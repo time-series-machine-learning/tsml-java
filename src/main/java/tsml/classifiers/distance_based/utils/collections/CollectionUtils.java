@@ -5,19 +5,43 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import org.junit.Assert;
 
 public class CollectionUtils {
     private CollectionUtils() {}
 
+    public static <B> void forEachGroup(int groupSize, List<B> list, Consumer<List<B>> consumer) {
+        List<B> group;
+        int i = 0;
+        int limit = groupSize;
+        while(i < list.size() && i < limit) {
+            group = new ArrayList<>();
+            for(; i < list.size() && i < limit; i++) {
+                group.add(list.get(i));
+            }
+            consumer.accept(group);
+            limit += groupSize;
+        }
+    }
+
+    public static <B> void forEachPair(List<B> pairs, BiConsumer<B, B> consumer) {
+        forEachGroup(2, pairs, pair -> {
+            if(pair.size() != 2) {
+                throw new IllegalStateException("expected pair");
+            }
+            consumer.accept(pair.get(0), pair.get(1));
+        });
+    }
+
     public static <B, A> List<A> convertPairs(List<B> pairs, BiFunction<B, B, A> func) {
         List<A> objs = new ArrayList<>();
-        for(int i = 0; i < pairs.size(); i += 2) {
-            final B trainContractAmountStr = pairs.get(i);
-            final B trainContractUnitStr = pairs.get(i + 1);
-            final A obj = func.apply(trainContractAmountStr, trainContractUnitStr);
+        forEachPair(pairs, (a, b) -> {
+            final A obj = func.apply(a, b);
             objs.add(obj);
-        }
+        });
         return objs;
     }
 

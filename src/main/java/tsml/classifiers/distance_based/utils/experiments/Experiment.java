@@ -103,34 +103,6 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         }
     }
 
-
-    /**
-     *
-     switch to control whether we need to switch out the random source for testing. For example, if we train a
-     classifier for 5 mins, then test, then train for another 5 mins (to 10 mins), then test, the results are
-     different to training for 10 minutes alone then testing. This is because the classifier sources random
-     numbers during testing and training, therefore the extra testing in the first version causes different
-     random numbers. Obviously this only matters if the classifier uses the random source during testing, but
-     for safety it is best to assume all classifiers do and switch the source to an alternate source for each
-     test batch.
-     * @param random
-     * @return
-     */
-    private Random switchRandom(Random random) {
-        Random prevRandom;
-        final Classifier classifier = getClassifier();
-        if(classifier instanceof RandomSource) {
-            prevRandom = ((RandomSource) classifier).getRandom();
-            ((RandomSource) classifier).setRandom(random);
-        } else if(classifier instanceof EnhancedAbstractClassifier) {
-            prevRandom = ((EnhancedAbstractClassifier) classifier).getRandom();
-            ((EnhancedAbstractClassifier) classifier).setRandom(random);
-        } else {
-            throw new IllegalStateException("unable to set new random source for testing");
-        }
-        return prevRandom;
-    }
-
     public void train() throws Exception {
         if(trained) {
             throw new IllegalStateException("already trained");
@@ -206,6 +178,14 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         }
     }
 
+    public boolean isTested() {
+        return tested;
+    }
+
+    public boolean isTrained() {
+        return trained;
+    }
+
     public void test() throws Exception {
         if(tested) {
             throw new IllegalStateException("already tested");
@@ -213,14 +193,10 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
             tested = true;
         }
         getLogger().info("testing...");
-        // set the test random. This is especially important if we're doing multiple train contracts as multiple
-        // train / test / train / test phases cause different sequence of random calls.
         final Classifier classifier = getClassifier();
         final Instances testData = new Instances(getTestData());
         // mark the test data as missing class
         InstanceTools.setClassMissing(testData);
-        final Random testRandom = new Random(getSeed());
-        final Random trainRandom = switchRandom(testRandom);
         // test the classifier
         final ClassifierResults testResults = new ClassifierResults();
         for(final Instance testInstance : testData) {
@@ -231,7 +207,6 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
             testResults.addPrediction(testInstance.classValue(), distribution, predictedClass, timeTaken, "");
         }
         // swap back the random source *only if* we switched it before because of multiple contracts
-        switchRandom(trainRandom);
         setTestResults(testResults);
         getLogger().info("test results: " + System.lineSeparator() + testResults.writeSummaryResultsToString());
     }
