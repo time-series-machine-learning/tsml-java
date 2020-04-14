@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * HIVE-COTE version 1.0: published here
  *
  */
-public class HIVE_COTE_Examples {
+public class EX07_HIVE_COTE_Examples {
 
     public static void basicUsage() throws Exception {
         System.out.println(" Basic Usage: load a dataset, build a default config classifier, make some predictions:");
@@ -171,16 +171,16 @@ public class HIVE_COTE_Examples {
     }
 
 
-    public static void contractAndCheckpoint() throws Exception {
+    public static void contract() throws Exception {
         System.out.println(" HIVE COTE is contractable and checkpointable");
         System.out.println(" these can be set through Experiments or directly");
         HIVE_COTE hc = new HIVE_COTE();
-        EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[4];
+        EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[3];
         c[0]=new TSF();
         c[1]=new RISE();
         c[2]=new cBOSS();
-        c[3]=new cBOSS();
-        String[] names={"TSF","RISE","cBOSS","STC"};//
+//        c[0]=new ShapeletTransformClassifier();
+        String[] names={"TSF","RISE","cBOSS"};//"STC"};//
         hc.setClassifiers(c,names,null);
         String[] n=hc.getClassifierNames();
         for(String s:n)
@@ -191,13 +191,16 @@ public class HIVE_COTE_Examples {
         hc.setDebug(true);
         System.out.println(" HIVE COTE is contractable only if its components are contractable.");
         System.out.println(" To set a contract (max run time) use any of the Contractable methods\n");
-//Ways of setting the time
+//Ways of setting the contract time
+//Minute, hour or day limit
         hc.setMinuteLimit(1);
         hc.setHourLimit(2);
         hc.setDayLimit(1);
+//Specify units
         hc.setTrainTimeLimit(30, TimeUnit.SECONDS);
         hc.setTrainTimeLimit(1, TimeUnit.MINUTES);
-
+//Or just give it in nanoseconds
+        hc.setTrainTimeLimit(10000000000L);
         long t =System.nanoTime();
         hc.buildClassifier(train);
         t =System.nanoTime()-t;
@@ -213,6 +216,6 @@ public class HIVE_COTE_Examples {
 //        usageWithExperimentsClass();
 //        buildingFromComponents();
  //       setClassifiersAndThread();
-        contractAndCheckpoint();
+        contract();
     }
 }
