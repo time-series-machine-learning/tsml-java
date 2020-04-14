@@ -59,7 +59,7 @@ public class ExperimentBatch {
         return classifier;
     }
 
-    private boolean multipleExperiments() {
+    private boolean conductingMultipleExperiments() {
         return !args.getTrainMemoryContracts().isEmpty() || !args.getTestTimeContracts().isEmpty() || !args.getTrainTimeContracts().isEmpty();
     }
 
@@ -112,7 +112,8 @@ public class ExperimentBatch {
     private void trainExperiment(Experiment experiment) throws Exception {
         // train classifier
         logger.info("training {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
-        if(experiment.isTrained()) {
+        if(experiment.isTrained() && conductingMultipleExperiments()) {
+            logger.info("cloning classifier for further experiments");
             Classifier classifier = experiment.getClassifier();
             classifier = Copy.deepCopy(classifier);
             experiment.setClassifier(classifier);
