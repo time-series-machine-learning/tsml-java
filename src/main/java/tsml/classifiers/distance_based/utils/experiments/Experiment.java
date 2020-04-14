@@ -75,129 +75,33 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
     private Classifier classifier;
     private ClassifierResults testResults;
     private ClassifierResults trainResults;
-
-    // the seeds to run
-    public static final String SEED_SHORT_FLAG = "-s";
-    public static final String SEED_LONG_FLAG = "--seed";
-    @Parameter(names = {SEED_SHORT_FLAG, SEED_LONG_FLAG}, description = "the seed to be used in sampling a dataset "
-        + "and in the random source for the classifier", required = true)
     private Integer seed;
-
-    // the classifier to use
-    public static final String CLASSIFIER_SHORT_FLAG = "-c";
-    public static final String CLASSIFIER_LONG_FLAG = "--classifier";
-    @Parameter(names = {CLASSIFIER_SHORT_FLAG, CLASSIFIER_LONG_FLAG},
-        description = "append the train memory contract to the classifier name")
     private String classifierName;
-
-    // where to put the results when finished
-    public static final String RESULTS_DIR_SHORT_FLAG = "-r";
-    public static final String RESULTS_DIR_LONG_FLAG = "--resultsDir";
-    @Parameter(names = {RESULTS_DIR_SHORT_FLAG, RESULTS_DIR_LONG_FLAG}, description = "path to a folder to place "
-        + "results in",
-        required = true)
-    private String resultsDirPath;
-
-    // paths to directory where problem data is stored
-    public static final String DATASET_DIR_SHORT_FLAG = "--dd";
-    public static final String DATASET_DIR_LONG_FLAG = "--datasetsDir";
-    @Parameter(names = {DATASET_DIR_SHORT_FLAG, DATASET_DIR_LONG_FLAG}, description = "the path to the folder "
-        + "containing the datasets",
-        required = true)
-    private String datasetDirPath;
-
-    // names of the dataset that should be run
-    public static final String DATASET_NAME_SHORT_FLAG = "-d";
-    public static final String DATASET_NAME_LONG_FLAG = "--dataset";
-    @Parameter(names = {DATASET_NAME_SHORT_FLAG, DATASET_NAME_LONG_FLAG}, description = "the name of the dataset",
-        required = true)
     private String datasetName;
-
-    // parameters to pass onto the classifiers
-    public static final String PARAMETERS_SHORT_FLAG = "-p";
-    public static final String PARAMETERS_LONG_FLAG = "--parameters";
-    @Parameter(names = {PARAMETERS_SHORT_FLAG, PARAMETERS_LONG_FLAG}, description = "parameters for the classifiers. ", variableArity =
-        true)
-    private List<String> classifierParameterStrs = new ArrayList<>();
-    private ParamSet classifierParameters = new ParamSet();
-
-    // whether to append the classifier parameters to the classifier name
-    public static final String APPEND_CLASSIFIER_PARAMETERS_SHORT_FLAG = "--acp";
-    public static final String APPEND_CLASSIFIER_PARAMETERS_LONG_FLAG = "--appendClassifierParameters";
-    @Parameter(names = {APPEND_CLASSIFIER_PARAMETERS_SHORT_FLAG, APPEND_CLASSIFIER_PARAMETERS_LONG_FLAG},
-        description = "append the classifier parameters to the classifier name")
-    private boolean appendClassifierParameters = false;
-
+    private ParamSet paramSet = new ParamSet();
     private Logger logger = LogUtils.buildLogger(this);
-
-    // the train time contract for the classifier
-    public static final String TRAIN_TIME_CONTRACT_SHORT_FLAG = "--ttc";
-    public static final String TRAIN_TIME_CONTRACT_LONG_FLAG = "--trainTimeContract";
-    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, TRAIN_TIME_CONTRACT_LONG_FLAG}, converter =
-        TimeAmountConverter.class, description =
-        "specify a train time contract for the classifier in the form \"<amount> <units>\", e.g. \"4 hour\"")
-    private List<TimeAmount> trainTimeContracts = Lists.newArrayList();
-
-    // the train memory contract for the classifier
-    public static final String TRAIN_MEMORY_CONTRACT_SHORT_FLAG = "--tmc";
-    public static final String TRAIN_MEMORY_CONTRACT_LONG_FLAG = "--trainMemoryContract";
-    @Parameter(names = {TRAIN_MEMORY_CONTRACT_SHORT_FLAG, TRAIN_MEMORY_CONTRACT_LONG_FLAG}, converter =
-        MemoryAmountConverter.class, description =
-        "specify a train memory contract for the classifier in the form \"<amount> <units>\", e.g. \"4 GIGABYTE\" - make"
-            + " sure you've considered whether you need GIBIbyte or GIGAbyte though.")
-    private List<MemoryAmount> trainMemoryContracts = Lists.newArrayList();
-
-    // the test time contract
-    public static final String TEST_TIME_CONTRACT_SHORT_FLAG = "--ptc";
-    public static final String TEST_TIME_CONTRACT_LONG_FLAG = "--testTimeContract";
-    @Parameter(names = {TEST_TIME_CONTRACT_SHORT_FLAG, TEST_TIME_CONTRACT_LONG_FLAG}, converter =
-        TimeAmountConverter.class, description =
-        "specify a test time contract for the classifier in the form \"<amount> <unit>\", e.g. \"1 minute\"")
-    private List<TimeAmount> testTimeContracts = Lists.newArrayList();
-
-    // checkpoint interval (if using checkpointing)
-    private static final String CHECKPOINT_INTERVAL_SHORT_FLAG = "--cpi";
-    private static final String CHECKPOINT_INTERVAL_LONG_FLAG = "--checkpointInterval";
-    @Parameter(names = {CHECKPOINT_INTERVAL_SHORT_FLAG, CHECKPOINT_INTERVAL_LONG_FLAG}, converter =
-        TimeAmountConverter.class, description =
-        "how "
-            + "often to "
-            + "save the classifier to file in the form \"<amount> <unit>\", e.g. \"1 hour\"")
     // todo add checkpoint interval to classifier post tony's interface changes
     private TimeAmount checkpointInteval = new TimeAmount(1, TimeUnit.HOURS);
 
     // todo append times + mem to clsf name
-
-    // whether to find a train estimate for the classifier
-    private static final String ESTIMATE_TRAIN_ERROR_SHORT_FLAG = "-e";
-    private static final String ESTIMATE_TRAIN_ERROR_LONG_FLAG = "--estimateTrainError";
-    @Parameter(names = {ESTIMATE_TRAIN_ERROR_SHORT_FLAG, ESTIMATE_TRAIN_ERROR_LONG_FLAG}, description = "set the "
-        + "classifier to find a train estimate")
     private boolean estimateTrainError = false;
     // todo another parameter for specifying a cv or something of a non-train-estimateable classifier to find a train
     //  estimate for it
-
-    // whether to overwrite train files
-    private static final String OVERWRITE_TRAIN_SHORT_FLAG = "--ot";
-    private static final String OVERWRITE_TRAIN_LONG_FLAG = "--overwriteTrain";
-    @Parameter(names = {OVERWRITE_TRAIN_SHORT_FLAG, OVERWRITE_TRAIN_LONG_FLAG}, description = "overwrite train results")
-    private boolean overwriteTrain = false;
-
-    // whether to overwrite test results
-    private static final String OVERWRITE_TEST_SHORT_FLAG = "--op";
-    private static final String OVERWRITE_TEST_LONG_FLAG = "--overwriteTest";
-    @Parameter(names = {OVERWRITE_TEST_SHORT_FLAG, OVERWRITE_TEST_LONG_FLAG}, description = "overwrite test results")
-    private boolean overwriteTest = false;
 
     // the factory to build classifiers using classifier name
     private ClassifierBuilderFactory<Classifier> classifierBuilderFactory =
         ClassifierBuilderFactory.getGlobalInstance();
     // todo get this by string, i.e. factory, and make into cmdline param
 
+    private boolean trained = false;
+    private boolean tested = false;
+    private String savePath;
+    private String loadPath;
 
     public void resetTrain() {
         trained = false;
         trainResults = null;
+        resetTest();
     }
 
     public void resetTest() {
@@ -292,18 +196,19 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         if(classifier instanceof Randomizable) {
             ((Randomizable) classifier).setSeed(getSeed());
         } else {
-            logger.warning("cannot set seed for {" + classifier.toString() + "}");
+            getLogger().warning("cannot set seed for {" + classifier.toString() + "}");
         }
         if(classifier instanceof Loggable) {
             // todo set to this experiment's logger instead
             ((Loggable) classifier).getLogger().setLevel(getLogger().getLevel());
         } else {
-            logger.warning("cannot set logger for {" + classifierName + "}");
+            getLogger().warning("cannot set logger for {" + classifierName + "}");
         }
         classifier.buildClassifier(trainData);
         if(isEstimateTrainError()) {
             if(classifier instanceof TrainEstimateable) {
                 ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
+                trainResults.setDetails(classifier, trainData);
                 setTrainResults(trainResults);
                 getLogger().info("train estimate: " + System.lineSeparator() + trainResults.writeSummaryResultsToString());
             } else {
@@ -340,7 +245,7 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
             final long timeTaken = System.nanoTime() - timestamp;
             testResults.addPrediction(testInstance.classValue(), distribution, predictedClass, timeTaken, "");
         }
-        // swap back the random source *only if* we switched it before because of multiple contracts
+        testResults.setDetails(classifier, testData);
         setTestResults(testResults);
         getLogger().info("test results: " + System.lineSeparator() + testResults.writeSummaryResultsToString());
     }
@@ -354,9 +259,6 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
         setSeed(seed);
         setClassifierName(classifierName);
         setDatasetName(datasetName);
-        if(classifier instanceof Randomizable) {
-            ((Randomizable) classifier).setSeed(seed);
-        }
     }
 
     private Experiment() {
@@ -412,6 +314,10 @@ public class Experiment implements Copy, TrainTimeContractable, Checkpointable, 
 
     public Experiment setSeed(final int seed) {
         this.seed = seed;
+        Classifier classifier = getClassifier();
+        if(this.classifier instanceof Randomizable) {
+            ((Randomizable) this.classifier).setSeed(seed);
+        }
         return this;
     }
 

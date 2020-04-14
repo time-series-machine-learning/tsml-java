@@ -217,20 +217,6 @@ public class ExperimentBatch {
         }
     }
 
-    private String buildClassifierResultsDirPath(Experiment experiment) {
-        return args.getResultsDirPath() + "/" + experiment.getClassifierName() + "/Predictions/" + experiment.getDatasetName() +
-            "/";
-    }
-
-    private String buildTrainResultsFilePath(Experiment experiment) {
-        return buildClassifierResultsDirPath(experiment) + "trainFold" + experiment.getSeed() +
-            ".csv";
-    }
-
-    private String buildTestResultsFilePath(Experiment experiment) {
-        return buildClassifierResultsDirPath(experiment) + "testFold" + experiment.getSeed() +
-            ".csv";
-    }
 
     private void applyTrainTimeContract(Experiment experiment, TimeAmount trainTimeContract) {
         // setup the next train contract
