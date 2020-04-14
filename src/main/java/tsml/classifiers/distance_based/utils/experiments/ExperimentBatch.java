@@ -65,10 +65,10 @@ public class ExperimentBatch {
     }
 
     private Experiment buildExperiment() throws Exception {
+        final Classifier classifier = buildClassifier();
         final Instances[] data = loadData();
         final Instances trainData = data[0];
         final Instances testData = data[1];
-        final Classifier classifier = buildClassifier();
         final Experiment experiment = new Experiment(trainData, testData, classifier, args.getSeed(),
             args.getClassifierName()
             , args.getDatasetName());

@@ -41,14 +41,14 @@ public class ProxTree extends BaseClassifier {
     public static final Factory FACTORY = new Factory();
 
     public static class Factory extends CompileTimeClassifierBuilderFactory<ProxTree> {
-        public final ClassifierBuilder<? extends ProxTree> PROXIMITY_TREE_R1_GINI =
-            add(new SuppliedClassifierBuilder<>("PROXIMITY_TREE_R1_GINI", Factory::buildProximityTreeR1Gini));
+        public final ClassifierBuilder<? extends ProxTree> PT_R1_GINI =
+            add(new SuppliedClassifierBuilder<>("PT_R1_GINI", Factory::buildProximityTreeR1Gini));
 
-        public final ClassifierBuilder<? extends ProxTree> PROXIMITY_TREE_R5_GINI =
-            add(new SuppliedClassifierBuilder<>("PROXIMITY_TREE_R5_GINI", Factory::buildProximityTreeR5Gini));
+        public final ClassifierBuilder<? extends ProxTree> PT_R5_GINI =
+            add(new SuppliedClassifierBuilder<>("PT_R5_GINI", Factory::buildProximityTreeR5Gini));
 
-        public final ClassifierBuilder<? extends ProxTree> PROXIMITY_TREE_R10_GINI =
-            add(new SuppliedClassifierBuilder<>("PROXIMITY_TREE_R10_GINI", Factory::buildProximityTreeR10Gini));
+        public final ClassifierBuilder<? extends ProxTree> PT_R10_GINI =
+            add(new SuppliedClassifierBuilder<>("PT_R10_GINI", Factory::buildProximityTreeR10Gini));
 
         public static ProxTree buildProximityTreeR1Gini() {
             return setProximityTreeR1GiniConfig(new ProxTree());
@@ -127,7 +127,7 @@ public class ProxTree extends BaseClassifier {
     }
 
     public static void main(String[] args) throws Exception {
-        ProxTree pt = FACTORY.PROXIMITY_TREE_R5_GINI.build();
+        ProxTree pt = FACTORY.PT_R5_GINI.build();
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets", "GunPoint", 0, pt);
         System.out.println(results.writeSummaryResultsToString()); // todo interfaces or abst classes for fields in
         // this cls, e.g. node iterator?
