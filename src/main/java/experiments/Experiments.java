@@ -142,7 +142,7 @@ public class Experiments  {
             int folds=30;
 
 
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
@@ -179,8 +179,8 @@ public class Experiments  {
                 for (String str : settings)
                     System.out.println("\t"+str);
                 System.out.println("");
-                String[] probFiles= {"Chinatown"}; //DatasetLists.ReducedUCI;
-                folds=1;
+                String[] probFiles= {"NonInvasiveFetalECGThorax1"}; //DatasetLists.ReducedUCI;
+                folds=30;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
                     for(int i=1;i<=folds;i++){
