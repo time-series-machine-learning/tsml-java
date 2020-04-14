@@ -30,6 +30,7 @@ import machine_learning.classifiers.ensembles.ContractRotationForest;
 import org.apache.commons.lang3.NotImplementedException;
 import tsml.classifiers.Tuneable;
 import utilities.InstanceTools;
+import weka.Run;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Classifier;
@@ -100,6 +101,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 
     private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
+
 
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
     private double singleShapeletTime=0;    //Estimate of the time to evaluate a single shapelet
@@ -245,28 +247,32 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             saveShapeletData(data);
 
 
-        printLineDebug("Starting STC build classifier ......");
+        printLineDebug("Starting STC build classifier after "+(System.nanoTime()-startTime)/1000000000+" ......");
         if(getEstimateOwnPerformance()){
 // if the classifier can estimate its own performance, do that. This is not yet in the time contract!
-//            if(classifier instanceof EnhancedAbstractClassifier)
-            if(estimator==EstimatorMethod.CV) {
+            boolean doExternalCV=false;
+            doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
+            if(doExternalCV) {
                 printLineDebug("Doing a CV with base to estimate accuracy");
-                int numCVFolds = 10;
-                numCVFolds = Math.min(data.numInstances(), numCVFolds);
+                int numFolds = setNumberOfFolds(data);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 cv.setSeed(seed * 12);
-                cv.setNumFolds(numCVFolds);
+                cv.setNumFolds(numFolds);
                 trainResults = cv.crossValidateWithStats(classifier, shapeletData);
             }
-            else if(estimator==EstimatorMethod.OOB){
-                throw new NotImplementedException("OOB Option not implemented ");
+            else{//The classifier can handler it internally
+                throw new RuntimeException(("ERROR: internal estimates not sorted out yet"));
+
             }
         }
 
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
-//Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
+
+
+
+        //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
 /*
         if(performPCA){
             pca.setNumAttributesToKeep(shapeletData.numAttributes()-1);
