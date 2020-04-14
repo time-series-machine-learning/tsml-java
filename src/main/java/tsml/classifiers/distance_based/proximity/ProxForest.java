@@ -2,7 +2,6 @@ package tsml.classifiers.distance_based.proximity;
 
 import java.util.ArrayList;
 import java.util.List;
-import tsml.classifiers.distance_based.proximity.ProxTree.Factory;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.ArrayUtilities;
@@ -24,7 +23,9 @@ public class ProxForest extends BaseClassifier {
             add(new SuppliedClassifierBuilder<>("PROXIMITY_FOREST", Factory::buildProximityForest));
 
         public static ProxForest buildProximityForest() {
-            return new ProxForest();
+            ProxForest proxForest = new ProxForest();
+            proxForest.setConstituentBuilder(data -> ProxTree.FACTORY.PT_R5_GINI.build());
+            return proxForest;
         }
     }
 
@@ -36,7 +37,7 @@ public class ProxForest extends BaseClassifier {
     private ConstituentBuilder constituentBuilder = (Instances trainData) -> {
         throw new UnsupportedOperationException();
     };
-    private int numTrees = 100;
+    private int numConstituentLimit = 100;
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
@@ -45,7 +46,7 @@ public class ProxForest extends BaseClassifier {
         if(rebuild) {
             constituents = new ArrayList<>();
         }
-        while(constituents.size() < numTrees) { // todo different stopping condition
+        while(constituents.size() < numConstituentLimit) { // todo different stopping condition
             Classifier constituent = constituentBuilder.build(trainData);
             constituents.add(constituent);
         }
@@ -63,5 +64,24 @@ public class ProxForest extends BaseClassifier {
         }
         ArrayUtilities.normalise(distribution);
         return distribution;
+    }
+
+    public ConstituentBuilder getConstituentBuilder() {
+        return constituentBuilder;
+    }
+
+    public ProxForest setConstituentBuilder(
+        final ConstituentBuilder constituentBuilder) {
+        this.constituentBuilder = constituentBuilder;
+        return this;
+    }
+
+    public int getNumConstituentLimit() {
+        return numConstituentLimit;
+    }
+
+    public ProxForest setNumConstituentLimit(final int numConstituentLimit) {
+        this.numConstituentLimit = numConstituentLimit;
+        return this;
     }
 }

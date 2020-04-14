@@ -23,16 +23,6 @@ import weka.classifiers.Classifier;
 
 public class ExperimentArgs {
 
-    public TimeAmount getCheckpointInteval() {
-        return checkpointInteval;
-    }
-
-    public ExperimentArgs setCheckpointInteval(
-        final TimeAmount checkpointInteval) {
-        this.checkpointInteval = checkpointInteval;
-        return this;
-    }
-
     private static class TimeAmountConverter implements
         IStringConverter<TimeAmount> {
 

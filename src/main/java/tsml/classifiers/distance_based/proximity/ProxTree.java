@@ -200,7 +200,6 @@ public class ProxTree extends BaseClassifier {
         while(nodeIterator.hasNext()) {
             final TreeNode<Split> node = nodeIterator.next();
             final List<Instances> partitions = node.getElement().split();
-            System.out.println(node.getElement());
             for(Instances childData : partitions) {
                 buildNode(childData, node);
             }

@@ -13,10 +13,11 @@ public class ExperimentRunner {
     public static void main(String[] args) throws Exception {
         ExperimentBatch.main(
             "-r", "results"
-            ,"-c", "PT_R1_GINI"
-            ,"-d", "GunPoint"
-            ,"--dd", "/bench/datasets"
-            ,"-s", "0"
+            , "-c", "PT_R1_GINI"
+            , "-d", "GunPoint"
+            , "--dd", "/bench/datasets"
+            , "-s", "0"
+            , "--op"
 //            ,"-e"
         );
     }

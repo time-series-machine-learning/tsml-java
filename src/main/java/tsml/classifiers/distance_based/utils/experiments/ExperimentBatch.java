@@ -90,9 +90,7 @@ public class ExperimentBatch {
             if(shouldTrain(experimentToTrain)) {
                 try {
                     trainExperiment(experiment);
-                    if(shouldTest(experiment)) {
-                        forEachExperimentTest(experiment, this::runExperimentTest);
-                    }
+                    forEachExperimentTest(experiment, this::runExperimentTest);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -173,7 +171,8 @@ public class ExperimentBatch {
 
     private boolean shouldTest(Experiment experiment, boolean log) {
         if(args.isOverwriteTest()) {
-            if(log) logger.finest("overwriting test results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+            if(log) logger.finest("overwriting test results enabled for {" + experiment.getClassifierName() + "} on "
+                + "{" + experiment.getDatasetName() + "}");
             return true;
         }
         String path = buildTestResultsFilePath(experiment);
@@ -195,26 +194,27 @@ public class ExperimentBatch {
         });
         // if there are tests to be performed then we must train
         if(box.get()) {
-            logger.finest("testing required so overwriting train results for {" + experiment.getClassifierName() + "} "
+            logger.finest("testing required for {" + experiment.getClassifierName() + "} "
                 + "on {" + experiment.getDatasetName() + "}");
             return true;
         }
-        if(!args.isEstimateTrainError()) {
-            logger.finest("not estimating train error for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+        if(args.isEstimateTrainError()) {
+            logger.finest("estimating train error enabled for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+            String path = buildTrainResultsFilePath(experiment);
+            boolean exists = new File(path).exists();
+            if(exists) {
+                logger.finest("existing train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+                if(args.isOverwriteTrain()) {
+                    logger.finest("overwriting train results enabled for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+                    return true;
+                }
+            } else {
+                logger.finest("non-existent train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
+            }
+            return !exists;
+        } else {
             return false;
         }
-        if(args.isOverwriteTrain()) {
-            logger.finest("overwriting train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
-            return true;
-        }
-        String path = buildTrainResultsFilePath(experiment);
-        boolean exists = new File(path).exists();
-        if(exists) {
-            logger.finest("existing train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
-        } else {
-            logger.finest("non-existent train results for {" + experiment.getClassifierName() + "} on {" + experiment.getDatasetName() + "}");
-        }
-        return !exists;
     }
 
     private String buildClassifierResultsDirPath(Experiment experiment) {
