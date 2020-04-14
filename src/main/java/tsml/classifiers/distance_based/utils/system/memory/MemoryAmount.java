@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.utils.system.memory;
 
+import java.util.concurrent.TimeUnit;
 import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount;
+import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount.ShortTimeUnit;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
@@ -9,6 +11,27 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
  * Contributors: goastler
  */
 public class MemoryAmount implements Comparable<MemoryAmount> {
+
+    public enum ShortMemoryUnit {
+        B(MemoryUnit.BYTES),
+        KB(MemoryUnit.KIBIBYTES),
+        K(MemoryUnit.KIBIBYTES),
+        MB(MemoryUnit.MEBIBYTES),
+        M(MemoryUnit.MEBIBYTES),
+        GB(MemoryUnit.GIBIBYTES),
+        G(MemoryUnit.GIBIBYTES),
+        ;
+
+        private final MemoryUnit alias;
+
+        ShortMemoryUnit(final MemoryUnit alias) {
+            this.alias = alias;
+        }
+
+        public MemoryUnit getAlias() {
+            return alias;
+        }
+    }
 
     private long amount;
     private MemoryUnit unit;
@@ -27,16 +50,17 @@ public class MemoryAmount implements Comparable<MemoryAmount> {
         amount = amount.trim();
         unit = unit.toUpperCase();
         unit = StrUtils.depluralise(unit);
-        return new MemoryAmount(Long.parseLong(amount), MemoryUnit.valueOf(unit));
+        MemoryUnit memoryUnit;
+        try {
+            memoryUnit = ShortMemoryUnit.valueOf(unit).getAlias();
+        } catch(Exception e) {
+            memoryUnit = MemoryUnit.valueOf(unit);
+        }
+        return new MemoryAmount(Long.parseLong(amount), memoryUnit);
     }
 
     public static MemoryAmount parse(String str) {
-        str = str.trim();
-        String[] parts = str.split(" ");
-        if(parts.length != 2) {
-            throw new IllegalArgumentException("expected TimeAmount in the form \"<amount> <unit>\", e.g. \"5 "
-                + "gigabyte\"");
-        }
+        String[] parts = StrUtils.extractAmountAndUnit(str);
         return parse(parts[0], parts[1]);
     }
 
@@ -71,6 +95,6 @@ public class MemoryAmount implements Comparable<MemoryAmount> {
     public int compareTo(final MemoryAmount other) {
         MemoryAmount otherNanos = other.convert(MemoryUnit.BYTES);
         MemoryAmount nanos = convert(MemoryUnit.BYTES);
-        return (int) (nanos.getAmount() - otherNanos.getAmount());
+        return (int) (otherNanos.getAmount() - nanos.getAmount());
     }
 }

@@ -5,15 +5,11 @@ import org.junit.Test;
 
 public enum MemoryUnit {
     BYTES(1),
-    B(BYTES),
     KIBIBYTES(1024, BYTES),
-    KB(KIBIBYTES),
     KILOBYTES(1000, BYTES),
     MEBIBYTES(1024, KIBIBYTES),
-    MB(MEBIBYTES),
     MEGABYTES(1000, KILOBYTES),
     GIBIBYTES(1024, MEBIBYTES),
-    GB(GIBIBYTES),
     GIGABYTES(1000, MEGABYTES),
     ;
 

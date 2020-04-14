@@ -19,6 +19,27 @@ import java.util.function.Function;
 
 public class StrUtils {
 
+    public static String[] extractAmountAndUnit(String str) {
+        str = str.trim();
+        StringBuilder amount = new StringBuilder();
+        StringBuilder unit = new StringBuilder();
+        char[] chars = str.toCharArray();
+        int i = 0;
+        boolean digitsEnded = false;
+        for(;i < chars.length; i++) {
+            char c = chars[i];
+            if(!Character.isDigit(c)) {
+                digitsEnded = true;
+            }
+            if(digitsEnded) {
+                unit.append(c);
+            } else {
+                amount.append(c);
+            }
+        }
+        return new String[] {amount.toString(), unit.toString()};
+    }
+
     public static String depluralise(String str) {
         if(str.endsWith("s")) {
             str = str.substring(0, str.length() - 1);

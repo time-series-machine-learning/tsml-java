@@ -59,12 +59,7 @@ public class TimeAmount implements Comparable<TimeAmount> {
     }
 
     public static TimeAmount parse(String str) {
-        str = str.trim();
-        String[] parts = str.split(" ");
-        if(parts.length != 2) {
-            throw new IllegalArgumentException("expected TimeAmount in the form \"<amount> <unit>\", e.g. \"5 "
-                + "minute\"");
-        }
+        String[] parts = StrUtils.extractAmountAndUnit(str);
         return parse(parts[0], parts[1]);
     }
 
@@ -99,6 +94,6 @@ public class TimeAmount implements Comparable<TimeAmount> {
     public int compareTo(final TimeAmount other) {
         TimeAmount otherNanos = other.convert(TimeUnit.NANOSECONDS);
         TimeAmount nanos = convert(TimeUnit.NANOSECONDS);
-        return (int) (nanos.getAmount() - otherNanos.getAmount());
+        return (int) (otherNanos.getAmount() - nanos.getAmount());
     }
 }
