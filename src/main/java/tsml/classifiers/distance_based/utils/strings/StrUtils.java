@@ -19,6 +19,13 @@ import java.util.function.Function;
 
 public class StrUtils {
 
+    public static String depluralise(String str) {
+        if(str.endsWith("s")) {
+            str = str.substring(0, str.length() - 1);
+        }
+        return str;
+    }
+
     public static String extractNameAndParams(Classifier classifier) {
         String params;
         if(classifier instanceof ParamHandler) {

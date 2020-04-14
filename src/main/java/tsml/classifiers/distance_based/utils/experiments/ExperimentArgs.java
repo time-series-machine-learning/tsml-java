@@ -1,5 +1,7 @@
 package tsml.classifiers.distance_based.utils.experiments;
 
+import com.beust.jcommander.IStringConverter;
+import com.beust.jcommander.IStringConverterFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import java.util.ArrayList;
@@ -8,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
@@ -20,11 +23,39 @@ import weka.classifiers.Classifier;
 
 public class ExperimentArgs {
 
+    public TimeAmount getCheckpointInteval() {
+        return checkpointInteval;
+    }
+
+    public ExperimentArgs setCheckpointInteval(
+        final TimeAmount checkpointInteval) {
+        this.checkpointInteval = checkpointInteval;
+        return this;
+    }
+
+    private static class TimeAmountConverter implements
+        IStringConverter<TimeAmount> {
+
+        @Override
+        public TimeAmount convert(final String str) {
+            return TimeAmount.parse(str);
+        }
+    }
+
+    private static class MemoryAmountConverter implements
+        IStringConverter<MemoryAmount> {
+
+        @Override
+        public MemoryAmount convert(final String str) {
+            return MemoryAmount.parse(str);
+        }
+    }
+
     // abide by unix cmdline args convention! single char --> single hyphen, multiple chars --> double hyphen
 
     // the classifier to use
-    private static final String CLASSIFIER_SHORT_FLAG = "--atmc";
-    private static final String CLASSIFIER_LONG_FLAG = "--appendTrainMemoryContract";
+    private static final String CLASSIFIER_SHORT_FLAG = "-c";
+    private static final String CLASSIFIER_LONG_FLAG = "--classifier";
     @Parameter(names = {CLASSIFIER_SHORT_FLAG, CLASSIFIER_LONG_FLAG},
         description = "append the train memory contract to the classifier name")
     private String classifierName;
@@ -79,26 +110,26 @@ public class ExperimentArgs {
     // the train time contract for the classifier
     private static final String TRAIN_TIME_CONTRACT_SHORT_FLAG = "--ttc";
     private static final String TRAIN_TIME_CONTRACT_LONG_FLAG = "--trainTimeContract";
-    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, TRAIN_TIME_CONTRACT_LONG_FLAG}, arity = 2, description =
+    @Parameter(names = {TRAIN_TIME_CONTRACT_SHORT_FLAG, TRAIN_TIME_CONTRACT_LONG_FLAG}, converter =
+        TimeAmountConverter.class, description =
         "specify a train time contract for the classifier in the form \"<amount> <units>\", e.g. \"4 hour\"")
-    private List<String> trainTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> trainTimeContracts = new ArrayList<>();
 
     // the train memory contract for the classifier
     private static final String TRAIN_MEMORY_CONTRACT_SHORT_FLAG = "--tmc";
     private static final String TRAIN_MEMORY_CONTRACT_LONG_FLAG = "--trainMemoryContract";
-    @Parameter(names = {TRAIN_MEMORY_CONTRACT_SHORT_FLAG, TRAIN_MEMORY_CONTRACT_LONG_FLAG}, arity = 2, description =
+    @Parameter(names = {TRAIN_MEMORY_CONTRACT_SHORT_FLAG, TRAIN_MEMORY_CONTRACT_LONG_FLAG}, converter =
+        MemoryAmountConverter.class, description =
         "specify a train memory contract for the classifier in the form \"<amount> <units>\", e.g. \"4 GIGABYTE\" - make"
             + " sure you've considered whether you need GIBIbyte or GIGAbyte though.")
-    private List<String> trainMemoryContractStrs = new ArrayList<>();
     private List<MemoryAmount> trainMemoryContracts = new ArrayList<>();
 
     // the test time contract
     private static final String TEST_TIME_CONTRACT_SHORT_FLAG = "--ptc";
     private static final String TEST_TIME_CONTRACT_LONG_FLAG = "--testTimeContract";
-    @Parameter(names = {TEST_TIME_CONTRACT_SHORT_FLAG, TEST_TIME_CONTRACT_LONG_FLAG}, arity = 2, description =
+    @Parameter(names = {TEST_TIME_CONTRACT_SHORT_FLAG, TEST_TIME_CONTRACT_LONG_FLAG}, converter =
+        TimeAmountConverter.class, description =
         "specify a test time contract for the classifier in the form \"<amount> <unit>\", e.g. \"1 minute\"")
-    private List<String> testTimeContractStrs = new ArrayList<>();
     private List<TimeAmount> testTimeContracts = new ArrayList<>();
 
     // whether to checkpoint or not. Paths for checkpointing will be auto generated.
@@ -113,10 +144,13 @@ public class ExperimentArgs {
     // checkpoint interval (if using checkpointing)
     private static final String CHECKPOINT_INTERVAL_SHORT_FLAG = "--cpi";
     private static final String CHECKPOINT_INTERVAL_LONG_FLAG = "--checkpointInterval";
-    @Parameter(names = {CHECKPOINT_INTERVAL_SHORT_FLAG, CHECKPOINT_INTERVAL_LONG_FLAG}, description = "how often to "
+    @Parameter(names = {CHECKPOINT_INTERVAL_SHORT_FLAG, CHECKPOINT_INTERVAL_LONG_FLAG}, converter =
+        TimeAmountConverter.class, description =
+        "how "
+        + "often to "
         + "save the classifier to file in the form \"<amount> <unit>\", e.g. \"1 hour\"")
     // todo add checkpoint interval to classifier post tony's interface changes
-
+    private TimeAmount checkpointInteval = new TimeAmount(1, TimeUnit.HOURS);
 
     // whether to append the train time to the classifier name
     private static final String APPEND_TRAIN_TIME_CONTRACT_SHORT_FLAG = "--attc";
@@ -194,11 +228,8 @@ public class ExperimentArgs {
             ", classifierParameterStrs=" + classifierParameterStrs +
             ", classifierParameters=" + classifierParameters +
             ", appendClassifierParameters=" + appendClassifierParameters +
-            ", trainTimeContractStrs=" + trainTimeContractStrs +
             ", trainTimeContracts=" + trainTimeContracts +
-            ", trainMemoryContractStrs=" + trainMemoryContractStrs +
             ", trainMemoryContracts=" + trainMemoryContracts +
-            ", testTimeContractStrs=" + testTimeContractStrs +
             ", testTimeContracts=" + testTimeContracts +
             ", checkpoint=" + checkpoint +
             ", appendTrainTimeContract=" + appendTrainTimeContract +
@@ -217,18 +248,6 @@ public class ExperimentArgs {
 
     public ExperimentArgs(final String... args) throws Exception {
         parse(args);
-    }
-
-    public static List<TimeAmount> convertStringPairsToTimeAmounts(List<String> strs) {
-        List<TimeAmount> times = CollectionUtils.convertPairs(strs, TimeAmount::parse);
-        Collections.sort(times);
-        return times;
-    }
-
-    public static List<MemoryAmount> convertStringPairsToMemoryAmounts(List<String> strs) {
-        List<MemoryAmount> times = CollectionUtils.convertPairs(strs, MemoryAmount::parse);
-        Collections.sort(times);
-        return times;
     }
 
     public void parse(String... args) throws Exception {
@@ -258,10 +277,7 @@ public class ExperimentArgs {
     }
 
     private void parseTrainTimeContracts() {
-        if(trainTimeContractStrs.size() % 2 != 0) {
-            throw new IllegalStateException("train time contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
-        }
-        trainTimeContracts = convertStringPairsToTimeAmounts(trainTimeContractStrs);
+        Collections.sort(trainTimeContracts);
         // if there's no train contract we'll put nulls in place. This causes the loop to fire and we'll handle nulls
         // as no contract inside the loop
         if(trainTimeContracts.isEmpty()) {
@@ -270,20 +286,14 @@ public class ExperimentArgs {
     }
 
     private void parseTestTimeContracts() {
-        if(testTimeContractStrs.size() % 2 != 0) {
-            throw new IllegalStateException("test time contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
-        }
-        testTimeContracts = convertStringPairsToTimeAmounts(testTimeContractStrs);
+        Collections.sort(testTimeContracts);
         if(testTimeContracts.isEmpty()) {
             testTimeContracts.add(null);
         }
     }
 
     private void parseTrainMemoryContracts() {
-        if(trainMemoryContractStrs.size() % 2 != 0) {
-            throw new IllegalStateException("train memory contracts must be a list of pairs, i.e. \"5\" \"minutes\"");
-        }
-        trainMemoryContracts = convertStringPairsToMemoryAmounts(trainMemoryContractStrs);
+        Collections.sort(trainMemoryContracts);
         if(trainMemoryContracts.isEmpty()) {
             trainMemoryContracts.add(null);
         }
@@ -431,14 +441,6 @@ public class ExperimentArgs {
         return TRAIN_TIME_CONTRACT_LONG_FLAG;
     }
 
-    public List<String> getTrainTimeContractStrs() {
-        return trainTimeContractStrs;
-    }
-
-    public void setTrainTimeContractStrs(final List<String> trainTimeContractStrs) {
-        this.trainTimeContractStrs = trainTimeContractStrs;
-    }
-
     public List<TimeAmount> getTrainTimeContracts() {
         return trainTimeContracts;
     }
@@ -456,14 +458,6 @@ public class ExperimentArgs {
         return TRAIN_MEMORY_CONTRACT_LONG_FLAG;
     }
 
-    public List<String> getTrainMemoryContractStrs() {
-        return trainMemoryContractStrs;
-    }
-
-    public void setTrainMemoryContractStrs(final List<String> trainMemoryContractStrs) {
-        this.trainMemoryContractStrs = trainMemoryContractStrs;
-    }
-
     public List<MemoryAmount> getTrainMemoryContracts() {
         return trainMemoryContracts;
     }
@@ -479,14 +473,6 @@ public class ExperimentArgs {
 
     public static String getTestTimeContractLongFlag() {
         return TEST_TIME_CONTRACT_LONG_FLAG;
-    }
-
-    public List<String> getTestTimeContractStrs() {
-        return testTimeContractStrs;
-    }
-
-    public void setTestTimeContractStrs(final List<String> testTimeContractStrs) {
-        this.testTimeContractStrs = testTimeContractStrs;
     }
 
     public List<TimeAmount> getTestTimeContracts() {

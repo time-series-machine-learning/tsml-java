@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.stopwatch;
 
 import java.util.concurrent.TimeUnit;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -21,9 +22,50 @@ public class TimeAmount implements Comparable<TimeAmount> {
         setUnit(unit);
     }
 
+    public enum ShortTimeUnit {
+        S(TimeUnit.SECONDS),
+        SEC(TimeUnit.SECONDS),
+        M(TimeUnit.MINUTES),
+        MIN(TimeUnit.MINUTES),
+        H(TimeUnit.HOURS),
+        HR(TimeUnit.HOURS),
+        D(TimeUnit.DAYS),
+        ;
+
+
+        private final TimeUnit alias;
+
+        ShortTimeUnit(final TimeUnit unit) {
+            this.alias = unit;
+        }
+
+        public TimeUnit getAlias() {
+            return alias;
+        }
+    }
+
     public static TimeAmount parse(String amount, String unit) {
+        unit = unit.trim();
+        amount = amount.trim();
         unit = unit.toUpperCase();
-        return new TimeAmount(Long.parseLong(amount), TimeUnit.valueOf(unit));
+        unit = StrUtils.depluralise(unit);
+        TimeUnit timeUnit;
+        try {
+            timeUnit = ShortTimeUnit.valueOf(unit).getAlias();
+        } catch(Exception e) {
+            timeUnit = TimeUnit.valueOf(unit);
+        }
+        return new TimeAmount(Long.parseLong(amount), timeUnit);
+    }
+
+    public static TimeAmount parse(String str) {
+        str = str.trim();
+        String[] parts = str.split(" ");
+        if(parts.length != 2) {
+            throw new IllegalArgumentException("expected TimeAmount in the form \"<amount> <unit>\", e.g. \"5 "
+                + "minute\"");
+        }
+        return parse(parts[0], parts[1]);
     }
 
     @Override
