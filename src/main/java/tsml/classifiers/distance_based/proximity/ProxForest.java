@@ -17,7 +17,7 @@ import weka.core.Instances;
  */
 public class ProxForest extends BaseClassifier {
 
-    public static final ProxTree.Factory FACTORY = new ProxTree.Factory();
+    public static final Factory FACTORY = new Factory();
 
     public static class Factory extends CompileTimeClassifierBuilderFactory<ProxForest> {
         public final ClassifierBuilder<? extends ProxForest> PROXIMITY_FOREST =
