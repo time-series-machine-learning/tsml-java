@@ -25,16 +25,16 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class NN_DTW_CID_D extends MultivariateAbstractClassifier{
+public class NN_DTW_D extends MultivariateAbstractClassifier{
     
     Instances train;
-    NN_CID.CIDDTWDistance D;
-    public NN_DTW_CID_D(){
-        D = new NN_CID.CIDDTWDistance();
+    DTW_D D;
+    public NN_DTW_D(){
+        D = new DTW_D();
     }
     
     public void setR(double r){
-       // D.setR(r);
+        D.setR(r);
     }
 
 
