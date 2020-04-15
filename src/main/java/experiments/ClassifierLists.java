@@ -301,7 +301,7 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D","DTW_A", "HC_I"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D","DTW_A", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -332,6 +332,18 @@ public class ClassifierLists {
                 break;
             case "HC_I":
                 c=new MultivariateHiveCote(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "CBOSS_I":
+                c=new MultivariateSingleEnsemble("cBOSS", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "RISE_I":
+                c=new MultivariateSingleEnsemble("RISE", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "STC_I":
+                c=new MultivariateSingleEnsemble("STC", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "TSF_I":
+                c=new MultivariateSingleEnsemble("TSF", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
                 break;
             default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");

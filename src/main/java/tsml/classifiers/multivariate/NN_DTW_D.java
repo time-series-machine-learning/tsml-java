@@ -14,6 +14,7 @@
  */
 package tsml.classifiers.multivariate;
 
+import tsml.classifiers.distance_based.NN_CID;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW_D;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;
@@ -24,16 +25,16 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class NN_DTW_D extends MultivariateAbstractClassifier{
+public class NN_DTW_CID_D extends MultivariateAbstractClassifier{
     
     Instances train;
-    DTW_D D;
-    public NN_DTW_D(){
-        D = new DTW_D();
+    NN_CID.CIDDTWDistance D;
+    public NN_DTW_CID_D(){
+        D = new NN_CID.CIDDTWDistance();
     }
     
     public void setR(double r){
-        D.setR(r);
+       // D.setR(r);
     }
 
 

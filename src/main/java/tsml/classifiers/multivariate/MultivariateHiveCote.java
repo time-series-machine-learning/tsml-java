@@ -7,6 +7,7 @@ import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import weka.classifiers.Classifier;
+import weka.core.Capabilities;
 
 public class MultivariateHiveCote extends MultivariateAbstractEnsemble {
 
@@ -18,6 +19,21 @@ public class MultivariateHiveCote extends MultivariateAbstractEnsemble {
         this.resultsPath = resultsPath;
         this.dataset = dataset;
         this.fold = fold;
+    }
+
+    @Override
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+        // attributes must be numeric
+        // Here add in relational when ready
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+        result.enable(Capabilities.Capability.MISSING_VALUES);
+        // instances
+        result.setMinimumNumberInstances(1);
+        return result;
     }
 
     @Override

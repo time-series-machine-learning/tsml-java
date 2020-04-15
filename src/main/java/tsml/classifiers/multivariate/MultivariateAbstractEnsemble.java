@@ -9,6 +9,7 @@ import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.kNN;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.interval_based.TSF;
+import utilities.ErrorReport;
 import utilities.ThreadingUtilities;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.Classifier;
@@ -20,7 +21,9 @@ import weka.classifiers.trees.J48;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -136,6 +139,7 @@ public abstract class MultivariateAbstractEnsemble extends AbstractEnsemble {
 
         this.setupMultivariateEnsembleSettings(splitData.length);
 
+
         //housekeeping
         if (resultsFilesParametersInitialised) {
             if (readResultsFilesDirectories.length > 1)
@@ -207,6 +211,62 @@ public abstract class MultivariateAbstractEnsemble extends AbstractEnsemble {
         this.testInstCounter = 0; //prep for start of testing
         this.prevTestInstance = null;
 
+    }
+
+    @Override
+    protected void loadModules() throws Exception {
+        //will look for all files and report all that are missing, instead of bailing on the first file not found
+        //just helps debugging/running experiments a little
+        ErrorReport errors = new ErrorReport("Errors while loading modules from file. Directories given: " + Arrays.toString(readResultsFilesDirectories));
+
+        //for each module
+        for(int m = 0; m < this.modules.length; m++){
+            String readResultsFilesDirectory = readResultsFilesDirectories.length == 1 ? readResultsFilesDirectories[0] : readResultsFilesDirectories[m];
+
+            boolean trainResultsLoaded = false;
+            boolean testResultsLoaded = false;
+
+            //try and load in the train/test results for this module
+            File moduleTrainResultsFile = findResultsFile(readResultsFilesDirectory, modules[m].getModuleName(), "train", (m+1));
+            if (moduleTrainResultsFile != null) {
+                printlnDebug(modules[m].getModuleName() + " train loading... " + moduleTrainResultsFile.getAbsolutePath());
+
+                modules[m].trainResults = new ClassifierResults(moduleTrainResultsFile.getAbsolutePath());
+                trainResultsLoaded = true;
+            }
+
+            File moduleTestResultsFile = findResultsFile(readResultsFilesDirectory, modules[m].getModuleName(), "test", (m+1));
+            if (moduleTestResultsFile != null) {
+                //of course these results not actually used at all during training,
+                //only loaded for future use when classifying with ensemble
+                printlnDebug(modules[m].getModuleName() + " test loading..." + moduleTestResultsFile.getAbsolutePath());
+
+                modules[m].testResults = new ClassifierResults(moduleTestResultsFile.getAbsolutePath());
+
+                numTestInsts = modules[m].testResults.numInstances();
+                testResultsLoaded = true;
+            }
+
+            if (!trainResultsLoaded)
+                errors.log("\nTRAIN results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "' not found. ");
+            else if (needIndividualTrainPreds() && modules[m].trainResults.getProbabilityDistributions().isEmpty())
+                errors.log("\nNo pred/distribution for instance data found in TRAIN results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "'. ");
+
+            if (!testResultsLoaded)
+                errors.log("\nTEST results files for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "' not found. ");
+            else if (modules[m].testResults.numInstances()==0)
+                errors.log("\nNo prediction data found in TEST results file for '" + modules[m].getModuleName() + "' on '" + datasetName + "' fold '" + seed + "'. ");
+        }
+
+        errors.throwIfErrors();
+    }
+
+    protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest, int dimension) {
+        File file = new File(readResultsFilesDirectory+classifierName+"/Predictions/"+datasetName+"Dimension"+(dimension)+"/"+trainOrTest+"Fold"+seed+".csv");
+        if(!file.exists() || file.length() == 0)
+            return null;
+        else
+            return file;
     }
 
     protected abstract void setupMultivariateEnsembleSettings(int instancesLength);
