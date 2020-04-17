@@ -31,10 +31,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import tsml.classifiers.Tuneable;
 import utilities.InstanceTools;
 import weka.Run;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.classifiers.Classifier;
-import weka.core.TechnicalInformation;
 import tsml.transformers.ShapeletTransform;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions.ShapeletTransformOptions;
@@ -48,7 +46,6 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
-import weka.core.Utils;
 
 
 /**
@@ -756,7 +753,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         else
             throw new Exception("in setOptions Unable to read number of intervals, -T flag is not set");
     }
-
 
     public static void main(String[] args) throws Exception {
 //        String dataLocation = "C:\\Temp\\TSC\\";

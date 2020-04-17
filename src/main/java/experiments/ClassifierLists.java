@@ -274,7 +274,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TS-CHIEF"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -287,6 +287,11 @@ public class ClassifierLists {
             case "HiveCote":
                 c=new HiveCote();
                 ((HiveCote)c).setContract(48);
+                break;
+            case "HIVE-COTEv1":
+                c=new HIVE_COTE();
+                ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                ((HIVE_COTE)c).setSeed(fold);
                 break;
             case "TS-CHIEF":
                 c=new TSCHIEFWrapper();
@@ -305,12 +310,19 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
-        Classifier c;
+        String classifier=exp.classifierName,resultsPath="",dataset="";
         int fold=exp.foldId;
+        Classifier c;
+        boolean canLoadFromFile=true;
+        if(exp.resultsWriteLocation==null || exp.datasetName==null)
+            canLoadFromFile=false;
+        else{
+            resultsPath=exp.resultsWriteLocation;
+            dataset=exp.datasetName;
+        }
         switch(classifier) {
             case "Shapelet_I": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -331,7 +343,20 @@ public class ClassifierLists {
             case "DTW_A":
                 c=new NN_DTW_A();
                 break;
-            default:
+            case "HIVE-COTE_I":
+                if(canLoadFromFile){
+                    String[] cls={"TSF_I","cBOSS_I","RISE_I","STC_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;            default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between multivariateBased and the switch statement ");
                 throw new UnsupportedOperationException("Unknown multivariate classifier, should not be able to get here "
