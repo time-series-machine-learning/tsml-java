@@ -94,7 +94,7 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
             "DD_DTW","DTD_C","CID_DTW","NN_CID"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
@@ -103,8 +103,13 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "DTW":
+            case "ED":
                 c = new KNN();
+                break;
+            case "DTW":
+                c = new DTW_kNN();
+                ((DTW_kNN)c).optimiseWindow(false);
+                ((DTW_kNN)c).setMaxR(1.0);
                 break;
             case "DTWCV":
                 c = new DTWCV();
