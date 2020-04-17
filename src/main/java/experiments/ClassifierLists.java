@@ -18,7 +18,9 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -72,18 +74,18 @@ public class ClassifierLists {
     //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">
     public static String[] allUnivariate={
 //Distance Based
-            "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C", "NN_CID","MSM","TWE","WDTW",
+            "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID",
 //Dictionary Based
-            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS","BoTSWEnsemble",
+            "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL",
 //Interval Based
-            "LPS","TSF","cTSF",
+            "LPS","TSF",
 //Frequency Based
             "RISE",
 //Shapelet Based
-            "FastShapelets","LearnShapelets","ShapeletTransformClassifier",
+            "FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC",
 //Hybrids
-            "HiveCote","FlatCote"
+            "HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"
 };
     //</editor-fold>
     public static HashSet<String> allClassifiers=new HashSet<String>( Arrays.asList(allUnivariate));
@@ -92,11 +94,8 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID",
-        "EE",
-        "LEE",
-        "TUNED_DTW_1NN_V1"
+        "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -104,6 +103,12 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "DTW":
+                c = new KNN();
+                break;
+            case "DTWCV":
+                c = new DTWCV();
+                break;
             case "EE":
                 c = ElasticEnsemble.FACTORY.EE_V2.build();
                 break;
@@ -145,7 +150,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -193,7 +198,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF"};
+    public static String[] interval= {"LPS","TSF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
