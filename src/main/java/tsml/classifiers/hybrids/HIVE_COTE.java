@@ -219,7 +219,27 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         super.buildClassifier(data);
         trainResults.setParas(getParameters());
     }
-    
+    /**
+     * Returns default capabilities of the classifier. These are that the
+     * data must be numeric, with no missing and a nominal class
+     * @return the capabilities of this classifier
+     */
+    @Override
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+        // attributes must be numeric
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // Can only handle discrete class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+        // instances
+        result.setMinimumNumberInstances(1);
+        if(readIndividualsResults)//Can handle all data sets
+            result.enableAll();
+        return result;
+    }
+
+
     /**
      * Will split time given evenly among the contractable base classifiers. 
      * 
