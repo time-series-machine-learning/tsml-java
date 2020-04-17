@@ -142,7 +142,7 @@ public class Experiments  {
             int folds=30;
 
 
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
@@ -163,24 +163,24 @@ public class Experiments  {
 
 
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[9];
+                String[] settings=new String[6];
 //Location of data set
                 settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
-                settings[1]="-rp=C:\\Temp\\";//Where to write results
-                settings[2]="-gtf=true"; //Whether to generate train files or not
-                settings[3]="-cn=TSF"; //Classifier name
+                settings[1]="-rp=Z:\\ReferenceResults\\";//Where to write results
+                settings[2]="-gtf=false"; //Whether to generate train files or not
+                settings[3]="-cn=TS-CHIEF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 settings[4]="-dn="+""; //Problem file, added below
                 settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
-                settings[6]="--force=true";
-                settings[7]="-ctrs=0";
-                settings[8]="-tb=true";
+//                settings[6]="--force=true";
+//                settings[7]="-ctrs=0";
+//                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t"+str);
                 System.out.println("");
-                String[] probFiles= {"Chinatown"}; //DatasetLists.ReducedUCI;
-                folds=1;
+                String[] probFiles= {"NonInvasiveFetalECGThorax1"}; //DatasetLists.ReducedUCI;
+                folds=30;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
                     for(int i=1;i<=folds;i++){
@@ -1075,6 +1075,7 @@ public class Experiments  {
                 //some kind of checkpointing is wanted
 
                 // is it simply "true"?
+
                 checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
                 if(!checkpointing){
                     //it's not. must be a timing string

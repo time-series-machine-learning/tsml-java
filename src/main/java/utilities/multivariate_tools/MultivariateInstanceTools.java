@@ -97,7 +97,7 @@ public class MultivariateInstanceTools {
                     localAtt=0;
             }
             
-            name = "attribute_dimension_" + dim + "_" + localAtt++;
+            name = "attribute_dimension_" + dim + "_" + localAtt++ + data[0].attribute(0).name();
             atts.add(new Attribute(name));
         }
         

@@ -18,7 +18,9 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -72,18 +74,18 @@ public class ClassifierLists {
     //<editor-fold defaultstate="collapsed" desc="All univariate time series classifiers">
     public static String[] allUnivariate={
 //Distance Based
-            "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","ElasticEnsemble","FastElasticEnsemble",
-            "DD_DTW","DTD_C", "NN_CID","MSM","TWE","WDTW",
+            "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID",
 //Dictionary Based
-            "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS","BoTSWEnsemble",
+            "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL",
 //Interval Based
-            "LPS","TSF","cTSF",
+            "LPS","TSF",
 //Frequency Based
             "RISE",
 //Shapelet Based
-            "FastShapelets","LearnShapelets","ShapeletTransformClassifier",
+            "FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC",
 //Hybrids
-            "HiveCote","FlatCote"
+            "HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"
 };
     //</editor-fold>
     public static HashSet<String> allClassifiers=new HashSet<String>( Arrays.asList(allUnivariate));
@@ -92,11 +94,8 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
-            "DD_DTW","DTD_C","NN_CID",
-        "EE",
-        "LEE",
-        "TUNED_DTW_1NN_V1"
+        "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -104,6 +103,12 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "DTW":
+                c = new KNN();
+                break;
+            case "DTWCV":
+                c = new DTWCV();
+                break;
             case "EE":
                 c = ElasticEnsemble.FACTORY.EE_V2.build();
                 break;
@@ -145,7 +150,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -193,7 +198,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","cTSF"};
+    public static String[] interval= {"LPS","TSF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -242,7 +247,7 @@ public class ClassifierLists {
     /**
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
-    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier"};
+    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -255,7 +260,7 @@ public class ClassifierLists {
             case "FastShapelets":
                 c=new FastShapelets();
                 break;
-            case "ShapeletTransformClassifier":
+            case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
                 break;
             case "ShapeletTreeClassifier":
@@ -274,7 +279,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -288,7 +293,12 @@ public class ClassifierLists {
                 c=new HiveCote();
                 ((HiveCote)c).setContract(48);
                 break;
-            case "TSCHIEF":
+            case "HIVE-COTEv1":
+                c=new HIVE_COTE();
+                ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                ((HIVE_COTE)c).setSeed(fold);
+                break;
+            case "TS-CHIEF":
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
@@ -305,12 +315,19 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
-        Classifier c;
+        String classifier=exp.classifierName,resultsPath="",dataset="";
         int fold=exp.foldId;
+        Classifier c;
+        boolean canLoadFromFile=true;
+        if(exp.resultsWriteLocation==null || exp.datasetName==null)
+            canLoadFromFile=false;
+        else{
+            resultsPath=exp.resultsWriteLocation;
+            dataset=exp.datasetName;
+        }
         switch(classifier) {
             case "Shapelet_I": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
@@ -331,7 +348,20 @@ public class ClassifierLists {
             case "DTW_A":
                 c=new NN_DTW_A();
                 break;
-            default:
+            case "HIVE-COTE_I":
+                if(canLoadFromFile){
+                    String[] cls={"TSF_I","cBOSS_I","RISE_I","STC_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;            default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between multivariateBased and the switch statement ");
                 throw new UnsupportedOperationException("Unknown multivariate classifier, should not be able to get here "
@@ -447,7 +477,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HC-V2NoRise","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
+    public static String[] bespoke= {"HIVE-COTE1.0","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -461,9 +491,9 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
-            case "HC-V2NoRise":
+            case "HIVE-COTE1.0":
                 if(canLoadFromFile){
-                    String[] cls={"CIF","TED","STC","PF"};//RotF for ST
+                    String[] cls={"TSF","RISE","STC","cBOSS"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
@@ -561,23 +591,14 @@ public class ClassifierLists {
                 break;
 
             case "HIVE-COTE":
-                if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC"};//RotF for ST
-                    c=new HIVE_COTE();
-                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
-                    ((HIVE_COTE)c).setSeed(fold);
-                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
-                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
-                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
-                }
-                else
-                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
-                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                c=new HIVE_COTE();
+                ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                ((HIVE_COTE)c).setSeed(fold);
                 break;
 
             case "TunedHIVE-COTE":
                 if(canLoadFromFile){
-                    String[] cls={"TSF","BOSS","RISE","STC"};//RotF for ST
+                    String[] cls=new String[]{"TSF","BOSS","RISE","STC"};//RotF for ST
                     HIVE_COTE hc=new HIVE_COTE();
                     hc.setFillMissingDistsWithOneHotVectors(true);
                     hc.setSeed(fold);
