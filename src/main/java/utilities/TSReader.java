@@ -1,19 +1,17 @@
 package utilities;
 
+import experiments.data.DatasetLists;
+import experiments.data.DatasetLoading;
 import utilities.generic_storage.Pair;
-import weka.core.*;
-import weka.core.pmml.Array;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.function.IntConsumer;
 
-import experiments.data.DatasetLists;
-
-import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationFrom;
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
 
 public class TSReader {
@@ -406,13 +404,12 @@ public class TSReader {
 
 
     public static void main(String[] args) throws IOException {
-        
+
         String local_path = "D:\\Work\\Data\\Univariate_ts\\";
         String local_path_orig = "D:\\Work\\Data\\Univariate_arff\\";
         String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
         String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
-        
-        
+
 /*
         for(String dataset : DatasetLists.tscProblems2018){
             //String dataset = "AllGestureWiimoteZ";
@@ -440,6 +437,9 @@ public class TSReader {
             TSReader ts_reader_multi = new TSReader(new FileReader(f1));
             Instances train_data_multi = ts_reader_multi.GetInstances();
 
+
+            //JAMESL ADDED TESTS
+            Instances tsisntances = DatasetLoading.loadData(filepath_multi + "_TRAIN");
         }
 
         //File f_orig_multi = new File(filepath_orig_multi);

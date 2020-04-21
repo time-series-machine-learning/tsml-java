@@ -22,12 +22,16 @@ import experiments.Experiments;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import utilities.TSReader;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Attribute;
@@ -315,9 +319,6 @@ public class DatasetLoading {
      * @throws java.io.IOException if cannot find the file, or file is malformed
      */
     public static Instances loadDataThrowable(String fullPath) throws IOException {
-        if (!fullPath.toLowerCase().endsWith(".arff"))
-            fullPath += ".arff";
-
         return loadDataThrowable(new File(fullPath));
     }
 
@@ -330,10 +331,47 @@ public class DatasetLoading {
      * @throws java.io.IOException if cannot find the file, or file is malformed
      */
     public static Instances loadDataThrowable(File targetFile) throws IOException {
+        String[] parts = targetFile.getName().split(Pattern.quote("\\."));
+        String extension = "";
+        final String ARFF = ".arff", TS = ".ts";
+
+        if (parts.length == 2) {
+            extension = parts[1];
+        }
+        else {
+            //have not been given a specific extension
+            //look for arff or ts formats
+            //arbitrarily looking for arff first
+            File newtarget = new File(targetFile.getAbsolutePath() + ARFF);
+            if (newtarget.exists()) {
+                targetFile = newtarget;
+                extension = ARFF;
+            }
+            else {
+                newtarget = new File(targetFile.getAbsolutePath() + TS);
+                if (newtarget.exists()) {
+                    targetFile = newtarget;
+                    extension = TS;
+                }
+                else
+                    throw new IOException("Cannot find file " + targetFile.getAbsolutePath() + " with either .arff or .ts extensions.");
+            }
+        }
+
+        Instances inst = null;
         FileReader reader = new FileReader(targetFile);
-        Instances inst = new Instances(reader);
+
+        if (extension.toLowerCase().equals(ARFF)) {
+            inst = new Instances(reader);
+        }
+        else if (extension.toLowerCase().equals(TS)) {
+            TSReader tsreader = new TSReader(reader);
+            inst = tsreader.GetInstances();
+        }
+
         inst.setClassIndex(inst.numAttributes() - 1);
         reader.close();
+
         return inst;
     }
 
@@ -346,9 +384,6 @@ public class DatasetLoading {
      * @return Instances from file.
      */
     public static Instances loadData(String fullPath) {
-        if (!fullPath.toLowerCase().endsWith(".arff"))
-            fullPath += ".arff";
-
         return loadDataNullable(new File(fullPath));
     }
 
@@ -362,9 +397,6 @@ public class DatasetLoading {
      * @return Instances from file.
      */
     public static Instances loadDataNullable(String fullPath) {
-        if (!fullPath.toLowerCase().endsWith(".arff"))
-            fullPath += ".arff";
-
         return loadDataNullable(new File(fullPath));
     }
 
