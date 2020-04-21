@@ -337,7 +337,7 @@ public class DatasetLoading {
         final String ARFF = ".arff", TS = ".ts";
 
         if (parts.length == 2) {
-            extension = parts[1];
+            extension = "." + parts[1]; //split will remove the .
         }
         else {
             //have not been given a specific extension
@@ -462,6 +462,8 @@ public class DatasetLoading {
 
     public static void main(String[] args) throws Exception {
 //        tests();
+
+        DatasetLoading.sampleItalyPowerDemand(0);
     }
 
     private static boolean quickEval(Instances insts) throws Exception {
