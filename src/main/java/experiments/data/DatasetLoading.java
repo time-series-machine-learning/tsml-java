@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -331,7 +332,7 @@ public class DatasetLoading {
      * @throws java.io.IOException if cannot find the file, or file is malformed
      */
     public static Instances loadDataThrowable(File targetFile) throws IOException {
-        String[] parts = targetFile.getName().split(Pattern.quote("\\."));
+        String[] parts = targetFile.getName().split(Pattern.quote("."));
         String extension = "";
         final String ARFF = ".arff", TS = ".ts";
 
@@ -460,7 +461,7 @@ public class DatasetLoading {
 
 
     public static void main(String[] args) throws Exception {
-        tests();
+//        tests();
     }
 
     private static boolean quickEval(Instances insts) throws Exception {
