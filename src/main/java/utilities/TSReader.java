@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.IntConsumer;
 
+import experiments.data.DatasetLists;
+
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationFrom;
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
 
@@ -41,8 +43,8 @@ public class TSReader {
     private ArrayList<String> classLabels;
     private ArrayList<Attribute> attList;
 
-    private ArrayList<ArrayList<Double>> uni_raw_data;
-    private ArrayList<ArrayList<ArrayList<Double>>> multi_raw_data;
+    private ArrayList<ArrayList<String>> uni_raw_data;
+    private ArrayList<ArrayList<ArrayList<String>>> multi_raw_data;
 
     private ArrayList<Double> raw_labels;
 
@@ -66,18 +68,16 @@ public class TSReader {
         raw_labels = new ArrayList<>();
 
         //read each line and extract a data Instance
-        Pair<ArrayList<ArrayList<Double>>, Double> multi_series_and_label;
+        Pair<ArrayList<ArrayList<String>>, Double> multi_series_and_label;
         //extract the multivariate series, and the possible label.
         while(( multi_series_and_label = readMultivariateInstance()) != null){
             multi_raw_data.add(multi_series_and_label.var1);
             raw_labels.add(multi_series_and_label.var2);
         }
 
-        System.out.println(multi_raw_data.size());
-
         //go through all the raw data, and find the longest row.
         int max_length = 0;
-        for(ArrayList<ArrayList<Double>> channel : multi_raw_data){
+        for(ArrayList<ArrayList<String>> channel : multi_raw_data){
             int curr = channel.stream().mapToInt(ArrayList::size).max().getAsInt();
             if(curr > max_length)
                 max_length = curr;
@@ -85,7 +85,6 @@ public class TSReader {
 
 
         int numAttsInChannel=max_length;
-        System.out.println(numAttsInChannel);
         int numChannels = multi_raw_data.get(0).size(); //each array in this list is a channel.
 
 
@@ -104,11 +103,21 @@ public class TSReader {
         m_data = new Instances(problemName, attList, multi_raw_data.size());
         for(int i=0; i< multi_raw_data.size(); i++){
 
-            ArrayList<ArrayList<Double>> series = multi_raw_data.get(i);
+            ArrayList<ArrayList<String>> series = multi_raw_data.get(i);
             m_data.add(new DenseInstance(attList.size()));
 
-            //add all the time series values.
-            Instances relational = createRelationFrom(relationHeader, series);
+            //TODO: add all the time series values, dealing with missing values.
+            Instances relational = new Instances(relationHeader, series.size());
+    
+            //each dense instance is row/ which is actually a channel.
+            for(int k=0; k< series.size(); k++){
+                relational.add(new DenseInstance(series.get(k).size()));
+                for(int j=0; j<series.get(k).size(); j++)
+                    //check whether the value is a double or "?" etc.
+                    if(utilities.Utilities.stringIsDouble(series.get(k).get(j)))
+                        relational.instance(k).setValue(j, Double.parseDouble(series.get(k).get(j)));
+            }
+            
 
             //add the relational series to the attribute, and set the value of the att to the relations index.
             int index = m_data.instance(i).attribute(0).addRelation(relational);
@@ -118,7 +127,6 @@ public class TSReader {
             //set class value.
             if(classLabel) {
                 m_data.instance(i).setValue(1, raw_labels.get(i));
-                //System.out.println(raw_labels.get(i));
             }
         }
 
@@ -130,7 +138,7 @@ public class TSReader {
         uni_raw_data = new ArrayList<>();
         raw_labels = new ArrayList<>();
         //read each line and extract a data Instance
-        Pair<ArrayList<Double>, Double>  series_and_label;
+        Pair<ArrayList<String>, Double>  series_and_label;
         //extract series and the possible label.
         while((series_and_label = readUnivariateInstance()) != null){
             uni_raw_data.add(series_and_label.var1);
@@ -151,16 +159,17 @@ public class TSReader {
 
         m_data = new Instances(problemName, attList, uni_raw_data.size());
 
-        for(ArrayList<Double> timeSeries : uni_raw_data){
+        for(ArrayList<String> timeSeries : uni_raw_data){
             //add all the time series values.
             Instance inst = new DenseInstance(max_length+1);
             for(int a = 0; a < timeSeries.size(); a++){
-                inst.setValue(a, timeSeries.get(a));
+                if(utilities.Utilities.stringIsDouble(timeSeries.get(a)))
+                    inst.setValue(a, Double.parseDouble(timeSeries.get(a)));
             }
             //only add if we have a classLabel
             //get the value from the end of the current time series, and put it at the end of the attribute list.
             if(classLabel)
-                inst.setValue(max_length, timeSeries.get(timeSeries.size()-1));
+                inst.setValue(max_length, Double.parseDouble(timeSeries.get(timeSeries.size()-1)));
 
             m_data.add(inst);
         }
@@ -170,17 +179,17 @@ public class TSReader {
         return m_data;
     }
 
-    private Pair<ArrayList<ArrayList<Double>>, Double> readMultivariateInstance() throws IOException {
+    private Pair<ArrayList<ArrayList<String>>, Double> readMultivariateInstance() throws IOException {
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             return null;
         }
 
-        ArrayList<ArrayList<Double>> multi_timeSeries = new ArrayList<>();
+        ArrayList<ArrayList<String>> multi_timeSeries = new ArrayList<>();
         String classValue ="";
 
 
-        ArrayList<Double> timeSeries = new ArrayList<>();
+        ArrayList<String> timeSeries = new ArrayList<>();
         do{
             //this means we're about to get the class value
             if(m_Tokenizer.ttype == ':' && classLabel){
@@ -189,7 +198,7 @@ public class TSReader {
                 timeSeries = new ArrayList<>();
             }
             else{
-                 timeSeries.add(Double.valueOf(m_Tokenizer.sval));
+                 timeSeries.add(m_Tokenizer.sval);
                  classValue = m_Tokenizer.sval; //the last value to be tokenized should be the class value.
             }
             m_Tokenizer.nextToken();
@@ -200,13 +209,13 @@ public class TSReader {
         return new Pair<>(multi_timeSeries,classVal);
     }
 
-    private  Pair<ArrayList<Double>,Double> readUnivariateInstance() throws IOException {
+    private  Pair<ArrayList<String>,Double> readUnivariateInstance() throws IOException {
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             return null;
         }
 
-        ArrayList<Double> timeSeries = new ArrayList<>();
+        ArrayList<String> timeSeries = new ArrayList<>();
         String classValue = null;
 
         //read the tokens, and if we hit a : then we need to do something clever.
@@ -222,7 +231,7 @@ public class TSReader {
                     bFoundColon = false;
                 }
                 else{
-                    timeSeries.add(Double.valueOf(m_Tokenizer.sval));
+                    timeSeries.add(m_Tokenizer.sval);
                 }
             }
             m_Tokenizer.nextToken();
@@ -266,7 +275,6 @@ public class TSReader {
         do{
             
             String token = m_Tokenizer.sval;
-            System.out.println(token);
 
             if(token.equalsIgnoreCase(CLASS_LABEL)){
                 ExtractClassLabels();
@@ -277,7 +285,6 @@ public class TSReader {
 
 
             getNextToken();
-            System.out.println(m_Tokenizer.sval);
 
         }while(!m_Tokenizer.sval.equalsIgnoreCase(DATA));
 
@@ -399,44 +406,49 @@ public class TSReader {
 
 
     public static void main(String[] args) throws IOException {
-        String dataset = "AllGestureWiimoteZ";
+        
         String local_path = "D:\\Work\\Data\\Univariate_ts\\";
         String local_path_orig = "D:\\Work\\Data\\Univariate_arff\\";
         String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
         String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
-
-        String filepath = local_path + dataset + "\\" + dataset;
-        String filepath_orig = local_path_orig + dataset + "\\" + dataset;
-
-
-        String dataset_multi = "CharacterTrajectories";
-        String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
-        String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" + dataset_multi;
+        
+        
 /*
-        File f = new File(filepath + "_TRAIN" + ".ts");
-        System.out.println(f);
-        TSReader ts_reader = new TSReader(new FileReader(f));
-        Instances train_data = ts_reader.GetInstances();
+        for(String dataset : DatasetLists.tscProblems2018){
+            //String dataset = "AllGestureWiimoteZ";
+            String filepath = local_path + dataset + "\\" + dataset;
+            String filepath_orig = local_path_orig + dataset + "\\" + dataset;
 
+            File f = new File(filepath + "_TRAIN" + ".ts");
+            System.out.println(f);
+            TSReader ts_reader = new TSReader(new FileReader(f));
+            Instances train_data = ts_reader.GetInstances();
+        }
+*/
         //File f_orig = new File(filepath_orig);
         //Instances train_data_orig = new Instances(new FileReader(f_orig));
 
-        System.out.println(train_data.toString());
-*/
+        //System.out.println(train_data.toString());
 
+        for(String dataset_multi :  DatasetLists.mtscProblems2018){
+            //String dataset_multi = "CharacterTrajectories";
+            String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
+            String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" + dataset_multi;
 
-        File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
-        System.out.println(f1);
-        TSReader ts_reader_multi = new TSReader(new FileReader(f1));
-        Instances train_data_multi = ts_reader_multi.GetInstances();
+            File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
+            System.out.println(f1);
+            TSReader ts_reader_multi = new TSReader(new FileReader(f1));
+            Instances train_data_multi = ts_reader_multi.GetInstances();
+
+        }
 
         //File f_orig_multi = new File(filepath_orig_multi);
         //Instances train_data_orig_multi = new Instances(new FileReader(f_orig_multi));
 
-        System.out.println(train_data_multi.instance(0));
+        //System.out.println(train_data_multi.instance(0));
 
         //do some comparison!
-        System.out.println(train_data_multi.toString());
+        //System.out.println(train_data_multi.toString());
 
     }
 }
