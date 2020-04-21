@@ -316,6 +316,14 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             for (int i = 0; i < classifiers.length; i++)
                 classifiers[i] = null;
         }
+        else {
+            //If they are able to, make the classifiers estimate their own performance. This helps with contracting
+            for (Classifier c : classifiers) {
+                if (c instanceof EnhancedAbstractClassifier)
+                    if (((EnhancedAbstractClassifier) c).ableToEstimateOwnPerformance())
+                        ((EnhancedAbstractClassifier) c).setEstimateOwnPerformance(true);
+            }
+        }
 
         if (classifierNames == null) {
             classifierNames = new String[classifiers.length];
@@ -908,7 +916,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         //HACK FOR CAWPE_EXTENSION PAPER: 
         //since experiments expects us to make a train results object 
         //and for us to record our build time, going to record it here instead of 
-        //editting experiments to record the buildtime at that level
+        //editing experiments to record the buildTime at that level
         
         //buildTime does not include the ensemble's trainEstimator in any case, only the work required to be ready for testing
         //time unit has been set in estimateEnsemblePerformance(data);

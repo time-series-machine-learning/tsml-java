@@ -1,7 +1,7 @@
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
-import tsml.elastic_distance_measures.DTW;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;

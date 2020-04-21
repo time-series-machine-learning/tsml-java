@@ -18,14 +18,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
-import tsml.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.ED1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.ERP1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.Efficient1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.LCSS1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.MSM1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.TWE1NN;
-import tsml.classifiers.distance_based.elastic_ensemble.WDTW1NN;
+import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
+import tsml.classifiers.legacy.elastic_ensemble.ED1NN;
+import tsml.classifiers.legacy.elastic_ensemble.ERP1NN;
+import tsml.classifiers.legacy.elastic_ensemble.Efficient1NN;
+import tsml.classifiers.legacy.elastic_ensemble.LCSS1NN;
+import tsml.classifiers.legacy.elastic_ensemble.MSM1NN;
+import tsml.classifiers.legacy.elastic_ensemble.TWE1NN;
+import tsml.classifiers.legacy.elastic_ensemble.WDTW1NN;
 import tsml.filters.Derivative;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -374,7 +374,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
             }
         }
         trainResults.setBuildTime(System.currentTimeMillis()-trainResults.getBuildTime());
-        
+        trainResults.setParas(getParameters());
+
     }
     
     /**
@@ -552,7 +553,8 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         }
         return st.toString();
     }
-    
+
+    @Override
     public String getParameters(){
         StringBuilder params = new StringBuilder();
         params.append(super.getParameters()).append(",");

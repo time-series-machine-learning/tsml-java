@@ -56,7 +56,10 @@ public class DatasetLists {
 //Multivariate TSC data sets  
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
-        "ArticularyWordRecognition", //Index 0
+		"ArticularyWordRecognition", //Index 0
+		"AsphaltObstaclesCoordinates",
+		"AsphaltPavementTypeCoordinates",
+		"AsphaltRegularityCoordinates",
         "AtrialFibrillation",//1
         "BasicMotions",
         "CharacterTrajectories",

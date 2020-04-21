@@ -244,11 +244,15 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
 
     /**
-     * Comps: NN, SVML, SVMQ, C4.5, NB, BN, RotF, RandF
+     * Comps: NN, SVML, SVMQ, C4.5, NB,  RotF, RandF, BN,
      * Weight: TrainAcc
      * Vote: MajorityVote
      *
      * As used originally in ST_HESCA, COTE.
+     * NOTE the original also contained Bayes Net (BN). We have removed it because the classifier crashes
+     * unpredictably when discretising features (due to lack of variance in the feature, but not easily detected and
+     * dealt with
+     *
      */
     public final void setupOriginalHESCASettings() {
         this.ensembleName = "HESCA";
@@ -313,7 +317,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         setClassifiers(classifiers, classifierNames, null);
     }
 
-   
+
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";
 
@@ -444,7 +448,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod17/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprodmem2/";
         
         //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };
@@ -527,8 +531,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
-            setTestResultsOnly(false).
+            setTestResultsOnly(true).
 //            setBuildMatlabDiagrams(true).
+//            setUseAccuracyOnly().
             setBuildMatlabDiagrams(false).
             setDatasets(datasets).
             readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
@@ -593,7 +598,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
-                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
+                        exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
+                        exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
+//                        exp.performTimingBenchmark = true;
+                        Experiments.runExperiment(exp,data[0],data[1],c);
                     }
                 }
             }

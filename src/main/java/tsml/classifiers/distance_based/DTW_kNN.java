@@ -17,7 +17,7 @@ import machine_learning.classifiers.kNN;
 
 import weka.core.*;
 
-import tsml.elastic_distance_measures.DTW;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 
 /* This class is a specialisation of kNN that can only be used with the efficient DTW distance
  * 

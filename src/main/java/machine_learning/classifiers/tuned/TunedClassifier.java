@@ -14,6 +14,8 @@
  */
 package machine_learning.classifiers.tuned;
 
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.InternalEstimateEvaluator;
 import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -26,7 +28,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.TrainTimeContractable;
@@ -74,20 +76,31 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     String SEP_CP_PS_paraWritePath; //SaveEachParameter //CheckpointClassifier //ParameterSplittable
     boolean SEP_CP_savingAllParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long CC_contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean CC_contracting = false; //TrainTimeContractClassifier
+    long trainContractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean trainTimeContract = false; //TrainTimeContractClassifier
     
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
     ////////// end interface variables
-    
-    
+
+    /**
+     * Creates an empty TunedClassifier. Tuner has a default value, however at minimum the classifier and parameter space
+     * shall need to be provided later via set...() methods
+     */
     public TunedClassifier() { 
-        this(null, null, new Tuner()); 
+        this(null, null, new Tuner());
     }
-    
-    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
-        this(classifier, space, new Tuner());
+
+    /**
+     * If the classifier is able to estimate its own performance while building, the tuner shall default to using that
+     * as the evaluation method. Otherwise defaults to an external 10fold cv
+     */
+    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) {
+        this(classifier, space,
+            EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ?
+                    new Tuner(new InternalEstimateEvaluator()) :
+                    new Tuner(new CrossValidationEvaluator())
+            );
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space, Tuner tuner) { 
@@ -96,7 +109,21 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.space = space;
         this.tuner = tuner;
     }
-    
+
+    /**
+     * PRE: Classifier must be set, if not, noothing happens
+     * @return true if successful in turning on internal estimate
+     */
+
+    public boolean useInternalEstimates(){
+            if(classifier==null)
+                return false;
+           if(EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ){
+               tuner=new Tuner(new InternalEstimateEvaluator());
+               return true;
+           }
+           return false;
+    }
     public void setSeed(int seed) { 
         super.setSeed(seed);
         tuner.setSeed(seed);
@@ -209,6 +236,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         bestOptions = Arrays.copyOf(options, options.length);
         classifier.setOptions(options);
         classifier.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
  
     @Override
@@ -287,11 +315,14 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     
     
-    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
+    // METHODS FOR:    TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
     
-    @Override //SaveParameterInfo
+    @Override
     public String getParameters() {
-        return getParas(); 
+        String str=classifier.getClass().getSimpleName();
+        if(classifier instanceof EnhancedAbstractClassifier)
+            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return str;
     }
 
     @Override //SaveEachParameter
@@ -318,14 +349,14 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.PS_parameterSplitting = true;
     }
 
-    @Override //ParameterSplittable
-    public String getParas() {
-        return bestParas.toClassifierResultsParaLine(true);
-    }
+ //   @Override //ParameterSplittable
+ //   public String getParas() {
+ //       return bestParas.toClassifierResultsParaLine(true);
+ //   }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.SEP_CP_PS_paraWritePath = path;
             this.SEP_CP_savingAllParameters = true;
@@ -338,26 +369,12 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //TrainTimeContractClassifier
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        CC_contracting = true;
-        long secToNano = 1000000000L;
-        
-        switch(time){
-            case NANOSECONDS:
-                CC_contractTimeNanos = amount;
-                break;
-            case MINUTES:
-                CC_contractTimeNanos = amount*60*secToNano;
-                break;
-            case HOURS: default:
-                CC_contractTimeNanos= amount*60*60*secToNano;
-                break;
-            case DAYS:
-                CC_contractTimeNanos= amount*24*60*60*secToNano; 
-                break;
-        }
+    @Override
+    public void setTrainTimeLimit(long amount) {
+        trainContractTimeNanos =amount;
+        trainTimeContract = true;
     }
+
     
     /**
      * To be called at start of buildClassifier
@@ -370,7 +387,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         if (SEP_CP_savingAllParameters || PS_parameterSplitting)
             tuner.setPathToSaveParameters(this.SEP_CP_PS_paraWritePath);
         
-        if (CC_contracting)
-            tuner.setTrainTimeLimit(this.CC_contractTimeNanos);
+        if (trainTimeContract)
+            tuner.setTrainTimeLimit(this.trainContractTimeNanos);
     }
 }

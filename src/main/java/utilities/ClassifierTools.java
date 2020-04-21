@@ -24,6 +24,7 @@ import experiments.data.DatasetLoading;
 
 import java.util.ArrayList;
 import java.util.Random;
+
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -35,9 +36,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
@@ -45,8 +44,9 @@ import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 import fileIO.OutFile;
 import statistics.distributions.NormalDistribution;
 import machine_learning.classifiers.kNN;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
+
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPath;
 
 /**
  * @author ajb
@@ -726,5 +726,37 @@ public class ClassifierTools {
         System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
         return res.getAcc() == expectedTestAccuracy;
     }
-    
+
+
+    public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
+        throws Exception {
+        Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances[] data, Classifier classifier) throws Exception {
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances trainData, Instances testData, Classifier classifier)
+        throws Exception {
+        classifier.buildClassifier(trainData);
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testCase : testData) {
+            long timestamp = System.nanoTime();
+            double[] distribution = classifier.distributionForInstance(testCase);
+            long timeTaken = System.nanoTime() - timestamp;
+            int prediction = ArrayUtilities.argMax(distribution);
+            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
+        }
+        return results;
+    }
+
+    public static ClassifierResults trainAndTest(String path, String name, Classifier classifier, int seed) throws Exception {
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
+        Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
+        return trainAndTest(data, classifier);
+    }
 }

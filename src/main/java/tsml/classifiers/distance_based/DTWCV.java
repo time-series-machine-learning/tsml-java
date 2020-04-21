@@ -14,8 +14,8 @@
  */
 package tsml.classifiers.distance_based;
 import java.util.ArrayList;
-import tsml.elastic_distance_measures.DTW;
-import tsml.elastic_distance_measures.DTW_DistanceBasic;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
+import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW_DistanceBasic;
 import java.util.HashMap;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
@@ -92,11 +92,6 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
 //This method doe
     }
      
-    
-    @Override
-    public String getParas() { //This is redundant really.
-        return getParameters();
-    }
 
     public DTWCV(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);        

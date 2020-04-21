@@ -14,11 +14,13 @@
  */
 package utilities;
 
+import weka.core.Instances;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
+import static java.math.BigDecimal.ROUND_HALF_UP;
 
 /**
  * A class offering statistical utility functions like the average and the
@@ -40,22 +42,67 @@ public class StatisticalUtilities {
 
         return sum / (double) (values.length - offset);
     }
-    
-    
-    
+
+
+    public static double pStdDev(Instances input){
+        // todo make sure class val at end of attributes
+        double sumx = 0;
+        double sumx2 = 0;
+        double[] ins2array;
+        for(int i = 0; i < input.numInstances(); i++){
+            ins2array = input.instance(i).toDoubleArray();
+            for(int j = 0; j < ins2array.length-1; j++){//-1 to avoid classVal
+                sumx+=ins2array[j];
+                sumx2+=ins2array[j]*ins2array[j];
+            }
+        }
+        int n = input.numInstances()*(input.numAttributes()-1);
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+
+    }
+
+
+
     // jamesl
     // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
-    // can make O(n) if wanted later 
-    public static double median(double[] values) {
-        if(values.length == 1) {
-            return values[0];
-        }
-        double[] copy = Arrays.copyOf(values, values.length);
+    // can make O(n) if wanted later
+    public static double median(double[] values) { return median(values, true); }
+
+    public static double median(double[] values, boolean copyArr) {
+        double[] copy;
+        if (copyArr) copy = Arrays.copyOf(values, values.length); else copy = values;
         Arrays.sort(copy);
         if (copy.length % 2 == 1)
-            return copy[copy.length/2 + 1];
+            return copy[copy.length/2];
         else 
-            return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
+            return (copy[copy.length/2 - 1] + copy[copy.length/2]) / 2;
+    }
+
+    public static double median(ArrayList<Double> values) { return median(values, true); }
+
+    public static double median(ArrayList<Double> values, boolean copyArr) {
+        ArrayList<Double> copy;
+        if (copyArr) copy = new ArrayList<>(values); else copy = values;
+        Collections.sort(copy);
+        if (copy.size() % 2 == 1)
+            return copy.get(copy.size()/2);
+        else
+            return (copy.get(copy.size()/2 - 1) + copy.get(copy.size()/2)) / 2;
+    }
+
+    public static double standardDeviation(double[] values, boolean classVal) {
+        double mean = mean(values, classVal);
+        double sumSquaresDiffs = 0;
+        int offset = classVal ? 1 : 0;
+
+        for (int i = 0; i < values.length - offset; i++) {
+            double diff = values[i] - mean;
+
+            sumSquaresDiffs += diff * diff;
+        }
+
+        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
 
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
@@ -71,6 +118,7 @@ public class StatisticalUtilities {
 
         return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
+
     // normalize the vector to mean 0 and std 1
     public static double[] normalize(double[] vector, boolean classVal) {
         double mean = mean(vector, classVal);
@@ -220,5 +268,22 @@ public class StatisticalUtilities {
     
     public static double averageFinalDimension(double[] results) { 
         return StatisticalUtilities.mean(results, false);
+    }
+
+    public static BigDecimal sqrt(BigDecimal decimal) {
+        int scale = MathContext.DECIMAL128.getPrecision();
+        BigDecimal x0 = new BigDecimal("0");
+        BigDecimal x1 = BigDecimal.valueOf(Math.sqrt(decimal.doubleValue()));
+        while (!x0.equals(x1)) {
+            x0 = x1;
+            x1 = decimal.divide(x0, scale, ROUND_HALF_UP);
+            x1 = x1.add(x0);
+            x1 = x1.divide(TWO, scale, ROUND_HALF_UP);
+        }
+        return x1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sqrt(BigDecimal.valueOf(12345)));
     }
 }
