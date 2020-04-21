@@ -6,6 +6,9 @@ import weka.core.pmml.Array;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.IntConsumer;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationFrom;
@@ -13,11 +16,17 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.createRelat
 
 public class TSReader {
 
+
+    //need to change this to a map function.
     public static final String PROBLEM_NAME = "@problemName";
     public static final String TIME_STAMPS = "@timeStamps";
     public static final String CLASS_LABEL = "@classLabel";
     public static final String UNIVARIATE = "@univariate";
+    public static final String MISSING = "@missing";
     public static final String DATA = "@data";
+
+
+    private HashMap<String, String> variables = new HashMap<>();
 
 
     private final StreamTokenizer m_Tokenizer;
@@ -25,8 +34,9 @@ public class TSReader {
 
     Instances m_data;
     private String problemName;
-    private boolean timeStamps;
     private boolean univariate = false;
+    private boolean missing = false;
+    private boolean timeStamps = false;
     private boolean classLabel;
     private ArrayList<String> classLabels;
     private ArrayList<Attribute> attList;
@@ -63,6 +73,8 @@ public class TSReader {
             raw_labels.add(multi_series_and_label.var2);
         }
 
+        System.out.println(multi_raw_data.size());
+
         //go through all the raw data, and find the longest row.
         int max_length = 0;
         for(ArrayList<ArrayList<Double>> channel : multi_raw_data){
@@ -73,6 +85,7 @@ public class TSReader {
 
 
         int numAttsInChannel=max_length;
+        System.out.println(numAttsInChannel);
         int numChannels = multi_raw_data.get(0).size(); //each array in this list is a channel.
 
 
@@ -99,13 +112,13 @@ public class TSReader {
 
             //add the relational series to the attribute, and set the value of the att to the relations index.
             int index = m_data.instance(i).attribute(0).addRelation(relational);
-            System.out.println(index);
+            //System.out.println(index);
             m_data.instance(i).setValue(0, index);
 
             //set class value.
             if(classLabel) {
                 m_data.instance(i).setValue(1, raw_labels.get(i));
-                System.out.println(raw_labels.get(i));
+                //System.out.println(raw_labels.get(i));
             }
         }
 
@@ -243,67 +256,80 @@ public class TSReader {
     //this function reads upto the @data bit in the file.
     protected void readHeader() throws IOException {
         //first token should be @problem name. as we skip whitespace and comments.
-        problemName = ExtractVariable(PROBLEM_NAME);
-        timeStamps = Boolean.parseBoolean(ExtractVariable(TIME_STAMPS));
-        ExtractClassLabels();
-        univariate = Boolean.parseBoolean(ExtractVariable(UNIVARIATE));
 
-        //find @data.
-        getFirstToken();
-        if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
-            errorMessage("premature end of file");
-        }
-
-        //if we've found @data then clear out any tokens up to the first point of data.
-        if(m_Tokenizer.sval.equalsIgnoreCase(DATA)){
-            getLastToken(false);
-        }
-    }
-
-    private void ExtractClassLabels() throws IOException {
-        getFirstToken();
-        if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
-            errorMessage("premature end of file");
-        }
-
-        classLabels = new ArrayList<>();
-        if(m_Tokenizer.sval.equalsIgnoreCase(CLASS_LABEL)){
-            getNextToken();
-            classLabel = Boolean.parseBoolean(m_Tokenizer.sval);
-
-            if(!classLabel) {
-                getLastToken(false);
-                return;
-            }
-
-            getNextToken();
-            //now read all the class values until we reach the EOL
-            do{
-                classLabels.add(m_Tokenizer.sval);
-                m_Tokenizer.nextToken();
-            }while(m_Tokenizer.ttype != StreamTokenizer.TT_EOL);
-        } else {
-            errorMessage("keyword " + CLASS_LABEL + " expected");
-        }
-    }
-
-    private String ExtractVariable(String VARIABLE) throws IOException {
         //this gets the token there may be weirdness at the front of the file.
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             errorMessage("premature end of file");
         }
 
-        //check if the current token matches the hardcoded value for @types e.g. @problemName etc.
-        String value = null;
-        if (m_Tokenizer.sval.equalsIgnoreCase(VARIABLE)) {
+        do{
+            
+            String token = m_Tokenizer.sval;
+            System.out.println(token);
+
+            if(token.equalsIgnoreCase(CLASS_LABEL)){
+                ExtractClassLabels();
+            }
+            else{
+                variables.put(token, ExtractVariable(token));
+            }
+
+
             getNextToken();
-            value = m_Tokenizer.sval;
-            getLastToken(false);
-        } else {
-            errorMessage("keyword " + VARIABLE + " expected");
+            System.out.println(m_Tokenizer.sval);
+
+        }while(!m_Tokenizer.sval.equalsIgnoreCase(DATA));
+
+
+        //these are required.
+        problemName = variables.get(PROBLEM_NAME);
+        if (problemName == null){
+            errorMessage("keyword " + PROBLEM_NAME + " expected");
         }
 
+        if (variables.get(UNIVARIATE) == null){
+            errorMessage("keyword " + UNIVARIATE + " expected");
+        }
+        else{
+            univariate = Boolean.parseBoolean(variables.get(UNIVARIATE));
+        }
+
+        //set optionals.
+        if(variables.get(MISSING) != null)
+            missing = Boolean.parseBoolean(variables.get(MISSING));
+        if(variables.get(TIME_STAMPS) != null)
+            timeStamps = Boolean.parseBoolean(variables.get(TIME_STAMPS));
+
+
+
+        //clear out last tokens.
+        getLastToken(false);
+    }
+
+    private void ExtractClassLabels() throws IOException {
+        classLabels = new ArrayList<>();
+        getNextToken();
+        classLabel = Boolean.parseBoolean(m_Tokenizer.sval);
+
+        if(!classLabel) {
+            getLastToken(false);
+            return;
+        }
+
+        getNextToken();
+        //now read all the class values until we reach the EOL
+        do{
+            classLabels.add(m_Tokenizer.sval);
+            m_Tokenizer.nextToken();
+        }while(m_Tokenizer.ttype != StreamTokenizer.TT_EOL);
+    }
+
+    private String ExtractVariable(String VARIABLE) throws IOException {
+        //check if the current token matches the hardcoded value for @types e.g. @problemName etc.
+        getNextToken();
+        String value = m_Tokenizer.sval;
+        getLastToken(false);
         return value;
     }
 
@@ -374,16 +400,19 @@ public class TSReader {
 
     public static void main(String[] args) throws IOException {
         String dataset = "AllGestureWiimoteZ";
-        String filepath = "D:\\Research TSC\\Data\\Univariate2018_ts\\" + dataset + "\\" + dataset;
-        String filepath_orig = "D:\\Research TSC\\Data\\TSCProblems2018\\" + dataset + "\\" + dataset;
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\";
+        String local_path_orig = "D:\\Work\\Data\\Univariate_arff\\";
+        String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
+        String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
+
+        String filepath = local_path + dataset + "\\" + dataset;
+        String filepath_orig = local_path_orig + dataset + "\\" + dataset;
 
 
         String dataset_multi = "CharacterTrajectories";
-        String filepath_multi = "D:\\Research TSC\\Data\\Multivariate2018_ts\\" + dataset_multi + "\\" + dataset_multi;
-        String filepath_orig_multi = "D:\\Research TSC\\Data\\MultivariateTSCProblems\\" + dataset_multi + "\\" + dataset_multi;
-
-
-
+        String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
+        String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" + dataset_multi;
+/*
         File f = new File(filepath + "_TRAIN" + ".ts");
         System.out.println(f);
         TSReader ts_reader = new TSReader(new FileReader(f));
@@ -393,10 +422,11 @@ public class TSReader {
         //Instances train_data_orig = new Instances(new FileReader(f_orig));
 
         System.out.println(train_data.toString());
+*/
 
 
         File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
-        System.out.println(f);
+        System.out.println(f1);
         TSReader ts_reader_multi = new TSReader(new FileReader(f1));
         Instances train_data_multi = ts_reader_multi.GetInstances();
 

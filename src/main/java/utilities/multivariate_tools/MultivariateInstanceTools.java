@@ -152,11 +152,11 @@ public class MultivariateInstanceTools {
     }
 
     public static Instances createRelationFrom(Instances header,  ArrayList<ArrayList<Double>> data){
-        int numAttsInChannel = data.get(0).size();
         Instances output = new Instances(header, data.size());
 
         //each dense instance is row/ which is actually a channel.
         for(int i=0; i< data.size(); i++){
+            int numAttsInChannel = data.get(i).size();
             output.add(new DenseInstance(numAttsInChannel));
             for(int j=0; j<numAttsInChannel; j++)
                 output.instance(i).setValue(j, data.get(i).get(j));
