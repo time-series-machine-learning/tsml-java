@@ -14,6 +14,7 @@
  */
 package utilities.multivariate_tools;
 
+import utilities.InstanceTools;
 import weka.core.*;
 import tsml.filters.NormalizeCase;
 
@@ -480,8 +481,9 @@ public class MultivariateInstanceTools {
         return output;              
   
   }
-        
-  public static Instances normaliseChannels(Instances data) throws Exception { 
+
+
+  public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
             
       for (Instances channel : channels) {

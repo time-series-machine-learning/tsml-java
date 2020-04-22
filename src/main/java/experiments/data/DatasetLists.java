@@ -262,6 +262,42 @@ public class DatasetLists {
 				"JapaneseVowels",
 				"SpokenArabicDigits"
 	};
+   int[][] minMaxMultivariate={
+		{96,1543,66,2370},
+		{95,4200,66,2371},
+		{60,180,61,181},
+		{2,21,2,21},
+		{7,26,7,28},
+		{4,92,7,83}
+		};
+	public static String[] fixedLengthMultivariate = {
+			"ArticularyWordRecognition", //Index 0
+			"AtrialFibrillation",//1
+			"BasicMotions",
+			"Cricket",
+			"DuckDuckGeese",
+			"EigenWorms",
+			"Epilepsy",
+			"EthanolConcentration",
+			"ERing",
+			"FaceDetection",//10
+			"FingerMovements",
+			"HandMovementDirection",
+			"Handwriting",
+			"Heartbeat",
+			"Libras",
+			"LSST",
+			"MotorImagery",
+			"NATOPS",//20
+			"PenDigits",
+			"PEMS-SF",
+			"PhonemeSpectra",
+			"RacketSports",
+			"SelfRegulationSCP1",//25
+			"SelfRegulationSCP2",
+			"StandWalkJump",
+			"UWaveGestureLibrary"
+	};
    public static String[] missingValue2018Problems={
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",

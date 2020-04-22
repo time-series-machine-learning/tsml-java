@@ -180,9 +180,10 @@ public class Truncator implements Transformer{
 
 
     public static int[] multivariateSeriesLengths(String problemPath){
-        String[] probs=DatasetLists.mtscProblems2018;
+        String[] probs=DatasetLists.variableLengthMultivariate;
         ArrayList<String> names=new ArrayList<>();
-        System.out.println(" Total number of problesm = "+probs.length);
+        int[][] minMax=new int[probs.length][4];
+        System.out.println(" Total number of problems = "+probs.length);
         //        String[] probs=DatasetLists.variableLength2018Problems;
 //        String[] probs=new String[]{"AllGestureWiimoteX"};
 //        OutFile of=new OutFile(problemPath+"Unqu");
@@ -208,6 +209,8 @@ public class Truncator implements Transformer{
                 System.out.print("\t\tTRAIN MIN =" + min + "\t Max =" + max);
                 names.add(str);
             }
+            minMax[count][0]=min;
+            minMax[count][1]=max;
             min=Integer.MAX_VALUE;
             max=0;
             for(Instance ins:test){
@@ -220,11 +223,17 @@ public class Truncator implements Transformer{
                         min = length;
                 }
             }
+            minMax[count][2]=min;
+            minMax[count][3]=max;
             if(min!=max)
                 System.out.println("\t"+str+"\t TEST MIN ="+min+"\t Max ="+max);
+            count++;
         }
         for(String str:names)
             System.out.print("\""+str+"\",");
+        for(int i=0;i<probs.length;i++){
+            System.out.println("{"+minMax[i][0]+","+minMax[i][1]+","+minMax[i][2]+","+minMax[i][3]+"},");
+        }
 
         return null;
     }
@@ -237,9 +246,9 @@ public class Truncator implements Transformer{
         String path2="Z:\\ArchiveData\\Multivariate_arff\\";
 
 //        String path="Z:\\ArchiveData\\Univariate_arff\\";
-//        multivariateSeriesLengths(path2);
+        multivariateSeriesLengths(path2);
  //       univariateSeriesLengths(path);
-   //     System.exit(0);
+     System.exit(0);
         System.out.println(" Test 1, univariate data with padding");
         testTruncateUnivariateData(path);
         System.exit(0);
