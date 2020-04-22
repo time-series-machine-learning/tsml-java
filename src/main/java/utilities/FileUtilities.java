@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class FileUtils {
+public class FileUtilities {
 
 
     public static void writeToFile(String str, String path) throws

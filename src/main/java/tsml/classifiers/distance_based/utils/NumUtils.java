@@ -1,4 +1,4 @@
-package utilities;
+package tsml.classifiers.distance_based.utils;
 
 public class NumUtils {
 

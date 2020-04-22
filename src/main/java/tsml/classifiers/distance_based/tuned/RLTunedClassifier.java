@@ -323,7 +323,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // processes may be executing non-benchmarking code during this time so may still be active)
                 // try and create the overall done file
                 // try locking the overall done file
-                try (FileUtils.FileLock lock = new FileUtils.FileLock(savePath + "overall.done")) {
+                try (FileUtilities.FileLock lock = new FileUtilities.FileLock(savePath + "overall.done")) {
                     // if we can lock the overall done file then we're the only process collating benchmarks and are
                     // sure we're proceeding without parallel counterparts
 
@@ -358,7 +358,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                     }
                     // we're done
                     setBuilt(true);
-                } catch (FileUtils.FileLock.LockException e) {
+                } catch (FileUtilities.FileLock.LockException e) {
                     getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;
                     // quit as another process is going to finish up the build and that other process has locked the
@@ -407,14 +407,14 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         String classifierSavePath = null;
         // we may be running in distributed mode therefore must get a lock on the classifier
         // we'll do this by locking the checkpoint directory for the classifier
-        FileUtils.FileLock lock = null;
+        FileUtilities.FileLock lock = null;
         if(isCheckpointSavingEnabled()){
             // otherwise no done file, so let's try and lock the classifier's checkpoint dir to claim it
             classifierSavePath = buildClassifierSavePath(classifier);
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setCheckpointPath(classifierSavePath);
             }
-            lock = new FileUtils.FileLock(classifierSavePath);
+            lock = new FileUtilities.FileLock(classifierSavePath);
             // if we're claimed the lock then we can evaluate the classifier
             evaluate = lock.isLocked();
             if(evaluate) {

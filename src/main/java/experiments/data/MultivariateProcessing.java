@@ -13,6 +13,9 @@ import experiments.data.DatasetLoading;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
+import java.util.ArrayList;
+
+import tsml.filters.NormalizeCase;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -21,11 +24,38 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
+
+
     /**
      * Sorting out the new archive
      * @author ajb
      */
     public class MultivariateProcessing {
+
+        public static void normaliseProblems() throws Exception {
+            String path="Z:\\ArchiveData\\MultivariateSplit\\";
+            String dest="Z:Z:\\ArchiveData\\MultivariateSplitNormalised\\";
+            File d=new File(dest);
+            d.mkdirs();
+            ArrayList<String> problemList = new ArrayList<>();
+            InFile f = new InFile("Z:\\ArchiveData\\MultivariateSplit\\allMTSC.txt");
+            String n=f.readLine();
+            while(n!=null){
+                problemList.add(n);
+                n=f.readLine();
+            }
+            NormalizeCase norm= new NormalizeCase();
+            for(String str:problemList) {
+                Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN");
+                Instances test = DatasetLoading.loadData(path+str+"\\"+str+"_TEST");
+                Instances normTrain=norm.process(train);
+                Instances normTest=norm.process(test);
+                DatasetLoading.saveDataset(normTrain,dest+str+"\\"+str+"_TRAIN");
+                DatasetLoading.saveDataset(normTest,dest+str+"\\"+str+"_TEST");
+
+            }
+
+        }
 
         public static void makeConcatenatedFiles(){
             String path="Z:\\Data\\Multivariate TSC Problems\\";
@@ -685,6 +715,8 @@ import weka.core.Instances;
         }
 
         public static void main(String[] args) throws Exception {
+            normaliseProblems();
+            System.exit(0);
             exampleUsage();
             String prob="UWaveGestureLibrary";
             String dest="Z:\\Data\\UnivariateMTSC\\";

@@ -16,7 +16,7 @@ package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
-import utilities.FileUtils;
+import utilities.FileUtilities;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +55,7 @@ public interface Checkpointable extends Serializable, Copy {
 
     //Override both if not using Java serialisation
     default void saveToFile(String filename) throws Exception {
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+        try (FileUtilities.FileLock fileLocker = new FileUtilities.FileLock(filename);
              FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
              GZIPOutputStream gos = new GZIPOutputStream(fos);
              ObjectOutputStream out = new ObjectOutputStream(gos)) {
@@ -64,7 +64,7 @@ public interface Checkpointable extends Serializable, Copy {
     }
     default void loadFromFile(String filename) throws Exception{
         Object obj = null;
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+        try (FileUtilities.FileLock fileLocker = new FileUtilities.FileLock(filename);
              FileInputStream fis = new FileInputStream(fileLocker.getFile());
              GZIPInputStream gis = new GZIPInputStream(fis);
              ObjectInputStream in = new ObjectInputStream(gis)) {

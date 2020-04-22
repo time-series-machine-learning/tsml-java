@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.utils.NumUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;

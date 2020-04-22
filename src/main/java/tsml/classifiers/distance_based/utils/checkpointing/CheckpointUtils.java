@@ -11,7 +11,7 @@ import tsml.classifiers.Checkpointable;
 import java.io.*;
 import java.util.logging.Logger;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
-import utilities.FileUtils.FileLock;
+import utilities.FileUtilities.FileLock;
 
 /**
  * Purpose: utilities for checkpointing to a single file. This performs usual checks / logging along the way.
