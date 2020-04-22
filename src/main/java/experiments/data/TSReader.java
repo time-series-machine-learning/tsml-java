@@ -12,6 +12,12 @@ import java.util.HashMap;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
 
+/**
+File for reading sktime format data
+
+ @author Aaron Bostrom, pushed 22/4/2020
+ */
+
 public class TSReader {
 
 
