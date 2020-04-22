@@ -1,7 +1,5 @@
-package utilities;
+package experiments.data;
 
-import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -13,6 +11,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
+
+/**
+File for reading sktime format data
+
+ @author Aaron Bostrom, pushed 22/4/2020
+ */
 
 public class TSReader {
 
