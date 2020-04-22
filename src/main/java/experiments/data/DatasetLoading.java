@@ -22,8 +22,6 @@ import experiments.Experiments;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -32,7 +30,6 @@ import java.util.regex.Pattern;
 
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import utilities.TSReader;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.Classifier;
 import weka.core.Attribute;

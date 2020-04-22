@@ -1,7 +1,5 @@
-package utilities;
+package experiments.data;
 
-import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import utilities.generic_storage.Pair;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
