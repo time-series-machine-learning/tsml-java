@@ -150,8 +150,22 @@ public class MultivariateInstanceTools {
         
         return output;
     }
+
+    public static Instances createRelationFrom(Instances header,  ArrayList<ArrayList<Double>> data){
+        Instances output = new Instances(header, data.size());
+
+        //each dense instance is row/ which is actually a channel.
+        for(int i=0; i< data.size(); i++){
+            int numAttsInChannel = data.get(i).size();
+            output.add(new DenseInstance(numAttsInChannel));
+            for(int j=0; j<numAttsInChannel; j++)
+                output.instance(i).setValue(j, data.get(i).get(j));
+        }
+
+        return output;
+    }
     
-    private static Instances createRelationHeader(int numAttsInChannel, int numChannels){
+    public static Instances createRelationHeader(int numAttsInChannel, int numChannels){
         //construct relational attribute vector.
         ArrayList<Attribute> relational_atts = new ArrayList(numAttsInChannel);
         for (int i = 0; i < numAttsInChannel; i++) {
