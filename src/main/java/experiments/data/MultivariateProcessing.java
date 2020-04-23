@@ -34,11 +34,9 @@ import weka.core.Instances;
 
         public static void normaliseProblems() throws Exception {
             String path="Z:\\ArchiveData\\MultivariateSplit\\";
-            String dest="Z:Z:\\ArchiveData\\MultivariateSplitNormalised\\";
-            File d=new File(dest);
-            d.mkdirs();
+            String dest="Z:\\ArchiveData\\MultivariateSplitNormalised\\";
             ArrayList<String> problemList = new ArrayList<>();
-            InFile f = new InFile("Z:\\ArchiveData\\MultivariateSplit\\allMTSC.txt");
+            InFile f = new InFile("Z:\\ArchiveData\\MultivariateSplitNormalised\\allEqualLengthMTSC.txt");
             String n=f.readLine();
             while(n!=null){
                 problemList.add(n);

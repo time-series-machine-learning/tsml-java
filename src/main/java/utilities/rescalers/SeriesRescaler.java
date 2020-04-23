@@ -8,6 +8,8 @@ package utilities.rescalers;
 /**
  *
  * @author a.bostrom1
+ *
+ * Tony writes: Should be replaced by methods in transformers
  */
 public interface SeriesRescaler {
    
