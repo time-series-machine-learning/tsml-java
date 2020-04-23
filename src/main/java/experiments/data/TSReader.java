@@ -159,9 +159,11 @@ public class TSReader {
         if(classLabel)
             attList.add(new Attribute("classVal", classLabels, classLabels.size()));
 
-        m_data = new Instances(problemName, attList, uni_raw_data.size());
+        this.m_data = new Instances(problemName, attList, uni_raw_data.size());
 
-        for(ArrayList<String> timeSeries : uni_raw_data){
+
+        for(int i=0; i<uni_raw_data.size(); i++){
+            ArrayList<String> timeSeries = uni_raw_data.get(i);
             //add all the time series values.
             Instance inst = new DenseInstance(max_length+1);
             for(int a = 0; a < timeSeries.size(); a++){
@@ -170,10 +172,10 @@ public class TSReader {
             }
             //only add if we have a classLabel
             //get the value from the end of the current time series, and put it at the end of the attribute list.
-            if(classLabel)
-                inst.setValue(max_length, Double.parseDouble(timeSeries.get(timeSeries.size()-1)));
-
-            m_data.add(inst);
+            if(classLabel) {
+                inst.setValue(max_length, raw_labels.get(i));
+            }
+            this.m_data.add(inst);
         }
     }
 
@@ -414,7 +416,7 @@ public class TSReader {
         String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
         String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
 
-/*
+
         for(String dataset : DatasetLists.tscProblems2018){
             //String dataset = "AllGestureWiimoteZ";
             String filepath = local_path + dataset + "\\" + dataset;
@@ -424,14 +426,15 @@ public class TSReader {
             System.out.println(f);
             TSReader ts_reader = new TSReader(new FileReader(f));
             Instances train_data = ts_reader.GetInstances();
+            System.out.println(train_data);
         }
-*/
+
         //File f_orig = new File(filepath_orig);
         //Instances train_data_orig = new Instances(new FileReader(f_orig));
 
         //System.out.println(train_data.toString());
 
-        for(String dataset_multi :  DatasetLists.mtscProblems2018){
+        /*for(String dataset_multi :  DatasetLists.mtscProblems2018){
             //String dataset_multi = "CharacterTrajectories";
             String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
             String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" + dataset_multi;
@@ -444,7 +447,7 @@ public class TSReader {
 
             //JAMESL ADDED TESTS
             Instances tsisntances = DatasetLoading.loadData(filepath_multi + "_TRAIN");
-        }
+        }*/
 
         //File f_orig_multi = new File(filepath_orig_multi);
         //Instances train_data_orig_multi = new Instances(new FileReader(f_orig_multi));
