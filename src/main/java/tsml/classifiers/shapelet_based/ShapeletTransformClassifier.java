@@ -274,10 +274,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*        if(performPCA){
+        if(performPCA){
             temp=pca.transform(temp);
         }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
         return classifier.classifyInstance(test);
@@ -290,10 +290,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*         if(performPCA){
+         if(performPCA){
              temp=pca.transform(temp);
          }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
 
