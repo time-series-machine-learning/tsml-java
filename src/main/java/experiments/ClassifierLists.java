@@ -316,11 +316,7 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-<<<<<<< HEAD
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D","DTW_A", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I"};//Not enough to classify yet
-=======
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I"};//Not enough to classify yet
->>>>>>> dev
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -356,7 +352,6 @@ public class ClassifierLists {
             case "DTW_A":
                 c=new NN_DTW_A();
                 break;
-<<<<<<< HEAD
             case "HC_I":
                 c=new MultivariateHiveCote(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
                 break;
@@ -372,8 +367,6 @@ public class ClassifierLists {
             case "TSF_I":
                 c=new MultivariateSingleEnsemble("TSF", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
                 break;
-            default:
-=======
             case "HIVE-COTE_I":
                 if(canLoadFromFile){
                     String[] cls={"TSF_I","cBOSS_I","RISE_I","STC_I"};//RotF for ST
@@ -387,8 +380,8 @@ public class ClassifierLists {
                 else
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;            default:
->>>>>>> dev
+                break;
+                default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between multivariateBased and the switch statement ");
                 throw new UnsupportedOperationException("Unknown multivariate classifier, should not be able to get here "
