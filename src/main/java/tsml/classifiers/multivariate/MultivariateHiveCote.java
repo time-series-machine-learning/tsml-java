@@ -2,7 +2,6 @@ package tsml.classifiers.multivariate;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.voting.MultivariateMajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -40,8 +39,8 @@ public class MultivariateHiveCote extends MultivariateAbstractEnsemble {
     protected void setupMultivariateEnsembleSettings(int instancesLength) {
             this.ensembleName = "MTSC_HC_I";
 
-            this.weightingScheme = new EqualWeighting();
-            this.votingScheme = new MajorityConfidence();
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
             this.transform = null;
 
             CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
