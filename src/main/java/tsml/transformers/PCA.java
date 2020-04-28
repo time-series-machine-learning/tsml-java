@@ -1,10 +1,14 @@
 package tsml.transformers;
 
 import experiments.data.DatasetLoading;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import weka.attributeSelection.PrincipalComponents;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.unsupervised.*;
+
+import java.io.File;
 
 /**
  * Transformer to generate Principal Components. Uses weka attribute selection PrincipalComponents. There is also
@@ -20,21 +24,31 @@ import weka.core.Instances;
  */
 public class PCA implements Transformer {
 
-//    PrincipalComponents pc=new weka.filters.unsupervised.attribute.PrincipalComponents();
-    int numAttributesToKeep=100;
-    weka.attributeSelection.PrincipalComponents pca=new PrincipalComponents();
+    private int numAttributesToKeep; //changed this to constructor as you could change number of atts to keep after fitting
+    private PrincipalComponents pca;
+    private boolean isFit = false;
 
-    public void setNumAttributesToKeep(int a){
-        numAttributesToKeep=a;
+    public PCA(){
+        this(100);
     }
+
+    public PCA(int attsToKeep){
+        pca = new PrincipalComponents();
+        numAttributesToKeep = Math.max(1, attsToKeep);
+        System.out.println(numAttributesToKeep);
+    }
+
     @Override
     public void fit(Instances data){
-        if(data.numAttributes()-1<numAttributesToKeep)
-            numAttributesToKeep=data.numAttributes()-1;
+        numAttributesToKeep = Math.min(data.numAttributes()-1, numAttributesToKeep);
+
         try{
-//Build the evaluator
+            //Build the evaluator
+            //this method is sets the names of the componenets used.
+            pca.setMaximumAttributeNames(numAttributesToKeep); 
             pca.setVarianceCovered(1.0);
             pca.buildEvaluator(data);
+            isFit = true;
         }catch(Exception e)
         {
             throw new RuntimeException(" Error in Transformers/PCA when fitting the PCA transform");
@@ -44,9 +58,15 @@ public class PCA implements Transformer {
     @Override
     public Instances transform(Instances data) {
 
+        if(!isFit)
+            throw new RuntimeException("Fit PCA before transforming");
+
+
         Instances newData= null;
         try {
             newData = pca.transformedData(data);
+
+            //TODO: replace with Truncator
             while(newData.numAttributes()-1>numAttributesToKeep)
                 newData.deleteAttributeAt(newData.numAttributes()-2);
         } catch (Exception e) {
@@ -57,11 +77,15 @@ public class PCA implements Transformer {
 
     @Override
     public Instance transform(Instance inst) {
+        if(!isFit)
+            throw new RuntimeException("Fit PCA before transforming");
+
         Instance newInst= null;
         try {
             newInst = pca.convertInstance(inst);
+            //TODO: replace with Truncator
             while(newInst.numAttributes()-1>numAttributesToKeep)
-                newInst.deleteAttributeAt(newInst.numAttributes()-2);
+               newInst.deleteAttributeAt(newInst.numAttributes()-2);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -78,16 +102,34 @@ public class PCA implements Transformer {
     }
 
 
-    public static void main(String[] args) {
-        Instances train= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TRAIN.arff");
-        Instances test= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TEST.arff");
-        PCA pca=new PCA();
+    public static void main(String[] args) throws Exception {
+        //Aarons local path for testing.
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        //String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
+        //String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
+        String dataset_name = "Chinatown";
+
+
+        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+
+        /*Instances train= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TRAIN.arff");
+        Instances test= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TEST.arff");*/
+        
+        
+        /*PCA pca=new PCA(1);
         pca.fit(train);
         Instances trans=pca.transform(train);
  //       Instances trans2=pca.transform(test);
         System.out.println(" Transfrom 1"+trans);
-        System.out.println("Num attribvvutes = "+trans.numAttributes());
+        System.out.println("Num attribvvutes = "+trans.numAttributes());*/
 //        System.out.println(" Transfrom 2"+trans2);
+
+        ShapeletTransformClassifier st = new ShapeletTransformClassifier();
+        //st.usePCA();
+        st.setPCA(true, 5);
+        st.buildClassifier(train);
+        double acc = utilities.ClassifierTools.accuracy(test, st);
 
     }
 }
