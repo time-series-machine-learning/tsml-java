@@ -316,6 +316,14 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             for (int i = 0; i < classifiers.length; i++)
                 classifiers[i] = null;
         }
+        else {
+            //If they are able to, make the classifiers estimate their own performance. This helps with contracting
+            for (Classifier c : classifiers) {
+                if (c instanceof EnhancedAbstractClassifier)
+                    if (((EnhancedAbstractClassifier) c).ableToEstimateOwnPerformance())
+                        ((EnhancedAbstractClassifier) c).setEstimateOwnPerformance(true);
+            }
+        }
 
         if (classifierNames == null) {
             classifierNames = new String[classifiers.length];

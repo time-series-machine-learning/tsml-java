@@ -1,8 +1,7 @@
-package utilities.stopwatch;
+package tsml.classifiers.distance_based.utils.stopwatch;
 
 import org.junit.Before;
 import org.junit.Test;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 
 public class StopWatchTest {
 

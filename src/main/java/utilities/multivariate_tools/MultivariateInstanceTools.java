@@ -14,6 +14,7 @@
  */
 package utilities.multivariate_tools;
 
+import utilities.InstanceTools;
 import weka.core.*;
 import tsml.filters.NormalizeCase;
 
@@ -97,7 +98,7 @@ public class MultivariateInstanceTools {
                     localAtt=0;
             }
             
-            name = "attribute_dimension_" + dim + "_" + localAtt++;
+            name = "attribute_dimension_" + dim + "_" + localAtt++ + data[0].attribute(0).name();
             atts.add(new Attribute(name));
         }
         
@@ -150,8 +151,22 @@ public class MultivariateInstanceTools {
         
         return output;
     }
+
+    public static Instances createRelationFrom(Instances header,  ArrayList<ArrayList<Double>> data){
+        Instances output = new Instances(header, data.size());
+
+        //each dense instance is row/ which is actually a channel.
+        for(int i=0; i< data.size(); i++){
+            int numAttsInChannel = data.get(i).size();
+            output.add(new DenseInstance(numAttsInChannel));
+            for(int j=0; j<numAttsInChannel; j++)
+                output.instance(i).setValue(j, data.get(i).get(j));
+        }
+
+        return output;
+    }
     
-    private static Instances createRelationHeader(int numAttsInChannel, int numChannels){
+    public static Instances createRelationHeader(int numAttsInChannel, int numChannels){
         //construct relational attribute vector.
         ArrayList<Attribute> relational_atts = new ArrayList(numAttsInChannel);
         for (int i = 0; i < numAttsInChannel; i++) {
@@ -480,8 +495,9 @@ public class MultivariateInstanceTools {
         return output;              
   
   }
-        
-  public static Instances normaliseChannels(Instances data) throws Exception { 
+
+
+  public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
             
       for (Instances channel : channels) {

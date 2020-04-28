@@ -10,11 +10,14 @@ import weka.core.Instances;
  * is to make our code more like sktime and reduce our Weka dependency. The Filter
  * mechanism has some down sides
  *
- * Ultimately this will move away from instances too
+ * Ultimately this will include the new data model
+ *
+ * @author Tony Bagnall 1/1/2020
+ *
  */
 public interface Transformer {
     /**
-     * Build the transform model from train data, storing the necessary info internally
+     * Build the transform model from train data, storing the necessary info internally.
      * @param data
      */
     void fit(Instances data);

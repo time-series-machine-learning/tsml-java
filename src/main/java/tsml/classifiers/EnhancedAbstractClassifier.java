@@ -318,9 +318,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         Capabilities result = super.getCapabilities();
         result.disableAll();
         // attributes must be numeric
-        // Here add in relational when ready
         result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
+        // Can only handle discrete class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         // instances
         result.setMinimumNumberInstances(1);
