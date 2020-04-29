@@ -2,6 +2,7 @@ package tsml.transformers;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import utilities.InstanceTools;
 import weka.attributeSelection.PrincipalComponents;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -27,6 +28,8 @@ public class PCA implements Transformer {
     private int numAttributesToKeep; //changed this to constructor as you could change number of atts to keep after fitting
     private PrincipalComponents pca;
     private boolean isFit = false;
+    private boolean removeRedundant = false;
+    private ConstantAttributeRemover remover;
 
     public PCA(){
         this(100);
@@ -35,6 +38,7 @@ public class PCA implements Transformer {
     public PCA(int attsToKeep){
         pca = new PrincipalComponents();
         numAttributesToKeep = Math.max(1, attsToKeep);
+        
         System.out.println(numAttributesToKeep);
     }
 
@@ -61,14 +65,18 @@ public class PCA implements Transformer {
         if(!isFit)
             throw new RuntimeException("Fit PCA before transforming");
 
+           
 
         Instances newData= null;
         try {
             newData = pca.transformedData(data);
+            
+            if(remover == null){
+                remover = new ConstantAttributeRemover();
+                remover.fit(newData);
+            }
 
-            //TODO: replace with Truncator
-            while(newData.numAttributes()-1>numAttributesToKeep)
-                newData.deleteAttributeAt(newData.numAttributes()-2);
+            newData = remover.transform(newData);
         } catch (Exception e) {
             throw new RuntimeException(" Error in Transformers/PCA when performing the PCA transform: "+e);
         }
@@ -83,6 +91,9 @@ public class PCA implements Transformer {
         Instance newInst= null;
         try {
             newInst = pca.convertInstance(inst);
+
+            /*for(int del:attsToRemove)
+                newInst.deleteAttributeAt(del);*/
             //TODO: replace with Truncator
             while(newInst.numAttributes()-1>numAttributesToKeep)
                newInst.deleteAttributeAt(newInst.numAttributes()-2);
@@ -107,7 +118,7 @@ public class PCA implements Transformer {
         String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
         //String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
         //String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
-        String dataset_name = "Chinatown";
+        String dataset_name = "ChinaTown";
 
 
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
@@ -126,10 +137,10 @@ public class PCA implements Transformer {
 //        System.out.println(" Transfrom 2"+trans2);
 
         ShapeletTransformClassifier st = new ShapeletTransformClassifier();
-        //st.usePCA();
-        st.setPCA(true, 5);
+        st.setPCA(true, 100);
         st.buildClassifier(train);
         double acc = utilities.ClassifierTools.accuracy(test, st);
+        System.out.println("acc: " + acc);
 
     }
 }
