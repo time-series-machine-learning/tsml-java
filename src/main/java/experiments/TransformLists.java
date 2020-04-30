@@ -42,6 +42,8 @@ public class TransformLists {
         return setClassicTransform(exp.classifierName, exp.foldId);
     }
 
+
+    //TODO: Fix for new Transformers.
     public static SimpleBatchFilter setClassicTransform(String transformName, int foldId) {
         SimpleBatchFilter transformer = null;
         switch(transformName){
@@ -66,9 +68,9 @@ public class TransformLists {
             case "Clipping":
                 transformer = new Clipping();
                 break;
-            case "Cosine":
-                transformer = new Cosine();
-                break;
+            //case "Cosine":
+                //transformer = new Cosine();
+                //break;
             case "Derivative":
                 transformer = new Derivative();
                 break;
@@ -81,9 +83,9 @@ public class TransformLists {
             case "FFT":
                 transformer = new FFT();
                 break;
-            case "Hilbert":
-                transformer = new Hilbert();
-                break;
+            //case "Hilbert":
+                //transformer = new Hilbert();
+                //break;
             case "MatrixProfile":
                 transformer = new MatrixProfile();
                 break;
@@ -117,9 +119,9 @@ public class TransformLists {
             case "SAX":
                 transformer = new SAX();
                 break;
-            case "Sine":
-                transformer = new Sine();
-                break;
+            //case "Sine":
+                //transformer = new Sine();
+                //break;
             case "Spectrogram":
                 transformer = new Spectrogram();
                 break;

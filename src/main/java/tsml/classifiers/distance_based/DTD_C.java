@@ -22,15 +22,12 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW_DistanceBasic;
-import weka.filters.SimpleBatchFilter;
-import tsml.filters.Cosine;
-import tsml.filters.Sine;
-import tsml.filters.Hilbert;
-import weka.filters.Filter;
+import tsml.transformers.*;
 
 /**
  *
  * @author Jason Lines (j.lines@uea.ac.uk)
+ * @author modified by Aaron Bostrom
  * 
  * Implementation of:
  * Gorecki, Tomasz, and Maciej Luczak.
@@ -261,25 +258,20 @@ public class DTD_C extends DD_DTW{
             Instances temp = new Instances(first.dataset(),0);
             temp.add(first);
             temp.add(second);
-            try{
-                SimpleBatchFilter bf=null;
-                switch(this.transformType){
-                    case COS:
-                        bf=new Cosine();
-                        break;
-                    case SIN:
-                        bf=new Sine();
-                        break;
-                    case HIL: default:
-                         bf=new Hilbert();
-                        break;
-                }
-                bf.setInputFormat(temp);
-                temp = Filter.useFilter(temp,bf);    
-            }catch(Exception e){
-                e.printStackTrace();
-                return null;
-            }        
+            Transformer bf=null;
+            switch(this.transformType){
+                case COS:
+                    bf=new Cosine();
+                    break;
+                case SIN:
+                    bf=new Sine();
+                    break;
+                case HIL: default:
+                        bf=new Hilbert();
+                    break;
+            } 
+            temp = bf.fitTransform(temp);
+    
 
             double dist = dtw.distance(first, second);
             double transDist = dtw.distance(temp.get(0), temp.get(1), Double.MAX_VALUE);
@@ -300,7 +292,7 @@ public class DTD_C extends DD_DTW{
         DecimalFormat df = new DecimalFormat("#.##");
         Instances transTrain, transTest;
         
-        SimpleBatchFilter[] transforms = {new Cosine(), new Sine(), new Hilbert()};
+        Transformer[] transforms = {new Cosine(), new Sine(), new Hilbert()};
         TransformType[] transformTypes = {TransformType.COS,TransformType.SIN,TransformType.HIL};
         System.out.println("Dataset,fullCosDTW,fullSinDTW,fullHilDTW,weightedCosDTW,weightedSinDTW,weightedHilDTW");
         for(String dataset:PAPER_DATASETS){
@@ -309,9 +301,9 @@ public class DTD_C extends DD_DTW{
             test = DatasetLoading.loadDataNullable(DATA_DIR+dataset+"/"+dataset+"_TEST");
             
             // DTW on only the transformed data first
-            for(SimpleBatchFilter transform:transforms){
-                transTrain = Filter.useFilter(train,transform);
-                transTest = Filter.useFilter(test,transform);
+            for(Transformer transform:transforms){
+                transTrain = transform.fitTransform(train);
+                transTest = transform.transform(test);
                 dtw = new DTW_DistanceBasic();
                 knn = new kNN();
                 knn.setDistanceFunction(dtw);
