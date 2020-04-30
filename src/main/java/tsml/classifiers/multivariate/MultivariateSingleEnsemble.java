@@ -3,6 +3,7 @@ package tsml.classifiers.multivariate;
 import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -24,15 +25,18 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
         this.fold = fold;
         this.setBuildIndividualsFromResultsFiles(true);
         this.setResultsFileLocationParameters(resultsPath,dataset, fold);
+        setSeed(fold);
+        setDebug(true);
     }
 
     @Override
     protected void setupMultivariateEnsembleSettings(int instancesLength) {
             this.ensembleName = "MTSC_"+ this.classifierName +"_I";
-
-            this.weightingScheme = new EqualWeighting();
-            this.votingScheme = new MajorityConfidence();
-            this.transform = null;
+//            this.weightingScheme = new EqualWeighting();
+//            this.votingScheme = new MajorityConfidence();
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        this.transform = null;
 
             CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
             cv.setNumFolds(10);

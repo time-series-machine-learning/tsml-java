@@ -215,9 +215,10 @@ public class DatasetLoading {
         boolean predefinedSplitsExist = trainFile.exists() && testFile.exists();
         if (predefinedSplitsExist) {
             // CASE 1)
+            System.out.println("CASE 1: Should NOT here "+trainFile.getName()+" Test file full = "+testFile.getAbsolutePath());
             data[0] = loadDataThrowable(trainFile);
             data[1] = loadDataThrowable(testFile);
-            LOGGER.log(Level.FINE, problem + " loaded from predfined folds.");
+            LOGGER.log(Level.FINE, problem + " loaded from predefined folds.");
         } else {
             trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
             testFile = new File(parentFolder + problem + "/" + problem + "_TEST.arff");
@@ -226,12 +227,15 @@ public class DatasetLoading {
                 // CASE 2)
                 data[0] = loadDataThrowable(trainFile);
                 data[1] = loadDataThrowable(testFile);
-                if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
+                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
+/*                if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
                     data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+                    System.out.println(" MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances complete");
+
                 } else {
                     data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                 }
-                LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
+*/              LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
             } else {
                 // We only have a single file with all the data
                 Instances all = null;

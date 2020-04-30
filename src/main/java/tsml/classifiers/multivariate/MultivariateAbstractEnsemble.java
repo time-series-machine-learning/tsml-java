@@ -120,6 +120,7 @@ public abstract class MultivariateAbstractEnsemble extends AbstractEnsemble {
     @Override
     public void buildClassifier(Instances data) throws Exception {
         printlnDebug("**MTSC ENSEMBLE TRAIN: " + ensembleName + "**");
+        System.out.println("DATA NAME ="+data.relationName());
 
         Instances[] splitData = MultivariateInstanceTools.splitMultivariateInstances(data);
 
