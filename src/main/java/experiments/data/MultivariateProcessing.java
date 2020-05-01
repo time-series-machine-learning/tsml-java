@@ -39,7 +39,7 @@ import weka.core.Instances;
                 n=f.readLine();
             }
  */
-            String[] problemList={"PhonemeSpectraDimension1","PhonemeSpectraDimension2","PhonemeSpectraDimension3","PhonemeSpectraDimension4","PhonemeSpectraDimension5","PhonemeSpectraDimension6"};
+            String[] problemList={"PhonemeSpectraDimension7","PhonemeSpectraDimension8","PhonemeSpectraDimension9","PhonemeSpectraDimension10","PhonemeSpectraDimension11"};
             NormaliseCase norm= new NormaliseCase();
             for(String str:problemList) {
                 Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN");
