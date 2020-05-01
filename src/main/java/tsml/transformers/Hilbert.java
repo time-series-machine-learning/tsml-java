@@ -14,8 +14,10 @@
  */
 package tsml.transformers;
 
+import java.io.File;
 import java.io.FileReader;
 
+import experiments.data.DatasetLoading;
 import utilities.InstanceTools;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
@@ -85,12 +87,15 @@ public class Hilbert implements Transformer {
 	}
 
 	public static void main(String[] args){
-		final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI * 1.5, Math.PI*2.5}};
-        final Instances train = InstanceTools.toWekaInstances(t1);
-
-        Hilbert hilbertTransform= new Hilbert();
-        Instances out_train = hilbertTransform.fitTransform(train);
-        System.out.println(out_train);
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        String dataset_name = "ChinaTown";
+        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+        Hilbert hTransform= new Hilbert();
+        Instances out_train = hTransform.fitTransform(train);
+        Instances out_test = hTransform.transform(test);
+        System.out.println(out_train.toString());
+        System.out.println(out_test.toString());
 	}
 
 

@@ -13,6 +13,10 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package tsml.transformers;
+
+import java.io.File;
+
+import experiments.data.DatasetLoading;
 import utilities.InstanceTools;
 import weka.core.*;
 
@@ -80,12 +84,15 @@ public class Sine implements Transformer {
 
 
     public static void main(String[] args){
-        final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI * 1.5, Math.PI*2.5}};
-        final Instances train = InstanceTools.toWekaInstances(t1);
-
-        Sine sinTransform= new Sine();
-        Instances out_train = sinTransform.fitTransform(train);
-        System.out.println(out_train);
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        String dataset_name = "ChinaTown";
+        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+        Sine sineTransform= new Sine();
+        Instances out_train = sineTransform.fitTransform(train);
+        Instances out_test = sineTransform.transform(test);
+        System.out.println(out_train.toString());
+        System.out.println(out_test.toString());
     }
 
 }

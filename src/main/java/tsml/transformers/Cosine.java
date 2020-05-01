@@ -13,6 +13,10 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package tsml.transformers;
+
+import java.io.File;
+
+import experiments.data.DatasetLoading;
 import utilities.InstanceTools;
 import weka.core.*;
 
@@ -34,7 +38,7 @@ public class Cosine implements Transformer {
 		for(Instance inst : data) 
             result.add(transform(inst));
             
-        System.out.println(result.firstInstance());
+        //System.out.println(result.firstInstance().toString());
         return result;
     }
 
@@ -54,6 +58,8 @@ public class Cosine implements Transformer {
         //overrided cosine class value, with original.
         if(inst.classIndex() >= 0)
             newInst.setValue(inst.classIndex(), inst.classValue());
+
+        System.out.println("Hello:"+newInst.toString());
         return newInst;
     }
 
@@ -80,17 +86,27 @@ public class Cosine implements Transformer {
             result.setClassIndex(result.numAttributes() - 1);
         }
 
+        System.out.println(result);
+
         return result;
     }
 
 
     public static void main(String[] args){
-        final double[][] t1 = {{0, Math.PI, Math.PI*2, 1},{ Math.PI * 0.5, Math.PI * 1.5, Math.PI*2.5, 2}};
-        final Instances train = InstanceTools.toWekaInstancesWithClass(t1);
+        //final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI * 1.5, Math.PI*2.5}};
+        //final double[] labels = {1,2};
+        //final Instances train = InstanceTools.toWekaInstances(t1, labels);
 
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        String dataset_name = "ChinaTown";
+        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
         Cosine cosTransform= new Cosine();
         Instances out_train = cosTransform.fitTransform(train);
-        System.out.println(out_train);
+        Instances out_test = cosTransform.transform(test);
+        System.out.println(out_train.toString());
+        System.out.println(out_test.toString());
+
     }
 
 }
