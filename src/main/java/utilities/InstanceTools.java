@@ -865,4 +865,70 @@ public class InstanceTools {
 
         return newInst;
     }
+
+
+
+    /* Surprised these don't exist */
+    public static double sum(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x;
+            }
+        }    
+        return sumSq;     
+    }
+
+    public static double sumSq(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x * x;
+            }
+        }    
+        return sumSq;         
+    }
+
+    public static int argmax(Instance inst){
+        double max = Double.MIN_VALUE;
+        int arg = -1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x > max){
+                    max = x;
+                    arg = j;
+                }
+            }
+        }
+        return arg;
+    }
+
+    public static double max(Instance inst){
+        return inst.value(argmax(inst));
+    }
+
+
+    public static int argmin(Instance inst){
+        double min = Double.MAX_VALUE;
+        int arg =-1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x < min){
+                    min = x;
+                    arg = j;
+                }
+                
+            }
+        }
+        return arg;
+    }
+
+    public static double min(Instance inst){
+        return inst.value(argmin(inst));
+    }
+
 }
