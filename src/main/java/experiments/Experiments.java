@@ -140,90 +140,32 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }else{
             int folds=1;
-
-
+            String[] settings=new String[6];
+            settings[0]="-dp=E:\\ArchiveData\\Multivariate_arff\\";//Where to get data
+            settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
+            settings[2]="-gtf=true"; //Whether to generate train files or not
+            settings[3]="-cn="; //Classifier name
+            settings[5]="1";
+            settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
+            settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            folds=1;
+            String classifier="RISE_I";
+            ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+            System.out.println("Threaded experiment with "+expSettings);
+//                String[] probFiles= {"Chinatown"};
+            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            System.out.println("Manually set args:");
+            for (String str : settings)
+                System.out.println("\t"+str);
+            System.out.println("");
             boolean threaded=true;
             if(threaded){
-                String[] settings=new String[6];
-                settings[0]="-dp=E:\\ArchiveData\\Multivariate_arff\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
-                settings[2]="-gtf=true"; //Whether to generate train files or not
-                settings[3]="-cn="; //Classifier name
-                settings[5]="1";
-                settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
-                settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-                folds=1;
-                String classifier="HIVE-COTE_I";
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with "+expSettings);
-//                String[] probFiles= {"Chinatown"};
-                String[] probFiles= DatasetLists.fixedLengthMultivariate;
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
-
-
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[6];
-//Location of data set
-                settings[0]="-dp=E:\\ArchiveData\\Multivariate_arff\\";//Where to get data
- //               settings[0]="-dp=E:\\Data Working Area\\MultivariateSplit\\";//Where to get data
-
-//                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\CompleteClassifiers\\ComponentsCAWPEWeight\\";//Where to write results
-                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
-                settings[2]="-gtf=true"; //Whether to generate train files or not
-                settings[3]="-cn=TSF_I"; //Classifier name
-//                for(String str:DatasetLists.tscProblems78){
-                settings[4]="-dn="+""; //Problem file, added below
-                settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
-//                settings[6]="--force=true";
-//                settings[7]="-ctr=0";
-//                settings[8]="-cp=0";
-                debug=true;
-                System.out.println("Manually set args:");
-                for (String str : settings)
-                    System.out.println("\t"+str);
-                System.out.println("");
-                String[] fixedLengthMultivariate = {
-                        "ArticularyWordRecognition", //Index 0
-                        "AtrialFibrillation",//1
-                        "BasicMotions",
-                        "Cricket",
-                        "DuckDuckGeese",
-                        "EigenWorms", //Wont build for some weird reason
-                        "Epilepsy",
-                        "EthanolConcentration",
-                        "ERing",
-                        "FaceDetection",//10
-                        "FingerMovements",
-                        "HandMovementDirection",
-                        "Handwriting",
-                        "Heartbeat",
-                        "Libras",
-                        "LSST",
-                        "MotorImagery",
-                        "NATOPS",//20
-                       "PenDigits",
-                       "PEMS-SF",
-                        "PhonemeSpectra",
-                        "RacketSports",
-                        "SelfRegulationSCP1",//25
-                        "SelfRegulationSCP2",
-                        "StandWalkJump",
-                        "UWaveGestureLibrary"
-                };
-                String[] temp={"ERing"
-                };
-                String[] missingFolds={"NATOPSDimension7","NATOPSDimension19"
-                };
-
-                String[] probFiles=fixedLengthMultivariate;//             {"EigenWorms"}; //DatasetLists.ReducedUCI;
-//                String[] probFiles=missingFolds;//             {"EigenWorms"}; //DatasetLists.ReducedUCI;
-
-                folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
-                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                         setupAndRunExperiment(expSettings);
                     }
                 }
