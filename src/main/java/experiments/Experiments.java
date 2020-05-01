@@ -142,18 +142,18 @@ public class Experiments  {
             int folds=1;
 
 
-            boolean threaded=false;
+            boolean threaded=true;
             if(threaded){
                 String[] settings=new String[6];
                 settings[0]="-dp=E:\\ArchiveData\\Multivariate_arff\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitResults\\";//Where to write results
+                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
                 settings[2]="-gtf=true"; //Whether to generate train files or not
                 settings[3]="-cn="; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-                folds=30;
-                String classifier="TSF_I";
+                folds=1;
+                String classifier="HIVE-COTE_I";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
 //                String[] probFiles= {"Chinatown"};
@@ -168,7 +168,7 @@ public class Experiments  {
  //               settings[0]="-dp=E:\\Data Working Area\\MultivariateSplit\\";//Where to get data
 
 //                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\CompleteClassifiers\\ComponentsCAWPEWeight\\";//Where to write results
-                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitResults\\";//Where to write results
+                settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
                 settings[2]="-gtf=true"; //Whether to generate train files or not
                 settings[3]="-cn=TSF_I"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
@@ -215,13 +215,13 @@ public class Experiments  {
                 String[] missingFolds={"NATOPSDimension7","NATOPSDimension19"
                 };
 
-                String[] probFiles=temp;//             {"EigenWorms"}; //DatasetLists.ReducedUCI;
+                String[] probFiles=fixedLengthMultivariate;//             {"EigenWorms"}; //DatasetLists.ReducedUCI;
 //                String[] probFiles=missingFolds;//             {"EigenWorms"}; //DatasetLists.ReducedUCI;
 
-                folds=2;
+                folds=1;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
-                    for(int i=2;i<=folds;i++){
+                    for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                         setupAndRunExperiment(expSettings);
