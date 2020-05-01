@@ -61,7 +61,7 @@ import weka.core.Instances;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
-import tsml.filters.NormalizeCase;
+import tsml.filters.NormaliseCase;
 
 import javax.management.Notification;
 
@@ -365,7 +365,7 @@ public class SimulationExperiments {
             
             else if(normalize){
                 
-                NormalizeCase nc= new NormalizeCase();
+                NormaliseCase nc= new NormaliseCase();
                 split[0]=nc.process(split[0]);
                 split[0]=nc.process(split[1]);
             }

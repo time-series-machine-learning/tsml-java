@@ -8,18 +8,14 @@ for TSC, the basic univariate syntax is
 package experiments.data;
 
 import experiments.CollateResults;
-import experiments.data.DatasetLists;
-import experiments.data.DatasetLoading;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
 import java.util.ArrayList;
 
-import tsml.filters.NormalizeCase;
-import utilities.ClassifierTools;
+import tsml.filters.NormaliseCase;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
-import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -35,14 +31,16 @@ import weka.core.Instances;
         public static void normaliseProblems() throws Exception {
             String path="Z:\\ArchiveData\\MultivariateSplit\\";
             String dest="Z:\\ArchiveData\\MultivariateSplitNormalised\\";
-            ArrayList<String> problemList = new ArrayList<>();
+/*            ArrayList<String> problemList = new ArrayList<>();
             InFile f = new InFile("Z:\\ArchiveData\\MultivariateSplitNormalised\\allEqualLengthMTSC.txt");
             String n=f.readLine();
             while(n!=null){
                 problemList.add(n);
                 n=f.readLine();
             }
-            NormalizeCase norm= new NormalizeCase();
+ */
+            String[] problemList={"PhonemeSpectraDimension1","PhonemeSpectraDimension2","PhonemeSpectraDimension3","PhonemeSpectraDimension4","PhonemeSpectraDimension5","PhonemeSpectraDimension6"};
+            NormaliseCase norm= new NormaliseCase();
             for(String str:problemList) {
                 Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN");
                 Instances test = DatasetLoading.loadData(path+str+"\\"+str+"_TEST");

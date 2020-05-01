@@ -48,7 +48,7 @@ public class RankOrder extends SimpleBatchFilter {
 			  result.add(in);
 		  }
 		  if(normalise){
-			  NormalizeAttribute na=new NormalizeAttribute(result);
+			  NormaliseAttribute na=new NormaliseAttribute(result);
 			  result=na.process(result);
 		  }
 		  return result;

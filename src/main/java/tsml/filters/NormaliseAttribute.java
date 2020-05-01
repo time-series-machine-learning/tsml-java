@@ -36,7 +36,7 @@ package tsml.filters;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
-public class NormalizeAttribute extends SimpleBatchFilter{
+public class NormaliseAttribute extends SimpleBatchFilter{
 	enum NormType {INTERVAL,STD_NORMAL};
 	Instances trainData;
 	double[] min;
@@ -46,10 +46,10 @@ public class NormalizeAttribute extends SimpleBatchFilter{
 	int classIndex;
 	NormType norm=NormType.INTERVAL;
 
-	public NormalizeAttribute(){
+	public NormaliseAttribute(){
 	}
 
-	public NormalizeAttribute(Instances data){
+	public NormaliseAttribute(Instances data){
 		trainData=data;
 		classIndex=data.classIndex();
 //Finds all the stats, doesnt cost much more really		

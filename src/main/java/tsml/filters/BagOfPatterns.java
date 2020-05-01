@@ -116,7 +116,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
             double[] pattern = slidingWindow(series, windowStart);
             
             try {
-                NormalizeCase.standardNorm(pattern);
+                NormaliseCase.standardNorm(pattern);
             } catch(Exception e) {
                 //throws exception if zero variance
                 //if zero variance, all values in window the same 

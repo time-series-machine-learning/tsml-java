@@ -17,7 +17,12 @@ package tsml.filters;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
-public class NormalizeCase extends SimpleBatchFilter{
+/**
+ * Normalises a CASE not an ATTRIBUTE, useful for time series
+ * If series has zero variance (or below TOL=e-10) and STD_NORMAL is used, it either throws an exception if throwErrorOnZeroVariance is true
+ * or replaces it with all zeros
+ */
+public class NormaliseCase extends SimpleBatchFilter{
 	public enum NormType {INTERVAL,STD,STD_NORMAL};
 	
         public static boolean throwErrorOnZeroVariance = false;
@@ -116,33 +121,36 @@ public class NormalizeCase extends SimpleBatchFilter{
 		int classIndex=r.classIndex();
 		if(classIndex>=0)
 			size--;
-		for(int i=0;i<r.numInstances();i++)
-		{
-			sum=sumSq=mean=stdev=0;
-			for(int j=0;j<r.numAttributes();j++){
-                            if(j!=classIndex && !r.attribute(j).isNominal()){// Ignore all nominal atts
-                                x=r.instance(i).value(j);
-                                sum+=x;
-                                sumSq+=x*x;
-                            }
-                        }
-                        stdev=(sumSq-sum*sum/size)/size;
-                        mean=sum/size;
-                        stdev=Math.sqrt(stdev);
-                        if(stdev==0)
-                            if (throwErrorOnZeroVariance)
-                                throw new Exception("Cannot normalise a series with zero variance! Instance number ="+i+" mean ="+mean+" sum = "+sum+" sum sq = "+sumSq+" instance ="+r.instance(i));
-                            else {
-                                System.out.println("Warning: instance with zero variance found, leaving it alone. relation="+r.relationName()+" instInd="+i+" inst=\n"+r.get(i));
-                                continue;
-                            } 
-                                
-                        for(int j=0;j<r.numAttributes();j++){
-                            if(j!=classIndex&& !r.attribute(j).isNominal()){
-                                    x=r.instance(i).value(j);
-                                    r.instance(i).setValue(j,(x-mean)/(stdev));
-                            }
-                        }
+		for(int i=0;i<r.numInstances();i++) {
+			sum = sumSq = mean = stdev = 0;
+			for (int j = 0; j < r.numAttributes(); j++) {
+				if (j != classIndex && !r.attribute(j).isNominal()) {// Ignore all nominal atts
+					x = r.instance(i).value(j);
+					sum += x;
+					sumSq += x * x;
+				}
+			}
+			stdev = (sumSq - sum * sum / size) / size;
+			mean = sum / size;
+			if (Math.abs(stdev) < 0.00000001) {
+				if (throwErrorOnZeroVariance)
+					throw new Exception("Cannot normalise a series with zero variance! Instance number =" + i + " mean =" + mean + " sum = " + sum + " sum sq = " + sumSq + " instance =" + r.instance(i));
+				for (int j = 0; j < r.numAttributes(); j++) {
+					if (j != classIndex && !r.attribute(j).isNominal()) {
+						x = r.instance(i).value(j);
+						r.instance(i).setValue(j, 0);
+					}
+				}
+			}
+			else {
+				stdev = Math.sqrt(stdev);
+				for (int j = 0; j < r.numAttributes(); j++) {
+					if (j != classIndex && !r.attribute(j).isNominal()) {
+						x = r.instance(i).value(j);
+						r.instance(i).setValue(j, (x - mean) / (stdev));
+					}
+				}
+			}
 		}
 		
 	}

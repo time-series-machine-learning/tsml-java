@@ -14,9 +14,8 @@
  */
 package utilities.multivariate_tools;
 
-import utilities.InstanceTools;
 import weka.core.*;
-import tsml.filters.NormalizeCase;
+import tsml.filters.NormaliseCase;
 
 import java.util.ArrayList;
 
@@ -501,7 +500,7 @@ public class MultivariateInstanceTools {
       Instances[] channels = splitMultivariateInstances(data);
             
       for (Instances channel : channels) {
-          NormalizeCase norm = new NormalizeCase();
+          NormaliseCase norm = new NormaliseCase();
           channel = norm.process(channel);
       }
       

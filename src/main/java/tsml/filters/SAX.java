@@ -296,7 +296,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         try {
             Instances test = DatasetLoading.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
             
-            new NormalizeCase().standardNorm(test);
+            new NormaliseCase().standardNorm(test);
             SAX sax = new SAX();
             
             sax.setNumIntervals(8);

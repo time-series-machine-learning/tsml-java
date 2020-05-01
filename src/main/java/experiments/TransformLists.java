@@ -91,10 +91,10 @@ public class TransformLists {
                 transformer = new MFCC();
                 break;
             case "NormalizeAttribute":
-                transformer = new NormalizeAttribute();
+                transformer = new NormaliseAttribute();
                 break;
             case "NormalizeCase":
-                transformer = new NormalizeCase();
+                transformer = new NormaliseCase();
                 break;
             case "PAA":
                 transformer = new PAA();

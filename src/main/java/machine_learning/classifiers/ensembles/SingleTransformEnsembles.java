@@ -16,7 +16,7 @@ package machine_learning.classifiers.ensembles;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import tsml.filters.NormalizeCase;
+import tsml.filters.NormaliseCase;
 import weka.filters.SimpleBatchFilter;
 
 public class SingleTransformEnsembles extends AbstractClassifier{
@@ -36,7 +36,7 @@ public class SingleTransformEnsembles extends AbstractClassifier{
 //Transform            
         switch(t){
             case TIME:
-                transform=new NormalizeCase();
+                transform=new NormaliseCase();
                 break;
                 
 
