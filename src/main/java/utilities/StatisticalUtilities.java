@@ -164,6 +164,26 @@ public class StatisticalUtilities {
         return out;
     }
 
+    public static void normInPlace(double[] r){
+        double sum=0,sumSq=0,mean=0,stdev=0;
+        for(int i=0;i<r.length;i++){
+                sum+=r[i];
+                sumSq+=r[i]*r[i];
+        }
+        stdev=(sumSq-sum*sum/r.length)/r.length;
+        mean=sum/r.length;
+        if(stdev==0){
+            for (int j = 0; j < r.length; ++j)
+                r[j] = 0;
+        }
+        else{
+            stdev=Math.sqrt(stdev);
+            for(int i=0;i<r.length;i++)
+                r[i]=(r[i]-mean)/stdev;
+        }
+    }
+    
+
 
     public static void normalize2D(double[][] data, boolean classVal)
     {

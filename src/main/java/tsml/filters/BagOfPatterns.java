@@ -117,7 +117,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
         for (int windowStart = 0; windowStart+windowSize-1 < series.numAttributes()-1; ++windowStart) { 
             double[] pattern = slidingWindow(series, windowStart);
             
-            pattern = StatisticalUtilities.norm(pattern);
+            StatisticalUtilities.normInPlace(pattern);
             pattern = SAX.convertSequence(pattern, alphabetSize, numIntervals);
             
             if (!(numerosityReduction && identicalPattern(pattern, prevPattern)))
