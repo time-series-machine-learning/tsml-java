@@ -140,7 +140,7 @@ public class StatisticalUtilities {
 
     //Aaron: I'm not confident in the others...I may have written those too... lol
     public static double[] norm(double[] patt){
-        double mean,sum,sumSq,var = 0;
+        double mean =0,sum =0 ,sumSq =0,var = 0;
 		double size = patt.length;
         for(int i=0; i< patt.length; ++i){
             sum = patt[i];
