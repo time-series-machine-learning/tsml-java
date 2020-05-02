@@ -15,6 +15,7 @@
 package tsml.filters;
 
 import experiments.data.DatasetLoading;
+import utilities.NumUtils;
 import utilities.StatisticalUtilities;
 
 import java.util.*;
@@ -116,7 +117,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
         for (int windowStart = 0; windowStart+windowSize-1 < series.numAttributes()-1; ++windowStart) { 
             double[] pattern = slidingWindow(series, windowStart);
             
-            pattern = StatisticalUtilities.normalize(pattern);
+            pattern = StatisticalUtilities.norm(pattern);
             pattern = SAX.convertSequence(pattern, alphabetSize, numIntervals);
             
             if (!(numerosityReduction && identicalPattern(pattern, prevPattern)))
@@ -126,6 +127,8 @@ public class BagOfPatterns extends SimpleBatchFilter {
         
         return buildHistogram(patterns);
     }
+
+
     
     private double[] slidingWindow(Instance series, int windowStart) {
         double[] window = new double[windowSize];

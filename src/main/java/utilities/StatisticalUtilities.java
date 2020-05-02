@@ -102,7 +102,7 @@ public class StatisticalUtilities {
             sumSquaresDiffs += diff * diff;
         }
 
-        return Math.sqrt(sumSquaresDiffs / (values.length - offset));
+        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
 
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
@@ -116,7 +116,7 @@ public class StatisticalUtilities {
             sumSquaresDiffs += diff * diff;
         }
 
-        return Math.sqrt(sumSquaresDiffs / (values.length - offset));
+        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
 
     // normalize the vector to mean 0 and std 1
@@ -137,6 +137,33 @@ public class StatisticalUtilities {
         return StatisticalUtilities.normalize(vector, false);
     }
     
+
+    //Aaron: I'm not confident in the others...I may have written those too... lol
+    public static double[] norm(double[] patt){
+        double mean,sum,sumSq,var = 0;
+		double size = patt.length;
+        for(int i=0; i< patt.length; ++i){
+            sum = patt[i];
+            sumSq = patt[i]*patt[i];
+        }
+
+		var = (sumSq - sum * sum / size) / size;
+        mean = sum / size;
+        
+
+        double[] out = new double[patt.length];
+        if(NumUtils.isNearlyEqual(var, 0.0)){
+            double stdv = Math.sqrt(var);
+            for(int i=0; i<patt.length; ++i)
+                out[i] = (patt[i] - mean) / stdv;
+        }
+        else{
+            for(int i=0; i<patt.length; ++i)
+                out[i] = 0;
+        }
+        return patt;
+    }
+
     public static void normalize2D(double[][] data, boolean classVal)
     {
         int offset = classVal ? 1 : 0;
