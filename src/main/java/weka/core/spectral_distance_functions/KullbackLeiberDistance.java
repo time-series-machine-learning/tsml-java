@@ -87,8 +87,8 @@ public double distance(Instance first, Instance second, double cutOffValue) {
 			  System.exit(0);
 		  }
 			if(!m_DontNormalize){ //If the series have been pre normalised, there is no need to do this. 
-				f = StatisticalUtilities.normalize(f);
-				s = StatisticalUtilities.normalize(s);     
+				f = StatisticalUtilities.norm(f);
+				s = StatisticalUtilities.norm(s);     
 			}
 		  return distance(f,s,cutOffValue);
 	  }
