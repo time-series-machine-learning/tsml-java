@@ -127,7 +127,7 @@ public class StatisticalUtilities {
         double[] normalizedVector = new double[vector.length];
 
         for (int i = 0; i < vector.length; i++) {
-            normalizedVector[i] = NumUtils.isNearlyEqual(std, 0.0) ? (vector[i] - mean) / std : 0;
+            normalizedVector[i] = !NumUtils.isNearlyEqual(std, 0.0) ? (vector[i] - mean) / std : 0;
         }
 
         return normalizedVector;
@@ -141,28 +141,29 @@ public class StatisticalUtilities {
     //Aaron: I'm not confident in the others...I may have written those too... lol
     public static double[] norm(double[] patt){
         double mean =0,sum =0 ,sumSq =0,var = 0;
-		double size = patt.length;
         for(int i=0; i< patt.length; ++i){
             sum = patt[i];
             sumSq = patt[i]*patt[i];
         }
 
+        double size= patt.length;
 		var = (sumSq - sum * sum / size) / size;
         mean = sum / size;
         
-
         double[] out = new double[patt.length];
         if(NumUtils.isNearlyEqual(var, 0.0)){
+            for(int i=0; i<patt.length; ++i)
+                out[i] = 0.0;
+        }
+        else{
             double stdv = Math.sqrt(var);
             for(int i=0; i<patt.length; ++i)
                 out[i] = (patt[i] - mean) / stdv;
         }
-        else{
-            for(int i=0; i<patt.length; ++i)
-                out[i] = 0;
-        }
-        return patt;
+
+        return out;
     }
+
 
     public static void normalize2D(double[][] data, boolean classVal)
     {
