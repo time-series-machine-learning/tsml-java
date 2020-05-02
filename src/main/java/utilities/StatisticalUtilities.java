@@ -102,7 +102,7 @@ public class StatisticalUtilities {
             sumSquaresDiffs += diff * diff;
         }
 
-        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
+        return Math.sqrt(sumSquaresDiffs / (values.length - offset));
     }
 
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
@@ -116,7 +116,7 @@ public class StatisticalUtilities {
             sumSquaresDiffs += diff * diff;
         }
 
-        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
+        return Math.sqrt(sumSquaresDiffs / (values.length - offset));
     }
 
     // normalize the vector to mean 0 and std 1
@@ -127,9 +127,7 @@ public class StatisticalUtilities {
         double[] normalizedVector = new double[vector.length];
 
         for (int i = 0; i < vector.length; i++) {
-            if (std != 0) {
-                normalizedVector[i] = (vector[i] - mean) / std;
-            }
+            normalizedVector[i] = NumUtils.isNearlyEqual(std, 0.0) ? (vector[i] - mean) / std : 0;
         }
 
         return normalizedVector;

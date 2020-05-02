@@ -216,7 +216,7 @@ public class NormalizeCase implements Transformer {
         String dataset_name = "ChinaTown";
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
-        Hilbert hTransform= new Hilbert();
+        NormalizeCase hTransform= new NormalizeCase();
         Instances out_train = hTransform.fitTransform(train);
         Instances out_test = hTransform.transform(test);
         System.out.println(out_train.toString());

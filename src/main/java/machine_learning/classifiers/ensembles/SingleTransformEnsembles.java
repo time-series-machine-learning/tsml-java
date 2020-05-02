@@ -19,7 +19,6 @@ import tsml.transformers.Transformer;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 public class SingleTransformEnsembles extends AbstractClassifier{
 
