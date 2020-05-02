@@ -95,9 +95,9 @@ public class TransformLists {
             case "NormalizeAttribute":
                 transformer = new NormalizeAttribute();
                 break;
-            case "NormalizeCase":
-                transformer = new NormalizeCase();
-                break;
+            //case "NormalizeCase":
+                //transformer = new NormalizeCase();
+                //break;
             case "PAA":
                 transformer = new PAA();
                 break;

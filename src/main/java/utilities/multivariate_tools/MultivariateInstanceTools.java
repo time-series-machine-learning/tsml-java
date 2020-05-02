@@ -16,7 +16,7 @@ package utilities.multivariate_tools;
 
 import utilities.InstanceTools;
 import weka.core.*;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 import java.util.ArrayList;
 
@@ -499,10 +499,12 @@ public class MultivariateInstanceTools {
 
   public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
-            
+      
+      NormalizeCase norm = new NormalizeCase();
+      norm.fit(data); //doesn't matter what we fit on, nothing happens.
+
       for (Instances channel : channels) {
-          NormalizeCase norm = new NormalizeCase();
-          channel = norm.process(channel);
+          channel = norm.transform(channel);
       }
       
       return mergeToMultivariateInstances(channels);

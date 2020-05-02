@@ -22,7 +22,8 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
+import utilities.StatisticalUtilities;
 
 /**
  *
@@ -93,15 +94,8 @@ public double distance(Instance first, Instance second, double cutOffValue) {
 			  System.exit(0);
 		  }
                   if(!m_DontNormalize){ //If the series have been pre normalised, there is no need to do this. 
-                      try{
-                        NormalizeCase.standardNorm(f);
-                        NormalizeCase.standardNorm(s);
-                      }catch(Exception e){
-                          System.out.println(" in log norm distance, Exception ="+e);
-                          e.printStackTrace();
-                          System.exit(0);
-                      }
-                          
+					f = StatisticalUtilities.normalize(f);
+					s = StatisticalUtilities.normalize(s);
                   }
 		  return distance(f,s,cutOffValue);
 	  }

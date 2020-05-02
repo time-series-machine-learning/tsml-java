@@ -5,7 +5,7 @@
 
 package statistics.simulators;
 import tsml.classifiers.distance_based.DTWCV;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 import tsml.filters.FFT;
 import tsml.filters.ARMA;
 import tsml.filters.PACF;
@@ -185,12 +185,9 @@ public class SimulateSpectralData extends DataSimulator{
 
         ds.setLength(arLength);
         Instances data=ds.generateDataSet();
-        NormalizeCase nc= new NormalizeCase();
-        try{
-            data=nc.process(data);
-        }catch(Exception e){
-            System.out.println("Normalisation failed : "+e);
-        }
+        tsml.transformers.NormalizeCase nc= new tsml.transformers.NormalizeCase();
+        data=nc.fitTransform(data);
+
         ArrayList<Model> noise=new ArrayList<>();
         WhiteNoiseModel wm=new WhiteNoiseModel();
         noise.add(wm);
@@ -462,17 +459,13 @@ public class SimulateSpectralData extends DataSimulator{
             paras[i]=generateStationaryParameters(p+i,p+i);
         }
         Instances d=generateARDataSet(paras,seriesLength,nosCases);
+
         if(normalize){
-        try{
-            NormalizeCase norm=new NormalizeCase();
-            norm.setNormType(NormalizeCase.NormType.STD_NORMAL);
-                d=norm.process(d);
-            }catch(Exception e){
-                System.out.println("Exception e"+e);
-                e.printStackTrace();
-                System.exit(0);
-            }
+
+            NormalizeCase norm=new NormalizeCase(NormalizeCase.NormType.STD_NORMAL);
+            d = norm.fitTransform(d);
         }
+
         return d;
     }    
 
@@ -489,15 +482,8 @@ public class SimulateSpectralData extends DataSimulator{
             paras[i]=generateStationaryParameters(minParas,maxParas);
         Instances d=generateARDataSet(paras,seriesLength,nosCases);
         if(normalize){
-        try{
-            NormalizeCase norm=new NormalizeCase();
-            norm.setNormType(NormalizeCase.NormType.STD_NORMAL);
-                d=norm.process(d);
-            }catch(Exception e){
-                System.out.println("Exception e"+e);
-                e.printStackTrace();
-                System.exit(0);
-            }
+            NormalizeCase norm=new NormalizeCase(NormalizeCase.NormType.STD_NORMAL);
+            d = norm.fitTransform(d);
         }
         return d;
     }
@@ -574,15 +560,8 @@ public class SimulateSpectralData extends DataSimulator{
         ds.setCasesPerClass(nosCases);
         Instances d=ds.generateDataSet();
         if(normalize){
-        try{
-            NormalizeCase norm=new NormalizeCase();
-            norm.setNormType(NormalizeCase.NormType.STD_NORMAL);
-            d=norm.process(d);
-            }catch(Exception e){
-                System.out.println("Exception e"+e);
-                e.printStackTrace();
-                System.exit(0);
-            }
+                NormalizeCase norm=new NormalizeCase(NormalizeCase.NormType.STD_NORMAL);
+                d = norm.fitTransform(d);
         }
         return d;
     }
@@ -603,15 +582,9 @@ public class SimulateSpectralData extends DataSimulator{
         of.writeString(d.toString());
         of2.writeString(d2.toString());
 
-        try{
-            NormalizeCase norm=new NormalizeCase();
-            norm.setNormType(NormalizeCase.NormType.STD_NORMAL);
-                d=norm.process(d);
-            }catch(Exception e){
-                System.out.println("Exception e"+e);
-                e.printStackTrace();
-                System.exit(0);
-       }
+        NormalizeCase norm=new NormalizeCase(NormalizeCase.NormType.STD_NORMAL);
+        d = norm.fitTransform(d);
+        
     }
    @Override
     public String getParameters() {

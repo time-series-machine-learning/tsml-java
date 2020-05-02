@@ -11,10 +11,11 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 package tsml.filters;
 
 import experiments.data.DatasetLoading;
+import utilities.StatisticalUtilities;
 
 import java.util.*;
 
@@ -115,14 +116,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
         for (int windowStart = 0; windowStart+windowSize-1 < series.numAttributes()-1; ++windowStart) { 
             double[] pattern = slidingWindow(series, windowStart);
             
-            try {
-                NormalizeCase.standardNorm(pattern);
-            } catch(Exception e) {
-                //throws exception if zero variance
-                //if zero variance, all values in window the same 
-                for (int j = 0; j < pattern.length; ++j)
-                    pattern[j] = 0;
-            }
+            pattern = StatisticalUtilities.normalize(pattern);
             pattern = SAX.convertSequence(pattern, alphabetSize, numIntervals);
             
             if (!(numerosityReduction && identicalPattern(pattern, prevPattern)))

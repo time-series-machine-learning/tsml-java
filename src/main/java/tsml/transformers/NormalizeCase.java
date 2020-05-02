@@ -35,10 +35,13 @@ public class NormalizeCase implements Transformer {
 
 	NormType norm = NormType.STD_NORMAL;
 
-	public void setNormType(NormType n) {
-		norm = n;
+	public NormalizeCase(){
+		this(NormType.STD_NORMAL);
 	}
 
+	public NormalizeCase(NormType type){
+		norm = type;
+	}
 
 	@Override
 	public void fit(Instances data) {

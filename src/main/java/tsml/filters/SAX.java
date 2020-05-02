@@ -11,10 +11,11 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 package tsml.filters;
 
 import experiments.data.DatasetLoading;
+import tsml.transformers.NormalizeCase;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -296,7 +297,8 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         try {
             Instances test = DatasetLoading.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
             
-            new NormalizeCase().standardNorm(test);
+            test =  new NormalizeCase().fitTransform(test);
+           
             SAX sax = new SAX();
             
             sax.setNumIntervals(8);

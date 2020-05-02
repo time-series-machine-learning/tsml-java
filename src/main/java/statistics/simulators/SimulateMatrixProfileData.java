@@ -9,7 +9,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instances;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 /**
  *
@@ -71,8 +71,8 @@ public class SimulateMatrixProfileData {
                 double acc=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
 
                 NormalizeCase nc=new NormalizeCase();
-                split[0]=nc.process(split[0]);
-                split[1]=nc.process(split[1]);
+                split[0]=nc.fitTransform(split[0]);
+                split[1]=nc.transform(split[1]);
                 double acc2=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
                 MatrixProfile mp=new MatrixProfile(29);
                 Instances[] mpSplit=new Instances[2];

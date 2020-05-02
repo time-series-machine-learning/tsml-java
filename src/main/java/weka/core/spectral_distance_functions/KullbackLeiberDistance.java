@@ -20,7 +20,7 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-import tsml.filters.NormalizeCase;
+import utilities.StatisticalUtilities;
 
 /**
  *
@@ -86,17 +86,10 @@ public double distance(Instance first, Instance second, double cutOffValue) {
 			  System.out.println("Error in distance calculation for Likelihhod ratio, unequal lengths, exiting program!");
 			  System.exit(0);
 		  }
-                                    if(!m_DontNormalize){ //If the series have been pre normalised, there is no need to do this. 
-                      try{
-                        NormalizeCase.standardNorm(f);
-                        NormalizeCase.standardNorm(s);
-                      }catch(Exception e){
-                          System.out.println(" in log norm distance, Exception ="+e);
-                          e.printStackTrace();
-                          System.exit(0);
-                      }
-                          
-                  }
+			if(!m_DontNormalize){ //If the series have been pre normalised, there is no need to do this. 
+				f = StatisticalUtilities.normalize(f);
+				s = StatisticalUtilities.normalize(s);     
+			}
 		  return distance(f,s,cutOffValue);
 	  }
 
