@@ -16,11 +16,7 @@ import weka.core.Instances;
  *
  */
 public interface Transformer {
-    /**
-     * Build the transform model from train data, storing the necessary info internally.
-     * @param data
-     */
-    void fit(Instances data);
+
     /**
      * perform the transform process. Some algorithms may require a fit before transform
      * (e.g. shapelets, PCA) others may not (FFT, PAA etc).
@@ -30,13 +26,6 @@ public interface Transformer {
      */
     Instances transform(Instances data);
     Instance transform(Instance inst);
-    /**
-     * fits and transforms, default to calling fit then transform!
-     * @return
-     */
-    default Instances fitTransform(Instances data){
-        fit(data);
-        return transform(data);
-    }
+
     Instances determineOutputFormat(Instances data) throws IllegalArgumentException ;
 }

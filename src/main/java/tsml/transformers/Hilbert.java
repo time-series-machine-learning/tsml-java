@@ -54,12 +54,6 @@ public class Hilbert implements Transformer {
 	}
 
 	@Override
-	public void fit(Instances data) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public Instances transform(Instances data) {
 		//for k=1 to n: f_k = sum_{i=1}^n f_i cos[(k-1)*(\pi/n)*(i-1/2)] 
 		//Assumes the class attribute is in the last one for simplicity            
@@ -92,7 +86,7 @@ public class Hilbert implements Transformer {
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
         Hilbert hTransform= new Hilbert();
-        Instances out_train = hTransform.fitTransform(train);
+        Instances out_train = hTransform.transform(train);
         Instances out_test = hTransform.transform(test);
         System.out.println(out_train.toString());
         System.out.println(out_test.toString());

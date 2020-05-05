@@ -44,11 +44,6 @@ public class NormalizeCase implements Transformer {
 	}
 
 	@Override
-	public void fit(Instances data) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public Instances transform(Instances data) {
 		switch (norm) {
 			case INTERVAL: // Map onto [0,1]
@@ -217,7 +212,7 @@ public class NormalizeCase implements Transformer {
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
         NormalizeCase hTransform= new NormalizeCase();
-        Instances out_train = hTransform.fitTransform(train);
+        Instances out_train = hTransform.transform(train);
         Instances out_test = hTransform.transform(test);
         System.out.println(out_train.toString());
         System.out.println(out_test.toString());

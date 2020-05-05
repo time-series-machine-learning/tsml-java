@@ -59,15 +59,15 @@ public class TransformLists {
             case "ARMA":
                 transformer = new ARMA();
                 break;
-            case "BagOfPatterns":
-                transformer = new BagOfPatterns();
-                break;
-            case "BinaryTransform":
-                transformer = new BinaryTransform();
-                break;
-            case "Clipping":
-                transformer = new Clipping();
-                break;
+            //case "BagOfPatterns":
+            //    transformer = new BagOfPatterns();
+            //    break;
+            //case "BinaryTransform":
+            //    transformer = new BinaryTransform();
+            //    break;
+            //case "Clipping":
+            //    transformer = new Clipping();
+            //    break;
             //case "Cosine":
                 //transformer = new Cosine();
                 //break;
@@ -98,9 +98,9 @@ public class TransformLists {
             //case "NormalizeCase":
                 //transformer = new NormalizeCase();
                 //break;
-            case "PAA":
-                transformer = new PAA();
-                break;
+            //case "PAA":
+            //    transformer = new PAA();
+            //    break;
             case "PACF":
                 transformer = new PACF();
                 break;
@@ -116,9 +116,9 @@ public class TransformLists {
             case "RunLength":
                 transformer = new RunLength();
                 break;
-            case "SAX":
-                transformer = new SAX();
-                break;
+            //case "SAX":
+            //    transformer = new SAX();
+            //    break;
             //case "Sine":
                 //transformer = new Sine();
                 //break;

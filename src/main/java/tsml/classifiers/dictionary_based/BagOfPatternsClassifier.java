@@ -16,6 +16,8 @@ package tsml.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.transformers.BagOfPatterns;
+import tsml.transformers.SAX;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
@@ -23,7 +25,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
-import tsml.filters.SAX;
 import weka.core.TechnicalInformationHandler;
 
 import java.util.List;
@@ -35,7 +36,7 @@ import java.util.List;
  * 
  * @author James
  */
-public class BagOfPatterns extends EnhancedAbstractClassifier implements TechnicalInformationHandler {
+public class BagOfPatternsClassifier extends EnhancedAbstractClassifier implements TechnicalInformationHandler {
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -56,7 +57,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
     public Instances matrix;
     public kNN knn;
     
-    private tsml.filters.BagOfPatterns bop;
+    private BagOfPatterns bop;
     private int PAA_intervalsPerWindow;
     private int SAX_alphabetSize;
     private int windowSize;
@@ -68,7 +69,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
     /**
      * No params given, do parameter search
      */
-    public BagOfPatterns() {
+    public BagOfPatternsClassifier() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         
         this.PAA_intervalsPerWindow = -1;
@@ -83,14 +84,14 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
     /**
      * Params given, use those only
      */
-    public BagOfPatterns(int PAA_intervalsPerWindow, int SAX_alphabetSize, int windowSize) {
+    public BagOfPatternsClassifier(int PAA_intervalsPerWindow, int SAX_alphabetSize, int windowSize) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         
         this.PAA_intervalsPerWindow = PAA_intervalsPerWindow;
         this.SAX_alphabetSize = SAX_alphabetSize;
         this.windowSize = windowSize;
         
-        bop = new tsml.filters.BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+        bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
         knn = new kNN(); //default to 1NN, Euclidean distance
         alphabet = SAX.getAlphabet(SAX_alphabetSize);
         
@@ -144,7 +145,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
         for (int alphaSize = 2; alphaSize <= 8; alphaSize++) {
             for (int winSize = minWinSize; winSize <= maxWinSize; winSize+=winInc) {
                 for (int wordSize = 2; wordSize <= winSize/2; wordSize*=2) { //lin BoP suggestion
-                    BagOfPatterns bop = new BagOfPatterns(wordSize, alphaSize, winSize);
+                    BagOfPatternsClassifier bop = new BagOfPatternsClassifier(wordSize, alphaSize, winSize);
                     double acc = bop.crossValidate(data); //leave-one-out without rebuiding every fold
                     
                     if (acc > bestAcc) {
@@ -190,7 +191,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
             this.SAX_alphabetSize = params[1];
             this.windowSize = params[2];
             
-            bop = new tsml.filters.BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
+            bop = new BagOfPatterns(PAA_intervalsPerWindow, SAX_alphabetSize, windowSize);
             alphabet = SAX.getAlphabet(SAX_alphabetSize);
         }
         
@@ -207,7 +208,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
                     + windowSize + " (series length "+ (data.numAttributes()-1) + ")");
         
         //real work
-        matrix = bop.process(data); //transform
+        matrix = bop.fitTransform(data); //transform
         knn.buildClassifier(matrix); //give to 1nn
         trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
@@ -215,14 +216,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        //convert to BOP form
-        double[] hist = bop.bagToArray(bop.buildBag(instance));
-        
-        //stuff into Instance
-        Instances newInsts = new Instances(matrix, 1); //copy attribute data
-        newInsts.add(new SparseInstance(1.0, hist));
-        
-        return knn.classifyInstance(newInsts.firstInstance());
+        return knn.classifyInstance(bop.transform(instance));
     }
 
     /**
@@ -298,7 +292,7 @@ public class BagOfPatterns extends EnhancedAbstractClassifier implements Technic
 
             System.out.println(train.relationName());
 
-            BagOfPatterns bop = new BagOfPatterns();
+            BagOfPatternsClassifier bop = new BagOfPatternsClassifier();
             System.out.println("Training starting");
             long start = System.nanoTime();
             bop.buildClassifier(train);

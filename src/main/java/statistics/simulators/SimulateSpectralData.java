@@ -186,7 +186,7 @@ public class SimulateSpectralData extends DataSimulator{
         ds.setLength(arLength);
         Instances data=ds.generateDataSet();
         NormalizeCase nc= new NormalizeCase();
-        data=nc.fitTransform(data);
+        data=nc.transform(data);
 
         ArrayList<Model> noise=new ArrayList<>();
         WhiteNoiseModel wm=new WhiteNoiseModel();
@@ -463,7 +463,7 @@ public class SimulateSpectralData extends DataSimulator{
         if(normalize){
 
             NormalizeCase norm=new NormalizeCase();
-            d = norm.fitTransform(d);
+            d = norm.transform(d);
         }
 
         return d;
@@ -483,7 +483,7 @@ public class SimulateSpectralData extends DataSimulator{
         Instances d=generateARDataSet(paras,seriesLength,nosCases);
         if(normalize){
             NormalizeCase norm=new NormalizeCase();
-            d = norm.fitTransform(d);
+            d = norm.transform(d);
         }
         return d;
     }
@@ -561,7 +561,7 @@ public class SimulateSpectralData extends DataSimulator{
         Instances d=ds.generateDataSet();
         if(normalize){
                 NormalizeCase norm=new NormalizeCase();
-                d = norm.fitTransform(d);
+                d = norm.transform(d);
         }
         return d;
     }
@@ -583,7 +583,7 @@ public class SimulateSpectralData extends DataSimulator{
         of2.writeString(d2.toString());
 
         NormalizeCase norm=new NormalizeCase();
-        d = norm.fitTransform(d);
+        d = norm.transform(d);
         
     }
    @Override

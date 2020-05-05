@@ -12,15 +12,17 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters;
+package tsml.transformers;
 
 import experiments.data.DatasetLoading;
 import utilities.NumUtils;
 import utilities.StatisticalUtilities;
 
+import java.io.File;
 import java.util.*;
 
 import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
@@ -39,7 +41,7 @@ import weka.filters.SimpleBatchFilter;
  * 
  * @author James
  */
-public class BagOfPatterns extends SimpleBatchFilter {
+public class BagOfPatterns implements TrainableTransformer {
 
     public TreeSet<String> dictionary;
     
@@ -52,6 +54,8 @@ public class BagOfPatterns extends SimpleBatchFilter {
     //like those in senin implementation later, if wanted
     
     private List<String> alphabet = null;
+
+    private boolean isFit;
     
     private static final long serialVersionUID = 1L;
     public BagOfPatterns() {
@@ -106,7 +110,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
         return hist;
     }
     
-    public HashMap<String, Integer> buildBag(Instance series) throws Exception {
+    public HashMap<String, Integer> buildBag(Instance series) {
        
         LinkedList<double[]> patterns = new LinkedList<>();
         
@@ -148,19 +152,7 @@ public class BagOfPatterns extends SimpleBatchFilter {
         return true;
     }
   
-    @Override
-    protected Instances determineOutputFormat(Instances inputFormat)
-            throws Exception {
-        
-        //Check all attributes are real valued, otherwise throw exception
-        for (int i = 0; i < inputFormat.numAttributes(); i++) {
-            if (inputFormat.classIndex() != i) {
-                if (!inputFormat.attribute(i).isNumeric()) {
-                    throw new Exception("Non numeric attribute not allowed for BoP conversion");
-                }
-            }
-        }
-
+    public Instances determineOutputFormat(Instances inputFormat){
         ArrayList<Attribute> attributes = new ArrayList<>();
         for (String word : dictionary) 
             attributes.add(new Attribute(word));
@@ -183,39 +175,50 @@ public class BagOfPatterns extends SimpleBatchFilter {
         return result;
     }
 
+    
+    //TODO: Review, as we build bag twice on train. *Could* override fittransform to avoid too much work.
     @Override
-    public String globalInfo() {
-        return null;
+    public void fit(Instances data) {
+        dictionary = new TreeSet<>();
+        for(Instance inst: data){
+            HashMap<String, Integer>  bag = buildBag(inst);
+            dictionary.addAll(bag.keySet());
+        }
+        isFit = true;
     }
 
     @Override
-    public Instances process(final Instances input) 
-            throws Exception {
-        
-        ArrayList< HashMap<String, Integer> > bags = new ArrayList<>(input.numInstances());
-        dictionary = new TreeSet<>();
-        
-        for (int i = 0; i < input.numInstances(); i++) {
-            bags.add(buildBag(input.get(i)));
-            dictionary.addAll(bags.get(i).keySet());
+    public boolean isFit() {
+        return isFit;
+    }
+
+    @Override
+    public Instances transform(Instances data) {
+        if(!isFit()){
+            System.out.println("Not Fit");
         }
-        
-        Instances output = determineOutputFormat(input); //now that dictionary is known, set up output
-        
-        Iterator<HashMap<String, Integer> > it = bags.iterator();
-        int i = 0;
-        while (it.hasNext()) {
-            double[] bag = bagToArray(it.next());
-            
-            it.remove(); //freeing space asap, now that data is in array form as needed
-            
-            output.add(new SparseInstance(1.0, bag));
-            output.get(i).setClassValue(input.get(i).classValue());
-            
-            ++i;
-        }
-        
+
+
+        Instances output = determineOutputFormat(data); //now that dictionary is known, set up output
+
+        for(Instance inst : data)
+            output.add(transform(inst));
+                
         return output;
+    }
+
+    @Override
+    public Instance transform(Instance inst) {
+        double[]  bag = bagToArray(buildBag(inst));
+        int size = bag.length + (inst.classIndex() >= 0 ? 1 : 0);
+        Instance out = new DenseInstance(size);
+        for (int j = 0; j < bag.length; j++)
+            out.setValue(j, bag[j]);
+            
+        if (inst.classIndex() >= 0)
+            out.setValue(out.numAttributes()-1, inst.classValue());
+
+        return out;
     }
 
     public double[] bagToArray(HashMap<String, Integer> bag) {
@@ -232,27 +235,19 @@ public class BagOfPatterns extends SimpleBatchFilter {
         return res;
     }
 
-    public String getRevision() {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     public static void main(String[] args) {
-        System.out.println("BoPtest\n\n");
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        String dataset_name = "Car";
+    
+        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+        BagOfPatterns transform= new BagOfPatterns();
+        Instances out_train = transform.fitTransform(train);
+        Instances out_test = transform.transform(test);
+        System.out.println(out_train.toString());
+        System.out.println(out_test.toString());
 
-        try {
-            Instances test = DatasetLoading.loadDataNullable("C:\\tempbakeoff\\TSC Problems\\Car\\Car_TRAIN.arff");
-            test.deleteAttributeAt(0); //just name of bottle
-          
-            BagOfPatterns bop = new BagOfPatterns(8,4,50);
-            bop.useRealValuedAttributes(false);
-            Instances result = bop.process(test);
-            
-            System.out.println(result);
-        }
-        catch (Exception e) {
-            System.out.println(e);
-            e.printStackTrace();
-        }
     }
+
 }

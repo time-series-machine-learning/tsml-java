@@ -71,7 +71,7 @@ public class SimulateMatrixProfileData {
                 double acc=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
 
                 NormalizeCase nc=new NormalizeCase();
-                split[0]=nc.fitTransform(split[0]);
+                split[0]=nc.transform(split[0]);
                 split[1]=nc.transform(split[1]);
                 double acc2=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
                 MatrixProfile mp=new MatrixProfile(29);

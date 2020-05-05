@@ -149,7 +149,7 @@ public class DataSimulator {
         data[1]=generateDataSet();
  //Normalise
         NormalizeCase nc= new NormalizeCase();
-        data[0]=nc.fitTransform(data[0]);
+        data[0]=nc.transform(data[0]);
         data[1]=nc.transform(data[1]);
             return data;
         

@@ -270,7 +270,7 @@ public class DTD_C extends DD_DTW{
                         bf=new Hilbert();
                     break;
             } 
-            temp = bf.fitTransform(temp);
+            temp = bf.transform(temp);
     
 
             double dist = dtw.distance(first, second);
@@ -302,7 +302,7 @@ public class DTD_C extends DD_DTW{
             
             // DTW on only the transformed data first
             for(Transformer transform:transforms){
-                transTrain = transform.fitTransform(train);
+                transTrain = transform.transform(train);
                 transTest = transform.transform(test);
                 dtw = new DTW_DistanceBasic();
                 knn = new kNN();

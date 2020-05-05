@@ -28,9 +28,6 @@ import weka.core.*;
 public class Cosine implements Transformer {
 
     @Override
-    public void fit(Instances data) {}
-
-    @Override
     public Instances transform(Instances data) {
         //for k=1 to n: f_k = sum_{i=1}^n f_i cos[(k-1)*(\pi/n)*(i-1/2)] 
     //Assumes the class attribute is in the last one for simplicity            
@@ -102,7 +99,7 @@ public class Cosine implements Transformer {
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
         Cosine cosTransform= new Cosine();
-        Instances out_train = cosTransform.fitTransform(train);
+        Instances out_train = cosTransform.transform(train);
         Instances out_test = cosTransform.transform(test);
         System.out.println(out_train.toString());
         System.out.println(out_test.toString());

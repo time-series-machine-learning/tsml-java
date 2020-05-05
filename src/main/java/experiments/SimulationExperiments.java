@@ -210,7 +210,7 @@ public class SimulationExperiments {
                 // ((ShapeletTransformClassifier)c).setOneMinuteLimit();//DEBUG
                 break;
             case "BOP":
-                c = new BagOfPatterns();
+                c = new BagOfPatternsClassifier();
                 break;
             case "BOSS":
                 c = new BOSS();
@@ -369,7 +369,7 @@ public class SimulationExperiments {
             else if (normalize) {
 
                 NormalizeCase nc = new NormalizeCase();
-                split[0] = nc.fitTransform(split[0]);
+                split[0] = nc.transform(split[0]);
                 split[1] = nc.transform(split[1]);
             }
 
@@ -563,7 +563,7 @@ public class SimulationExperiments {
                         c=new LearnShapelets();
                         break;
                     case "BOP":
-                        c=new BagOfPatterns();
+                        c=new BagOfPatternsClassifier();
                         break;
                     case "BOSS":
                         c=new BOSS();

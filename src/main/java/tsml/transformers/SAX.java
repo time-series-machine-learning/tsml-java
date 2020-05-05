@@ -12,10 +12,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters;
+package tsml.transformers;
 
 import experiments.data.DatasetLoading;
-import tsml.transformers.NormalizeCase;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -38,7 +37,7 @@ import java.util.List;
  *
  * @author James
  */
-public class SAX extends SimpleBatchFilter implements TechnicalInformationHandler {
+public class SAX implements Transformer,TechnicalInformationHandler {
 
     private int numIntervals = 8;
     private int alphabetSize = 4;
@@ -78,6 +77,16 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
     }
     
     public void setAlphabetSize(int alphasize) {
+
+        if(alphasize > 10 ){
+            alphasize = 10;
+            System.out.println("Alpha size too large, setting to 10");
+        }
+        else if(alphasize < 2){
+            alphasize = 2;
+            System.out.println("Alpha size too small, setting to 2");
+        }
+
         alphabetSize = alphasize;
     }
     
@@ -96,9 +105,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
     //columns up to a=10 stored
     //lit. suggests that a = 3 or 4 is bet in almost all cases, up to 6 or 7 at most
     //for specific datasets
-    public double[] generateBreakpoints(int alphabetSize) 
-            throws Exception {
-        
+    public double[] generateBreakpoints(int alphabetSize) {
     	double maxVal = Double.MAX_VALUE;
     	double[] breakpoints = null;
         
@@ -112,28 +119,13 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
             case 8: {  breakpoints = new double[]{-1.15, -0.67, -0.32, 0, 0.32, 0.67, 1.15, maxVal}; break; }
             case 9: {  breakpoints = new double[]{-1.22, -0.76, -0.43, -0.14, 0.14, 0.43, 0.76, 1.22, maxVal}; break; }
             case 10: { breakpoints = new double[]{-1.28, -0.84, -0.52, -0.25, 0.0, 0.25, 0.52, 0.84, 1.28, maxVal}; break; }
-            
-            default: { 
-                throw new Exception("No breakpoints stored for alphabet size " + alphabetSize); 
-            }
     	}
     	
     	return breakpoints;
     }
 
     @Override
-    protected Instances determineOutputFormat(Instances inputFormat)
-            throws Exception {
-        
-        //Check all attributes are real valued, otherwise throw exception
-        for (int i = 0; i < inputFormat.numAttributes(); i++) {
-            if (inputFormat.classIndex() != i) {
-                if (!inputFormat.attribute(i).isNumeric()) {
-                    throw new Exception("Non numeric attribute not allowed for SAX conversion");
-                }
-            }
-        }
-        
+    public Instances determineOutputFormat(Instances inputFormat){
         ArrayList<Attribute> attributes = new ArrayList<>();
         
         //If the alphabet is to be considered as discrete values (i.e non real), 
@@ -173,65 +165,59 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         return result;
     }
 
+    
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Instances process(Instances input) 
-            throws Exception {
-        
-        inputFormat = new Instances(input, 0);
-        Instances inputCopy = new Instances(input);
-        Instances output = determineOutputFormat(input);
+    public Instances transform(Instances data) {
+        Instances output = determineOutputFormat(data);
         
         //Convert input to PAA format
         PAA paa = new PAA();
         paa.setNumIntervals(numIntervals);
-        inputCopy = paa.process(inputCopy);
-        
         //Now convert PAA -> SAX
-        for (int i = 0; i < inputCopy.numInstances(); i++) {
-            double[] data = inputCopy.instance(i).toDoubleArray();
-            
-            //remove class attribute if needed
-            double[] temp;
-            int c = inputCopy.classIndex();
-            if(c >= 0) {
-                temp=new double[data.length-1];
-                System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
-                data=temp;
-            }
-            
-            convertSequence(data);
-            
-            //Now in SAX form, extract out the terms and set the attributes of new instance
-            Instance newInstance;
-            if (input.classIndex() >= 0)
-                newInstance = new DenseInstance(numIntervals + 1);
-            else
-                newInstance = new DenseInstance(numIntervals);
-
-            for (int j = 0; j < numIntervals; j++)
-                newInstance.setValue(j, data[j]);
-                
-            if (inputCopy.classIndex() >= 0)
-                newInstance.setValue(output.classIndex(), inputCopy.instance(i).classValue());
-
-            output.add(newInstance);
+        for(Instance inst : data){
+            //lower mem to do it series at a time.
+            output.add(transform(paa.transform(inst)));
         }
         
         return output;
     }
+
+
+    @Override
+    public Instance transform(Instance inst) {
+        double[] data = inst.toDoubleArray();
+            
+        //remove class attribute if needed
+        double[] temp;
+        int c = inst.classIndex();
+        if(c >= 0) {
+            temp=new double[data.length-1];
+            System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
+            data=temp;
+        }
+        
+        convertSequence(data);
+        
+        //Now in SAX form, extract out the terms and set the attributes of new instance
+        Instance newInstance = new DenseInstance(numIntervals + inst.classIndex() >= 0 ? 1 : 0);
+
+        for (int j = 0; j < numIntervals; j++)
+            newInstance.setValue(j, data[j]);
+            
+        if (inst.classIndex() >= 0)
+            newInstance.setValue(inst.classIndex(), inst.classValue());
+
+        return newInstance;
+    }
+
+
     
     /**
      * converts a double[] of 'paa-ed' data to sax letters
      * @param data
      * @throws Exception 
      */
-    public void convertSequence(double[] data) 
-            throws Exception {
+    public void convertSequence(double[] data)  {
         double[] gaussianBreakpoints = generateBreakpoints(alphabetSize);
         
         for (int i = 0; i < numIntervals; ++i) {
@@ -251,7 +237,7 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
      * @param numIntervals size of resulting word
      * @throws Exception 
      */
-    public static double[] convertSequence(double[] data, int alphabetSize, int numIntervals) throws Exception {
+    public static double[] convertSequence(double[] data, int alphabetSize, int numIntervals) {
         SAX sax = new SAX();
         sax.setNumIntervals(numIntervals);
         sax.setAlphabetSize(alphabetSize);     
@@ -262,30 +248,6 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
         
         return d;
     }
-    
-    /**
-     * Will perform a SAX transformation on a single data series passed as a double[], input format
-     * must already be known. 
-     * 
-     * Generally to be used 
-     * in the SAX_1NN classifier (essentially a wrapper classifier that just feeds SAX-filtered
-     * data to a 1NN classifier) to filter individual instances during testing
-     * 
-     * Instance objects need the header info as well as the basic data
-     * 
-     * @param alphabetSize size of SAX alphabet
-     * @param numIntervals size of resulting word
-     * @throws Exception 
-     */
-    public Instance convertInstance(Instance inst, int alphabetSize, int numIntervals) throws Exception {
-
-        Instances newInsts = new Instances(inputFormat, 1);
-        newInsts.add(inst);
-        
-        newInsts = process(newInsts);
-        
-        return newInsts.firstInstance();
-    }
 
     public String getRevision() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -294,26 +256,20 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
     public static void main(String[] args) {
         System.out.println("SAXtest\n\n");
         
-        try {
-            Instances test = DatasetLoading.loadDataThrowable("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
-            
-            test =  new NormalizeCase().fitTransform(test);
-           
-            SAX sax = new SAX();
-            
-            sax.setNumIntervals(8);
-            sax.setAlphabetSize(4);     
-            sax.useRealValuedAttributes(false);
-            Instances result = sax.process(test);
-            
-            System.out.println(test);
-            System.out.println("\n\n\nResults:\n\n");
-            System.out.println(result);
-        }
-        catch (Exception e) {
-            System.out.println(e);
-            e.printStackTrace();
-        }
+        Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
+        
+        test =  new NormalizeCase().transform(test);
+        
+        SAX sax = new SAX();
+        
+        sax.setNumIntervals(8);
+        sax.setAlphabetSize(4);     
+        sax.useRealValuedAttributes(false);
+        Instances result = sax.transform(test);
+        
+        System.out.println(test);
+        System.out.println("\n\n\nResults:\n\n");
+        System.out.println(result);
     }
 
     @Override
@@ -330,7 +286,6 @@ public class SAX extends SimpleBatchFilter implements TechnicalInformationHandle
 
         return result;
     }
-
 
     
 }

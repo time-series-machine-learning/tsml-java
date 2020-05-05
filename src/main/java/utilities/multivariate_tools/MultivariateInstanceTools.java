@@ -501,8 +501,6 @@ public class MultivariateInstanceTools {
       Instances[] channels = splitMultivariateInstances(data);
       
       NormalizeCase norm = new NormalizeCase();
-      norm.fit(data); //doesn't matter what we fit on, nothing happens.
-
       for (Instances channel : channels) {
           channel = norm.transform(channel);
       }

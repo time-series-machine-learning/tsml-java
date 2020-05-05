@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-package tsml.filters;
+package tsml.transformers;
 
 import java.util.ArrayList;
 import weka.core.Attribute;
@@ -27,7 +27,7 @@ import weka.filters.SimpleBatchFilter;
  *
  * @author James
  */
-public class PAA extends SimpleBatchFilter {
+public class PAA implements Transformer {
 
     private int numIntervals = 8;
     
@@ -42,19 +42,7 @@ public class PAA extends SimpleBatchFilter {
     }
 
 
-    @Override
-    protected Instances determineOutputFormat(Instances inputFormat)
-            throws Exception {
-        
-        //Check all attributes are real valued, otherwise throw exception
-        for (int i = 0; i < inputFormat.numAttributes(); i++) {
-            if (inputFormat.classIndex() != i) {
-                if (!inputFormat.attribute(i).isNumeric()) {
-                    throw new Exception("Non numeric attribute not allowed for PAA");
-                }
-            }
-        }
-        
+    public Instances determineOutputFormat(Instances inputFormat) {
         //Set up instances size and format. 
         ArrayList<Attribute> attributes = new ArrayList<>();
         
@@ -80,56 +68,55 @@ public class PAA extends SimpleBatchFilter {
     }
 
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    public Instances transform(Instances data) {
+        Instances output = determineOutputFormat(data);
 
-    @Override
-    public Instances process(Instances input) 
-            throws Exception {
-        Instances output = determineOutputFormat(input);
-
-        for (int i = 0; i < input.numInstances(); i++) {
-            
-            double[] data = input.instance(i).toDoubleArray();
-            
-            //remove class attribute if needed
-            double[] temp;
-            int c = input.classIndex();
-            if(c >= 0) {
-                temp=new double[data.length-1];
-                System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
-                data=temp;
-            }
-            
-            double[] intervals = convertInstance(data);
-            
-            //Now in PAA form, extract out the terms and set the attributes of new instance
-            Instance newInstance;
-            if (input.classIndex() >= 0)
-                newInstance = new DenseInstance(numIntervals + 1);
-            else
-                newInstance = new DenseInstance(numIntervals);
-
-            for (int j = 0; j < numIntervals; j++)
-                newInstance.setValue(j, intervals[j]);
-                
-            if (input.classIndex() >= 0)
-                newInstance.setValue(output.classIndex(), input.instance(i).classValue());
-
-            output.add(newInstance);
+        for (Instance inst: data) {
+            output.add(transform(inst));
         }
         
         return output;
     }
+
+    @Override
+    public Instance transform(Instance inst) {
+        double[] data = inst.toDoubleArray();
+            
+        //remove class attribute if needed
+        double[] temp;
+        int c = inst.classIndex();
+        if(c >= 0) {
+            temp=new double[data.length-1];
+            System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
+            data=temp;
+        }
+        
+        double[] intervals = convertInstance(data);
+        
+        //Now in PAA form, extract out the terms and set the attributes of new instance
+        Instance newInstance;
+        if (inst.classIndex() >= 0)
+            newInstance = new DenseInstance(numIntervals + 1);
+        else
+            newInstance = new DenseInstance(numIntervals);
+
+        for (int j = 0; j < numIntervals; j++)
+            newInstance.setValue(j, intervals[j]);
+            
+        if (inst.classIndex() >= 0)
+            newInstance.setValue(inst.classIndex(), inst.classValue());
+
+        return newInstance;
+    }
     
     private double[] convertInstance(double[] data) 
-            throws Exception {
+            /*throws Exception {
         
         if (numIntervals > data.length) 
             throw new Exception(
                     "Error converting to PAA, number of intervals (" + numIntervals + ") greater"
-                    + " than series length (" + data.length + ")");
+                    + " than series length (" + data.length + ")");*/
+        {
         
         double[] intervals = new double[numIntervals];
 
@@ -173,7 +160,7 @@ public class PAA extends SimpleBatchFilter {
         return intervals;
     }
     
-    public static double[] convertInstance(double[] data, int numIntervals) throws Exception {
+    public static double[] convertInstance(double[] data, int numIntervals) {
         PAA paa = new PAA();
         paa.setNumIntervals(numIntervals);
         
@@ -203,36 +190,35 @@ public class PAA extends SimpleBatchFilter {
 
         
         // Jason's Test
-        try{
-            double[] wavey = {0.841470985,0.948984619,0.997494987,0.983985947,0.909297427,0.778073197,0.598472144,0.381660992,0.141120008,-0.108195135,-0.350783228,-0.571561319,-0.756802495,-0.894989358,-0.977530118,-0.999292789,-0.958924275,-0.858934493,-0.705540326,-0.508279077,-0.279415498};
-            
-            PAA paa = new PAA();
-            paa.setNumIntervals(10);
-            
-            // convert into Instances format            
-            ArrayList<Attribute> atts = new ArrayList<>();
-            DenseInstance ins = new DenseInstance(wavey.length+1);
-            for(int i = 0; i < wavey.length; i++){
-                ins.setValue(i, wavey[i]);
-                atts.add(new Attribute("att"+i));
-            }
-            atts.add(new Attribute("classVal"));
-            ins.setValue(wavey.length, 1);
 
-            Instances instances = new Instances("blah", atts, 1);
-            instances.setClassIndex(instances.numAttributes()-1);
-            instances.add(ins);
-                        
-            Instances out = paa.process(instances);
-
-            for(int i = 0; i < out.numAttributes()-1;i++){
-                System.out.print(out.instance(0).value(i)+",");
-            }
-            System.out.println();
-        }catch(Exception e){
-            e.printStackTrace();
+        double[] wavey = {0.841470985,0.948984619,0.997494987,0.983985947,0.909297427,0.778073197,0.598472144,0.381660992,0.141120008,-0.108195135,-0.350783228,-0.571561319,-0.756802495,-0.894989358,-0.977530118,-0.999292789,-0.958924275,-0.858934493,-0.705540326,-0.508279077,-0.279415498};
+        
+        PAA paa = new PAA();
+        paa.setNumIntervals(10);
+        
+        // convert into Instances format            
+        ArrayList<Attribute> atts = new ArrayList<>();
+        DenseInstance ins = new DenseInstance(wavey.length+1);
+        for(int i = 0; i < wavey.length; i++){
+            ins.setValue(i, wavey[i]);
+            atts.add(new Attribute("att"+i));
         }
+        atts.add(new Attribute("classVal"));
+        ins.setValue(wavey.length, 1);
+
+        Instances instances = new Instances("blah", atts, 1);
+        instances.setClassIndex(instances.numAttributes()-1);
+        instances.add(ins);
+                    
+        Instances out = paa.transform(instances);
+
+        for(int i = 0; i < out.numAttributes()-1;i++){
+            System.out.print(out.instance(0).value(i)+",");
+        }
+        System.out.println();
+
 
     }
+
 
 }
