@@ -110,8 +110,8 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
     }
     
     public ClassifierResults[] getFoldResults(int classifierIndex) {
-        if (resultsPerFold != null)
-            return resultsPerFold[0];
+        if (resultsPerFold != null && resultsPerFold.length > classifierIndex)
+            return resultsPerFold[classifierIndex];
         else
             return null;
     }

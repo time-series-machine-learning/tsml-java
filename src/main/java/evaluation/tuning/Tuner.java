@@ -45,9 +45,9 @@ public class Tuner
         implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
-    private ParameterSearcher searcher = new GridSearcher();
-    private Evaluator evaluator = new CrossValidationEvaluator();
-    private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
+    private ParameterSearcher searcher;                      //default = new GridSearcher();
+    private Evaluator evaluator;                             //default = new CrossValidationEvaluator();
+    private Function<ClassifierResults, Double> evalMetric;  //default = ClassifierResults.GETTER_Accuracy;
     
     private ParameterResults bestParaSetAndResults = null;
     
@@ -95,6 +95,14 @@ public class Tuner
     boolean cloneTrainSetForEachParameterEval = false;
 
     public Tuner() { 
+        this(new CrossValidationEvaluator());
+    }
+
+    public Tuner(Evaluator evaluator) {
+        this.searcher = new GridSearcher();
+        this.evaluator = evaluator;
+        this.evalMetric = ClassifierResults.GETTER_Accuracy;
+
         setSeed(0);
     }
 
@@ -469,8 +477,8 @@ public class Tuner
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.parameterSavingPath = path;
             this.saveParameters = true;

@@ -23,9 +23,9 @@ import java.util.Arrays;
  * 
  * Currently only supports alphabet size <= 4, wordlength <= 16 
  * 
- * As of 2016/03/05 only incorporated into SFA/BOSS, TODO implement into SAX
+ * Used by TDE, stripped down version of original BitWord class using a long to store the word.
  * 
- * @author James Large
+ * @author James Large, updated by Matthew Middlehurst
  */
 public class BitWordLong implements Comparable<BitWordLong>, Serializable {
 

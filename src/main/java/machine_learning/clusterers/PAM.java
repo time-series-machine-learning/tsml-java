@@ -335,7 +335,7 @@ public class PAM extends AbstractVectorClusterer{
         }
     }
     
-    //Select new medoids bu finding the point with the lowest distnce sum for
+    //Select new medoids by finding the point with the lowest distance sum for
     //each cluster.
     private boolean selectMedoids(){
         boolean changedMedoid = false;
@@ -378,7 +378,7 @@ public class PAM extends AbstractVectorClusterer{
     //"Selecting variables for k-means cluster analysis by using a genetic algorithm that optimises the silhouettes." 
     //Analytica Chimica Acta 515.1 (2004): 87-100.
     
-    //Method of finding the best value for k based on the silhouette method 
+    //Method of finding the best value for k based on the silhouette method
     //above.
     private void findBestK(Instances data) throws Exception{
         int maxK = 10;

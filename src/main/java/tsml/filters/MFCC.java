@@ -1,4 +1,4 @@
-package tsml.filters;;
+package tsml.filters;
 import org.apache.commons.math3.transform.DctNormalization;
 import org.apache.commons.math3.transform.FastCosineTransformer;
 import org.apache.commons.math3.transform.TransformType;
@@ -30,6 +30,7 @@ public class MFCC extends SimpleBatchFilter{
     int lowerFreq = 0;
     int upperFreq = 2000;
 
+    public int interval = 0;
 
     public MFCC(){
         spectrogram = new Spectrogram(windowLength, overlapLength, nfft);
@@ -46,7 +47,7 @@ public class MFCC extends SimpleBatchFilter{
         Instances instances = null;
         FastVector attributes = new FastVector(melFreqCepsCo.length);
         for (int i = 0; i < (melFreqCepsCo.length); i++) {
-            attributes.addElement(new Attribute("MFCC_att" + String.valueOf(i + 1)));
+            attributes.addElement(new Attribute("MFCC_att" + interval + String.valueOf(i + 1)));
         }
 
         FastVector classValues = new FastVector(inputFormat.classAttribute().numValues());
@@ -142,7 +143,7 @@ public class MFCC extends SimpleBatchFilter{
 
             MFCCInstances = determineOutputFormat(instances.get(i).dataset());
             double[] temp;
-            for (int j = 0; j < numFilterBanks; j++) {
+            for (int j = 0; j < Math.floor(numFilterBanks/2); j++) {
                 temp = new double[melFreqCepsCo.length + 1];
                 for (int k = 0; k < melFreqCepsCo.length; k++) {
                     temp[k] = (-1) * melFreqCepsCo[k][j];
@@ -153,7 +154,17 @@ public class MFCC extends SimpleBatchFilter{
 
             MFCCs[i] = MFCCInstances;
         }
-        return MultivariateInstanceTools.mergeToMultivariateInstances(MFCCs);
+
+        //Rearrange data
+        Instances[] temp = new Instances[MFCCs[0].size()];
+        for (int i = 0; i < temp.length; i++) {
+            temp[i] = new Instances(MFCCs[0], 0);
+            for (int j = 0; j < MFCCs.length; j++) {
+                temp[i].add(MFCCs[j].get(i));
+            }
+        }
+
+        return MultivariateInstanceTools.concatinateInstances(temp);
     }
 
     private double[][] createFilterBanks(){
@@ -190,6 +201,9 @@ public class MFCC extends SimpleBatchFilter{
                     filterBank[i][j] = 0;
                 }
                 if(j < filterPeaks[i] || (j == 0 && filterPeaks[i] == 0)){
+                    filterBank[i][j] = 0;
+                }
+                if(Double.isNaN(filterBank[i][j])){
                     filterBank[i][j] = 0;
                 }
             }

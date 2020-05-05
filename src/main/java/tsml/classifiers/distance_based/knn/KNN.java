@@ -99,8 +99,8 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     @Override
-    public boolean setSavePath(String path) {
-        boolean result = Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean result = Checkpointable.super.createDirectories(path);
         if(result) {
             savePath = StrUtils.asDirPath(path);
         } else {

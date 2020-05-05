@@ -386,8 +386,8 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 /**
  * Checkpoint methods
  */
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.checkpointFullPath=path;
         }

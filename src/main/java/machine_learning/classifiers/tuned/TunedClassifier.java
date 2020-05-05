@@ -14,6 +14,8 @@
  */
 package machine_learning.classifiers.tuned;
 
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.InternalEstimateEvaluator;
 import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
@@ -80,14 +82,25 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     boolean PS_parameterSplitting = false; //ParameterSplittable
     int PS_paraSetID = -1; //ParameterSplittable
     ////////// end interface variables
-    
-    
+
+    /**
+     * Creates an empty TunedClassifier. Tuner has a default value, however at minimum the classifier and parameter space
+     * shall need to be provided later via set...() methods
+     */
     public TunedClassifier() { 
-        this(null, null, new Tuner()); 
+        this(null, null, new Tuner());
     }
-    
-    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) { 
-        this(classifier, space, new Tuner());
+
+    /**
+     * If the classifier is able to estimate its own performance while building, the tuner shall default to using that
+     * as the evaluation method. Otherwise defaults to an external 10fold cv
+     */
+    public TunedClassifier(AbstractClassifier classifier, ParameterSpace space) {
+        this(classifier, space,
+            EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ?
+                    new Tuner(new InternalEstimateEvaluator()) :
+                    new Tuner(new CrossValidationEvaluator())
+            );
     }
     
     public TunedClassifier(AbstractClassifier classifier, ParameterSpace space, Tuner tuner) { 
@@ -96,7 +109,21 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.space = space;
         this.tuner = tuner;
     }
-    
+
+    /**
+     * PRE: Classifier must be set, if not, noothing happens
+     * @return true if successful in turning on internal estimate
+     */
+
+    public boolean useInternalEstimates(){
+            if(classifier==null)
+                return false;
+           if(EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier) ){
+               tuner=new Tuner(new InternalEstimateEvaluator());
+               return true;
+           }
+           return false;
+    }
     public void setSeed(int seed) { 
         super.setSeed(seed);
         tuner.setSeed(seed);
@@ -209,6 +236,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         bestOptions = Arrays.copyOf(options, options.length);
         classifier.setOptions(options);
         classifier.buildClassifier(data);
+        trainResults.setParas(getParameters());
     }
  
     @Override
@@ -287,11 +315,14 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     
     
-    // METHODS FOR:    SaveParameterInfo,TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
+    // METHODS FOR:    TrainAccuracyEstimate,SaveEachParameter,ParameterSplittable,CheckpointClassifier,TrainTimeContractClassifier
     
-    @Override //SaveParameterInfo
+    @Override
     public String getParameters() {
-        return getParas(); 
+        String str=classifier.getClass().getSimpleName();
+        if(classifier instanceof EnhancedAbstractClassifier)
+            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return str;
     }
 
     @Override //SaveEachParameter
@@ -318,14 +349,14 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.PS_parameterSplitting = true;
     }
 
-    @Override //ParameterSplittable
-    public String getParas() {
-        return bestParas.toClassifierResultsParaLine(true);
-    }
+ //   @Override //ParameterSplittable
+ //   public String getParas() {
+ //       return bestParas.toClassifierResultsParaLine(true);
+ //   }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.SEP_CP_PS_paraWritePath = path;
             this.SEP_CP_savingAllParameters = true;

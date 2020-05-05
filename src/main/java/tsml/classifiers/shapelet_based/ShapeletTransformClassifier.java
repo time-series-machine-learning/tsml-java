@@ -19,20 +19,21 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
-import tsml.transformers.PCA;
+import org.apache.commons.lang3.NotImplementedException;
+import tsml.classifiers.Tuneable;
 import utilities.InstanceTools;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.Run;
+import weka.core.*;
 import weka.classifiers.Classifier;
-import weka.core.TechnicalInformation;
+import tsml.transformers.PCA;
 import tsml.transformers.ShapeletTransform;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions.ShapeletTransformOptions;
@@ -48,8 +49,6 @@ import fileIO.FullAccessOutFile;
 import fileIO.OutFile;
 
 
-
-
 /**
  * ShapeletTransformClassifier
  * Builds a time series classifier by first extracting the best numShapeletsInTransform
@@ -62,9 +61,12 @@ import fileIO.OutFile;
  *
  * 
  */
-public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
+public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
+        implements TrainTimeContractable, Tuneable {
     //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;    //Configurable ST
+   //Default to one hour
+
     private Instances shapeletData;         //Transformed shapelets header info stored here
     private Classifier classifier;          //Final classifier built on transformed shapelet data
 
@@ -76,11 +78,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     /** Redundant features in the shapelet space are removed prior to building the classifier **/
     int[] redundantFeatures;
 
-    /** PCA Option: not currently implemented, as it has not been debugged
+    // PCA Option: not currently implemented, as it has not been debugged
     private boolean performPCA=false;
     private PCA pca;
     private int numPCAFeatures=100;
-    */
+    
 
 
 
@@ -89,16 +91,25 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
      * If this is zero and no contract time is set, a full evaluation is done.
       */
-    private long contractTime = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
-    private long transformContractTime = 0;//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
-    private boolean contractClassifier=true;
+    private boolean trainTimeContract =false;
+    private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
+    private int contractHours=1;
+    private long transformContractTime = TimeUnit.NANOSECONDS.convert(contractHours, TimeUnit.HOURS);//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
     private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
 
+/**** Shapelet Transform Information *************/
     private long numShapeletsInProblem = 0; //Number of shapelets in problem if we do a full enumeration
     private double singleShapeletTime=0;    //Estimate of the time to evaluate a single shapelet
     private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
     private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
     private long transformBuildTime=0;
+    public void setTransformTime(long t){
+        transformContractTime=t;
+    }
+    public void setTransformTimeHours(long t){
+        contractHours=(int)t;
+        transformContractTime=TimeUnit.NANOSECONDS.convert(t, TimeUnit.HOURS);
+    }
 
 /************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
 //Check pointing is not fully debugged
@@ -115,25 +126,37 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         this.pruneMatchingShapelets = pruneMatchingShapelets;
     }
 
-    //This is set up to allow the user to easily employ a default configuration. Needs a bit of work
-    enum ShapeletConfig{BAKEOFF,BALANCED,DEFAULT}
-    ShapeletConfig sConfig=ShapeletConfig.DEFAULT;//The default or user set up, to avoid overwriting user defined config
+    /** If trainAccuracy is required, there are two mechanisms to obtain it:
+     * 2. estimator=CV: do a 10x CV on the train set with a clone
+     * of this classifier
+     * 3. estimator=OOB: build an OOB model just to get the OOB
+     * accuracy estimate
+     */
+    enum EstimatorMethod{CV,OOB}
+    private EstimatorMethod estimator=EstimatorMethod.CV;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
+    }
+
+
 
     public ShapeletTransformClassifier(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
+//Data independent config set here, so user can change them after construction
         configureDefaultShapeletTransform();
         ContractRotationForest rotf=new ContractRotationForest();
         rotf.setMaxNumTrees(200);
         classifier=rotf;
 
 
-/*        CAWPE base= new CAWPE();//Change to RotF
-        base.setupOriginalHESCASettings();
-        base.setEstimateOwnPerformance(false);//Defaults to false anyway
-        classifier=base;
-*/
     }
-/* Not debugged, doesnt currently work
+// Not debugged, doesnt currently work
     public void usePCA(){
         setPCA(true);
     }
@@ -142,40 +165,29 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     }
     public void setPCA(boolean b, int numberEigenvectorsToRetain) {
         performPCA = b;
-        pca=new PCA();
         numPCAFeatures=numberEigenvectorsToRetain;
-        pca.setNumAttributesToKeep(numPCAFeatures);
+        pca=new PCA(numPCAFeatures);
     }
-*/
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
+    //Add the requirement to test if there are at least one of each class
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
 //All in nanos
-        if(contractClassifier) {
-            transformContractTime = contractTime * 2 / 3;
-            classifierContractTime = contractTime - transformContractTime;
+        System.out.println("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
+        if(trainTimeContract) {
+
+            transformContractTime = trainContractTimeNanos * 2 / 3;
+            classifierContractTime = trainContractTimeNanos - transformContractTime;
         }
         else{
-            transformContractTime = contractTime;
             classifierContractTime=0;
         }
-//       Full set up of configs to match published. Note these will reset other parameters to their default
-//      to the default, so user set parameters prior to this point will be overwritten,
-        switch(sConfig){
-            case BAKEOFF:
-    //Full enumeration, early abandon, CAWPE basic config, 10n shapelets in transform, capped at n*m
-                configureBakeoffShapeletTransform(data);
-                break;
-            case BALANCED:
-    //As with bakeoff, but with binary shapelets and class balancing when #classes > 2, 10n shapelets in transform, uncapped!
-                configureDawakShapeletTransform(data);
-                break;
-            default:
-                configureDataDependentShapeletTransform(data);
-        }
+        //Data independent parameters are set in the constructor. These are parameters of the data
+        configureDataDependentShapeletTransform(data);
 //Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
 //This is done by estimating the time to evaluate a single shapelet then extrapolating (not in aarons way)
         if(transformContractTime >0) {
@@ -211,31 +223,40 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
             saveShapeletData(data);
 
 
-        printLineDebug("Starting STC build classifier ......");
+        printLineDebug("Starting STC build classifier after "+(System.nanoTime()-startTime)/1000000000+" ......");
         if(getEstimateOwnPerformance()){
 // if the classifier can estimate its own performance, do that. This is not yet in the time contract!
-//            if(classifier instanceof EnhancedAbstractClassifier)
-            printLineDebug("Doing a CV to estimate accuracy");
-            int numCVFolds=10;
-            numCVFolds = Math.min(data.numInstances(), numCVFolds);
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            cv.setSeed(seed*12);
-            cv.setNumFolds(numCVFolds);
-            trainResults = cv.crossValidateWithStats(classifier, shapeletData);
+            boolean doExternalCV=false;
+            doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
+            if(doExternalCV) {
+                printLineDebug("Doing a CV with base to estimate accuracy");
+                int numFolds = setNumberOfFolds(data);
+                CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                cv.setSeed(seed * 12);
+                cv.setNumFolds(numFolds);
+                trainResults = cv.crossValidateWithStats(classifier, shapeletData);
+            }
+            else{//The classifier can handler it internally
+                throw new RuntimeException(("ERROR: internal estimates not sorted out yet"));
+
+            }
         }
 
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
-//Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
-/*
+
+        //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
         if(performPCA){
-            pca.setNumAttributesToKeep(shapeletData.numAttributes()-1);
+            setPCA(performPCA, Math.min(shapeletData.numAttributes()-1, numPCAFeatures)); //update eigen values to reflect min (this will override old PCA)
             pca.fit(shapeletData);
+            System.out.println("BEFOOOREEE");
+            System.out.println(shapeletData);
             shapeletData=pca.transform(shapeletData);
-            System.out.println(shapeletData.toString());
+            System.out.println("AFTEEEER");
+            System.out.println(shapeletData);
         }
-*/
+
 //Here get the train estimate directly from classifier using cv for now
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
@@ -253,10 +274,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*        if(performPCA){
+        if(performPCA){
             temp=pca.transform(temp);
         }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
         return classifier.classifyInstance(test);
@@ -269,10 +290,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*         if(performPCA){
+         if(performPCA){
              temp=pca.transform(temp);
          }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
 
@@ -344,7 +365,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
 
     /*********** METHODS TO CONFIGURE TRANSFORM
-     * Note there are two types of parameters: data independent and data dependent. The
+     * Note there are two types of parameters: data independent and data dependent. They are now all set here, but
      * former are set in the constructor, the latter in buildClassifier. We could tidy this up with lambdas
 
 
@@ -358,14 +379,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     transformOptions.setRescalerType(ShapeletDistance.RescalerType.NORMALISATION);
     transformOptions.setRoundRobin(true);
     transformOptions.setCandidatePruning(true);
-    transformOptions.setBinaryClassValue(false);
-    transformOptions.setClassBalancing(false);
-    transformOptions.setKShapelets(ShapeletTransform.MAXTRANSFORMSIZE);
 }
     /**
      * Sets up the parameters that require the data characteristics (series length, number of classes and number of cases
      */
     public void configureDataDependentShapeletTransform(Instances train){
+
+
         int n = train.numInstances();
         int m = train.numAttributes()-1;
         transformOptions.setMinLength(3);
@@ -380,6 +400,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         }
         if(numShapeletsInTransform==ShapeletTransform.MAXTRANSFORMSIZE)//It has not then been set by the user
             numShapeletsInTransform=  10*train.numInstances() < ShapeletTransform.MAXTRANSFORMSIZE ? 10*train.numInstances(): ShapeletTransform.MAXTRANSFORMSIZE;        //Got to cap this surely!
+        transformOptions.setKShapelets(numShapeletsInTransform);
+
+
     }
 
     /**
@@ -507,22 +530,34 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      */
     @Override
     public String getParameters(){
+
         String paras=transform.getShapeletCounts();
         //Build time info
-        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ contractTime +",transformTimeContract,"+ transformContractTime;
+        String result=super.getParameters();
         //Shapelet numbers and contract info
-        str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
+        result+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
         //transform config
-        str+=",SearchType,"+searchType;
-        str+=","+transformOptions.toString();
-        str+=",ConfigSetup,"+sConfig;
-        str+=","+paras;
-        str+=",Classifier,"+classifier.getClass().getSimpleName();
+        result+=",SearchType,"+searchType;
+        result+=","+transformOptions.toString();
+        result+=","+paras;
+        result+=",Classifier,"+classifier.getClass().getSimpleName();
         String classifierParas="No Classifier Para Info";
         if(classifier instanceof EnhancedAbstractClassifier)
             classifierParas=((EnhancedAbstractClassifier)classifier).getParameters();
-        str+=","+classifierParas;
-        return str;
+        result+=","+classifierParas;
+        if(trainTimeContract)
+            result+= ",TimeContract(ns), " +trainContractTimeNanos;
+        else
+            result+=",NoContract";
+        result+= ",TransformActualBuildTime,"+transformBuildTime+",trainContractTimeNanos,"+ trainContractTimeNanos +",transformContractTime,"+ transformContractTime;
+
+
+        result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
+        if(getEstimateOwnPerformance()) {
+            result += ",trainEstimateMethod," + estimator;
+        }
+
+        return result;
     }
 
     /**
@@ -531,13 +566,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
      */
     public String getTransformParameters(){
         String paras=transform.getShapeletCounts();
-        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ contractTime +",transformTimeContract,"+ transformContractTime;
+        String str= "TransformActualBuildTime,"+transformBuildTime+",totalTimeContract,"+ trainContractTimeNanos +",transformTimeContract,"+ transformContractTime;
         //Shapelet numbers and contract info
         str+=",numberOfShapeletsInProblem,"+numShapeletsInProblem+",proportionToEvaluate,"+proportionToEvaluate;
         //transform config
         str+=",SearchType,"+searchType;
         str+=","+transformOptions.toString();
-        str+=",ConfigSetup,"+sConfig;
         str+=","+paras;
         return str;
     }
@@ -548,55 +582,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
 
 
     public void setTrainTimeLimit(long amount) {
-        contractTime = amount;
+        trainTimeContract=true;
+        trainContractTimeNanos = amount;
     }
-/*    I think this is now redundant, default method in TrainTimeContractable does this
-    //pass in an enum of hour, minute, day, and the amount of them.
-    @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        //min,hour,day converted to nanosecs.
-        switch(time){
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            case SECONDS:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
-                break;
-            case MINUTES:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
-                break;
-            case HOURS:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
-                break;
-            case DAYS:
-                contractTime = ShapeletTransformTimingUtilities.dayNano * amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
-    }
-*/
     public void setNumberOfShapeletsToEvaluate(long numS){
         numShapeletsToEvaluate = numS;
     }
     public void setNumberOfShapeletsInTransform(int numS){
         numShapeletsInTransform = numS;
-    }
-    public void setConfiguration(ShapeletConfig s){
-        sConfig=s;
-    }
-    public final void setConfiguration(String s){
-        String temp=s.toUpperCase();
-        switch(temp){
-            case "BAKEOFF": case "BAKE OFF": case "BAKE-OFF": case "FULL":
-                sConfig=ShapeletConfig.BAKEOFF;
-                break;
-            case "DAWAK": case "BINARY": case "AARON": case "BALANCED":
-                sConfig=ShapeletConfig.BALANCED;
-                break;
-            default:
-                sConfig=ShapeletConfig.DEFAULT;
-        }
     }
 
     /**
@@ -623,7 +616,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         numShapeletsToEvaluate =st.numShapeletsToEvaluate;
         seed =st.seed;
         seedClassifier=st.seedClassifier;
-        contractTime =st.contractTime;
+        trainContractTimeNanos =st.trainContractTimeNanos;
 
         
     }
@@ -664,6 +657,39 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         return result;
     }
 
+    /**
+     * From the interface Tuneable
+     * @return the range of parameters to tune over
+     */
+    @Override
+    public ParameterSpace getDefaultParameterSearchSpace(){
+        ParameterSpace ps=new ParameterSpace();
+        String[] maxNumShapelets={"100","200","300","400","500","600","700","800","900","1000"};
+        ps.addParameter("T", maxNumShapelets);
+
+        return ps;
+    }
+    /**
+     * Parses a given list of options to set the parameters of the classifier.
+     * We use this for the tuning mechanism, setting parameters through setOptions
+     <!-- options-start -->
+     * Valid options are: <p/>
+     * <pre> -S
+     * Number of shapelets kept in the transform.</pre>
+     * More to follow
+     <!-- options-end -->
+     *
+     * @param options the list of options as an array of strings
+     * @throws Exception if an option is not supported
+     */
+    @Override
+    public void setOptions(String[] options) throws Exception{
+        String numShapeletsString= Utils.getOption('S', options);
+        if (numShapeletsString.length() != 0)
+            numShapeletsInTransform = Integer.parseInt(numShapeletsString);
+        else
+            throw new Exception("in setOptions Unable to read number of intervals, -T flag is not set");
+    }
 
     public static void main(String[] args) throws Exception {
 //        String dataLocation = "C:\\Temp\\TSC\\";
@@ -679,6 +705,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         String preds=saveLocation+datasetName;
         System.out.println("Data Loaded");
         ShapeletTransformClassifier st= new ShapeletTransformClassifier();
+
         //st.saveResults(trainS, testS);
         st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
         st.setMinuteLimit(2);
@@ -687,7 +714,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
         long t1= System.currentTimeMillis();
 
         st.configureDefaultShapeletTransform();
-        st.configureTrainTimeContract(train,st.contractTime);
+        st.configureTrainTimeContract(train,st.trainContractTimeNanos);
+
         Instances stTrain=st.transform.fitTransform(train);
         long t2= System.currentTimeMillis();
         System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");

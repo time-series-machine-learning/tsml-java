@@ -92,11 +92,6 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
 //This method doe
     }
      
-    
-    @Override
-    public String getParas() { //This is redundant really.
-        return getParameters();
-    }
 
     public DTWCV(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);        

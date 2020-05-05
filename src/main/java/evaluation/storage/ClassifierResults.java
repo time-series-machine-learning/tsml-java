@@ -332,10 +332,10 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     private double acc = -1;
 
     /**
-     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
+     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter
+     * set builds, etc It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
+     * default milliseconds, nanoseconds recommended. If no benchmark time is supplied, the default value is -1
      *
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
-     * If no benchmark time is supplied, the default value is -1
      */
     private long buildTime = -1;
 
@@ -346,7 +346,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
      * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
      * If no benchmark time is supplied, the default value is -1
      */
-    private long testTime = -1; //total testtime for all predictions
+    private long testTime = -1; //total test time for all predictions
 
     /**
      * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise)

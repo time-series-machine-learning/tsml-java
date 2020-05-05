@@ -18,7 +18,7 @@ Installation
 ------------
 We are looking into deploying this project on Maven or Gradle in the future. For now there are two options:
 
-* download the `jar file <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
+* download the `jar file <http://timeseriesclassification.com/Downloads/tsml11_3_2020.jar>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
 * fork or download the source files and include in a project in your favourite IDE you can then construct your own experiments (see our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/java/examples>`__) and implement your own classifiers.
 
 Overview
