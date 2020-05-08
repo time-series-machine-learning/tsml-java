@@ -50,15 +50,15 @@ public class TransformLists {
             case "ShapeletTransform": case "ST":
                 transformer = new ShapeletFilter();
                 break;
-            case "ACF":
-                transformer = new ACF();
-                break;
-            case "ACF_PACF":
-                transformer = new ACF_PACF();
-                break;
-            case "ARMA":
-                transformer = new ARMA();
-                break;
+            //case "ACF":
+            //    transformer = new ACF();
+            //    break;
+            //case "ACF_PACF":
+            //    transformer = new ACF_PACF();
+            //    break;
+            //case "ARMA":
+            //    transformer = new ARMA();
+            //    break;
             //case "BagOfPatterns":
             //    transformer = new BagOfPatterns();
             //    break;
@@ -74,15 +74,15 @@ public class TransformLists {
             //case "Derivative":
             //    transformer = new Derivative();
             //    break;
-            case "Differences":
-                transformer = new Differences();
-                break;
-            case "Fast_FFT":
-                transformer = new Fast_FFT();
-                break;
-            case "FFT":
-                transformer = new FFT();
-                break;
+            //case "Differences":
+            //    transformer = new Differences();
+            //    break;
+            //case "Fast_FFT":
+            //    transformer = new Fast_FFT();
+            //    break;
+            //case "FFT":
+            //    transformer = new FFT();
+            //    break;
             //case "Hilbert":
                 //transformer = new Hilbert();
                 //break;
@@ -101,15 +101,15 @@ public class TransformLists {
             //case "PAA":
             //    transformer = new PAA();
             //    break;
-            case "PACF":
-                transformer = new PACF();
-                break;
-            case "PowerCepstrum":
-                transformer = new PowerCepstrum();
-                break;
-            case "PowerSpectrum":
-                transformer = new PowerSpectrum();
-                break;
+            //case "PACF":
+            //    transformer = new PACF();
+            //    break;
+            //case "PowerCepstrum":
+            //    transformer = new PowerCepstrum();
+            //    break;
+            //case "PowerSpectrum":
+            //    transformer = new PowerSpectrum();
+            //    break;
             case "RankOrder":
                 transformer = new RankOrder();
                 break;

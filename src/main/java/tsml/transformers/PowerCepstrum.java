@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.filters;
+package tsml.transformers;
 
 import weka.core.Attribute;
 import weka.core.Instance;
@@ -26,20 +26,14 @@ import java.util.ArrayList;
  */
 public class PowerCepstrum extends PowerSpectrum{
 
-    public PowerCepstrum(){
-    }
+    public PowerCepstrum(){}
+
 
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat) {
 
         //Set up instances size and format.
-
-        int length=(fftFilter.findLength(inputFormat));
+        int length=(fftTransformer.findLength(inputFormat));
         length/=2;
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
@@ -66,38 +60,36 @@ public class PowerCepstrum extends PowerSpectrum{
     }
 
     @Override
-    public Instances process(Instances instances) throws Exception {
-//Find power spectrum                
-        Instances output=super.process(instances);
-//Take logs
-        logDataSet(output);
-//Take Inverse FFT of logged Spectrum.
-        for(int i=0;i<output.numInstances();i++){
-//Get out values, store in a complex array   
-            Instance next=output.instance(i);
-            double[] ar=next.toDoubleArray();
-//Have to pad
-            int n = (int)MathsPower2.roundPow2(ar.length-1);
-            if(n<ar.length-1)
-                n*=2;
-            FFT.Complex[] complex=new FFT.Complex[n];
-            for(int j=0;j<ar.length-1;j++)
-                complex[j]=new FFT.Complex(ar[j],0);
-            for(int j=ar.length-1;j<n;j++)
-                complex[j]=new FFT.Complex(0,0);
+    public Instance transform(Instance inst){
+        Instance out = super.transform(inst);
 
-
-            //Take inverse FFT
-            inverseFFT(complex,complex.length);
-//Square the terms for the PowerCepstrum 
-            for(int j=0;j<ar.length-1;j++)
-                next.setValue(j,complex[j].real*complex[j].real+complex[j].imag*complex[j].imag);
-
+        //log dataset
+        for(int j=0;j<out.numAttributes();j++){
+            if(j!=out.classIndex())
+                out.setValue(j,Math.log(out.value(j)));
         }
 
-        return output;
+        double[] ar=out.toDoubleArray();
+        //Have to pad
+        int n = (int)MathsPower2.roundPow2(ar.length-1);
+        if(n<ar.length-1)
+            n*=2;
+        FFT.Complex[] complex=new FFT.Complex[n];
+        for(int j=0;j<ar.length-1;j++)
+            complex[j]=new FFT.Complex(ar[j],0);
+        for(int j=ar.length-1;j<n;j++)
+            complex[j]=new FFT.Complex(0,0);
 
+
+        //Take inverse FFT
+        inverseFFT(complex,complex.length);
+        //Square the terms for the PowerCepstrum 
+        for(int j=0;j<ar.length-1;j++)
+            out.setValue(j,complex[j].real*complex[j].real+complex[j].imag*complex[j].imag);
+
+        return out;
     }
+
     public void logDataSet(Instances out ){
         for(int i=0;i<out.numInstances();i++){
             Instance ins=out.instance(i);

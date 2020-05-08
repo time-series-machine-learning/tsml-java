@@ -931,4 +931,17 @@ public class InstanceTools {
         return inst.value(argmin(inst));
     }
 
+    public static double[] ConvertInstanceToArrayRemovingClassValue(Instance inst) {
+        double[]  d = inst.toDoubleArray();
+        double[] temp;
+		int c = inst.classIndex();
+		if (c >= 0) {
+			temp = new double[d.length - 1];
+			System.arraycopy(d, 0, temp, 0, c);
+			d = temp;
+        }
+        
+        return d;
+    }
+
 }

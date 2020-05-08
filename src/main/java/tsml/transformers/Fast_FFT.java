@@ -1,4 +1,4 @@
-package tsml.filters;
+package tsml.transformers;
 import experiments.data.DatasetLists;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
@@ -10,7 +10,7 @@ import weka.filters.SimpleBatchFilter;
 import static experiments.data.DatasetLoading.loadDataNullable;
 import static utilities.InstanceTools.fromWekaInstancesArray;
 
-public class Fast_FFT extends SimpleBatchFilter{
+public class Fast_FFT implements Transformer{
     final String className = "sandbox.transforms.FFT";
     int nfft = 512;
 
@@ -40,12 +40,7 @@ public class Fast_FFT extends SimpleBatchFilter{
     }
 
     @Override
-    public String globalInfo() {
-        return null;
-    }
-
-    @Override
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat) {
         Instances instances = null;
         if(inputFormat.attribute("samplerate") != null){
             nfft = (int)inputFormat.get(0).value(inputFormat.attribute("samplerate"));
@@ -142,5 +137,11 @@ public class Fast_FFT extends SimpleBatchFilter{
         System.out.println(data[0].get(0).toString());
         //After transform.
         System.out.println(data[1].get(0).toString());
+    }
+
+    @Override
+    public Instance transform(Instance inst) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

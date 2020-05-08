@@ -13,8 +13,8 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package machine_learning.classifiers.ensembles;
-import tsml.filters.PowerSpectrum;
-import tsml.filters.ACF;
+import tsml.transformers.PowerSpectrum;
+import tsml.transformers.ACF;
 import java.util.ArrayList;
 import java.util.Random;
 import weka.attributeSelection.PrincipalComponents;
@@ -202,8 +202,8 @@ public class TransformEnsembles extends AbstractClassifier{
 			System.out.println("Build whole ...");
 			init(data); //Assume its already standardised
 			train.add(data);
-			Instances t1=ps.process(data);
-			Instances t2=acf.process(data);
+			Instances t1=ps.transform(data);
+			Instances t2=acf.transform(data);
 			if(normaliseAtts){
 				nPs=new NormalizeAttribute(t1);
 				t1=nPs.process(t1);
@@ -237,14 +237,14 @@ public class TransformEnsembles extends AbstractClassifier{
 			temp.add(ins);
 			Instances temp2;
 			if(all[1]!=null){
-				temp2=ps.process(temp);
+				temp2=ps.transform(temp);
 				if(normaliseAtts){
 					temp2=nPs.process(temp2);
 				}
 				preds[1]=all[1].distributionForInstance(temp2.instance(0));
 			}
 			if(all[2]!=null){
-				temp2=acf.process(temp);
+				temp2=acf.transform(temp);
 				if(normaliseAtts){
 					temp2=nAcf.process(temp2);
 				}

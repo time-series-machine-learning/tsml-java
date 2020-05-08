@@ -38,6 +38,9 @@ public interface Transformer extends CapabilitiesHandler{
 
     Instances determineOutputFormat(Instances data) throws IllegalArgumentException ;
 
+    default void setOptions(String[] options) throws Exception{
+        //DEFAULT DOES NOTHING
+    }
 
     //do a default capabilities that covers normal time series.
     default Capabilities getCapabilities(){
