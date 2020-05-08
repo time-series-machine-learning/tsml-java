@@ -71,9 +71,9 @@ public class TransformLists {
             //case "Cosine":
                 //transformer = new Cosine();
                 //break;
-            case "Derivative":
-                transformer = new Derivative();
-                break;
+            //case "Derivative":
+            //    transformer = new Derivative();
+            //    break;
             case "Differences":
                 transformer = new Differences();
                 break;

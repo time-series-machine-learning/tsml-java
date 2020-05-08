@@ -1,5 +1,7 @@
 package tsml.transformers;
 
+import weka.core.Capabilities;
+import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -15,7 +17,7 @@ import weka.core.Instances;
  * @author Tony Bagnall 1/1/2020
  *
  */
-public interface Transformer {
+public interface Transformer extends CapabilitiesHandler{
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform
@@ -24,8 +26,33 @@ public interface Transformer {
      * Need to determine where to setOut
      * @return Instances of transformed data
      */
-    Instances transform(Instances data);
+    default Instances transform(Instances data){
+        Instances output = determineOutputFormat(data);
+        for(Instance inst : data){
+            output.add(transform(inst));
+        }
+        return output;
+    }
+
     Instance transform(Instance inst);
 
     Instances determineOutputFormat(Instances data) throws IllegalArgumentException ;
+
+
+    //do a default capabilities that covers normal time series.
+    default Capabilities getCapabilities(){
+        Capabilities result = new Capabilities(this);
+        result.disableAll();
+
+        result.setMinimumNumberInstances(2);
+
+        // attributes
+        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+
+        return result;
+    }
 }

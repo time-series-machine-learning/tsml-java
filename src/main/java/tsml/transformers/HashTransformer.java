@@ -1,36 +1,34 @@
-package tsml.filters;
+package tsml.transformers;
 
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 import java.util.Arrays;
 import java.util.List;
+/**
+ * Purpose: transforms a set of instances into a set of hashed instances. This allows them to reliably be cached.
+ * <p>
+ * Contributors: goastler, abostrom
+ */
 
-public class HashFilter extends SimpleBatchFilter {
+public class HashTransformer implements Transformer {
 
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected Instances determineOutputFormat(final Instances inputFormat) throws
-                                                                           Exception {
+    public Instances determineOutputFormat(final Instances inputFormat) {
         return inputFormat;
     }
 
-    @Override public boolean setInputFormat(final Instances instanceInfo) throws Exception {
-        hashInstances(instanceInfo);
-        return super.setInputFormat(instanceInfo);
+    
+    @Override
+    public Instances transform(Instances inst) {
+        hashInstances(inst);
+        return inst;
     }
 
     @Override
-    public Instances process(final Instances instances) throws
-                                                           Exception {
-        hashInstances(instances); // this can be removed when this func is made protected as it should be
-        return instances;
+    public Instance transform(Instance inst) {
+        return inst.dataset() != null ? hashInstanceAndDataset(inst) : hashInstance(inst);
     }
 
     public static class HashedDenseInstance
@@ -117,4 +115,5 @@ public class HashFilter extends SimpleBatchFilter {
         hashInstances(dataset);
         return dataset.get(index);
     }
+
 }
