@@ -44,6 +44,8 @@ public class StatisticalUtilities {
     }
 
 
+    
+
     public static double pStdDev(Instances input){
         // todo make sure class val at end of attributes
         double sumx = 0;

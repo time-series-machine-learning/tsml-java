@@ -125,9 +125,9 @@ public class TransformLists {
             case "Spectrogram":
                 transformer = new Spectrogram();
                 break;
-            case "SummaryStats":
-                transformer = new SummaryStats();
-                break;
+            //case "SummaryStats":
+            //    transformer = new SummaryStats();
+            //    break;
 
 
 
