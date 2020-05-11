@@ -55,8 +55,6 @@ public class Cosine implements Transformer {
         //overrided cosine class value, with original.
         if(inst.classIndex() >= 0)
             newInst.setValue(inst.classIndex(), inst.classValue());
-
-        System.out.println("Hello:"+newInst.toString());
         return newInst;
     }
 
