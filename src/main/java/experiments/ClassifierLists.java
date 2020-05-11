@@ -159,8 +159,10 @@ public class ClassifierLists {
             "HI-BIpIGB-cS-BOSS","HI-BIpIGB-750cS-BOSS","HI-Bigram-pIGB-Bc-BOSS","Bigram-pIGB-BcS-BOSS",
     "HI-Cutoff-Bigram-pIGB-BcS-BOSS","HI-tp80-Bigram-pIGB-BcS-BOSS","HI-tp60-Bigram-pIGB-BcS-BOSS","HI-tp50-Bigram-pIGB-BcS-BOSS","HI-l4-Bigram-pIGB-BcS-BOSS",
             "HI-pBigram-pIGB-BcS-BOSS","HI-fs-pIGB-BcS-BOSS","HI-500s-pIGB-BcS-BOSS","HI-100m-pIGB-BcS-BOSS",
-            "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H", "TDE-Cutoff70", "TDE-WordLength",
-            "TDE-GP","TDE-GP750","TDE-Bigrams","TDE-IGB","TDE-HI","TDE-Spatial"};
+            "HI-tp100-Bigram-pIGB-BcS-BOSS","cBOSS-Max100","TDE-1H","TDE-4H","TDE-12H", "TDE-Cutoff70", "TDE-WordLength", "TDE50-WordLength",
+            "TDE-GP","TDE-GP750","TDE-Bigrams","TDE-IGB","TDE-HI","TDE-Spatial","TDE-M25","TDE-M150","TDE-fs1","TDE-fs2","TDE-fs3","TDE-fs4",
+            "TDE-tAnova","TDE-tIGB","TDE-tAnovaIGB","TDE-tbAnova","TDE-tbAnovaIGB","TDE-Cutoff80","TDE-Cutoff90",
+            "TDE-MaxWinLen75","TDE-MaxWinLen50","TDE-MaxWinLen25","TDE-MaxWinSearch50","TDE-MaxWinSearch125"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -291,6 +293,8 @@ public class ClassifierLists {
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).useLogistic = true;
                 break;
+
+
             case "FCNN-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
@@ -534,14 +538,44 @@ public class ClassifierLists {
                 ((cBOSSSP) c).bigrams = new boolean[]{true, false};
                 break;
 
-            case "HI-fs-pIGB-BcS-BOSS":
+            case "TDE-fs1":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0.5};
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-fs2":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0.7};
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-fs3":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0.9};
                 ((cBOSSSP) c).featureSelection = true;
                 ((cBOSSSP) c).useIGB = new boolean[]{true, false};
                 ((cBOSSSP) c).histogramIntersection = true;
                 ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
                 break;
+            case "TDE-fs4":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0.4, 0.6, 0.8, 1};
+                ((cBOSSSP) c).featureSelection = true;
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+
+
             case "HI-500s-pIGB-BcS-BOSS":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
@@ -606,6 +640,26 @@ public class ClassifierLists {
                 ((cBOSSSP) c).setCutoff(true);
                 ((cBOSSSP) c).correctThreshold = 0.7;
                 break;
+            case "TDE-Cutoff80":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setCutoff(true);
+                ((cBOSSSP) c).correctThreshold = 0.8;
+                break;
+            case "TDE-Cutoff90":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setCutoff(true);
+                ((cBOSSSP) c).correctThreshold = 0.9;
+                break;
             case "TDE-WordLength":
                 c = new cBOSSSP();
                 ((cBOSSSP) c).chiLimits = new double[]{0};
@@ -613,6 +667,14 @@ public class ClassifierLists {
                 ((cBOSSSP) c).histogramIntersection = true;
                 ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).wordLengths = new int[]{16, 14, 12, 10, 8, 6, 4};
+                break;
+            case "TDE50-WordLength":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).wordLengths = new int[]{16, 14, 12, 10, 8, 6, 4};
                 break;
 
@@ -666,6 +728,117 @@ public class ClassifierLists {
                 ((cBOSSSP) c).bigrams = new boolean[]{true};
                 ((cBOSSSP) c).setMaxEnsembleSize(100);
                 ((cBOSSSP) c).levels = new Integer[]{1};
+                break;
+
+            case "TDE-M25":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(25);
+                break;
+            case "TDE-M150":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(150);
+                break;
+
+
+            case "TDE-tAnova":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{false};
+                ((cBOSSSP) c).useAnova = new boolean[]{true};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-tIGB":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true};
+                ((cBOSSSP) c).useAnova = new boolean[]{false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-tAnovaIGB":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true};
+                ((cBOSSSP) c).useAnova = new boolean[]{true};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+
+            case "TDE-tbAnova":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{false};
+                ((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+            case "TDE-tbAnovaIGB":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).useAnova = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                break;
+
+            case "TDE-MaxWinLen75":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setMaxWinLenProportion(0.75);
+                break;
+            case "TDE-MaxWinLen50":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setMaxWinLenProportion(0.50);
+                break;
+            case "TDE-MaxWinLen25":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setMaxWinLenProportion(0.25);
+                break;
+            case "TDE-MaxWinSearch50":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setMaxWinSearchProportion(0.50);
+                break;
+            case "TDE-MaxWinSearch125":
+                c = new cBOSSSP();
+                ((cBOSSSP) c).chiLimits = new double[]{0};
+                ((cBOSSSP) c).useIGB = new boolean[]{true, false};
+                ((cBOSSSP) c).histogramIntersection = true;
+                ((cBOSSSP) c).bigrams = new boolean[]{true};
+                ((cBOSSSP) c).setMaxEnsembleSize(100);
+                ((cBOSSSP) c).setMaxWinSearchProportion(0.125);
                 break;
 
             default:
