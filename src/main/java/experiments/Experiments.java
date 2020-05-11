@@ -139,33 +139,39 @@ public class Experiments  {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunExperiment(expSettings);
         }else{
-            int folds=1;
+            int folds=30;
             String[] settings=new String[6];
+            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
+            String classifier=classifiers[3];
+
+//
+//            settings[0]="-dp=Z:\\ArchiveData\\MultivariateSplitNormalised\\";//Where to get data
             settings[0]="-dp=E:\\ArchiveData\\Multivariate_arff\\";//Where to get data
-            settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitNormalisedResults\\";//Where to write results
+ //           settings[1]="-rp=E:\\Results Working Area\\Multivariate\\CompleteClassifiers\\NotNormalised\\ComponentsCAWPEWeight\\";//Where to write results
+            settings[1]="-rp=E:\\Results Working Area\\Multivariate\\MTSCSplitResults\\";//Where to write results
             settings[2]="-gtf=true"; //Whether to generate train files or not
-            settings[3]="-cn="; //Classifier name
-            settings[5]="1";
-            settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
+            settings[3]="-cn="+classifier; //Classifier name
+            settings[4]="-dn="; //Problem file
             settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            folds=1;
-            String classifier="RISE_I";
-            ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-            System.out.println("Threaded experiment with "+expSettings);
-//                String[] probFiles= {"Chinatown"};
+//            String[] probFiles= {"BasicMotions"};
             String[] probFiles= DatasetLists.fixedLengthMultivariate;
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
             System.out.println("");
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                System.out.println("Threaded experiment with "+expSettings);
+//                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
             }else{//Local run without args, mainly for debugging
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
+                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+//                        System.out.println("Sequential experiment with "+expSettings);
                         setupAndRunExperiment(expSettings);
                     }
                 }

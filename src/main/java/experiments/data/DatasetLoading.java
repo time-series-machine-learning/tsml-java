@@ -226,14 +226,17 @@ public class DatasetLoading {
                 // CASE 2)
                 data[0] = loadDataThrowable(trainFile);
                 data[1] = loadDataThrowable(testFile);
-                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
+                if(fold!=0)
+//                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
+//                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                 if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
                     data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
 
                 } else {
                     data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                 }
-              LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
+
+                LOGGER.log(Level.FINE, problem + " resampled from predfined fold0 split.");
             } else {
                 // We only have a single file with all the data
                 Instances all = null;

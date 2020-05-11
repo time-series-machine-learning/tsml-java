@@ -18,6 +18,7 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
@@ -316,7 +317,7 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I","HIVE-COTEn_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -363,6 +364,8 @@ public class ClassifierLists {
                 break;
             case "STC_I":
                 c=new MultivariateSingleEnsemble("STC", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                ((EnhancedAbstractClassifier)c).setDebug(true);
+
                 break;
             case "TSF_I":
                 c=new MultivariateSingleEnsemble("TSF", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
@@ -387,6 +390,35 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
+            case "HIVE-COTEn_I":
+                if(canLoadFromFile){
+                    String[] cls={"TSF_I","cBOSS_I","RISE_I","STC_I","TSFn_I","cBOSSn_I","RISEn_I","STCn_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-PF_I":
+                if(canLoadFromFile){
+                    String[] cls={"PF_I","TSF_I","cBOSS_I","RISE_I","STC_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+
                 default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between multivariateBased and the switch statement ");
