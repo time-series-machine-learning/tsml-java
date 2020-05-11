@@ -19,7 +19,7 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.ExecutorService;
-import timeseriesweka.classifiers.MultiThreadable;
+import tsml.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 
@@ -110,8 +110,8 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
     }
     
     public ClassifierResults[] getFoldResults(int classifierIndex) {
-        if (resultsPerFold != null)
-            return resultsPerFold[0];
+        if (resultsPerFold != null && resultsPerFold.length > classifierIndex)
+            return resultsPerFold[classifierIndex];
         else
             return null;
     }

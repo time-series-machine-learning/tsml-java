@@ -17,12 +17,7 @@ package utilities;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Formatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  *
@@ -136,6 +131,64 @@ public class GenericTools {
             for (int j = 0; j < in[0].length; j++)
                 out[j][i] = in[i][j];
         return out;
+    }
+
+    public static class SortIndexDescending implements Comparator<Integer> {
+        private double[] values;
+
+        public SortIndexDescending(double[] values){
+            this.values = values;
+        }
+
+        public Integer[] getIndicies(){
+            Integer[] indicies = new Integer[values.length];
+            for (int i = 0; i < values.length; i++) {
+                indicies[i] = i;
+            }
+            return indicies;
+        }
+
+        @Override
+        public int compare(Integer index1, Integer index2) {
+            if (values[index2] < values[index1]){
+                return -1;
+            }
+            else if (values[index2] > values[index1]){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+    }
+
+    public static class SortIndexAscending implements Comparator<Integer>{
+        private double[] values;
+
+        public SortIndexAscending(double[] values){
+            this.values = values;
+        }
+
+        public Integer[] getIndicies(){
+            Integer[] indicies = new Integer[values.length];
+            for (int i = 0; i < values.length; i++) {
+                indicies[i] = i;
+            }
+            return indicies;
+        }
+
+        @Override
+        public int compare(Integer index1, Integer index2) {
+            if (values[index1] < values[index2]){
+                return -1;
+            }
+            else if (values[index1] > values[index2]){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
     }
 
     public static double[] linSpace(int numValues, double min, double max){

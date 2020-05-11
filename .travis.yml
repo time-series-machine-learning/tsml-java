@@ -5,4 +5,20 @@ branches:
   only:
   - gh-pages
   - /.*/
-script: ./gradlew test
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+script:
+  - ./gradlew build --info --parallel
+# @goastler says:
+# below can be used to deploy jars / releases *but* we need somewhere to upload it to, e.g. github using OAUTH tokens etc etc etc. More hassle than it's worth atm.
+# deploy:
+#   provider: script
+#   script: ./gradew buildJar
+#   on:
+#       all_branches: true
+#       skip_cleanup: true

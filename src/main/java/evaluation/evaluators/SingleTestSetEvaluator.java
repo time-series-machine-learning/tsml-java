@@ -46,36 +46,33 @@ public class SingleTestSetEvaluator extends Evaluator {
     
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
-        
+
         final Instances insts = cloneData ? new Instances(dataset) : dataset;
-        
+
         ClassifierResults res = new ClassifierResults(insts.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
         res.setClassifierName(classifier.getClass().getSimpleName());
         res.setDatasetName(dataset.relationName());
         res.setFoldID(seed);
         res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
-        
+
         res.turnOffZeroTimingsErrors();
         for (Instance testinst : insts) {
             double trueClassVal = testinst.classValue();
             if (setClassMissing)
                 testinst.setClassMissing();
-            
+
             long startTime = System.nanoTime();
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.nanoTime() - startTime;
-            
-            if(REGRESSION_HACK) 
-                res.addPrediction(trueClassVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
-            else 
-                res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
-        
+
         res.turnOnZeroTimingsErrors();
-        
+
         res.finaliseResults();
-        if(!REGRESSION_HACK) res.findAllStatsOnce(); 
+        res.findAllStatsOnce();
         
         return res;
     }

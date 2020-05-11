@@ -89,6 +89,73 @@ public class ClusteringUtilities {
         }
     }
 
+    public static void zNormalise(double[] inst){
+        double meanSum = 0;
+
+        for (int i = 0; i < inst.length; i++){
+            meanSum += inst[i];
+        }
+
+        double mean = meanSum / inst.length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < inst.length; i++){
+            double temp = inst[i] - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(inst.length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < inst.length; i++){
+            inst[i] = (inst[i] - mean) / stdev;
+        }
+    }
+
+    public static void zNormaliseWithClass(Instances data) {
+        for (Instance inst: data){
+            zNormaliseWithClass(inst);
+        }
+    }
+
+    public static void zNormaliseWithClass(Instance inst){
+        double meanSum = 0;
+        int length = inst.numAttributes()-1;
+
+        for (int i = 0; i < inst.numAttributes(); i++){
+            if (inst.classIndex() != i) {
+                meanSum += inst.value(i);
+            }
+        }
+
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < inst.numAttributes(); i++){
+            if (inst.classIndex() != i) {
+                double temp = inst.value(i) - mean;
+                squareSum += temp * temp;
+            }
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < inst.numAttributes(); i++){
+            if (inst.classIndex() != i) {
+                inst.setValue(i, (inst.value(i) - mean) / stdev);
+            }
+        }
+    }
+
     //Create lower half distance matrix.
     public static double[][] createDistanceMatrix(Instances data, DistanceFunction distFunc){
         double[][] distMatrix = new double[data.numInstances()][];

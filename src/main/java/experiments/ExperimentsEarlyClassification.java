@@ -14,52 +14,40 @@
  */
 package experiments;
 
-import weka.core.Instance;
-import weka_extras.classifiers.SaveEachParameter;
-import weka_extras.classifiers.tuned.TunedRandomForest;
-import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import timeseriesweka.classifiers.ParameterSplittable;
+import com.google.common.testing.GcFinalization;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import timeseriesweka.classifiers.SaveParameterInfo;
-import weka.classifiers.Classifier;
-import evaluation.storage.ClassifierResults;
-import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.evaluators.StratifiedResamplesEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import utilities.InstanceTools;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.SaveEachParameter;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.tuned.TunedRandomForest;
+import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.StrUtils;
+import weka.classifiers.Classifier;
+import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.classifiers.TrainAccuracyEstimator;
 
+import java.io.*;
+import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import experiments.Experiments.ExperimentalArguments;
 
 import static utilities.GenericTools.indexOfMax;
+import static utilities.InstanceTools.*;
 import static utilities.InstanceTools.truncateInstance;
-import static utilities.InstanceTools.truncateInstances;
-import static utilities.Utilities.argMax;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -95,14 +83,25 @@ import static utilities.Utilities.argMax;
  *
  * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
-public class ExperimentsEarlyClassification  {
+public class ExperimentsEarlyClassification {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(ExperimentsEarlyClassification.class.getName());
 
     public static boolean debug = false;
 
+    private static boolean testFoldExists;
+    private static boolean trainFoldExists;
+
+    /**
+     * If true, experiments will not print or log to stdout/err anything other that exceptions (SEVERE)
+     */
+    public static boolean beQuiet = false;
+
     //A few 'should be final but leaving them not final just in case' public static settings
     public static int numCVFolds = 10;
+
+    private static String WORKSPACE_DIR = "Workspace";
+    private static String PREDICTIONS_DIR = "Predictions";
 
     /**
      * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
@@ -123,46 +122,67 @@ public class ExperimentsEarlyClassification  {
      */
     public static void main(String[] args) throws Exception {
         //even if all else fails, print the args as a sanity check for cluster.
-        System.out.println("Raw args:");
-        for (String str : args)
-            System.out.println("\t"+str);
-        System.out.println("");
+        if (!beQuiet) {
+            System.out.println("Raw args:");
+            for (String str : args)
+                System.out.println("\t"+str);
+            System.out.println("");
+        }
 
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunExperiment(expSettings);
         }else{
-            int folds=1;
+            int folds=30;
+
+
             boolean threaded=false;
             if(threaded){
                 String[] settings=new String[6];
-                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data
-                settings[1]="-rp=E:/Results/";//Where to write results
-                settings[2]="-gtf=true"; //Whether to generate train files or not
-                settings[3]="-cn=RISE"; //Classifier name
+                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
+//                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
+                settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
+                settings[2]="-gtf=false"; //Whether to generate train files or not
+                settings[3]="-cn=HC-TED2"; //Classifier name
                 settings[5]="1";
                 settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
                 settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+                folds=30;
+                String classifier="HIVE-COTE";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{settings[3]},DatasetLists.tscProblems78,0,folds);
+                System.out.println("Threaded experiment with "+expSettings);
+//                String[] probFiles= {"Chinatown"};
+                String[] probFiles= DatasetLists.tscProblems112;
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
+
+
             }else{//Local run without args, mainly for debugging
                 String[] settings=new String[6];
 //Location of data set
-                settings[0]="-dp=E:/Data/TSCProblems2018/";//Where to get data
-                settings[1]="-rp=E:/Results/";//Where to write results
+                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
+                settings[1]="-rp=Z:\\ReferenceResults\\";//Where to write results
                 settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=TunedTSF"; //Classifier name
+                settings[3]="-cn=TS-CHIEF"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
-                settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
-                settings[5]="-f=2";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+                settings[4]="-dn="+""; //Problem file, added below
+                settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
+//                settings[6]="--force=true";
+//                settings[7]="-ctrs=0";
+//                settings[8]="-tb=true";
                 System.out.println("Manually set args:");
                 for (String str : settings)
-                    System.out.println("\t"+settings);
+                    System.out.println("\t"+str);
                 System.out.println("");
-
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                setupAndRunExperiment(expSettings);
-//                }
+                String[] probFiles= {"NonInvasiveFetalECGThorax1"}; //DatasetLists.ReducedUCI;
+                folds=30;
+                for(String prob:probFiles){
+                    settings[4]="-dn="+prob;
+                    for(int i=1;i<=folds;i++){
+                        settings[5]="-f="+i;
+                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                        setupAndRunExperiment(expSettings);
+                    }
+                }
             }
         }
     }
@@ -179,81 +199,34 @@ public class ExperimentsEarlyClassification  {
      * 5) Samples the dataset.
      * 6) If we're good to go, runs the experiment.
      */
-    public static void setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
-        //todo: when we convert to e.g argparse4j for parameter passing, add a para
-        //for location to log to file as well. for now, assuming console output is good enough
-        //for local running, and cluster output files are good enough on there.
-//        LOGGER.addHandler(new FileHandler());
-        if (debug)
-            LOGGER.setLevel(Level.FINEST);
-        else
-            LOGGER.setLevel(Level.INFO);
-        DatasetLoading.setDebug(false); //TODO when we got full enterprise and figure out how to properly do logging, clean this up
+    public static ClassifierResults[] setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
+        if (beQuiet)
+            LOGGER.setLevel(Level.SEVERE); // only print severe things
+        else {
+            if (debug) LOGGER.setLevel(Level.FINEST); // print everything
+            else       LOGGER.setLevel(Level.INFO); // print warnings, useful info etc, but not simple progress messages, e.g. 'training started'
+
+            DatasetLoading.setDebug(debug); //TODO when we go full enterprise and figure out how to properly do logging, clean this up
+        }
         LOGGER.log(Level.FINE, expSettings.toString());
 
-        //TODO still setting these for now, since maybe certain classfiiers still use these "global"
-        //paths. would rather just use the expSettings to do it all though
-        DatasetLists.resultsPath = expSettings.resultsWriteLocation;
-        experiments.data.DatasetLists.problemPath = expSettings.dataReadLocation;
-
-        //2019_06_03: cases in the classifier can now change the classifier name to reflect
-        //paritcular parameters wanting to be represented as different classifiers
-        //e.g. a case ShapletsContracted might take a contract time (e.g. 1 day) from the args and set up the
-        //shapelet transform, but also change the classifier name stored in the experimentalargs to e.g. Shapelets_1day
-        //such that if the experimenter is looping over contract times, they need only create one case
-        //in the setclassifier switch and pass one classifier name, but loop over contract time directly
-        //
-        //so, the setClassifier has been moved to up here, previously only done after the check for
-        //whether we abort due to the results file already existing. the instantiation of a classifier
-        //shouldn't be too much work, so despite it looking a little ugly, the call is
-        //moved to here before the first proper usage of classifiername, such that it can
-        //be updated first if need be
+        // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
+        // represented as different classifiers, e.g. ST_1day, ST_2day
+        // The set classifier call is therefore made before defining paths that are dependent on the classifier name
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
 
-        //Build/make the directory to write the train and/or testFold files to
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/Predictions/" + expSettings.datasetName + "/";
-        File f = new File(fullWriteLocation);
-        if (!f.exists())
-            f.mkdirs();
+        buildExperimentDirectoriesAndFilenames(expSettings, classifier);
+        //Check whether results already exists, if so and force evaluation is false: just quit
+        if (quitEarlyDueToResultsExistence(expSettings))
+            return null;
 
-        String targetFileName = fullWriteLocation + "testFold" + expSettings.foldId + ".csv";
+        Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+        setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
 
-        //Check whether fold already exists, if so, dont do it, just quit
-        if (!expSettings.forceEvaluation && experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+targetFileName+", exiting.");
-            return;
-        }
-        else {
-            Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+        ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
+        LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
-            //If needed, build/make the directory to write the train and/or testFold files to
-            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-                expSettings.supportingFilePath = fullWriteLocation;
-
-            ///////////// 02/04/2019 jamesl to be put back in in place of above when interface redesign finished.
-            // default builds a foldx/ dir in normal write dir
-//            if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-//                expSettings.supportingFilePath = fullWriteLocation + "fold" + expSettings.foldId + "/";
-//            if (classifier instanceof FileProducer) {
-//                f = new File(expSettings.supportingFilePath);
-//                if (!f.exists())
-//                    f.mkdirs();
-//            }
-
-            //If this is to be a single _parameter_ evaluation of a fold, check whether this exists, and again quit if it does.
-            if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable) {
-                expSettings.checkpointing = false; //Just to tie up loose ends in case user defines both checkpointing AND para splitting
-
-                targetFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
-                if (experiments.CollateResults.validateSingleFoldFile(targetFileName)) {
-                    LOGGER.log(Level.INFO, expSettings.toShortString() + ", parameter " + expSettings.singleParameterID +", already exists at "+targetFileName+", exiting.");
-                    return;
-                }
-            }
-
-            double acc = runExperiment(expSettings, data[0], data[1], classifier, fullWriteLocation);
-            LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + acc);
-        }
+        return results;
     }
 
     /**
@@ -263,8 +236,8 @@ public class ExperimentsEarlyClassification  {
      * 2) If we want to be performing cv to find an estimate of the error on the train set, either do that here or set up the classifier to do it internally
      *          during buildClassifier()
      * 3) Do the actual training, i.e buildClassifier()
-     * 4) Save any train cv results
-     * 5) Evaluate on the test set
+     * 4) Save information needed from the training, e.g. train estimates, serialising the classifier, etc.
+     * 5) Evaluate the trained classifier on the test set
      * 6) Save test results
      * 7) Done
      *
@@ -275,110 +248,346 @@ public class ExperimentsEarlyClassification  {
      * final classifierName, if it is available Line 3: test accuracy then each line
      * is Actual Class, Predicted Class, Class probabilities
      *
-     * @param resultsPath The exact folder in which to write the train and/or testFoldX.csv files
-     * @return the accuracy of c on fold for problem given in train/test, or -1 on an error
+     * @return the classifierresults for this experiment, {train, test}
      */
-    public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
-
-        //if this is a parameter split run, train file name is defined by this
-        //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
-        String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);
-        if (trainFoldFilename == null)
-            //otherwise, defined by this as default
-            trainFoldFilename = "trainFold" + expSettings.foldId + ".csv";
-        String testFoldFilename = "testFold" + expSettings.foldId + ".csv";
-
-        ClassifierResults trainResults = null;
-        ClassifierResults testResults = null;
+    public static ClassifierResults[] runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier) {
+        ClassifierResults[] experimentResults = null; // the combined container, to hold { trainResults, testResults } on return
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            //Setup train results
-            if (expSettings.generateErrorEstimateOnTrainSet)
-                trainResults = findOrSetUpTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);
-            LOGGER.log(Level.FINE, "Train estimate ready.");
+            trainSet = zNormaliseWithClass(trainSet);
+            testSet = zNormaliseWithClass(testSet);
 
+            ClassifierResults trainResults = training(expSettings, classifier, trainSet);
+            postTrainingOperations(expSettings, classifier);
+            ClassifierResults testResults = testing(expSettings, classifier, testSet, trainResults);
 
-            //Build on the full train data here
-            long buildTime = System.nanoTime();
-            classifier.buildClassifier(trainSet);
-            buildTime = System.nanoTime() - buildTime;
-            LOGGER.log(Level.FINE, "Training complete");
-
-            if (expSettings.serialiseTrainedClassifier && classifier instanceof Serializable)
-                serialiseClassifier(expSettings, classifier);
-
-            //Write train results
-            if (expSettings.generateErrorEstimateOnTrainSet) {
-                if (!(classifier instanceof TrainAccuracyEstimator)) {
-                    assert(trainResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the crossvalidation
-                    trainResults.turnOffZeroTimingsErrors();
-                    trainResults.setBuildTime(buildTime);
-                    writeResults(expSettings, classifier, trainResults, resultsPath + trainFoldFilename, "train");
-                }
-                //else
-                //   the classifier will have written it's own train estimate internally via TrainAccuracyEstimate
-            }
-            LOGGER.log(Level.FINE, "Train estimate written");
-
-
-            //And now evaluate on the test set, if this wasn't a single parameter fold
-            if (expSettings.singleParameterID == null) {
-                //This is checked before the buildClassifier also, but
-                //a) another process may have been doing the same experiment
-                //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
-                //no reason not to check again
-                if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(resultsPath + testFoldFilename)) {
-                    long testBenchmark = findBenchmarkTime(expSettings);
-
-                    testResults = evaluateClassifier(expSettings, classifier, testSet);
-                    assert(testResults.getTimeUnit().equals(TimeUnit.NANOSECONDS)); //should have been set as nanos in the evaluation
-
-                    testResults.turnOffZeroTimingsErrors();
-                    testResults.setBenchmarkTime(testBenchmark);
-
-                    if (classifier instanceof TrainAccuracyEstimator) {
-                        //if this classifier is recording it's own results, use the build time it found
-                        //this is because e.g ensembles that read from file (e.g cawpe) will calculate their build time
-                        //as the sum of their modules' buildtime plus the time to define the ensemble prediction forming
-                        //schemes. that is more accurate than what experiments would measure, which would in fact be
-                        //the i/o time for reading in the modules' results, + the ensemble scheme time
-                        //therefore the general assumption here is that the classifier knows its own buildtime
-                        //better than we do here
-                        testResults.setBuildTime(((TrainAccuracyEstimator)classifier).getTrainResults().getBuildTime());
-                    }
-                    else {
-                        //else use the buildtime calculated here in experiments
-                        testResults.setBuildTime(buildTime);
-                    }
-
-                    LOGGER.log(Level.FINE, "Testing complete");
-
-                    writeResults(expSettings, classifier, testResults, resultsPath + testFoldFilename, "test");
-                    LOGGER.log(Level.FINE, "Testing written");
-                }
-                else {
-                    LOGGER.log(Level.INFO, "Test file already found, written by another process.");
-                    testResults = new ClassifierResults(resultsPath + testFoldFilename);
-                }
-                return testResults.getAcc();
-            }
-            else {
-                return 0; //not error, but we dont have a test acc. just returning 0 for now
-            }
+            experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
             //todo expand..
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
-            return -1; //error state
+            e.printStackTrace();
+            return null; //error state
+        }
+
+        return experimentResults;
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Performs all operations related to training the classifier, and returns a ClassifierResults object holding the results
+     * of training.
+     *
+     * At minimum these results hold the hardware benchmark timing (if requested in expSettings), the memory used,
+     * and the build time.
+     *
+     * If a train estimate is to be generated, the results also hold predictions and results from the train set, and these
+     * results are written to file.
+     */
+    public static ClassifierResults training(ExperimentalArguments expSettings, Classifier classifier, Instances trainSet) throws Exception {
+        ClassifierResults trainResults = new ClassifierResults();
+
+        long benchmark = findBenchmarkTime(expSettings);
+
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.installMonitor();
+
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+            //Tell the classifier to generate train results if it can do it internally,
+            //otherwise perform the evaluation externally here (e.g. cross validation on the
+            //train data
+            if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
+                ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
+            else
+                trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
+        }
+        LOGGER.log(Level.FINE, "Train estimate ready.");
+
+        //Build on the full train data here
+        long buildTime = System.nanoTime();
+        classifier.buildClassifier(trainSet);
+        buildTime = System.nanoTime() - buildTime;
+        LOGGER.log(Level.FINE, "Training complete");
+
+        // Training done, collect memory monitor results
+        // Need to wait for an update, otherwise very quick classifiers may not experience gc calls during training,
+        // or the monitor may not update in time before collecting the max
+        GcFinalization.awaitFullGc();
+        long maxMemory = memoryMonitor.getMaxMemoryUsed();
+
+        trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, TimeUnit.NANOSECONDS, maxMemory);
+
+        //At this stage, regardless of whether the classifier is able to estimate it's
+        //own accuracy or not, train results should contain either
+        //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
+        //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
+
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+            writeResults(expSettings, trainResults, expSettings.trainFoldFileName, "train");
+            LOGGER.log(Level.FINE, "Train estimate written");
+        }
+
+        return trainResults;
+    }
+
+    /**
+     * Any operations aside from testing that we want to perform on the trained classifier. Performed after training, but before testing,
+     * with exceptions caught and only severe warning logged instead of program failure; completion of testing is preferred instead
+     * requiring retraining in a future execution
+     */
+    public static void postTrainingOperations(ExperimentalArguments expSettings, Classifier classifier)  {
+        if (expSettings.serialiseTrainedClassifier) {
+            if (classifier instanceof Serializable) {
+                try {
+                    serialiseClassifier(expSettings, classifier);
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, "Serialisation attempted but failed for classifier ("+classifier.getClass().getName()+")", ex);
+                }
+            }
+            else
+                LOGGER.log(Level.WARNING, "Serialisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Serializable.");
+        }
+
+
+        if (expSettings.visualise) {
+            if (classifier instanceof Visualisable) {
+                ((Visualisable) classifier).setVisualisationSavePath(expSettings.supportingFilePath);
+
+                try {
+                    ((Visualisable) classifier).createVisualisation();
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, "Visualisation attempted but failed for classifier ("+classifier.getClass().getName()+")", ex);
+                }
+            }
+            else
+                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Visualisable.");
         }
     }
 
-    private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train, String resultsPath) {
+    /**
+     * Performs all operations related to testing the classifier, and returns a ClassifierResults object holding the results
+     * of testing.
+     *
+     * Computational resource costs of the training process are taken from the train results.
+     */
+    public static ClassifierResults testing(ExperimentalArguments expSettings, Classifier classifier, Instances testSet, ClassifierResults trainResults) throws Exception {
+        ClassifierResults testResults = new ClassifierResults();
+
+        //And now evaluate on the test set, if this wasn't a single parameter fold
+        if (expSettings.singleParameterID == null) {
+            //This is checked before the buildClassifier also, but
+            //a) another process may have been doing the same experiment
+            //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
+            //no reason not to check again
+            if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
+                for (double i = 0.05; i < 1.01; i += 0.05) {
+                    i = Math.round(i * 100.0) / 100.0;
+
+                    String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
+                            PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + i + "%testFold"
+                            + expSettings.foldId + ".csv";
+                    if (!expSettings.forceEvaluation && CollateResults.validateSingleFoldFile(path)) {
+                        continue;
+                    }
+
+                    Instances shortData = shortenInstances(testSet, i, true);
+
+                    testResults = evaluateClassifier(expSettings, classifier, shortData);
+                    testResults.setParas(trainResults.getParas());
+                    testResults.turnOffZeroTimingsErrors();
+                    testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
+                    testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
+                    testResults.turnOnZeroTimingsErrors();
+                    testResults.setMemory(trainResults.getMemory());
+                    LOGGER.log(Level.FINE, "Testing complete");
+
+                    writeResults(expSettings, testResults, expSettings.testFoldFileName, "test");
+                    LOGGER.log(Level.FINE, "Test results written");
+                }
+            }
+            else {
+                LOGGER.log(Level.INFO, "Test file already found, written by another process.");
+                testResults = new ClassifierResults(expSettings.testFoldFileName);
+            }
+        }
+        else {
+            LOGGER.log(Level.INFO, "This experiment evaluated a single training iteration or parameter set, skipping test phase.");
+        }
+
+        return testResults;
+    }
+
+
+    /**
+     * Based on experimental parameters passed, defines the target results file and workspace locations for use in the
+     * rest of the experiment
+     */
+    public static void buildExperimentDirectoriesAndFilenames(ExperimentalArguments expSettings, Classifier classifier) {
+        //Build/make the directory to write the train and/or testFold files to
+        // [writeLoc]/[classifier]/Predictions/[dataset]/
+        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
+        File f = new File(fullWriteLocation);
+        if (!f.exists())
+            f.mkdirs();
+
+        expSettings.testFoldFileName = fullWriteLocation + "100%testFold" + expSettings.foldId + ".csv";
+        expSettings.trainFoldFileName = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
+
+        if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)
+            expSettings.testFoldFileName = expSettings.trainFoldFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
+
+        testFoldExists = CollateResults.validateSingleFoldFile(expSettings.testFoldFileName);
+        trainFoldExists = CollateResults.validateSingleFoldFile(expSettings.trainFoldFileName);
+
+        // If needed, build/make the directory to write any supporting files to, e.g. checkpointing files
+        // [writeLoc]/[classifier]/Workspace/[dataset]/[fold]/
+        // todo foreseeable problems with threaded experiments:
+        // user sets a supporting path for the 'master' exp, each generated exp to be run threaded inherits that path,
+        // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
+        // going to be the case; supply a path and everything will be written there
+        if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
+            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
+
+        f = new File(expSettings.supportingFilePath);
+        if (!f.exists())
+            f.mkdirs();
+    }
+
+
+    /**
+     * Returns true if the work to be done in this experiment already exists at the locations defined by the experimental settings,
+     * indicating that this execution can be skipped.
+     */
+    public static boolean quitEarlyDueToResultsExistence(ExperimentalArguments expSettings) {
+        boolean quit = false;
+
+        if (!expSettings.forceEvaluation &&
+                ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
+                        (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
+            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + expSettings.testFoldFileName + ", exiting.");
+            quit = true;
+        }
+
+        return quit;
+    }
+
+
+    /**
+     * This method cleans up and consolidates the information we have about the
+     * build process into a ClassifierResults object, based on the capabilities of the
+     * classifier and whether we want to be writing a train predictions file
+     *
+     * Regardless of whether the classifier is able to estimate it's own accuracy
+     * or not, the returned train results should contain either
+     *    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
+     *    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
+     *
+     * @param exp
+     * @param classifier
+     * @param trainResults the results object so far which may be empty, contain the recorded
+     *      timings of the particular classifier, or contain the results of a previous executed
+     *      external estimation process,
+     * @param buildTime as recorded by experiments.java, but which may not be used if the classifier
+     *      records it's own build time more accurately
+     * @return the finalised train results object
+     * @throws Exception
+     */
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, TimeUnit expTimeUnit, long maxMemory) throws Exception {
+
+        /*
+        if estimateacc { //want full predictions
+            timingToUpdateWith = buildTime (the one passed to this func)
+            if is EnhancedAbstractClassifier {
+                if able to estimate own acc
+                    just return getTrainResults()
+                else
+                    timingToUpdateWith = getTrainResults().getBuildTime()
+            }
+            trainResults.setBuildTime(timingToUpdateWith)
+            return trainResults
+        }
+        else not estimating acc { //just want timings
+            if is EnhancedAbstractClassifier
+                just return getTrainResults(), contains the timings and other maybe useful metainfo
+            else
+                trainResults passed are empty
+                trainResults.setBuildTime(buildTime)
+                return trainResults
+        */
+
+        //todo just enforce nanos everywhere, this is ridiculous. this needs overhaul
+
+        if (exp.generateErrorEstimateOnTrainSet) { //want timings and full predictions
+            long timingToUpdateWith = buildTime; //the timing that experiments measured by default
+            TimeUnit timeUnitToUpdateWith = expTimeUnit;
+            String paras = "No parameter info";
+
+            if (classifier instanceof EnhancedAbstractClassifier) {
+                EnhancedAbstractClassifier eac = ((EnhancedAbstractClassifier)classifier);
+                if (eac.getEstimateOwnPerformance()) {
+                    ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
+                    res.setBenchmarkTime(res.getTimeUnit().convert(benchmarkTime, expTimeUnit));
+                    res.setMemory(maxMemory);
+
+                    return res;
+                }
+                else {
+                    timingToUpdateWith = eac.getTrainResults().getBuildTime(); //update with classifier's own timings instead
+                    timeUnitToUpdateWith = eac.getTrainResults().getTimeUnit();
+                    paras = eac.getParameters();
+                }
+            }
+
+            timingToUpdateWith = trainResults.getTimeUnit().convert(timingToUpdateWith, timeUnitToUpdateWith);
+            long estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
+
+            //update the externally produced results with the appropriate timing
+            trainResults.setBuildTime(timingToUpdateWith);
+            trainResults.setBuildPlusEstimateTime(timingToUpdateWith + estimateToUpdateWith);
+
+            trainResults.setParas(paras);
+        }
+        else { // just want the timings
+            if (classifier instanceof EnhancedAbstractClassifier) {
+                trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
+            }
+            else {
+                trainResults.setBuildTime(trainResults.getTimeUnit().convert(buildTime, expTimeUnit));
+            }
+        }
+
+        trainResults.setBenchmarkTime(trainResults.getTimeUnit().convert(benchmarkTime, expTimeUnit));
+        trainResults.setMemory(maxMemory);
+
+        return trainResults;
+    }
+
+    /**
+     * Based on the experimental settings passed, make any classifier interface calls that modify how the classifier is TRAINED here,
+     * e.g. give checkpointable classifiers the location to save, give contractable classifiers their contract, etc.
+     *
+     * @return If the classifier is set up to evaluate a single parameter set on the train data, a new trainfilename shall be returned,
+     *      otherwise null.
+     *
+     */
+    private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
         String parameterFileName = null;
+
+
+        // Parameter/thread/job splitting and checkpointing are treated as mutually exclusive, thus if/else
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
         {
+            if (expSettings.checkpointing)
+                LOGGER.log(Level.WARNING, "Parameter splitting AND checkpointing requested, but cannot do both. Parameter splitting turned on, checkpointing not.");
+
             if (classifier instanceof TunedRandomForest)
                 ((TunedRandomForest) classifier).setNumFeaturesInProblem(train.numAttributes() - 1);
 
@@ -386,100 +595,109 @@ public class ExperimentsEarlyClassification  {
             ((ParameterSplittable) classifier).setParametersFromIndex(expSettings.singleParameterID);
             parameterFileName = "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
             expSettings.generateErrorEstimateOnTrainSet = true;
+
         }
         else {
-            //Only do all this if not an internal _single parameter_ experiment
+            // Only do all this if not an internal _single parameter_ experiment
             // Save internal info for ensembles
-            if (classifier instanceof SaveableEnsemble) {
-                ((SaveableEnsemble) classifier).saveResults(resultsPath + "internalCV_" + expSettings.foldId + ".csv", resultsPath + "internalTestPreds_" + expSettings.foldId + ".csv");
+            if (classifier instanceof SaveableEnsemble) { // mostly legacy, original hivecote code afaik
+                ((SaveableEnsemble) classifier).saveResults(expSettings.supportingFilePath + "internalCV_" + expSettings.foldId + ".csv", expSettings.supportingFilePath + "internalTestPreds_" + expSettings.foldId + ".csv");
             }
-            if (expSettings.checkpointing && classifier instanceof SaveEachParameter) {
-                ((SaveEachParameter) classifier).setPathToSaveParameters(resultsPath + "fold" + expSettings.foldId + "_");
+            if (expSettings.checkpointing && classifier instanceof SaveEachParameter) { // for legacy things. mostly tuned classifiers
+                ((SaveEachParameter) classifier).setPathToSaveParameters(expSettings.supportingFilePath + "fold" + expSettings.foldId + "_");
+            }
+
+            // Main thing to set:
+            if (expSettings.checkpointing && classifier instanceof Checkpointable) {
+                ((Checkpointable) classifier).setCheckpointPath(expSettings.supportingFilePath);
+
+                if (expSettings.checkpointInterval > 0) {
+                    // want to checkpoint at regular timings
+                    // todo setCheckpointTimeHours expects int hours only, review
+                    ((Checkpointable) classifier).setCheckpointTimeHours((int) TimeUnit.HOURS.convert(expSettings.checkpointInterval, TimeUnit.NANOSECONDS));
+                }
+                //else, as default
+                    // want to checkpoint at classifier's discretion
             }
         }
+
+        if(classifier instanceof TrainTimeContractable && expSettings.contractTrainTimeNanos>0)
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(TimeUnit.NANOSECONDS,expSettings.contractTrainTimeNanos);
+        if(classifier instanceof TestTimeContractable && expSettings.contractTestTimeNanos >0)
+            ((TestTimeContractable) classifier).setTestTimeLimit(TimeUnit.NANOSECONDS,expSettings.contractTestTimeNanos);
 
         return parameterFileName;
     }
 
-    private static ClassifierResults findOrSetUpTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold, String fullTrainWritingPath) throws Exception {
+    private static ClassifierResults findExternalTrainEstimate(ExperimentalArguments exp, Classifier classifier, Instances train, int fold) throws Exception {
         ClassifierResults trainResults = null;
+        long trainBenchmark = findBenchmarkTime(exp);
 
-        if (classifier instanceof TrainAccuracyEstimator) {
-            //Classifier will perform cv internally while building, probably as part of a parameter search
-            ((TrainAccuracyEstimator) classifier).writeTrainEstimatesToFile(fullTrainWritingPath);
-            File f = new File(fullTrainWritingPath);
-            if (f.exists())
-                f.setWritable(true, false);
+        //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
+        String[] parts = exp.trainEstimateMethod.split("_");
+        String method = parts[0];
+
+        String para1 = null;
+        if (parts.length > 1)
+            para1 = parts[1];
+
+        String para2 = null;
+        if (parts.length > 2)
+            para2 = parts[2];
+
+        switch (method) {
+            case "cv":
+            case "CV":
+            case "CrossValidationEvaluator":
+                int numCVFolds = ExperimentsEarlyClassification.numCVFolds;
+                if (para1 != null)
+                    numCVFolds = Integer.parseInt(para1);
+                numCVFolds = Math.min(train.numInstances(), numCVFolds);
+
+                CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                cv.setSeed(fold);
+                cv.setNumFolds(numCVFolds);
+                trainResults = cv.crossValidateWithStats(classifier, train);
+                break;
+
+            case "hov":
+            case "HOV":
+            case "SingleTestSetEvaluator":
+                double trainPropHov = DatasetLoading.getProportionKeptForTraining();
+                if (para1 != null)
+                    trainPropHov = Double.parseDouble(para1);
+
+                SingleSampleEvaluator hov = new SingleSampleEvaluator();
+                hov.setSeed(fold);
+                hov.setPropInstancesInTrain(trainPropHov);
+                trainResults = hov.evaluate(classifier, train);
+                break;
+
+            case "sr":
+            case "SR":
+            case "StratifiedResamplesEvaluator":
+                int numSRFolds = 30;
+                if (para1 != null)
+                    numSRFolds = Integer.parseInt(para1);
+
+                double trainPropSRR = DatasetLoading.getProportionKeptForTraining();
+                if (para2 != null)
+                    trainPropSRR = Double.parseDouble(para2);
+
+                StratifiedResamplesEvaluator srr = new StratifiedResamplesEvaluator();
+                srr.setSeed(fold);
+                srr.setNumFolds(numSRFolds);
+                srr.setUseEachResampleIdAsSeed(true);
+                srr.setPropInstancesInTrain(trainPropSRR);
+                trainResults = srr.evaluate(classifier, train);
+                break;
+
+            default:
+                throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
         }
-        else {
-            long trainBenchmark = findBenchmarkTime(exp);
 
-            //todo clean up this hack. default is cv_10, as with all old trainFold results pre 2019/07/19
-            String[] parts = exp.trainEstimateMethod.split("_");
-            String method = parts[0];
-
-            String para1 = null;
-            if (parts.length > 1)
-                para1 = parts[1];
-
-            String para2 = null;
-            if (parts.length > 2)
-                para2 = parts[2];
-
-            switch (method) {
-                case "cv":
-                case "CV":
-                case "CrossValidationEvaluator":
-                    int numCVFolds = Experiments.numCVFolds;
-                    if (para1 != null)
-                        numCVFolds = Integer.parseInt(para1);
-                    numCVFolds = Math.min(train.numInstances(), numCVFolds);
-
-                    CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                    cv.setSeed(fold);
-                    cv.setNumFolds(numCVFolds);
-                    trainResults = cv.crossValidateWithStats(classifier, train);
-                    break;
-
-                case "hov":
-                case "HOV":
-                case "SingleTestSetEvaluator":
-                    double trainPropHov = DatasetLoading.getProportionKeptForTraining();
-                    if (para1 != null)
-                        trainPropHov = Double.parseDouble(para1);
-
-                    SingleSampleEvaluator hov = new SingleSampleEvaluator();
-                    hov.setSeed(fold);
-                    hov.setPropInstancesInTrain(trainPropHov);
-                    trainResults = hov.evaluate(classifier, train);
-                    break;
-
-                case "sr":
-                case "SR":
-                case "StratifiedResamplesEvaluator":
-                    int numSRFolds = 30;
-                    if (para1 != null)
-                        numSRFolds = Integer.parseInt(para1);
-
-                    double trainPropSRR = DatasetLoading.getProportionKeptForTraining();
-                    if (para2 != null)
-                        trainPropSRR = Double.parseDouble(para2);
-
-                    StratifiedResamplesEvaluator srr = new StratifiedResamplesEvaluator();
-                    srr.setSeed(fold);
-                    srr.setNumFolds(numSRFolds);
-                    srr.setUseEachResampleIdAsSeed(true);
-                    srr.setPropInstancesInTrain(trainPropSRR);
-                    trainResults = srr.evaluate(classifier, train);
-                    break;
-
-                default:
-                    throw new Exception("Unrecognised method to estimate error on the train given: " + exp.trainEstimateMethod);
-            }
-
-            trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
-            trainResults.setBenchmarkTime(trainBenchmark);
-        }
+        trainResults.setErrorEstimateMethod(exp.trainEstimateMethod);
+        trainResults.setBenchmarkTime(trainBenchmark);
 
         return trainResults;
     }
@@ -500,7 +718,7 @@ public class ExperimentsEarlyClassification  {
     }
 
     /**
-     * Meta info shall be set by writeResults(...), just generating the prediction info and 
+     * Meta info shall be set by writeResults(...), just generating the prediction info and
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
@@ -555,12 +773,12 @@ public class ExperimentsEarlyClassification  {
     }
 
     /**
-     * If exp.performTimingBenchmark = true, this will return the total time to 
+     * If exp.performTimingBenchmark = true, this will return the total time to
      * sort 1,000 arrays of size 10,000
      *
      * Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds
      *
-     * This can still anecdotally vary between 0.75 to 1.05 on my windows machine, however. 
+     * This can still anecdotally vary between 0.75 to 1.05 on my windows machine, however.
      */
     public static long findBenchmarkTime(ExperimentalArguments exp) {
         if (!exp.performTimingBenchmark)
@@ -619,15 +837,28 @@ public class ExperimentsEarlyClassification  {
         return System.nanoTime() - startTime;
     }
 
-    public static void writeResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
+    public static String buildExperimentDescription() {
+        //TODO get system information, e.g. cpu clock-speed. generic across os too
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        StringBuilder sb = new StringBuilder("Generated by Experiments.java on " + formatter.format(date) + ".");
+
+        sb.append("    SYSTEMPROPERTIES:{");
+        sb.append("user.name:").append(System.getProperty("user.name", "unknown"));
+        sb.append(",os.arch:").append(System.getProperty("os.arch", "unknown"));
+        sb.append(",os.name:").append(System.getProperty("os.name", "unknown"));
+        sb.append("},ENDSYSTEMPROPERTIES");
+
+        return sb.toString().replace("\n", "NEW_LINE");
+    }
+
+    public static void writeResults(ExperimentalArguments exp, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
         results.setClassifierName(exp.classifierName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);
-        results.setDescription("Generated by Experiments.java");
-
-        if (classifier instanceof SaveParameterInfo)
-            results.setParas(((SaveParameterInfo) classifier).getParameters());
+        results.setDescription(buildExperimentDescription());
 
         //todo, need to make design decisions with the classifierresults enum to clean this switch up
         switch (exp.classifierResultsFileFormat) {
@@ -655,7 +886,7 @@ public class ExperimentsEarlyClassification  {
     }
 
     /**
-     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the 
+     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. Will by default set numThreads = numCores
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
@@ -663,9 +894,9 @@ public class ExperimentsEarlyClassification  {
     }
 
     /**
-     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the 
-     * standardArgs. If numThreads > 0, will spawn that many threads. If numThreads == 0, will use as many threads as there are cores, 
-     * else if numThreads == -1, will spawn as many threads as there are cores minus 1, to aid usability of the machine. 
+     * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
+     * standardArgs. If numThreads > 0, will spawn that many threads. If numThreads == 0, will use as many threads as there are cores,
+     * else if numThreads == -1, will spawn as many threads as there are cores minus 1, to aid usability of the machine.
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds, int numThreads) throws Exception{
         int numCores = Runtime.getRuntime().availableProcessors();

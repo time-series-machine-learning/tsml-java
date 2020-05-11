@@ -4,11 +4,12 @@
 
 
 package statistics.simulators;
-import timeseriesweka.filters.NormalizeCase;
-import timeseriesweka.filters.FFT;
-import timeseriesweka.filters.ARMA;
-import timeseriesweka.filters.PACF;
-import timeseriesweka.filters.ACF;
+import tsml.classifiers.distance_based.DTWCV;
+import tsml.filters.NormalizeCase;
+import tsml.filters.FFT;
+import tsml.filters.ARMA;
+import tsml.filters.PACF;
+import tsml.filters.ACF;
 import java.util.*;
 import java.text.*;
 //import utilities.OutFile;
@@ -16,11 +17,6 @@ import weka.core.*;
 import fileIO.*;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
-import weka.filters.*;
-
-
-
 
 
 public class SimulateSpectralData extends DataSimulator{
@@ -54,7 +50,7 @@ public class SimulateSpectralData extends DataSimulator{
             setLength(100);
             try{
             Instances[] data=this.generateTrainTest();
-            Classifier c =new FastDTW_1NN();
+            Classifier c =new DTWCV();
             double acc=ClassifierTools.singleTrainTestSplitAccuracy(c, data[0], data[1]);
             if(acc<THRESH)
                 validated=true;
