@@ -41,7 +41,7 @@ public class SummaryStats implements Transformer {
     }
 
     public SummaryStats(int numM){
-        numMoments = numM;
+        numMoments = Math.max(Math.min(numM, 5), 0); //no less than 0
     }
 
     public Instances determineOutputFormat(Instances inputFormat) {
@@ -91,29 +91,36 @@ public class SummaryStats implements Transformer {
         double totalKur = 0;
         double p = 0;
         // Find variance
-        for (int j = 0; j < d.length; j++) {
-            p = (d[j] - moments[0]) * (d[j] - moments[0]); // ^2
-            totalVar += p;
+        if(numMoments > 0){
+            for (int j = 0; j < d.length; j++) {
+                p = (d[j] - moments[0]) * (d[j] - moments[0]); // ^2
+                totalVar += p;
+    
+                p *= (d[j] - moments[0]); // ^3
+                totalSkew += p;
+    
+                p *= (d[j] - moments[0]); // ^4
+                totalKur += p;
+            }
 
-            p *= (d[j] - moments[0]); // ^3
-            totalSkew += p;
+            moments[1] = totalVar / (d.length - 1);
+            double standardDeviation = Math.sqrt(moments[1]);
+            moments[1] = standardDeviation;
 
-            p *= (d[j] - moments[0]); // ^4
-            totalKur += p;
+            if(numMoments > 1){
+                double std3 = Math.pow(standardDeviation, 3);
+                double skew = totalSkew / (std3);
+                moments[2] = skew / d.length;
+                if(numMoments > 2){
+                    double kur = totalKur / (std3 * standardDeviation);
+                    moments[3] = kur / d.length;
+                    if(numMoments > 3){
+                        // slope
+                        moments[4] = standardDeviation != 0 ? InstanceTools.slope(inst, sum, sumSq) : 0;
+                    }
+                }
+            }
         }
-
-        moments[1] = totalVar / (d.length - 1);
-        double standardDeviation = Math.sqrt(moments[1]);
-        moments[1] = standardDeviation;
-        double std3 = Math.pow(standardDeviation, 3);
-        double skew = totalSkew / (std3);
-        moments[2] = skew / d.length;
-        double kur = totalKur / (std3 * standardDeviation);
-        moments[3] = kur / d.length;
-
-        // slope
-        moments[4] = standardDeviation != 0 ? InstanceTools.slope(inst, sum, sumSq) : 0;
-
         double[] atts = new double[numMoments + 2 + (inst.classIndex() >= 0 ? 1 : 0)];
         for (int j = 0; j < numMoments; j++) {
             atts[j] = moments[j];
