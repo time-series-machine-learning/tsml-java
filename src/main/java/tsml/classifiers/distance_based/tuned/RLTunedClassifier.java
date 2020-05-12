@@ -226,13 +226,15 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     @Override public ParamSet getParams() {
-        return TrainTimeContractable.super.getParams()
+        return
+//            TrainTimeContractable.
+                super.getParams()
                                     .add(BENCHMARK_ITERATOR_FLAG, agent)
                                     .add(TRAIN_SETUP_FUNCTION_FLAG, trainSetupFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
-        TrainTimeContractable.super.setParams(params);
+//        TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
         ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
                               TrainSetupFunction.class); //
@@ -245,15 +247,15 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         trainTimeContract=true;
     }
 
-    @Override public long predictNextTrainTimeNanos() {
+    public long predictNextTrainTimeNanos() {
         return agent.predictNextTimeNanos();
     }
 
-    @Override public boolean isBuilt() {
+    public boolean isBuilt() {
         return !agent.hasNext();
     }
 
-    @Override public long getTrainContractTimeNanos() {
+    @Override public long getTrainTimeLimit() {
         return trainContractTimeNanos;
     }
 
@@ -357,7 +359,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                         throw new IllegalStateException("could not create overall done file");
                     }
                     // we're done
-                    setBuilt(true);
+//                    setBuilt(true);
                 } catch (FileUtils.FileLock.LockException e) {
                     getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;
@@ -380,7 +382,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
     
     protected boolean hasNextBuildTick() {
-        return agent.hasNext() && hasRemainingTraining();
+        return agent.hasNext()
+//            && hasRemainingTraining()
+                    ;
     }
 
     protected void suspendResourceMonitors() {

@@ -138,7 +138,10 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     public boolean saveToCheckpoint() throws Exception {
         trainTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
+        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
+//            isBuilt()
+//            &&
+            !skipFinalCheckpoint);
         memoryWatcher.unsuspend();
         trainTimer.unsuspend();
         return result;
@@ -220,7 +223,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         // save our model data
         this.trainData = trainData;
         // we're fully built now
-        setBuilt(true);
+//        setBuilt(true);
         // disable resource monitors
         trainTimer.disable();
         memoryWatcher.disable();

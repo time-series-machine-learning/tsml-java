@@ -16,12 +16,12 @@ public class ArrayUtilities {
         return list.get(0);
     }
 
-    public static void addInPlace(double[] a, double[] b) {
-        if(a.length < b.length) {
+    public static void addInPlace(double[] src, double[] addend) {
+        if(src.length < addend.length) {
             throw new IllegalArgumentException();
         }
-        for(int i = 0; i < b.length; i++) {
-            a[i] += b[i];
+        for(int i = 0; i < addend.length; i++) {
+            src[i] += addend[i];
         }
     }
 

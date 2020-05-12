@@ -3,9 +3,9 @@ package tsml.classifiers.distance_based.knn.strategies;
 import com.google.common.collect.ImmutableSet;
 import evaluation.storage.ClassifierResults;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.dimensions.IndexedParameterSpace;
@@ -460,11 +460,13 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
     }
 
     private boolean hasNextExploreTime() {
-        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+//        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+        return false;
     }
 
     private boolean hasNextExploitTime() {
-        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+//        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+        return false;
     }
 
     private boolean hasNextExploreTick() {

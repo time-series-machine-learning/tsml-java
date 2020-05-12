@@ -311,11 +311,13 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainTimer.suspend();
         trainEstimateTimer.suspend();
         memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
+//        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() &&
+        //        !skipFinalCheckpoint); // todo fix
         memoryWatcher.unsuspend();
         trainEstimateTimer.unsuspend();
         trainTimer.unsuspend();
-        return result;
+//        return result;
+        return false;
     }
 
     public boolean loadFromCheckpoint() {
@@ -358,7 +360,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainTimeLimitNanos = nanos;
     }
 
-    @Override public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
+    public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
         long result = 0;
         // if we've got no more constituents to look at then we're done
         if(!nextConstituentsBatch.isEmpty()) {
@@ -366,23 +368,28 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             EnhancedAbstractClassifier classifier = nextConstituentsBatch.get(0);
             // if it's able to predict its next amount of time then use that
             if(classifier instanceof TrainTimeContractable) {
-                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
+//                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
             }
         }
         return result;
     }
 
-    @Override public long getTrainContractTimeNanos() {
+    @Override public long getTrainTimeLimit() {
         return trainContractTimeNanos;
     }
 
     private void setRemainingTrainTimeNanosPerConstituent() {
         // if we've got no train time limit then the constituents can take as long as they like
         // if we've got no constituents in the batch then there's no remaining time
-        if(!hasTrainTimeLimit() || constituentsBatch.isEmpty()) {
+        if(
+//            !hasTrainTimeLimit()
+//                ||
+        constituentsBatch.isEmpty()) {
             remainingTrainTimeNanosPerConstituent = -1;
         } else {
-            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / constituentsBatch.size();
+//            remainingTrainTimeNanosPerConstituent =
+//                getRemainingTrainTimeNanos()
+//                    / constituentsBatch.size();
         }
     }
 
@@ -490,7 +497,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // free up train data
         this.trainData = null;
         // we're built by here
-        setBuilt(true);
+//        setBuilt(true);
         logger.info("build finished");
         saveToCheckpoint();
     }
@@ -520,7 +527,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // set the train time limit if possible
         if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()) {
-            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
+//            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
         // track the train time of the constituent
         StopWatch constituentTrainTimer = new StopWatch();
@@ -582,8 +589,11 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // if the constituent is contracting train time AND there's time remaining for each constituent AND the
         // constituent has remaining work to do
-        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent() &&
-                ((TrainTimeContractable) constituent).hasRemainingTraining()) {
+        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()
+//            &&
+//                ((TrainTimeContractable) constituent).hasRemainingTraining()
+                        )
+                        {
             // add it to the next batch of constituents
             nextConstituentsBatch.add(constituent);
         }
@@ -611,7 +621,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // must do a first pass of all constituents, therefore if the first batch hasn't been completed this should
         // always return true
         // otherwise, it's dependent on whether there's further training remaining
-        return !firstBatchDone || (hasRemainingTrainTime() && !constituentsBatch.isEmpty());
+        return !firstBatchDone
+//            || (hasRemainingTrainTime() && !constituentsBatch.isEmpty())
+                    ;
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {

@@ -25,6 +25,7 @@ import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
@@ -761,4 +762,5 @@ public class ClassifierTools {
         Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
         return trainAndTest(data, classifier);
     }
+
 }

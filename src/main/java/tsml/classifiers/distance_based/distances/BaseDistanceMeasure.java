@@ -24,16 +24,6 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
         return getClass().getSimpleName();
     }
 
-    @Override
-    public boolean isDebug() {
-        return debug;
-    }
-
-    @Override
-    public void setDebug(final boolean debug) {
-        this.debug = debug;
-    }
-
     // optional check for data in the correct format
     public void checkData(Instance first, Instance second) {
         if(!dataAvailable) {

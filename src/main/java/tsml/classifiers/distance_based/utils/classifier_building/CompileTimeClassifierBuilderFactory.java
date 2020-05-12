@@ -2,7 +2,6 @@ package tsml.classifiers.distance_based.utils.classifier_building;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory.ClassifierBuilder;
 import weka.classifiers.Classifier;
 

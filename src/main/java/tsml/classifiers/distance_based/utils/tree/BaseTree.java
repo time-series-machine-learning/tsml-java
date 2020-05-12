@@ -12,6 +12,11 @@ public class BaseTree<A> implements Tree<A> {
 
     }
 
+    @Override
+    public void clear() {
+        setRoot(null);
+    }
+
     private TreeNode<A> root = null;
 
     @Override

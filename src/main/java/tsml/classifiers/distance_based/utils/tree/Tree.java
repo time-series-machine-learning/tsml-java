@@ -15,4 +15,6 @@ public interface Tree<A> {
     int size();
 
     int height();
+
+    void clear();
 }

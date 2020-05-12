@@ -1,15 +1,19 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
+import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
+import java.lang.reflect.Array;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.proximity.RandomSource;
-import tsml.classifiers.distance_based.utils.logging.Debugable;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import utilities.ArrayUtilities;
+import utilities.Utilities;
 import weka.core.Debug.Random;
+import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -19,15 +23,19 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy,
-    Debugable, TrainEstimateable,
+public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy, TrainEstimateable,
     Loggable, RandomSource {
 
+    // method of logging
     private Logger logger = LogUtils.buildLogger(this);
-    private boolean built = false;
+    // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
-    private boolean debug = false;
+    // whether the seed has been set
     private boolean seedSet = false;
+    // method of listening for when rebuilding
+    private RebuildListener rebuildListener = (final Instances trainData) -> {};
+    // has buildClassifier ever been called?
+    private boolean firstBuild = true;
 
     public BaseClassifier() {
 
@@ -37,9 +45,32 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         super(a);
     }
 
+    public boolean isFirstBuild() {
+        return firstBuild;
+    }
+
+    protected BaseClassifier setFirstBuild(final boolean firstBuild) {
+        this.firstBuild = firstBuild;
+        return this;
+    }
+
+    public interface RebuildListener {
+        void onRebuild(final Instances trainData);
+    }
+
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        if(isRebuild()) {
+        final boolean firstBuild = isFirstBuild();
+        final boolean rebuild = isRebuild();
+        final Logger logger = getLogger();
+        if(rebuild || firstBuild) {
+            logger.info(() -> {
+                if(firstBuild) {
+                    return "first build";
+                } else {
+                    return "rebuilding";
+                }
+            });
             Assert.assertNotNull(trainData);
             // check the seed has been set
             if(!seedSet) {
@@ -47,11 +78,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             }
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(trainData);
+            // we're no longer rebuilding
+            // assume all subclasses would have save this value before calling this method
             setRebuild(false);
+            // this is the first build
+            setFirstBuild(false);
+            // notify the rebuild listener that we're rebuilding so anything requiring train data knowledge can be
+            // setup (this is helpful when tuning over a data dependent range. The range would be setup inside this
+            // method and set corresponding variables in this classifier)
+            rebuildListener.onRebuild(trainData);
         }
-        // assume that child classes will set built to true if/when they're built. We'll set it to false here in case
-        // it's already been set to true from a previous call
-        setBuilt(false);
     }
 
     @Override
@@ -61,14 +97,14 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         logger = LogUtils.buildLogger(classifierName);
     }
 
-    @Override
-    public boolean isDebug() {
-        return debug;
+    public RebuildListener getRebuildListener() {
+        return rebuildListener;
     }
 
-    @Override
-    public void setDebug(boolean debug) {
-        this.debug = debug;
+    public BaseClassifier setRebuildListener(
+        final RebuildListener rebuildListener) {
+        this.rebuildListener = rebuildListener;
+        return this;
     }
 
     @Override
@@ -94,14 +130,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         this.rebuild = rebuild;
     }
 
-    public boolean isBuilt() {
-        return built;
-    }
-
-    protected void setBuilt(boolean built) {
-        this.built = built;
-    }
-
     @Override
     public void setSeed(int seed) {
         super.setSeed(seed);
@@ -111,5 +139,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void setRandom(Random random) {
         Assert.assertNotNull(random);
         rand = random;
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance instance) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public double classifyInstance(final Instance instance) throws Exception {
+        double[] distribution = distributionForInstance(instance);
+        return ArrayUtilities.argMax(distribution);
     }
 }

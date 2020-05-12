@@ -243,7 +243,7 @@ public class KNNLOOCV
             knn.setDistanceFunction(new DDTWDistance(-1));
             return knn;
         }
-        
+
         public static void main(String[] args) throws Exception {
             int seed = 0;
             Instances[] data = DatasetLoading.sampleGunPoint(seed);
@@ -323,7 +323,9 @@ public class KNNLOOCV
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        return estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
+        return estimateOwnPerformance && hasNextNeighbour()
+//            && hasRemainingTrainTime()
+            ;
     }
 
     public long predictNextTrainTimeNanos() {
@@ -411,7 +413,8 @@ public class KNNLOOCV
         return super.getParams()
                     .add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder)
                     .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit)
-                    .addAll(TrainTimeContractable.super.getParams());
+//                    .addAll(TrainTimeContractable.super.getParams())
+            ;
     }
 
     @Override public void setParams(final ParamSet params) {
@@ -419,7 +422,7 @@ public class KNNLOOCV
         ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
         ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
                               NeighbourIteratorBuilder.class);
-        TrainTimeContractable.super.setParams(params);
+//        TrainTimeContractable.super.setParams(params);
     }
 
     public boolean loadFromCheckpoint() {
@@ -504,8 +507,10 @@ public class KNNLOOCV
         }
         trainTimer.checkDisabled();
         if(estimateOwnPerformance && regenerateTrainEstimate) {
-            if(!hasTrainTimeLimit()
-                && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
+            if(
+//                !hasTrainTimeLimit()
+//                &&
+                    ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
                         (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
                 throw new IllegalStateException("not fully built");
             }
@@ -528,7 +533,7 @@ public class KNNLOOCV
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
         }
         regenerateTrainEstimate = false;
-        setBuilt(true);
+//        setBuilt(true);
         saveToCheckpoint();
     }
 
@@ -536,11 +541,10 @@ public class KNNLOOCV
         return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
     }
 
-    public long getTrainContractTimeNanos() {
+    public long getTrainTimeLimit() {
         return trainTimeLimitNanos;
     }
 
-    @Override
     public void setTrainTimeLimitNanos(final long trainTimeLimit) {
         this.trainTimeLimitNanos = trainTimeLimit;
     }

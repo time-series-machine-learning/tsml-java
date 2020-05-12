@@ -1,12 +1,10 @@
 package tsml.classifiers.distance_based.utils.collections;
 
-import tsml.classifiers.distance_based.utils.checks.NotNull;
-
 public class IntListView implements DefaultList<Integer> {
 
-    @NotNull final int[] array;
+    final int[] array;
 
-    public IntListView(@NotNull final int[] array) {this.array = array;}
+    public IntListView(final int[] array) {this.array = array;}
 
     @Override public Integer get(final int i) {
         return array[i];

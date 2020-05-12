@@ -225,6 +225,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     public void setTimeDetails(final TrainEstimateTimeable trainTimeable) {
         setTimeDetails((TrainTimeable) trainTimeable);
         setBuildPlusEstimateTime(trainTimeable.getTrainPlusEstimateTimeNanos());
+        setTimeUnit(TimeUnit.NANOSECONDS);
     }
 
     public void setMemoryDetails(final Object obj) {
