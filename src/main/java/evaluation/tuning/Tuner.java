@@ -25,18 +25,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.ClassifierTools;
+
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import weka_extras.classifiers.SaveEachParameter;
+import machine_learning.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 
 /**
  *
@@ -46,9 +45,9 @@ public class Tuner
         implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
-    private ParameterSearcher searcher = new GridSearcher();
-    private Evaluator evaluator = new CrossValidationEvaluator();
-    private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
+    private ParameterSearcher searcher;                      //default = new GridSearcher();
+    private Evaluator evaluator;                             //default = new CrossValidationEvaluator();
+    private Function<ClassifierResults, Double> evalMetric;  //default = ClassifierResults.GETTER_Accuracy;
     
     private ParameterResults bestParaSetAndResults = null;
     
@@ -66,8 +65,8 @@ public class Tuner
     private String parameterSavingPath = null; //SaveEachParameter //CheckpointClassifier
     private boolean saveParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean contracting = false; //TrainTimeContractClassifier
+    long trainContractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean trainTimeContract = false; //TrainTimeContractClassifier
     
     ////////// end interface variables
     
@@ -96,6 +95,14 @@ public class Tuner
     boolean cloneTrainSetForEachParameterEval = false;
 
     public Tuner() { 
+        this(new CrossValidationEvaluator());
+    }
+
+    public Tuner(Evaluator evaluator) {
+        this.searcher = new GridSearcher();
+        this.evaluator = evaluator;
+        this.evalMetric = ClassifierResults.GETTER_Accuracy;
+
         setSeed(0);
     }
 
@@ -269,7 +276,7 @@ public class Tuner
             else 
                 storeParaResult(pset, results, tiesBestSoFar);
             
-            if (contracting) {
+            if (trainTimeContract) {
                 long thisParaTime = System.nanoTime() - thisParaStartTime;
                 if (thisParaTime > maxParaEvalTime) 
                     maxParaEvalTime = thisParaTime;
@@ -292,7 +299,7 @@ public class Tuner
             // we might not have had time to eval ALL the psets, justfind the best so far
             // if we're contracting but not saving each paraset, we'll have been using 
             // storeParaResult() and have them in memory currently anyway
-            if (contracting)
+            if (trainTimeContract)
                 tiesBestSoFar = loadBestOfSavedParas_SoFar();
             else
                 tiesBestSoFar = loadBestOfSavedParas_All(parameterSpace.numUniqueParameterSets());
@@ -308,7 +315,7 @@ public class Tuner
     }
     
     private boolean canWeEvaluateAnotherParaSet(long maxParaEvalTime, long totalTimeSoFar) {
-        return contractTimeNanos - totalTimeSoFar > maxParaEvalTime;
+        return trainContractTimeNanos - totalTimeSoFar > maxParaEvalTime;
     }
     
     private boolean parametersAlreadyEvaluated(int paraID) {
@@ -469,10 +476,14 @@ public class Tuner
         //does anywhere set this to true but not give the path?. part of interface cleanup tests
     }
 
-    @Override //CheckpointClassifier
-    public void setSavePath(String path) {
-        this.parameterSavingPath = path;
-        this.saveParameters = true;
+    @Override //Checkpointable
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
+        if(validPath){
+            this.parameterSavingPath = path;
+            this.saveParameters = true;
+        }
+        return validPath;
     }
 
     @Override //CheckpointClassifier
@@ -480,24 +491,9 @@ public class Tuner
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //TrainTimeContractClassifier
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        contracting = true;
-        
-        long secToNano = 1000000000L;
-        switch(time){
-            case NANOSECONDS:
-                contractTimeNanos = amount;
-                break;
-            case MINUTES:
-                contractTimeNanos = amount*60*secToNano;
-                break;
-            case HOURS: default:
-                contractTimeNanos= amount*60*60*secToNano;
-                break;
-            case DAYS:
-                contractTimeNanos= amount*24*60*60*secToNano; 
-                break;
-        }
+    public void setTrainTimeLimit(long amount) {
+        trainTimeContract = true;
+        trainContractTimeNanos =amount;
     }
+
 }

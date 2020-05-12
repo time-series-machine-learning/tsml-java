@@ -38,7 +38,9 @@ import weka.filters.UnsupervisedFilter;
 
 /** 
  <!-- globalinfo-start -->
- * This filter removes attributes that do not vary at all or that vary too much. All constant attributes are deleted automatically, along with any that exceed the maximum percentage of variance parameter. The maximum variance test is only applied to nominal attributes.
+ * This filter removes attributes that do not vary at all or that vary too much. 
+ * All constant attributes are deleted automatically, along with any that exceed 
+ * #the maximum percentage of variance parameter. The maximum variance test is only applied to nominal attributes.
  * <p/>
  <!-- globalinfo-end -->
  * 

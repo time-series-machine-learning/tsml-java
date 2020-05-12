@@ -18,13 +18,13 @@ package utilities;
 
  */
 
-import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import experiments.data.DatasetLoading;
-import java.io.FileReader;
+
 import java.util.ArrayList;
 import java.util.Random;
+
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -32,27 +32,21 @@ import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 
 import fileIO.OutFile;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import weka_extras.classifiers.kNN;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.converters.ArffSaver;
+import machine_learning.classifiers.kNN;
+
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPath;
 
 /**
  * @author ajb
@@ -247,7 +241,7 @@ public class ClassifierTools {
 
     }
 		
-    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed){
+    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed) throws Exception{
         Random rand = new Random(seed);   // create seeded number generator
         Instances randData = new Instances(data);   // create copy of original data
         randData.randomize(rand);         // randomize data with number generator
@@ -257,19 +251,14 @@ public class ClassifierTools {
         for (int n = 0; n < folds; n++) {
            Instances train = randData.trainCV(folds, n);
            Instances test = randData.testCV(folds, n);
-           try{
-               c.buildClassifier(train);
-                for(Instance ins:test){
-                    int pred=(int)c.classifyInstance(ins);
-                    if(pred==ins.classValue())
-                        correct++;
-                }
+           c.buildClassifier(train);
+            for(Instance ins:test){
+                int pred=(int)c.classifyInstance(ins);
+                if(pred==ins.classValue())
+                    correct++;
+            }
 //                System.out.println("Finished fold "+n+" acc ="+((double)correct/((n+1)*test.numInstances())));
-           }catch(Exception e){
-               System.err.println("ERROR BUILDING FOLD "+n+" for data set "+data.relationName());
-               e.printStackTrace();
-               System.exit(1);
-           }
+  
         }            
         return ((double)correct)/total;
     }
@@ -737,5 +726,37 @@ public class ClassifierTools {
         System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
         return res.getAcc() == expectedTestAccuracy;
     }
-    
+
+
+    public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
+        throws Exception {
+        Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances[] data, Classifier classifier) throws Exception {
+        return trainAndTest(data[0], data[1], classifier);
+    }
+
+    public static ClassifierResults trainAndTest(Instances trainData, Instances testData, Classifier classifier)
+        throws Exception {
+        classifier.buildClassifier(trainData);
+        ClassifierResults results = new ClassifierResults();
+        for(Instance testCase : testData) {
+            long timestamp = System.nanoTime();
+            double[] distribution = classifier.distributionForInstance(testCase);
+            long timeTaken = System.nanoTime() - timestamp;
+            int prediction = ArrayUtilities.argMax(distribution);
+            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
+        }
+        return results;
+    }
+
+    public static ClassifierResults trainAndTest(String path, String name, Classifier classifier, int seed) throws Exception {
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
+        Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
+        return trainAndTest(data, classifier);
+    }
 }

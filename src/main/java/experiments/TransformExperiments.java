@@ -20,15 +20,16 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.dayNano;
-import static timeseriesweka.filters.shapelet_transforms.ShapeletTransformTimingUtilities.nanoToOp;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
+import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
+import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.dayNano;
+import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.nanoToOp;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
+import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
 import weka.core.converters.ArffSaver;
 import weka.filters.SimpleBatchFilter;
@@ -41,10 +42,10 @@ public class TransformExperiments {
     
     private final static Logger LOGGER = Logger.getLogger(TransformExperiments.class.getName());
     
-     public static boolean debug = false;
-    
+    public static boolean debug = false;
+
     public static void main(String[] args) throws Exception {
-        
+        System.out.println("Tony Dev Test");
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             SetupTransformExperiment(expSettings);
@@ -64,7 +65,6 @@ public class TransformExperiments {
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
-            System.out.println("");
 
             ExperimentalArguments expSettings = new ExperimentalArguments(settings);
             SetupTransformExperiment(expSettings);
@@ -79,10 +79,11 @@ public class TransformExperiments {
         else 
             LOGGER.setLevel(Level.INFO);
         LOGGER.log(Level.FINE, expSettings.toString());
-        
+
+        long hrs = TimeUnit.HOURS.convert(expSettings.contractTrainTimeNanos, TimeUnit.NANOSECONDS);
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + Long.toString(expSettings.contractTrainTimeHours) + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + hrs + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -94,7 +95,6 @@ public class TransformExperiments {
         if (experiments.CollateResults.validateSingleFoldFile(transformWriteLocation) && experiments.CollateResults.validateSingleFoldFile(additionalWriteLocation)) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+additionalWriteLocation+", exiting.");
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+transformWriteLocation+", exiting.");
-            return;
         }
         else{
             SimpleBatchFilter transformer = TransformLists.setTransform(expSettings);
@@ -143,7 +143,7 @@ public class TransformExperiments {
                 
                 
                 /*TODO: Can tidy it up big time. Or move some of this else where.*/
-                ShapeletTransform st = (ShapeletTransform)transformer;
+                ShapeletFilter st = (ShapeletFilter)transformer;
                 //do contracting.
                 int m = train.numAttributes()-1;
                 int n = train.numInstances();
@@ -153,8 +153,8 @@ public class TransformExperiments {
                 int numShapeletsInTransform=st.getNumberOfShapelets();
                 
                 long numShapeletsToSearchFor = 0;
-                if(expSettings.contractTrainTimeHours > 0){
-                    long time  = expSettings.contractTrainTimeHours *  (dayNano/24); //time in nanoseconds for the number of hours we want to run for.
+                if(expSettings.contractTrainTimeNanos > 0){
+                    long time  = expSettings.contractTrainTimeNanos; //time in nanoseconds for the number of hours we want to run for.
                     
                     //proportion of operations we can perform in time frame.
                     BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
@@ -173,14 +173,14 @@ public class TransformExperiments {
                         System.out.println(numShapeletsToSearchFor);
                         //make sure the k shapelets is less than the amount we're looking at.
                         numShapeletsInTransform =  numShapeletsToSearchFor > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToSearchFor;
-                        searchType = ShapeletSearch.SearchType.IMP_RANDOM;
+                        searchType = ShapeletSearch.SearchType.IMPROVED_RANDOM;
                     }
                 }
                 ShapeletSearchOptions sops = new ShapeletSearchOptions.Builder()
                         .setSearchType(searchType)
                         .setMin(3).setMax(m)
                         .setSeed(expSettings.foldId)
-                        .setNumShapelets(numShapeletsToSearchFor)
+                        .setNumShapeletsToEvaluate(numShapeletsToSearchFor)
                         .build();
 
                 st.setSearchFunction(new ShapeletSearchFactory(sops).getShapeletSearch());
@@ -207,7 +207,7 @@ public class TransformExperiments {
         switch(expSettings.classifierName){
             
             case"ST": case "ShapeletTransform":
-                ShapeletTransform st = (ShapeletTransform) transformer;
+                ShapeletFilter st = (ShapeletFilter) transformer;
                 st.writeAdditionalData(additionalDataFilePath, expSettings.foldId);
                 break;
             

@@ -46,7 +46,9 @@ public class PerformanceMetric {
     /**
      * currently only used for the pairwise scatter diagrams in the pipeline, 
      * this refers to the descriptor for comparing the scores of a metric between 
-     * classifiers. e.g 'this is {better,worse,slower} than that' 
+     * classifiers
+     *
+     * If the raw value of a is HIGHER than b, then a is {better,worse,slower,faster,etc.} than b
      */
     public String comparisonDescriptor;
     
@@ -80,12 +82,23 @@ public class PerformanceMetric {
     public static PerformanceMetric recall          = new PerformanceMetric("Recall", ClassifierResults.GETTER_Recall,                   mean, max,   better);
     public static PerformanceMetric sensitivity     = new PerformanceMetric("Sens", ClassifierResults.GETTER_Sensitivity,                mean, max,   better);
     public static PerformanceMetric specificity     = new PerformanceMetric("Spec", ClassifierResults.GETTER_Specificity,                mean, max,   better);
+
     public static PerformanceMetric buildTime       = new PerformanceMetric("TrainTimes", ClassifierResults.GETTER_buildTimeDoubleMillis,         median, min, slower);
     public static PerformanceMetric totalTestTime   = new PerformanceMetric("TestTimes", ClassifierResults.GETTER_totalTestTimeDoubleMillis,      median, min, slower);
     public static PerformanceMetric avgTestPredTime = new PerformanceMetric("AvgPredTimes", ClassifierResults.GETTER_avgTestPredTimeDoubleMillis, median, min, slower);
     public static PerformanceMetric fromScratchEstimateTime = new PerformanceMetric("FromScratchEstimateTimes", ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillis, median, min, slower);
     public static PerformanceMetric totalBuildPlusEstimateTime = new PerformanceMetric("TotalBuildPlusEstimateTimes", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillis, median, min, slower);
     public static PerformanceMetric additionalTimeForEstimate = new PerformanceMetric("AdditionalTimesForEstimates", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillis, median, min, slower);
+
+    public static PerformanceMetric buildTimeBenchmarked = new PerformanceMetric("TrainTimesBenchmarked", ClassifierResults.GETTER_buildTimeDoubleMillisBenchmarked,         median, min, slower);
+    public static PerformanceMetric totalTestTimeBenchmarked = new PerformanceMetric("TestTimesBenchmarked", ClassifierResults.GETTER_totalTestTimeDoubleMillisBenchmarked,      median, min, slower);
+    public static PerformanceMetric avgTestPredTimeBenchmarked = new PerformanceMetric("AvgPredTimesBenchmarked", ClassifierResults.GETTER_avgTestPredTimeDoubleMillisBenchmarked, median, min, slower);
+    public static PerformanceMetric fromScratchEstimateTimeBenchmarked = new PerformanceMetric("FromScratchEstimateTimesBenchmarked", ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked, median, min, slower);
+    public static PerformanceMetric totalBuildPlusEstimateTimeBenchmarked = new PerformanceMetric("TotalBuildPlusEstimateTimesBenchmarked", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked, median, min, slower);
+    public static PerformanceMetric additionalTimeForEstimateBenchmarked = new PerformanceMetric("AdditionalTimesForEstimatesBenchmarked", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillisBenchmarked, median, min, slower);
+
+    public static PerformanceMetric benchmarkTime = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower);
+    public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse);
     
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
@@ -115,6 +128,9 @@ public class PerformanceMetric {
         stats.add(recall);
         stats.add(sensitivity);
         stats.add(specificity);
+
+        //stats.add(memory);
+
         return stats;
     }
 }

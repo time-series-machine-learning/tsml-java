@@ -18,7 +18,7 @@
 package examples;
 
 import experiments.data.DatasetLoading;
-import timeseriesweka.clusterers.UnsupervisedShapelets;
+import tsml.clusterers.UnsupervisedShapelets;
 import utilities.ClusteringUtilities;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instances;
