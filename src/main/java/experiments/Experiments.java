@@ -311,7 +311,7 @@ public class Experiments  {
         GcFinalization.awaitFullGc();
         long maxMemory = memoryMonitor.getMaxMemoryUsed();
 
-        trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, maxMemory);
+        trainResults = finaliseTrainResults(expSettings, classifier, trainResults, buildTime, benchmark, TimeUnit.NANOSECONDS, maxMemory);
 
         //At this stage, regardless of whether the classifier is able to estimate it's
         //own accuracy or not, train results should contain either
@@ -379,8 +379,8 @@ public class Experiments  {
                 testResults = evaluateClassifier(expSettings, classifier, testSet);
                 testResults.setParas(trainResults.getParas());
                 testResults.turnOffZeroTimingsErrors();
-                testResults.setBenchmarkTime(trainResults.getBenchmarkTime());
-                testResults.setBuildTime(trainResults.getBuildTime());
+                testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
+                testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
                 testResults.turnOnZeroTimingsErrors();
                 testResults.setMemory(trainResults.getMemory());
                 LOGGER.log(Level.FINE, "Testing complete");
@@ -475,7 +475,7 @@ public class Experiments  {
      * @return the finalised train results object
      * @throws Exception
      */
-    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, long maxMemory) throws Exception {
+    public static ClassifierResults finaliseTrainResults(ExperimentalArguments exp, Classifier classifier, ClassifierResults trainResults, long buildTime, long benchmarkTime, TimeUnit expTimeUnit, long maxMemory) throws Exception {
 
         /*
         if estimateacc { //want full predictions
@@ -498,42 +498,48 @@ public class Experiments  {
                 return trainResults
         */
 
+        //todo just enforce nanos everywhere, this is ridiculous. this needs overhaul
+
         if (exp.generateErrorEstimateOnTrainSet) { //want timings and full predictions
             long timingToUpdateWith = buildTime; //the timing that experiments measured by default
+            TimeUnit timeUnitToUpdateWith = expTimeUnit;
             String paras = "No parameter info";
 
             if (classifier instanceof EnhancedAbstractClassifier) {
                 EnhancedAbstractClassifier eac = ((EnhancedAbstractClassifier)classifier);
                 if (eac.getEstimateOwnPerformance()) {
                     ClassifierResults res = eac.getTrainResults(); //classifier internally estimateed/recorded itself, just return that directly
-                    res.setBenchmarkTime(benchmarkTime);
+                    res.setBenchmarkTime(res.getTimeUnit().convert(benchmarkTime, expTimeUnit));
                     res.setMemory(maxMemory);
 
                     return res;
                 }
                 else {
                     timingToUpdateWith = eac.getTrainResults().getBuildTime(); //update with classifier's own timings instead
+                    timeUnitToUpdateWith = eac.getTrainResults().getTimeUnit();
                     paras = eac.getParameters();
                 }
             }
 
+            timingToUpdateWith = trainResults.getTimeUnit().convert(timingToUpdateWith, timeUnitToUpdateWith);
+            long estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
+
             //update the externally produced results with the appropriate timing
             trainResults.setBuildTime(timingToUpdateWith);
-            trainResults.setBuildPlusEstimateTime(timingToUpdateWith + trainResults.getErrorEstimateTime());
-            trainResults.setBenchmarkTime(benchmarkTime);
+            trainResults.setBuildPlusEstimateTime(timingToUpdateWith + estimateToUpdateWith);
+
             trainResults.setParas(paras);
         }
         else { // just want the timings
             if (classifier instanceof EnhancedAbstractClassifier) {
                 trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
-                trainResults.setBenchmarkTime(benchmarkTime);
             }
             else {
-                trainResults.setBuildTime(buildTime);
-                trainResults.setBenchmarkTime(benchmarkTime);
+                trainResults.setBuildTime(trainResults.getTimeUnit().convert(buildTime, expTimeUnit));
             }
         }
 
+        trainResults.setBenchmarkTime(trainResults.getTimeUnit().convert(benchmarkTime, expTimeUnit));
         trainResults.setMemory(maxMemory);
 
         return trainResults;
