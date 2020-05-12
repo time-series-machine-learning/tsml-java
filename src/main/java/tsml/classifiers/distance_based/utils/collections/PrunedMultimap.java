@@ -17,6 +17,20 @@ public class PrunedMultimap<K, V> extends DecoratedMultimap<K, V> implements Ran
     private boolean randomInitialised = false;
     private final TreeMap<K, Collection<V>> backingMap;
 
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> ascSoftSingle(Random random) {
+        PrunedMultimap<K, V> map = asc(ArrayList::new);
+        map.setSoftLimit(1);
+        map.setRandom(random);
+        return map;
+    }
+
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> descSoftSingle(Random random) {
+        PrunedMultimap<K, V> map = desc(ArrayList::new);
+        map.setSoftLimit(1);
+        map.setRandom(random);
+        return map;
+    }
+
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc() {
         return asc(ArrayList::new);
     }

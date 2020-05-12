@@ -1,20 +1,13 @@
 package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
 import com.beust.jcommander.internal.Lists;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.proximity.splitting.AbstractSplit;
-import tsml.classifiers.distance_based.proximity.splitting.scoring.ScoreUtils;
-import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
+import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
-import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -25,7 +18,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class RandomExemplarProximitySplit extends AbstractSplit {
+public class RandomExemplarProximitySplit extends Split {
 
     private Random random;
     private ExemplarPicker exemplarPicker;

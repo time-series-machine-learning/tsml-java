@@ -7,7 +7,7 @@ import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class BestOfNSplits extends AbstractSplit {
+public class BestOfNSplits extends Split {
     private int numSplits = 5;
     private Splitter splitter;
     private Random random;
@@ -45,7 +45,7 @@ public class BestOfNSplits extends AbstractSplit {
         map.setSoftLimit(1);
         for(int i = 0; i < getNumSplits(); i++) {
             Split split = splitter.buildSplit(data);
-            split.split();
+            split.buildClassifier();
             double score = split.getScore();
             map.put(score, split);
         }

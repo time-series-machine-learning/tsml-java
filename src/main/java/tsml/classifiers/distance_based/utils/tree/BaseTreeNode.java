@@ -67,6 +67,11 @@ public class BaseTreeNode<A> implements TreeNode<A> {
         return element != null;
     }
 
+    @Override
+    public boolean isRoot() {
+        return parent == null;
+    }
+
     /**
      * the number of children branching from this node
      * @return

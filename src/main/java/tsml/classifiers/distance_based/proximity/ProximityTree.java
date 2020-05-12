@@ -1,17 +1,12 @@
 package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
-import java.util.Set;
 import org.junit.Assert;
-import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
@@ -22,7 +17,6 @@ import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.Random
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarProximitySplit;
 import tsml.classifiers.distance_based.proximity.stopping_conditions.Pure;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.TestTimeable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -31,7 +25,6 @@ import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.tree.Tree;
 import tsml.classifiers.distance_based.utils.tree.TreeNode;
 import tsml.filters.CachedFilter;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -40,15 +33,19 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements TrainTimeContractable, TestTimeable {
+public class ProximityTree extends BaseClassifier
+//    implements TrainTimeContractable, TestTimeable
+{
 
     public static void main(String[] args) throws Exception {
-        int seed = 1;
-        ProximityTree classifier = new ProximityTree();
-        classifier.setEstimateOwnPerformance(false);
-        classifier.setSeed(seed);
-        classifier.setConfigR1();
-        Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        for(int i = 0; i < 30; i++) {
+            int seed = i;
+            ProximityTree classifier = new ProximityTree();
+            classifier.setEstimateOwnPerformance(false);
+            classifier.setSeed(seed);
+            classifier.setConfigR1();
+            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        }
     }
 
     // -------------------- configs --------------------
@@ -77,6 +74,15 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
 
     public ProximityTree setBuildUntilPure() {
         return setStoppingCondition(new Pure());
+//        return setStoppingCondition(new StoppingCondition() {
+//            @Override
+//            public boolean shouldStop(final TreeNode<Split> node) {
+//                if(node.isRoot()) {
+//                    return false;
+//                }
+//                return node.getParent().getElement().getScore() == 0;
+//            }
+//        });
     }
 
     public ProximityTree setSingleSplit() {
@@ -111,6 +117,7 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
 
     public ProximityTree setMultipleSplits(int numSplits) {
         Assert.assertTrue(numSplits > 0);
+        setSingleSplit();
         Splitter splitter = getSplitter();
         setSplitter(data -> {
             BestOfNSplits bestOfNSplits = new BestOfNSplits(splitter, this.getRandom(), numSplits);
@@ -129,18 +136,18 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     }
 
     private final Tree<Split> tree = new BaseTree<>();
-    private final TimeContracter trainTimeContracter = new TimeContracter();
-    private final TimeContracter testTimeContracter = new TimeContracter();
-    private final MemoryContracter trainMemoryContracter = new MemoryContracter();
-    private final MemoryContracter testMemoryContracter = new MemoryContracter();
-    private long longestNodeBuildTimeNanos;
+//    private final TimeContracter trainTimeContracter = new TimeContracter();
+//    private final TimeContracter testTimeContracter = new TimeContracter();
+//    private final MemoryContracter trainMemoryContracter = new MemoryContracter();
+//    private final MemoryContracter testMemoryContracter = new MemoryContracter();
+//    private long longestNodeBuildTimeNanos;
     private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
     private StoppingCondition stoppingCondition;
     private Splitter splitter;
-    private Instances oobTrain;
-    private Instances oobTest;
-    private List<Integer> oobTestIndices;
-    private List<Integer> oobTrainIndices;
+//    private Instances oobTrain;
+//    private Instances oobTest;
+//    private List<Integer> oobTestIndices;
+//    private List<Integer> oobTrainIndices;
 
     public interface StoppingCondition extends Serializable {
         boolean shouldStop(TreeNode<Split> node);
@@ -148,35 +155,35 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        trainMemoryContracter.getWatcher().enable();
-        trainTimeContracter.getTimer().enable();
+//        trainMemoryContracter.getWatcher().enable();
+//        trainTimeContracter.getTimer().enable();
         if(isRebuild()) {
             // reset
-            trainMemoryContracter.getWatcher().resetAndEnable();
-            trainTimeContracter.getTimer().resetAndEnable();
+//            trainMemoryContracter.getWatcher().resetAndEnable();
+//            trainTimeContracter.getTimer().resetAndEnable();
             super.buildClassifier(trainData);
             // make the instances hashed so caching of distances works
-            if(getEstimateOwnPerformance()) {
-                oobTrain = new Instances(trainData, 0);
-                oobTrainIndices = new ArrayList<>();
-                final Set<Integer> oobTestSetIndices = new HashSet<>(ArrayUtilities.sequence(trainData.size()));
-                // todo double check this is working as intended
-                for(int i = 0; i < trainData.size(); i++) {
-                    int index = rand.nextInt(trainData.size());
-                    Instance instance = trainData.get(index);
-                    oobTrain.add(instance);
-                    oobTrainIndices.add(index);
-                    oobTestSetIndices.remove(index);
-                }
-                oobTestIndices = new ArrayList<>(oobTestSetIndices);
-                oobTest = new Instances(trainData, 0);
-                for(int index : oobTestIndices) {
-                    oobTest.add(trainData.get(index));
-                }
-                trainData = oobTrain;
-            }
+//            if(getEstimateOwnPerformance()) {
+//                oobTrain = new Instances(trainData, 0);
+//                oobTrainIndices = new ArrayList<>();
+//                final Set<Integer> oobTestSetIndices = new HashSet<>(ArrayUtilities.sequence(trainData.size()));
+//                 todo double check this is working as intended
+//                for(int i = 0; i < trainData.size(); i++) {
+//                    int index = rand.nextInt(trainData.size());
+//                    Instance instance = trainData.get(index);
+//                    oobTrain.add(instance);
+//                    oobTrainIndices.add(index);
+//                    oobTestSetIndices.remove(index);
+//                }
+//                oobTestIndices = new ArrayList<>(oobTestSetIndices);
+//                oobTest = new Instances(trainData, 0);
+//                for(int index : oobTestIndices) {
+//                    oobTest.add(trainData.get(index));
+//                }
+//                trainData = oobTrain;
+//            }
             tree.clear();
-            longestNodeBuildTimeNanos = 0;
+//            longestNodeBuildTimeNanos = 0;
             nodeBuildQueue = new LinearListIterator<>();
             final TreeNode<Split> root = buildNode(trainData, null);
             tree.setRoot(root);
@@ -184,52 +191,54 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
         CachedFilter.hashInstances(trainData);
         while(
             // there is enough time for another split to be built
-            (!this.trainTimeContracter.hasTimeLimit()
-                ||
-                this.trainTimeContracter.getRemainingTrainTime() < longestNodeBuildTimeNanos)
+//            (!this.trainTimeContracter.hasTimeLimit()
+//                ||
+//                this.trainTimeContracter.getRemainingTrainTime() < longestNodeBuildTimeNanos)
             // and there's remaining nodes to be built
-            &&
+//            &&
                 this.nodeBuildQueue.hasNext()
         ) {
             final TreeNode<Split> node = this.nodeBuildQueue.next();
             // partition the data at the node
-            List<Instances> partitions = node.getElement().split();
+            Split split = node.getElement();
+            List<Instances> partitions = split.buildClassifier();
+//            getLogger().info("score: " + split.getScore());
             // for each partition of data
             for(Instances partition : partitions) {
                 // try to build a child node
                 buildNode(partition, node);
             }
-            trainTimeContracter.getTimer().lap();
+//            trainTimeContracter.getTimer().lap();
         }
-        if(getEstimateOwnPerformance()) {
-            // todo put oob in contract
-            trainResults = new ClassifierResults();
-            for(Instance instance : oobTest) {
-                Utils.addPrediction(this, instance, trainResults);
-            }
-        }
-        trainTimeContracter.getTimer().disable();
-        trainMemoryContracter.getWatcher().disable();
-        if(getEstimateOwnPerformance()) {
-            trainResults.setDetails(this, trainData);
-        }
+//        if(getEstimateOwnPerformance()) {
+//             todo put oob in contract
+//            trainResults = new ClassifierResults();
+//            for(Instance instance : oobTest) {
+//                Utils.addPrediction(this, instance, trainResults);
+//            }
+//        }
+//        trainTimeContracter.getTimer().disable();
+//        trainMemoryContracter.getWatcher().disable();
+//        if(getEstimateOwnPerformance()) {
+//            trainResults.setDetails(this, trainData);
+//        }
     }
 
-    public List<Integer> getOobTestIndices() {
-        return oobTestIndices;
-    }
-
-    public List<Integer> getOobTrainIndices() {
-        return oobTrainIndices;
-    }
-
-    public Instances getOobTrain() {
-        return oobTrain;
-    }
-
-    public Instances getOobTest() {
-        return oobTest;
-    }
+//    public List<Integer> getOobTestIndices() {
+//        return oobTestIndices;
+//    }
+//
+//    public List<Integer> getOobTrainIndices() {
+//        return oobTrainIndices;
+//    }
+//
+//    public Instances getOobTrain() {
+//        return oobTrain;
+//    }
+//
+//    public Instances getOobTest() {
+//        return oobTest;
+//    }
 
     private TreeNode<Split> buildNode(Instances data, TreeNode<Split> parent) {
         // split the data into multiple partitions, housed in a Split object
@@ -247,15 +256,15 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
         return node;
     }
 
-    @Override
-    public void setTrainTimeLimit(final long time) {
-        trainTimeContracter.setTimeLimit(time);
-    }
-
-    @Override
-    public long getTrainTimeLimit() {
-        return trainTimeContracter.getTimeLimit();
-    }
+//    @Override
+//    public void setTrainTimeLimit(final long time) {
+//        trainTimeContracter.setTimeLimit(time);
+//    }
+//
+//    @Override
+//    public long getTrainTimeLimit() {
+//        return trainTimeContracter.getTimeLimit();
+//    }
 
     public StoppingCondition getStoppingCondition() {
         return stoppingCondition;
@@ -281,16 +290,16 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         // enable resource monitors
-        testMemoryContracter.getWatcher().resetAndEnable();
-        testTimeContracter.getTimer().resetAndEnable();
-        double[] distribution = new double[getNumClasses()];
+//        testMemoryContracter.getWatcher().resetAndEnable();
+//        testTimeContracter.getTimer().resetAndEnable();
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
         int index = -1;
+        Split split = node.getElement();
         // traverse the tree downwards from root
         while(!node.isLeaf()) {
             // get the split at that node
-            final Split split = node.getElement();
+            split = node.getElement();
             // work out which branch to go to next
             index = split.getPartitionIndexFor(instance);
             final List<TreeNode<Split>> children = node.getChildren();
@@ -298,24 +307,24 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             node = children.get(index);
         }
         // hit a leaf node by here
-        // the index is the branch we're at AKA class value
-        distribution[index]++;
+        //
+        double[] distribution = split.distributionForInstance(index);
         // disable the resource monitors
-        testTimeContracter.getTimer().disable();
-        testMemoryContracter.getWatcher().disable();
+//        testTimeContracter.getTimer().disable();
+//        testMemoryContracter.getWatcher().disable();
         return distribution;
     }
 
-    @Override
-    public long getTestTimeNanos() {
-        return testTimeContracter.getTimer().getTimeNanos();
-    }
-
-    public MemoryContracter getTrainMemoryContracter() {
-        return trainMemoryContracter;
-    }
-
-    public TimeContracter getTrainTimeContracter() {
-        return trainTimeContracter;
-    }
+//    @Override
+//    public long getTestTimeNanos() {
+//        return testTimeContracter.getTimer().getTimeNanos();
+//    }
+//
+//    public MemoryContracter getTrainMemoryContracter() {
+//        return trainMemoryContracter;
+//    }
+//
+//    public TimeContracter getTrainTimeContracter() {
+//        return trainTimeContracter;
+//    }
 }

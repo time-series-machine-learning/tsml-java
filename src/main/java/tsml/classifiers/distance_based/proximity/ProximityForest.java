@@ -93,20 +93,20 @@ public class ProximityForest extends BaseClassifier {
             double[][] finalDistributions = new double[trainData.size()][];
             long[] times = new long[trainData.size()];
             for(ProximityTree tree : trees) {
-                List<Integer> oobTestIndices = tree.getOobTestIndices();
-                ClassifierResults treeTrainResults = tree.getTrainResults();
-                for(int i = 0; i < oobTestIndices.size(); i++) {
-                    long time = System.nanoTime();
-                    int index = oobTestIndices.get(i);
-                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
-                    if(finalDistributions[index] == null) {
-                        finalDistributions[index] = new double[getNumClasses()];
-                    }
-                    vote(finalDistributions[index], distribution);
-                    time = System.nanoTime() - time;
-                    time += treeTrainResults.getPredictionTime(i);
-                    times[index] = time;
-                }
+//                List<Integer> oobTestIndices = tree.getOobTestIndices();
+//                ClassifierResults treeTrainResults = tree.getTrainResults();
+//                for(int i = 0; i < oobTestIndices.size(); i++) {
+//                    long time = System.nanoTime();
+//                    int index = oobTestIndices.get(i);
+//                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
+//                    if(finalDistributions[index] == null) {
+//                        finalDistributions[index] = new double[getNumClasses()];
+//                    }
+//                    vote(finalDistributions[index], distribution);
+//                    time = System.nanoTime() - time;
+//                    time += treeTrainResults.getPredictionTime(i);
+//                    times[index] = time;
+//                }
             }
             for(int i = 0; i < finalDistributions.length; i++) {
                 long time = System.nanoTime();

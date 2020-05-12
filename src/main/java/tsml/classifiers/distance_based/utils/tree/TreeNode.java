@@ -35,4 +35,6 @@ public interface TreeNode<A> {
     boolean addChild(TreeNode<A> child);
 
     boolean removeChild(TreeNode<A> child);
+
+    boolean isRoot();
 }
