@@ -40,15 +40,22 @@ public class ArrayUtilities {
         return sum;
     }
 
-    public static double[] normaliseInPlace(double[] array) {
+    public static double[] normaliseInPlace(double[] array, boolean ignoreZeroSum) {
         double sum = sum(array);
         if(sum == 0) {
+            if(ignoreZeroSum) {
+                return array;
+            }
             throw new IllegalArgumentException("sum of zero");
         }
         for(int i = 0; i < array.length; i++) {
             array[i] /= sum;
         }
         return array;
+    }
+
+    public static double[] normaliseInPlace(double[] array) {
+        return normaliseInPlace(array, false);
     }
 
     public static double[] normalise(double[] array) {
@@ -629,5 +636,17 @@ public class ArrayUtilities {
 
     public static int sum(Iterable<Integer> iterable) {
         return sum(iterable.iterator());
+    }
+
+    public static double[] uniformDistribution(final int limit) {
+        double[] result = new double[limit];
+        double amount = 1d / limit;
+        double sum = 0;
+        for(int i = 0; i < limit - 1; i++) {
+            result[i] = amount;
+            sum += amount;
+        }
+        result[limit - 1] = 1d - sum;
+        return result;
     }
 }

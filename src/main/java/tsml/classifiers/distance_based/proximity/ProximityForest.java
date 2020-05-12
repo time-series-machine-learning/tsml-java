@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
+import tsml.filters.CachedFilter;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -21,7 +22,7 @@ public class ProximityForest extends BaseClassifier {
     public static void main(String[] args) throws Exception {
         int seed = 1;
         ProximityForest classifier = new ProximityForest();
-        classifier.setEstimateOwnPerformance(true);
+        classifier.setEstimateOwnPerformance(false);
         classifier.setSeed(seed);
         classifier.setConfig100TreeLimit();
         Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
@@ -72,6 +73,7 @@ public class ProximityForest extends BaseClassifier {
             trees.clear();
             longestTreeBuildTimeNanos = 0;
         }
+        CachedFilter.hashInstances(trainData);
         while(
             (!hasNumTreeLimit() || trees.size() < numTreeLimit)
             &&
@@ -88,13 +90,55 @@ public class ProximityForest extends BaseClassifier {
         }
         if(getEstimateOwnPerformance()) {
             trainResults = new ClassifierResults();
-            double[][] distributions = new double[trainData.size()][getNumClasses()];
+            double[][] finalDistributions = new double[trainData.size()][];
+            long[] times = new long[trainData.size()];
             for(ProximityTree tree : trees) {
-                Instances oobTest = tree.getOobTest();
-                for()
+                List<Integer> oobTestIndices = tree.getOobTestIndices();
+                ClassifierResults treeTrainResults = tree.getTrainResults();
+                for(int i = 0; i < oobTestIndices.size(); i++) {
+                    long time = System.nanoTime();
+                    int index = oobTestIndices.get(i);
+                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
+                    if(finalDistributions[index] == null) {
+                        finalDistributions[index] = new double[getNumClasses()];
+                    }
+                    vote(finalDistributions[index], distribution);
+                    time = System.nanoTime() - time;
+                    time += treeTrainResults.getPredictionTime(i);
+                    times[index] = time;
+                }
+            }
+            for(int i = 0; i < finalDistributions.length; i++) {
+                long time = System.nanoTime();
+                if(finalDistributions[i] == null) {
+                    finalDistributions[i] = ArrayUtilities.uniformDistribution(getNumClasses());
+                } else {
+                    ArrayUtilities.normaliseInPlace(finalDistributions[i]);
+                }
+                time = System.nanoTime() - time;
+                times[i] += time;
+            }
+            for(int i = 0; i < trainData.size(); i++) {
+                long time = System.nanoTime();
+                double[] distribution = finalDistributions[i];
+                double prediction = Utilities.argMax(distribution, rand);
+                double classValue = trainData.get(i).classValue();
+                time = System.nanoTime() - time;
+                times[i] += time;
+                trainResults.addPrediction(classValue, distribution, prediction, times[i], null);
             }
         }
         getLogger().info("build complete");
+    }
+
+    private void vote(double[] finalDistribution, double[] distribution) {
+        if(useDistributionInVoting) {
+            ArrayUtilities.addInPlace(finalDistribution, distribution);
+        } else {
+            // majority vote
+            double index = Utilities.argMax(distribution, rand);
+            finalDistribution[(int) index]++;
+        }
     }
 
     @Override
@@ -102,14 +146,9 @@ public class ProximityForest extends BaseClassifier {
         final double[] finalDistribution = new double[getNumClasses()];
         for(ProximityTree tree : trees) {
             final double[] distribution = tree.distributionForInstance(instance);
-            if(useDistributionInVoting) {
-                ArrayUtilities.addInPlace(finalDistribution, distribution);
-            } else {
-                // majority vote
-                double index = Utilities.argMax(distribution, rand);
-                finalDistribution[(int) index]++;
-            }
+            vote(finalDistribution, distribution);
         }
+        ArrayUtilities.normaliseInPlace(finalDistribution);
         return finalDistribution;
     }
 

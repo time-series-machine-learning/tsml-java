@@ -4,6 +4,7 @@ import com.beust.jcommander.internal.Lists;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -30,6 +31,7 @@ import tsml.classifiers.distance_based.utils.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.tree.Tree;
 import tsml.classifiers.distance_based.utils.tree.TreeNode;
 import tsml.filters.CachedFilter;
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -43,7 +45,7 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     public static void main(String[] args) throws Exception {
         int seed = 1;
         ProximityTree classifier = new ProximityTree();
-        classifier.setEstimateOwnPerformance(true);
+        classifier.setEstimateOwnPerformance(false);
         classifier.setSeed(seed);
         classifier.setConfigR1();
         Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
@@ -137,6 +139,8 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     private Splitter splitter;
     private Instances oobTrain;
     private Instances oobTest;
+    private List<Integer> oobTestIndices;
+    private List<Integer> oobTrainIndices;
 
     public interface StoppingCondition extends Serializable {
         boolean shouldStop(TreeNode<Split> node);
@@ -152,17 +156,23 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             trainTimeContracter.getTimer().resetAndEnable();
             super.buildClassifier(trainData);
             // make the instances hashed so caching of distances works
-            CachedFilter.hashInstances(trainData);
             if(getEstimateOwnPerformance()) {
                 oobTrain = new Instances(trainData, 0);
-                final Set<Instance> oobTestSet = new HashSet<>(trainData);
+                oobTrainIndices = new ArrayList<>();
+                final Set<Integer> oobTestSetIndices = new HashSet<>(ArrayUtilities.sequence(trainData.size()));
+                // todo double check this is working as intended
                 for(int i = 0; i < trainData.size(); i++) {
-                    Instance instance = trainData.get(rand.nextInt(trainData.size()));
+                    int index = rand.nextInt(trainData.size());
+                    Instance instance = trainData.get(index);
                     oobTrain.add(instance);
-                    oobTestSet.remove(instance);
+                    oobTrainIndices.add(index);
+                    oobTestSetIndices.remove(index);
                 }
+                oobTestIndices = new ArrayList<>(oobTestSetIndices);
                 oobTest = new Instances(trainData, 0);
-                oobTest.addAll(oobTestSet);
+                for(int index : oobTestIndices) {
+                    oobTest.add(trainData.get(index));
+                }
                 trainData = oobTrain;
             }
             tree.clear();
@@ -171,6 +181,7 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             final TreeNode<Split> root = buildNode(trainData, null);
             tree.setRoot(root);
         }
+        CachedFilter.hashInstances(trainData);
         while(
             // there is enough time for another split to be built
             (!this.trainTimeContracter.hasTimeLimit()
@@ -202,6 +213,14 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
         if(getEstimateOwnPerformance()) {
             trainResults.setDetails(this, trainData);
         }
+    }
+
+    public List<Integer> getOobTestIndices() {
+        return oobTestIndices;
+    }
+
+    public List<Integer> getOobTrainIndices() {
+        return oobTrainIndices;
     }
 
     public Instances getOobTrain() {
@@ -278,7 +297,7 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             // make this the next node to visit
             node = children.get(index);
         }
-        // we've hit a leaf node by here
+        // hit a leaf node by here
         // the index is the branch we're at AKA class value
         distribution[index]++;
         // disable the resource monitors
