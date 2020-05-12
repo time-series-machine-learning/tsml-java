@@ -37,22 +37,21 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+        cv.setNumFolds(10);
+        this.trainEstimator = cv;
 
-            CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
-            cv.setNumFolds(10);
-            this.trainEstimator = cv;
+        Classifier[] classifiers = new Classifier[instancesLength];
+        String[] classifierNames = new String[instancesLength];
 
-            Classifier[] classifiers = new Classifier[instancesLength];
-            String[] classifierNames = new String[instancesLength];
+        for (int i=0;i<instancesLength;i++){
 
-            for (int i=0;i<instancesLength;i++){
-
-                classifiers[i] = getClassifier();
-                classifierNames[i] = this.classifierName;
-            }
+            classifiers[i] = getClassifier();
+            classifierNames[i] = this.classifierName;
+        }
 
 
-            setClassifiers(classifiers, classifierNames, null);
+        setClassifiers(classifiers, classifierNames, null);
 
     }
 

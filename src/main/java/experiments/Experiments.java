@@ -142,7 +142,7 @@ public class Experiments  {
             int folds=30;
             String[] settings=new String[6];
             String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
-            String classifier=classifiers[3];
+            String classifier=classifiers[1];
 
 //
 //            settings[0]="-dp=Z:\\ArchiveData\\MultivariateSplitNormalised\\";//Where to get data
@@ -159,7 +159,7 @@ public class Experiments  {
             for (String str : settings)
                 System.out.println("\t"+str);
             System.out.println("");
-            boolean threaded=false;
+            boolean threaded=true;
             if(threaded){
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
