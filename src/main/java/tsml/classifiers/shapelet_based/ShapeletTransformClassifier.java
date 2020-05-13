@@ -258,6 +258,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         }
 
 //Here get the train estimate directly from classifier using cv for now
+        if(classifier instanceof EnhancedAbstractClassifier)
+            ((EnhancedAbstractClassifier)classifier).setDebug(debug);
+        printLineDebug("Entering build classifier with classifier contract = "+classifierContractTime);
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);

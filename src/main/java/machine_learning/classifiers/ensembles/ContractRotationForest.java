@@ -265,18 +265,19 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     // can classifier handle the data? These default capabilities
     // only allow real valued series and classification. To be adjusted
         getCapabilities().testWithFail(data);
-        long startTime=System.nanoTime(); 
+        long startTime=System.nanoTime();
+    //Set up the results file
+        super.buildClassifier(data);
         String relationName=data.relationName();
         data = new Instances( data );
         File file = new File(checkpointPath + "RotF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && file.exists()){
-        //path checkpoint files will be saved to
+        if (checkpoint && file.exists()){ //Configure from file
             printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "RotF" + seed + ".ser");
  //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        else{
+        else{   //Initialise
             if (baseClassifier == null) {
                 throw new Exception("A base classifier has not been specified!");
             }
@@ -297,8 +298,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         if (getEstimateOwnPerformance()) {
             estimateOwnPerformance(data);
             this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((trainContractTimeNanos * (1.0 / perForBag))));
-            numTrees = 0;
-
+//Do we need to do this again?
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
@@ -306,6 +306,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
+            numTrees = 0;
         }
 
         rand = new Random(seed);
@@ -342,7 +343,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //Re-estimate even if loading serialised, may be different hardware ....
         estSingleTree=tm.estimateSingleTreeHours(n,m);
         printLineDebug("n ="+n+" m = "+m+" estSingleTree = "+estSingleTree);
-        printLineDebug("Contract time ="+trainContractTimeNanos/1000000000+" seconds ");
+        printLineDebug("Contract time ="+trainContractTimeNanos/1000000000+" seconds  and contractHours "+contractHours);
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
         if(contractHours==0 || (estSingleTree*minNumTrees)<contractHours){
@@ -354,9 +355,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             int batchSize=1;//setBatchSize(estSingleTree);    //Set larger for smaller data
 //            if(debug)
 //                System.out.println("Batch size = "+batchSize);
-            long startBuild=System.currentTimeMillis(); 
+            long startBuild=System.nanoTime();
             while((contractHours==0 || timeUsed<contractHours) && numTrees<maxNumTrees){
-                long singleTreeStartTime=System.currentTimeMillis();
+                long singleTreeStartTime=System.nanoTime();
                 if(buildFullTree)
                     size=m;
                 else{
@@ -369,9 +370,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 for(int i=0;i<batchSize;i++)
                     buildTreeAttSample(data,instancesOfClass,numTrees++,m);
             //Update time used
-                long newTime=System.currentTimeMillis(); 
-                timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
-                treeTime=(newTime-singleTreeStartTime)/(1000.0*60.0*60.0);
+                long newTime=System.nanoTime();
+                timeUsed=(newTime-startBuild)/(1000000000.0*60.0*60.0);
+                treeTime=(newTime-singleTreeStartTime)/(1000000000.0*60.0*60.0);
                 
             //  Update single tree estimate                
                 estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
@@ -1433,12 +1434,12 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
      */
     @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" TSF setting contract to "+amount);
+        printLineDebug(" Setting ContractRotationForest contract to be "+amount);
 
         if(amount>0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
-            contractHours=trainContractTimeNanos/1000000000/60/60;
+            contractHours=trainContractTimeNanos/1000000000/60.0/60.0;
         }
         else
             trainTimeContract = false;

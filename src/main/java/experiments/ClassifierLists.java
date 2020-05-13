@@ -725,8 +725,15 @@ public class ClassifierLists {
             System.out.println("Unknown classifier "+classifier+" it is not in any of the sublists ");
             throw new UnsupportedOperationException("Unknown classifier "+classifier+" it is not in any of the sublists on ClassifierLists ");
         }
-        if(c instanceof Randomizable)
+        if (c instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) c).setSeed(exp.foldId);
+            ((EnhancedAbstractClassifier) c).setDebug(exp.debug);
+        } 
+        else if (c instanceof Randomizable) {
+            //normal weka classifiers that aren't EnhancedAbstractClassifiers
+            //EAC's setSeed sets up a random object internally too. 
             ((Randomizable)c).setSeed(exp.foldId);
+        }
         return c;
     }
 
