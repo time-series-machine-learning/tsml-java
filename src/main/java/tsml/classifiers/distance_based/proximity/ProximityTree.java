@@ -36,9 +36,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier
-    implements TrainTimeContractable, TestTimeable
-{
+public class ProximityTree extends BaseClassifier implements TrainTimeContractable, TestTimeable {
 
     public static void main(String[] args) throws Exception {
         for(int i = 2; i < 3; i++) {
@@ -225,8 +223,6 @@ public class ProximityTree extends BaseClassifier
 //        }
         trainTimeContracter.getTimer().disable();
         trainMemoryContracter.getWatcher().disable();
-
-        System.out.println(TimeUnit.MILLISECONDS.convert(trainTimeContracter.getTimer().getTimeNanos(), TimeUnit.NANOSECONDS));
 //        if(getEstimateOwnPerformance()) {
 //            trainResults.setDetails(this, trainData);
 //        }

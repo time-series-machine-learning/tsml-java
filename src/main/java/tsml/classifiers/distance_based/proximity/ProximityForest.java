@@ -1,9 +1,13 @@
 package tsml.classifiers.distance_based.proximity;
 
+import de.bwaldvogel.liblinear.Train;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import tsml.classifiers.TestTimeContractable;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.filters.CachedFilter;
@@ -17,7 +21,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class ProximityForest extends BaseClassifier {
+public class ProximityForest extends BaseClassifier implements TrainTimeContractable {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -26,23 +30,11 @@ public class ProximityForest extends BaseClassifier {
             classifier.setEstimateOwnPerformance(false);
             classifier.setSeed(seed);
             classifier.setConfig100TreeLimit();
-            classifier.setConstituentConfig(new ConstituentConfig() {
-
-                private ProximityTree first = null;
-
-                @Override
-                public ProximityTree setConfig(final ProximityTree tree) {
-                    if(first == null) {
-                        tree.setConfigR5();
-                        first = tree;
-                    } else {
-                        System.out.println("sharing splitter");
-                        tree.setSplitter(first.getSplitter());
-                        tree.setRebuildListener(trainData -> {});
-                    }
-                    return tree;
-                }
+            classifier.setConstituentConfig(tree -> {
+                tree.setConfigR5();
+                return tree;
             });
+            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
@@ -87,6 +79,9 @@ public class ProximityForest extends BaseClassifier {
         trainMemoryContracter.getWatcher().enable();
         trainTimeContracter.getTimer().enable();
         if(isRebuild()) {
+            if(trainTimeContracter.hasTimeLimit()) {
+                getLogger().info("train time limit: " + getTrainTimeLimit());
+            }
             trainMemoryContracter.getWatcher().resetAndEnable();
             trainTimeContracter.getTimer().resetAndEnable();
             super.buildClassifier(trainData);
@@ -99,16 +94,20 @@ public class ProximityForest extends BaseClassifier {
             &&
             (!trainTimeContracter.hasTimeLimit() || trainTimeContracter.getRemainingTrainTime() > longestTreeBuildTimeNanos)
         ) {
+            getLogger().info("train contract remaining: " + TimeUnit.MILLISECONDS.convert(trainTimeContracter.getRemainingTrainTime(), TimeUnit.NANOSECONDS));
             getLogger().info("building tree " + trees.size());
-            ProximityTree tree = new ProximityTree();
+            ProximityTree tree;
+                tree = new ProximityTree();
+                tree = constituentConfig.setConfig(tree);
+                tree.setSeed(seed);
+                tree.setEstimateOwnPerformance(getEstimateOwnPerformance());
             trees.add(tree);
-            constituentConfig.setConfig(tree);
-            tree.setSeed(seed);
-            tree.setEstimateOwnPerformance(getEstimateOwnPerformance());
-            // todo should resource monitors be disabled and then retrospectively added after build?
+            long time = System.nanoTime();
             tree.buildClassifier(trainData);
-            // todo track longest tree build time
+            longestTreeBuildTimeNanos = Math.max(longestTreeBuildTimeNanos, System.nanoTime() - time);
+            trainTimeContracter.getTimer().lap();
         }
+        getLogger().info("train contract remaining: " + TimeUnit.MILLISECONDS.convert(trainTimeContracter.getRemainingTrainTime(), TimeUnit.NANOSECONDS));
         if(getEstimateOwnPerformance()) {
             trainResults = new ClassifierResults();
             double[][] finalDistributions = new double[trainData.size()][];
@@ -212,6 +211,16 @@ public class ProximityForest extends BaseClassifier {
     public ProximityForest setShareSplitter(final boolean shareSplitter) {
         this.shareSplitter = shareSplitter;
         return this;
+    }
+
+    @Override
+    public void setTrainTimeLimit(final long time) {
+        trainTimeContracter.setTimeLimit(time);
+    }
+
+    @Override
+    public long getTrainTimeLimit() {
+        return trainTimeContracter.getTimeLimit();
     }
 
     public interface ConstituentConfig {
