@@ -342,7 +342,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //Re-estimate even if loading serialised, may be different hardware ....
         estSingleTree=tm.estimateSingleTreeHours(n,m);
         printLineDebug("n ="+n+" m = "+m+" estSingleTree = "+estSingleTree);
-        printLineDebug("Contract time ="+trainContractTimeNanos/1000000000+" seconds ");
+        printLineDebug("Contract time ="+trainContractTimeNanos/1000000000+" seconds  and contractHours "+contractHours);
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
         if(contractHours==0 || (estSingleTree*minNumTrees)<contractHours){
@@ -354,9 +354,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             int batchSize=1;//setBatchSize(estSingleTree);    //Set larger for smaller data
 //            if(debug)
 //                System.out.println("Batch size = "+batchSize);
-            long startBuild=System.currentTimeMillis(); 
+            long startBuild=System.nanoTime();
             while((contractHours==0 || timeUsed<contractHours) && numTrees<maxNumTrees){
-                long singleTreeStartTime=System.currentTimeMillis();
+                long singleTreeStartTime=System.nanoTime();
                 if(buildFullTree)
                     size=m;
                 else{
@@ -369,9 +369,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 for(int i=0;i<batchSize;i++)
                     buildTreeAttSample(data,instancesOfClass,numTrees++,m);
             //Update time used
-                long newTime=System.currentTimeMillis(); 
-                timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
-                treeTime=(newTime-singleTreeStartTime)/(1000.0*60.0*60.0);
+                long newTime=System.nanoTime();
+                timeUsed=(newTime-startBuild)/(1000000000.0*60.0*60.0);
+                treeTime=(newTime-singleTreeStartTime)/(1000000000.0*60.0*60.0);
                 
             //  Update single tree estimate                
                 estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
