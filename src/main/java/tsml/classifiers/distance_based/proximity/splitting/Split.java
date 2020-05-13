@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.proximity.splitting;
 
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.proximity.splitting.scoring.ScoreUtils;
 import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;

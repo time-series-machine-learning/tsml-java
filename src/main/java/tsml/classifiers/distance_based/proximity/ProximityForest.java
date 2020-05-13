@@ -20,12 +20,31 @@ import weka.core.Instances;
 public class ProximityForest extends BaseClassifier {
 
     public static void main(String[] args) throws Exception {
-        int seed = 1;
-        ProximityForest classifier = new ProximityForest();
-        classifier.setEstimateOwnPerformance(false);
-        classifier.setSeed(seed);
-        classifier.setConfig100TreeLimit();
-        Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        for(int i = 0; i < 1; i++) {
+            int seed = i;
+            ProximityForest classifier = new ProximityForest();
+            classifier.setEstimateOwnPerformance(false);
+            classifier.setSeed(seed);
+            classifier.setConfig100TreeLimit();
+            classifier.setConstituentConfig(new ConstituentConfig() {
+
+                private ProximityTree first = null;
+
+                @Override
+                public ProximityTree setConfig(final ProximityTree tree) {
+                    if(first == null) {
+                        tree.setConfigR5();
+                        first = tree;
+                    } else {
+                        System.out.println("sharing splitter");
+                        tree.setSplitter(first.getSplitter());
+                        tree.setRebuildListener(trainData -> {});
+                    }
+                    return tree;
+                }
+            });
+            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        }
     }
 
     // -------------------- configs --------------------
@@ -61,6 +80,7 @@ public class ProximityForest extends BaseClassifier {
     private long longestTreeBuildTimeNanos = 0;
     private ConstituentConfig constituentConfig = ProximityTree::setConfigR1;
     private boolean useDistributionInVoting = false;
+    private boolean shareSplitter = true;
 
     @Override
     public void buildClassifier(final Instances trainData) throws Exception {
@@ -87,6 +107,7 @@ public class ProximityForest extends BaseClassifier {
             tree.setEstimateOwnPerformance(getEstimateOwnPerformance());
             // todo should resource monitors be disabled and then retrospectively added after build?
             tree.buildClassifier(trainData);
+            // todo track longest tree build time
         }
         if(getEstimateOwnPerformance()) {
             trainResults = new ClassifierResults();
@@ -181,6 +202,15 @@ public class ProximityForest extends BaseClassifier {
 
     public ProximityForest setUseDistributionInVoting(final boolean useDistributionInVoting) {
         this.useDistributionInVoting = useDistributionInVoting;
+        return this;
+    }
+
+    public boolean isShareSplitter() {
+        return shareSplitter;
+    }
+
+    public ProximityForest setShareSplitter(final boolean shareSplitter) {
+        this.shareSplitter = shareSplitter;
         return this;
     }
 

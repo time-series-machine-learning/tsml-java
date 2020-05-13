@@ -23,7 +23,7 @@ public class TimeContracter {
         }
         long timeTaken = timer.getTimeNanos();
         long diff = timeLimit - timeTaken;
-        return Math.max(0, timeLimit);
+        return Math.max(0, diff);
     }
 
     public boolean hasRemainingTrainTime() {

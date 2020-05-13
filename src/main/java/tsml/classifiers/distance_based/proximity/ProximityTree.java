@@ -6,7 +6,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
@@ -17,6 +19,7 @@ import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.Random
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarProximitySplit;
 import tsml.classifiers.distance_based.proximity.stopping_conditions.Pure;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifier_mixins.TestTimeable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -34,7 +37,7 @@ import weka.core.Instances;
  * Contributors: goastler
  */
 public class ProximityTree extends BaseClassifier
-//    implements TrainTimeContractable, TestTimeable
+    implements TrainTimeContractable, TestTimeable
 {
 
     public static void main(String[] args) throws Exception {
@@ -44,6 +47,7 @@ public class ProximityTree extends BaseClassifier
             classifier.setEstimateOwnPerformance(false);
             classifier.setSeed(seed);
             classifier.setConfigR1();
+            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
@@ -74,55 +78,54 @@ public class ProximityTree extends BaseClassifier
 
     public ProximityTree setBuildUntilPure() {
         return setStoppingCondition(new Pure());
-//        return setStoppingCondition(new StoppingCondition() {
-//            @Override
-//            public boolean shouldStop(final TreeNode<Split> node) {
-//                if(node.isRoot()) {
-//                    return false;
-//                }
-//                return node.getParent().getElement().getScore() == 0;
-//            }
-//        });
+    }
+
+    private void setSingleSplitFromTrainData(Instances trainData) {
+        final Random random = getRandom();
+        final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
+        final List<ParamSpace> paramSpaces = Lists.newArrayList(
+            DistanceMeasureConfigs.buildEdSpace(),
+            DistanceMeasureConfigs.buildFullDtwSpace(),
+            DistanceMeasureConfigs.buildFullDdtwSpace(),
+            ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
+            ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
+            ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
+            ContinuousDistanceFunctionConfigs.buildLcssSpace(trainData),
+            DistanceMeasureConfigs.buildMsmSpace(),
+            ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
+            ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
+            DistanceMeasureConfigs.buildTwedSpace()
+        );
+        final RandomDistanceFunctionPicker distanceFunctionPicker = new RandomDistanceFunctionPicker(
+            random, paramSpaces);
+        setSplitter(data -> {
+            RandomExemplarProximitySplit split = new RandomExemplarProximitySplit(
+                random, exemplarPicker,
+                distanceFunctionPicker);
+            split.setData(data);
+            return split;
+        });
     }
 
     public ProximityTree setSingleSplit() {
-        setRebuildListener(trainData -> {
-            final Random random = getRandom();
-            final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
-            final List<ParamSpace> paramSpaces = Lists.newArrayList(
-                DistanceMeasureConfigs.buildEdSpace(),
-                DistanceMeasureConfigs.buildFullDtwSpace(),
-                DistanceMeasureConfigs.buildFullDdtwSpace(),
-                ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
-                ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
-                ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
-                ContinuousDistanceFunctionConfigs.buildLcssSpace(trainData),
-                DistanceMeasureConfigs.buildMsmSpace(),
-                ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
-                ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
-                DistanceMeasureConfigs.buildTwedSpace()
-            );
-            final RandomDistanceFunctionPicker distanceFunctionPicker = new RandomDistanceFunctionPicker(
-                random, paramSpaces);
-            setSplitter(data -> {
-                RandomExemplarProximitySplit split = new RandomExemplarProximitySplit(
-                    random, exemplarPicker,
-                    distanceFunctionPicker);
-                split.setData(data);
-                return split;
-            });
-        });
+        setRebuildListener(this::setSingleSplitFromTrainData);
         return this;
     }
 
-    public ProximityTree setMultipleSplits(int numSplits) {
-        Assert.assertTrue(numSplits > 0);
-        setSingleSplit();
+    private void setMultipleSplitsFromTrainData(Instances trainData, int numSplits) {
+        setSingleSplitFromTrainData(trainData);
         Splitter splitter = getSplitter();
         setSplitter(data -> {
             BestOfNSplits bestOfNSplits = new BestOfNSplits(splitter, this.getRandom(), numSplits);
             bestOfNSplits.setData(data);
             return bestOfNSplits;
+        });
+    }
+
+    public ProximityTree setMultipleSplits(int numSplits) {
+        Assert.assertTrue(numSplits > 0);
+        setRebuildListener(trainData -> {
+            setMultipleSplitsFromTrainData(trainData, numSplits);
         });
         return this;
     }
@@ -136,11 +139,11 @@ public class ProximityTree extends BaseClassifier
     }
 
     private final Tree<Split> tree = new BaseTree<>();
-//    private final TimeContracter trainTimeContracter = new TimeContracter();
-//    private final TimeContracter testTimeContracter = new TimeContracter();
-//    private final MemoryContracter trainMemoryContracter = new MemoryContracter();
-//    private final MemoryContracter testMemoryContracter = new MemoryContracter();
-//    private long longestNodeBuildTimeNanos;
+    private final TimeContracter trainTimeContracter = new TimeContracter();
+    private final TimeContracter testTimeContracter = new TimeContracter();
+    private final MemoryContracter trainMemoryContracter = new MemoryContracter();
+    private final MemoryContracter testMemoryContracter = new MemoryContracter();
+    private long longestNodeBuildTimeNanos;
     private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
     private StoppingCondition stoppingCondition;
     private Splitter splitter;
@@ -155,12 +158,12 @@ public class ProximityTree extends BaseClassifier
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-//        trainMemoryContracter.getWatcher().enable();
-//        trainTimeContracter.getTimer().enable();
+        trainMemoryContracter.getWatcher().enable();
+        trainTimeContracter.getTimer().enable();
         if(isRebuild()) {
             // reset
-//            trainMemoryContracter.getWatcher().resetAndEnable();
-//            trainTimeContracter.getTimer().resetAndEnable();
+            trainMemoryContracter.getWatcher().resetAndEnable();
+            trainTimeContracter.getTimer().resetAndEnable();
             super.buildClassifier(trainData);
             // make the instances hashed so caching of distances works
 //            if(getEstimateOwnPerformance()) {
@@ -183,7 +186,7 @@ public class ProximityTree extends BaseClassifier
 //                trainData = oobTrain;
 //            }
             tree.clear();
-//            longestNodeBuildTimeNanos = 0;
+            longestNodeBuildTimeNanos = 0;
             nodeBuildQueue = new LinearListIterator<>();
             final TreeNode<Split> root = buildNode(trainData, null);
             tree.setRoot(root);
@@ -191,14 +194,15 @@ public class ProximityTree extends BaseClassifier
         CachedFilter.hashInstances(trainData);
         while(
             // there is enough time for another split to be built
-//            (!this.trainTimeContracter.hasTimeLimit()
-//                ||
-//                this.trainTimeContracter.getRemainingTrainTime() < longestNodeBuildTimeNanos)
+            (!trainTimeContracter.hasTimeLimit()
+                ||
+                trainTimeContracter.getRemainingTrainTime() > longestNodeBuildTimeNanos)
             // and there's remaining nodes to be built
-//            &&
-                this.nodeBuildQueue.hasNext()
+            &&
+                nodeBuildQueue.hasNext()
         ) {
-            final TreeNode<Split> node = this.nodeBuildQueue.next();
+            long time = System.nanoTime();
+            final TreeNode<Split> node = nodeBuildQueue.next();
             // partition the data at the node
             Split split = node.getElement();
             split.buildSplit();
@@ -209,7 +213,8 @@ public class ProximityTree extends BaseClassifier
                 // try to build a child node
                 buildNode(partition, node);
             }
-//            trainTimeContracter.getTimer().lap();
+            longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, System.nanoTime() - time);
+            trainTimeContracter.getTimer().lap();
         }
 //        if(getEstimateOwnPerformance()) {
 //             todo put oob in contract
@@ -218,8 +223,10 @@ public class ProximityTree extends BaseClassifier
 //                Utils.addPrediction(this, instance, trainResults);
 //            }
 //        }
-//        trainTimeContracter.getTimer().disable();
-//        trainMemoryContracter.getWatcher().disable();
+        trainTimeContracter.getTimer().disable();
+        trainMemoryContracter.getWatcher().disable();
+
+        System.out.println(TimeUnit.MILLISECONDS.convert(trainTimeContracter.getTimer().getTimeNanos(), TimeUnit.NANOSECONDS));
 //        if(getEstimateOwnPerformance()) {
 //            trainResults.setDetails(this, trainData);
 //        }
@@ -257,15 +264,15 @@ public class ProximityTree extends BaseClassifier
         return node;
     }
 
-//    @Override
-//    public void setTrainTimeLimit(final long time) {
-//        trainTimeContracter.setTimeLimit(time);
-//    }
-//
-//    @Override
-//    public long getTrainTimeLimit() {
-//        return trainTimeContracter.getTimeLimit();
-//    }
+    @Override
+    public void setTrainTimeLimit(final long time) {
+        trainTimeContracter.setTimeLimit(time);
+    }
+
+    @Override
+    public long getTrainTimeLimit() {
+        return trainTimeContracter.getTimeLimit();
+    }
 
     public StoppingCondition getStoppingCondition() {
         return stoppingCondition;
@@ -291,8 +298,8 @@ public class ProximityTree extends BaseClassifier
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         // enable resource monitors
-//        testMemoryContracter.getWatcher().resetAndEnable();
-//        testTimeContracter.getTimer().resetAndEnable();
+        testMemoryContracter.getWatcher().resetAndEnable();
+        testTimeContracter.getTimer().resetAndEnable();
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
         int index = -1;
@@ -309,25 +316,20 @@ public class ProximityTree extends BaseClassifier
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
+        if(node.isRoot()) {
+            throw new IllegalStateException("the only node is the root node");
+        }
         node = node.getParent();
         split = node.getElement();
         double[] distribution = split.distributionForInstance(instance, index);
         // disable the resource monitors
-//        testTimeContracter.getTimer().disable();
-//        testMemoryContracter.getWatcher().disable();
+        testTimeContracter.getTimer().disable();
+        testMemoryContracter.getWatcher().disable();
         return distribution;
     }
 
-//    @Override
-//    public long getTestTimeNanos() {
-//        return testTimeContracter.getTimer().getTimeNanos();
-//    }
-//
-//    public MemoryContracter getTrainMemoryContracter() {
-//        return trainMemoryContracter;
-//    }
-//
-//    public TimeContracter getTrainTimeContracter() {
-//        return trainTimeContracter;
-//    }
+    @Override
+    public long getTestTimeNanos() {
+        return testTimeContracter.getTimer().getTimeNanos();
+    }
 }
