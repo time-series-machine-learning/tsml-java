@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-package tsml.filters;
+package tsml.transformers;
 
 import experiments.data.DatasetLoading;
 import java.util.ArrayList;
@@ -21,7 +21,6 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 /**
  *
@@ -36,12 +35,13 @@ import weka.filters.SimpleBatchFilter;
  *        that are evaluated when calculating the profile (e.g. not every 1 index, every 2, 3, ... etc.)
  * 
  */
-public class MatrixProfile extends SimpleBatchFilter{
+public class MatrixProfile implements Transformer{
     
     private int windowSize = 10;
     private final int stride = 1; // to-do later (maybe!)
     private double[][] distances;
     private int[][] indices;
+    private boolean m_Debug = false;
 
     public MatrixProfile(){
         this(10);
@@ -52,8 +52,30 @@ public class MatrixProfile extends SimpleBatchFilter{
         this.windowSize = windowSize;
     }
 
+    
     @Override
-    public Instances process(Instances instances) throws Exception {
+    public Instance transform(Instance inst) {
+
+        int seriesLength = inst.classIndex() >= 0 ? inst.numAttributes()-1 : inst.numAttributes();        
+        int numOutputAtts = seriesLength+1-windowSize;
+
+        SingleInstanceMatrixProfile mpIns = new SingleInstanceMatrixProfile(inst,this.windowSize, this.stride);
+        Instance out = new DenseInstance(numOutputAtts);
+        
+        
+        for(int i = 0; i < mpIns.distances.length; i++){
+            out.setValue(i, mpIns.distances[i]);
+        }
+        
+        if(inst.classIndex() >=0){
+            out.setValue(mpIns.distances.length, inst.classValue());
+        }
+
+        return out;
+    }
+
+    @Override
+    public Instances transform(Instances instances) {
         
         int seriesLength = instances.numAttributes()-(instances.classIndex()>=0?1:0);
         
@@ -69,31 +91,8 @@ public class MatrixProfile extends SimpleBatchFilter{
             windowSize=seriesLength/4;
         }
         
-        SingleInstanceMatrixProfile mpIns;
-        Instances transformed = this.determineOutputFormat(instances);
-        Instance out;
         
-        this.distances = new double[instances.numInstances()][];
-        this.indices = new int[instances.numInstances()][];
-        
-        for(int ins = 0; ins < instances.numInstances(); ins++){
-            mpIns = new SingleInstanceMatrixProfile(instances.get(ins),this.windowSize, this.stride);
-            out = new DenseInstance(transformed.numAttributes());
-            
-            distances[ins] = mpIns.distances;
-            indices[ins] = mpIns.indices;
-            
-            for(int i = 0; i < mpIns.distances.length; i++){
-                out.setValue(i, mpIns.distances[i]);
-                
-            }
-            
-            if(instances.classIndex() >=0){
-                out.setValue(mpIns.distances.length, instances.instance(ins).classValue());
-            }
-            transformed.add(out);
-        }
-        return transformed;
+        return Transformer.super.transform(instances);
     }
     
     /**
@@ -710,7 +709,7 @@ public class MatrixProfile extends SimpleBatchFilter{
                         int windowSize = 10;
                         MatrixProfile mp = new MatrixProfile(windowSize);
                         
-                        Instances transformedToDistances = mp.process(train);
+                        Instances transformedToDistances = mp.transform(train);
                         System.out.println(transformedToDistances);
                         
                         // additional use case: transform to indices too
@@ -730,7 +729,7 @@ public class MatrixProfile extends SimpleBatchFilter{
                         Instances train = DatasetLoading.loadDataNullable(datapath+datasetName+"/"+datasetName+"_TRAIN");
                         int windowSize = (train.numAttributes()-1)/4+1;
                         MatrixProfile mp = new MatrixProfile(windowSize);
-                        Instances transformedToDistances = mp.process(train);
+                        Instances transformedToDistances = mp.transform(train);
 //                        Instances[] transformedToDistancesAndIndices = mp.process(train);
                         System.out.println(transformedToDistances);
                         break;
@@ -745,14 +744,8 @@ public class MatrixProfile extends SimpleBatchFilter{
         }
     }
     
-
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat) {
    
         int seriesLength = inputFormat.classIndex() >= 0 ? inputFormat.numAttributes()-1 : inputFormat.numAttributes();        
         int numOutputAtts = seriesLength+1-windowSize;
@@ -778,5 +771,6 @@ public class MatrixProfile extends SimpleBatchFilter{
         }
         return output;
     }
+
 
 }

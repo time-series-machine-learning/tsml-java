@@ -1,5 +1,6 @@
-package tsml.filters;
+package tsml.transformers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -10,7 +11,7 @@ import weka.filters.SimpleBatchFilter;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
-public class Spectrogram extends SimpleBatchFilter {
+public class Spectrogram implements Transformer {
 
     private int nfft = 256;
     private int windowLength = 75;
@@ -33,10 +34,10 @@ public class Spectrogram extends SimpleBatchFilter {
         return null;
     }
 
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat){
         Instances instances = null;
 
-        FastVector attributes = new FastVector(nfft/2);
+        FastVector<Attribute> attributes = new FastVector<>(nfft/2);
         for (int i = 0; i < (nfft/2); i++) {
             attributes.addElement(new Attribute("Spec_att" + String.valueOf(i + 1)));
         }
@@ -49,7 +50,23 @@ public class Spectrogram extends SimpleBatchFilter {
         return instances;
     }
 
-    public Instances process(Instances instances){
+    @Override
+    public Instance transform(Instance inst) {
+        /*double[] signal = new double[instances.get(i).numAttributes() - 1];
+
+        for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
+            signal[j] = instances.get(i).value(j);
+        }
+        double[][] spectrogram = spectrogram(signal, windowLength, overlap, nfft);
+        Instances spectrogramsInstances = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
+        return null;*/
+
+        //TODO: Not sure on how to convert this for a single instance.
+        throw new NotImplementedException("This is not implemented for single transformation");
+    }
+
+
+    public Instances transform(Instances instances){
 
         double[][] spectrogram = null;
         Instances[] spectrogramsInstances = new Instances[instances.numInstances()];
@@ -111,7 +128,7 @@ public class Spectrogram extends SimpleBatchFilter {
     private Instances MatrixToInstances(double[][] data, Attribute classAttribute, double classValue){
         Instances instances = null;
 
-        FastVector attributes = new FastVector(data[0].length);
+        FastVector<Attribute> attributes = new FastVector<>(data[0].length);
         for (int i = 0; i < data[0].length; i++) {
             attributes.addElement(new Attribute("attr" + String.valueOf(i + 1)));
         }
@@ -140,7 +157,7 @@ public class Spectrogram extends SimpleBatchFilter {
         data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TRAIN.arff");
         data[1] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TEST.arff");
         System.out.println(data[0].get(0).toString());
-        data[1] = spec.process(data[0]);
+        data[1] = spec.transform(data[0]);
         System.out.println();
         for (int i = 0; i < data[1].size(); i++) {
             Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(i));
@@ -152,4 +169,6 @@ public class Spectrogram extends SimpleBatchFilter {
         System.out.println("Overlap: " + spec.overlap);
         System.out.println("NFFT: " + spec.nfft);
     }
+
+
 }

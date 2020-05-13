@@ -15,12 +15,9 @@
 package tsml.transformers;
 
 import java.io.File;
-import java.io.FileReader;
 
 import experiments.data.DatasetLoading;
-import utilities.InstanceTools;
 import weka.core.*;
-import weka.filters.SimpleBatchFilter;
 
 /*
      * copyright: Anthony Bagnall

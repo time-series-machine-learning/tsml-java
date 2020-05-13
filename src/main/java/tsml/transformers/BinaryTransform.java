@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-package tsml.filters;
+package tsml.transformers;
 
 //import java.io.FileWriter;
 import java.util.ArrayList;
@@ -30,20 +30,14 @@ import weka.filters.SimpleBatchFilter;
      * copyright: Anthony Bagnall
  * @author Jon Hills j.hills@uea.ac.uk
  */
-public class BinaryTransform extends SimpleBatchFilter{
+public class BinaryTransform implements TrainableTransformer{
     private boolean findNewSplits=true;
     private double[] splits;
     public void findNewSplits(){findNewSplits=true;}
     
     
     @Override
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception{
-//Check all are numerical
-                 //Check all attributes are real valued, otherwise throw exception
-        for(int i=0;i<inputFormat.numAttributes();i++)
-                if(inputFormat.classIndex()!=i)
-                        if(!inputFormat.attribute(i).isNumeric())
-                                throw new Exception("Non numeric attribute not allowed in BinaryTransform");       
+    public Instances determineOutputFormat(Instances inputFormat){  
         int length=inputFormat.numAttributes();
         if(inputFormat.classIndex()>=0)
             length--;
@@ -76,44 +70,7 @@ public class BinaryTransform extends SimpleBatchFilter{
         
         
     }
-    @Override
-    public Instances process(Instances data) throws Exception{
-         Instances output = determineOutputFormat(data);
-         if(findNewSplits){
-            splits=new  double[data.numAttributes()];
-            double[] classes=new  double[data.numInstances()];
-            for(int i=0;i<classes.length;i++)
-                classes[i]=data.instance(i).classValue();
-            for (int j=0; j< data.numAttributes(); j++) { // for each data
-                if(j!=data.classIndex()){
 
-    //Get values of attribute j
-                    double[] vals=new double[data.numInstances()];
-                    for(int i=0;i<data.numInstances();i++)
-                        vals[i]=data.instance(i).value(j);
-    //find the IG split point                
-                    splits[j] =findSplitValue(data,vals,classes);
-                }
-            }
-            findNewSplits=false;
-         }
-//Extract out the terms and set the attributes
-        for(int i=0;i<data.numInstances();i++){
-            Instance newInst=new DenseInstance(data.numAttributes());
-            for(int j=0;j<data.numAttributes();j++){
-                if(j!=data.classIndex()){
-                    if(data.instance(i).value(j)<splits[j])
-                        newInst.setValue(j,0);
-                    else
-                        newInst.setValue(j,1);
-                }
-                else
-                    newInst.setValue(j,data.instance(i).classValue());
-            }
-            output.add(newInst);
-        }
-        return output;
-    }
     public double findSplitValue(Instances data, double[] vals, double[] classes){
 //        return 1;
 //Put into an order list
@@ -226,8 +183,46 @@ public class BinaryTransform extends SimpleBatchFilter{
     }
 
     @Override
-    public String globalInfo() {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public Instance transform(Instance inst) {
+        Instance newInst=new DenseInstance(inst.numAttributes());
+        for(int j=0;j<inst.numAttributes();j++){
+            if(j!=inst.classIndex()){
+                if(inst.value(j)<splits[j])
+                    newInst.setValue(j,0);
+                else
+                    newInst.setValue(j,1);
+            }
+            else
+                newInst.setValue(j,inst.classValue());
+        }
+        return newInst;
+    }
+
+    @Override
+    public void fit(Instances data) {
+        if(findNewSplits){
+            splits=new  double[data.numAttributes()];
+            double[] classes=new  double[data.numInstances()];
+            for(int i=0;i<classes.length;i++)
+                classes[i]=data.instance(i).classValue();
+            for (int j=0; j< data.numAttributes(); j++) { // for each data
+                if(j!=data.classIndex()){
+
+    //Get values of attribute j
+                    double[] vals=new double[data.numInstances()];
+                    for(int i=0;i<data.numInstances();i++)
+                        vals[i]=data.instance(i).value(j);
+    //find the IG split point                
+                    splits[j] =findSplitValue(data,vals,classes);
+                }
+            }
+            findNewSplits=false;
+         }
+    }
+
+    @Override
+    public boolean isFit() {
+        return findNewSplits;
     }
     
        

@@ -1,4 +1,5 @@
-package tsml.filters;
+package tsml.transformers;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.transform.DctNormalization;
 import org.apache.commons.math3.transform.FastCosineTransformer;
 import org.apache.commons.math3.transform.TransformType;
@@ -8,7 +9,7 @@ import weka.filters.SimpleBatchFilter;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
-public class MFCC extends SimpleBatchFilter{
+public class MFCC implements Transformer{
 
     //Default values (samples), assuming no sample rate set.
     int windowLength = 50;
@@ -43,14 +44,14 @@ public class MFCC extends SimpleBatchFilter{
         return null;
     }
 
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat){
         Instances instances = null;
-        FastVector attributes = new FastVector(melFreqCepsCo.length);
+        FastVector<Attribute> attributes = new FastVector<>(melFreqCepsCo.length);
         for (int i = 0; i < (melFreqCepsCo.length); i++) {
             attributes.addElement(new Attribute("MFCC_att" + interval + String.valueOf(i + 1)));
         }
 
-        FastVector classValues = new FastVector(inputFormat.classAttribute().numValues());
+        FastVector<String> classValues = new FastVector<>(inputFormat.classAttribute().numValues());
         for(int i=0;i<inputFormat.classAttribute().numValues();i++)
             classValues.addElement(inputFormat.classAttribute().value(i));
         attributes.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(),classValues));
@@ -70,13 +71,20 @@ public class MFCC extends SimpleBatchFilter{
         return null;
     }
 
+
+    @Override
+    public Instance transform(Instance inst) {
+        //TODO: not sure on how to oconvert this. need to have a think.
+        throw new NotImplementedException("This method is not implemented for single transformations.");
+    }
+
     /**
      *
      * @param instances   Univariate instances.
      * @return Relational instances containing MFCC information.
      * @throws Exception
      */
-    public Instances process(Instances instances) throws Exception {
+    public Instances transform(Instances instances) {
         Instances[] MFCCs = new Instances[instances.size()];
         Instances flatMFCCs = null;
         Instances MFCCInstances = null;
@@ -226,7 +234,7 @@ public class MFCC extends SimpleBatchFilter{
         mfcc.setSampleRate(16000);
         System.out.println(data[0].get(0).toString());
         try {
-            data[1] = mfcc.process(data[0]);
+            data[1] = mfcc.transform(data[0]);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -235,4 +243,6 @@ public class MFCC extends SimpleBatchFilter{
         Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(0));
         System.out.println(temp[0]);
     }
+
+
 }

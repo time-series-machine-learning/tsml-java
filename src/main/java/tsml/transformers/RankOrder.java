@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-package tsml.filters;
+package tsml.transformers;
 
 import weka.core.Capabilities;
 import weka.core.Instances;
@@ -21,19 +21,31 @@ import weka.core.Capabilities.Capability;
 import weka.filters.*;
 
 import java.util.*;
+
+import org.apache.commons.lang3.NotImplementedException;
+
 import weka.core.DenseInstance;
 
 /*
      * copyright: Anthony Bagnall
  * */
-public class RankOrder extends SimpleBatchFilter {
+public class RankOrder implements Transformer {
 
 	public double[][] ranks;
-		public int numAtts=0;
-		private boolean normalise=true;
-		public void setNormalise(boolean f){normalise=f;};  
-		  
-	  public Instances process(Instances inst) throws Exception {
+	public int numAtts = 0;
+	private boolean normalise = true;
+
+	public void setNormalise(boolean f) {
+		normalise = f;
+	};
+
+	@Override
+	public Instance transform(Instance inst) {
+		throw new NotImplementedException("Single instance transformation does not make sense for rank order, which is column wise ranking!");
+	}
+	
+	@Override
+	public Instances transform(Instances inst) {
 //Set input instance format		  
 		 
 		  Instances result = new Instances(determineOutputFormat(inst), 0);
@@ -47,13 +59,9 @@ public class RankOrder extends SimpleBatchFilter {
 				  in.setValue(j, ranks[i][j]);
 			  result.add(in);
 		  }
-		  if(normalise){
-			  NormalizeAttribute na=new NormalizeAttribute(result);
-			  result=na.process(result);
-		  }
 		  return result;
-
 	  }
+
 	  protected class Pair implements Comparable{
 		  int pos;
 		  double val;
@@ -69,8 +77,6 @@ public class RankOrder extends SimpleBatchFilter {
 		  
 	  }
 
-	  
-	  
 	  public void rankOrder(Instances inst){  
 		  numAtts=inst.numAttributes();
 		  int c= inst.classIndex();
@@ -93,48 +99,26 @@ public class RankOrder extends SimpleBatchFilter {
 					ranks[d[i][j].pos][i]=j;
 
 		  }
-	  
-	  public static void testFilter(Instances data, Filter ct){
-			try{
-				data.deleteStringAttributes();
-				ct.setInputFormat(data);
-				Instances newData=Filter.useFilter(data,ct);
-				System.out.print(newData);
-			}catch(Exception e){
-				System.err.println("Exception thrown ="+e);
-				System.err.println("Stack =");
-				StackTraceElement[] str=e.getStackTrace();
-				for(StackTraceElement s:str)
-					System.err.println(s);
-			}	
-		  
-	  }
 	
-			@Override
-			protected Instances determineOutputFormat(Instances inputFormat){
-			     Instances result = new Instances(inputFormat, 0);
-			     return result;
-			}
+	@Override
+	public Instances determineOutputFormat(Instances inputFormat){
+			Instances result = new Instances(inputFormat, 0);
+			return result;
+	}
 
-			@Override
-			public String globalInfo() {
-				return null;
-			}
 
-			public Capabilities getCapabilities() {
-				 Capabilities result = super.getCapabilities();
-				result.enableAllAttributes();
-				 result.enableAllClasses();
-				 result.enable(Capability.NO_CLASS);  // filter doesn't need class to be set
-				return result;
-				}
-			public String getRevision() {
-				// TODO Auto-generated method stub
-				return null;
-			}  
+	public Capabilities getCapabilities() {
+			Capabilities result = Transformer.super.getCapabilities();
+			result.enableAllAttributes();
+			result.enableAllClasses();
+			result.enable(Capability.NO_CLASS);  // filter doesn't need class to be set
+		return result;
+	}
 	
-			public static void main(String[] args){
-				
-			}
+	public static void main(String[] args){
+		
+	}
+
+
 
 }

@@ -68,17 +68,6 @@ public class PAA implements Transformer {
     }
 
     @Override
-    public Instances transform(Instances data) {
-        Instances output = determineOutputFormat(data);
-
-        for (Instance inst: data) {
-            output.add(transform(inst));
-        }
-        
-        return output;
-    }
-
-    @Override
     public Instance transform(Instance inst) {
         double[] data = inst.toDoubleArray();
             

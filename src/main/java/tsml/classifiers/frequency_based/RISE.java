@@ -439,7 +439,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 try {
                     int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2;
                     Fast_FFT.setNFFT(nfft);
-                    temp = Fast_FFT.process(instances);
+                    temp = Fast_FFT.transform(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -447,7 +447,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    temp = MFCC.process(instances);
+                    temp = MFCC.transform(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -455,7 +455,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case SPEC:
                 Spectrogram spec = new Spectrogram();
                 try{
-                    temp = spec.process(instances);
+                    temp = spec.transform(instances);
                 }catch(Exception e){
                     e.printStackTrace();
                 }
@@ -463,7 +463,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case AF:
                 AudioFeatures af = new AudioFeatures();
                 try{
-                    temp = af.process(instances);
+                    temp = af.transform(instances);
                 }catch(Exception e){
                     e.printStackTrace();
                 }

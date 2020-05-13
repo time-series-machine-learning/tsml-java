@@ -4,10 +4,10 @@ Class to do basic build tests for all classifiers
 package experiments;
 
 import experiments.data.DatasetLoading;
+import tsml.transformers.Transformer;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 /**
  * Does basic sanity check builds for all listed classifiers and transformers. Does not guarantee correctness,
@@ -45,11 +45,11 @@ public class BasicBuildTests {
             Instances test = DatasetLoading.loadData(path+str+"\\"+str+"_TEST.arff");
             for(String trans:transforms){
                 System.out.print("\t Building "+trans+" .... ");
-                SimpleBatchFilter f = TransformLists.setClassicTransform(trans,0);
+                Transformer f = TransformLists.setClassicTransform(trans,0);
                 try{
-                    Instances trainTrans=f.process(train);
+                    Instances trainTrans=f.transform(train);
                     System.out.print("\tTrain transformed successfully. Prior to Trans length = "+(train.numAttributes()-1));
-                    Instances testTrans=f.process(test);
+                    Instances testTrans=f.transform(test);
                     System.out.println("\t\t   Test transformed successfully. Length = "+(testTrans.numAttributes()-1));
                 }catch(Exception e){
                     System.out.println("Transform failed to build with exception "+e);

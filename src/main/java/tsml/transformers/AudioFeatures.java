@@ -1,11 +1,14 @@
-package tsml.filters;
+package tsml.transformers;
 
 import experiments.data.DatasetLists;
+import utilities.InstanceTools;
+
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
@@ -14,14 +17,10 @@ import java.util.ArrayList;
 import static experiments.data.DatasetLoading.loadDataNullable;
 import static org.apache.commons.math3.transform.TransformType.FORWARD;
 
-public class AudioFeatures extends SimpleBatchFilter {
-    @Override
-    public String globalInfo() {
-        return null;
-    }
+public class AudioFeatures implements Transformer {
 
     @Override
-    protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
+    public Instances determineOutputFormat(Instances inputFormat) {
         ArrayList<Attribute> atts = new ArrayList<>();
         for (int i = 1; i < 7; i++){
             atts.add(new Attribute("AF_att" + i));
@@ -32,23 +31,14 @@ public class AudioFeatures extends SimpleBatchFilter {
         return transformHeader;
     }
 
-    @Override
-    public Instances process(Instances instances) throws Exception {
-        Instances output = determineOutputFormat(instances);
-        for (int i = 0; i < instances.size(); i++) {
-            double[] data = new double[instances.numAttributes() - 1];
-            for (int j = 0; j < data.length; j++) {
-                data[j] = instances.get(i).value(j);
-            }
-            try{
-                output.add(new DenseInstance(1, audioTransform(data, instances.get(i).classValue())));
-            }catch(Exception e){
-                output.add(new DenseInstance(1, audioTransform(data, instances.get(i).classValue())));
-            }
 
-        }
-        return output;
-    }
+    
+	@Override
+	public Instance transform(Instance inst) {
+		return new DenseInstance(1, audioTransform(InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst), inst.classValue()));
+	}
+
+
 
     private double[] audioTransform(double[] series, double classVal){
         int fs = (series.length + 1) * 2;
@@ -209,7 +199,7 @@ public class AudioFeatures extends SimpleBatchFilter {
         data[0].addAll(loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[88] + "/" + DatasetLists.tscProblems112[88] + "_TEST"));
         System.out.println(data[0].relationName());
         try {
-            data[1] = af.process(data[0]);
+            data[1] = af.transform(data[0]);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -221,4 +211,5 @@ public class AudioFeatures extends SimpleBatchFilter {
         }
 
     }
+
 }

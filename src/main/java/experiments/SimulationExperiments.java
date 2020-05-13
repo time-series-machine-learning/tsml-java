@@ -56,7 +56,7 @@ import weka.classifiers.meta.RotationForest;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
-import tsml.filters.MatrixProfile;
+import tsml.transformers.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
@@ -358,8 +358,8 @@ public class SimulationExperiments {
                 try {
                     System.out.println("MAtrix profile run ....");
                     MatrixProfile mp = new MatrixProfile(29);
-                    split[0] = mp.process(split[0]);
-                    split[1] = mp.process(split[1]);
+                    split[0] = mp.transform(split[0]);
+                    split[1] = mp.transform(split[1]);
                 } catch (Exception ex) {
                     Logger.getLogger(SimulationExperiments.class.getName()).log(Level.SEVERE, null, ex);
                 }

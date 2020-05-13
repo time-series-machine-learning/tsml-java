@@ -12,11 +12,12 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-package tsml.filters;
+package tsml.transformers;
 
 import java.io.FileReader;
 import java.util.ArrayList;
 
+import utilities.InstanceTools;
 import weka.filters.*;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -27,7 +28,7 @@ import weka.core.Instances;
      * copyright: Anthony Bagnall
  * 
  * */
-public class RunLength extends SimpleBatchFilter {
+public class RunLength implements Transformer {
 	private int maxRunLength=50;
 	private boolean useGlobalMean=true;
 	private double globalMean=5.5;
@@ -48,8 +49,7 @@ public class RunLength extends SimpleBatchFilter {
 	}
 	
 	@Override
-	protected Instances determineOutputFormat(Instances inputFormat)
-			throws Exception {
+	public Instances determineOutputFormat(Instances inputFormat) {
 //Treating counts as reals
 		ArrayList<Attribute> atts=new ArrayList<>();
 		Attribute a;
@@ -73,100 +73,58 @@ public class RunLength extends SimpleBatchFilter {
 	}
 
 
-	@Override
-	public Instances process(Instances instances) throws Exception {
-		// TODO Auto-generated method stub
-		Instances rl=determineOutputFormat(instances);
-		if(instances.classIndex()>=0)
-			rl.setClassIndex(rl.numAttributes()-1);
-
-		Instance newInst;
-		double [] d;
-		for(int i=0;i<instances.numInstances();i++){
-
-//1: Get series into an array, remove class value if present
-			newInst=new DenseInstance(rl.numAttributes());
-			d=instances.instance(i).toDoubleArray();
-//Need to remove the class value, if present. Class value can be put at the end of the transformed data
-//This needs debugging, NOT TESTED WITH CLASS INDEX < length!					
-			if(instances.classIndex()>=0){	//Class has been set
-				double cVal=instances.instance(i).classValue();
-				double[] temp=new double[d.length-1];
-				System.arraycopy(d,0,temp,0,instances.instance(i).classIndex());
-				if(instances.instance(i).classIndex()<d.length-1)
-					System.arraycopy(d,instances.instance(i).classIndex()+1,temp,instances.instance(i).classIndex(),d.length-instances.instance(i).classIndex()-1);
-				d=temp;
-			}
-			
-//2: Form histogram of run lengths: note missing values assumed in the same run
-			double[] histogram=new double[newInst.numAttributes()];
-			double t=0;
-			if(useGlobalMean)
-				t=globalMean;
-			else{	//Find average
-				int count=0;
-				for(int j=0;j<d.length;j++){
-					if(!instances.instance(i).isMissing(j)){
-						t+=d[j];
-						count++;
-					}
-				}
-				t/=count;
-			}
-			int pos=1;
-			int length=0;
-			boolean u2=false;
-			boolean under=d[0]<t?true:false;
-			while(pos<d.length){
-				 u2=d[pos]<t?true:false;
-//					System.out.println("Pos ="+pos+" currentUNDER ="+under+"  newUNDER = "+u2);
-				if(instances.instance(i).isMissing(pos)||under==u2){
-					length++;
-				}
-				else{
-//					System.out.println("Position "+pos+" has run length "+length);
-					if(length<maxRunLength-1)
-						histogram[length]++;
-					else
-						histogram[maxRunLength-1]++;
-					under=u2;
-					length=0;
-				}
-				pos++;
-			}
-			if(length<maxRunLength-1)
-				histogram[length]++;
-			else
-				histogram[maxRunLength-1]++;		
-			
-			
-/*			System.out.print("\n Histogram =  ");
-			for(int k=0;k<histogram.length;k++)
-				System.out.print(histogram[k]+",");
-			System.out.print("\n");
-*/				
-//3. Put run lengths and class value into instances
-			for(int j=0;j<histogram.length;j++)
-				newInst.setValue(j,histogram[j]);
-			if(instances.classIndex()>=0)
-				newInst.setValue(rl.numAttributes()-1,instances.instance(i).classValue());
-			rl.add(newInst);
-		
-		}
-		return rl;
-	}
-
-	@Override
-	public String globalInfo() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public String getRevision() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
+	@Override
+	public Instance transform(Instance inst) {
+		//1: Get series into an array, remove class value if present
+		Instance newInst=new DenseInstance(inst.numAttributes());
+		double[] d = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
+		
+//2: Form histogram of run lengths: note missing values assumed in the same run
+		double[] histogram=new double[newInst.numAttributes()];
+		double t=0;
+		if(useGlobalMean)
+			t=globalMean;
+		else{	//Find average
+			t = InstanceTools.mean(inst);
+		}
+		int pos=1;
+		int length=0;
+		boolean u2=false;
+		boolean under=d[0]<t?true:false;
+		while(pos<d.length){
+			 u2=d[pos]<t?true:false;
+//					System.out.println("Pos ="+pos+" currentUNDER ="+under+"  newUNDER = "+u2);
+			if(inst.isMissing(pos)||under==u2){
+				length++;
+			}
+			else{
+//					System.out.println("Position "+pos+" has run length "+length);
+				if(length<maxRunLength-1)
+					histogram[length]++;
+				else
+					histogram[maxRunLength-1]++;
+				under=u2;
+				length=0;
+			}
+			pos++;
+		}
+		if(length<maxRunLength-1)
+			histogram[length]++;
+		else
+			histogram[maxRunLength-1]++;		
+		
+				
+//3. Put run lengths and class value into instances
+		for(int j=0;j<histogram.length;j++)
+			newInst.setValue(j,histogram[j]);
+
+		if(inst.classIndex()>=0)
+			newInst.setValue(inst.numAttributes()-1,inst.classValue());
+
+		return newInst;
+	}
+
 //Primitives version, assumes zero mean global, passes max run length
 	public int[] processSingleSeries(double[] d, int mrl){
 		double mean=0;
@@ -211,7 +169,7 @@ public class RunLength extends SimpleBatchFilter {
 			data.setClassIndex(data.numAttributes()-1);
 			System.out.println(data);
 
-			Instances newInst=cp.process(data);
+			Instances newInst=cp.transform(data);
 			System.out.println("\n"+newInst);
 		}catch(Exception e)
 		{
@@ -222,6 +180,7 @@ public class RunLength extends SimpleBatchFilter {
 				
 		}
 	}
+
 	
 	
 }

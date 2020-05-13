@@ -1,5 +1,7 @@
 package tsml.transformers;
 import experiments.data.DatasetLists;
+import utilities.InstanceTools;
+
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -72,76 +74,55 @@ public class Fast_FFT implements Transformer{
         nfft = (int)Math.pow(2.0, (double)m);
     }
 
-    public Instances process(Instances input) throws Exception {
-        Instances instances = new Instances(input);
-        double[][] data = null;
-        double[][] FFTData = null;
-        Instances FFTInstances = null;
+    @Override
+    public Instance transform(Instance inst) {
+        Complex[] complexData = new Complex[nfft];
+        double[] data = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
+        for (int j = 0; j < complexData.length; j++){
+            complexData[j] = new Complex(0.0, 0.0);
+        }
+
+        double mean = 0;
+        if (data.length < nfft){
+            for (int j = 0; j < data.length; j++) {
+                mean += data[j];
+            }
+            mean /= data.length;
+        }
+
+        //int limit = nfft < data[i].length ? nfft : data[i].length;
+        for (int j = 0; j < nfft; j++) {
+            if(j < data.length)
+                complexData[j] = new Complex(data[j], 0);
+            else
+                complexData[j] = new Complex(mean, 0);
+        }
+
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
-        Complex[] complexData = null;
-
-        data = fromWekaInstancesArray(instances, true);
-        FFTInstances = determineOutputFormat(instances);
-
-        FFTData = new double[instances.size()][nfft/2 + 1];
-
-        for (int i = 0; i < FFTData.length; i++){
-
-            complexData = new Complex[nfft];
-            for (int j = 0; j < complexData.length; j++){
-                complexData[j] = new Complex(0.0, 0.0);
-            }
-
-            double mean = 0;
-            if (data[i].length < nfft){
-                for (int j = 0; j < data[i].length; j++) {
-                    mean += data[i][j];
-                }
-                mean /= data[i].length;
-            }
-
-            //int limit = nfft < data[i].length ? nfft : data[i].length;
-            for (int j = 0; j < nfft; j++) {
-                if(j < data[i].length)
-                    complexData[j] = new Complex(data[i][j], 0);
-                else
-                    complexData[j] = new Complex(mean, 0);
-            }
-
-            complexData = fft.transform(complexData, TransformType.FORWARD);
-
-            for (int j = 0; j < (nfft/2); j++) {
-                FFTData[i][j] = complexData[j].abs();
-            }
-
-            FFTData[i][FFTData[i].length - 1] = instances.get(i).classValue();
+        complexData = fft.transform(complexData, TransformType.FORWARD);
+        
+        double[] FFTData = new double[(nfft/2) + (inst.classIndex()>=0 ? 1:0)];
+        for (int j = 0; j < (nfft/2); j++) {
+            FFTData[j] = complexData[j].abs();
         }
 
-        for (int i = 0; i < FFTData.length; i++) {
-            FFTInstances.add(new DenseInstance(1.0, FFTData[i]));
-        }
+        if(inst.classIndex()>=0)
+            FFTData[FFTData.length - 1] = inst.classValue();
 
-        return FFTInstances;
+        return new DenseInstance(1,FFTData);
     }
 
     public static void main(String[] args) {
         Fast_FFT fast_fft = new Fast_FFT();
         Instances[] data = new Instances[2];
         data[0] = loadDataNullable("Z:/ArchiveData/Univariate_arff/" + DatasetLists.tscProblems85[28] + "/" + DatasetLists.tscProblems85[28]);
-        try {
-            data[1] = fast_fft.process(data[0]);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        data[1] = fast_fft.transform(data[0]);
+        
         //Before transform.
         System.out.println(data[0].get(0).toString());
         //After transform.
         System.out.println(data[1].get(0).toString());
     }
 
-    @Override
-    public Instance transform(Instance inst) {
-        // TODO Auto-generated method stub
-        return null;
-    }
+
 }
