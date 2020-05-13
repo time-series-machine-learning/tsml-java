@@ -243,6 +243,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         }
 
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
+            System.out.println(" Contracting the classifier to time "+classifierContractTime);
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
 

@@ -265,18 +265,19 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     // can classifier handle the data? These default capabilities
     // only allow real valued series and classification. To be adjusted
         getCapabilities().testWithFail(data);
-        long startTime=System.nanoTime(); 
+        long startTime=System.nanoTime();
+    //Set up the results file
+        super.buildClassifier(data);
         String relationName=data.relationName();
         data = new Instances( data );
         File file = new File(checkpointPath + "RotF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && file.exists()){
-        //path checkpoint files will be saved to
+        if (checkpoint && file.exists()){ //Configure from file
             printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "RotF" + seed + ".ser");
  //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        else{
+        else{   //Initialise
             if (baseClassifier == null) {
                 throw new Exception("A base classifier has not been specified!");
             }
@@ -297,8 +298,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         if (getEstimateOwnPerformance()) {
             estimateOwnPerformance(data);
             this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((trainContractTimeNanos * (1.0 / perForBag))));
-            numTrees = 0;
-
+//Do we need to do this again?
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
@@ -306,6 +306,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
+            numTrees = 0;
         }
 
         rand = new Random(seed);
