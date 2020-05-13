@@ -89,7 +89,10 @@ public class DatasetLists {
         "SelfRegulationSCP2",
         "SpokenArabicDigits",
         "StandWalkJump",        
-        "UWaveGestureLibrary"            
+        "UWaveGestureLibrary",
+		"AsphaltObstaclesCoordinates",
+		"AsphaltPavementTypeCoordinates",
+		"AsphaltRegularityCoordinates"
 };    
        //</editor-fold>       
 
