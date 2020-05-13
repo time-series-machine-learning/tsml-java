@@ -1,24 +1,13 @@
 package tsml.classifiers.multivariate;
 
-import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
-import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import machine_learning.classifiers.kNN;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.interval_based.TSF;
 import utilities.ErrorReport;
 import utilities.ThreadingUtilities;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.Classifier;
-import weka.classifiers.functions.Logistic;
-import weka.classifiers.functions.MultilayerPerceptron;
-import weka.classifiers.functions.SMO;
-import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.trees.J48;
-import weka.core.EuclideanDistance;
 import weka.core.Instances;
 
 import java.io.File;
@@ -120,23 +109,16 @@ public abstract class MultivariateAbstractEnsemble extends AbstractEnsemble {
     @Override
     public void buildClassifier(Instances data) throws Exception {
         printlnDebug("**MTSC ENSEMBLE TRAIN: " + ensembleName + "**");
-        System.out.println("DATA NAME ="+data.relationName());
 
+        System.out.println("DATA NAME ="+data.relationName());
         Instances[] splitData = MultivariateInstanceTools.splitMultivariateInstances(data);
+        // can classifier handle the data?
+        for (int i=0;i<splitData.length;i++)
+            getCapabilities().testWithFail(splitData[i]);
+
 
         long startTime = System.nanoTime();
 
-        //transform data if specified
-        if(this.transform!=null){
-            printlnDebug(" Transform is being used: Transform = "+transform.getClass().getSimpleName());
-
-            //  this.trainInsts = transform.process(data);
-            for (int i=0;i<splitData.length;i++)
-                splitData[i] = transform.process(splitData[i]);
-
-            printlnDebug(" Transform "+transform.getClass().getSimpleName()+" complete");
-            printlnDebug(" Transform "+transform.toString());
-        }
 
         this.setupMultivariateEnsembleSettings(splitData.length);
 
@@ -152,16 +134,14 @@ public abstract class MultivariateAbstractEnsemble extends AbstractEnsemble {
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
 
-        // can classifier handle the data?
-        for (int i=0;i<splitData.length;i++)
-            getCapabilities().testWithFail(splitData[i]);
+
 
 
 
         //init
         this.numTrainInsts = data.numInstances();
         this.numClasses = data.numClasses();
-        this.numAttributes = data.numAttributes();
+        this.numAttributes = 2;
 
         //set up modules
         initialiseModules(splitData,data.numClasses());
