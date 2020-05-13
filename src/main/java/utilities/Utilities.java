@@ -879,7 +879,9 @@ public class Utilities {
         return list.get(0);
     }
 
-    public static <A> List<A> randPickN(Collection<A> collection, int num, Random rand) {
+    public static <A> List<A> randPickN(Collection<A> collection, int num, Random random) {
+        Assert.assertNotNull(collection);
+        Assert.assertNotNull(random);
         if(num > collection.size()) {
             throw new IllegalArgumentException("too many");
         }
@@ -892,7 +894,7 @@ public class Utilities {
         }
         List<A> removed = new ArrayList<>();
         for(int i = 0; i < num; i++) {
-            int index = rand.nextInt(list.size());
+            int index = random.nextInt(list.size());
             A removedItem = list.remove(index);
             removed.add(removedItem);
         }

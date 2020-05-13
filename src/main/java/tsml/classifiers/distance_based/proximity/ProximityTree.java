@@ -38,7 +38,7 @@ public class ProximityTree extends BaseClassifier
 {
 
     public static void main(String[] args) throws Exception {
-        for(int i = 0; i < 30; i++) {
+        for(int i = 2; i < 3; i++) {
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setEstimateOwnPerformance(false);
@@ -201,8 +201,9 @@ public class ProximityTree extends BaseClassifier
             final TreeNode<Split> node = this.nodeBuildQueue.next();
             // partition the data at the node
             Split split = node.getElement();
-            List<Instances> partitions = split.buildClassifier();
-//            getLogger().info("score: " + split.getScore());
+            split.buildSplit();
+            List<Instances> partitions = split.getPartitions();
+            //            getLogger().info("score: " + split.getScore());
             // for each partition of data
             for(Instances partition : partitions) {
                 // try to build a child node
@@ -306,9 +307,11 @@ public class ProximityTree extends BaseClassifier
             // make this the next node to visit
             node = children.get(index);
         }
-        // hit a leaf node by here
-        //
-        double[] distribution = split.distributionForInstance(index);
+        // hit a leaf node
+        // get the parent of the leaf node to work out distribution
+        node = node.getParent();
+        split = node.getElement();
+        double[] distribution = split.distributionForInstance(instance, index);
         // disable the resource monitors
 //        testTimeContracter.getTimer().disable();
 //        testMemoryContracter.getWatcher().disable();

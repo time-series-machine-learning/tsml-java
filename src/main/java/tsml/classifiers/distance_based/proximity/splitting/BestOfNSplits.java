@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.proximity.splitting;
 
 import java.util.List;
 import java.util.Random;
+import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import weka.core.Instance;
@@ -10,7 +11,6 @@ import weka.core.Instances;
 public class BestOfNSplits extends Split {
     private int numSplits = 5;
     private Splitter splitter;
-    private Random random;
     private Split bestSplit;
 
     public BestOfNSplits(final Splitter splitter, final Random random) {
@@ -18,9 +18,9 @@ public class BestOfNSplits extends Split {
     }
 
     public BestOfNSplits(final Splitter splitter, final Random random, final int numSplits) {
+        super(random);
         setNumSplits(numSplits);
         setSplitter(splitter);
-        setRandom(random);
     }
 
     public int getNumSplits() {
@@ -36,6 +36,7 @@ public class BestOfNSplits extends Split {
     }
 
     public void setSplitter(final Splitter splitter) {
+        Assert.assertNotNull(splitter);
         this.splitter = splitter;
     }
 
@@ -45,7 +46,7 @@ public class BestOfNSplits extends Split {
         map.setSoftLimit(1);
         for(int i = 0; i < getNumSplits(); i++) {
             Split split = splitter.buildSplit(data);
-            split.buildClassifier();
+            split.buildSplit();
             double score = split.getScore();
             map.put(score, split);
         }
@@ -53,14 +54,6 @@ public class BestOfNSplits extends Split {
         Split choice = RandomUtils.choice(map.values(), getRandom());
         setBestSplit(choice);
         return choice.getPartitions();
-    }
-
-    public Random getRandom() {
-        return random;
-    }
-
-    public void setRandom(final Random random) {
-        this.random = random;
     }
 
     public Split getBestSplit() {
@@ -74,6 +67,11 @@ public class BestOfNSplits extends Split {
 
     @Override
     public int getPartitionIndexFor(final Instance instance) {
-        return getBestSplit().getPartitionIndexFor(instance);
+        return bestSplit.getPartitionIndexFor(instance);
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance instance, final int partitionIndex) {
+        return bestSplit.distributionForInstance(instance, partitionIndex);
     }
 }

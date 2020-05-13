@@ -8,6 +8,7 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
+import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -20,27 +21,16 @@ import weka.core.Instances;
  */
 public class RandomExemplarProximitySplit extends Split {
 
-    private Random random;
     private ExemplarPicker exemplarPicker;
     private boolean useEarlyAbandon = true;
     private DistanceFunction distanceFunction;
     private List<List<Instance>> exemplars;
     private DistanceFunctionPicker distanceFunctionPicker;
 
-    public Random getRandom() {
-        return random;
-    }
-
-    public RandomExemplarProximitySplit setRandom(Random random) {
-        Assert.assertNotNull(random);
-        this.random = random;
-        return this;
-    }
-
     public RandomExemplarProximitySplit(Random random,
         ExemplarPicker exemplarPicker, DistanceFunctionPicker distanceFunctionPicker) {
+        super(random);
         setExemplarPicker(exemplarPicker);
-        setRandom(random);
         setDistanceFunctionPicker(distanceFunctionPicker);
     }
 
@@ -51,10 +41,10 @@ public class RandomExemplarProximitySplit extends Split {
      */
     @Override
     public List<Instances> performSplit(Instances data) {
-        List<List<Instance>> exemplars = getExemplarPicker().pickExemplars(data);
+        List<List<Instance>> exemplars = exemplarPicker.pickExemplars(data);
         setExemplars(exemplars);
         List<Instances> partitions = Lists.newArrayList(exemplars.size());
-        DistanceFunction distanceFunction = getDistanceFunctionPicker().pickDistanceFunction();
+        DistanceFunction distanceFunction = distanceFunctionPicker.pickDistanceFunction();
         setDistanceFunction(distanceFunction);
         for(List<Instance> group : exemplars) {
             partitions.add(new Instances(data, 0));
@@ -69,15 +59,14 @@ public class RandomExemplarProximitySplit extends Split {
     }
 
     public int getPartitionIndexFor(final Instance instance) {
-        final List<List<Instance>> exemplars = getExemplars();
-        final DistanceFunction distanceFunction = getDistanceFunction();
-        double limit = DistanceMeasureable.getMaxDistance();
+        double maxDistance = DistanceMeasureable.getMaxDistance();
+        double limit = maxDistance;
         final PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
         distanceToPartitionIndexMap.setSoftLimit(1);
         final boolean useEarlyAbandon = isUseEarlyAbandon();
         for(int i = 0; i < exemplars.size(); i++) {
             // todo extract min dist to exemplar in group into own interfaceMu
-            double minDistance = DistanceMeasureable.getMaxDistance();
+            double minDistance = maxDistance;
             for(Instance exemplar : exemplars.get(i)) {
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
                 if(useEarlyAbandon) {
@@ -92,6 +81,21 @@ public class RandomExemplarProximitySplit extends Split {
         final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
         final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
         return closestPartitionIndex;
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance instance, int index) {
+        // get the corresponding closest exemplars
+        List<Instance> exemplars = this.exemplars.get(index);
+        double[] distribution = new double[instance.numClasses()];
+        // for each exemplar
+        for(Instance exemplar : exemplars) {
+            // vote for the exemplar's class
+            double classValue = exemplar.classValue();
+            distribution[(int) classValue]++;
+        }
+        ArrayUtilities.normaliseInPlace(distribution);
+        return distribution;
     }
 
     public ExemplarPicker getExemplarPicker() {
