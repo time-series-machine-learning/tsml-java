@@ -140,26 +140,29 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }else{
             int folds=30;
-            String[] settings=new String[6];
+            String[] settings=new String[8];
             String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
-            String classifier=classifiers[3];
+ //           String classifier=classifiers[2];
+            String classifier="STC";
 
 //
-//            settings[0]="-dp=Z:\\ArchiveData\\MultivariateSplitNormalised\\";//Where to get data
-            settings[0]="-dp=Z:\\ArchiveData\\Multivariate_arff\\";//Where to get data
- //           settings[1]="-rp=E:\\Results Working Area\\Multivariate\\CompleteClassifiers\\NotNormalised\\ComponentsCAWPEWeight\\";//Where to write results
-            settings[1]="-rp=Z:\\Results Working Area\\Multivariate\\MTSCSplitResults\\";//Where to write results
-            settings[2]="-gtf=true"; //Whether to generate train files or not
+            settings[0]="-dp=E:\\Data Working Area\\DomenicHeartbeat";//Where to get data
+            settings[1]="-rp=E:\\Temp\\";//Where to write results
+            settings[2]="-gtf=false"; //Whether to generate train files or not
             settings[3]="-cn="+classifier; //Classifier name
             settings[4]="-dn="; //Problem file
             settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-//            String[] probFiles= {"BasicMotions"};
-            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            settings[6]="-ctr=60s";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[7]="-d=true";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+
+
+            String[] probFiles= {"HB"};
+//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
             System.out.println("");
-            boolean threaded=true;
+            boolean threaded=false;
             if(threaded){
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);

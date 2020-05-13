@@ -725,8 +725,10 @@ public class ClassifierLists {
             System.out.println("Unknown classifier "+classifier+" it is not in any of the sublists ");
             throw new UnsupportedOperationException("Unknown classifier "+classifier+" it is not in any of the sublists on ClassifierLists ");
         }
-        if(c instanceof Randomizable)
-            ((Randomizable)c).setSeed(exp.foldId);
+        if(c instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) c).setSeed(exp.foldId);
+            ((EnhancedAbstractClassifier) c).setDebug(exp.debug);
+        }
         return c;
     }
 

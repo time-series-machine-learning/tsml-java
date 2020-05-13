@@ -1434,12 +1434,12 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
      */
     @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" TSF setting contract to "+amount);
+        printLineDebug(" Setting ContractRotationForest contract to be "+amount);
 
         if(amount>0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
-            contractHours=trainContractTimeNanos/1000000000/60/60;
+            contractHours=trainContractTimeNanos/1000000000/60.0/60.0;
         }
         else
             trainTimeContract = false;
