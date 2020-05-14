@@ -2,16 +2,21 @@ package tsml.classifiers.distance_based.utils.logging;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.logging.*;
+import tsml.classifiers.distance_based.proximity.TimeContracter;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
  * Purpose: build loggers / handy logging functions
- *
+ * <p>
  * Contributors: goastler
  */
 public class LogUtils {
-    private LogUtils() {}
+
+    private LogUtils() {
+    }
 
     public static Logger buildLogger(Object object) {
         String name;
@@ -36,7 +41,8 @@ public class LogUtils {
 
     public static class CustomLogFormat extends Formatter {
 
-        @Override public String format(final LogRecord logRecord) {
+        @Override
+        public String format(final LogRecord logRecord) {
             String separator = " | ";
             return logRecord.getSequenceNumber() + separator +
                 logRecord.getLevel() + separator +
@@ -48,6 +54,7 @@ public class LogUtils {
     }
 
     public static class CustomStreamHandler extends StreamHandler {
+
         public CustomStreamHandler(final OutputStream out, final Formatter formatter) {
             super(out, formatter);
         }
@@ -74,6 +81,20 @@ public class LogUtils {
         StreamHandler soh = new CustomStreamHandler(System.out, formatter);
         soh.setLevel(Level.ALL); //Default StdOut Setting
         return soh;
+    }
+
+    public static void logTimeContract(TimeContracter timeContracter, Logger logger, String name) {
+        if(timeContracter.hasTimeLimit()) {
+            logger.info(() -> {
+                Duration limit = Duration.ofNanos(timeContracter.getTimeLimit());
+                Duration time = Duration.ofNanos(timeContracter.getTimer().getTimeNanos());
+                Duration diff = limit.minus(time);
+                return StrUtils.durationToHmsString(time) + " elapsed of " + StrUtils.durationToHmsString(limit) +
+                    " " + name + " "
+                    + "time "
+                    + "limit" + System.lineSeparator() + StrUtils.durationToHmsString(diff) + " train time remaining";
+            });
+        }
     }
 
 }

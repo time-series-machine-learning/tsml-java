@@ -1,15 +1,15 @@
 package tsml.classifiers.distance_based.proximity;
 
-import de.bwaldvogel.liblinear.Train;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.TestTimeContractable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
+import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.filters.CachedFilter;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
@@ -34,7 +34,7 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
                 tree.setConfigR5();
                 return tree;
             });
-            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+//            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
@@ -74,38 +74,11 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
     private boolean useDistributionInVoting = false;
     private boolean shareSplitter = true;
 
-    private void logRemainingTrainTime() {
-        long limitNano = trainTimeContracter.getTimeLimit();
-        long timeNano = trainTimeContracter.getTimer().getTimeNanos();
-        long time;
-        TimeUnit unit;
-        if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.DAYS)) {
-            unit = TimeUnit.DAYS;
-        } else if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS)) {
-            unit = TimeUnit.HOURS;
-        } else if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES)) {
-            unit = TimeUnit.MINUTES;
-        } else if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS)) {
-            unit = TimeUnit.SECONDS;
-        } else if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS)) {
-            unit = TimeUnit.MILLISECONDS;
-        } else if(timeNano > TimeUnit.NANOSECONDS.convert(1, TimeUnit.MICROSECONDS)) {
-            unit = TimeUnit.MICROSECONDS;
-        } else {
-            unit = TimeUnit.NANOSECONDS;
-        }
-        time = unit.convert(timeNano, TimeUnit.NANOSECONDS);
-        long limit = unit.convert(limitNano, TimeUnit.NANOSECONDS);
-        if(trainTimeContracter.hasTimeLimit()) {
-            getLogger().info(time + " / " + limit + " " + unit.toString().toLowerCase() + " train time remaining");
-        }
-    }
-
     @Override
     public void buildClassifier(final Instances trainData) throws Exception {
         trainMemoryContracter.getWatcher().enable();
         trainTimeContracter.getTimer().enable();
-        logRemainingTrainTime();
+        LogUtils.logTimeContract(trainTimeContracter, getLogger(), "train");
         if(isRebuild()) {
             trainMemoryContracter.getWatcher().resetAndEnable();
             trainTimeContracter.getTimer().resetAndEnable();
@@ -115,14 +88,16 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
         }
         CachedFilter.hashInstances(trainData);
         trainTimeContracter.getTimer().lap();
-        logRemainingTrainTime();
+        LogUtils.logTimeContract(trainTimeContracter, getLogger(), "train");
+        // todo contract train of trees?
         while(
             (!hasNumTreeLimit() || trees.size() < numTreeLimit)
             &&
             (!trainTimeContracter.hasTimeLimit() || trainTimeContracter.getRemainingTrainTime() > longestTreeBuildTimeNanos)
         ) {
-            logRemainingTrainTime();
-            getLogger().info("building tree " + trees.size());
+            getLogger().info(() -> "building tree " + trees.size());
+            LogUtils.logTimeContract(trainTimeContracter, getLogger(), "train");
+            getLogger().info(() -> "" + TimeUnit.MILLISECONDS.convert(longestTreeBuildTimeNanos, TimeUnit.NANOSECONDS));
             ProximityTree tree;
                 tree = new ProximityTree();
                 tree = constituentConfig.setConfig(tree);
@@ -135,7 +110,7 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
             trainTimeContracter.getTimer().lap();
         }
         getLogger().info("finished building trees");
-        logRemainingTrainTime();
+        LogUtils.logTimeContract(trainTimeContracter, getLogger(), "train");
         if(getEstimateOwnPerformance()) {
             trainResults = new ClassifierResults();
             double[][] finalDistributions = new double[trainData.size()][];

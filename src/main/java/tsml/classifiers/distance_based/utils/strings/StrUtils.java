@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.strings;
 
 import experiments.ClassifierLists;
 import experiments.Experiments;
+import java.time.Duration;
 import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
@@ -18,6 +19,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class StrUtils {
+
+    public static String durationToHmsString(Duration duration) {
+        return duration.toString().substring(2)
+            //            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+            .toLowerCase();
+    }
 
     public static String[] extractAmountAndUnit(String str) {
         str = str.trim();
