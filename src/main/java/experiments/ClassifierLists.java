@@ -22,6 +22,7 @@ import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
@@ -95,7 +96,28 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID"
+            "DD_DTW","DTD_C","CID_DTW","NN_CID",
+        "PF_10",
+        "PF_10_CV",
+        "PF_10_OOB",
+        "PF_20",
+        "PF_20_CV",
+        "PF_20_OOB",
+        "PF_50",
+        "PF_50_CV",
+        "PF_50_OOB",
+        "PF_100",
+        "PF_100_CV",
+        "PF_100_OOB",
+        "PF_200",
+        "PF_200_CV",
+        "PF_200_OOB",
+        "PF_500",
+        "PF_500_CV",
+        "PF_500_OOB",
+        "PF_1000",
+        "PF_1000_CV",
+        "PF_1000_OOB",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -103,6 +125,69 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "PF_10":
+                c = new ProximityForest().setNumTreeLimit(10);
+                break;
+            case "PF_20":
+                c = new ProximityForest().setNumTreeLimit(20);
+                break;
+            case "PF_50":
+                c = new ProximityForest().setNumTreeLimit(50);
+                break;
+            case "PF_100":
+                c = new ProximityForest().setNumTreeLimit(100);
+                break;
+            case "PF_200":
+                c = new ProximityForest().setNumTreeLimit(200);
+                break;
+            case "PF_500":
+                c = new ProximityForest().setNumTreeLimit(500);
+                break;
+            case "PF_1000":
+                c = new ProximityForest().setNumTreeLimit(1000);
+                break;
+            case "PF_10_OOB":
+                c = new ProximityForest().setNumTreeLimit(10).setOOB(true);
+                break;
+            case "PF_20_OOB":
+                c = new ProximityForest().setNumTreeLimit(20).setOOB(true);
+                break;
+            case "PF_50_OOB":
+                c = new ProximityForest().setNumTreeLimit(50).setOOB(true);
+                break;
+            case "PF_100_OOB":
+                c = new ProximityForest().setNumTreeLimit(100).setOOB(true);
+                break;
+            case "PF_200_OOB":
+                c = new ProximityForest().setNumTreeLimit(200).setOOB(true);
+                break;
+            case "PF_500_OOB":
+                c = new ProximityForest().setNumTreeLimit(500).setOOB(true);
+                break;
+            case "PF_1000_OOB":
+                c = new ProximityForest().setNumTreeLimit(1000).setOOB(true);
+                break;
+            case "PF_10_CV":
+                c = new ProximityForest().setNumTreeLimit(10).setCV(true);
+                break;
+            case "PF_20_CV":
+                c = new ProximityForest().setNumTreeLimit(20).setCV(true);
+                break;
+            case "PF_50_CV":
+                c = new ProximityForest().setNumTreeLimit(50).setCV(true);
+                break;
+            case "PF_100_CV":
+                c = new ProximityForest().setNumTreeLimit(100).setCV(true);
+                break;
+            case "PF_200_CV":
+                c = new ProximityForest().setNumTreeLimit(200).setCV(true);
+                break;
+            case "PF_500_CV":
+                c = new ProximityForest().setNumTreeLimit(500).setCV(true);
+                break;
+            case "PF_1000_CV":
+                c = new ProximityForest().setNumTreeLimit(1000).setCV(true);
+                break;
             case "ED":
                 c = new KNN();
                 break;
