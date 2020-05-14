@@ -27,7 +27,7 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
         for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityForest classifier = new ProximityForest();
-            classifier.setEstimateOwnPerformance(false);
+            classifier.setEstimateOwnPerformance(true);
             classifier.setSeed(seed);
             classifier.setConfig100TreeLimit();
             classifier.setConstituentConfig(tree -> {
@@ -97,7 +97,6 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
         ) {
             getLogger().info(() -> "building tree " + trees.size());
             LogUtils.logTimeContract(trainTimeContracter, getLogger(), "train");
-            getLogger().info(() -> "" + TimeUnit.MILLISECONDS.convert(longestTreeBuildTimeNanos, TimeUnit.NANOSECONDS));
             ProximityTree tree;
                 tree = new ProximityTree();
                 tree = constituentConfig.setConfig(tree);
@@ -116,20 +115,20 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
             double[][] finalDistributions = new double[trainData.size()][];
             long[] times = new long[trainData.size()];
             for(ProximityTree tree : trees) {
-//                List<Integer> oobTestIndices = tree.getOobTestIndices();
-//                ClassifierResults treeTrainResults = tree.getTrainResults();
-//                for(int i = 0; i < oobTestIndices.size(); i++) {
-//                    long time = System.nanoTime();
-//                    int index = oobTestIndices.get(i);
-//                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
-//                    if(finalDistributions[index] == null) {
-//                        finalDistributions[index] = new double[getNumClasses()];
-//                    }
-//                    vote(finalDistributions[index], distribution);
-//                    time = System.nanoTime() - time;
-//                    time += treeTrainResults.getPredictionTime(i);
-//                    times[index] = time;
-//                }
+                List<Integer> oobTestIndices = tree.getOobTestIndices();
+                ClassifierResults treeTrainResults = tree.getTrainResults();
+                for(int i = 0; i < oobTestIndices.size(); i++) {
+                    long time = System.nanoTime();
+                    int index = oobTestIndices.get(i);
+                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
+                    if(finalDistributions[index] == null) {
+                        finalDistributions[index] = new double[getNumClasses()];
+                    }
+                    vote(finalDistributions[index], distribution, treeTrainResults.getAcc());
+                    time = System.nanoTime() - time;
+                    time += treeTrainResults.getPredictionTime(i);
+                    times[index] = time;
+                }
             }
             for(int i = 0; i < finalDistributions.length; i++) {
                 long time = System.nanoTime();
@@ -154,13 +153,13 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
         getLogger().info("build complete");
     }
 
-    private void vote(double[] finalDistribution, double[] distribution) {
+    private void vote(double[] finalDistribution, double[] distribution, double weight) {
         if(useDistributionInVoting) {
             ArrayUtilities.addInPlace(finalDistribution, distribution);
         } else {
             // majority vote
             double index = Utilities.argMax(distribution, rand);
-            finalDistribution[(int) index]++;
+            finalDistribution[(int) index]+=weight;
         }
     }
 
@@ -169,7 +168,7 @@ public class ProximityForest extends BaseClassifier implements TrainTimeContract
         final double[] finalDistribution = new double[getNumClasses()];
         for(ProximityTree tree : trees) {
             final double[] distribution = tree.distributionForInstance(instance);
-            vote(finalDistribution, distribution);
+            vote(finalDistribution, distribution, tree.getTrainResults().getAcc());
         }
         ArrayUtilities.normaliseInPlace(finalDistribution);
         return finalDistribution;
