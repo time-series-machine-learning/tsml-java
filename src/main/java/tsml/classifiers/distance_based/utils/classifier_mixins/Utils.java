@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import evaluation.storage.ClassifierResults;
+import java.util.Arrays;
 import java.util.logging.Level;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.logging.Loggable;

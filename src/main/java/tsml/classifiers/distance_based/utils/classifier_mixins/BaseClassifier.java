@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
+import evaluation.storage.ClassifierResults;
 import java.lang.reflect.Array;
 import java.util.logging.Logger;
 import org.junit.Assert;
@@ -72,6 +73,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
                 }
             });
             Assert.assertNotNull(trainData);
+            // reset train results
+            trainResults = new ClassifierResults();
             // check the seed has been set
             if(!seedSet) {
                 throw new IllegalStateException("seed not set");
