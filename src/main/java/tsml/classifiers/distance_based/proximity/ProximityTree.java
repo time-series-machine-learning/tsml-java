@@ -76,7 +76,7 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     // -------------------- end configs --------------------
 
     public ProximityTree() {
-        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
     }
 
     public ProximityTree setBuildUntilPure() {
@@ -150,10 +150,6 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
     private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
     private StoppingCondition stoppingCondition;
     private Splitter splitter;
-    private Instances oobTrain;
-    private Instances oobTest;
-    private List<Integer> oobTestIndices;
-    private List<Integer> oobTrainIndices;
 
     public interface StoppingCondition extends Serializable {
         boolean shouldStop(TreeNode<Split> node);
@@ -168,30 +164,6 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             trainMemoryContracter.getWatcher().resetAndEnable();
             trainTimeContracter.getTimer().resetAndEnable();
             super.buildClassifier(trainData);
-            // make the instances hashed so caching of distances works
-            if(getEstimateOwnPerformance()) {
-                oobTrain = new Instances(trainData, 0);
-                oobTrainIndices = new ArrayList<>();
-                final Set<Integer> oobTestSetIndices = new HashSet<>(ArrayUtilities.sequence(trainData.size()));
-//                 todo double check this is working as intended
-                for(int i = 0; i < trainData.size(); i++) {
-                    int index = rand.nextInt(trainData.size());
-                    Instance instance = trainData.get(index);
-                    oobTrain.add(instance);
-                    oobTrainIndices.add(index);
-                    oobTestSetIndices.remove(index);
-                }
-                // quick check that oob test / train are independent
-//                for(Integer i : oobTrainIndices) {
-//                    Assert.assertFalse(oobTestSetIndices.contains(i));
-//                }
-                oobTestIndices = new ArrayList<>(oobTestSetIndices);
-                oobTest = new Instances(trainData, 0);
-                for(int index : oobTestIndices) {
-                    oobTest.add(trainData.get(index));
-                }
-                trainData = oobTrain;
-            }
             tree.clear();
             longestNodeBuildTimeNanos = 0;
             nodeBuildQueue = new LinearListIterator<>();
@@ -222,34 +194,8 @@ public class ProximityTree extends BaseClassifier implements TrainTimeContractab
             longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, System.nanoTime() - time);
             trainTimeContracter.getTimer().lap();
         }
-        if(getEstimateOwnPerformance()) {
-//             todo put oob in contract
-            trainResults = new ClassifierResults();
-            for(Instance instance : oobTest) {
-                Utils.addPrediction(this, instance, trainResults);
-            }
-        }
         trainTimeContracter.getTimer().disable();
         trainMemoryContracter.getWatcher().disable();
-        if(getEstimateOwnPerformance()) {
-            trainResults.setDetails(this, trainData);
-        }
-    }
-
-    public List<Integer> getOobTestIndices() {
-        return oobTestIndices;
-    }
-
-    public List<Integer> getOobTrainIndices() {
-        return oobTrainIndices;
-    }
-
-    public Instances getOobTrain() {
-        return oobTrain;
-    }
-
-    public Instances getOobTest() {
-        return oobTest;
     }
 
     private TreeNode<Split> buildNode(Instances data, TreeNode<Split> parent) {
