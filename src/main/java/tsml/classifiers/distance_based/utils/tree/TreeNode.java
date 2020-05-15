@@ -16,6 +16,10 @@ public interface TreeNode<A> {
 
     List<TreeNode<A>> getChildren();
 
+    default boolean hasChildren() {
+        return getChildren().size() > 0;
+    }
+
     A getElement();
 
     void setElement(A element);
