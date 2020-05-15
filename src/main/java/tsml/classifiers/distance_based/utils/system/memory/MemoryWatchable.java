@@ -10,7 +10,7 @@ public interface MemoryWatchable {
     double getMeanMemoryUsageInBytes();
     double getVarianceMemoryUsageInBytes();
     double getStdDevMemoryUsageInBytes();
-    long getGarbageCollectionTimeInMillis();
+    long getGarbageCollectionTimeInNanos();
     long getMemoryReadingCount();
     default boolean hasMemoryReadings() {
         return getMemoryReadingCount() > 0;

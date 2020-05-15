@@ -55,7 +55,7 @@ public interface MemoryContractable extends MemoryWatchable {
     default double getStdDevMemoryUsageInBytes() {
         return -1;
     }
-    default long getGarbageCollectionTimeInMillis() {
+    default long getGarbageCollectionTimeInNanos() {
         return -1;
     }
     default long getMemoryReadingCount() {

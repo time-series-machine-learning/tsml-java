@@ -44,7 +44,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
     // the main thread performance.
     private BigDecimal sqDiffFromMean = BigDecimal.ZERO;
     private double mean = 0;
-    private long garbageCollectionTimeInMillis = 0;
+    private long garbageCollectionTimeInNanos = 0;
     private transient Set<MemoryWatcher> listeners = new HashSet<>();
 
     /**
@@ -174,8 +174,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
             if(isEnabled()) {
                 if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
                     GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
-                    long duration = info.getGcInfo().getDuration();
-                    garbageCollectionTimeInMillis += duration;
+                    long duration = TimeUnit.NANOSECONDS.convert(info.getGcInfo().getDuration(), TimeUnit.MILLISECONDS);
+                    garbageCollectionTimeInNanos += duration;
                     Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
                     for (Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
                         MemoryUsage memoryUsageSnapshot = entry.getValue();
@@ -208,7 +208,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
      */
     public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
         maxMemoryUsageBytes = other.getMaxMemoryUsageInBytes();
-        garbageCollectionTimeInMillis += other.getGarbageCollectionTimeInMillis();
+        garbageCollectionTimeInNanos += other.getGarbageCollectionTimeInNanos();
         if(hasReadings() && other.hasMemoryReadings()) {
             BigDecimal thisMean = BigDecimal.valueOf(this.mean);
             BigDecimal thisCount = BigDecimal.valueOf(this.count);
@@ -307,8 +307,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         }
     }
 
-    public synchronized long getGarbageCollectionTimeInMillis() {
-        return garbageCollectionTimeInMillis;
+    public synchronized long getGarbageCollectionTimeInNanos() {
+        return garbageCollectionTimeInNanos;
     }
 
     @Override public String toString() {
@@ -322,8 +322,8 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         disableAnyway();
         count = 0;
         mean = 0;
-        garbageCollectionTimeInMillis = 0;
-        maxMemoryUsageBytes = -1;
+        garbageCollectionTimeInNanos = 0;
+        maxMemoryUsageBytes = 0;
         sqDiffFromMean = BigDecimal.ZERO;
     }
 
@@ -363,7 +363,7 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         System.out.println(realMemWatcher.getMaxMemoryUsageInBytes());
         System.out.println(realMemWatcher.getMeanMemoryUsageInBytes());
         System.out.println(realMemWatcher.getStdDevMemoryUsageInBytes());
-        System.out.println(realMemWatcher.getGarbageCollectionTimeInMillis());
+        System.out.println(realMemWatcher.getGarbageCollectionTimeInNanos());
         System.out.println("----");
         System.out.println(stopWatch.getTimeNanos());
         System.out.println(TimeUnit.SECONDS.convert(stopWatch.getTimeNanos(), TimeUnit.NANOSECONDS));
