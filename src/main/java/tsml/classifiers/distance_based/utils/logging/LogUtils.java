@@ -83,11 +83,11 @@ public class LogUtils {
         return soh;
     }
 
-    public static void logTimeContract(TimeContracter timeContracter, Logger logger, String name) {
-        if(timeContracter.hasTimeLimit()) {
+    public static void logTimeContract(long timeNanos, long limitNanos, Logger logger, String name) {
+        if(limitNanos > 0) {
             logger.info(() -> {
-                Duration limit = Duration.ofNanos(timeContracter.getTimeLimit());
-                Duration time = Duration.ofNanos(timeContracter.getTimer().getTimeNanos());
+                Duration limit = Duration.ofNanos(limitNanos);
+                Duration time = Duration.ofNanos(timeNanos);
                 Duration diff = limit.minus(time);
                 return StrUtils.durationToHmsString(time) + " elapsed of " + StrUtils.durationToHmsString(limit) +
                     " " + name + " "

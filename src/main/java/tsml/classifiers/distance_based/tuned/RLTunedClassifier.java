@@ -5,15 +5,17 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrain;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrainEstimate;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
-import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
@@ -29,8 +31,9 @@ import java.util.logging.Level;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
-public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable, GcMemoryWatchable,
-    StopWatchTrainTimeable,
+public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable,
+    WatchedMemory,
+    TimedTrain, TimedTrainEstimate,
                                                                     Checkpointable, Parallelisable {
 
     /*
@@ -255,7 +258,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return !agent.hasNext();
     }
 
-    @Override public long getTrainTimeLimit() {
+    public long getTrainTimeLimit() {
         return trainContractTimeNanos;
     }
 
@@ -351,7 +354,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                     trainTimer.disable();
                     trainEstimateTimer.checkDisabled();
                     memoryWatcher.disable();
-                    trainResults.setDetails(this, trainData);
+                    ResultUtils.setInfo(trainResults, this, trainData);
                     // try to create the overall done file
                     boolean created = createDoneFile("overall");
                     if(!created) {
@@ -482,11 +485,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             this.memoryWatcher.enableAnyway();
             this.trainTimer.enableAnyway();
             // set train info
-            classifier.getTrainResults().setDetails(classifier, trainData);
+            ResultUtils.setInfo(classifier.getTrainResults(), classifier, trainData);
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
-                this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
@@ -495,7 +498,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we already tracked this as part of the train time
             }
@@ -506,7 +509,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // we tracked the memory usage of the classifier
                 memoryWatcher.add(classifierMemoryWatcher);
                 // set train results info
-                classifier.getTrainResults().setMemoryDetails(classifierMemoryWatcher);
+                ResultUtils.setMemoryInfo(classifier.getTrainResults(), classifierMemoryWatcher);
             }
             // feed the built classifier back to the agent (which will decide what to do with it)
             boolean classifierFullyBuilt = !agent.feedback(classifier);
@@ -585,7 +588,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
-                    trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                    trainTimer.add(((TrainTimeable) classifier).getTrainTime());
                 }
                 if(classifier instanceof TrainEstimateTimeable) {
                     trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
@@ -598,7 +601,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 classifier =
                         (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
                 ClassifierResults results = classifier.getTrainResults();
-                trainTimer.add(results.getTrainTimeNanos());
+                trainTimer.add(results.getTrainTime());
                 trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
                 memoryWatcher.add(results);
             }

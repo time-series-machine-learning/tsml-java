@@ -5,11 +5,12 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrain;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrainEstimate;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
@@ -29,8 +30,8 @@ import java.util.logging.Logger;
  *
  * Contributors: goastler
  */
-public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
-    StopWatchTrainTimeable {
+public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, WatchedMemory,
+    TimedTrain {
 
     /**
      * flag for k variable. This is used in representing parameters in the form of a string.
@@ -359,6 +360,5 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets/", "GunPoint", new KNN(), 0);
         System.out.println(results.writeSummaryResultsToString());
     }
-
 }
 

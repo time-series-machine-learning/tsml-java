@@ -6,5 +6,5 @@ package tsml.classifiers.distance_based.utils.classifier_mixins;
  * Contributors: goastler
  */
 public interface TestTimeable {
-    long getTestTimeNanos();
+    long getTestTime();
 }

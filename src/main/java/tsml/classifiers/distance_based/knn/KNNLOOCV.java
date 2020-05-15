@@ -11,6 +11,7 @@ import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIt
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
+import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
@@ -252,9 +253,9 @@ public class KNNLOOCV
             classifier.getLogger().setLevel(Level.ALL);
             classifier.setEstimateOwnPerformance(true);
             ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-            results.setDetails(classifier, data[1]);
+            ResultUtils.setInfo(results, classifier, data[1]);
             ClassifierResults trainResults = classifier.getTrainResults();
-            trainResults.setDetails(classifier, data[0]);
+            ResultUtils.setInfo(trainResults, classifier, data[0]);
             System.out.println(trainResults.writeSummaryResultsToString());
             System.out.println(results.writeSummaryResultsToString());
         }
@@ -527,7 +528,7 @@ public class KNNLOOCV
         trainEstimateTimer.disable();
         memoryWatcher.disable();
         if(regenerateTrainEstimate) {
-            trainResults.setDetails(this, trainData);
+            ResultUtils.setInfo(trainResults, this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
@@ -585,9 +586,9 @@ public class KNNLOOCV
         classifier.setSeed(seed); // set seed
         classifier.setEstimateOwnPerformance(true);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+        ResultUtils.setInfo(results, classifier, data[1]);
         ClassifierResults trainResults = classifier.getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+        ResultUtils.setInfo(trainResults, classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }

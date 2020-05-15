@@ -14,15 +14,17 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
+import tsml.classifiers.distance_based.utils.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrain;
+import tsml.classifiers.distance_based.utils.stopwatch.TimedTrainEstimate;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
-import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.Stated;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
 import utilities.*;
@@ -37,7 +39,7 @@ import java.util.logging.Logger;
 // todo this has likeness to RLTuner, perhaps need to unify somewhere / make this a RLTuner?
 
 public class ElasticEnsemble extends BaseClassifier implements TrainTimeContractable, Checkpointable,
-    GcMemoryWatchable, StopWatchTrainTimeable {
+    WatchedMemory, TimedTrain, TimedTrainEstimate {
 
     public static void main(String[] args) throws Exception {
         int seed = 0;
@@ -47,9 +49,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         classifier.setSeed(0);
         classifier.getLogger().setLevel(Level.ALL);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+        ResultUtils.setInfo(results, classifier, data[1]);
         ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+        ResultUtils.setInfo(trainResults, classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
@@ -374,7 +376,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public long getTrainTimeLimit() {
+    public long getTrainTimeLimit() {
         return trainContractTimeNanos;
     }
 
@@ -493,7 +495,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
         // set train results details
-        trainResults.setDetails(this, trainData);
+        ResultUtils.setInfo(trainResults, this, trainData);
         // free up train data
         this.trainData = null;
         // we're built by here
@@ -570,14 +572,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // add the constituent's train time onto ours
         if(constituent instanceof TrainTimeable) { // todo these can probs be a util method as similar elsewhere
             // (RLTune)
-            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            trainTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             trainTimer.add(constituentTrainTimer);
         }
         // add the constituent's train estimate time onto ours
         if(constituent instanceof TrainEstimateTimeable) {
             // the classifier tracked its time internally
-            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             // we already tracked this as part of the train time
         }

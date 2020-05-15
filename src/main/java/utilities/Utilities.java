@@ -17,8 +17,7 @@ package utilities;
 import com.beust.jcommander.internal.Lists;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.utils.system.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
@@ -75,60 +74,60 @@ public class Utilities {
     public static <A, B, C extends Collection<B>> C convert(Iterable<A> source, Function<A, B> converter, Supplier<C> supplier) {
         return convert(source.iterator(), converter, supplier);
     }
-
-    public static void listenToTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
-                trainTimer.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
-                trainTimer.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof GcMemoryWatchable) {
-            try {
-                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
-                memoryWatcher.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
-                trainTimer.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
-                trainTimer.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof GcMemoryWatchable) {
-            try {
-                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
-                memoryWatcher.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
+//
+//    public static void listenToTrainTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainTimer();
+//                trainTimer.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainEstimateTimer();
+//                trainTimer.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
+//        if(obj instanceof WatchedMemory) {
+//            try {
+//                MemoryWatcher memoryWatcher = ((WatchedMemory) obj).getMemoryWatcher();
+//                memoryWatcher.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainTimer();
+//                trainTimer.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainEstimateTimer();
+//                trainTimer.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
+//        if(obj instanceof WatchedMemory) {
+//            try {
+//                MemoryWatcher memoryWatcher = ((WatchedMemory) obj).getMemoryWatcher();
+//                memoryWatcher.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
 
     public static long toNanos(String amountStr, String unitStr) {
         long amount = Long.parseLong(amountStr);
