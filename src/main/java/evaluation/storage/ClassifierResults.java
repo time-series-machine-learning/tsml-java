@@ -155,7 +155,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         return memoryReadingCount;
     }
 
-    @Override public long getTrainTimeNanos() {
+    @Override public long getTrainTime() {
         return getBuildTimeInNanos();
     }
 
@@ -184,62 +184,6 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
 
     public void setCpuInfo(final String cpuInfo) {
         this.cpuInfo = cpuInfo;
-    }
-
-    public void setNonResourceDetails(final Classifier classifier, final Instances data) {
-        setDatasetName(data.relationName());
-        if(classifier instanceof EnhancedAbstractClassifier) {
-            setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
-            setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
-        } else {
-            setClassifierName(classifier.getClass().getSimpleName());
-        }
-        if(classifier instanceof Randomizable) {
-            setFoldID(((Randomizable) classifier).getSeed());
-        }
-        if(classifier instanceof OptionHandler) {
-            setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
-        }
-        setOs(SysUtils.getOsName());
-        setCpuInfo(SysUtils.findCpuInfo());
-    }
-
-    public void setDetails(final Classifier classifier, final Instances data) {
-        setNonResourceDetails(classifier, data);
-        setMemoryDetails(classifier);
-        setTimeDetails(classifier);
-    }
-
-    public void setTimeDetails(final Object obj) {
-        if(obj instanceof TrainEstimateTimeable) {
-            setTimeDetails((TrainEstimateTimeable) obj);
-        } else if(obj instanceof TrainTimeable) {
-            setTimeDetails((TrainTimeable) obj);
-        }
-    }
-
-    public void setTimeDetails(final TrainTimeable trainTimeable) {
-        setBuildTime(trainTimeable.getTrainTimeNanos());
-    }
-
-    public void setTimeDetails(final TrainEstimateTimeable trainTimeable) {
-        setTimeDetails((TrainTimeable) trainTimeable);
-        setBuildPlusEstimateTime(trainTimeable.getTrainPlusEstimateTimeNanos());
-        setTimeUnit(TimeUnit.NANOSECONDS);
-    }
-
-    public void setMemoryDetails(final Object obj) {
-        if(obj instanceof MemoryWatchable) {
-            setMemoryDetails((MemoryWatchable) obj);
-        }
-    }
-
-    public void setMemoryDetails(final MemoryWatchable memoryWatchable) {
-        setMemory(memoryWatchable.getMaxMemoryUsageInBytes());
-        setMeanMemoryUsageInBytes(memoryWatchable.getMeanMemoryUsageInBytes());
-        setGarbageCollectionTimeInMillis(memoryWatchable.getGarbageCollectionTimeInMillis());
-        setStdDevMemoryUsageInBytes(memoryWatchable.getStdDevMemoryUsageInBytes());
-        setMemoryReadingCount(memoryWatchable.getMemoryReadingCount());
     }
 
     /**
@@ -282,7 +226,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         this.stdDevMemoryUsageInBytes = stdDevMemoryUsageInBytes;
     }
 
-    public long getGarbageCollectionTimeInMillis() {
+    public long getGarbageCollectionTimeInNanos() {
         return garbageCollectionTimeInMillis;
     }
 
