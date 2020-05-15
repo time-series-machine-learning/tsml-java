@@ -31,7 +31,7 @@ known classifiers: ShapeletTransformClassifier, RISE, HIVE_COTE (partial),
  *
  */
 public interface TrainTimeContractable
-    extends ParamHandler, TrainTimeable {
+    extends ParamHandler {
 
     /**
      * This is the single method that must be implemented to store the contract time
@@ -71,8 +71,5 @@ public interface TrainTimeContractable
         setTrainTimeLimit(time, amount);
     }
 
-    default long getTrainTimeLimit() {
-        throw new UnsupportedOperationException();
-    }
 
 }
