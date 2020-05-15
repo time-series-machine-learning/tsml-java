@@ -34,8 +34,14 @@ public interface TestTimeContractable extends TestTimeable {
     default void setMillisecondLimit(int t){ setTestTimeLimit(TimeUnit.MILLISECONDS, t); }
 
     //set any value in nanoseconds you like.
-    default void setTestTimeLimit(long time){ setTestTimeLimit(TimeUnit.NANOSECONDS, time);}
+    void setTestTimeLimit(long nanos);
 
     //pass in an value from the TimeUnit enum and the amount of said values.
-    void setTestTimeLimit(TimeUnit time, long amount);
+    default void setTestTimeLimit(TimeUnit unit, long amount) {
+        setTestTimeLimit(amount, unit);
+    }
+
+    default void setTestTimeLimit(long amount, TimeUnit unit) {
+        setTestTimeLimit(TimeUnit.NANOSECONDS.convert(amount, unit));
+    }
 }
