@@ -30,8 +30,7 @@ known classifiers: ShapeletTransformClassifier, RISE, HIVE_COTE (partial),
  * 1) contract time of <=0 means no contract has been set, even if this is potentially contractable
  *
  */
-public interface TrainTimeContractable
-    extends ParamHandler {
+public interface TrainTimeContractable {
 
     /**
      * This is the single method that must be implemented to store the contract time
