@@ -54,7 +54,7 @@ public interface ParamHandler
     @Override
     default void setOptions(String... options) throws
                                       Exception {
-        setOptionsList(new ArrayList<>(Arrays.asList(options))); // todo replace with view
+        setOptionsList(new ArrayList<>(Arrays.asList(options)));
     }
 
     @Override
@@ -62,14 +62,9 @@ public interface ParamHandler
         return Collections.enumeration(listParams());
     }
 
-    default void setParams(ParamSet paramSet) {
-        throw new UnsupportedOperationException("param setting not supported. make sure you've overriden setParams " +
-                                                    "and getParams!");
-    }
+    void setParams(ParamSet paramSet);
 
-    default ParamSet getParams() {
-        return new ParamSet();
-    }
+    ParamSet getParams();
 
     /**
      * Set parameter using name, a setter and a class type of the parameter. This is a utility method so you don't

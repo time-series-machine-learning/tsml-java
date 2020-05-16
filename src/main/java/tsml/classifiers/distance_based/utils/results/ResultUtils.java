@@ -20,14 +20,15 @@ public class ResultUtils {
         if(classifier instanceof EnhancedAbstractClassifier) {
             results.setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
             results.setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
+            results.setParas(((EnhancedAbstractClassifier) classifier).getParameters());
         } else {
             results.setClassifierName(classifier.getClass().getSimpleName());
+            if(classifier instanceof OptionHandler) {
+                results.setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
+            }
         }
         if(classifier instanceof Randomizable) {
             results.setFoldID(((Randomizable) classifier).getSeed());
-        }
-        if(classifier instanceof OptionHandler) {
-            results.setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
         }
         results.setOs(SysUtils.getOsName());
         results.setCpuInfo(SysUtils.findCpuInfo());

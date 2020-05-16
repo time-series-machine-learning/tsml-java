@@ -117,12 +117,17 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public ParamSet getParams() {
-        return ParamHandler.super.getParams();
+        return new ParamSet();
     }
 
     @Override
     public void setParams(ParamSet params) {
         Assert.assertNotNull(params);
+    }
+
+    @Override
+    public String getParameters() {
+        return super.getParameters() + "," + getParams().toString();
     }
 
     public boolean isRebuild() {
