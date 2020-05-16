@@ -99,8 +99,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
         final List<ParamSpace> paramSpaces = Lists.newArrayList(
             DistanceMeasureConfigs.buildEdSpace(),
-            DistanceMeasureConfigs.buildFullDtwSpace(),
-            DistanceMeasureConfigs.buildFullDdtwSpace(),
+            // these aren't in orig PF
+//            DistanceMeasureConfigs.buildFullDtwSpace(),
+//            DistanceMeasureConfigs.buildFullDdtwSpace(),
             ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
@@ -162,6 +163,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
     private StoppingCondition stoppingCondition;
     private Splitter splitter;
+    public static final String STOPPING_CONDITION_FLAG = "c";
+    public static final String SPLITTER_FLAG = "s";
+    public static final String SPLITTER_BUILDER_FLAG = "b";
 
     @Override
     public StopWatch getTrainTimer() {
