@@ -27,8 +27,8 @@ import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import tsml.filters.ACF;
-import tsml.filters.PowerSpectrum;
+import tsml.transformers.ACF;
+import tsml.transformers.PowerSpectrum;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 /**
@@ -105,7 +105,7 @@ public class FlatCote extends EnhancedAbstractClassifier implements TechnicalInf
         ShapeletFilter shapeletFilter = ShapeletTransformTimingUtilities.createTransformWithTimeLimit(train, 24); // now defaults to max of 24 hours
         shapeletFilter.supressOutput();
         st = new CAWPE();
-        st.setTransform(shapeletFilter);
+        //st.setTransform(shapeletFilter); //TODO: Update Shapelets so i can update CAWPE
         st.setupOriginalHESCASettings();
         acf = new CAWPE();
         acf.setupOriginalHESCASettings();

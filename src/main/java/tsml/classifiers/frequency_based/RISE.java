@@ -24,6 +24,7 @@ import fileIO.FullAccessOutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Tuneable;
 import tsml.filters.*;
+import tsml.transformers.*;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -420,7 +421,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 ACF acf = new ACF();
                 acf.setNormalized(false);
                 try {
-                    temp = acf.process(instances);
+                    temp = acf.transform(instances);
                 } catch (Exception e) {
                     System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
                 }
@@ -428,7 +429,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case PS:
                 try {
                     PS.useFFT();
-                    temp = PS.process(instances);
+                    temp = PS.transform(instances);
                 } catch (Exception ex) {
                     System.out.println("FFT failed (could be build or classify) \n" + ex);
                 }
@@ -438,7 +439,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 try {
                     int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2;
                     Fast_FFT.setNFFT(nfft);
-                    temp = Fast_FFT.process(instances);
+                    temp = Fast_FFT.transform(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -446,7 +447,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case MFCC:
                 MFCC MFCC= new MFCC();
                 try {
-                    temp = MFCC.process(instances);
+                    temp = MFCC.transform(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -454,7 +455,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case SPEC:
                 Spectrogram spec = new Spectrogram();
                 try{
-                    temp = spec.process(instances);
+                    temp = spec.transform(instances);
                 }catch(Exception e){
                     e.printStackTrace();
                 }
@@ -462,7 +463,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case AF:
                 AudioFeatures af = new AudioFeatures();
                 try{
-                    temp = af.process(instances);
+                    temp = af.transform(instances);
                 }catch(Exception e){
                     e.printStackTrace();
                 }
@@ -517,7 +518,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 arma.setUseAIC(false);
                 Instances arData = null;
                 try {
-                    arData = arma.process(instances);
+                    arData = arma.transform(instances);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

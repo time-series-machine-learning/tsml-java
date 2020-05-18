@@ -160,7 +160,7 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "BOP":
-                c=new BagOfPatterns();
+                c=new BagOfPatternsClassifier();
                 break;
             case "SAXVSM":
                 c=new SAXVSM();

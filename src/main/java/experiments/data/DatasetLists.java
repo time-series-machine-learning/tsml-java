@@ -17,7 +17,7 @@ package experiments.data;
 
 import fileIO.InFile;
 import fileIO.OutFile;
-import tsml.filters.SummaryStats;
+import tsml.transformers.SummaryStats;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.IBk;
@@ -1603,8 +1603,8 @@ public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicke
         Instances test=DatasetLoading.loadDataNullable(problemPath+s+"/"+s+"_TEST");
 //Find summary 
         SummaryStats ss= new SummaryStats();
-        train=ss.process(train);
-        test=ss.process(test);
+        train=ss.transform(train);
+        test=ss.transform(test);
         int i=1;
         for(Instance ins:train){
             double stdev=ins.value(1)*ins.value(1);

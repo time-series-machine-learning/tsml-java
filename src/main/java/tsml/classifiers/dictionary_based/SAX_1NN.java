@@ -21,7 +21,7 @@ import machine_learning.classifiers.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.SAX;
+import tsml.transformers.SAX;
 import weka.filters.unsupervised.instance.Randomize;
 
 /**
@@ -59,21 +59,19 @@ public class SAX_1NN extends EnhancedAbstractClassifier {
     public void buildClassifier(Instances data) throws Exception {
         long startTime=System.currentTimeMillis();
         
-        SAXdata = sax.process(data);
+        SAXdata = sax.transform(data);
         knn.buildClassifier(SAXdata);
         trainResults.setBuildTime(System.currentTimeMillis()-startTime);
     }
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        Instance saxinst = sax.convertInstance(instance, SAX_alphabetSize, PAA_intervalsPerWindow);
-        return knn.classifyInstance(saxinst);
+        return knn.classifyInstance(sax.transform(instance));
     }
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        Instance saxinst = sax.convertInstance(instance, SAX_alphabetSize, PAA_intervalsPerWindow);
-        return knn.distributionForInstance(saxinst);
+        return knn.distributionForInstance(sax.transform(instance));
     }
 
     @Override

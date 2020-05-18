@@ -61,7 +61,7 @@ import java.util.logging.Logger;
  *
  * Refactored version for
  */
-public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer {
+public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,TrainableTransformer {
 //Global defaults. Max should be a lambda set to series length
     public final static int MAXTRANSFORMSIZE = 1000;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
@@ -1382,6 +1382,11 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     }
     public boolean getSuppressOutput() {
         return this.supressOutput;
+    }
+
+    @Override
+    public boolean isFit() {
+        return searchComplete;
     }
 
 }
