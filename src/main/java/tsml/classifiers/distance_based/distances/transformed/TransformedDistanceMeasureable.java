@@ -8,12 +8,12 @@ Contributors: goastler
 */
 
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
-import weka.filters.Filter;
 
 public interface TransformedDistanceMeasureable extends DistanceMeasureable {
     DistanceFunction getDistanceFunction();
-    Filter getTransformer();
+    Transformer getTransformer();
     static String getTransformerFlag() {
         return "f";
     }

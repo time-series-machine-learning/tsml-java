@@ -14,4 +14,5 @@ public class NumUtils {
 	    return isNearlyEqual(a,b, 1e-6);
 	}
 
+
 }

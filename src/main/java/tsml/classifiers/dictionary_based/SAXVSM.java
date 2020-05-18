@@ -16,13 +16,13 @@ package tsml.classifiers.dictionary_based;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.transformers.BagOfPatterns;
 import utilities.ClassifierTools;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
-import tsml.filters.BagOfPatterns;
 import weka.core.TechnicalInformationHandler;
 
 /**
@@ -158,7 +158,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
      * @return cv accuracy
      */
     private double crossValidate(Instances data) throws Exception {
-        transformedData = bop.process(data);
+        transformedData = bop.fitTransform(data);
         
         double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
@@ -199,7 +199,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
             throw new Exception("SAXVSM_BuildClassifier: Invalid sliding window size: " 
                     + windowSize + " (series length "+ (data.numAttributes()-1) + ")");
         
-        transformedData = bop.process(data);
+        transformedData = bop.fitTransform(data);
         
         corpus = tfxidf(transformedData);
         trainResults.setBuildTime(System.currentTimeMillis()-startTime);
