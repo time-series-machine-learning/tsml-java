@@ -888,7 +888,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             words[wInd] = word;
 
             if (bigrams) {
-                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
+                if (wInd - windowSize >= 0 && wInd > 0) {
                     BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte) 0);
@@ -1008,7 +1008,7 @@ public class BOSSIndividualSP extends AbstractClassifier implements Serializable
             newWords[wInd] = word;
 
             if (bigrams) {
-                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
+                if (wInd - windowSize >= 0 && wInd > 0) {
                     BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     ComparablePair<BitWordLong, Byte> key = new ComparablePair<>(bigram, (byte) 0);
