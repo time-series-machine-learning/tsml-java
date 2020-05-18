@@ -151,7 +151,8 @@ public class InstanceTools {
      * @return Instances[] with two elements; [0] is the output training instances, [1] output test instances
      */
     public static Instances[] resampleTrainAndTestInstances(Instances train, Instances test, long seed){
-        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it introduced a bug indiagnostics elsewhere
+        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it
+            // introduced a bug in diagnostics elsewhere
             Instances newTrain = new Instances(train);
             Instances newTest = new Instances(test);
             return new Instances[]{newTrain,newTest};
