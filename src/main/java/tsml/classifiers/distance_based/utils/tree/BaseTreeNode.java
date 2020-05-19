@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.junit.Assert;
+import org.junit.Test;
 import utilities.Utilities;
 
 /**
@@ -87,13 +89,15 @@ public class BaseTreeNode<A> implements TreeNode<A> {
      */
     @Override
     public int size() {
-        List<TreeNode<?>> backlog = new LinkedList<>();
-        ListIterator<TreeNode<?>> iterator = backlog.listIterator();
-        iterator.add(this);
-        return Utilities.sum(iterator, node -> {
-            node.getChildren().forEach(iterator::add);
-            return node.getChildren().size();
-        }) + 1; // + 1 to count this node
+        LinkedList<TreeNode<?>> backlog = new LinkedList<>();
+        int count = 0;
+        backlog.add(this);
+        while(!backlog.isEmpty()) {
+            TreeNode<?> node = backlog.pollFirst();
+            count++;
+            backlog.addAll(node.getChildren());
+        }
+        return count;
     }
 
     @Override
@@ -107,43 +111,28 @@ public class BaseTreeNode<A> implements TreeNode<A> {
      */
     @Override
     public int height() { // todo test this out as first version so may contain bugs
-        int height = 0;
-        int maxHeight = 0;
-        TreeNode<?> node = this;
+        int height = 1; // start at 1 because this node is 1 level itself
+        int maxHeight = 1;
         LinkedList<TreeNode<?>> nodeStack = new LinkedList<>();
-        LinkedList<Iterator<? extends TreeNode<?>>> childrenIndexStack = new LinkedList<>();
-        while (true) {
-            height++;
-            if(!node.isLeaf()) {
-                nodeStack.add(node);
-                Iterator<? extends TreeNode<?>> iterator = node.getChildren().iterator();
+        LinkedList<Iterator<? extends TreeNode<?>>> childrenIteratorStack = new LinkedList<>();
+        nodeStack.add(this);
+        childrenIteratorStack.add(this.getChildren().iterator());
+        while (!nodeStack.isEmpty()) {
+            TreeNode<?> node = nodeStack.peekLast();
+            Iterator<? extends TreeNode<?>> iterator = childrenIteratorStack.peekLast();
+            if(iterator.hasNext()) {
+                // descend down to next child
+                height++;
                 node = iterator.next();
-                childrenIndexStack.add(iterator);
+                iterator = node.getChildren().iterator();
+                nodeStack.add(node);
+                childrenIteratorStack.add(iterator);
             } else {
-                // node is leaf, therefore need to check max height
-                maxHeight = Math.max(maxHeight, height);
-                if(nodeStack.isEmpty()) {
-                    break;
-                }
-                // then we need to go up 1 level to the parent
+                // ascend up to parent
+                maxHeight = Math.max(height, maxHeight);
                 height--;
-                TreeNode<?> parent = nodeStack.pop();
-                // get the current child we've been looking at
-                Iterator<? extends TreeNode<?>> index = childrenIndexStack.pop();
-                // if there's remaining children to be examined
-                if(index.hasNext()) {
-                    // assign current node the next child
-                    node = index.next();
-                    // add the parent back onto the stack
-                    nodeStack.add(parent);
-                    // add the index of the current child onto the stack
-                    childrenIndexStack.add(index);
-                } else {
-                    // we've examined all the children
-                    // therefore assign current node the parent
-                    node = parent;
-                    // and loop again to check the parent isn't a leaf, etc, etc
-                }
+                nodeStack.pollLast();
+                childrenIteratorStack.pollLast();
             }
         }
         return maxHeight;
@@ -173,5 +162,41 @@ public class BaseTreeNode<A> implements TreeNode<A> {
             }
         }
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return element.toString();
+    }
+
+    public static class UnitTests {
+        @Test
+        public void testHeightAndSize() {
+            //  a
+            //  |
+            //  b
+            // / \
+            // c d
+            // |
+            // e
+            TreeNode<String> a = new BaseTreeNode<>("a");
+            TreeNode<String> b = new BaseTreeNode<>("b");
+            TreeNode<String> c = new BaseTreeNode<>("c");
+            TreeNode<String> d = new BaseTreeNode<>("d");
+            TreeNode<String> e = new BaseTreeNode<>("e");
+            a.addChild(b);
+            b.addChild(c);
+            b.addChild(d);
+            c.addChild(e);
+//            e.addChild(e); // todo check this errs
+            Assert.assertEquals(a.size(), 5);
+            Assert.assertEquals(a.height(), 4);
+        }
+
+//        @Test(expected = IllegalArgumentException.class)
+//        public void testAddSelfAsChild() {
+//            BaseTreeNode<String> node = new BaseTreeNode<>("a");
+//            node.addChild(node);
+//        }
     }
 }
