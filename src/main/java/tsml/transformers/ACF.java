@@ -180,8 +180,8 @@ public class ACF implements Transformer {
         // 2. Fit Autocorrelations, if not already set externally
         double[] autoCorr = fitAutoCorrelations(d);
 
-        int length = autoCorr.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional
-                                                                       // classvalue.
+        //int length = autoCorr.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional
+          int length = autoCorr.length + 1;                                                             // classvalue.
 
         // 6. Stuff back into new Instances.
         Instance out = new DenseInstance(length);
