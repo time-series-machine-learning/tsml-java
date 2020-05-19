@@ -33,6 +33,7 @@ import tsml.classifiers.Checkpointable;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TestTimeContractable;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.transformers.Transformer;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import static utilities.GenericTools.indexOfMax;
@@ -75,7 +76,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
     protected ModuleVotingScheme votingScheme;
     protected EnsembleModule[] modules;
     protected SamplingEvaluator trainEstimator;
-    protected SimpleBatchFilter transform;
+    protected Transformer transform;
 
     protected Instances trainInsts;
 
@@ -315,6 +316,14 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             classifiers = new Classifier[classifierNames.length];
             for (int i = 0; i < classifiers.length; i++)
                 classifiers[i] = null;
+        }
+        else {
+            //If they are able to, make the classifiers estimate their own performance. This helps with contracting
+            for (Classifier c : classifiers) {
+                if (c instanceof EnhancedAbstractClassifier)
+                    if (((EnhancedAbstractClassifier) c).ableToEstimateOwnPerformance())
+                        ((EnhancedAbstractClassifier) c).setEstimateOwnPerformance(true);
+            }
         }
 
         if (classifierNames == null) {
@@ -781,11 +790,11 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         return preds;
     }
 
-    public SimpleBatchFilter getTransform(){
+    public Transformer getTransform(){
         return this.transform;
     }
 
-    public void setTransform(SimpleBatchFilter transform){
+    public void setTransform(Transformer transform){
         this.transform = transform;
     }
 
@@ -860,7 +869,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         }else{
            printlnDebug(" Transform is being used: Transform = "+transform.getClass().getSimpleName());
 
-           this.trainInsts = transform.process(data);           
+           this.trainInsts = transform.transform(data);           
            printlnDebug(" Transform "+transform.getClass().getSimpleName()+" complete");
            printlnDebug(" Transform "+transform.toString());
         }
@@ -934,7 +943,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             rawContainer.add(instance);
 //            transform.setInputFormat(rawContainer);
 //            Instances converted = Filter.useFilter(rawContainer,transform);
-            Instances converted = transform.process(rawContainer);            
+            Instances converted = transform.transform(rawContainer);            
             ins = converted.instance(0);
             
         }
@@ -993,7 +1002,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
 //            Instances converted = Filter.useFilter(rawContainer,transform);
 
 
-            Instances converted = transform.process(rawContainer);
+            Instances converted = transform.transform(rawContainer);
             ins = converted.instance(0);
         }
 
@@ -1013,7 +1022,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         if(this.transform!=null){
             Instances rawContainer = new Instances(instance.dataset(),0);
             rawContainer.add(instance);
-            Instances converted = transform.process(rawContainer);
+            Instances converted = transform.transform(rawContainer);
             ins = converted.instance(0);
         }
 

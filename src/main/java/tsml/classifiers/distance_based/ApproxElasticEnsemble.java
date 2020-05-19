@@ -64,7 +64,7 @@ public class ApproxElasticEnsemble extends FastElasticEnsemble {
         }
 
         if (usesDer) {
-            this.derTrain = df.process(train);
+            this.derTrain = df.transform(train);
         }
 
         if (buildFromFile) {
@@ -159,7 +159,7 @@ public class ApproxElasticEnsemble extends FastElasticEnsemble {
         if (this.usesDer) {
             Instances temp = new Instances(derTrain, 1);
             temp.add(instance);
-            temp = df.process(temp);
+            temp = df.transform(temp);
             derIns = temp.instance(0);
         }
 

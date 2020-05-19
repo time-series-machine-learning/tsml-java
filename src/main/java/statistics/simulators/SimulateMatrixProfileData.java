@@ -4,12 +4,12 @@ package statistics.simulators;
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 
-import tsml.filters.MatrixProfile;
+import tsml.transformers.MatrixProfile;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instances;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 /**
  *
@@ -71,13 +71,13 @@ public class SimulateMatrixProfileData {
                 double acc=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
 
                 NormalizeCase nc=new NormalizeCase();
-                split[0]=nc.process(split[0]);
-                split[1]=nc.process(split[1]);
+                split[0]=nc.transform(split[0]);
+                split[1]=nc.transform(split[1]);
                 double acc2=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
                 MatrixProfile mp=new MatrixProfile(29);
                 Instances[] mpSplit=new Instances[2];
-                mpSplit[0]=mp.process(split[0]);
-                mpSplit[1]=mp.process(split[1]);
+                mpSplit[0]=mp.transform(split[0]);
+                mpSplit[1]=mp.transform(split[1]);
                 double acc3=ClassifierTools.singleTrainTestSplitAccuracy(knn, mpSplit[0], mpSplit[1]);
                 meanAcc+=acc;
                 meanAcc2+=acc2;
@@ -100,7 +100,7 @@ public class SimulateMatrixProfileData {
         Instances d=generateMatrixProfileData(seriesLength,casesPerClass);
         MatrixProfile mp=new MatrixProfile(29);
         Instances md;
-        md=mp.process(d);
+        md=mp.transform(d);
         raw.writeLine(d.toString());
         mpFile.writeLine(md.toString());
     }
@@ -121,11 +121,11 @@ public class SimulateMatrixProfileData {
         of = new OutFile("C:\\Temp\\test.arff");
         of.writeString(split[1].toString()+"");
         MatrixProfile mp=new MatrixProfile(29);
-        Instances m1=mp.process(split[0]);
+        Instances m1=mp.transform(split[0]);
 //        m1=nc.process(m1);
         of = new OutFile("C:\\Temp\\MPTrain.arff");
         of.writeString(split[0]+"");
-        Instances m2=mp.process(split[1]);
+        Instances m2=mp.transform(split[1]);
  //       m2=nc.process(m2);
         of = new OutFile("C:\\Temp\\MPTest.arff");
         of.writeString(split[1].toString()+"\n\n");

@@ -4,8 +4,8 @@ import tsml.classifiers.distance_based.distances.transformed.TransformedDistance
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.filters.CachedFilter;
-import tsml.filters.Derivative;
+import tsml.transformers.CachedTransformer;
+import tsml.transformers.Derivative;
 
 
 /**
@@ -17,7 +17,7 @@ public class WDDTWDistance extends TransformedDistanceMeasure implements WDTW {
 
     // Global derivative function which is cached, i.e. if you ask it to convert the same instance twice it will
     // instead fetch from the cache the second time
-    private CachedFilter derivativeCache;
+    private CachedTransformer derivativeCache;
     private WDTW wdtw;
 
     public WDDTWDistance() {
