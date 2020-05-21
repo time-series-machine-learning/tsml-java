@@ -81,7 +81,6 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  **/
 
 public class RISE extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
-//This needs better commenting of what these variables mean
 
     //maxIntervalLength is used when contract is set. Via the timer the interval space is constricted to prevent breach
     // on contract.
@@ -147,6 +146,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     //Updated work
     private ArrayList<int[]> startEndPoints = null;
+    private int intervalMethod = 0;
 
 
 
@@ -189,6 +189,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     public void setNumClassifiers(int numClassifiers){
         this.numClassifiers = numClassifiers;
+    }
+
+    public void setIntervalMethod(int x){
+        this.intervalMethod = x;
     }
 
     /**
@@ -781,6 +785,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
+        /*for (int i = 0; i < this.startEndPoints.size(); i++) {
+            System.out.println(this.startEndPoints.get(i)[0] + ", " + this.startEndPoints.get(i)[1]);
+        }*/
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception{
@@ -937,7 +944,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         ArrayList<Attribute>attributes = new ArrayList<>();
         ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
 
-        startEndPoints.add(new int[2]);
+        /*startEndPoints.add(new int[2]);
         if(startEndPoints.size() == 1){
             startEndPoints.get(startEndPoints.size() - 1)[0] = 0;
             startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1;
@@ -952,7 +959,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                     startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
             }
-        }
+        }*/
+
+        startEndPoints = selectStartEndPoints(startEndPoints, intervalMethod);
 
         int nearestPowerOfTwo = startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0];
 
@@ -980,6 +989,65 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         intervalInstances.setClassIndex(intervalInstances.numAttributes() - 1);
 
         return intervalInstances;
+    }
+
+    private ArrayList<int[]> selectStartEndPoints(ArrayList<int[]> startEndPoints, int x){
+
+        if(x == 0){
+            startEndPoints.add(new int[2]);
+            if(startEndPoints.size() == 1){
+                startEndPoints.get(startEndPoints.size() - 1)[0] = 0;
+                startEndPoints.get(startEndPoints.size() - 1)[1] = data.numAttributes() - 1;
+            }else{
+                startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((data.numAttributes() - 1)- minIntervalLength);
+                //This avoid calling nextInt(0)
+                if(startEndPoints.get(startEndPoints.size() - 1)[0] == (data.numAttributes() - 1) - 1 - minIntervalLength)
+                    startEndPoints.get(startEndPoints.size() - 1)[1] = data.numAttributes() - 1 - 1;
+                else{
+                    startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0]);
+                    if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
+                        startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
+                    startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
+                }
+            }
+        }
+        if(x == 1){
+            startEndPoints.add(new int[2]);
+            startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
+            int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
+                    ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
+            int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+            startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
+        }
+        if(x == 2){
+            startEndPoints.add(new int[2]);
+            startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength) + minIntervalLength;
+            int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
+                    ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
+            int length;
+            if (range - minIntervalLength == 0) length = 3;
+            else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+            startEndPoints.get(startEndPoints.size() - 1)[0] = startEndPoints.get(startEndPoints.size() - 1)[1] - length;
+        }
+        if(x == 3){
+            startEndPoints.add(new int[2]);
+            if (rand.nextBoolean()) {
+                startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
+                int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
+                        ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
+                int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
+            } else {
+                startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength) + minIntervalLength; //Start point
+                int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
+                        ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
+                int length;
+                if (range - minIntervalLength == 0) length = 3;
+                else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                startEndPoints.get(startEndPoints.size() - 1)[0] = startEndPoints.get(startEndPoints.size() - 1)[1] - length;
+            }
+        }
+        return startEndPoints;
     }
 
     /**
