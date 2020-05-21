@@ -311,10 +311,13 @@ public class MemoryWatcher extends Stated implements Loggable, Serializable, Mem
         return garbageCollectionTimeInNanos;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "MemoryWatcher{" +
-            super.toString() +
-            ", maxMemoryUsageBytes=" + maxMemoryUsageBytes +
+            "maxMemoryUsageBytes=" + maxMemoryUsageBytes +
+            ", count=" + count +
+            ", mean=" + mean +
+            ", garbageCollectionTimeInNanos=" + garbageCollectionTimeInNanos +
             '}';
     }
 

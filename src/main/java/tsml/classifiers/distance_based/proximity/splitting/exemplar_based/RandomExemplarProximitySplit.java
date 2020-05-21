@@ -61,9 +61,10 @@ public class RandomExemplarProximitySplit extends Split {
     public int getPartitionIndexFor(final Instance instance) {
         double maxDistance = DistanceMeasureable.getMaxDistance();
         double limit = maxDistance;
-        final PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
-        distanceToPartitionIndexMap.setSoftLimit(1);
+//        final PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
+//        distanceToPartitionIndexMap.setSoftLimit(1);
         final boolean useEarlyAbandon = isUseEarlyAbandon();
+        int best = -1;
         for(int i = 0; i < exemplars.size(); i++) {
             // todo extract min dist to exemplar in group into own interfaceMu
             double minDistance = maxDistance;
@@ -72,15 +73,20 @@ public class RandomExemplarProximitySplit extends Split {
                 if(useEarlyAbandon) {
                     limit = Math.min(distance, limit);
                 }
-                minDistance = Math.min(distance, minDistance);
+                if(distance < minDistance) {
+                    best = i;
+                    minDistance = distance;
+                }
+//                minDistance = Math.min(distance, minDistance);
             }
-            distanceToPartitionIndexMap.put(minDistance, i);
+//            distanceToPartitionIndexMap.put(minDistance, i);
         }
-        distanceToPartitionIndexMap.hardPruneToSoftLimit();
-        final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
-        final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
-        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
-        return closestPartitionIndex;
+        return best;
+//        distanceToPartitionIndexMap.hardPruneToSoftLimit();
+//        final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
+//        final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
+//        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
+//        return closestPartitionIndex;
     }
 
     @Override

@@ -57,7 +57,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     TimedTrain, TimedTest, WatchedMemory {
 
     public static void main(String[] args) throws Exception {
-        for(int i = 2; i < 3; i++) {
+        for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
@@ -288,19 +288,25 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         // enable resource monitors
-        testTimer.resetAndEnable();
-        long longestPredictTime = 0;
+//        testTimer.resetAndEnable();
+//        long longestPredictTime = 0;
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
-        if(!node.hasChildren()) {
-            // root node has not been built, just return random guess
-            return ArrayUtilities.uniformDistribution(getNumClasses());
-        }
+//        if(!node.hasChildren()) {
+//             root node has not been built, just return random guess
+//            return ArrayUtilities.uniformDistribution(getNumClasses());
+//        }
         int index = -1;
+        int i = 0;
         Split split = node.getElement();
         // traverse the tree downwards from root
-        while(!node.isLeaf() && insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)) {
-            final long timestamp = System.nanoTime();
+        while(
+            !node.isLeaf()
+//            &&
+//            insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
+        ) {
+//            final long timestamp = System.nanoTime();
+            System.out.println(i++);
             // get the split at that node
             split = node.getElement();
             // work out which branch to go to next
@@ -308,7 +314,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final List<TreeNode<Split>> children = node.getChildren();
             // make this the next node to visit
             node = children.get(index);
-            longestPredictTime = System.nanoTime() - timestamp;
+//            longestPredictTime = System.nanoTime() - timestamp;
         };
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
@@ -316,7 +322,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         split = node.getElement();
         double[] distribution = split.distributionForInstance(instance, index);
         // disable the resource monitors
-        testTimer.disable();
+//        testTimer.disable();
         return distribution;
+    }
+
+    public int height() {
+        return tree.height();
+    }
+
+    public int size() {
+        return tree.size();
     }
 }

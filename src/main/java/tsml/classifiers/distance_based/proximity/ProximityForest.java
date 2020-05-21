@@ -6,6 +6,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory {
 
     public static void main(String[] args) throws Exception {
+        Thread.sleep(10000);
         for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityForest classifier = new ProximityForest();
@@ -55,8 +57,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return tree;
             });
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+            Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/datasets/uni2018/",
+                "GunPoint", seed));
+//            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
+//        Thread.sleep(10000);
     }
 
     public ProximityForest() {
@@ -135,7 +140,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             &&
             insideTrainTimeLimit(trainTimer.getTimeNanos() + longestTreeBuildTimeNanos)
         ) {
-            getLogger().info(() -> "building tree " + trees.size());
+            int treeIndex = trees.size();
+            getLogger().info(() -> "building tree " + treeIndex);
             LogUtils.logTimeContract(trainTimer.getTimeNanos(), trainTimeLimitNanos, getLogger(), "train");
             ProximityTree tree = new ProximityTree();
             tree = constituentConfig.setConfig(tree);
@@ -143,6 +149,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trees.add(tree);
             long timestamp = System.nanoTime();
             if(getEstimateOwnPerformance()) {
+                getLogger().info(() -> "building tree " + treeIndex + "  train estimate");
                 trainEstimaterTimer.enable();
                 ClassifierResults results;
                 if(oob) {
@@ -162,11 +169,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 } else {
                     throw new IllegalStateException("no train estimate method set");
                 }
-                getLogger().info(() -> "tree train estimate " + trees.size());
                 ResultUtils.setInfo(results, tree, trainData);
                 trainEstimaterTimer.disable();
+                getLogger().info(() -> "finished building tree " + treeIndex + "  train estimate");
             }
-            getLogger().info(() -> "training tree " + trees.size());
             tree.setRebuild(true);
             tree.buildClassifier(trainData);
             longestTreeBuildTimeNanos = Math.max(longestTreeBuildTimeNanos, System.nanoTime() - timestamp);
@@ -218,6 +224,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.disable();
         memoryWatcher.disable();
         getLogger().info("build complete");
+        for(ProximityTree tree : trees) {
+            System.out.println(tree.height());
+        }
     }
 
     private void vote(double[] finalDistribution, double[] distribution, double weight) {
@@ -240,27 +249,27 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
-        testTimer.resetAndEnable();
-        long longestPredictTime = 0;
+//        testTimer.resetAndEnable();
+//        long longestPredictTime = 0;
         final double[] finalDistribution = new double[getNumClasses()];
         for(int i = 0;
             i < trees.size()
-            &&
-            (testTimeLimitNanos <= 0 || testTimer.getTimeNanos() + longestPredictTime < testTimeLimitNanos)
+//            &&
+//            (testTimeLimitNanos <= 0 || testTimer.getTimeNanos() + longestPredictTime < testTimeLimitNanos)
             ; i++) {
-            final long timestamp = System.nanoTime();
+//            final long timestamp = System.nanoTime();
             ProximityTree tree = trees.get(i);
             final double[] distribution = tree.distributionForInstance(instance);
-            if(getEstimateOwnPerformance()) {
-                vote(finalDistribution, distribution, treeTrainResults.get(i));
-            } else {
+//            if(getEstimateOwnPerformance()) {
+//                vote(finalDistribution, distribution, treeTrainResults.get(i));
+//            } else {
                 vote(finalDistribution, distribution);
-            }
-            longestPredictTime = System.nanoTime() - timestamp;
-            testTimer.lap();
+//            }
+//            longestPredictTime = System.nanoTime() - timestamp;
+//            testTimer.lap();
         }
         ArrayUtilities.normaliseInPlace(finalDistribution);
-        testTimer.disable();
+//        testTimer.disable();
         return finalDistribution;
     }
 
