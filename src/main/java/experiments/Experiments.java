@@ -967,6 +967,12 @@ public class Experiments  {
         @Parameter(names={"-l", "--logLevel"}, description = "log level")
         private String logLevelStr = null;
 
+        @Parameter(names={"-mem"}, description = "mem")
+        private int mem = -1;
+
+        @Parameter(names={"-threads"}, description = "threads")
+        private int threads = 1;
+
         private Level logLevel = null;
 
         public boolean hasTrainContracts() {
@@ -1086,7 +1092,7 @@ public class Experiments  {
                 if(!checkpointing){
                     //it's not. must be a timing string
                     checkpointing = true;
-                    checkpointInterval = parseTiming(checkpointingStr);
+//                    checkpointInterval = parseTiming(checkpointingStr);
 
                 }
           }
