@@ -1,10 +1,9 @@
 package tsml.filters;
 
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 
+import tsml.classifiers.distance_based.utils.cache.Cache;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -21,15 +20,16 @@ public class CachedFilter extends HashFilter {
     // the filter to cache the output of
     private Filter filter;
     // the cache to store instances against their corresponding output
-    private Map<Instance, Instance> cache;
+    private Cache<Instance, Instance> cache;
     // custom queue for managing cached transformations
     private Queue<Instance> transformQueue = new LinkedList<>();
+    // is it caching
 
     public CachedFilter(Filter filter) {
-        this(filter, new HashMap<>());
+        this(filter, new Cache<>());
     }
 
-    public CachedFilter(Filter filter, Map<Instance, Instance> cache) {
+    public CachedFilter(Filter filter, Cache<Instance, Instance> cache) {
         setFilter(filter);
         setCache(cache);
     }
@@ -55,7 +55,9 @@ public class CachedFilter extends HashFilter {
      * @throws Exception
      */
     public boolean setInputFormat(Instances instanceInfo) throws Exception {
-        HashFilter.hashInstances(instanceInfo);
+        if(cache.isReadOrWrite()) {
+            HashFilter.hashInstances(instanceInfo);
+        }
         super.setInputFormat(instanceInfo);
         boolean outputFormatHasBeenSetup = filter.setInputFormat(instanceInfo);
         if(outputFormatHasBeenSetup) {
@@ -115,7 +117,7 @@ public class CachedFilter extends HashFilter {
 
     @Override
     public boolean input(Instance instance) throws Exception {
-        if(!(instance instanceof HashFilter.HashedDenseInstance)) {
+        if(cache.isReadOrWrite() && !(instance instanceof HashFilter.HashedDenseInstance)) {
             HashFilter.hashInstanceAndDataset(instance);
         }
         Instance transformed = cache.get(instance);
@@ -158,11 +160,11 @@ public class CachedFilter extends HashFilter {
         this.filter = filter;
     }
 
-    public Map<Instance, Instance> getCache() {
+    public Cache<Instance, Instance> getCache() {
         return cache;
     }
 
-    public void setCache(Map<Instance, Instance> cache) {
+    public void setCache(Cache<Instance, Instance> cache) {
         if(cache == null) {
             throw new NullPointerException();
         }

@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.utils.cache;
 
-public class SymmetricCache<A, B> extends Cache<A, A, B> {
+public class SymmetricBiCache<A, B> extends BiCache<A, A, B> {
+
+    // todo cache state read / write
 
     @Override
     public B get(final A firstKey, final A secondKey) {
