@@ -26,10 +26,11 @@ import weka.filters.Filter;
 public class RandomExemplarProximitySplit extends Split {
 
     private ExemplarPicker exemplarPicker;
-    private boolean useEarlyAbandon = true;
+    private boolean useEarlyAbandon = false;
     private DistanceFunction distanceFunction;
     private List<List<Instance>> exemplars;
     private DistanceFunctionPicker distanceFunctionPicker;
+    private boolean randomTieBreak = false;
 
     public RandomExemplarProximitySplit(Random random,
         ExemplarPicker exemplarPicker, DistanceFunctionPicker distanceFunctionPicker) {
@@ -69,33 +70,42 @@ public class RandomExemplarProximitySplit extends Split {
     }
 
     public int getPartitionIndexFor(final Instance instance) {
-        double maxDistance = Double.POSITIVE_INFINITY;
+        final double maxDistance = Double.POSITIVE_INFINITY;
         double limit = maxDistance;
-//        final PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
-//        distanceToPartitionIndexMap.setSoftLimit(1);
-        final boolean useEarlyAbandon = isUseEarlyAbandon();
+        PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = null;
         int best = -1;
+        if(randomTieBreak) {
+            distanceToPartitionIndexMap = PrunedMultimap.asc();
+            distanceToPartitionIndexMap.setSoftLimit(1);
+        }
+        double minDistance = maxDistance;
         for(int i = 0; i < exemplars.size(); i++) {
-            double minDistance = maxDistance;
             for(Instance exemplar : exemplars.get(i)) {
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
                 if(useEarlyAbandon) {
                     limit = Math.min(distance, limit);
                 }
-                if(distance < minDistance) {
-                    best = i;
-                    minDistance = distance;
+                if(randomTieBreak) {
+                    minDistance = Math.min(distance, minDistance);
+                    distanceToPartitionIndexMap.put(minDistance, i);
+                } else {
+                    // todo this is the equiv of hard pruned map
+                    if(distance < minDistance) {
+                        best = i;
+                        minDistance = distance;
+                    }
                 }
-//                minDistance = Math.min(distance, minDistance);
             }
-//            distanceToPartitionIndexMap.put(minDistance, i);
         }
-        return best;
-//        distanceToPartitionIndexMap.hardPruneToSoftLimit();
-//        final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
-//        final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
-//        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
-//        return closestPartitionIndex;
+        if(randomTieBreak) {
+            distanceToPartitionIndexMap.hardPruneToSoftLimit();
+            final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
+            final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
+            final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
+            return closestPartitionIndex;
+        } else {
+            return best;
+        }
     }
 
     @Override
@@ -165,6 +175,15 @@ public class RandomExemplarProximitySplit extends Split {
         final DistanceFunctionPicker distanceFunctionPicker) {
         Assert.assertNotNull(distanceFunctionPicker);
         this.distanceFunctionPicker = distanceFunctionPicker;
+        return this;
+    }
+
+    public boolean isRandomTieBreak() {
+        return randomTieBreak;
+    }
+
+    public RandomExemplarProximitySplit setRandomTieBreak(final boolean randomTieBreak) {
+        this.randomTieBreak = randomTieBreak;
         return this;
     }
 }
