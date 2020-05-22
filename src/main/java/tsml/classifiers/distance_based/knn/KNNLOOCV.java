@@ -20,8 +20,8 @@ import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.filters.HashFilter;
 import utilities.*;
-import tsml.classifiers.distance_based.utils.cache.Cache;
-import tsml.classifiers.distance_based.utils.cache.SymmetricCache;
+import tsml.classifiers.distance_based.utils.cache.BiCache;
+import tsml.classifiers.distance_based.utils.cache.SymmetricBiCache;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.DistanceFunction;
@@ -272,7 +272,7 @@ public class KNNLOOCV
     protected int neighbourCount;
     protected int comparisonCount;
     protected StopWatch trainEstimateTimer = new StopWatch();
-    protected Cache<Instance, Instance, Double> cache;
+    protected BiCache<Instance, Instance, Double> biCache;
     protected NeighbourSearcher leftOutSearcher = null;
     protected Iterator<NeighbourSearcher> leftOutSearcherIterator;
     protected Iterator<NeighbourSearcher> cvSearcherIterator;
@@ -349,16 +349,16 @@ public class KNNLOOCV
         if(!leftOutInstance.equals(instance)) {
             boolean seen;
             if(customCache) {
-                seen = cache.contains(leftOutInstance, instance);
+                seen = biCache.contains(leftOutInstance, instance);
             } else {
-                seen = cache.remove(leftOutInstance, instance);
+                seen = biCache.remove(leftOutInstance, instance);
             }
             if(seen) {
                 // we've already seen this instance
                 logger.info(() -> comparisonCount + ") " + "already seen i" + instance.hashCode() + " and i" + leftOutInstance.hashCode());
             } else {
                 final long distanceMeasurementTimeStamp = System.nanoTime();
-                Double distance = customCache ? cache.get(instance, leftOutInstance) : null;
+                Double distance = customCache ? biCache.get(instance, leftOutInstance) : null;
                 final long timeTakenInNanos = System.nanoTime() - distanceMeasurementTimeStamp;
                 if(distance == null) {
                     distance = searcher.add(leftOutInstance);
@@ -366,7 +366,7 @@ public class KNNLOOCV
                     searcher.add(leftOutInstance, distance, timeTakenInNanos);
                 }
                 leftOutSearcher.add(instance, distance, 0); // we get this for free!
-                cache.put(instance, leftOutInstance, distance);
+                biCache.put(instance, leftOutInstance, distance);
                 final Double finalDistance = distance;
                 logger.info(() -> comparisonCount + ") i" + instance.hashCode() + " and i" + leftOutInstance.hashCode() +
                                  ": " + finalDistance);
@@ -477,9 +477,9 @@ public class KNNLOOCV
                 }
                 if(distanceFunction instanceof BaseDistanceMeasure) {
                     if(((BaseDistanceMeasure) distanceFunction).isSymmetric()) {
-                        cache = new SymmetricCache<>();
+                        biCache = new SymmetricBiCache<>();
                     } else {
-                        cache = new Cache<>();
+                        biCache = new BiCache<>();
                     }
                 }
                 leftOutSearcherIterator = neighbourIteratorBuilder.build();
@@ -558,17 +558,17 @@ public class KNNLOOCV
         this.neighbourLimit = neighbourLimit;
     }
 
-    public Cache<Instance, Instance, Double> getCache() {
-        return cache;
+    public BiCache<Instance, Instance, Double> getBiCache() {
+        return biCache;
     }
 
-    public void setCache(final Cache<Instance, Instance, Double> cache) {
-        this.cache = cache;
-        customCache = cache != null;
+    public void setBiCache(final BiCache<Instance, Instance, Double> biCache) {
+        this.biCache = biCache;
+        customCache = biCache != null;
     }
 
     public void setDefaultCache() {
-        setCache(null);
+        setBiCache(null);
     }
 
     public NeighbourIteratorBuilder getCvSearcherIteratorBuilder() {

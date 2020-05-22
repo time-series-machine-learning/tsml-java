@@ -6,13 +6,17 @@ import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasureable;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
+import tsml.filters.CachedFilter;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.Filter;
 
 /**
  * Purpose: perform a split using several exemplar instances to partition the data based upon proximity.
@@ -46,6 +50,9 @@ public class RandomExemplarProximitySplit extends Split {
         List<Instances> partitions = Lists.newArrayList(exemplars.size());
         DistanceFunction distanceFunction = distanceFunctionPicker.pickDistanceFunction();
         setDistanceFunction(distanceFunction);
+        if(distanceFunction instanceof DistanceMeasureable) {
+            ((DistanceMeasureable) distanceFunction).setTraining(true);
+        }
         for(List<Instance> group : exemplars) {
             partitions.add(new Instances(data, 0));
         }
@@ -55,18 +62,20 @@ public class RandomExemplarProximitySplit extends Split {
             final Instances closestPartition = partitions.get(index);
             closestPartition.add(instance);
         }
+        if(distanceFunction instanceof DistanceMeasureable) {
+            ((DistanceMeasureable) distanceFunction).setTraining(false);
+        }
         return partitions;
     }
 
     public int getPartitionIndexFor(final Instance instance) {
-        double maxDistance = DistanceMeasureable.getMaxDistance();
+        double maxDistance = Double.POSITIVE_INFINITY;
         double limit = maxDistance;
 //        final PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
 //        distanceToPartitionIndexMap.setSoftLimit(1);
         final boolean useEarlyAbandon = isUseEarlyAbandon();
         int best = -1;
         for(int i = 0; i < exemplars.size(); i++) {
-            // todo extract min dist to exemplar in group into own interfaceMu
             double minDistance = maxDistance;
             for(Instance exemplar : exemplars.get(i)) {
                 final double distance = distanceFunction.distance(instance, exemplar, limit);

@@ -1,21 +1,12 @@
 package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
-import tsml.classifiers.TestTimeContractable;
-import tsml.classifiers.TrainTimeContractable;
-import tsml.classifiers.TrainTimeable;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
@@ -26,7 +17,6 @@ import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.Random
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarProximitySplit;
 import tsml.classifiers.distance_based.proximity.stopping_conditions.Pure;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.TestTimeable;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
@@ -35,8 +25,6 @@ import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.stopwatch.TimedTest;
 import tsml.classifiers.distance_based.utils.stopwatch.TimedTrain;
-import tsml.classifiers.distance_based.utils.stopwatch.TimedTrainEstimate;
-import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.tree.BaseTree;
@@ -56,18 +44,31 @@ import weka.core.Instances;
 public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain,
     TimedTrain, TimedTest, WatchedMemory {
 
+    private final Tree<Split> tree = new BaseTree<>();
+    private final StopWatch trainTimer = new StopWatch();
+    private final StopWatch testTimer = new StopWatch();
+    private final MemoryWatcher memoryWatcher = new MemoryWatcher();
+    private long trainTimeLimitNanos = 0;
+    private long testTimeLimitNanos = 0;
+    private long longestNodeBuildTimeNanos = 0;
+    private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
+    private StoppingCondition stoppingCondition;
+    private Splitter splitter;
+
+    public ProximityTree() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    }
+
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
             classifier.setConfigR1();
-//            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+            //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
-
-    // -------------------- configs --------------------
 
     public ProximityTree setConfigR1() {
         setBuildUntilPure();
@@ -84,12 +85,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return set10Splits();
     }
 
-    // -------------------- end configs --------------------
-
-    public ProximityTree() {
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-    }
-
     public ProximityTree setBuildUntilPure() {
         return setStoppingCondition(new Pure());
     }
@@ -100,8 +95,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         final List<ParamSpace> paramSpaces = Lists.newArrayList(
             DistanceMeasureConfigs.buildEdSpace(),
             // these aren't in orig PF
-//            DistanceMeasureConfigs.buildFullDtwSpace(),
-//            DistanceMeasureConfigs.buildFullDdtwSpace(),
+            //            DistanceMeasureConfigs.buildFullDtwSpace(),
+            //            DistanceMeasureConfigs.buildFullDdtwSpace(),
             ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
@@ -153,20 +148,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return setMultipleSplits(10);
     }
 
-    private final Tree<Split> tree = new BaseTree<>();
-    private final StopWatch trainTimer = new StopWatch();
-    private final StopWatch testTimer = new StopWatch();
-    private final MemoryWatcher memoryWatcher = new MemoryWatcher();
-    private long trainTimeLimitNanos = 0;
-    private long testTimeLimitNanos = 0;
-    private long longestNodeBuildTimeNanos = 0;
-    private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
-    private StoppingCondition stoppingCondition;
-    private Splitter splitter;
-    public static final String STOPPING_CONDITION_FLAG = "c";
-    public static final String SPLITTER_FLAG = "s";
-    public static final String SPLITTER_BUILDER_FLAG = "b";
-
     @Override
     public StopWatch getTrainTimer() {
         return trainTimer;
@@ -183,18 +164,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override
-    public void setTestTimeLimit(final long nanos) {
-        testTimeLimitNanos = nanos;
-    }
-
-    @Override
     public long getTestTimeLimit() {
         return testTimeLimitNanos;
     }
 
     @Override
-    public void setTrainTimeLimit(final long nanos) {
-        trainTimeLimitNanos = nanos;
+    public void setTestTimeLimit(final long nanos) {
+        testTimeLimitNanos = nanos;
     }
 
     @Override
@@ -202,8 +178,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return trainTimeLimitNanos;
     }
 
-    public interface StoppingCondition extends Serializable {
-        boolean shouldStop(TreeNode<Split> node);
+    @Override
+    public void setTrainTimeLimit(final long nanos) {
+        trainTimeLimitNanos = nanos;
     }
 
     @Override
@@ -226,9 +203,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         while(
             // there is enough time for another split to be built
             insideTrainTimeLimit(trainTimer.getTimeNanos() + longestNodeBuildTimeNanos)
-            // and there's remaining nodes to be built
-            &&
-            nodeBuildQueue.hasNext()
+                // and there's remaining nodes to be built
+                &&
+                nodeBuildQueue.hasNext()
         ) {
             long time = System.nanoTime();
             final TreeNode<Split> node = nodeBuildQueue.next();
@@ -288,25 +265,24 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         // enable resource monitors
-//        testTimer.resetAndEnable();
-//        long longestPredictTime = 0;
+        testTimer.resetAndEnable();
+        long longestPredictTime = 0;
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
-//        if(!node.hasChildren()) {
+        if(!node.hasChildren()) {
 //             root node has not been built, just return random guess
-//            return ArrayUtilities.uniformDistribution(getNumClasses());
-//        }
+            return ArrayUtilities.uniformDistribution(getNumClasses());
+        }
         int index = -1;
         int i = 0;
         Split split = node.getElement();
         // traverse the tree downwards from root
         while(
             !node.isLeaf()
-//            &&
-//            insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
+            &&
+            insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
         ) {
-//            final long timestamp = System.nanoTime();
-            System.out.println(i++);
+            final long timestamp = System.nanoTime();
             // get the split at that node
             split = node.getElement();
             // work out which branch to go to next
@@ -314,15 +290,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final List<TreeNode<Split>> children = node.getChildren();
             // make this the next node to visit
             node = children.get(index);
-//            longestPredictTime = System.nanoTime() - timestamp;
-        };
+            longestPredictTime = System.nanoTime() - timestamp;
+        }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
         node = node.getParent();
         split = node.getElement();
         double[] distribution = split.distributionForInstance(instance, index);
         // disable the resource monitors
-//        testTimer.disable();
+        testTimer.disable();
         return distribution;
     }
 
@@ -332,5 +308,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public int size() {
         return tree.size();
+    }
+
+    public interface StoppingCondition extends Serializable {
+        boolean shouldStop(TreeNode<Split> node);
     }
 }
