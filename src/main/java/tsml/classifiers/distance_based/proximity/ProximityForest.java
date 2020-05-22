@@ -70,10 +70,28 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             });
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/datasets/uni2018/",
-                "Ham", seed));
+                "GunPoint", seed));
             //            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
         //        Thread.sleep(10000);
+    }
+
+    public ProximityForest setConfigOriginalR1() {
+        setNumTreeLimit(100);
+        setConstituentConfig(ProximityTree::setConfigR1);
+        return this;
+    }
+
+    public ProximityForest setConfigOriginalR5() {
+        setNumTreeLimit(100);
+        setConstituentConfig(ProximityTree::setConfigR5);
+        return this;
+    }
+
+    public ProximityForest setConfigOriginalR10() {
+        setNumTreeLimit(100);
+        setConstituentConfig(ProximityTree::setConfigR10);
+        return this;
     }
 
     @Override

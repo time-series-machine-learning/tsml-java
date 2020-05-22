@@ -72,21 +72,24 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree setConfigR1() {
         setBuildUntilPure();
-        return setSingleSplit();
+        setSingleSplit();
+        return this;
     }
 
     public ProximityTree setConfigR5() {
         setBuildUntilPure();
-        return set5Splits();
+        setMultipleSplits(5);
+        return this;
     }
 
     public ProximityTree setConfigR10() {
         setBuildUntilPure();
-        return set10Splits();
+        setMultipleSplits(10);
+        return this;
     }
 
-    public ProximityTree setBuildUntilPure() {
-        return setStoppingCondition(new Pure());
+    public void setBuildUntilPure() {
+        setStoppingCondition(new Pure());
     }
 
     private void setSingleSplitFromTrainData(Instances trainData) {
@@ -94,9 +97,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
         final List<ParamSpace> paramSpaces = Lists.newArrayList(
             DistanceMeasureConfigs.buildEdSpace(),
-            // these aren't in orig PF
-            //            DistanceMeasureConfigs.buildFullDtwSpace(),
-            //            DistanceMeasureConfigs.buildFullDdtwSpace(),
             ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
             ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
@@ -138,14 +138,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             setMultipleSplitsFromTrainData(trainData, numSplits);
         });
         return this;
-    }
-
-    public ProximityTree set5Splits() {
-        return setMultipleSplits(5);
-    }
-
-    public ProximityTree set10Splits() {
-        return setMultipleSplits(10);
     }
 
     @Override
@@ -270,7 +262,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
         if(!node.hasChildren()) {
-//             root node has not been built, just return random guess
+            //             root node has not been built, just return random guess
             return ArrayUtilities.uniformDistribution(getNumClasses());
         }
         int index = -1;
@@ -279,8 +271,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // traverse the tree downwards from root
         while(
             !node.isLeaf()
-            &&
-            insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
+                &&
+                insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
         ) {
             final long timestamp = System.nanoTime();
             // get the split at that node
@@ -311,6 +303,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     public interface StoppingCondition extends Serializable {
+
         boolean shouldStop(TreeNode<Split> node);
     }
 }
