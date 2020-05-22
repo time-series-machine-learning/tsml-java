@@ -70,4 +70,7 @@ public interface DistanceMeasureable extends Serializable, DistanceFunction, Par
 
     }
 
+    boolean isTraining();
+
+    void setTraining(boolean state);
 }

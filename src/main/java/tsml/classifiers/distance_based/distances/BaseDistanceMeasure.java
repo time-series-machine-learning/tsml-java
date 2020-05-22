@@ -18,6 +18,8 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     private transient boolean dataAvailable = false;
     // the data which was passed to setInstances
     private transient Instances data;
+    // is this in training phase or testing phase
+    private boolean training = true;
 
     @Override
     public String getName() {
@@ -72,5 +74,15 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
 
     @Override public ParamSet getParams() {
         return new ParamSet();
+    }
+
+    @Override
+    public boolean isTraining() {
+        return training;
+    }
+
+    @Override
+    public void setTraining(final boolean training) {
+        this.training = training;
     }
 }

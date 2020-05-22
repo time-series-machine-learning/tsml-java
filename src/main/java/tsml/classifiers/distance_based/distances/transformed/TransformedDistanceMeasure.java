@@ -9,9 +9,8 @@ Contributors: goastler
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.distances.wdtw.WDTW;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.filters.CachedFilter;
 import tsml.filters.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -97,4 +96,18 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     public static String getTransformerFlag() {
         return "t";
     }
+
+    @Override
+    public void setTraining(final boolean training) {
+        super.setTraining(training);
+        if(transformer instanceof CachedFilter) {
+            // always enable cache read, doesn't matter if the cache is empty
+            ((CachedFilter) transformer).getCache().setRead(true);
+            // disable the cache writing if not in training mode
+            // don't want to keep instances / transformation from the test data as the cache will explode along with
+            // your computer
+            ((CachedFilter) transformer).getCache().setWrite(training);
+        }
+    }
+
 }
