@@ -12,6 +12,8 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 public interface DTW extends DistanceMeasureable {
     void setWarpingWindow(int warpingWindow);
     int getWarpingWindow();
+    void setWarpingWindowPercentage(double percentage);
+    double getWarpingWindowPercentage();
     static String getWarpingWindowFlag() {
         return "w";
     }

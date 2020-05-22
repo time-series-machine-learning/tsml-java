@@ -19,6 +19,8 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
     // whether to keep the distance matrix
     private boolean keepDistanceMatrix = false;
     private int warpingWindow = -1;
+    private double warpingWindowPercentage = -1;
+    private boolean warpingWindowInPercentage = false;
 
     public DTWDistance() {
     }
@@ -32,8 +34,20 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         return warpingWindow;
     }
 
+    @Override
+    public void setWarpingWindowPercentage(final double percentage) {
+        this.warpingWindowPercentage = percentage;
+        warpingWindowInPercentage = true;
+    }
+
+    @Override
+    public double getWarpingWindowPercentage() {
+        return warpingWindowPercentage;
+    }
+
     public void setWarpingWindow(int warpingWindow) {
         this.warpingWindow = warpingWindow;
+        warpingWindowInPercentage = false;
     }
 
     public double[][] getDistanceMatrix() {
@@ -65,7 +79,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
     }
 
     @Override
-    public double distance(final Instance first, final Instance second, final double limit,
+    public double distance(Instance first, Instance second, final double limit,
         final PerformanceStats stats) {
         checkData(first, second);
 
@@ -75,13 +89,33 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         int aLength = first.numAttributes() - 1;
         int bLength = second.numAttributes() - 1;
 
+        // put a or first as the longest time series
+        if(bLength > aLength) {
+            Instance tmp = first;
+            first = second;
+            second = tmp;
+            aLength = first.numAttributes() - 1;
+            bLength = second.numAttributes() - 1;
+        }
+
         /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
          generalised for variable window size
          * */
         int windowSize = warpingWindow + 1; // + 1 to include the current cell
-        if(warpingWindow < 0) {
-            windowSize = aLength + 1; // todo how would this work for unequal length time series?
+        if(warpingWindowInPercentage) {
+            // warping window as double typed percentage
+            if(warpingWindowPercentage < 0) {
+                windowSize = aLength + 1;
+            } else {
+                windowSize = 
+            }
+        } else {
+            // warping window as int
+            if(warpingWindow < 0) {
+                windowSize = aLength + 1;
+            }
         }
+
         //Extra memory than required, could limit to windowsize,
         //        but avoids having to recreate during CV
         //for varying window sizes
