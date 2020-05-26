@@ -19,6 +19,7 @@ import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -339,6 +340,39 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         if (classifierName == null)
             classifierName = this.getClass().getSimpleName();
         return classifierName;
+    }
+
+    /**
+     * Method to find the best index in a list of doubles. If a tie occurs,
+     * then the best index is chosen randomly.
+     *
+     * @param x a list of doubles.
+     * @return the index of the highest value in x.
+     */
+    public static int findIndexOfMax(double [] x) {
+
+        double currentMax = Double.MIN_VALUE;
+        ArrayList<Integer> bestIndexes = new ArrayList<>();
+
+        //Find the best index(es)
+        for(int i=0;i<x.length;i++) {
+            if(x[i] > currentMax) {
+                bestIndexes.clear();
+                bestIndexes.add(i);
+                currentMax = x[i];
+            } else if(x[i] == currentMax) {
+                bestIndexes.add(i);
+            }
+        }
+
+        //No ties occured
+        if(bestIndexes.size() == 1) {
+            return (int) bestIndexes.get(0);
+        } else {
+            //ties did occur
+            Random rnd = new Random();
+            return bestIndexes.get(rnd.nextInt(bestIndexes.size()));
+        }
     }
     
     /**
