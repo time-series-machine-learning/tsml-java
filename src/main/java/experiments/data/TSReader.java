@@ -9,6 +9,7 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
 
@@ -45,8 +46,8 @@ public class TSReader {
     private ArrayList<String> classLabels;
     private ArrayList<Attribute> attList;
 
-    private ArrayList<ArrayList<String>> uni_raw_data;
-    private ArrayList<ArrayList<ArrayList<String>>> multi_raw_data;
+    private ArrayList<ArrayList<Double>> uni_raw_data;
+    private ArrayList<ArrayList<ArrayList<Double>>> multi_raw_data;
 
     private ArrayList<Double> raw_labels;
 
@@ -70,7 +71,7 @@ public class TSReader {
         raw_labels = new ArrayList<>();
 
         //read each line and extract a data Instance
-        Pair<ArrayList<ArrayList<String>>, Double> multi_series_and_label;
+        Pair<ArrayList<ArrayList<Double>>, Double> multi_series_and_label;
         //extract the multivariate series, and the possible label.
         while(( multi_series_and_label = readMultivariateInstance()) != null){
             multi_raw_data.add(multi_series_and_label.var1);
@@ -79,7 +80,7 @@ public class TSReader {
 
         //go through all the raw data, and find the longest row.
         int max_length = 0;
-        for(ArrayList<ArrayList<String>> channel : multi_raw_data){
+        for(ArrayList<ArrayList<Double>> channel : multi_raw_data){
             int curr = channel.stream().mapToInt(ArrayList::size).max().getAsInt();
             if(curr > max_length)
                 max_length = curr;
@@ -105,7 +106,7 @@ public class TSReader {
         m_data = new Instances(problemName, attList, multi_raw_data.size());
         for(int i=0; i< multi_raw_data.size(); i++){
 
-            ArrayList<ArrayList<String>> series = multi_raw_data.get(i);
+            ArrayList<ArrayList<Double>> series = multi_raw_data.get(i);
             m_data.add(new DenseInstance(attList.size()));
 
             //TODO: add all the time series values, dealing with missing values.
@@ -113,13 +114,14 @@ public class TSReader {
     
             //each dense instance is row/ which is actually a channel.
             for(int k=0; k< series.size(); k++){
-                relational.add(new DenseInstance(series.get(k).size()));
-                for(int j=0; j<series.get(k).size(); j++)
-                    //check whether the value is a double or "?" etc.
-                    if(utilities.Utilities.stringIsDouble(series.get(k).get(j)))
-                        relational.instance(k).setValue(j, Double.parseDouble(series.get(k).get(j)));
-            }
-            
+                
+                DenseInstance ds = new DenseInstance(numAttsInChannel);
+                int index  = 0;
+                for(Double d : series.get(k))
+                    ds.setValue(index++, d);
+
+                relational.add(ds);
+            }            
 
             //add the relational series to the attribute, and set the value of the att to the relations index.
             int index = m_data.instance(i).attribute(0).addRelation(relational);
@@ -140,7 +142,7 @@ public class TSReader {
         uni_raw_data = new ArrayList<>();
         raw_labels = new ArrayList<>();
         //read each line and extract a data Instance
-        Pair<ArrayList<String>, Double>  series_and_label;
+        Pair<ArrayList<Double>, Double>  series_and_label;
         //extract series and the possible label.
         while((series_and_label = readUnivariateInstance()) != null){
             uni_raw_data.add(series_and_label.var1);
@@ -156,6 +158,9 @@ public class TSReader {
             attList.add(new Attribute("att"+(i+1), i));
         }
         //have to cast the null to arraylist type (this is taken from WEKAS OWN CODE.) to force it to use the right method.
+
+        System.out.println(classLabels.toString());
+
         if(classLabel)
             attList.add(new Attribute("classVal", classLabels, classLabels.size()));
 
@@ -163,19 +168,18 @@ public class TSReader {
 
 
         for(int i=0; i<uni_raw_data.size(); i++){
-            ArrayList<String> timeSeries = uni_raw_data.get(i);
+            ArrayList<Double> timeSeries = uni_raw_data.get(i);
             //add all the time series values.
-            Instance inst = new DenseInstance(max_length+1);
-            for(int a = 0; a < timeSeries.size(); a++){
-                if(utilities.Utilities.stringIsDouble(timeSeries.get(a)))
-                    inst.setValue(a, Double.parseDouble(timeSeries.get(a)));
-            }
+            Instance ds = new DenseInstance(max_length+1);
+                int index  = 0;
+                for(Double d : timeSeries)
+                    ds.setValue(index++, d);
             //only add if we have a classLabel
             //get the value from the end of the current time series, and put it at the end of the attribute list.
             if(classLabel) {
-                inst.setValue(max_length, raw_labels.get(i));
+                ds.setValue(max_length, raw_labels.get(i));
             }
-            this.m_data.add(inst);
+            this.m_data.add(ds);
         }
     }
 
@@ -183,17 +187,17 @@ public class TSReader {
         return m_data;
     }
 
-    private Pair<ArrayList<ArrayList<String>>, Double> readMultivariateInstance() throws IOException {
+    private Pair<ArrayList<ArrayList<Double>>, Double> readMultivariateInstance() throws IOException {
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             return null;
         }
 
-        ArrayList<ArrayList<String>> multi_timeSeries = new ArrayList<>();
+        ArrayList<ArrayList<Double>> multi_timeSeries = new ArrayList<>();
         String classValue ="";
 
 
-        ArrayList<String> timeSeries = new ArrayList<>();
+        ArrayList<Double> timeSeries = new ArrayList<>();
         do{
             //this means we're about to get the class value
             if(m_Tokenizer.ttype == ':' && classLabel){
@@ -201,9 +205,9 @@ public class TSReader {
                 multi_timeSeries.add(timeSeries);
                 timeSeries = new ArrayList<>();
             }
-            else{
-                 timeSeries.add(m_Tokenizer.sval);
-                 classValue = m_Tokenizer.sval; //the last value to be tokenized should be the class value.
+            else{               
+                timeSeries.add(m_Tokenizer.sval == "?" ? Double.NaN : m_Tokenizer.nval);
+                classValue = m_Tokenizer.sval == null ? ""+m_Tokenizer.nval : m_Tokenizer.sval; //the last value to be tokenized should be the class value. can be in string or number format so check both.
             }
             m_Tokenizer.nextToken();
         } while(m_Tokenizer.ttype != StreamTokenizer.TT_EOL);
@@ -213,13 +217,14 @@ public class TSReader {
         return new Pair<>(multi_timeSeries,classVal);
     }
 
-    private  Pair<ArrayList<String>,Double> readUnivariateInstance() throws IOException {
+    private  Pair<ArrayList<Double>, Double> readUnivariateInstance() throws IOException {
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             return null;
         }
 
-        ArrayList<String> timeSeries = new ArrayList<>();
+
+        ArrayList<Double> timeSeries = new ArrayList<>();
         String classValue = null;
 
         //read the tokens, and if we hit a : then we need to do something clever.
@@ -231,11 +236,12 @@ public class TSReader {
             }
             else{
                 if(bFoundColon){
-                    classValue = m_Tokenizer.sval;
+                    classValue = m_Tokenizer.sval == null ? ""+m_Tokenizer.nval : m_Tokenizer.sval;
                     bFoundColon = false;
                 }
                 else{
-                    timeSeries.add(m_Tokenizer.sval);
+                    //if the tokenizer has a ? in it, then we set the value to nan.
+                    timeSeries.add(m_Tokenizer.sval == "?" ? Double.NaN : m_Tokenizer.nval);
                 }
             }
             m_Tokenizer.nextToken();
@@ -249,8 +255,10 @@ public class TSReader {
         //Setup the tokenizer to read the stream.
         m_Tokenizer.resetSyntax();
 
-        //chars are the chars.
+        ////ignore 0-9 chars
         m_Tokenizer.wordChars(' '+1,'\u00FF');
+
+        m_Tokenizer.parseNumbers();
 
         //setup the white space tokens
         m_Tokenizer.whitespaceChars(' ', ' ');
@@ -331,7 +339,7 @@ public class TSReader {
         getNextToken();
         //now read all the class values until we reach the EOL
         do{
-            classLabels.add(m_Tokenizer.sval);
+            classLabels.add(m_Tokenizer.sval == null ? ""+m_Tokenizer.nval : m_Tokenizer.sval);
             m_Tokenizer.nextToken();
         }while(m_Tokenizer.ttype != StreamTokenizer.TT_EOL);
     }
@@ -417,17 +425,21 @@ public class TSReader {
         String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
 
 
-        for(String dataset : DatasetLists.tscProblems2018){
-            //String dataset = "AllGestureWiimoteZ";
+        //for(String dataset : DatasetLists.tscProblems2018){
+            String dataset = "AllGestureWiimoteZ";
             String filepath = local_path + dataset + "\\" + dataset;
             String filepath_orig = local_path_orig + dataset + "\\" + dataset;
 
             File f = new File(filepath + "_TRAIN" + ".ts");
-            System.out.println(f);
+            //System.out.println(f);
+
+            long time = System.nanoTime();
             TSReader ts_reader = new TSReader(new FileReader(f));
+            System.out.println("after: " + (System.nanoTime() - time));
+
             Instances train_data = ts_reader.GetInstances();
-            System.out.println(train_data);
-        }
+            //System.out.println(train_data);
+        //}
 
         //File f_orig = new File(filepath_orig);
         //Instances train_data_orig = new Instances(new FileReader(f_orig));
