@@ -65,7 +65,7 @@ public class BasicReproductionTests {
     
     public static final String[] classifierPaths = {
         
-        tsClassifiers + "dictionary_based.BagOfPatterns",
+        tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
         tsClassifiers + "dictionary_based.SAXVSM",
         tsClassifiers + "dictionary_based.WEASEL",
         tsClassifiers + "dictionary_based.cBOSS",

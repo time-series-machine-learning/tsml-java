@@ -57,3 +57,11 @@ distribution/tsml.jar
 distribution/tsml.jar
 distribution/tsml.jar
 src/main/java/tsml/classifiers/frequency_based/RISE.java
+
+#Aaron's personal / for VSCode.
+bin/*
+*.settings
+launch.json
+settings.json
+.project
+.classpath

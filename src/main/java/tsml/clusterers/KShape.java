@@ -12,9 +12,9 @@ import java.util.Random;
 import experiments.data.DatasetLoading;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.FFT;
-import tsml.filters.FFT.Complex;
-import static tsml.filters.FFT.MathsPower2;
+import tsml.transformers.FFT;
+import tsml.transformers.FFT.Complex;
+import static tsml.transformers.FFT.MathsPower2;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;

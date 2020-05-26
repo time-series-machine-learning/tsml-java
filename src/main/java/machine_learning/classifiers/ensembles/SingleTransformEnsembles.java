@@ -13,18 +13,19 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package machine_learning.classifiers.ensembles;
+
+import tsml.transformers.NormalizeCase;
+import tsml.transformers.Transformer;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import tsml.filters.NormalizeCase;
-import weka.filters.SimpleBatchFilter;
 
 public class SingleTransformEnsembles extends AbstractClassifier{
 
 
     enum TransformType {TIME,PS,ACF}; 
     TransformType t = TransformType.TIME;
-    SimpleBatchFilter transform;
+    Transformer transform;
     Classifier[] classifiers;
     Instances train;
 

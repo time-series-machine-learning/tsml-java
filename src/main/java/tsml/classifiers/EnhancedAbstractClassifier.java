@@ -152,7 +152,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         ableToEstimateOwnPerformance = state;
     }
 
-    @Override public void buildClassifier(final Instances trainData) throws
+    @Override
+    public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
