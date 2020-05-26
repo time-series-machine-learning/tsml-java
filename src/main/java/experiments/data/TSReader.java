@@ -446,20 +446,22 @@ public class TSReader {
 
         //System.out.println(train_data.toString());
 
-        /*for(String dataset_multi :  DatasetLists.mtscProblems2018){
-            //String dataset_multi = "CharacterTrajectories";
+        //for(String dataset_multi :  DatasetLists.mtscProblems2018){
+            String dataset_multi = "CharacterTrajectories";
             String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
             String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" + dataset_multi;
 
             File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
             System.out.println(f1);
+            time = System.nanoTime();
             TSReader ts_reader_multi = new TSReader(new FileReader(f1));
             Instances train_data_multi = ts_reader_multi.GetInstances();
+            System.out.println("after: " + (System.nanoTime() - time));
 
 
             //JAMESL ADDED TESTS
-            Instances tsisntances = DatasetLoading.loadData(filepath_multi + "_TRAIN");
-        }*/
+            //Instances tsisntances = DatasetLoading.loadData(filepath_multi + "_TRAIN");
+        //}
 
         //File f_orig_multi = new File(filepath_orig_multi);
         //Instances train_data_orig_multi = new Instances(new FileReader(f_orig_multi));
