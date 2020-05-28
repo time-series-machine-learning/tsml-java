@@ -56,7 +56,7 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
     }
 
     public synchronized void start(boolean check) {
-        super.start();
+        super.start(check);
     }
 
     public synchronized void stop(boolean check) {

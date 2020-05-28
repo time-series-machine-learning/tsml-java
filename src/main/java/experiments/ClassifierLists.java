@@ -121,6 +121,7 @@ public class ClassifierLists {
         "PF_R1",
         "PF_R5",
         "PF_R10",
+        "ORIG_PF",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -199,6 +200,9 @@ public class ClassifierLists {
                 break;
             case "PF_R10":
                 c = new ProximityForest().setConfigOriginalR10();
+                break;
+            case "ORIG_PF":
+                c = new ProximityForestWrapper();
                 break;
             case "ED":
                 c = new KNN();

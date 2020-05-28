@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.proximity.splitting.Split;
+import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -25,7 +25,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class ProximitySplit extends Split {
+public class ProximitySplit {
 
     private boolean earlyAbandon = false;
     private DistanceFunction distanceFunction;
@@ -33,9 +33,14 @@ public class ProximitySplit extends Split {
     private boolean randomTieBreak = false;
     private int r = 5;
     private List<ParamSpace> distanceFunctionSpaces = new ArrayList<>();
+    private Random random;
+    private Scorer scorer = Scorer.GINI;
+    private double score = -1;
+    private Instances data;
+    private List<Instances> partitions;
 
     public ProximitySplit(Random random) {
-        super(random);
+        setRandom(random);
     }
 
     private void pickExemplars(final Instances instances) {
@@ -59,33 +64,122 @@ public class ProximitySplit extends Split {
         setDistanceFunction((DistanceFunction) obj);
     }
 
-    /**
-     * pick exemplars using the picker. Find a random distance measure.
-     * @param data
-     * @return
-     */
-    @Override
-    public List<Instances> performSplit(Instances data) {
-        // todo r
-        pickExemplars(data);
-        pickDistanceFunction();
-        List<Instances> partitions = Lists.newArrayList(exemplars.size());
-        if(distanceFunction instanceof DistanceMeasureable) {
-            ((DistanceMeasureable) distanceFunction).setTraining(true);
+    public void buildSplit() {
+        class Container {
+            public final List<List<Instance>> exemplars;
+            public final DistanceFunction distanceFunction;
+            public final List<Instances> partitions;
+            public final double score;
+
+            Container(final List<List<Instance>> exemplars, final DistanceFunction distanceFunction,
+                final List<Instances> partitions, final double score) {
+                this.exemplars = exemplars;
+                this.distanceFunction = distanceFunction;
+                this.partitions = partitions;
+                this.score = score;
+            }
         }
-        for(List<Instance> group : exemplars) {
-            partitions.add(new Instances(data, 0));
+        PrunedMultimap<Double, Container> map = PrunedMultimap.descSoftSingle();
+        for(int i = 0; i < r; i++) {
+            pickDistanceFunction();
+            System.out.println(random.nextInt(100));
+            pickExemplars(data);
+            List<Instances> partitions = Lists.newArrayList(exemplars.size());
+            if(distanceFunction instanceof DistanceMeasureable) {
+                ((DistanceMeasureable) distanceFunction).setTraining(true);
+            }
+            for(List<Instance> group : exemplars) {
+                partitions.add(new Instances(data, 0));
+            }
+            distanceFunction.setInstances(data);
+            for(Instance instance : data) {
+                final int index = getPartitionIndexFor(instance);
+                final Instances closestPartition = partitions.get(index);
+                closestPartition.add(instance);
+            }
+            if(distanceFunction instanceof DistanceMeasureable) {
+                ((DistanceMeasureable) distanceFunction).setTraining(false);
+            }
+            double score = scorer.findScore(data, partitions);
+            Container container = new Container(exemplars, distanceFunction, partitions, score);
+            map.put(score, container);
         }
-        distanceFunction.setInstances(data);
-        for(Instance instance : data) {
-            final int index = getPartitionIndexFor(instance);
-            final Instances closestPartition = partitions.get(index);
-            closestPartition.add(instance);
-        }
-        if(distanceFunction instanceof DistanceMeasureable) {
-            ((DistanceMeasureable) distanceFunction).setTraining(false);
-        }
+        Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
+        partitions = choice.partitions;
+        distanceFunction = choice.distanceFunction;
+        exemplars = choice.exemplars;
+        score = choice.score;
+    }
+
+    public Instances getPartitionFor(Instance instance) {
+        final int index = getPartitionIndexFor(instance);
+        return partitions.get(index);
+    }
+
+    public double[] distributionForInstance(Instance instance) {
+        int index = getPartitionIndexFor(instance);
+        return distributionForInstance(instance, index);
+    }
+
+    public List<Instances> getPartitions() {
         return partitions;
+    }
+
+    public Instances getData() {
+        return data;
+    }
+
+    public void setData(Instances data) {
+        Assert.assertNotNull(data);
+        this.data = data;
+    }
+
+    private void setPartitions(List<Instances> partitions) {
+        Assert.assertNotNull(partitions);
+        this.partitions = partitions;
+    }
+
+    private void setScore(final double score) {
+        this.score = score;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("PartitionSet{" +
+            "score=" + score +
+            ", dataSize=" + data.size());
+        if(partitions != null) {
+            int i = 0;
+            for(Instances instances : partitions) {
+                stringBuilder.append(", p" + i + "=" + instances.size());
+                i++;
+            }
+        }
+        stringBuilder.append("}");
+        return  stringBuilder.toString();
+    }
+
+    public Scorer getScorer() {
+        return scorer;
+    }
+
+    public void setScorer(final Scorer scorer) {
+        Assert.assertNotNull(scorer);
+        this.scorer = scorer;
+    }
+
+    public Random getRandom() {
+        return random;
+    }
+
+    public void setRandom(final Random random) {
+        Assert.assertNotNull(random);
+        this.random = random;
+    }
+
+    public double getScore() {
+        return score;
     }
 
     public int getPartitionIndexFor(final Instance instance) {
@@ -127,7 +221,6 @@ public class ProximitySplit extends Split {
         }
     }
 
-    @Override
     public double[] distributionForInstance(final Instance instance, int index) {
         // get the corresponding closest exemplars
         List<Instance> exemplars = this.exemplars.get(index);

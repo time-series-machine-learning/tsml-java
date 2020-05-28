@@ -243,37 +243,37 @@ public class ClassifierResultsAnalysis {
         //using the presence of summaries for train and test timings as an indicator that they are present
         List<PerformanceMetric> compMetrics = new ArrayList<>();
 
-        if (compResourceSummaries != null) {
-            compMetrics.add(PerformanceMetric.buildTime);
-            compMetrics.add(testTimeMetric);
-            compMetrics.add(memoryMaxMetric);
-            compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
-            compMetrics.add(benchmarkedTestTimeMetric);
-//            compMetrics.add(estimateTimeMetric);
-            for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
-                String label = compMetrics.get(j).name;
-                if (compResourceSummaries.get(j) != null) {
-                    //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
-                    metrics.add(compMetrics.get(j));
-
-                    bigSummary.writeString(label + ":");
-                    bigSummary.writeLine(compResourceSummaries.get(j)[0]);
-
-                    smallSummary.writeString(label + ":");
-                    smallSummary.writeLine(compResourceSummaries.get(j)[1]);
-
-                    statCliquesForCDDias.add(compResourceSummaries.get(j)[2]);
-                }
-                else {
-                    //not present, ignore, and remove from list of time-specific metrics
-                    //to be passed to the timing dia creator
-                    compMetrics.remove(j);
-
-                    bigSummary.writeString(label + ":  MISSING\n\n");
-                    smallSummary.writeString(label + ": MISSING\n\n");
-                }
-            }
-        }
+//        if (compResourceSummaries != null) {
+//            compMetrics.add(PerformanceMetric.buildTime);
+//            compMetrics.add(testTimeMetric);
+//            compMetrics.add(memoryMaxMetric);
+//            compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
+//            compMetrics.add(benchmarkedTestTimeMetric);
+////            compMetrics.add(estimateTimeMetric);
+//            for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
+//                String label = compMetrics.get(j).name;
+//                if (compResourceSummaries.get(j) != null) {
+//                    //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
+//                    metrics.add(compMetrics.get(j));
+//
+//                    bigSummary.writeString(label + ":");
+//                    bigSummary.writeLine(compResourceSummaries.get(j)[0]);
+//
+//                    smallSummary.writeString(label + ":");
+//                    smallSummary.writeLine(compResourceSummaries.get(j)[1]);
+//
+//                    statCliquesForCDDias.add(compResourceSummaries.get(j)[2]);
+//                }
+//                else {
+//                    //not present, ignore, and remove from list of time-specific metrics
+//                    //to be passed to the timing dia creator
+//                    compMetrics.remove(j);
+//
+//                    bigSummary.writeString(label + ":  MISSING\n\n");
+//                    smallSummary.writeString(label + ": MISSING\n\n");
+//                }
+//            }
+//        }
         //END TIMINGS
 
         bigSummary.closeFile();
@@ -951,6 +951,7 @@ public class ClassifierResultsAnalysis {
      */
     protected static void matlab_buildCDDias(String expname, String[] cliques) {
         MatlabController proxy = MatlabController.getInstance();
+        System.out.println("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+");");
         proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+");"); //friedman
         proxy.eval("clear");
         proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+pairwiseCDDiaDirName+"', 1);");  //pairwise
@@ -975,7 +976,7 @@ public class ClassifierResultsAnalysis {
             String ylabel = metric.equals(memoryMaxMetric) ?
                     "Max Memory (MB)" :
                     "Time, " + evalSet.toLowerCase() + " (ms)";
-
+            System.out.println("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
             proxy.eval("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
         }
     }

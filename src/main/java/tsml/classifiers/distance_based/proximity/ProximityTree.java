@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.DistanceFunctionSpaceBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ProximitySplit;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
@@ -37,7 +36,7 @@ import weka.core.Instances;
 public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain,
     TimedTrain, TimedTest, WatchedMemory {
 
-    private Tree<Split> tree;
+    private Tree<ProximitySplit> tree;
     private final StopWatch trainTimer = new StopWatch();
     private final StopWatch testTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
@@ -49,8 +48,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private int r;
     private boolean earlyAbandon;
     private boolean randomTieBreak;
-    private LinkedList<TreeNode<Split>> nodeBuildQueue;
-    private boolean breadthFirst = true;
+    private LinkedList<TreeNode<ProximitySplit>> nodeBuildQueue;
+    private boolean breadthFirst = false;
     private List<ParamSpace> distanceFunctionSpaces;
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
 
@@ -88,16 +87,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         setTestTimeLimit(0);
         setDistanceFunctionSpaceBuilders(Lists.newArrayList(
             DistanceFunctionSpaceBuilder.ED,
-            DistanceFunctionSpaceBuilder.DTW,
             DistanceFunctionSpaceBuilder.FULL_DTW,
-            DistanceFunctionSpaceBuilder.DDTW,
+            DistanceFunctionSpaceBuilder.DTW,
             DistanceFunctionSpaceBuilder.FULL_DDTW,
+            DistanceFunctionSpaceBuilder.DDTW,
             DistanceFunctionSpaceBuilder.WDTW,
             DistanceFunctionSpaceBuilder.WDDTW,
-            DistanceFunctionSpaceBuilder.ERP,
             DistanceFunctionSpaceBuilder.LCSS,
-            DistanceFunctionSpaceBuilder.MSM,
-            DistanceFunctionSpaceBuilder.TWED
+            DistanceFunctionSpaceBuilder.ERP,
+            DistanceFunctionSpaceBuilder.TWED,
+            DistanceFunctionSpaceBuilder.MSM
         ));
         return this;
     }
@@ -171,7 +170,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             for(DistanceFunctionSpaceBuilder builder : distanceFunctionSpaceBuilders) {
                 distanceFunctionSpaces.add(builder.build(trainData));
             }
-            final TreeNode<Split> root = buildNode(trainData, null);
+            final TreeNode<ProximitySplit> root = buildNode(trainData, null);
             tree.setRoot(root);
         }
         CachedFilter.hashInstances(trainData);
@@ -183,9 +182,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 !nodeBuildQueue.isEmpty()
         ) {
             trainStageTimer.resetAndStart();
-            final TreeNode<Split> node = nodeBuildQueue.removeFirst();
+            final TreeNode<ProximitySplit> node = nodeBuildQueue.removeFirst();
             // partition the data at the node
-            Split split = node.getElement();
+            ProximitySplit split = node.getElement();
             split.buildSplit();
             List<Instances> partitions = split.getPartitions();
             // for each partition of data
@@ -200,11 +199,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         memoryWatcher.stop();
     }
 
-    private TreeNode<Split> buildNode(Instances data, TreeNode<Split> parent) {
-        // split the data into multiple partitions, housed in a Split object
-        final Split split = setupSplit(data);
+    private TreeNode<ProximitySplit> buildNode(Instances data, TreeNode<ProximitySplit> parent) {
+        // split the data into multiple partitions, housed in a ProximitySplit object
+        final ProximitySplit split = setupSplit(data);
         // build a new node
-        final TreeNode<Split> node = new BaseTreeNode<>(split);
+        final TreeNode<ProximitySplit> node = new BaseTreeNode<>(split);
         // set tree relationship
         node.setParent(parent);
         // check the stopping condition hasn't been hit
@@ -219,7 +218,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return node;
     }
 
-    private Split setupSplit(Instances data) {
+    private ProximitySplit setupSplit(Instances data) {
         ProximitySplit split = new ProximitySplit(getRandom());
         split.setData(data);
         split.setR(r);
@@ -235,14 +234,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         testTimer.resetAndStart();
         long longestPredictTime = 0;
         // start at the tree node
-        TreeNode<Split> node = tree.getRoot();
+        TreeNode<ProximitySplit> node = tree.getRoot();
         if(!node.hasChildren()) {
             //             root node has not been built, just return random guess
             return ArrayUtilities.uniformDistribution(getNumClasses());
         }
         int index = -1;
         int i = 0;
-        Split split = node.getElement();
+        ProximitySplit split = node.getElement();
         // traverse the tree downwards from root
         while(
             !node.isLeaf()
@@ -254,7 +253,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             split = node.getElement();
             // work out which branch to go to next
             index = split.getPartitionIndexFor(instance);
-            final List<TreeNode<Split>> children = node.getChildren();
+            final List<TreeNode<ProximitySplit>> children = node.getChildren();
             // make this the next node to visit
             node = children.get(index);
             longestPredictTime = System.nanoTime() - timestamp;

@@ -64,6 +64,18 @@ public class ArrayUtilities {
         return normaliseInPlace(copy);
     }
 
+    public static double[] normalise(int[] array) {
+        double sum = sum(array);
+        double[] result = new double[array.length];
+        if(sum == 0) {
+            throw new IllegalArgumentException("sum of zero");
+        }
+        for(int i = 0; i < array.length; i++) {
+            result[i] = array[i] / sum;
+        }
+        return result;
+    }
+
     public static <A> List<A> drain(Iterable<A> iterable) {
         return drain(iterable.iterator());
     }
