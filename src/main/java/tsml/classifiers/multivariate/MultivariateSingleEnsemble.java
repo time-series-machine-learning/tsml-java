@@ -1,5 +1,7 @@
 package tsml.classifiers.multivariate;
 
+import development.CIF;
+import development.TDE;
 import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
@@ -61,6 +63,8 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
             case "RISE": return new RISE();
             case "STC": return new ShapeletTransformClassifier();
             case "TSF": return new TSF();
+            case "TDE": return new TDE();
+            case "CIF": return new CIF();
             default: return new TSF();
 
         }
