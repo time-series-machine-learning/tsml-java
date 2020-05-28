@@ -19,10 +19,7 @@ public class DoubleToIntDistributionAdapter implements Distribution<Integer> {
 
     private Distribution<Double> distribution;
     private Converter converter;
-    private static final Converter DEFAULT_CONVERTER = value -> {
-        long rounded = Math.round(value);
-        return (int) rounded;
-    };
+    private static final Converter DEFAULT_CONVERTER = value -> (int) value;
 
     public static Converter getDefaultConverter() {
         return DEFAULT_CONVERTER;

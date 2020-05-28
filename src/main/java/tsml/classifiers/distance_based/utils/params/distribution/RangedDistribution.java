@@ -62,6 +62,7 @@ public abstract class RangedDistribution extends BaseRandom implements Distribut
 
     public void setMinAndMax(final double min, final double max) {
         Assert.assertTrue(min <= max);
+        Assert.assertTrue(min >= 0);
         this.min = min;
         this.max = max;
     }
