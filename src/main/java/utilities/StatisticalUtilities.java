@@ -45,7 +45,9 @@ public class StatisticalUtilities {
 
 
     public static double pStdDev(Instances input){
-        // todo make sure class val at end of attributes
+        if(input.classIndex() != input.numAttributes() - 1) {
+            throw new IllegalArgumentException("class value must be at the end");
+        }
         double sumx = 0;
         double sumx2 = 0;
         double[] ins2array;
