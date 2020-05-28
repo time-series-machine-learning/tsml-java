@@ -33,37 +33,19 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
         setWarpingWindow(warpingWindow);
     }
 
-    public static void main(String[] args) throws Exception {
-        final Instances[] data = DatasetLoading.sampleGunPoint(0);
-        final Instances train = data[0];
+    @Override
+    public void setWarpingWindowPercentage(final double percentage) {
+        dtw.setWarpingWindowPercentage(percentage);
+    }
 
-//        double[] array = train.get(0).toDoubleArray();
-//        long ahcSum = 0;
-//        int repeats = 100;
-//        for(int i = 0; i < repeats; i++) {
-//            long time = System.nanoTime();
-//            int hashCode = Arrays.hashCode(array);
-//            ahcSum += System.nanoTime() - time;
-//        }
-//        System.out.println((double) ahcSum / repeats);
-//        long derSum = 0;
-//        for(int i = 0; i < repeats; i++) {
-//            long time = System.nanoTime();
-//            double[] der = Derivative.getDerivative(array, true);
-//            derSum += System.nanoTime() - time;
-//        }
-//        System.out.println((double) derSum / repeats);
+    @Override
+    public double getWarpingWindowPercentage() {
+        return dtw.getWarpingWindowPercentage();
+    }
 
-//        DDTWDistance ddtwDistance = new DDTWDistance();
-//        ddtwDistance.setInstances(train);
-//        double distanceA = ddtwDistance.distance(train.get(0), train.get(1));
-//        double distanceB = ddtwDistance.distance(train.get(0), train.get(1));// it should cache the transform here
-//        System.out.println();
-
-//        ParamSpace space = DistanceMeasureConfigs.buildDdtwSpaceV1(train);
-//        System.out.println(space.toString());
-//        ParamSet paramSet = space.get(5);
-//        System.out.println(paramSet);
+    @Override
+    public boolean isWarpingWindowInPercentage() {
+        return dtw.isWarpingWindowInPercentage();
     }
 
     @Override

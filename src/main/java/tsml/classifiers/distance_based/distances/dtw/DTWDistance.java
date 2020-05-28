@@ -79,6 +79,11 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
     }
 
     @Override
+    public boolean isWarpingWindowInPercentage() {
+        return warpingWindowInPercentage;
+    }
+
+    @Override
     public double distance(Instance first, Instance second, final double limit,
         final PerformanceStats stats) {
         checkData(first, second);
@@ -101,20 +106,21 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
          generalised for variable window size
          * */
-        int windowSize = warpingWindow + 1; // + 1 to include the current cell
+        int windowSize;
         if(warpingWindowInPercentage) {
-            // warping window as double typed percentage
             if(warpingWindowPercentage < 0) {
-                windowSize = aLength + 1;
+                windowSize = aLength;
             } else {
-                windowSize = 
+                windowSize = (int) (warpingWindowPercentage * aLength);
             }
         } else {
-            // warping window as int
             if(warpingWindow < 0) {
-                windowSize = aLength + 1;
+                windowSize = aLength;
+            } else {
+                windowSize = warpingWindow;
             }
         }
+        windowSize++; // to include current cell
 
         //Extra memory than required, could limit to windowsize,
         //        but avoids having to recreate during CV
