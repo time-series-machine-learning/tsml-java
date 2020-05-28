@@ -38,7 +38,7 @@ public class Splitter{
 		int branch = 0;
 		for (Map.Entry<Integer, ListDataset> entry : data_per_class.entrySet()) {
 			int r = AppContext.getRand().nextInt(entry.getValue().size());
-			
+			System.out.println("ex:" + r);
 			splits[branch] = new ListDataset(sample.size(), sample.length());
 			//use key just in case iteration order is not consistent
 			temp_exemplars[branch] = entry.getValue().get_series(r);
@@ -53,6 +53,7 @@ public class Splitter{
 			if (closest_branch == -1) {
 				assert false;
 			}
+			System.out.println("cb:" + j + "," + closest_branch);
 			splits[closest_branch].add(sample.get_class(j), sample.get_series(j));
 		}
 
@@ -86,9 +87,8 @@ public class Splitter{
 
 			if (AppContext.random_dm_per_node) {
 				int r = AppContext.getRand().nextInt(AppContext.enabled_distance_measures.length);
+				System.out.println("dm:" + r);
 				temp_distance_measure = new DistanceMeasure(AppContext.enabled_distance_measures[r]);
-
-				System.out.println(AppContext.rand.nextInt(100));
 			}else {
 				//NOTE: num_candidates_per_split has no effect if random_dm_per_node == false (if DM is selected once per tree)
 				//after experiments we found that DM selection per node is better since it diversifies the ensemble
