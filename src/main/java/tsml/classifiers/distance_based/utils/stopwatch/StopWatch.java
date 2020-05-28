@@ -42,8 +42,10 @@ public class StopWatch extends Stated {
             long diff = nextTimeStamp - this.timeStamp;
             time += diff;
             this.timeStamp = nextTimeStamp;
+            return time;
+        } else {
+            throw new IllegalStateException("not started, cannot lap");
         }
-        return time;
     }
 
     /**

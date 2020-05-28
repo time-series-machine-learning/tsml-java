@@ -57,15 +57,15 @@ public class StopWatchTest {
     public void testLap() throws InterruptedException {
         long sleepTime = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
         long tolerance = TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
-        System.out.println("t: " + tolerance);
-        System.out.println("s: " + sleepTime);
+//        System.out.println("t: " + tolerance);
+//        System.out.println("s: " + sleepTime);
         long offset = 0;
         stopWatch.start();
         for(int i = 1; i <= 5; i++) {
             long sleep = TimeUnit.MILLISECONDS.convert(sleepTime, TimeUnit.NANOSECONDS);
             Thread.sleep(sleep);
             long lapTime = stopWatch.lap();
-            System.out.println("l: " + lapTime);
+//            System.out.println("l: " + lapTime);
             Assert.assertTrue(lapTime > sleepTime * i );
             Assert.assertTrue(lapTime < (sleepTime + tolerance) * i);
         }
@@ -127,4 +127,9 @@ public class StopWatchTest {
         Assert.assertEquals(stopWatch.getTime(), prevTime * 2);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testLapWhenStopped() {
+        stopWatch.stop();
+        stopWatch.lap();
+    }
 }
