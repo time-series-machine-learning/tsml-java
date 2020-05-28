@@ -6,6 +6,6 @@ public interface TimedTest extends TestTimeable {
     StopWatch getTestTimer();
 
     default long getTestTime() {
-        return getTestTimer().getTimeNanos();
+        return getTestTimer().getTime();
     }
 }

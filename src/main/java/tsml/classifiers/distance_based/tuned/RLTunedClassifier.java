@@ -266,17 +266,17 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // enable resource monitors
-        memoryWatcher.enable();
-        trainEstimateTimer.checkDisabled();
-        trainTimer.enable();
+        memoryWatcher.start();
+        trainEstimateTimer.checkStopped();
+        trainTimer.start();
         final boolean rebuild = isRebuild();
         lastCheckpointTimeStamp = System.nanoTime();
         // if we're rebuilding
         if(rebuild) {
             // reset resource monitors
-            trainTimer.resetAndEnable();
-            memoryWatcher.resetAndEnable();
-            trainEstimateTimer.resetAndDisable();
+            trainTimer.resetAndStart();
+            memoryWatcher.resetAndStart();
+            trainEstimateTimer.resetAndStop();
             // setup agent, etc, based on train data
             trainSetupFunction.accept(trainData);
             // reset switches
@@ -294,9 +294,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             nextBuildTick();
         }
         // sanity check resource monitors (as the benchmark iterator *should* have been using them)
-        trainEstimateTimer.checkDisabled();
-        trainTimer.checkEnabled();
-        memoryWatcher.checkEnabled();
+        trainEstimateTimer.checkStopped();
+        trainTimer.checkStarted();
+        memoryWatcher.checkStarted();
         // check whether we've skipped any work due to parallelisation / locking
         if(hasSkippedEvaluation) {
             // checkpointing should be enabled if we've skipped
@@ -350,10 +350,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                         throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
                     }
                     // cleanup
-                    trainEstimateTimer.checkDisabled();
-                    trainTimer.disable();
-                    trainEstimateTimer.checkDisabled();
-                    memoryWatcher.disable();
+                    trainEstimateTimer.checkStopped();
+                    trainTimer.stop();
+                    memoryWatcher.stop();
                     ResultUtils.setInfo(trainResults, this, trainData);
                     // try to create the overall done file
                     boolean created = createDoneFile("overall");
@@ -374,9 +373,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         // clear train data
         this.trainData = null;
         // disable resource monitors for sanity
-        memoryWatcher.disableAnyway();
-        trainEstimateTimer.disableAnyway();
-        trainTimer.disableAnyway();
+        memoryWatcher.stop(false);
+        trainEstimateTimer.stop(false);
+        trainTimer.stop(false);
     }
     
     @Override
@@ -391,15 +390,17 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     protected void suspendResourceMonitors() {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
+        // todo fix
+//        trainTimer.suspend();
+//        trainEstimateTimer.suspend();
+//        memoryWatcher.suspend();
     }
 
     protected void unsuspendResourceMonitors() {
-        trainTimer.unsuspend();
-        trainEstimateTimer.unsuspend();
-        memoryWatcher.unsuspend();
+        // todo fix
+//        trainTimer.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        memoryWatcher.unsuspend();
     }
 
     protected void nextBuildTick() throws Exception {
@@ -468,22 +469,22 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // then we don't need to record train time as classifier does so internally
             } else {
                 // otherwise we'll enable our train timer to record timings
-                classifierTrainTimer.enable();
+                classifierTrainTimer.start();
             }
             if(classifier instanceof MemoryWatchable) {
                 // then we don't need to record memory usage as classifier does so internally
             } else {
                 // otherwise we'll enable our memory watcher to record memory usage
-                classifierMemoryWatcher.enable();
+                classifierMemoryWatcher.start();
             }
             // build the classifier
             classifier.buildClassifier(trainData);
             // enable tracking of resources for tuning process
-            classifierTrainTimer.disableAnyway();
-            classifierMemoryWatcher.disableAnyway();
-            this.trainEstimateTimer.checkDisabled();
-            this.memoryWatcher.enableAnyway();
-            this.trainTimer.enableAnyway();
+            classifierTrainTimer.stop(false);
+            classifierMemoryWatcher.stop(false);
+            this.trainEstimateTimer.checkStopped();
+            this.memoryWatcher.start(false);;
+            this.trainTimer.start(false);;
             // set train info
             ResultUtils.setInfo(classifier.getTrainResults(), classifier, trainData);
             // add the resource usage onto our monitors
@@ -494,7 +495,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
                 // set train results info
-                classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTimeNanos());
+                classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTime());
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
@@ -577,9 +578,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     protected EnhancedAbstractClassifier loadClassifier(EnhancedAbstractClassifier classifier) throws Exception {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
+//        trainTimer.suspend();
+//        trainEstimateTimer.suspend();
+//        memoryWatcher.suspend(); todo fix
         if(isCheckpointLoadingEnabled()) {
             final String classifierLoadPath = buildClassifierLoadPath(classifier);
             if(classifier instanceof Checkpointable) {
@@ -606,9 +607,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 memoryWatcher.add(results);
             }
         }
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
+        // todo fix
+//        memoryWatcher.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        trainTimer.unsuspend();
         return classifier;
     }
 

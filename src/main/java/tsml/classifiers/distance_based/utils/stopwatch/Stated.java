@@ -1,197 +1,105 @@
 package tsml.classifiers.distance_based.utils.stopwatch;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.io.Serializable;
 
 /**
- * Purpose: managed boolean state which can be suspended if required (i.e. ignored). Has listeners to pass on state
- * changes and corresponding checks for state changes, etc.
- *
+ * Purpose: // todo - docs - type the purpose of the code here
+ * <p>
  * Contributors: goastler
  */
-public class Stated {
+public class Stated implements Serializable {
 
-    public Stated() {}
+    private transient boolean started = false;
 
-    private transient Stated.State state = Stated.State.DISABLED;
-    private transient Stated.State suspendedState = null;
-    private transient Set<Stated> listeners = new HashSet<>();
-
-    public void addListener(Stated stated) {
-        listeners.add(stated);
+    public boolean isStarted() {
+        return started;
     }
 
-    public void removeListener(Stated stated) {
-        listeners.remove(stated);
+    public boolean isStopped() {
+        return !started;
     }
 
-    public Stated(final State state) {
-        setStateAnyway(state);
-    }
-
-    public enum State {
-        ENABLED,
-        DISABLED,
-    }
-
-    public Stated suspend() {
-        if(isUnsuspended()) {
-            suspendedState = state;
-            disableAnywayUnchecked();
-            for(Stated listener : listeners) {
-                listener.suspend();
-            }
-        }
-        return this;
-    }
-
-    public boolean isSuspended() {
-        return suspendedState != null;
-    }
-
-    public boolean isUnsuspended() {
-        return !isSuspended();
-    }
-
-    public Stated unsuspend() {
-        if(isSuspended()) {
-            state = suspendedState;
-            suspendedState = null;
-            setStateAnyway(state);
-            for(Stated listener : listeners) {
-                listener.unsuspend();
-            }
-        }
-        return this;
-    }
-
-    public Stated checkDisabled() {
-        if(isSuspended()) {
-            throw new IllegalStateException("already suspended");
-        }
-        if(!isDisabled()) {
-            throw new IllegalStateException("not disabled");
-        }
-        return this;
-    }
-
-    public Stated checkEnabled() {
-        if(isSuspended()) {
-            throw new IllegalStateException("already suspended");
-        }
-        if(!isEnabled()) {
-            throw new IllegalStateException("not enabled");
-        }
-        return this;
-    }
-
-    public Stated checkNotDisabled() {
-        if(isSuspended()) {
-            throw new IllegalStateException("already suspended");
-        }
-        if(isDisabled()) {
-            throw new IllegalStateException("already disabled");
-        }
-        return this;
-    }
-
-    public Stated checkNotEnabled() {
-        if(isSuspended()) {
-            throw new IllegalStateException("already suspended");
-        }
-        if(isEnabled()) {
-            throw new IllegalStateException("already enabled");
-        }
-        return this;
-    }
-
-
-    public Stated.State getState() {
-        return state;
-    }
-
-    public Stated.State getSuspendedState() {
-        return suspendedState;
-    }
-
-    public boolean isDisabled() {
-        return getState().equals(Stated.State.DISABLED);
-    }
-
-    public boolean isEnabled() {
-        return getState().equals(Stated.State.ENABLED);
-    }
-
-    public boolean setState(State state) {
-        if(state.equals(Stated.State.DISABLED)) {
-            return disable();
-        } else if(state.equals(Stated.State.ENABLED)) {
-            return enable();
-        } else {
-            throw new UnsupportedOperationException("invalid state");
+    public void start(boolean check) {
+        if(!started) {
+            beforeStart();
+            started = true;
+            afterStart();
+        } else if(check) {
+            throw new IllegalStateException("already started");
         }
     }
 
-    public boolean setStateAnyway(State state) {
-        if(state.equals(Stated.State.DISABLED)) {
-            return disableAnyway();
-        } else if(state.equals(Stated.State.ENABLED)) {
-            return enableAnyway();
-        } else {
-            throw new UnsupportedOperationException("invalid state");
+    protected void beforeStart() {
+
+    }
+
+    protected void afterStart() {
+
+    }
+
+    public void start() {
+        start(true);
+    }
+
+    public void stop(boolean check) {
+        if(started) {
+            beforeStop();
+            started = false;
+            afterStop();
+        } else if(check) {
+            throw new IllegalStateException("already stopped");
         }
     }
 
-    public boolean enable() {
-        checkNotEnabled();
-        return enableAnyway();
+    protected void beforeStop() {
+
     }
 
-    public boolean enableAnyway() {
-        if(isSuspended()) {
-            throw new IllegalStateException("suspended");
+    protected void afterStop() {
+
+    }
+
+    public void stop() {
+        stop(true);
+    }
+
+    public void reset() {
+        final boolean wasStarted = started;
+        stop(false);
+        onReset();
+        if(wasStarted) {
+            start();
         }
-        return enableAnywayUnchecked();
     }
 
-    private boolean enableAnywayUnchecked() {
-        if(!isEnabled()) {
-            state = Stated.State.ENABLED;
-            for(Stated listener : listeners) {
-                listener.enableAnyway();
-            }
-            return true;
+    public void resetAndStart() {
+        reset();
+        start(false);
+    }
+
+    public void resetAndStop() {
+        reset();
+        stop(false);
+    }
+
+    protected void onReset() {
+
+    }
+
+    public void checkStopped() {
+        if(started) {
+            throw new IllegalStateException("not stopped");
         }
-        return false;
     }
 
-    public boolean disable() {
-        checkNotDisabled();
-        return disableAnyway();
-    }
-
-    public boolean disableAnyway() {
-        if(isSuspended()) {
-            throw new IllegalStateException("suspended");
+    public void checkStarted() {
+        if(!started) {
+            throw new IllegalStateException("not started");
         }
-        return disableAnywayUnchecked();
     }
 
-    private boolean disableAnywayUnchecked() {
-        if(!isDisabled()) {
-            state = Stated.State.DISABLED;
-            for(Stated listener : listeners) {
-                listener.disableAnyway();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    @Override public String toString() {
-        return "Stated{" +
-            "state=" + state +
-            ", suspendedState=" + suspendedState +
-            '}';
+    @Override
+    public String toString() {
+        return "started=" + started;
     }
 }

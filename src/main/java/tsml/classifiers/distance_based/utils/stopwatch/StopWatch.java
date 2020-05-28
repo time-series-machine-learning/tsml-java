@@ -1,45 +1,35 @@
 package tsml.classifiers.distance_based.utils.stopwatch;
 
-import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * Purpose: track time, ability to pause and add on time from another stop watch
  *
  * Contributors: goastler
  */
-public class StopWatch extends Stated implements Serializable {
+public class StopWatch extends Stated {
     private transient long timeStamp;
     private long time;
-    private transient Set<StopWatch> listeners = new HashSet<>();
-
-    public static StopWatch newStopWatchEnabled() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.enable();
-        return stopWatch;
-    }
 
     public StopWatch() {
-        super();
+        reset();
     }
 
-    public StopWatch(State state) {
-        super(state);
+    public long getStartTime() {
+        if(!isStarted()) {
+            throw new IllegalStateException("not started");
+        }
+        return timeStamp;
     }
 
-    /**
-     * listen to another stopwatch, updating the other stopwatch's state when this stopwatch's state changes.
-     * @param other
-     */
-    public void addListener(StopWatch other) {
-        super.addListener(other);
-        listeners.add(other);
+    @Override
+    protected void beforeStart() {
+        super.beforeStart();
+        timeStamp = System.nanoTime();
     }
 
-    public void removeListener(StopWatch other) {
-        super.removeListener(other);
-        listeners.remove(other);
+    @Override
+    protected void beforeStop() {
+        super.beforeStop();
+        lap();
     }
 
     /**
@@ -47,51 +37,21 @@ public class StopWatch extends Stated implements Serializable {
      * @return
      */
     public long lap() {
-        if(isEnabled()) {
-            uncheckedLap();
+        if(isStarted()) {
+            long nextTimeStamp = System.nanoTime();
+            long diff = nextTimeStamp - this.timeStamp;
+            time += diff;
+            this.timeStamp = nextTimeStamp;
         }
         return time;
     }
 
     /**
-     * this is dangerous, don't use unless you know what you're doing. It updates the time without any checks on the
-     * state of the stopwatch.
-     * @return
+     *
+     * @return time in nanos
      */
-    private long uncheckedLap() {
-        long nextTimeStamp = System.nanoTime();
-        long diff = nextTimeStamp - this.timeStamp;
-        time += diff;
-        this.timeStamp = nextTimeStamp;
+    public long getTime() {
         return time;
-    }
-
-    public long getTimeNanos() {
-        return time;
-    }
-
-    /**
-     * enable irrelevant of current state
-     * @return
-     */
-    @Override public boolean enableAnyway() {
-        boolean change = super.enableAnyway();
-        if(change) {
-            resetClock();
-        }
-        return change;
-    }
-
-    /**
-     * disable irrelevant of current state
-     * @return
-     */
-    @Override public boolean disableAnyway() {
-        boolean change = super.disableAnyway();
-        if(change) {
-            uncheckedLap();
-        }
-        return change;
     }
 
     /**
@@ -111,18 +71,7 @@ public class StopWatch extends Stated implements Serializable {
     /**
      * reset entirely
      */
-    public void reset() {
-        resetAndDisable();
-    }
-
-    public void resetAndEnable() {
-        disableAnyway();
-        resetTime();
-        enable();
-    }
-
-    public void resetAndDisable() {
-        disableAnyway();
+    public void onReset() {
         resetTime();
         resetClock();
     }
@@ -133,9 +82,6 @@ public class StopWatch extends Stated implements Serializable {
      */
     public void add(long nanos) {
         time += nanos;
-        for(StopWatch other : listeners) {
-            other.add(nanos);
-        }
     }
 
     public void add(StopWatch stopWatch) {

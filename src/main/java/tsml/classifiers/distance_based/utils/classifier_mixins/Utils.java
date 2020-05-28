@@ -1,8 +1,6 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
-import com.google.common.testing.GcFinalization;
 import evaluation.storage.ClassifierResults;
-import java.util.Date;
 import java.util.logging.Level;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
@@ -25,8 +23,8 @@ public class Utils {
     public static void trainTestPrint(Classifier classifier, Instances[] trainAndTestData) throws Exception {
         MemoryWatcher overallMemoryWatcher = new MemoryWatcher();
         StopWatch overallTimer = new StopWatch();
-        overallMemoryWatcher.resetAndEnable();
-        overallTimer.resetAndEnable();
+        overallMemoryWatcher.resetAndStart();
+        overallTimer.resetAndStart();
         MemoryWatcher memoryWatcher = new MemoryWatcher();
         StopWatch timer = new StopWatch();
         if(classifier instanceof Loggable) {
@@ -34,13 +32,13 @@ public class Utils {
         }
         final Instances trainData = trainAndTestData[0];
         final Instances testData = trainAndTestData[1];
-        timer.resetAndEnable();
-        memoryWatcher.resetAndEnable();
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
         classifier.buildClassifier(trainData);
-        timer.disable();
-        memoryWatcher.disable();
+        timer.stop();
+        memoryWatcher.stop();
         System.out.println("end build");
-        System.out.println("train time: " + timer.getTimeNanos());
+        System.out.println("train time: " + timer.getTime());
         System.out.println("train mem: " + memoryWatcher.toString());
 //        GcFinalization.awaitFullGc();
         if(classifier instanceof EnhancedAbstractClassifier) {
@@ -51,22 +49,22 @@ public class Utils {
                 System.out.println(trainResults.writeSummaryResultsToString());
             }
         }
-        timer.resetAndEnable();
-        memoryWatcher.resetAndEnable();
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
         ClassifierResults testResults = new ClassifierResults();
         for(Instance instance : testData) {
             addPrediction(classifier, instance, testResults);
         }
-        memoryWatcher.disable();
-        timer.disable();
+        memoryWatcher.stop();
+        timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
-        System.out.println("test time: " + timer.getTimeNanos());
+        System.out.println("test time: " + timer.getTime());
         System.out.println("test mem: " + memoryWatcher.toString());
         System.out.println("test results:");
         System.out.println(testResults.writeSummaryResultsToString());
-        overallMemoryWatcher.disable();
-        overallTimer.disable();
-        System.out.println("overall time: " + overallTimer.getTimeNanos());
+        overallMemoryWatcher.stop();
+        overallTimer.stop();
+        System.out.println("overall time: " + overallTimer.getTime());
         System.out.println("overall mem: " + overallMemoryWatcher.toString());
     }
 

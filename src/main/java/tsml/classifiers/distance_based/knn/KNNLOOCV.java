@@ -429,22 +429,22 @@ public class KNNLOOCV
     public boolean loadFromCheckpoint() {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
+//        trainTimer.suspend();
+//        trainEstimateTimer.suspend() todo fix;
+//        memoryWatcher.suspend();
         boolean result = super.loadFromCheckpoint();
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
+//        memoryWatcher.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        trainTimer.unsuspend();
         return result;
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
-        memoryWatcher.enable();
-        trainEstimateTimer.checkDisabled();
-        trainTimer.enable();
+        memoryWatcher.start();
+        trainEstimateTimer.checkStopped();
+        trainTimer.start();
         final DistanceFunction distanceFunction = getDistanceFunction();
         final Logger logger = getLogger();
         final boolean rebuild = isRebuild();
@@ -452,18 +452,18 @@ public class KNNLOOCV
         boolean skip = isSkipFinalCheckpoint();
         setSkipFinalCheckpoint(true);
         // must disable train timer and memory watcher as super enables them at start of build
-        trainTimer.disable();
-        memoryWatcher.disable();
+        trainTimer.stop();
+        memoryWatcher.stop();
         super.buildClassifier(trainData);
         // re-enable skipping the final checkpoint
         setSkipFinalCheckpoint(skip);
-        memoryWatcher.enableAnyway();
-        trainEstimateTimer.checkDisabled();
-        trainTimer.enableAnyway();
+        memoryWatcher.start(false);
+        trainEstimateTimer.checkStopped();
+        trainTimer.start(false);
         if(rebuild) {
-            trainTimer.disableAnyway();
-            memoryWatcher.enableAnyway();
-            trainEstimateTimer.resetAndEnable();
+            trainTimer.stop(false);
+            memoryWatcher.start(false);
+            trainEstimateTimer.resetAndStart();
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointSavingEnabled()) { // was needed for caching
                     HashFilter.hashInstances(trainData);
@@ -500,13 +500,13 @@ public class KNNLOOCV
                 comparisonCount = 0;
             }
         }
-        trainTimer.disableAnyway();
-        trainEstimateTimer.enableAnyway();
+        trainTimer.stop(false);
+        trainEstimateTimer.start(false);
         while(hasNextBuildTick()) {
             nextBuildTick();
             saveToCheckpoint();
         }
-        trainTimer.checkDisabled();
+        trainTimer.checkStopped();
         if(estimateOwnPerformance && regenerateTrainEstimate) {
             if(
 //                !hasTrainTimeLimit()
@@ -525,13 +525,13 @@ public class KNNLOOCV
                 trainResults.addPrediction(trueClassValue, distribution, prediction, time, null);
             }
         }
-        trainEstimateTimer.disable();
-        memoryWatcher.disable();
+        trainEstimateTimer.stop();
+        memoryWatcher.stop();
         if(regenerateTrainEstimate) {
             ResultUtils.setInfo(trainResults, this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-            trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
-            trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
+            trainResults.setBuildTime(trainEstimateTimer.getTime());
+            trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTime() + trainTimer.getTime());
         }
         regenerateTrainEstimate = false;
 //        setBuilt(true);
@@ -539,7 +539,7 @@ public class KNNLOOCV
     }
 
     public long getTrainTimeNanos() {
-        return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
+        return trainEstimateTimer.getTime() + getTrainTimer().getTime();
     }
 
     public long getTrainTimeLimit() {

@@ -4,6 +4,6 @@ public interface TimedTrainEstimate extends TrainEstimateTimeable {
     StopWatch getTrainEstimateTimer();
 
     default long getTrainEstimateTime() {
-        return getTrainEstimateTimer().getTimeNanos();
+        return getTrainEstimateTimer().getTime();
     }
 }

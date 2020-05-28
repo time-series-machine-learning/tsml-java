@@ -6,7 +6,6 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.stopwatch.TimedTrain;
-import tsml.classifiers.distance_based.utils.stopwatch.TimedTrainEstimate;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
@@ -137,23 +136,23 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     }
 
     public boolean saveToCheckpoint() throws Exception {
-        trainTimer.suspend();
-        memoryWatcher.suspend();
+//        trainTimer.suspend();
+//        memoryWatcher.suspend();
         boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
 //            isBuilt()
 //            &&
             !skipFinalCheckpoint);
-        memoryWatcher.unsuspend();
-        trainTimer.unsuspend();
+//        memoryWatcher.unsuspend();
+//        trainTimer.unsuspend(); todo fix
         return result;
     }
 
     public boolean loadFromCheckpoint() {
-        trainTimer.suspend(); // todo interface for this
-        memoryWatcher.suspend();
+//        trainTimer.suspend(); // todo interface for this
+//        memoryWatcher.suspend();
         boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
-        memoryWatcher.unsuspend();
-        trainTimer.unsuspend();
+//        memoryWatcher.unsuspend(); todo fix
+//        trainTimer.unsuspend();
         return result;
     }
 
@@ -209,13 +208,13 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         // load from a previous checkpoint
         boolean loadedFromCheckpoint = loadFromCheckpoint();
         // enable resource monitors
-        memoryWatcher.enable(); // todo can we share emitters in mem watcher?
-        trainTimer.enable();
+        memoryWatcher.start(); // todo can we share emitters in mem watcher?
+        trainTimer.start();
         final boolean rebuild = isRebuild();
         if(rebuild) {
             // if we're rebuilding then reset resource monitors
-            memoryWatcher.resetAndEnable();
-            trainTimer.resetAndEnable();
+            memoryWatcher.resetAndStart();
+            trainTimer.resetAndStart();
         }
         // build parent
         super.buildClassifier(trainData);
@@ -226,8 +225,8 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         // we're fully built now
 //        setBuilt(true);
         // disable resource monitors
-        trainTimer.disable();
-        memoryWatcher.disable();
+        trainTimer.stop();
+        memoryWatcher.stop();
         // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
             saveToCheckpoint();
@@ -277,26 +276,27 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
 
         // add an instance, finding the distance between the target instance and the given instance
         public double add(Instance neighbour) {
-            StopWatch timer = StopWatch.newStopWatchEnabled();
+            StopWatch timer = new StopWatch();
+            timer.start();
             final double distance = distanceFunction.distance(this.instance, neighbour, limit);
-            timer.disable();
-            add(neighbour, distance, timer.getTimeNanos());
+            timer.stop();
+            add(neighbour, distance, timer.getTime());
             return distance;
         }
 
         // add an instance given a precomputed distance and corresponding time it took to find that distance
         public void add(Instance neighbour, double distance, long distanceMeasurementTime) {
-            comparisonTimer.enable();
+            comparisonTimer.start();
             prunedMap.put(distance, neighbour);
             if(earlyAbandon) {
                 limit = prunedMap.lastKey();
             }
             comparisonTimer.add(distanceMeasurementTime);
-            comparisonTimer.disable();
+            comparisonTimer.stop();
         }
 
         public double[] predict() {
-            predictTimer.resetAndEnable();
+            predictTimer.resetAndStart();
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
             final Random random = getRandom();
             final Logger logger = getLogger();
@@ -312,13 +312,13 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                 }
                 ArrayUtilities.normaliseInPlace(distribution);
             }
-            predictTimer.disable();
+            predictTimer.stop();
             return distribution;
         }
 
         public long getTimeInNanos() {
             // the time taken to find the nearest neighbours and make a prediction for the target instance
-            return predictTimer.getTimeNanos() + comparisonTimer.getTimeNanos();
+            return predictTimer.getTime() + comparisonTimer.getTime();
         }
 
         public double getLimit() {

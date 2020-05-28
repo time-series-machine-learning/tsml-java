@@ -6,6 +6,6 @@ public interface TimedTrain extends TrainTimeable {
     StopWatch getTrainTimer();
 
     default long getTrainTime() {
-        return getTrainTimer().getTimeNanos();
+        return getTrainTimer().getTime();
     }
 }
