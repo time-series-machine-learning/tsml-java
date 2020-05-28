@@ -48,7 +48,7 @@ public class ProximitySplit {
         List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
-            final Instance exemplar = Utilities.randPickOne(instanceClass, getRandom());
+            final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
             exemplars.add(Lists.newArrayList(exemplar));
         }
         setExemplars(exemplars);
@@ -82,7 +82,6 @@ public class ProximitySplit {
         PrunedMultimap<Double, Container> map = PrunedMultimap.descSoftSingle();
         for(int i = 0; i < r; i++) {
             pickDistanceFunction();
-            System.out.println(random.nextInt(100));
             pickExemplars(data);
             List<Instances> partitions = Lists.newArrayList(exemplars.size());
             if(distanceFunction instanceof DistanceMeasureable) {
@@ -92,8 +91,10 @@ public class ProximitySplit {
                 partitions.add(new Instances(data, 0));
             }
             distanceFunction.setInstances(data);
-            for(Instance instance : data) {
+            for(int j = 0; j < data.size(); j++) {
+                final Instance instance = data.get(j);
                 final int index = getPartitionIndexFor(instance);
+                System.out.println(j + "," + index);
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }

@@ -77,12 +77,14 @@ public class RandomUtils {
         } else if(size == 1) {
             return list;
         } else if(numChoices == 1) {
-            return new ArrayList<>(Collections.singletonList(list.get(random.nextInt(size))));
+            int index = random.nextInt(size);
+            return new ArrayList<>(Collections.singletonList(list.get(index)));
         }
         final List<A> choices = new ArrayList<>();
         final List<Integer> indices = CollectionUtils.sequence(list.size());
         for(int i = 0; i < numChoices; i++) {
-            final int index = indices.remove(random.nextInt(indices.size()));
+            int indexOfIndex = random.nextInt(indices.size());
+            final int index = indices.remove(indexOfIndex);
             final A value = list.get(index);
             choices.add(value);
         }
