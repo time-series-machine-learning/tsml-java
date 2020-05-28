@@ -272,7 +272,7 @@ public class Utilities {
     }
 
     public static Map<Double, Instances> instancesByClass(Instances instances) {
-        Map<Double, Instances> map = new HashMap<>();
+        Map<Double, Instances> map = new TreeMap<>();
         for(Instance instance : instances) {
             map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
         }
