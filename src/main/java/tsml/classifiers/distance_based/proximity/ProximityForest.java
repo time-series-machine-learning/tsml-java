@@ -34,6 +34,7 @@ import weka.core.Instances;
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest,
     TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory {
 
+    // todo config funcs + init all vars in def config
     private final StopWatch trainEstimaterTimer = new StopWatch();
     private final StopWatch trainTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
@@ -42,7 +43,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private int numTreeLimit = 100;
     private long trainTimeLimitNanos = 0;
     private long testTimeLimitNanos = 0;
-    private long longestTreeBuildTimeNanos = 0;
+    private final StopWatch trainStageTimer = new StopWatch();
+    private long longestTrainStageTimeNanos;
+    private final StopWatch testStageTimer = new StopWatch();
+    private long longestTestStageTimeNanos;
     private ConstituentConfig constituentConfig = ProximityTree::setConfigR1;
     private boolean useDistributionInVoting = false;
     private Instances oobTrain;
@@ -96,19 +100,20 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(final Instances trainData) throws Exception {
-        memoryWatcher.enable();
-        trainTimer.enable();
-        trainEstimaterTimer.checkDisabled();
-        LogUtils.logTimeContract(trainTimer.getTimeNanos(), trainTimeLimitNanos, getLogger(), "train");
+        memoryWatcher.start();
+        trainTimer.start();
+        trainEstimaterTimer.checkStopped();
+        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(isRebuild()) {
-            trainEstimaterTimer.resetAndDisable();
-            memoryWatcher.resetAndEnable();
-            trainTimer.resetAndEnable();
+            trainEstimaterTimer.resetAndStop();
+            memoryWatcher.resetAndStart();
+            trainTimer.resetAndStart();
             super.buildClassifier(trainData);
             trees = new ArrayList<>();
             trainResults = new ClassifierResults();
             treeTrainResults = new ArrayList<>();
-            longestTreeBuildTimeNanos = 0;
+            trainStageTimer.resetAndStop();
+            longestTrainStageTimeNanos = 0;
             if(getEstimateOwnPerformance()) {
                 if(oob) {
                     trainResults.setErrorEstimateMethod("oob");
@@ -139,25 +144,25 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
         }
         CachedFilter.hashInstances(trainData);
-        trainTimer.lap();
-        LogUtils.logTimeContract(trainTimer.getTimeNanos(), trainTimeLimitNanos, getLogger(), "train");
+        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLogger(), "train");
         // todo contract train of trees?
         while(
             insideNumTreeLimit()
                 &&
-                insideTrainTimeLimit(trainTimer.getTimeNanos() + longestTreeBuildTimeNanos)
+                insideTrainTimeLimit(trainTimer.lap() + longestTrainStageTimeNanos)
         ) {
+            trainStageTimer.resetAndStart();
             int treeIndex = trees.size();
             getLogger().info(() -> "building tree " + treeIndex);
-            LogUtils.logTimeContract(trainTimer.getTimeNanos(), trainTimeLimitNanos, getLogger(), "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
             ProximityTree tree = new ProximityTree();
             tree = constituentConfig.setConfig(tree);
-            tree.setSeed(getRandom().nextInt());
+//            tree.setSeed(getRandom().nextInt()); todo
+            tree.setRandom(rand);
             trees.add(tree);
-            long timestamp = System.nanoTime();
             if(getEstimateOwnPerformance()) {
                 getLogger().info(() -> "building tree " + treeIndex + "  train estimate");
-                trainEstimaterTimer.enable();
+                trainEstimaterTimer.start();
                 ClassifierResults results;
                 if(oob) {
                     tree.buildClassifier(oobTrain);
@@ -177,18 +182,18 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     throw new IllegalStateException("no train estimate method set");
                 }
                 ResultUtils.setInfo(results, tree, trainData);
-                trainEstimaterTimer.disable();
+                trainEstimaterTimer.stop();
                 getLogger().info(() -> "finished building tree " + treeIndex + "  train estimate");
             }
             tree.setRebuild(true);
             tree.buildClassifier(trainData);
-            longestTreeBuildTimeNanos = Math.max(longestTreeBuildTimeNanos, System.nanoTime() - timestamp);
-            trainTimer.lap();
+            trainStageTimer.stop();
+            longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getTime());
         }
         getLogger().info("finished building trees");
-        LogUtils.logTimeContract(trainTimer.getTimeNanos(), trainTimeLimitNanos, getLogger(), "train");
+        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(getEstimateOwnPerformance()) {
-            trainEstimaterTimer.enable();
+            trainEstimaterTimer.start();
             double[][] finalDistributions = new double[trainData.size()][];
             long[] times = new long[trainData.size()];
             for(int j = 0; j < trees.size(); j++) {
@@ -226,10 +231,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 times[i] += time;
                 trainResults.addPrediction(classValue, distribution, prediction, times[i], null);
             }
-            trainEstimaterTimer.disable();
+            trainEstimaterTimer.stop();
         }
-        trainTimer.disable();
-        memoryWatcher.disable();
+        trainTimer.stop();
+        memoryWatcher.stop();
         getLogger().info("build complete");
     }
 
@@ -253,15 +258,15 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
-        testTimer.resetAndEnable();
-        long longestPredictTime = 0;
+        testTimer.resetAndStart();
+        longestTestStageTimeNanos = 0;
         final double[] finalDistribution = new double[getNumClasses()];
         for(int i = 0;
             i < trees.size()
                 &&
-                (testTimeLimitNanos <= 0 || testTimer.getTimeNanos() + longestPredictTime < testTimeLimitNanos)
+                (testTimeLimitNanos <= 0 || testTimer.lap() + longestTestStageTimeNanos < testTimeLimitNanos)
             ; i++) {
-            final long timestamp = System.nanoTime();
+            testStageTimer.resetAndStart();
             ProximityTree tree = trees.get(i);
             final double[] distribution = tree.distributionForInstance(instance);
             if(getEstimateOwnPerformance()) {
@@ -269,11 +274,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             } else {
                 vote(finalDistribution, distribution);
             }
-            longestPredictTime = System.nanoTime() - timestamp;
-            testTimer.lap();
+            testStageTimer.stop();
+            longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getTime());
         }
         ArrayUtilities.normaliseInPlace(finalDistribution);
-        testTimer.disable();
+        testTimer.stop();
         return finalDistribution;
     }
 

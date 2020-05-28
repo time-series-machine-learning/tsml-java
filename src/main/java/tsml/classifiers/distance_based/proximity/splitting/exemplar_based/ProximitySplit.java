@@ -1,42 +1,62 @@
 package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
 
 import com.beust.jcommander.internal.Lists;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasureable;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.filters.CachedFilter;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
+import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
 
 /**
  * Purpose: perform a split using several exemplar instances to partition the data based upon proximity.
  * <p>
  * Contributors: goastler
  */
-public class RandomExemplarProximitySplit extends Split {
+public class ProximitySplit extends Split {
 
-    private ExemplarPicker exemplarPicker;
-    private boolean useEarlyAbandon = false;
+    private boolean earlyAbandon = false;
     private DistanceFunction distanceFunction;
     private List<List<Instance>> exemplars;
-    private DistanceFunctionPicker distanceFunctionPicker;
     private boolean randomTieBreak = false;
+    private int r = 5;
+    private List<ParamSpace> distanceFunctionSpaces = new ArrayList<>();
 
-    public RandomExemplarProximitySplit(Random random,
-        ExemplarPicker exemplarPicker, DistanceFunctionPicker distanceFunctionPicker) {
+    public ProximitySplit(Random random) {
         super(random);
-        setExemplarPicker(exemplarPicker);
-        setDistanceFunctionPicker(distanceFunctionPicker);
+    }
+
+    private void pickExemplars(final Instances instances) {
+        final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
+        List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
+        for(Double classLabel : instancesByClass.keySet()) {
+            final Instances instanceClass = instancesByClass.get(classLabel);
+            final Instance exemplar = Utilities.randPickOne(instanceClass, getRandom());
+            exemplars.add(Lists.newArrayList(exemplar));
+        }
+        setExemplars(exemplars);
+    }
+
+    private void pickDistanceFunction() {
+        ParamSpace space = RandomUtils.choice(distanceFunctionSpaces, getRandom());
+        RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), space);
+        ParamSet paramSet = iterator.next();
+        List<Object> list = paramSet.get(DistanceMeasureable.getDistanceFunctionFlag());
+        Assert.assertEquals(1, list.size());
+        Object obj = list.get(0);
+        setDistanceFunction((DistanceFunction) obj);
     }
 
     /**
@@ -46,11 +66,10 @@ public class RandomExemplarProximitySplit extends Split {
      */
     @Override
     public List<Instances> performSplit(Instances data) {
-        List<List<Instance>> exemplars = exemplarPicker.pickExemplars(data);
-        setExemplars(exemplars);
+        // todo r
+        pickExemplars(data);
+        pickDistanceFunction();
         List<Instances> partitions = Lists.newArrayList(exemplars.size());
-        DistanceFunction distanceFunction = distanceFunctionPicker.pickDistanceFunction();
-        setDistanceFunction(distanceFunction);
         if(distanceFunction instanceof DistanceMeasureable) {
             ((DistanceMeasureable) distanceFunction).setTraining(true);
         }
@@ -82,7 +101,7 @@ public class RandomExemplarProximitySplit extends Split {
         for(int i = 0; i < exemplars.size(); i++) {
             for(Instance exemplar : exemplars.get(i)) {
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
-                if(useEarlyAbandon) {
+                if(earlyAbandon) {
                     limit = Math.min(distance, limit);
                 }
                 if(randomTieBreak) {
@@ -123,23 +142,12 @@ public class RandomExemplarProximitySplit extends Split {
         return distribution;
     }
 
-    public ExemplarPicker getExemplarPicker() {
-        return exemplarPicker;
+    public boolean isEarlyAbandon() {
+        return earlyAbandon;
     }
 
-    public RandomExemplarProximitySplit setExemplarPicker(
-        ExemplarPicker exemplarPicker) {
-        Assert.assertNotNull(exemplarPicker);
-        this.exemplarPicker = exemplarPicker;
-        return this;
-    }
-
-    public boolean isUseEarlyAbandon() {
-        return useEarlyAbandon;
-    }
-
-    public RandomExemplarProximitySplit setUseEarlyAbandon(final boolean useEarlyAbandon) {
-        this.useEarlyAbandon = useEarlyAbandon;
+    public ProximitySplit setEarlyAbandon(final boolean earlyAbandon) {
+        this.earlyAbandon = earlyAbandon;
         return this;
     }
 
@@ -151,7 +159,7 @@ public class RandomExemplarProximitySplit extends Split {
         return exemplars;
     }
 
-    protected RandomExemplarProximitySplit setExemplars(final List<List<Instance>> exemplars) {
+    private ProximitySplit setExemplars(final List<List<Instance>> exemplars) {
         Assert.assertNotNull(exemplars);
         for(List<Instance> exemplarGroup : exemplars) {
             Assert.assertNotNull(exemplarGroup);
@@ -161,20 +169,9 @@ public class RandomExemplarProximitySplit extends Split {
         return this;
     }
 
-    protected RandomExemplarProximitySplit setDistanceFunction(final DistanceFunction distanceFunction) {
+    private ProximitySplit setDistanceFunction(final DistanceFunction distanceFunction) {
         Assert.assertNotNull(distanceFunction);
         this.distanceFunction = distanceFunction;
-        return this;
-    }
-
-    public DistanceFunctionPicker getDistanceFunctionPicker() {
-        return distanceFunctionPicker;
-    }
-
-    public RandomExemplarProximitySplit setDistanceFunctionPicker(
-        final DistanceFunctionPicker distanceFunctionPicker) {
-        Assert.assertNotNull(distanceFunctionPicker);
-        this.distanceFunctionPicker = distanceFunctionPicker;
         return this;
     }
 
@@ -182,8 +179,30 @@ public class RandomExemplarProximitySplit extends Split {
         return randomTieBreak;
     }
 
-    public RandomExemplarProximitySplit setRandomTieBreak(final boolean randomTieBreak) {
+    public ProximitySplit setRandomTieBreak(final boolean randomTieBreak) {
         this.randomTieBreak = randomTieBreak;
+        return this;
+    }
+
+    public List<ParamSpace> getDistanceFunctionSpaces() {
+        return distanceFunctionSpaces;
+    }
+
+    public ProximitySplit setDistanceFunctionSpaces(
+        final List<ParamSpace> distanceFunctionSpaces) {
+        Assert.assertNotNull(distanceFunctionSpaces);
+        Assert.assertFalse(distanceFunctionSpaces.isEmpty());
+        this.distanceFunctionSpaces = distanceFunctionSpaces;
+        return this;
+    }
+
+    public int getR() {
+        return r;
+    }
+
+    public ProximitySplit setR(final int r) {
+        Assert.assertTrue(r > 0);
+        this.r = r;
         return this;
     }
 }

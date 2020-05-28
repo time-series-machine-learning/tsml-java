@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.*;
-import tsml.classifiers.distance_based.proximity.TimeContracter;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**

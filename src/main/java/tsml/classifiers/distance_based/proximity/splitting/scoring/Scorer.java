@@ -9,5 +9,8 @@ import java.util.List;
  * Purpose: score the partitioning of some data into subsets.
  */
 public interface Scorer {
-    double findScore(Instances parent, List<Instances> parts);
+    double findScore(Instances parent, List<Instances> children);
+
+    Scorer GINI = Utilities::giniImpurity;
+    Scorer INFO_GAIN = Utilities::infoGain;
 }

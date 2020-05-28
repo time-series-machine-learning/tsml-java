@@ -2,17 +2,14 @@ package tsml.classifiers.distance_based.proximity.splitting;
 
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Logger;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.splitting.scoring.ScoreUtils;
 import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 public abstract class Split {
     private Random random;
-    private Scorer scorer = ScoreUtils.getGlobalGiniImpurityScorer();
+    private Scorer scorer = Scorer.GINI;
     private double score = -1;
     private Instances data;
     private List<Instances> partitions;
@@ -70,7 +67,7 @@ public abstract class Split {
         this.partitions = partitions;
     }
 
-    public void setScore(final double score) {
+    private void setScore(final double score) {
         this.score = score;
     }
 

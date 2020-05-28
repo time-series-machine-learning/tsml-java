@@ -2,25 +2,17 @@ package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Random;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.proximity.splitting.BestOfNSplits;
 import tsml.classifiers.distance_based.proximity.splitting.Split;
-import tsml.classifiers.distance_based.proximity.splitting.Splitter;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ContinuousDistanceFunctionConfigs;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomDistanceFunctionPicker;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarPerClassPicker;
-import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.RandomExemplarProximitySplit;
-import tsml.classifiers.distance_based.proximity.stopping_conditions.Pure;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.DistanceFunctionSpaceBuilder;
+import tsml.classifiers.distance_based.proximity.splitting.exemplar_based.ProximitySplit;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
-import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
 import tsml.classifiers.distance_based.utils.stopwatch.TimedTest;
@@ -33,6 +25,7 @@ import tsml.classifiers.distance_based.utils.tree.Tree;
 import tsml.classifiers.distance_based.utils.tree.TreeNode;
 import tsml.filters.CachedFilter;
 import utilities.ArrayUtilities;
+import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -44,19 +37,36 @@ import weka.core.Instances;
 public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain,
     TimedTrain, TimedTest, WatchedMemory {
 
-    private final Tree<Split> tree = new BaseTree<>();
+    private Tree<Split> tree;
     private final StopWatch trainTimer = new StopWatch();
     private final StopWatch testTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
-    private long trainTimeLimitNanos = 0;
-    private long testTimeLimitNanos = 0;
-    private long longestNodeBuildTimeNanos = 0;
-    private ListIterator<TreeNode<Split>> nodeBuildQueue = new LinearListIterator<>();
-    private StoppingCondition stoppingCondition;
-    private Splitter splitter;
+    private final StopWatch trainStageTimer = new StopWatch();
+    private final StopWatch testStageTimer = new StopWatch();
+    private long trainTimeLimitNanos;
+    private long testTimeLimitNanos;
+    private long longestNodeBuildTimeNanos;
+    private int r;
+    private boolean earlyAbandon;
+    private boolean randomTieBreak;
+    private LinkedList<TreeNode<Split>> nodeBuildQueue;
+    private boolean breadthFirst = true;
+    private List<ParamSpace> distanceFunctionSpaces;
+    private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
+
+    public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
+        return distanceFunctionSpaceBuilders;
+    }
+
+    public ProximityTree setDistanceFunctionSpaceBuilders(
+        final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
+        this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
+        return this;
+    }
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        setConfigDefault();
     }
 
     public static void main(String[] args) throws Exception {
@@ -70,73 +80,43 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
     }
 
+    public ProximityTree setConfigDefault() {
+        setR(5);
+        setEarlyAbandon(false);
+        setRandomTieBreak(false);
+        setTrainTimeLimit(0);
+        setTestTimeLimit(0);
+        setDistanceFunctionSpaceBuilders(Lists.newArrayList(
+            DistanceFunctionSpaceBuilder.ED,
+            DistanceFunctionSpaceBuilder.DTW,
+            DistanceFunctionSpaceBuilder.FULL_DTW,
+            DistanceFunctionSpaceBuilder.DDTW,
+            DistanceFunctionSpaceBuilder.FULL_DDTW,
+            DistanceFunctionSpaceBuilder.WDTW,
+            DistanceFunctionSpaceBuilder.WDDTW,
+            DistanceFunctionSpaceBuilder.ERP,
+            DistanceFunctionSpaceBuilder.LCSS,
+            DistanceFunctionSpaceBuilder.MSM,
+            DistanceFunctionSpaceBuilder.TWED
+        ));
+        return this;
+    }
+
     public ProximityTree setConfigR1() {
-        setBuildUntilPure();
-        setSingleSplit();
+        setConfigDefault();
+        setR(1);
         return this;
     }
 
     public ProximityTree setConfigR5() {
-        setBuildUntilPure();
-        setMultipleSplits(5);
+        setConfigDefault();
+        setR(5);
         return this;
     }
 
     public ProximityTree setConfigR10() {
-        setBuildUntilPure();
-        setMultipleSplits(10);
-        return this;
-    }
-
-    public void setBuildUntilPure() {
-        setStoppingCondition(new Pure());
-    }
-
-    private void setSingleSplitFromTrainData(Instances trainData) {
-        final Random random = getRandom();
-        final RandomExemplarPerClassPicker exemplarPicker = new RandomExemplarPerClassPicker(random);
-        final List<ParamSpace> paramSpaces = Lists.newArrayList(
-            DistanceMeasureConfigs.buildEdSpace(),
-            ContinuousDistanceFunctionConfigs.buildDtwSpace(trainData),
-            ContinuousDistanceFunctionConfigs.buildDdtwSpace(trainData),
-            ContinuousDistanceFunctionConfigs.buildErpSpace(trainData),
-            ContinuousDistanceFunctionConfigs.buildLcssSpace(trainData),
-            DistanceMeasureConfigs.buildMsmSpace(),
-            ContinuousDistanceFunctionConfigs.buildWdtwSpace(),
-            ContinuousDistanceFunctionConfigs.buildWddtwSpace(),
-            DistanceMeasureConfigs.buildTwedSpace()
-        );
-        final RandomDistanceFunctionPicker distanceFunctionPicker = new RandomDistanceFunctionPicker(
-            random, paramSpaces);
-        setSplitter(data -> {
-            RandomExemplarProximitySplit split = new RandomExemplarProximitySplit(
-                random, exemplarPicker,
-                distanceFunctionPicker);
-            split.setData(data);
-            return split;
-        });
-    }
-
-    public ProximityTree setSingleSplit() {
-        setRebuildListener(this::setSingleSplitFromTrainData);
-        return this;
-    }
-
-    private void setMultipleSplitsFromTrainData(Instances trainData, int numSplits) {
-        setSingleSplitFromTrainData(trainData);
-        Splitter splitter = getSplitter();
-        setSplitter(data -> {
-            BestOfNSplits bestOfNSplits = new BestOfNSplits(splitter, this.getRandom(), numSplits);
-            bestOfNSplits.setData(data);
-            return bestOfNSplits;
-        });
-    }
-
-    public ProximityTree setMultipleSplits(int numSplits) {
-        Assert.assertTrue(numSplits > 0);
-        setRebuildListener(trainData -> {
-            setMultipleSplitsFromTrainData(trainData, numSplits);
-        });
+        setConfigDefault();
+        setR(10);
         return this;
     }
 
@@ -177,30 +157,33 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        memoryWatcher.enable();
-        trainTimer.enable();
+        memoryWatcher.start();
+        trainTimer.start();
         if(isRebuild()) {
             // reset
-            memoryWatcher.resetAndEnable();
-            trainTimer.resetAndEnable();
-            super.buildClassifier(trainData);
-            tree.clear();
+            memoryWatcher.resetAndStart();
+            trainTimer.resetAndStart();
+            tree = new BaseTree<>();
+            nodeBuildQueue = new LinkedList<>();
             longestNodeBuildTimeNanos = 0;
-            nodeBuildQueue = new LinearListIterator<>();
+            super.buildClassifier(trainData);
+            distanceFunctionSpaces = new ArrayList<>();
+            for(DistanceFunctionSpaceBuilder builder : distanceFunctionSpaceBuilders) {
+                distanceFunctionSpaces.add(builder.build(trainData));
+            }
             final TreeNode<Split> root = buildNode(trainData, null);
             tree.setRoot(root);
         }
         CachedFilter.hashInstances(trainData);
-        trainTimer.lap();
         while(
             // there is enough time for another split to be built
-            insideTrainTimeLimit(trainTimer.getTimeNanos() + longestNodeBuildTimeNanos)
+            insideTrainTimeLimit(trainTimer.lap() + longestNodeBuildTimeNanos)
                 // and there's remaining nodes to be built
                 &&
-                nodeBuildQueue.hasNext()
+                !nodeBuildQueue.isEmpty()
         ) {
-            long time = System.nanoTime();
-            final TreeNode<Split> node = nodeBuildQueue.next();
+            trainStageTimer.resetAndStart();
+            final TreeNode<Split> node = nodeBuildQueue.removeFirst();
             // partition the data at the node
             Split split = node.getElement();
             split.buildSplit();
@@ -210,54 +193,46 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // try to build a child node
                 buildNode(partition, node);
             }
-            longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, System.nanoTime() - time);
-            trainTimer.lap();
+            trainStageTimer.stop();
+            longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, trainStageTimer.getTime());
         }
-        trainTimer.disable();
-        memoryWatcher.disable();
+        trainTimer.stop();
+        memoryWatcher.stop();
     }
 
     private TreeNode<Split> buildNode(Instances data, TreeNode<Split> parent) {
         // split the data into multiple partitions, housed in a Split object
-        final Split split = splitter.buildSplit(data);
+        final Split split = setupSplit(data);
         // build a new node
         final TreeNode<Split> node = new BaseTreeNode<>(split);
         // set tree relationship
         node.setParent(parent);
         // check the stopping condition hasn't been hit
-        final boolean stop = stoppingCondition.shouldStop(node);
-        if(!stop) {
+        if(!Utilities.isHomogeneous(data)) {
             // if not hit the stopping condition then add node to the build queue
-            nodeBuildQueue.add(node);
+            if(breadthFirst) {
+                nodeBuildQueue.addLast(node);
+            } else {
+                nodeBuildQueue.addFirst(node);
+            }
         }
         return node;
     }
 
-    public StoppingCondition getStoppingCondition() {
-        return stoppingCondition;
-    }
-
-    public ProximityTree setStoppingCondition(
-        final StoppingCondition stoppingCondition) {
-        Assert.assertNotNull(stoppingCondition);
-        this.stoppingCondition = stoppingCondition;
-        return this;
-    }
-
-    public Splitter getSplitter() {
-        return splitter;
-    }
-
-    public ProximityTree setSplitter(final Splitter splitter) {
-        Assert.assertNotNull(splitter);
-        this.splitter = splitter;
-        return this;
+    private Split setupSplit(Instances data) {
+        ProximitySplit split = new ProximitySplit(getRandom());
+        split.setData(data);
+        split.setR(r);
+        split.setEarlyAbandon(earlyAbandon);
+        split.setRandomTieBreak(randomTieBreak);
+        split.setDistanceFunctionSpaces(distanceFunctionSpaces);
+        return split;
     }
 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         // enable resource monitors
-        testTimer.resetAndEnable();
+        testTimer.resetAndStart();
         long longestPredictTime = 0;
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
@@ -272,7 +247,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         while(
             !node.isLeaf()
                 &&
-                insideTestTimeLimit(testTimer.getTimeNanos() + longestPredictTime)
+                insideTestTimeLimit(testTimer.getTime() + longestPredictTime)
         ) {
             final long timestamp = System.nanoTime();
             // get the split at that node
@@ -290,7 +265,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         split = node.getElement();
         double[] distribution = split.distributionForInstance(instance, index);
         // disable the resource monitors
-        testTimer.disable();
+        testTimer.stop();
         return distribution;
     }
 
@@ -302,8 +277,45 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return tree.size();
     }
 
-    public interface StoppingCondition extends Serializable {
-
-        boolean shouldStop(TreeNode<Split> node);
+    public int getR() {
+        return r;
     }
+
+    public ProximityTree setR(final int r) {
+        Assert.assertTrue(r > 0);
+        this.r = r;
+        return this;
+    }
+
+    public boolean isEarlyAbandon() {
+        return earlyAbandon;
+    }
+
+    public ProximityTree setEarlyAbandon(final boolean earlyAbandon) {
+        this.earlyAbandon = earlyAbandon;
+        return this;
+    }
+
+    public boolean isRandomTieBreak() {
+        return randomTieBreak;
+    }
+
+    public ProximityTree setRandomTieBreak(final boolean randomTieBreak) {
+        this.randomTieBreak = randomTieBreak;
+        return this;
+    }
+
+    public boolean isBreadthFirst() {
+        return breadthFirst;
+    }
+
+    public ProximityTree setBreadthFirst(final boolean breadthFirst) {
+        this.breadthFirst = breadthFirst;
+        return this;
+    }
+
+    public List<ParamSpace> getDistanceFunctionSpaces() {
+        return distanceFunctionSpaces;
+    }
+
 }
