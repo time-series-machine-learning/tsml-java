@@ -1,8 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
-import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
 import evaluation.storage.ClassifierResults;
-import java.lang.reflect.Array;
+import java.util.Random;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -12,8 +11,6 @@ import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import utilities.ArrayUtilities;
-import utilities.Utilities;
-import weka.core.Debug.Random;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -144,9 +141,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         seedSet = true;
     }
 
+    @Override
     public void setRandom(Random random) {
         Assert.assertNotNull(random);
         rand = random;
+        seedSet = true;
     }
 
     @Override
