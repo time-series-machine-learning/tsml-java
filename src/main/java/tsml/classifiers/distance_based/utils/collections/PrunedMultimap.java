@@ -203,14 +203,6 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
         setSoftLimit(-1);
     }
 
-    public void hardPruneToSoftLimit() {
-        if(hasSoftLimit()) {
-            int origHardLimit = getHardLimit();
-            setHardLimit(getSoftLimit());
-            setHardLimit(origHardLimit);
-        }
-    }
-
     @Override
     public List<V> get(final K k) {
         return listMultimap.get(k);

@@ -13,6 +13,7 @@ import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.random.DebuggingRandom;
 import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
@@ -105,6 +106,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainEstimaterTimer.checkStopped();
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(isRebuild()) {
+            rand = new DebuggingRandom(seed); // todo remove post debugging
             trainEstimaterTimer.resetAndStop();
             memoryWatcher.resetAndStart();
             trainTimer.resetAndStart();

@@ -42,8 +42,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private long testTimeLimitNanos;
     private long longestNodeBuildTimeNanos;
     private int r;
-    private boolean earlyAbandon;
-    private boolean randomTieBreak;
+    private boolean earlyAbandonDistances;
+    private boolean randomTieBreakDistances;
+    private boolean randomTieBreakR;
     private LinkedList<TreeNode<ProximitySplit>> nodeBuildQueue;
     private boolean breadthFirst;
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
@@ -76,8 +77,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree setConfigDefault() {
         setR(5);
-        setEarlyAbandon(false);
-        setRandomTieBreak(false);
+        setEarlyAbandonDistances(false);
+        setRandomTieBreakDistances(true);
+        setRandomTieBreakR(false);
         setBreadthFirst(false);
         setTrainTimeLimit(0);
         setTestTimeLimit(0);
@@ -214,8 +216,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         ProximitySplit split = new ProximitySplit(getRandom());
         split.setData(data);
         split.setR(r);
-        split.setEarlyAbandon(earlyAbandon);
-        split.setRandomTieBreak(randomTieBreak);
+        split.setEarlyAbandonDistances(earlyAbandonDistances);
+        split.setRandomTieBreakDistances(randomTieBreakDistances);
+        split.setRandomTieBreakR(randomTieBreakR);
         split.setDistanceFunctionSpaceBuilders(distanceFunctionSpaceBuilders);
         return split;
     }
@@ -279,21 +282,21 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return this;
     }
 
-    public boolean isEarlyAbandon() {
-        return earlyAbandon;
+    public boolean isEarlyAbandonDistances() {
+        return earlyAbandonDistances;
     }
 
-    public ProximityTree setEarlyAbandon(final boolean earlyAbandon) {
-        this.earlyAbandon = earlyAbandon;
+    public ProximityTree setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
+        this.earlyAbandonDistances = earlyAbandonDistances;
         return this;
     }
 
-    public boolean isRandomTieBreak() {
-        return randomTieBreak;
+    public boolean isRandomTieBreakDistances() {
+        return randomTieBreakDistances;
     }
 
-    public ProximityTree setRandomTieBreak(final boolean randomTieBreak) {
-        this.randomTieBreak = randomTieBreak;
+    public ProximityTree setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
+        this.randomTieBreakDistances = randomTieBreakDistances;
         return this;
     }
 
@@ -306,4 +309,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return this;
     }
 
+    public boolean isRandomTieBreakR() {
+        return randomTieBreakR;
+    }
+
+    public void setRandomTieBreakR(final boolean randomTieBreakR) {
+        this.randomTieBreakR = randomTieBreakR;
+    }
 }

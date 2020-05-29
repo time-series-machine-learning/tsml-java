@@ -27,10 +27,11 @@ import weka.core.Instances;
  */
 public class ProximitySplit {
 
-    private boolean earlyAbandon;
+    private boolean earlyAbandonDistances;
     private DistanceFunction distanceFunction;
     private List<List<Instance>> exemplars;
-    private boolean randomTieBreak;
+    private boolean randomTieBreakDistances;
+    private boolean randomTieBreakR;
     private int r;
     private Random random;
     private Scorer scorer;
@@ -44,8 +45,9 @@ public class ProximitySplit {
     public ProximitySplit(Random random) {
         setRandom(random);
         setR(5);
-        setRandomTieBreak(false);
-        setEarlyAbandon(false);
+        setRandomTieBreakDistances(true);
+        setRandomTieBreakR(false);
+        setEarlyAbandonDistances(false);
         setScorer(Scorer.GINI);
         setScore(-1);
     }
@@ -70,6 +72,7 @@ public class ProximitySplit {
         Assert.assertEquals(1, list.size());
         Object obj = list.get(0);
         setDistanceFunction((DistanceFunction) obj);
+        System.out.println(distanceFunction.toString());
     }
 
     public void buildSplit() {
@@ -87,7 +90,12 @@ public class ProximitySplit {
                 this.score = score;
             }
         }
-        PrunedMultimap<Double, Container> map = PrunedMultimap.descSoftSingle();
+        PrunedMultimap<Double, Container> map = PrunedMultimap.desc();
+        if(randomTieBreakR) {
+            map.setSoftLimit(1);
+        } else {
+            map.setHardLimit(1);
+        }
         for(int i = 0; i < r; i++) {
             pickDistanceFunction();
             pickExemplars(data);
@@ -102,7 +110,7 @@ public class ProximitySplit {
             for(int j = 0; j < data.size(); j++) {
                 final Instance instance = data.get(j);
                 final int index = getPartitionIndexFor(instance);
-                System.out.println(j + "," + index);
+                System.out.println("cb: " + j + "," + index);
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }
@@ -194,40 +202,36 @@ public class ProximitySplit {
     public int getPartitionIndexFor(final Instance instance) {
         final double maxDistance = Double.POSITIVE_INFINITY;
         double limit = maxDistance;
-        PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = null;
-        int best = -1;
-        if(randomTieBreak) {
-            distanceToPartitionIndexMap = PrunedMultimap.asc();
+        PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
+        if(randomTieBreakDistances) {
             distanceToPartitionIndexMap.setSoftLimit(1);
+        } else {
+            distanceToPartitionIndexMap.setHardLimit(1);
         }
         double minDistance = maxDistance;
         for(int i = 0; i < exemplars.size(); i++) {
             for(Instance exemplar : exemplars.get(i)) {
+                if(exemplar.equals(instance)) {
+                    return i;
+                }
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
-                if(earlyAbandon) {
+                if(earlyAbandonDistances) {
                     limit = Math.min(distance, limit);
                 }
-                if(randomTieBreak) {
-                    minDistance = Math.min(distance, minDistance);
-                    distanceToPartitionIndexMap.put(minDistance, i);
-                } else {
-                    // todo this is the equiv of hard pruned map
-                    if(distance < minDistance) {
-                        best = i;
-                        minDistance = distance;
-                    }
-                }
+                minDistance = Math.min(distance, minDistance);
+                distanceToPartitionIndexMap.put(distance, i);
             }
         }
-        if(randomTieBreak) {
-            distanceToPartitionIndexMap.hardPruneToSoftLimit();
-            final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
-            final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
-            final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
-            return closestPartitionIndex;
-        } else {
-            return best;
+        final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
+        final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
+        // no-op, but must sample the random source to match orig pf. The orig implementation always samples the
+        // random irrelevant of whether the list size is 1 or more. We only sample IFF the list size is larger than 1
+        // . Therefore we'll sample the random if the list is exactly equal to 1 in size.
+        if(closestPartitionIndices.size() == 1) {
+            getRandom().nextInt(closestPartitionIndices.size());
         }
+        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
+        return closestPartitionIndex;
     }
 
     public double[] distributionForInstance(final Instance instance, int index) {
@@ -244,12 +248,12 @@ public class ProximitySplit {
         return distribution;
     }
 
-    public boolean isEarlyAbandon() {
-        return earlyAbandon;
+    public boolean isEarlyAbandonDistances() {
+        return earlyAbandonDistances;
     }
 
-    public ProximitySplit setEarlyAbandon(final boolean earlyAbandon) {
-        this.earlyAbandon = earlyAbandon;
+    public ProximitySplit setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
+        this.earlyAbandonDistances = earlyAbandonDistances;
         return this;
     }
 
@@ -277,12 +281,12 @@ public class ProximitySplit {
         return this;
     }
 
-    public boolean isRandomTieBreak() {
-        return randomTieBreak;
+    public boolean isRandomTieBreakDistances() {
+        return randomTieBreakDistances;
     }
 
-    public ProximitySplit setRandomTieBreak(final boolean randomTieBreak) {
-        this.randomTieBreak = randomTieBreak;
+    public ProximitySplit setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
+        this.randomTieBreakDistances = randomTieBreakDistances;
         return this;
     }
 
@@ -305,5 +309,13 @@ public class ProximitySplit {
         Assert.assertNotNull(distanceFunctionSpaceBuilders);
         Assert.assertFalse(distanceFunctionSpaceBuilders.isEmpty());
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
+    }
+
+    public boolean isRandomTieBreakR() {
+        return randomTieBreakR;
+    }
+
+    public void setRandomTieBreakR(final boolean randomTieBreakR) {
+        this.randomTieBreakR = randomTieBreakR;
     }
 }
