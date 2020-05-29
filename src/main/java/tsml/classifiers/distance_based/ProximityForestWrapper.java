@@ -133,7 +133,8 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         
     public void setSeed(int seed) { 
         AppContext.rand_seed = seed;
-        AppContext.rand = new DebuggingRandom(seed);
+//        AppContext.rand = new DebuggingRandom(seed); todo
+        AppContext.rand = new Random(seed);
     }
     
     public int getSeed() { 
