@@ -22,7 +22,6 @@ public class BaseRandom implements RandomSource {
 
     @Override
     public void setRandom(final Random random) {
-        Assert.assertNotNull(random);
         this.random = random;
     }
 
