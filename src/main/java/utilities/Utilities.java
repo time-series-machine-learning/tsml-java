@@ -336,6 +336,16 @@ public class Utilities {
         return isUnique(data, Instance::classValue);
     }
 
+    public static int sum(List<List<Integer>> lists) {
+        int sum = 0;
+        for(List<Integer> list : lists) {
+            for(Integer i : list) {
+                sum += i;
+            }
+        }
+        return sum;
+    }
+
     public static final double[] interpolate(double min, double max, int num) {
         double[] result = new double[num];
         double diff = (max - min) / (num - 1);
