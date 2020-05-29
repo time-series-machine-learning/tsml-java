@@ -1,9 +1,13 @@
 package tsml.classifiers.distance_based.distances.twe;
 
+import distance.elastic.TWE;
+import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import utilities.Utilities;
 import weka.core.Instance;
+import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
@@ -126,10 +130,12 @@ public class TWEDistance
         // border of the cost matrix initialization
         D[0][0] = 0;
         for(i = 1; i <= r; i++) {
-            D[i][0] = Double.POSITIVE_INFINITY;
+//            D[i][0] = Double.POSITIVE_INFINITY;
+            D[i][0] = D[i - 1][0] + Di1[i];
         }
         for(j = 1; j <= c; j++) {
-            D[0][j] = Double.POSITIVE_INFINITY;
+//            D[0][j] = Double.POSITIVE_INFINITY;
+            D[0][j] = D[0][j - 1] + Dj1[j];
         }
 
         double dmin, htrans, dist0;
@@ -167,6 +173,29 @@ public class TWEDistance
 
         dist = D[r][c];
         return dist;
+    }
+
+    public static void main(String[] args) throws Exception {
+        Instances instances = DatasetLoading.sampleGunPoint(0)[0];
+        TWE theirs = new TWE();
+        double nu = 0.01;
+        double lambda = 0.011111111111111111;
+        TWEDistance ours = new TWEDistance();
+        ours.setNu(nu);
+        ours.setLambda(lambda);
+        ours.setInstances(instances);
+        for(int i = 1; i < instances.size(); i++) {
+            for(int j = 0; j < i; j++) {
+                Instance i1 = instances.get(i);
+                Instance i2 = instances.get(j);
+                double theirDistance = theirs.distance(Utilities.extractTimeSeries(i1), Utilities.extractTimeSeries(i2),
+                    Double.POSITIVE_INFINITY, nu, lambda);
+                double ourDistance = ours.distance(i1, i2, Double.POSITIVE_INFINITY);
+                if(ourDistance != theirDistance) {
+                    System.out.println("oops");
+                }
+            }
+        }
     }
 
     public double getLambda() {
