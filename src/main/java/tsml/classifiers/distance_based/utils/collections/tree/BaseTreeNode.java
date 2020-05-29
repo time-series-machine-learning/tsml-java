@@ -1,14 +1,12 @@
-package tsml.classifiers.distance_based.utils.tree;
+package tsml.classifiers.distance_based.utils.collections.tree;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 import org.junit.Assert;
 import org.junit.Test;
-import utilities.Utilities;
 
 /**
  * Purpose: node of a tree data structure.

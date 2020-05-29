@@ -1,8 +1,5 @@
 package tsml.classifiers.distance_based.utils.system.memory;
 
-import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount;
-import tsml.classifiers.distance_based.utils.stopwatch.TimeAmount.ShortTimeUnit;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**

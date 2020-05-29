@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.cache;
+package tsml.classifiers.distance_based.utils.collections.cache;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.stopwatch;
+package tsml.classifiers.distance_based.utils.system.timing;
 
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;

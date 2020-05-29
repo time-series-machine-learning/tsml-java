@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.cache;
+package tsml.classifiers.distance_based.utils.collections.cache;
 
 public class SymmetricBiCache<A, B> extends BiCache<A, A, B> {
 

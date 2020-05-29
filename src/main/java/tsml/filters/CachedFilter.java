@@ -3,7 +3,7 @@ package tsml.filters;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import tsml.classifiers.distance_based.utils.cache.Cache;
+import tsml.classifiers.distance_based.utils.collections.cache.Cache;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;

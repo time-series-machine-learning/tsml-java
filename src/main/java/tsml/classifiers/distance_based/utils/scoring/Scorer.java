@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.proximity.splitting.scoring;
+package tsml.classifiers.distance_based.utils.scoring;
 
 import utilities.Utilities;
 import weka.core.Instances;
@@ -11,6 +11,6 @@ import java.util.List;
 public interface Scorer {
     double findScore(Instances parent, List<Instances> children);
 
-    Scorer GINI = Utilities::giniImpurity;
-    Scorer INFO_GAIN = Utilities::infoGain;
+    Scorer GINI = ScoreUtils::giniImpurity;
+    Scorer INFO_GAIN = ScoreUtils::infoGain;
 }

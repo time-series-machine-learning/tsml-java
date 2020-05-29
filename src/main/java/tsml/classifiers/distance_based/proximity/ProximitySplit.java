@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
+package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import java.util.ArrayList;
@@ -8,13 +8,12 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
+import tsml.classifiers.distance_based.utils.scoring.Scorer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;

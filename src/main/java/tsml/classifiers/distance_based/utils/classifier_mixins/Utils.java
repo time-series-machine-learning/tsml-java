@@ -5,7 +5,7 @@ import java.util.logging.Level;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.results.ResultUtils;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import utilities.ArrayUtilities;
 import weka.classifiers.Classifier;

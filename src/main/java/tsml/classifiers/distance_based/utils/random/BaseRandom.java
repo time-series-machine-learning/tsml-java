@@ -2,7 +2,6 @@ package tsml.classifiers.distance_based.utils.random;
 
 import java.util.Random;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.RandomSource;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

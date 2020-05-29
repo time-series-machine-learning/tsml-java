@@ -1,25 +1,20 @@
-package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
+package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
-import java.util.Random;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
-import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.distribution.double_based.UniformDoubleDistribution;
 import tsml.classifiers.distance_based.utils.params.distribution.int_based.UniformIntDistribution;
-import utilities.InstanceTools;
 import utilities.StatisticalUtilities;
-import utilities.Utilities;
 import weka.core.Instances;
 
 /**

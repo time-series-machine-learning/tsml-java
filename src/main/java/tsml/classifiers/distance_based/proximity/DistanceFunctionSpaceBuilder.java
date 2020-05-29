@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.proximity.splitting.exemplar_based;
+package tsml.classifiers.distance_based.proximity;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;

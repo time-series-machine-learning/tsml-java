@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.stopwatch.Stated;
+import tsml.classifiers.distance_based.utils.system.timing.Stated;
 
 /**
  * Purpose: watch the memory whilst enabled, tracking the mean, std dev, count, gc time and max mem usage.

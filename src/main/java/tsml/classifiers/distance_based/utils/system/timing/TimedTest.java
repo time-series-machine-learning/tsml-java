@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.stopwatch;
+package tsml.classifiers.distance_based.utils.system.timing;
 
 import tsml.classifiers.distance_based.utils.classifier_mixins.TestTimeable;
 

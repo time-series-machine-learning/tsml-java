@@ -15,7 +15,7 @@
 //import tsml.classifiers.MemoryContractable;
 //import tsml.classifiers.TestTimeContractable;
 //import tsml.classifiers.TrainTimeContractable;
-//import tsml.classifiers.distance_based.proximity.RandomSource;
+//import tsml.classifiers.distance_based.utils.random.RandomSource;
 //import tsml.classifiers.distance_based.utils.classifier_building.ClassifierBuilderFactory;
 //import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
 //import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;

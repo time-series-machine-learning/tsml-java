@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.proximity.RandomSource;
+import tsml.classifiers.distance_based.utils.random.RandomSource;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;

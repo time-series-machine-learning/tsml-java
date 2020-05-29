@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.proximity;
+package tsml.classifiers.distance_based.utils.random;
 
 import java.io.Serializable;
 import java.util.Random;

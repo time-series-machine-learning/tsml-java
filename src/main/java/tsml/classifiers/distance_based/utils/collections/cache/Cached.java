@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.cache;
+package tsml.classifiers.distance_based.utils.collections.cache;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
