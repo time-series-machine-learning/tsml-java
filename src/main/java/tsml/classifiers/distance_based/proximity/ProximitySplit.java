@@ -54,7 +54,7 @@ public class ProximitySplit {
     }
 
     private void pickExemplars(final Instances instances) {
-        System.out.println("pe");
+//        System.out.println("pe"); todo
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
         List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
@@ -66,7 +66,7 @@ public class ProximitySplit {
     }
 
     private void pickDistanceFunction() {
-        System.out.println("pd");
+//        System.out.println("pd"); todo
         distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
         distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
         RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
@@ -112,7 +112,7 @@ public class ProximitySplit {
             for(int j = 0; j < data.size(); j++) {
                 final Instance instance = data.get(j);
                 final int index = getPartitionIndexFor(instance);
-                System.out.println("cb: " + j + "," + index);
+//                System.out.println("cb: " + j + "," + index); todo
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }
@@ -122,14 +122,14 @@ public class ProximitySplit {
             double score = scorer.findScore(data, partitions);
             Container container = new Container(exemplars, distanceFunction, partitions, score);
             map.put(score, container);
-            System.out.println("g: " + (0.5 - score));
+//            System.out.println("g: " + (0.5 - score)); // todo
         }
         Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
         partitions = choice.partitions;
         distanceFunction = choice.distanceFunction;
         exemplars = choice.exemplars;
         score = choice.score;
-        System.out.println("bg: " + (0.5 - score));
+//        System.out.println("bg: " + (0.5 - score)); // todo
     }
 
     public Instances getPartitionFor(Instance instance) {

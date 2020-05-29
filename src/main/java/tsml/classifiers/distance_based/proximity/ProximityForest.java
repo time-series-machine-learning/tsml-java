@@ -106,7 +106,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainEstimaterTimer.checkStopped();
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(isRebuild()) {
-            rand = new DebuggingRandom(seed); // todo remove post debugging
+//            rand = new DebuggingRandom(seed); // todo remove post debugging
             trainEstimaterTimer.resetAndStop();
             memoryWatcher.resetAndStart();
             trainTimer.resetAndStart();
@@ -159,7 +159,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
             ProximityTree tree = new ProximityTree();
             tree = constituentConfig.setConfig(tree);
-//            tree.setSeed(getRandom().nextInt()); todo
             tree.setRandom(rand);
             trees.add(tree);
             if(getEstimateOwnPerformance()) {
