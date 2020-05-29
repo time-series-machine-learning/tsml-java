@@ -67,7 +67,7 @@ public class ScoreUtilsTest {
             Lists.newArrayList(1, 1)
         ));
         // System.out.println(score);
-        Assert.assertTrue(score == 0.011111111111111058);
+        Assert.assertEquals(score, 0.011111111111111000, 0.0000000000000001);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class ScoreUtilsTest {
             Lists.newArrayList(1, 1)
         ));
         // System.out.println(score);
-        Assert.assertTrue(score == 0.01722008469557898);
+        Assert.assertEquals(score, 0.01722008469557898, 0.0000000000000001);
     }
 
     @Test

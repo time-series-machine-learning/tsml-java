@@ -11,6 +11,35 @@ import java.util.List;
 public interface Scorer {
     double findScore(Instances parent, List<Instances> children);
 
-    Scorer GINI = ScoreUtils::giniImpurity;
-    Scorer INFO_GAIN = ScoreUtils::infoGain;
+    class GiniImpurity implements Scorer {
+
+        @Override
+        public double findScore(final Instances parent, final List<Instances> children) {
+            return ScoreUtils.giniImpurity(parent, children);
+        }
+    }
+
+    class InfoGain implements Scorer {
+
+        @Override
+        public double findScore(final Instances parent, final List<Instances> children) {
+            return ScoreUtils.infoGain(parent, children);
+        }
+    }
+
+    class GiniImpurityEntropy implements Scorer {
+
+        @Override
+        public double findScore(final Instances parent, final List<Instances> children) {
+            return ScoreUtils.giniImpurityEntropy(children);
+        }
+    }
+
+    class InfoGainEntropy implements Scorer {
+
+        @Override
+        public double findScore(final Instances parent, final List<Instances> children) {
+            return ScoreUtils.infoGainEntropy(children);
+        }
+    }
 }

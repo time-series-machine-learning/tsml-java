@@ -95,6 +95,13 @@ public class ScoreUtils {
             throw new IllegalArgumentException("parent has empty class count");
         }
         double score = entropyFunction.apply(parentClassCount); // find how pure the parent node is
+        score -= entropy(childClassCounts, entropyFunction);
+        return score;
+    }
+
+    public static double entropy(List<List<Integer>> childClassCounts, Function<ClassCount, Double> entropyFunction) {
+        double score = 0;
+        final int parentClassCountSum = Utilities.sum(childClassCounts);
         for(List<Integer> classCount : childClassCounts) {
             // find the proportion of classes in the child node
             ClassCount childClassCount = new ClassCount(classCount);
@@ -104,7 +111,7 @@ public class ScoreUtils {
             // weight the entropy by the number of cases at the child node
             entropy *= proportion;
             // subtract the child entropy from the parent for relative improvement
-            score -= entropy;
+            score += entropy;
         }
         return score;
     }
@@ -121,6 +128,11 @@ public class ScoreUtils {
 
     public static double infoGain(Instances parentData, List<Instances> childData) {
         return infoGain(findClassCounts(parentData), findClassCounts(childData));
+    }
+
+    public static double infoGainEntropy(List<Instances> childData) {
+        return 1 - entropy(findClassCounts(childData), ScoreUtils::infoGainEntropyFromClassCounts); // todo should it
+        // be 1- for IG as well??
     }
 
     public static double giniImpurityEntropyFromClassCounts(Instances data) {
@@ -161,6 +173,10 @@ public class ScoreUtils {
 
     public static double giniImpurity(Instances parentData, List<Instances> childData) {
         return giniImpurity(findClassCounts(parentData), findClassCounts(childData));
+    }
+
+    public static double giniImpurityEntropy(List<Instances> childData) {
+        return 0.5 - entropy(findClassCounts(childData), ScoreUtils::giniImpurityEntropyFromClassCounts);
     }
 
     public static List<Integer> findClassCounts(Instances data) {
