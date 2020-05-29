@@ -27,7 +27,7 @@ public class RandomSearchIteratorTest {
             stringBuilder.append(paramSet);
             stringBuilder.append("\n");
         }
-        System.out.println(stringBuilder.toString());
+//        System.out.println(stringBuilder.toString());
         Assert.assertEquals(count, limit);
         Assert.assertEquals(stringBuilder.toString(),
             "-a, 0.3654838936883285, -b, 0.6202682078357429\n"

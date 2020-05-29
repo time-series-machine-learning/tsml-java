@@ -34,7 +34,7 @@ public class Splitter{
 //		num_children = sample.get_num_classes();
 		ListDataset[] splits = new ListDataset[sample.get_num_classes()];
 		temp_exemplars = new double[sample.get_num_classes()][];
-		System.out.println("pe");
+//		System.out.println("pe");
 		int branch = 0;
 		for (Map.Entry<Integer, ListDataset> entry : data_per_class.entrySet()) {
 			int r = AppContext.getRand().nextInt(entry.getValue().size());
@@ -52,7 +52,7 @@ public class Splitter{
 			if (closest_branch == -1) {
 				assert false;
 			}
-			System.out.println("cb:" + j + "," + closest_branch);
+//			System.out.println("cb:" + j + "," + closest_branch);
 			splits[closest_branch].add(sample.get_class(j), sample.get_series(j));
 		}
 
@@ -85,7 +85,7 @@ public class Splitter{
 		for (int i = 0; i < AppContext.num_candidates_per_split; i++) {
 
 			if (AppContext.random_dm_per_node) {
-				System.out.println("pd");
+//				System.out.println("pd");
 				int r = AppContext.getRand().nextInt(AppContext.enabled_distance_measures.length);
 				temp_distance_measure = new DistanceMeasure(AppContext.enabled_distance_measures[r]);
 			}else {
@@ -99,7 +99,7 @@ public class Splitter{
 			splits = split_data(data, data_per_class);
 			weighted_gini = weighted_gini(parent_size, splits);
 
-			System.out.println("g: " + weighted_gini);
+//			System.out.println("g: " + weighted_gini);
 
 			if (weighted_gini <  best_weighted_gini) {
 				best_weighted_gini = weighted_gini;

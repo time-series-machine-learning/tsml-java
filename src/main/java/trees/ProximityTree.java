@@ -282,7 +282,7 @@ public class ProximityTree{
 //				}
 //			}
 //			System.out.println(str);
-			System.out.println("bg: " + splitter.best_weighted_gini);
+//			System.out.println("bg: " + splitter.best_weighted_gini);
 			this.children = new Node[best_splits.length];
 			for (int i = 0; i < children.length; i++) {
 				this.children[i] = new Node(this, i, ++tree.node_counter, tree);

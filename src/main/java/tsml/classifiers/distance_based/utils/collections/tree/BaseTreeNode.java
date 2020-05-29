@@ -166,35 +166,4 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     public String toString() {
         return element.toString();
     }
-
-    public static class UnitTests {
-        @Test
-        public void testHeightAndSize() {
-            //  a
-            //  |
-            //  b
-            // / \
-            // c d
-            // |
-            // e
-            TreeNode<String> a = new BaseTreeNode<>("a");
-            TreeNode<String> b = new BaseTreeNode<>("b");
-            TreeNode<String> c = new BaseTreeNode<>("c");
-            TreeNode<String> d = new BaseTreeNode<>("d");
-            TreeNode<String> e = new BaseTreeNode<>("e");
-            a.addChild(b);
-            b.addChild(c);
-            b.addChild(d);
-            c.addChild(e);
-//            e.addChild(e); // todo check this errs
-            Assert.assertEquals(a.size(), 5);
-            Assert.assertEquals(a.height(), 4);
-        }
-
-//        @Test(expected = IllegalArgumentException.class)
-//        public void testAddSelfAsChild() {
-//            BaseTreeNode<String> node = new BaseTreeNode<>("a");
-//            node.addChild(node);
-//        }
-    }
 }
