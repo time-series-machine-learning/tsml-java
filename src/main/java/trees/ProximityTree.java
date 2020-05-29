@@ -270,19 +270,19 @@ public class ProximityTree{
 			this.splitter = new Splitter(this);
 						
 			Dataset[] best_splits = splitter.find_best_split(data);
-			String str = splitter.distance_measure.toString();
-			String a = splitter.distance_measure.toString();
-			if(a.endsWith("cv")) {
-				a = a.substring(0, a.length() - 2);
-			}
-			for(Field field : Copy.findFields(splitter.distance_measure.getClass())) {
-				field.setAccessible(true);
-				if(field.getName().endsWith(a.toUpperCase()) && field.getName().length() > a.length()) {
-					str += ", " + field.getName() + "=" + field.get(splitter.distance_measure);
-				}
-			}
-			System.out.println(str);
-			System.out.println(splitter.best_weighted_gini);
+//			String str = splitter.distance_measure.toString();
+//			String a = splitter.distance_measure.toString();
+//			if(a.endsWith("cv")) {
+//				a = a.substring(0, a.length() - 2);
+//			}
+//			for(Field field : Copy.findFields(splitter.distance_measure.getClass())) {
+//				field.setAccessible(true);
+//				if(field.getName().endsWith(a.toUpperCase()) && field.getName().length() > a.length()) {
+//					str += ", " + field.getName() + "=" + field.get(splitter.distance_measure);
+//				}
+//			}
+//			System.out.println(str);
+			System.out.println("bg: " + splitter.best_weighted_gini);
 			this.children = new Node[best_splits.length];
 			for (int i = 0; i < children.length; i++) {
 				this.children[i] = new Node(this, i, ++tree.node_counter, tree);

@@ -34,11 +34,10 @@ public class Splitter{
 //		num_children = sample.get_num_classes();
 		ListDataset[] splits = new ListDataset[sample.get_num_classes()];
 		temp_exemplars = new double[sample.get_num_classes()][];
-
+		System.out.println("pe");
 		int branch = 0;
 		for (Map.Entry<Integer, ListDataset> entry : data_per_class.entrySet()) {
 			int r = AppContext.getRand().nextInt(entry.getValue().size());
-			System.out.println("ex:" + r);
 			splits[branch] = new ListDataset(sample.size(), sample.length());
 			//use key just in case iteration order is not consistent
 			temp_exemplars[branch] = entry.getValue().get_series(r);
@@ -86,8 +85,8 @@ public class Splitter{
 		for (int i = 0; i < AppContext.num_candidates_per_split; i++) {
 
 			if (AppContext.random_dm_per_node) {
+				System.out.println("pd");
 				int r = AppContext.getRand().nextInt(AppContext.enabled_distance_measures.length);
-				System.out.println("dm:" + r);
 				temp_distance_measure = new DistanceMeasure(AppContext.enabled_distance_measures[r]);
 			}else {
 				//NOTE: num_candidates_per_split has no effect if random_dm_per_node == false (if DM is selected once per tree)
@@ -99,6 +98,8 @@ public class Splitter{
 							
 			splits = split_data(data, data_per_class);
 			weighted_gini = weighted_gini(parent_size, splits);
+
+			System.out.println("g: " + weighted_gini);
 
 			if (weighted_gini <  best_weighted_gini) {
 				best_weighted_gini = weighted_gini;

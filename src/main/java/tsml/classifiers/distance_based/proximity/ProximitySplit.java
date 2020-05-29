@@ -53,6 +53,7 @@ public class ProximitySplit {
     }
 
     private void pickExemplars(final Instances instances) {
+        System.out.println("pe");
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
         List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
@@ -64,6 +65,7 @@ public class ProximitySplit {
     }
 
     private void pickDistanceFunction() {
+        System.out.println("pd");
         distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
         distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
         RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
@@ -72,7 +74,6 @@ public class ProximitySplit {
         Assert.assertEquals(1, list.size());
         Object obj = list.get(0);
         setDistanceFunction((DistanceFunction) obj);
-        System.out.println(distanceFunction.toString());
     }
 
     public void buildSplit() {
@@ -120,12 +121,14 @@ public class ProximitySplit {
             double score = scorer.findScore(data, partitions);
             Container container = new Container(exemplars, distanceFunction, partitions, score);
             map.put(score, container);
+            System.out.println("g: " + score);
         }
         Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
         partitions = choice.partitions;
         distanceFunction = choice.distanceFunction;
         exemplars = choice.exemplars;
         score = choice.score;
+        System.out.println("bg: " + score);
     }
 
     public Instances getPartitionFor(Instance instance) {
