@@ -89,8 +89,11 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
             } catch(Exception e) {
                 throw new IllegalStateException("cannot copy value");
             }
-            ParamSet subParamSet = get(dimension.getSubSpaces(), indices);
-            ParamSet.setParams(value, subParamSet);
+            List<ParamSpace> subSpaces = dimension.getSubSpaces();
+            if(!subSpaces.isEmpty()) {
+                ParamSet subParamSet = get(subSpaces, indices);
+                ParamSet.setParams(value, subParamSet);
+            }
             return value;
         } else {
             throw new IllegalArgumentException();
@@ -199,51 +202,4 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
         return sizes;
     }
 
-    public static class UnitTests {
-
-        @Test(expected = IllegalArgumentException.class)
-        public void testNonDiscreteParameterDimensionException() {
-            IndexedParameterSpace space = new IndexedParameterSpace(ParamSpace.UnitTests.buildLParams());
-            for(int i = 0; i < space.size(); i++) {
-                space.get(i);
-            }
-        }
-
-        @Test
-        public void testUniquePermutations() {
-            IndexedParameterSpace space = new IndexedParameterSpace(ParamSpace.UnitTests.buildWParams());
-            int size = space.size();
-            Set<ParamSet> paramSets = new HashSet<>();
-            for(int i = 0; i < size; i++) {
-                ParamSet paramSet = space.get(i);
-                boolean added = paramSets.add(paramSet);
-                if(!added) {
-                    Assert.fail("duplicate parameter set: " + paramSet);
-                }
-            }
-        }
-
-        @Test
-        public void testEquals() {
-            ParamSpace wParams = ParamSpace.UnitTests.buildWParams();
-            IndexedParameterSpace a = new IndexedParameterSpace(wParams);
-            IndexedParameterSpace b = new IndexedParameterSpace(wParams);
-            ParamSpace alt = new ParamSpace();
-            alt.add("letters", new DiscreteParameterDimension<>(Arrays.asList("a", "b", "c")));
-            IndexedParameterSpace c = new IndexedParameterSpace(alt);
-            IndexedParameterSpace d = new IndexedParameterSpace(alt);
-            Assert.assertEquals(a, b);
-            Assert.assertEquals(a.hashCode(), b.hashCode());
-            Assert.assertEquals(c, d);
-            Assert.assertEquals(c.hashCode(), c.hashCode());
-            Assert.assertNotEquals(a, c);
-            Assert.assertNotEquals(a.hashCode(), c.hashCode());
-            Assert.assertNotEquals(b, c);
-            Assert.assertNotEquals(b.hashCode(), c.hashCode());
-            Assert.assertNotEquals(a, d);
-            Assert.assertNotEquals(a.hashCode(), d.hashCode());
-            Assert.assertNotEquals(b, d);
-            Assert.assertNotEquals(b.hashCode(), d.hashCode());
-        }
-    }
 }

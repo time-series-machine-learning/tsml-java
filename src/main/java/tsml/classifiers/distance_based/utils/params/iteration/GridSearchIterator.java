@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.ParamSpaceTest;
 import tsml.classifiers.distance_based.utils.params.dimensions.IndexedParameterSpace;
 
 /**
@@ -64,44 +65,5 @@ public class GridSearchIterator implements Iterator<ParamSet> {
 
     public static class UnitTests {
 
-        @Test
-        public void testIteration() {
-            ParamSpace space = ParamSpace.UnitTests.build2DDiscreteSpace();
-            GridSearchIterator iterator = new GridSearchIterator(space);
-            StringBuilder stringBuilder = new StringBuilder();
-            while(iterator.hasNext()) {
-                ParamSet paramSet = iterator.next();
-                stringBuilder.append(paramSet);
-                stringBuilder.append("\n");
-            }
-            System.out.println(stringBuilder.toString());
-            Assert.assertEquals(stringBuilder.toString(),
-                "ParamSet{-a, \"1\", -b, \"6\"}\n"
-                + "ParamSet{-a, \"2\", -b, \"6\"}\n"
-                + "ParamSet{-a, \"3\", -b, \"6\"}\n"
-                + "ParamSet{-a, \"4\", -b, \"6\"}\n"
-                + "ParamSet{-a, \"5\", -b, \"6\"}\n"
-                + "ParamSet{-a, \"1\", -b, \"7\"}\n"
-                + "ParamSet{-a, \"2\", -b, \"7\"}\n"
-                + "ParamSet{-a, \"3\", -b, \"7\"}\n"
-                + "ParamSet{-a, \"4\", -b, \"7\"}\n"
-                + "ParamSet{-a, \"5\", -b, \"7\"}\n"
-                + "ParamSet{-a, \"1\", -b, \"8\"}\n"
-                + "ParamSet{-a, \"2\", -b, \"8\"}\n"
-                + "ParamSet{-a, \"3\", -b, \"8\"}\n"
-                + "ParamSet{-a, \"4\", -b, \"8\"}\n"
-                + "ParamSet{-a, \"5\", -b, \"8\"}\n"
-                + "ParamSet{-a, \"1\", -b, \"9\"}\n"
-                + "ParamSet{-a, \"2\", -b, \"9\"}\n"
-                + "ParamSet{-a, \"3\", -b, \"9\"}\n"
-                + "ParamSet{-a, \"4\", -b, \"9\"}\n"
-                + "ParamSet{-a, \"5\", -b, \"9\"}\n"
-                + "ParamSet{-a, \"1\", -b, \"10\"}\n"
-                + "ParamSet{-a, \"2\", -b, \"10\"}\n"
-                + "ParamSet{-a, \"3\", -b, \"10\"}\n"
-                + "ParamSet{-a, \"4\", -b, \"10\"}\n"
-                + "ParamSet{-a, \"5\", -b, \"10\"}\n"
-            );
-        }
     }
 }

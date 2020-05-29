@@ -15,8 +15,8 @@ import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.proximity.RandomSource;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.distribution.DoubleToIntDistributionAdapter;
-import tsml.classifiers.distance_based.utils.params.distribution.UniformDistribution;
+import tsml.classifiers.distance_based.utils.params.distribution.double_based.UniformDoubleDistribution;
+import tsml.classifiers.distance_based.utils.params.distribution.int_based.UniformIntDistribution;
 import utilities.InstanceTools;
 import utilities.StatisticalUtilities;
 import utilities.Utilities;
@@ -39,8 +39,10 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwParams(Instances data) {
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(DTW.getWarpingWindowFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
-            (int) (((double) data.numAttributes() + 1) / 4))));
+        // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
+        // above doesn't consider class value, so -1 from len
+        subSpace.add(DTW.getWarpingWindowFlag(), new UniformIntDistribution(0,
+            (data.numAttributes()) / 4 - 1));
         return subSpace;
     }
 
@@ -63,9 +65,9 @@ public class ContinuousDistanceFunctionConfigs {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt(len / 4 + 1), so range is from 0 to len / 4 inclusively
         // above doesn't consider class value, so -1 from len
-        subSpace.add(ERPDistance.getBandSizeFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
-            (int) (((double) data.numAttributes() - 1) / 4))));
-        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDistribution(0.2 * std, std));
+        subSpace.add(ERPDistance.getBandSizeFlag(), new UniformIntDistribution(0,
+            (data.numAttributes() - 1) / 4));
+        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
         return subSpace;
     }
 
@@ -81,9 +83,9 @@ public class ContinuousDistanceFunctionConfigs {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(LCSSDistance.getDeltaFlag(), new DoubleToIntDistributionAdapter(new UniformDistribution(0,
-            (int) ((double) data.numAttributes() / 4) - 1)));
-        subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDistribution(0.2 * std, std));
+        subSpace.add(LCSSDistance.getDeltaFlag(), new UniformIntDistribution(0,
+            data.numAttributes() / 4 - 1));
+        subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDoubleDistribution(0.2 * std, std));
         return subSpace;
     }
 
@@ -96,7 +98,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWdtwParams() {
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(WDTW.getGFlag(), new UniformDistribution(0, 1));
+        subSpace.add(WDTW.getGFlag(), new UniformDoubleDistribution(0d, 1d));
         return subSpace;
     }
 
@@ -115,5 +117,4 @@ public class ContinuousDistanceFunctionConfigs {
         return space;
     }
 
-    // todo unit test these just to make sure param flags match up and actually set the param when applied
 }
