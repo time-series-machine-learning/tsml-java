@@ -45,7 +45,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private boolean earlyAbandon;
     private boolean randomTieBreak;
     private LinkedList<TreeNode<ProximitySplit>> nodeBuildQueue;
-    private boolean breadthFirst = false;
+    private boolean breadthFirst;
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
 
     public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
@@ -78,6 +78,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         setR(5);
         setEarlyAbandon(false);
         setRandomTieBreak(false);
+        setBreadthFirst(false);
         setTrainTimeLimit(0);
         setTestTimeLimit(0);
         setDistanceFunctionSpaceBuilders(Lists.newArrayList(
@@ -239,7 +240,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 &&
                 insideTestTimeLimit(testTimer.getTime() + longestPredictTime)
         ) {
-            final long timestamp = System.nanoTime();
+            testStageTimer.resetAndStart();
             // get the split at that node
             split = node.getElement();
             // work out which branch to go to next
@@ -247,7 +248,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final List<TreeNode<ProximitySplit>> children = node.getChildren();
             // make this the next node to visit
             node = children.get(index);
-            longestPredictTime = System.nanoTime() - timestamp;
+            testStageTimer.stop();
+            longestPredictTime = testStageTimer.getTime();
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
