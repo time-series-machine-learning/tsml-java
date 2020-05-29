@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.proximity.splitting.scoring.Scorer;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -27,20 +28,27 @@ import weka.core.Instances;
  */
 public class ProximitySplit {
 
-    private boolean earlyAbandon = false;
+    private boolean earlyAbandon;
     private DistanceFunction distanceFunction;
     private List<List<Instance>> exemplars;
-    private boolean randomTieBreak = false;
-    private int r = 5;
-    private List<ParamSpace> distanceFunctionSpaces = new ArrayList<>();
+    private boolean randomTieBreak;
+    private int r;
     private Random random;
-    private Scorer scorer = Scorer.GINI;
-    private double score = -1;
+    private Scorer scorer;
+    private double score;
     private Instances data;
     private List<Instances> partitions;
+    private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
+    private DistanceFunctionSpaceBuilder distanceFunctionSpaceBuilder;
+    private ParamSpace distanceFunctionSpace;
 
     public ProximitySplit(Random random) {
         setRandom(random);
+        setR(5);
+        setRandomTieBreak(false);
+        setEarlyAbandon(false);
+        setScorer(Scorer.GINI);
+        setScore(-1);
     }
 
     private void pickExemplars(final Instances instances) {
@@ -55,8 +63,9 @@ public class ProximitySplit {
     }
 
     private void pickDistanceFunction() {
-        ParamSpace space = RandomUtils.choice(distanceFunctionSpaces, getRandom());
-        RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), space);
+        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
+        distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
+        RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
         ParamSet paramSet = iterator.next();
         List<Object> list = paramSet.get(DistanceMeasureable.getDistanceFunctionFlag());
         Assert.assertEquals(1, list.size());
@@ -278,18 +287,6 @@ public class ProximitySplit {
         return this;
     }
 
-    public List<ParamSpace> getDistanceFunctionSpaces() {
-        return distanceFunctionSpaces;
-    }
-
-    public ProximitySplit setDistanceFunctionSpaces(
-        final List<ParamSpace> distanceFunctionSpaces) {
-        Assert.assertNotNull(distanceFunctionSpaces);
-        Assert.assertFalse(distanceFunctionSpaces.isEmpty());
-        this.distanceFunctionSpaces = distanceFunctionSpaces;
-        return this;
-    }
-
     public int getR() {
         return r;
     }
@@ -298,5 +295,16 @@ public class ProximitySplit {
         Assert.assertTrue(r > 0);
         this.r = r;
         return this;
+    }
+
+    public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
+        return distanceFunctionSpaceBuilders;
+    }
+
+    public void setDistanceFunctionSpaceBuilders(
+        final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
+        Assert.assertNotNull(distanceFunctionSpaceBuilders);
+        Assert.assertFalse(distanceFunctionSpaceBuilders.isEmpty());
+        this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
     }
 }

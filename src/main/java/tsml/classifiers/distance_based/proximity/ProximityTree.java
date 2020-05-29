@@ -50,7 +50,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private boolean randomTieBreak;
     private LinkedList<TreeNode<ProximitySplit>> nodeBuildQueue;
     private boolean breadthFirst = false;
-    private List<ParamSpace> distanceFunctionSpaces;
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
 
     public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
@@ -166,10 +165,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             nodeBuildQueue = new LinkedList<>();
             longestNodeBuildTimeNanos = 0;
             super.buildClassifier(trainData);
-            distanceFunctionSpaces = new ArrayList<>();
-            for(DistanceFunctionSpaceBuilder builder : distanceFunctionSpaceBuilders) {
-                distanceFunctionSpaces.add(builder.build(trainData));
-            }
             final TreeNode<ProximitySplit> root = buildNode(trainData, null);
             tree.setRoot(root);
         }
@@ -224,7 +219,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         split.setR(r);
         split.setEarlyAbandon(earlyAbandon);
         split.setRandomTieBreak(randomTieBreak);
-        split.setDistanceFunctionSpaces(distanceFunctionSpaces);
+        split.setDistanceFunctionSpaceBuilders(distanceFunctionSpaceBuilders);
         return split;
     }
 
@@ -311,10 +306,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     public ProximityTree setBreadthFirst(final boolean breadthFirst) {
         this.breadthFirst = breadthFirst;
         return this;
-    }
-
-    public List<ParamSpace> getDistanceFunctionSpaces() {
-        return distanceFunctionSpaces;
     }
 
 }
