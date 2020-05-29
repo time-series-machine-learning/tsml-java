@@ -9,6 +9,8 @@ import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
+import tsml.classifiers.distance_based.utils.scoring.Scorer;
+import tsml.classifiers.distance_based.utils.scoring.Scorer.GiniImpurityEntropy;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
@@ -42,6 +44,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private long testTimeLimitNanos;
     private long longestNodeBuildTimeNanos;
     private int r;
+    private Scorer scorer;
     private boolean earlyAbandonDistances;
     private boolean randomTieBreakDistances;
     private boolean randomTieBreakR;
@@ -81,6 +84,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         setRandomTieBreakDistances(true);
         setRandomTieBreakR(false);
         setBreadthFirst(false);
+        setScorer(new GiniImpurityEntropy());
         setTrainTimeLimit(0);
         setTestTimeLimit(0);
         setDistanceFunctionSpaceBuilders(Lists.newArrayList(
@@ -286,27 +290,24 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return earlyAbandonDistances;
     }
 
-    public ProximityTree setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
+    public void setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
         this.earlyAbandonDistances = earlyAbandonDistances;
-        return this;
     }
 
     public boolean isRandomTieBreakDistances() {
         return randomTieBreakDistances;
     }
 
-    public ProximityTree setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
+    public void setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
         this.randomTieBreakDistances = randomTieBreakDistances;
-        return this;
     }
 
     public boolean isBreadthFirst() {
         return breadthFirst;
     }
 
-    public ProximityTree setBreadthFirst(final boolean breadthFirst) {
+    public void setBreadthFirst(final boolean breadthFirst) {
         this.breadthFirst = breadthFirst;
-        return this;
     }
 
     public boolean isRandomTieBreakR() {
@@ -315,5 +316,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public void setRandomTieBreakR(final boolean randomTieBreakR) {
         this.randomTieBreakR = randomTieBreakR;
+    }
+
+    public Scorer getScorer() {
+        return scorer;
+    }
+
+    public void setScorer(final Scorer scorer) {
+        Assert.assertNotNull(scorer);
+        this.scorer = scorer;
     }
 }

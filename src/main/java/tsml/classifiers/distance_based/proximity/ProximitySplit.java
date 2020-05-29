@@ -14,6 +14,7 @@ import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.scoring.Scorer;
+import tsml.classifiers.distance_based.utils.scoring.Scorer.GiniImpurityEntropy;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -48,7 +49,7 @@ public class ProximitySplit {
         setRandomTieBreakDistances(true);
         setRandomTieBreakR(false);
         setEarlyAbandonDistances(false);
-        setScorer(Scorer.GINI);
+        setScorer(new GiniImpurityEntropy());
         setScore(-1);
     }
 
@@ -121,14 +122,14 @@ public class ProximitySplit {
             double score = scorer.findScore(data, partitions);
             Container container = new Container(exemplars, distanceFunction, partitions, score);
             map.put(score, container);
-            System.out.println("g: " + score);
+            System.out.println("g: " + (0.5 - score));
         }
         Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
         partitions = choice.partitions;
         distanceFunction = choice.distanceFunction;
         exemplars = choice.exemplars;
         score = choice.score;
-        System.out.println("bg: " + score);
+        System.out.println("bg: " + (0.5 - score));
     }
 
     public Instances getPartitionFor(Instance instance) {
@@ -255,9 +256,8 @@ public class ProximitySplit {
         return earlyAbandonDistances;
     }
 
-    public ProximitySplit setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
+    public void setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
         this.earlyAbandonDistances = earlyAbandonDistances;
-        return this;
     }
 
     public DistanceFunction getDistanceFunction() {
@@ -268,39 +268,35 @@ public class ProximitySplit {
         return exemplars;
     }
 
-    private ProximitySplit setExemplars(final List<List<Instance>> exemplars) {
+    private void setExemplars(final List<List<Instance>> exemplars) {
         Assert.assertNotNull(exemplars);
         for(List<Instance> exemplarGroup : exemplars) {
             Assert.assertNotNull(exemplarGroup);
             Assert.assertFalse(exemplarGroup.isEmpty());
         }
         this.exemplars = exemplars;
-        return this;
     }
 
-    private ProximitySplit setDistanceFunction(final DistanceFunction distanceFunction) {
+    private void setDistanceFunction(final DistanceFunction distanceFunction) {
         Assert.assertNotNull(distanceFunction);
         this.distanceFunction = distanceFunction;
-        return this;
     }
 
     public boolean isRandomTieBreakDistances() {
         return randomTieBreakDistances;
     }
 
-    public ProximitySplit setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
+    public void setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
         this.randomTieBreakDistances = randomTieBreakDistances;
-        return this;
     }
 
     public int getR() {
         return r;
     }
 
-    public ProximitySplit setR(final int r) {
+    public void setR(final int r) {
         Assert.assertTrue(r > 0);
         this.r = r;
-        return this;
     }
 
     public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
@@ -320,5 +316,13 @@ public class ProximitySplit {
 
     public void setRandomTieBreakR(final boolean randomTieBreakR) {
         this.randomTieBreakR = randomTieBreakR;
+    }
+
+    public DistanceFunctionSpaceBuilder getDistanceFunctionSpaceBuilder() {
+        return distanceFunctionSpaceBuilder;
+    }
+
+    public ParamSpace getDistanceFunctionSpace() {
+        return distanceFunctionSpace;
     }
 }
