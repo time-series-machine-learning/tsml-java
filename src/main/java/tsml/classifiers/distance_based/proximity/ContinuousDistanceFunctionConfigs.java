@@ -58,11 +58,11 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildErpParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
+        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt(len / 4 + 1), so range is from 0 to len / 4 inclusively
         // above doesn't consider class value, so -1 from len
         subSpace.add(ERPDistance.getBandSizeFlag(), new UniformIntDistribution(0,
             (data.numAttributes() - 1) / 4));
-        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
         return subSpace;
     }
 
@@ -76,11 +76,11 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildLcssParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
+        subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
         subSpace.add(LCSSDistance.getDeltaFlag(), new UniformIntDistribution(0,
             data.numAttributes() / 4 - 1));
-        subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDoubleDistribution(0.2 * std, std));
         return subSpace;
     }
 
