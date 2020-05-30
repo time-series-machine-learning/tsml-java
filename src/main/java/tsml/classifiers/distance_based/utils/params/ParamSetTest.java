@@ -36,7 +36,7 @@ public class ParamSetTest {
     public void testEmptyToString() {
         ParamSet paramSet;
         paramSet = new ParamSet();
-        System.out.println(paramSet);
+//        System.out.println(paramSet);
         Assert.assertEquals(paramSet.toString(), "");
     }
 
@@ -62,7 +62,7 @@ public class ParamSetTest {
         String aFlag = "a";
         int aValue = 1;
         ParamSet paramSet = new ParamSet(aFlag, aValue);
-        System.out.println(paramSet);
+//        System.out.println(paramSet);
         Assert.assertEquals(paramSet.toString(), "-a, 1");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
@@ -80,7 +80,7 @@ public class ParamSetTest {
         ParamSet paramSet = new ParamSet(aFlag, aValue);
         paramSet.add(aFlag, anotherAValue);
         paramSet.add(aFlag, yetAnotherAValue);
-        System.out.println(paramSet);
+//        System.out.println(paramSet);
         String out = "-a, 1, -a, 3.3, -a, \"\\\"not another!\\\"\"";
         Assert.assertEquals(paramSet.toString(), out);
         Assert.assertFalse(paramSet.isEmpty());
@@ -103,7 +103,7 @@ public class ParamSetTest {
         ParamSet subParamSetB = new ParamSet(bFlag, bValue);
         ParamSet subParamSetC = new ParamSet(cFlag, cValue);
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
-        System.out.println(paramSet);
+//        System.out.println(paramSet);
         Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance -d 5 -e 0.2\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);

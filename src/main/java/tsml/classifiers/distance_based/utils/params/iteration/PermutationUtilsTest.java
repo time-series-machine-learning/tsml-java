@@ -49,21 +49,20 @@ public class PermutationUtilsTest {
         for(int i = 0; i < index; i++) {
             List<Integer> permutation = fromPermutation(i, bins);
             int index = toPermutation(permutation, bins);
-            System.out.println("permutation for " + i + " is " + permutation + " and reverse is " + index);
+//            System.out.println("permutation for " + i + " is " + permutation + " and reverse is " + index);
             Assert.assertEquals(index, i);
             for(List<Integer> seenPermutation : seenPermutations) {
                 assertThat(permutation, is(not(seenPermutation)));
             }
-            System.out.println("permutation " + permutation + " with index " + i + " is unique");
+//            System.out.println("permutation " + permutation + " with index " + i + " is unique");
             seenPermutations.add(permutation);
         }
     }
 
     @Test
     public void testNumPermutations() {
-
         int index = numPermutations(bins);
-        System.out.println("num perms for " + bins + " is " + index);
+//        System.out.println("num perms for " + bins + " is " + index);
         Assert.assertEquals(index, this.index);
     }
 }
