@@ -1,18 +1,14 @@
 package tsml.classifiers.distance_based.utils.params.dimensions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import org.junit.Assert;
-import org.junit.Test;
 import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.iteration.Permutations;
+import tsml.classifiers.distance_based.utils.params.iteration.PermutationUtils;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
@@ -79,7 +75,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
         Object values = dimension.getValues();
         if(values instanceof List<?>) {
             final List<Integer> allSizes = sizes(dimension);
-            final List<Integer> indices = Permutations.fromPermutation(index, allSizes);
+            final List<Integer> indices = PermutationUtils.fromPermutation(index, allSizes);
             final Integer valueIndex = indices.remove(0);
             List<?> valuesList = (List<?>) values;
             Object value = valuesList.get(valueIndex);
@@ -157,11 +153,11 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
 
     public static int size(ParamSpace space) {
         final List<Integer> sizes = sizes(space);
-        return Permutations.numPermutations(sizes);
+        return PermutationUtils.numPermutations(sizes);
     }
 
     public static int size(ParameterDimension<?> dimension) {
-        return Permutations.numPermutations(sizes(dimension));
+        return PermutationUtils.numPermutations(sizes(dimension));
     }
 
     public static List<Integer> sizesParameterSpace(List<ParamSpace> spaces) {
@@ -169,7 +165,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
     }
 
     public static int size(List<ParameterDimension<?>> dimensions) {
-        return Permutations.numPermutations(sizesParameterDimension(dimensions));
+        return PermutationUtils.numPermutations(sizesParameterDimension(dimensions));
     }
 
     public static List<Integer> sizesParameterDimension(List<ParameterDimension<?>> dimensions) {

@@ -18,54 +18,7 @@ import org.junit.runners.Parameterized;
  * <p>
  * Contributors: goastler
  */
-public class Permutations {
-
-    @RunWith(Parameterized.class)
-    public static class FromPermutationTest {
-        private List<Integer> bins;
-        private int index;
-
-        public FromPermutationTest(List<Integer> bins, int index) {
-            this.bins = bins;
-            this.index = index;
-        }
-
-        @Parameterized.Parameters
-        public static Collection permutations() {
-            return Arrays.asList(new Object[][]{
-                {Arrays.asList(2, 3, 4), 24},
-                {Arrays.asList(0, 0, 0), 0},
-                {Arrays.asList(0, 1, 0), 1},
-                {Arrays.asList(0, -1, 0), 0},
-                {Arrays.asList(2, -1, 5), 10},
-                {Arrays.asList(-3392, -348642, -4), 0},
-            });
-        }
-
-        @Test
-        public void testToAndFromUniquePermutations() {
-            List<List<Integer>> seenPermutations = new ArrayList<>();
-            for(int i = 0; i < index; i++) {
-                List<Integer> permutation = fromPermutation(i, bins);
-                int index = toPermutation(permutation, bins);
-                System.out.println("permutation for " + i + " is " + permutation + " and reverse is " + index);
-                Assert.assertEquals(index, i);
-                for(List<Integer> seenPermutation : seenPermutations) {
-                    assertThat(permutation, is(not(seenPermutation)));
-                }
-                System.out.println("permutation " + permutation + " with index " + i + " is unique");
-                seenPermutations.add(permutation);
-            }
-        }
-
-        @Test
-        public void testNumPermutations() {
-
-            int index = numPermutations(bins);
-            System.out.println("num perms for " + bins + " is " + index);
-            Assert.assertEquals(index, this.index);
-        }
-    }
+public class PermutationUtils {
 
     public static List<Integer> fromPermutation(int permutation, List<Integer> binSizes) {
         int maxCombination = numPermutations(binSizes) - 1;

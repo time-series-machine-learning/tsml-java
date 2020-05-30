@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.params.dimensions;
 import java.util.List;
 import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.iteration.Permutations;
+import tsml.classifiers.distance_based.utils.params.iteration.PermutationUtils;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -32,7 +32,7 @@ public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> i
 
     @Override
     public int size() {
-        return Permutations.numPermutations(getAllSizes());
+        return PermutationUtils.numPermutations(getAllSizes());
     }
 
     public List<Integer> getAllSizes() {

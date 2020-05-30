@@ -24,41 +24,39 @@ import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
-import tsml.classifiers.distance_based.utils.random.DebuggingRandom;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Randomizable;
 
 /**
- * 
+ *
  * An in-progress wrapper/conversion class for the java Proximity Forest implementation.
- * 
+ *
  * The code as-is on the github page does not return distributions when predicting. Therefore
  * in our version of the jar I have added a predict_proba() to be used here instead of predict().
- * Existing proximity code is UNEDITED, and predict_proba simply returns the distribution of 
+ * Existing proximity code is UNEDITED, and predict_proba simply returns the distribution of
  * the num_votes class member instead of resolving ties internally and returning the single,
- * majority voted for, class value. As such, metrics that do not consider probabilistic performance 
+ * majority voted for, class value. As such, metrics that do not consider probabilistic performance
  * (accuracy, most importantly) should be identical when training and testing on identical data
- * with identical seeds. The only part where this falls down is in tie resolution for 
- * the majority class, todo. 
- * 
+ * with identical seeds. The only part where this falls down is in tie resolution for
+ * the majority class, todo.
+ *
  * tl;dr, performance on average should be significantly the same towards vanishing p values
- * 
+ *
  * NOTE1: we are by-passing the test method which is ultimately foreach inst { predict() },
- * and so proximity forest's internal results object is empty. This has no other sides effects for 
+ * and so proximity forest's internal results object is empty. This has no other sides effects for
  * our purposes here.
- * 
- * NOTE2: because of the static AppContext holding e.g random seeds etc, do not run multiple 
+ *
+ * NOTE2: because of the static AppContext holding e.g random seeds etc, do not run multiple
  * experiments using ProximityForest in parallel, i.e with Experiments.setupAndRunMultipleExperimentsThreaded(...)
- * 
- * TODO: weka/tsc interface implementations etc, currently this is simply in a runnable state 
- * for basic experimental runs to compare against. Need: TechnicalInformationHandler, need to do the get/setOptions, 
+ *
+ * TODO: weka/tsc interface implementations etc, currently this is simply in a runnable state
+ * for basic experimental runs to compare against. Need: TechnicalInformationHandler, need to do the get/setOptions,
  * could do parameter searches if wanted, etcetc.
- * 
- * 
+ *
+ *
  * Github code:   https://github.com/fpetitjean/ProximityForestWeka
- * 
+ *
  * @article{DBLP:journals/corr/abs-1808-10594,
  *   author    = {Benjamin Lucas and
  *                Ahmed Shifaz and
@@ -80,30 +78,30 @@ import weka.core.Randomizable;
  *   biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1808-10594},
  *   bibsource = {dblp computer science bibliography, https://dblp.org}
  * }
- * 
+ *
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ProximityForestWrapper extends AbstractClassifier implements Randomizable {
+public class ProximityForestWrapper extends AbstractClassifier {
 
-    //from paper, pg18-19: 
+    //from paper, pg18-19:
     /*
         4.2 Experiments on the UCR Archive
-    
+
         ...
-    
+
         The Proximity Forest results are obtained for 100 trees
         with selection between 5 candidates per node. A detailed discussion about the
         Proximity Forest parameters will be performed in Section 4.2
     */
-    private int num_trees = 100;                
-    private int num_candidates_per_split = 5;   
-    private boolean random_dm_per_node = true;  
-    
+    private int num_trees = 100;
+    private int num_candidates_per_split = 5;
+    private boolean random_dm_per_node = true;
+
     public ProximityForest pf;
-    
+
     private int numClasses;
     private Instances header;
-    
+
     public ProximityForestWrapper() {
     }
 
@@ -130,33 +128,32 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
     public void setRandom_dm_per_node(boolean random_dm_per_node) {
         this.random_dm_per_node = random_dm_per_node;
     }
-        
-    public void setSeed(int seed) { 
+
+    public void setSeed(int seed) {
         AppContext.rand_seed = seed;
-//        AppContext.rand = new DebuggingRandom(seed); todo
         AppContext.rand = new Random(seed);
     }
-    
-    public int getSeed() { 
+
+    public int getSeed() {
         return (int)AppContext.rand_seed;
     }
-    
+
     private Dataset toPFDataset(Instances insts) {
         Dataset dset = new ListDataset(insts.numInstances());
-        
+
         for (Instance inst : insts)
             dset.add((int)inst.classValue(), getSeries(inst));
-        
+
         return dset;
     }
-    
+
     private double[] getSeries(Instance inst) {
         double[] d = new double[inst.numAttributes()-1];
         for (int i = 0; i < d.length; i++)
             d[i] = inst.value(i);
         return d;
     }
-    
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         //init
@@ -164,30 +161,30 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         header = new Instances(data,0);
 
         if (AppContext.rand == null) AppContext.rand = new Random();
-                
+
         AppContext.num_trees = num_trees;
         AppContext.num_candidates_per_split = num_candidates_per_split;
         AppContext.random_dm_per_node = random_dm_per_node;
-        
-        pf = new ProximityForest((int) AppContext.rand_seed); //just an id 
-        
-        
+
+        pf = new ProximityForest((int) AppContext.rand_seed); //just an id
+
+
         //actual work
         Dataset pfdata = toPFDataset(data);
         pf.train(pfdata);
     }
-    
+
     @Override
     public double[] distributionForInstance(Instance inst) throws Exception {
-//        header.add(inst);
-//        Dataset dset = toPFDataset(header);
-//        header.remove(0);
-//        
-//        double[] dist = new double[inst.numClasses()]; 
-//        ProximityForestResult pfres = pf.test(dset);
-//        
-        
-        return pf.predict_proba(getSeries(inst));
+        //        header.add(inst);
+        //        Dataset dset = toPFDataset(header);
+        //        header.remove(0);
+        //
+        //        double[] dist = new double[inst.numClasses()];
+        //        ProximityForestResult pfres = pf.test(dset);
+        //
+
+        return pf.predict_proba(getSeries(inst), numClasses);
     }
 
 
@@ -209,27 +206,27 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 
         return maxClass;
     }
-    
+
     public static void main(String[] args) throws Exception {
-        
-//        ProximityForestWrapper pf = new ProximityForestWrapper();
-//        pf.setSeed(0);
-//        System.out.println(ClassifierTools.testUtils_getIPDAcc(pf));
-//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(pf, 0.966958211856171, "2019_09_26"));
-        
+
+        //        ProximityForestWrapper pf = new ProximityForestWrapper();
+        //        pf.setSeed(0);
+        //        System.out.println(ClassifierTools.testUtils_getIPDAcc(pf));
+        //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(pf, 0.966958211856171, "2019_09_26"));
+
         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
 
         exp.dataReadLocation = "Z:/Data/TSCProblems2015/";
         exp.resultsWriteLocation = "C:/Temp/ProximityForestWekaTest/";
         exp.classifierName = "ProximityForest";
-//        exp.datasetName = "BeetleFly";
-//        exp.foldId = 0;
-//        Experiments.setupAndRunExperiment(exp);
+        //        exp.datasetName = "BeetleFly";
+        //        exp.foldId = 0;
+        //        Experiments.setupAndRunExperiment(exp);
 
 
-        
+
         String[] classifiers = { "ProximityForest" };
-        
+
         String[] datasets = {
             "Beef", // 30,30,470,5
             "Car", // 60,60,577,4
@@ -248,11 +245,11 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
             "SonyAIBORobotSurface2", // 27,953,65,2
             "SyntheticControl", // 300,300,60,6
             "Trace", // 100,100,275,4
-            "TwoLeadECG", // 23,1139,82,2  
+            "TwoLeadECG", // 23,1139,82,2
         };
         int numFolds = 30;
 
-        
+
         //Because of the static app context, best not run multithreaded, stick to single threaded
         for (String dataset : datasets) {
             for (int f = 0; f < numFolds; f++) {
@@ -261,14 +258,14 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
                 Experiments.setupAndRunExperiment(exp);
             }
         }
-        
-        
+
+
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(exp.resultsWriteLocation +"ANA/", "sanityCheck", numFolds);
         mce.setBuildMatlabDiagrams(false);
         mce.setTestResultsOnly(true);
         mce.setDatasets(datasets);
         mce.readInClassifier(exp.classifierName, exp.resultsWriteLocation);
-//        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
+        //        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it
         mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
         mce.runComparison();
     }

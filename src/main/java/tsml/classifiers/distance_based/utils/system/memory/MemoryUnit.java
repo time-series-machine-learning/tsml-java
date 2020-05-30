@@ -37,18 +37,4 @@ public enum MemoryUnit {
             return amount * ratio;
         }
     }
-
-    public static class UnitTests {
-        @Test
-        public void gibibyteToMebibyte() {
-            long amount = MEBIBYTES.convert(8, GIBIBYTES);
-            Assert.assertEquals(amount, 8192);
-        }
-
-        @Test
-        public void mebibyteToGibibyte() {
-            long amount = GIBIBYTES.convert(8192, MEBIBYTES);
-            Assert.assertEquals(amount, 8);
-        }
-    }
 }
