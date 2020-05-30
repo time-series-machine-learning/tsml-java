@@ -278,6 +278,13 @@ public class StrUtils {
         if(parts.length == 0) {
             throw new Exception("Invalid option: " + option);
         }
+        if(parts.length == 1) {
+            try {
+                return (A) parts[0];
+            } catch(ClassCastException e) {
+                throw new IllegalArgumentException("cannot cast " + parts[0] + " to " + baseClass.getName());
+            }
+        }
         String className = parts[0];
         parts[0] = "";
         return forName(baseClass,
@@ -294,7 +301,18 @@ public class StrUtils {
     public static <A> A forName(Class<? super A> classType,
                                  String className,
                                  String[] options) throws Exception {
-
+        // CANNOT HANDLE STRINGS WITH SPACES!
+        if(className.equals(String.class.getName())) {
+            if(options.length != 1) {
+                throw new IllegalArgumentException("can only construct string from 1 option");
+            }
+            try {
+                A result = (A) options[0];
+                return result;
+            } catch (ClassCastException e) {
+                throw new Exception("not castable to string");
+            }
+        }
         Class<?> c = null;
         try {
             c = Class.forName(className);
@@ -330,6 +348,7 @@ public class StrUtils {
     }
 
     public static String toOptionValue(Object value) {
+        // CANNOT HANDLE STRINGS WITH SPACES!
         String str;
         if(value == null) {
             str = "null";
@@ -341,9 +360,10 @@ public class StrUtils {
            value instanceof Short ||
            value instanceof Long ||
            value instanceof Character ||
-           value instanceof Boolean ||
-           value instanceof String) {
+           value instanceof Boolean) {
             str = String.valueOf(value);
+        } else if(value instanceof String) {
+            str = "\"\\\"" + value + "\\\"\"";
         } else {
             Class<?> classValue;
             if(value instanceof Class<?>) {
