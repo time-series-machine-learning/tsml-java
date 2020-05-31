@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
@@ -220,6 +221,10 @@ public class Experiments  {
         // represented as different classifiers, e.g. ST_1day, ST_2day
         // The set classifier call is therefore made before defining paths that are dependent on the classifier name
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
+
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(expSettings.logLevel);
+        }
 
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
         //Check whether results already exists, if so and force evaluation is false: just quit
