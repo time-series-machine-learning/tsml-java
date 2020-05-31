@@ -14,8 +14,13 @@
  */
 package tsml.filters;
 
+import static experiments.data.DatasetLoading.sampleGunPoint;
+import static utilities.Utilities.extractTimeSeries;
+
 import java.io.Serializable;
+import org.junit.Assert;
 import weka.core.DenseInstance;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 
@@ -51,6 +56,15 @@ public class Derivative
         return GLOBAL_CACHE;
     }
 
+    public static Instance getDerivative(Instance instance) {
+        instance = (Instance) instance.copy();
+        double[] derivative = getDerivative(instance.toDoubleArray(), true);
+        for(int i = 0; i < derivative.length; i++) {
+            instance.setValue(i, derivative[i]);
+        }
+        return instance;
+    }
+
     public static double[] getDerivative(double[] input, boolean classValOn) {
 
         int classPenalty = 0;
@@ -84,62 +98,29 @@ public class Derivative
 
     @Override
     protected Instances determineOutputFormat(Instances inputFormat) throws Exception {
-        if(inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
-            throw new IllegalArgumentException("cannot handle class values not at end");
-        }
-        inputFormat = new Instances(inputFormat, 0);
-        for(int i = 0; i < inputFormat.numAttributes(); i++) {
-            if(i != inputFormat.classIndex()) {
-                inputFormat.renameAttribute(i, getPrefix() + inputFormat.attribute(i).name());
-            }
-        }
-        inputFormat.setRelationName(getPrefix() + inputFormat.relationName());
-        return inputFormat;
-
-        // below: old fastvector implementation
-
-        //        int numAttributes = inputFormat.numAttributes();
-        //
-        //        FastVector atts = new FastVector();
-        //        String name;
-        //        for(int i = 0; i < numAttributes-1; i++){
-        //            name = "Attribute_" + i;
-        //            atts.addElement(new Attribute(name));
-        //        }
-        //
-        //        if(inputFormat.classIndex() >= 0){ //Classification set, set class
-        //            //Get the class values as a fast vector
-        //            Attribute target = inputFormat.attribute(inputFormat.classIndex());
-        ////
-        //            FastVector vals = new FastVector(target.numValues());
-        //            for(int i = 0; i < target.numValues(); i++){
-        //                vals.addElement(target.value(i));
-        //            }
-        //            atts.addElement(new Attribute(inputFormat.attribute(inputFormat.classIndex()).name(), vals));
-        //        }
-        //        Instances result = new Instances("derivativeTransform_" + inputFormat.relationName(), atts, inputFormat.numInstances());
-        //        if(inputFormat.classIndex() >= 0){
-        //            result.setClassIndex(result.numAttributes() - 1);
-        //        }
-        //
-        //        return result;
-
+        return new Instances(inputFormat, 0);
     }
 
     public Instances process(Instances data) throws Exception {
-
+        Assert.assertEquals(data.numAttributes() - 1, data.classIndex());
         Instances output = determineOutputFormat(data);
 
         // for each data, get distance to each shapelet and create new instance
         for(int i = 0; i < data.numInstances(); i++) { // for each data
-
-            double[] rawData = data.instance(i).toDoubleArray();
-            double[] derivative = getDerivative(rawData, true); // class value has now been removed - be careful!
-
-            DenseInstance instance = new DenseInstance(1, derivative);
+            Instance instance = data.get(i);
+            instance = getDerivative(instance);
             output.add(instance);
         }
         return output;
+    }
+
+    public static void main(String[] args) {
+        try {
+            Instances instances = sampleGunPoint(0)[0];
+            Instances processed = new Derivative().process(instances);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
