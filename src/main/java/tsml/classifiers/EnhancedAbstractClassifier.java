@@ -14,13 +14,12 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.random.DebuggingRandom;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
 import java.io.Serializable;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
@@ -96,6 +95,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
     public void setRandom(Random rand) {
         this.rand = rand;
+        seedClassifier = false;
     }
 
     /**
@@ -154,7 +154,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
-        rand.setSeed(seed);
+        if(seedClassifier) {
+            rand.setSeed(seed);
+        }
         numClasses = trainData.numClasses();
         trainResults.setClassifierName(getClassifierName());
         trainResults.setParas(getParameters());
@@ -295,7 +297,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void setSeed(int seed) { 
         seedClassifier=true;
         this.seed = seed;
-        rand=new Random(seed);
+        rand=new DebuggingRandom(seed);
     }
 
     /**

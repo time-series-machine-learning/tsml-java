@@ -11,6 +11,7 @@ import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.filters.CachedFilter;
+import tsml.filters.HashFilter;
 import tsml.filters.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -45,6 +46,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     @Override
     public void setInstances(Instances data) {
         super.setInstances(data);
+        HashFilter.hashInstances(data);
         distanceFunction.setInstances(data);
         try {
             transformer.setInputFormat(data);

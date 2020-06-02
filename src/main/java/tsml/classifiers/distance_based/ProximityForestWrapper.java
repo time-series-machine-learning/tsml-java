@@ -24,6 +24,7 @@ import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
+import tsml.classifiers.distance_based.utils.random.DebuggingRandom;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -132,7 +133,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 
     public void setSeed(int seed) {
         AppContext.rand_seed = seed;
-        AppContext.rand = new Random(seed);
+        AppContext.rand = new DebuggingRandom(seed);
     }
 
     public int getSeed() {

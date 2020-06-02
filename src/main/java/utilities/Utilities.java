@@ -15,6 +15,8 @@
 package utilities;
 
 import com.beust.jcommander.internal.Lists;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
@@ -269,11 +271,19 @@ public class Utilities {
     }
 
     public static Map<Double, Instances> instancesByClass(Instances instances) {
-        Map<Double, Instances> map = new TreeMap<>();
+        Map<Double, Instances> map = new LinkedHashMap<>();
         for(Instance instance : instances) {
             map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
         }
         return map;
+    }
+
+    public static double roundExact(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     public static double sum(Iterable<Double> iterable) {
@@ -671,5 +681,20 @@ public class Utilities {
     }
 
 
+    public static double[] normalise(final int[] array) {
+        int sum = sum(array);
+        double[] result = new double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            result[i] = (double) array[i] / sum;
+        }
+        return result;
+    }
 
+    private static int sum(final int[] array) {
+        int sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += array[i];
+        }
+        return sum;
+    }
 }

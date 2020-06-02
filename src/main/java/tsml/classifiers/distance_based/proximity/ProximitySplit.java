@@ -15,6 +15,7 @@ import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterat
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.scoring.Scorer;
 import tsml.classifiers.distance_based.utils.scoring.Scorer.GiniImpurityEntropy;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -54,19 +55,30 @@ public class ProximitySplit {
     }
 
     private void pickExemplars(final Instances instances) {
-//        System.out.println("pe"); todo
+        System.out.println("pe"); // todo
+        System.out.println("is: " + instances.size());
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
+        for(Double classLabel : instancesByClass.keySet()) {
+            final Instances instanceClass = instancesByClass.get(classLabel);
+            System.out.println("cc: " + instanceClass.size());
+        }
         List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
             final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
+            // orig pf always calls for a random number even if the instances has only one instance. The choice
+            // function doesn't source a random number given a list of size 1, therefore the random number call must
+            // be made here to match orig pf random number sequence
+            if(instanceClass.size() == 1) {
+                getRandom().nextInt(1);
+            }
             exemplars.add(Lists.newArrayList(exemplar));
         }
         setExemplars(exemplars);
     }
 
     private void pickDistanceFunction() {
-//        System.out.println("pd"); todo
+        System.out.println("pd"); // todo
         distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
         distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
         RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
@@ -100,7 +112,7 @@ public class ProximitySplit {
         }
         for(int i = 0; i < r; i++) {
             pickDistanceFunction();
-            pickExemplars(data);
+            pickExemplars(data); // todo can reuse class counts
             List<Instances> partitions = Lists.newArrayList(exemplars.size());
             if(distanceFunction instanceof DistanceMeasureable) {
                 ((DistanceMeasureable) distanceFunction).setTraining(true);
@@ -112,7 +124,7 @@ public class ProximitySplit {
             for(int j = 0; j < data.size(); j++) {
                 final Instance instance = data.get(j);
                 final int index = getPartitionIndexFor(instance);
-//                System.out.println("cb: " + j + "," + index); todo
+                System.out.println("cb: " + j + "," + index); // todo
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }
@@ -122,14 +134,21 @@ public class ProximitySplit {
             double score = scorer.findScore(data, partitions);
             Container container = new Container(exemplars, distanceFunction, partitions, score);
             map.put(score, container);
-//            System.out.println("g: " + (0.5 - score)); // todo
+            System.out.println("g: " + Utilities.roundExact(0.5 - score, 8)); // todo
         }
         Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
         partitions = choice.partitions;
         distanceFunction = choice.distanceFunction;
         exemplars = choice.exemplars;
         score = choice.score;
-//        System.out.println("bg: " + (0.5 - score)); // todo
+//        System.out.println(distanceFunction.getClass() + " " + StrUtils.join(" ", distanceFunction.getOptions()));
+        System.out.println("bg: " + Utilities.roundExact(0.5 - score, 8)); // todo
+//        if(0.5 - score == 0.26666666666666666) {
+//            System.out.println("stop here");
+//        }
+        for(Instances part : partitions) {
+            System.out.println("part: " + part.size());
+        }
     }
 
     public Instances getPartitionFor(Instance instance) {
@@ -216,7 +235,8 @@ public class ProximitySplit {
         for(int i = 0; i < exemplars.size(); i++) {
             for(Instance exemplar : exemplars.get(i)) {
                 if(exemplar.equals(instance)) {
-                    return i;
+                    return i; // move this check to outside of the loop (i.e. if we've received the second exemplar
+                    // we end up doing the distance to the first which is pointless
                 }
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
                 if(earlyAbandonDistances) {
@@ -228,6 +248,9 @@ public class ProximitySplit {
         }
         final Double smallestDistance = distanceToPartitionIndexMap.firstKey();
         final Collection<Integer> closestPartitionIndices = distanceToPartitionIndexMap.get(smallestDistance);
+        if(!randomTieBreakDistances) {
+            Assert.assertEquals(closestPartitionIndices.size(), 1);
+        }
         // no-op, but must sample the random source to match orig pf. The orig implementation always samples the
         // random irrelevant of whether the list size is 1 or more. We only sample IFF the list size is larger than 1
         // . Therefore we'll sample the random if the list is exactly equal to 1 in size.

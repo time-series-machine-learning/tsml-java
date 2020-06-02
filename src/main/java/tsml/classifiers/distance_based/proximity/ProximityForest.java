@@ -3,6 +3,9 @@ package tsml.classifiers.distance_based.proximity;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +107,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.start();
         trainTimer.start();
         trainEstimaterTimer.checkStopped();
+        System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.out")), true));
+        System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.err")), true));
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(isRebuild()) {
 //            rand = new DebuggingRandom(seed); // todo remove post debugging
@@ -146,7 +151,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
         }
         CachedFilter.hashInstances(trainData);
-        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLogger(), "train");
         // todo contract train of trees?
         while(
             insideNumTreeLimit()
@@ -155,14 +159,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         ) {
             trainStageTimer.resetAndStart();
             int treeIndex = trees.size();
-            getLogger().info(() -> "building tree " + treeIndex);
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
+            System.out.println("------------------------------------------------------------ tree " + (trees.size()));
             ProximityTree tree = new ProximityTree();
             tree = constituentConfig.setConfig(tree);
             tree.setRandom(rand);
             trees.add(tree);
             if(getEstimateOwnPerformance()) {
-                getLogger().info(() -> "building tree " + treeIndex + "  train estimate");
                 trainEstimaterTimer.start();
                 ClassifierResults results;
                 if(oob) {
@@ -184,7 +186,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 }
                 ResultUtils.setInfo(results, tree, trainData);
                 trainEstimaterTimer.stop();
-                getLogger().info(() -> "finished building tree " + treeIndex + "  train estimate");
             }
             tree.setRebuild(true);
             tree.buildClassifier(trainData);

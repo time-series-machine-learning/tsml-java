@@ -186,15 +186,25 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             split.buildSplit();
             List<Instances> partitions = split.getPartitions();
             // for each partition of data
-            for(Instances partition : partitions) {
-                // try to build a child node
-                buildNode(partition, node);
-            }
+            // try to build a child node
+            buildNodes(partitions, node);
             trainStageTimer.stop();
             longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, trainStageTimer.getTime());
         }
         trainTimer.stop();
         memoryWatcher.stop();
+    }
+
+    private void buildNodes(List<Instances> partitions, TreeNode<ProximitySplit> parent) {
+        if(breadthFirst) {
+            for(int i = 0; i < partitions.size(); i++) {
+                buildNode(partitions.get(i), parent);
+            }
+        } else {
+            for(int i = partitions.size() - 1; i >= 0; i--) {
+                buildNode(partitions.get(i), parent);
+            }
+        }
     }
 
     private TreeNode<ProximitySplit> buildNode(Instances data, TreeNode<ProximitySplit> parent) {
@@ -262,7 +272,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // get the parent of the leaf node to work out distribution
         node = node.getParent();
         split = node.getElement();
+        final boolean origRandomTieBreakDistances = split.isRandomTieBreakDistances();
+        split.setRandomTieBreakDistances(false);
         double[] distribution = split.distributionForInstance(instance, index);
+        split.setRandomTieBreakDistances(origRandomTieBreakDistances);
         // disable the resource monitors
         testTimer.stop();
         return distribution;
