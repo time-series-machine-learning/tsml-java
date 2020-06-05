@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
+<<<<<<< HEAD
 import static utilities.Utilities.extractTimeSeries;
 
 import distance.elastic.DDTW;
@@ -71,4 +72,8 @@ public class TmpTest {
 //            }
 //        }
     }
+=======
+public class TmpTest {
+
+>>>>>>> pf
 }
