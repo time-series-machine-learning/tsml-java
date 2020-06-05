@@ -116,7 +116,7 @@ public class ERP {
 			}
 		}
 
-		return Math.sqrt(curr[m - 1]);	//TODO do we need sqrt here
+		return curr[m - 1];	//TODO do we need sqrt here
 	}
 	
 	public int get_random_window(Dataset d, Random r) {

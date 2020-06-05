@@ -186,9 +186,15 @@ public class ProximitySplit {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("PartitionSet{" +
+        stringBuilder.append(getClass().getSimpleName() + "{" +
             "score=" + score +
             ", dataSize=" + data.size());
+        stringBuilder.append(", df=");
+        if(distanceFunction != null) {
+            stringBuilder.append(distanceFunction.toString());
+        } else {
+            stringBuilder.append("null");
+        }
         if(partitions != null) {
             int i = 0;
             for(Instances instances : partitions) {
@@ -239,6 +245,7 @@ public class ProximitySplit {
                     // we end up doing the distance to the first which is pointless
                 }
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
+                System.out.println(Utilities.roundExact(distance, 8));
                 if(earlyAbandonDistances) {
                     limit = Math.min(distance, limit);
                 }

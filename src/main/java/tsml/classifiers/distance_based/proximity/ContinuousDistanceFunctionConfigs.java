@@ -12,6 +12,7 @@ import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.distribution.double_based.DoubleDistribution;
 import tsml.classifiers.distance_based.utils.params.distribution.double_based.UniformDoubleDistribution;
 import tsml.classifiers.distance_based.utils.params.distribution.int_based.UniformIntDistribution;
 import utilities.StatisticalUtilities;
@@ -58,7 +59,14 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildErpParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
+        subSpace.add(ERPDistance.getPenaltyFlag(), new DoubleDistribution(0,1) {
+
+            @Override
+            public Double sample() {
+                return getRandom().nextDouble() * 0.8 * std + 0.2 * std;
+            }
+        });
+//        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt(len / 4 + 1), so range is from 0 to len / 4 inclusively
         // above doesn't consider class value, so -1 from len
         subSpace.add(ERPDistance.getBandSizeFlag(), new UniformIntDistribution(0,

@@ -238,6 +238,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.stop();
         memoryWatcher.stop();
         getLogger().info("build complete");
+        System.out.println("--------- train finished");
     }
 
     private void vote(double[] finalDistribution, double[] distribution, double weight) {
@@ -258,6 +259,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         vote(finalDistribution, distribution, results.getAcc());
     }
 
+    private int x = 0;
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         testTimer.resetAndStart();
@@ -281,6 +283,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         }
         ArrayUtilities.normaliseInPlace(finalDistribution);
         testTimer.stop();
+        x++;
         return finalDistribution;
     }
 

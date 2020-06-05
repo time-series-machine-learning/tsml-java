@@ -47,7 +47,7 @@ public class DebuggingRandom extends Random {
 
     @Override
     protected int next(final int i) {
-        System.out.println("next(" + i + ")");
+//        System.out.println("next(" + i + ")");
         return super.next(i);
     }
 

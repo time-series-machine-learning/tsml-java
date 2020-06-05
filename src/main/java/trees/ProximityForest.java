@@ -47,6 +47,8 @@ public class ProximityForest implements Serializable{
 
 	}
 
+	private int x = 0;
+
 	public double[] predict_proba(double[] query, int numClasses) throws Exception {
 		num_votes = new int[numClasses];
 		max_voted_classes = new ArrayList<>();
@@ -65,7 +67,7 @@ public class ProximityForest implements Serializable{
 
 			num_votes[label]++;
 		}
-
+		x++;
 		return Utilities.normalise(num_votes);
 	}
 	
@@ -102,7 +104,7 @@ public class ProximityForest implements Serializable{
 		if (AppContext.verbosity > 0) {
 			PrintUtilities.printMemoryUsage();	
 		}
-	
+		System.out.println("--------- train finished");
 	}
 	
 	//ASSUMES CLASS labels HAVE BEEN reordered to start from 0 and contiguous

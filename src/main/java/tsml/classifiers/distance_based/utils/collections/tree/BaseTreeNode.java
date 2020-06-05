@@ -23,7 +23,16 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     public BaseTreeNode() {}
 
     public BaseTreeNode(A element) {
+        this(element, null);
+    }
+
+    public BaseTreeNode(A element, TreeNode<A> parent) {
         setElement(element);
+        setParent(parent);
+    }
+
+    public BaseTreeNode(TreeNode<A> parent) {
+        this(null, parent);
     }
 
     @Override

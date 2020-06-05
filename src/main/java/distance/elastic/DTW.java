@@ -118,8 +118,9 @@ public class DTW {
 
 		}
 		
-		double res = sqrt(currentRow[length2 - 1]);
-		
+//		double res = sqrt(currentRow[length2 - 1]);
+		double res = currentRow[length2 - 1];
+
 		return res;
 	}
 

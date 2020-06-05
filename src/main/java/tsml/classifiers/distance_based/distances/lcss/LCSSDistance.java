@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.distances.lcss;
 
 import static utilities.Utilities.extractTimeSeries;
 
+import distance.elastic.ERP;
 import distance.elastic.LCSS;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
@@ -9,6 +10,7 @@ import tsml.classifiers.distance_based.distances.dtw.DTWTest;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import utilities.InstanceTools;
+import utilities.Utilities;
 import weka.core.Debug.Random;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -119,10 +121,13 @@ public class LCSSDistance extends BaseDistanceMeasure {
                     if(second.value(j) + this.epsilon >= first.value(i) && second.value(j) - epsilon <= first
                         .value(i)) {
                         lcss[i + 1][j + 1] = lcss[i][j] + 1;
-                    } else if(lcss[i][j + 1] > lcss[i + 1][j]) {
-                        lcss[i + 1][j + 1] = lcss[i][j + 1];
-                    } else {
-                        lcss[i + 1][j + 1] = lcss[i + 1][j];
+//                    } else if(lcss[i][j + 1] > lcss[i + 1][j]) {
+//                        lcss[i + 1][j + 1] = lcss[i][j + 1];
+//                    } else {
+//                        lcss[i + 1][j + 1] = lcss[i + 1][j];
+                    }
+                    else {
+                        lcss[i + 1][j + 1] = Utilities.max(lcss[i + 1][j], lcss[i][j], lcss[i][j + 1]);
                     }
                     // if this value is less than the limit then fast-fail the limit overflow
                     if(tooBig && lcss[i + 1][j + 1] < limit) {
@@ -167,44 +172,52 @@ public class LCSSDistance extends BaseDistanceMeasure {
         this.delta = delta;
     }
 
-    public static void main(String[] args) {
-        Instances instances = DTWTest.buildInstances();
-        final LCSSDistance df = new LCSSDistance();
-        df.setInstances(instances);
-        final int w = 0;
-        final double e = 0.41393;
-        df.setDelta(w);
-        df.setEpsilon(e);
-//        System.out.println(df.distance(instances.get(0), instances.get(1)));
-//        System.out.println(df.distance(extractTimeSeries(instances.get(0)), extractTimeSeries(instances.get(1))));
-//        System.out.println(new LCSS().distance(extractTimeSeries(instances.get(0)),
-//            extractTimeSeries(instances.get(1)), Double.POSITIVE_INFINITY, w, e));
-        Random random = new Random();
-        random.setSeed(0);
-        int length = 100;
-        final double min = -1;
-        final double max = 3;
-        final double range = Math.abs(max - min);
-        for(int i = 0; i < 100; i++) {
-            double[] a = new double[length];
-            double[] b = new double[length];
-            for(int j = 0; j < length; j++) {
-                a[j] = random.nextDouble() * range + min;
-                b[j] = random.nextDouble() * range + min;
-            }
-            final Instances dummy = InstanceTools.toWekaInstances(new double[][]{
-                a,
-                b,
-            }, new double[]{1, 2});
-            double d1 = df.distance(a, b);
-            double d2 = df.distance(dummy.get(0), dummy.get(1));
-            double d3 = new LCSS().distance(a, b, Double.POSITIVE_INFINITY, w, e);
-            System.out.println(d1);
-            System.out.println(d2);
-            System.out.println(d3);
-            Assert.assertEquals(d1, d2, 0);
-            Assert.assertEquals(d1, d3, 0);
-            Assert.assertEquals(d2, d3, 0);
+
+    public double lcssDist(double[] a, double[] b, double epsilon) {
+        final int m = a.length + 1;
+        final int n = b.length + 1;
+        final int[][] matrix = new int[m][n];
+
+        final int[] col1 = matrix[0];
+        if(approxEqual(a[0], b[0], epsilon)) {
+            col1[0] = 1;
+        } else {
+            col1[0] = 0;
         }
+
+        for(int i = 1; i < a.length; i++) {
+            final int[] row = matrix[i];
+            if(approxEqual(a[i], b[0], epsilon)) {
+                row[0] = 1;
+            } else {
+                row[0] = matrix[i - 1][0];
+            }
+        }
+
+        for(int j = 1; j < b.length; j++) {
+            if(approxEqual(a[0], b[j], epsilon)) {
+                col1[j] = 1;
+            } else {
+                col1[j] = col1[j - 1];
+            }
+        }
+
+        for(int i = 1; i < m; i++) {
+            final int[] row = matrix[i];
+            final int[] prevRow = matrix[i - 1];
+            for(int j = 1; j < n; j++) {
+                if(approxEqual(a[i - 1], b[j - 1], epsilon)) {
+                    row[j] = prevRow[j - 1] + 1;
+                } else {
+                    row[j] = Utilities.max(row[j - 1], prevRow[j], prevRow[j - 1]);
+                }
+            }
+        }
+
+        return 1 - (double) matrix[a.length - 1][b.length - 1] / Utilities.min(a.length, b.length);
+    }
+
+    public static boolean approxEqual(double a, double b, double epsilon) {
+        return Math.abs(a - b) <= epsilon;
     }
 }

@@ -278,6 +278,28 @@ public class Utilities {
         return map;
     }
 
+    public static int max(int... values) {
+        int max = values[0];
+        for(int i = 0; i < values.length; i++) {
+            final int value = values[i];
+            if(value > max) {
+                max = value;
+            }
+        }
+        return max;
+    }
+
+    public static int min(int... values) {
+        int min = values[0];
+        for(int i = 0; i < values.length; i++) {
+            final int value = values[i];
+            if(value < min) {
+                min = value;
+            }
+        }
+        return min;
+    }
+
     public static double roundExact(double value, int places) {
         if (places < 0) throw new IllegalArgumentException();
 

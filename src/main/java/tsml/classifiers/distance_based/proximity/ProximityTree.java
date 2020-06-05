@@ -2,6 +2,10 @@ package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.Assert;
@@ -48,7 +52,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private boolean earlyAbandonDistances;
     private boolean randomTieBreakDistances;
     private boolean randomTieBreakR;
-    private LinkedList<TreeNode<ProximitySplit>> nodeBuildQueue;
+    private Deque<TreeNode<ProximitySplit>> nodeBuildQueue;
     private boolean breadthFirst;
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
 
@@ -168,10 +172,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             nodeBuildQueue = new LinkedList<>();
             longestNodeBuildTimeNanos = 0;
             super.buildClassifier(trainData);
-            final TreeNode<ProximitySplit> root = buildNode(trainData, null);
+            final TreeNode<ProximitySplit> root = setupNode(trainData, null);
             tree.setRoot(root);
+            nodeBuildQueue.add(root);
         }
-        CachedFilter.hashInstances(trainData);
         while(
             // there is enough time for another split to be built
             insideTrainTimeLimit(trainTimer.lap() + longestNodeBuildTimeNanos)
@@ -184,10 +188,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // partition the data at the node
             ProximitySplit split = node.getElement();
             split.buildSplit();
-            List<Instances> partitions = split.getPartitions();
-            // for each partition of data
-            // try to build a child node
-            buildNodes(partitions, node);
+            // for each partition of data build a child node
+            final List<TreeNode<ProximitySplit>> children = setupChildNodes(node);
+            // add the child nodes to the build queue
+            enqueueNodes(children);
+            // done building this node
             trainStageTimer.stop();
             longestNodeBuildTimeNanos = Math.max(longestNodeBuildTimeNanos, trainStageTimer.getTime());
         }
@@ -195,34 +200,40 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         memoryWatcher.stop();
     }
 
-    private void buildNodes(List<Instances> partitions, TreeNode<ProximitySplit> parent) {
-        if(breadthFirst) {
-            for(int i = 0; i < partitions.size(); i++) {
-                buildNode(partitions.get(i), parent);
+    private void enqueueNodes(List<TreeNode<ProximitySplit>> nodes) {
+        for(int i = 0; i < nodes.size(); i++) {
+            TreeNode<ProximitySplit> node;
+            if(breadthFirst) {
+                node = nodes.get(i);
+            } else {
+                node = nodes.get(nodes.size() - i - 1);
             }
-        } else {
-            for(int i = partitions.size() - 1; i >= 0; i--) {
-                buildNode(partitions.get(i), parent);
+            // check the stopping condition hasn't been hit
+            // check the data at the node is not pure
+            if(!Utilities.isHomogeneous(node.getElement().getData())) {
+                // if not hit the stopping condition then add node to the build queue
+                if(breadthFirst) {
+                    nodeBuildQueue.addLast(node);
+                } else {
+                    nodeBuildQueue.addFirst(node);
+                }
             }
         }
     }
 
-    private TreeNode<ProximitySplit> buildNode(Instances data, TreeNode<ProximitySplit> parent) {
+    private List<TreeNode<ProximitySplit>> setupChildNodes(TreeNode<ProximitySplit> parent) {
+        List<TreeNode<ProximitySplit>> children = new ArrayList<>();
+        for(Instances partition : parent.getElement().getPartitions()) {
+            children.add(setupNode(partition, parent));
+        }
+        return children;
+    }
+
+    private TreeNode<ProximitySplit> setupNode(Instances data, TreeNode<ProximitySplit> parent) {
         // split the data into multiple partitions, housed in a ProximitySplit object
         final ProximitySplit split = setupSplit(data);
         // build a new node
-        final TreeNode<ProximitySplit> node = new BaseTreeNode<>(split);
-        // set tree relationship
-        node.setParent(parent);
-        // check the stopping condition hasn't been hit
-        if(!Utilities.isHomogeneous(data)) {
-            // if not hit the stopping condition then add node to the build queue
-            if(breadthFirst) {
-                nodeBuildQueue.addLast(node);
-            } else {
-                nodeBuildQueue.addFirst(node);
-            }
-        }
+        final TreeNode<ProximitySplit> node = new BaseTreeNode<>(split, parent);
         return node;
     }
 

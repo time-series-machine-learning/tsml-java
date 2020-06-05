@@ -6,7 +6,8 @@ import java.util.Random;
 
 import core.AppContext;
 import core.contracts.Dataset;
- 
+import utilities.Utilities;
+
 public class DistanceMeasure {
 	
 	public final MEASURE distance_measure;
@@ -291,7 +292,7 @@ public class DistanceMeasure {
 			}
 							
 			dist = this.distance(query, exemplar);
-			
+			System.out.println(Utilities.roundExact(dist, 8));
 			if (dist < bsf) {
 				bsf = dist;
 				closest_nodes.clear();
@@ -305,7 +306,7 @@ public class DistanceMeasure {
 			}
 		}
 		
-		int r = AppContext.getRand().nextInt(closest_nodes.size());
+ 		int r = AppContext.getRand().nextInt(closest_nodes.size());
 		return closest_nodes.get(r);
 	}
 	
