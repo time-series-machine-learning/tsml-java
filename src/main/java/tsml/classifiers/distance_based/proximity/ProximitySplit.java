@@ -2,7 +2,6 @@ package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -72,7 +71,6 @@ public class ProximitySplit {
     private boolean exemplarCheckOriginal;
 
     /**
-     * 
      * @param random the random source
      */
     public ProximitySplit(Random random) {
@@ -91,6 +89,7 @@ public class ProximitySplit {
 
     /**
      * pick exemplars from the given dataset
+     *
      * @param instancesByClass a map of class labels to instances
      */
     private void pickExemplars(final Map<Double, Instances> instancesByClass) {
@@ -136,6 +135,7 @@ public class ProximitySplit {
         // small helper class to contain a split. This is used to temporarily hold split results while this function 
         // compares R splits to pick the best
         class SplitCandididate {
+
             public final List<List<Instance>> exemplars;
             public final DistanceFunction distanceFunction;
             public final List<Instances> partitions;
@@ -196,7 +196,8 @@ public class ProximitySplit {
             // find the score of this split attempt, i.e. how good it is
             double score = scorer.findScore(data, partitions);
             // chuck into a container to keep for later
-            SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions, score);
+            SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions,
+                score);
             // add it to the map. The map will handle whether the split attempt was any good and should be kept
             map.put(score, splitCandididate);
         }
@@ -223,6 +224,11 @@ public class ProximitySplit {
         return partitions;
     }
 
+    private void setPartitions(List<Instances> partitions) {
+        Assert.assertNotNull(partitions);
+        this.partitions = partitions;
+    }
+
     public Instances getData() {
         return data;
     }
@@ -230,15 +236,6 @@ public class ProximitySplit {
     public void setData(Instances data) {
         Assert.assertNotNull(data);
         this.data = data;
-    }
-
-    private void setPartitions(List<Instances> partitions) {
-        Assert.assertNotNull(partitions);
-        this.partitions = partitions;
-    }
-
-    private void setScore(final double score) {
-        this.score = score;
     }
 
     @Override
@@ -261,7 +258,7 @@ public class ProximitySplit {
             }
         }
         stringBuilder.append("}");
-        return  stringBuilder.toString();
+        return stringBuilder.toString();
     }
 
     public Scorer getScorer() {
@@ -286,8 +283,13 @@ public class ProximitySplit {
         return score;
     }
 
+    private void setScore(final double score) {
+        this.score = score;
+    }
+
     /**
      * get the partition index of the given instance
+     *
      * @param instance
      * @return
      */
@@ -300,16 +302,14 @@ public class ProximitySplit {
                 final List<Instance> group = exemplarGroups.get(i);
                 // for each exemplar
                 for(Instance exemplar : group) {
-                    if(exemplar.equals(instance)) {
+                    if(exemplar == instance) {
                         return i;
                     }
                 }
             }
         }
-        // the maximum possible distance returned by the distance function
-        final double maxDistance = Double.POSITIVE_INFINITY;
         // the limit for early abandon
-        double limit = maxDistance;
+        double limit = Double.POSITIVE_INFINITY;
         // a map to maintain the closest partition indices
         PrunedMultimap<Double, Integer> distanceToPartitionIndexMap = PrunedMultimap.asc();
         if(randomTieBreakDistances) {
@@ -326,7 +326,7 @@ public class ProximitySplit {
             // for each exemplar in the current group
             for(Instance exemplar : exemplarGroups.get(i)) {
                 // check the instance isn't an exemplar
-                if(exemplarCheckOriginal && exemplar.equals(instance)) {
+                if(exemplarCheckOriginal && exemplar == instance) {
                     return i;
                 }
                 // find the distance
@@ -360,8 +360,9 @@ public class ProximitySplit {
 
     /**
      * find the distribution for the given instance and partition index it belongs to
+     *
      * @param instance the instance
-     * @param index the index of the partition it belongs to
+     * @param index    the index of the partition it belongs to
      * @return the distribution
      */
     public double[] distributionForInstance(final Instance instance, int index) {
@@ -391,6 +392,11 @@ public class ProximitySplit {
         return distanceFunction;
     }
 
+    private void setDistanceFunction(final DistanceFunction distanceFunction) {
+        Assert.assertNotNull(distanceFunction);
+        this.distanceFunction = distanceFunction;
+    }
+
     public List<List<Instance>> getExemplarGroups() {
         return exemplarGroups;
     }
@@ -402,11 +408,6 @@ public class ProximitySplit {
             Assert.assertFalse(exemplarGroup.isEmpty());
         }
         this.exemplarGroups = exemplarGroups;
-    }
-
-    private void setDistanceFunction(final DistanceFunction distanceFunction) {
-        Assert.assertNotNull(distanceFunction);
-        this.distanceFunction = distanceFunction;
     }
 
     public boolean isRandomTieBreakDistances() {
