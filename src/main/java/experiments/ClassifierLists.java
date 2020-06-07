@@ -193,13 +193,13 @@ public class ClassifierLists {
 //                c = new ProximityForest().setNumTreeLimit(1000).setCV(true);
 //                break;
             case "PF_R1":
-                c = new ProximityForest().setConfigOriginalR1();
+                c = ProximityForest.CONFIG_R1.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5":
-                c = new ProximityForest().setConfigOriginalR5();
+                c = ProximityForest.CONFIG_R5.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R10":
-                c = new ProximityForest().setConfigOriginalR10();
+                c = ProximityForest.CONFIG_R10.applyConfigTo(new ProximityForest());
                 break;
             case "ORIG_PF":
                 c = new ProximityForestWrapper();

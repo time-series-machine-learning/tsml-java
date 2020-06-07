@@ -22,7 +22,7 @@ import weka.core.Instances;
  * Contributors: goastler
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy, TrainEstimateable,
-    Loggable, RandomSource {
+    Loggable, DefaultClassifier {
 
     // method of logging
     private Logger logger = LogUtils.buildLogger(this);
@@ -153,9 +153,4 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public double classifyInstance(final Instance instance) throws Exception {
-        double[] distribution = distributionForInstance(instance);
-        return ArrayUtilities.argMax(distribution);
-    }
 }
