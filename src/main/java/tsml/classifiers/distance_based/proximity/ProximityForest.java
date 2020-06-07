@@ -107,8 +107,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.start();
         trainTimer.start();
         trainEstimaterTimer.checkStopped();
-        System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.out")), true));
-        System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.err")), true));
+//        System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.out")), true));
+//        System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream("my_pf.err")), true));
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLogger(), "train");
         if(isRebuild()) {
 //            rand = new DebuggingRandom(seed); // todo remove post debugging
@@ -159,7 +159,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         ) {
             trainStageTimer.resetAndStart();
             int treeIndex = trees.size();
-            System.out.println("------------------------------------------------------------ tree " + (trees.size()));
+//            System.out.println("------------------------------------------------------------ tree " + (trees.size()));
             ProximityTree tree = new ProximityTree();
             tree = constituentConfig.setConfig(tree);
             tree.setRandom(rand);
@@ -238,7 +238,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.stop();
         memoryWatcher.stop();
         getLogger().info("build complete");
-        System.out.println("--------- train finished");
+//        System.out.println("--------- train finished");
     }
 
     private void vote(double[] finalDistribution, double[] distribution, double weight) {

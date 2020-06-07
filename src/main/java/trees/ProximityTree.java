@@ -46,7 +46,7 @@ public class ProximityTree{
 		}
 		
 		this.root = new Node(null, null, ++node_counter, this);
-		System.out.println("------------------------------------------------------------ tree " + tree_id);
+//		System.out.println("------------------------------------------------------------ tree " + tree_id);
 		this.root.train(data);
 	}
 	

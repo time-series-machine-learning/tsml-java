@@ -75,8 +75,8 @@ public class ProximityForest implements Serializable{
 		result.startTimeTrain = System.nanoTime();
 
 
-		System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream("their_pf.out")), true));
-		System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream("their_pf.err")), true));
+//		System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream("their_pf.out")), true));
+//		System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream("their_pf.err")), true));
 
 		for (int i = 0; i < AppContext.num_trees; i++) {
 			trees[i].train(train_data);
@@ -104,7 +104,7 @@ public class ProximityForest implements Serializable{
 		if (AppContext.verbosity > 0) {
 			PrintUtilities.printMemoryUsage();	
 		}
-		System.out.println("--------- train finished");
+//		System.out.println("--------- train finished");
 	}
 	
 	//ASSUMES CLASS labels HAVE BEEN reordered to start from 0 and contiguous

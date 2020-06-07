@@ -55,12 +55,12 @@ public class ProximitySplit {
     }
 
     private void pickExemplars(final Instances instances) {
-        System.out.println("pe"); // todo
-        System.out.println("is: " + instances.size());
+//        System.out.println("pe"); // todo
+//        System.out.println("is: " + instances.size());
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(instances);
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
-            System.out.println("cc: " + instanceClass.size());
+//            System.out.println("cc: " + instanceClass.size());
         }
         List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
@@ -78,7 +78,7 @@ public class ProximitySplit {
     }
 
     private void pickDistanceFunction() {
-        System.out.println("pd"); // todo
+//        System.out.println("pd"); // todo
         distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
         distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
         RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
@@ -124,7 +124,7 @@ public class ProximitySplit {
             for(int j = 0; j < data.size(); j++) {
                 final Instance instance = data.get(j);
                 final int index = getPartitionIndexFor(instance);
-                System.out.println("cb: " + j + "," + index); // todo
+//                System.out.println("cb: " + j + "," + index); // todo
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }
@@ -134,7 +134,7 @@ public class ProximitySplit {
             double score = scorer.findScore(data, partitions);
             Container container = new Container(exemplars, distanceFunction, partitions, score);
             map.put(score, container);
-            System.out.println("g: " + Utilities.roundExact(0.5 - score, 8)); // todo
+//            System.out.println("g: " + Utilities.roundExact(0.5 - score, 8)); // todo
         }
         Container choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
         partitions = choice.partitions;
@@ -142,12 +142,12 @@ public class ProximitySplit {
         exemplars = choice.exemplars;
         score = choice.score;
 //        System.out.println(distanceFunction.getClass() + " " + StrUtils.join(" ", distanceFunction.getOptions()));
-        System.out.println("bg: " + Utilities.roundExact(0.5 - score, 8)); // todo
+//        System.out.println("bg: " + Utilities.roundExact(0.5 - score, 8)); // todo
 //        if(0.5 - score == 0.26666666666666666) {
 //            System.out.println("stop here");
 //        }
         for(Instances part : partitions) {
-            System.out.println("part: " + part.size());
+//            System.out.println("part: " + part.size());
         }
     }
 
@@ -245,7 +245,7 @@ public class ProximitySplit {
                     // we end up doing the distance to the first which is pointless
                 }
                 final double distance = distanceFunction.distance(instance, exemplar, limit);
-                System.out.println(Utilities.roundExact(distance, 8));
+//                System.out.println(Utilities.roundExact(distance, 8));
                 if(earlyAbandonDistances) {
                     limit = Math.min(distance, limit);
                 }

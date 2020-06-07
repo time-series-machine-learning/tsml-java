@@ -53,7 +53,7 @@ public class Splitter{
 			closest_branch = this.find_closest_branch(sample.get_series(j), 
 					temp_distance_measure, temp_exemplars);
 
-			System.out.println("cb: " + j + "," + closest_branch); // todo
+//			System.out.println("cb: " + j + "," + closest_branch); // todo
 
 			if (closest_branch == -1) {
 				assert false;
@@ -86,7 +86,7 @@ public class Splitter{
 		int parent_size = data.size();
 	
 		for (int i = 0; i < AppContext.num_candidates_per_split; i++) {
-			System.out.println("pd");
+//			System.out.println("pd");
 			if (AppContext.random_dm_per_node) {
 				int r = AppContext.getRand().nextInt(AppContext.enabled_distance_measures.length);
 				temp_distance_measure = new DistanceMeasure(AppContext.enabled_distance_measures[r]);		
@@ -98,14 +98,14 @@ public class Splitter{
 			
 			temp_distance_measure.select_random_params(data, AppContext.getRand());
 
-			System.out.println("pe");
-			System.out.println("is: " + data.size());
+//			System.out.println("pe");
+//			System.out.println("is: " + data.size());
 			for(Map.Entry<Integer, ListDataset> entry : data_per_class.entrySet()) {
-				System.out.println("cc: " + entry.getValue().size());
+//				System.out.println("cc: " + entry.getValue().size());
 			}
 			splits = split_data(data, data_per_class);
 			weighted_gini = weighted_gini(parent_size, splits);
-			System.out.println("g: " + Utilities.roundExact(weighted_gini, 8));
+//			System.out.println("g: " + Utilities.roundExact(weighted_gini, 8));
 
 			if (weighted_gini <  best_weighted_gini) {
 				best_weighted_gini = weighted_gini;
@@ -115,7 +115,7 @@ public class Splitter{
 			}
 		}
 
-		System.out.println("bg: " + Utilities.roundExact(best_weighted_gini, 8));
+//		System.out.println("bg: " + Utilities.roundExact(best_weighted_gini, 8));
 
 //		if(best_weighted_gini == 0.26666666666666666) {
 //			System.out.println("stop here");
@@ -125,7 +125,7 @@ public class Splitter{
 
 
 		for(ListDataset part : best_split) {
-			System.out.println("part: " + part.size());
+//			System.out.println("part: " + part.size());
 		}
 
 		return this.best_split;
