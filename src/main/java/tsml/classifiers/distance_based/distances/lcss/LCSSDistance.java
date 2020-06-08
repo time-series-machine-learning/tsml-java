@@ -79,8 +79,7 @@ public class LCSSDistance extends BaseDistanceMeasure {
     @Override
     public double distance(final Instance a,
         final Instance b,
-        double limit,
-        final PerformanceStats stats) {
+        double limit) {
 
         checkData(a, b);
 

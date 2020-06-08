@@ -1,11 +1,7 @@
 package distance.elastic;
 
-import static experiments.data.DatasetLoading.sampleGunPoint;
-
-import java.util.Arrays;
-import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.distances.dtw.DTWTest;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import utilities.Utilities;
 import weka.core.Instances;
 
@@ -49,16 +45,16 @@ public class DDTW extends DTW{
 	}
 
 	public static void main(String[] args) throws Exception {
-		final Instances instances = DTWTest.buildInstances();
+		final Instances instances = DTWDistanceTest.buildInstances();
 		final double[] a = Utilities.extractTimeSeries(instances.get(0));
 		final double[] b = Utilities.extractTimeSeries(instances.get(1));
 		System.out.println(new DTW().distance(a, b, Double.POSITIVE_INFINITY, 1));
 		final DTWDistance df = new DTWDistance();
-		df.setWarpingWindow(1);
+		df.setWindowSize(1);
 		df.setInstances(instances);
-		df.setKeepDistanceMatrix(true);
+		df.setKeepMatrix(true);
 		System.out.println(df.distance(instances.get(0), instances.get(1)));
-		final double[][] matrix = df.getDistanceMatrix();
+		final double[][] matrix = df.getMatrix();
 	}
 	
 }

@@ -32,8 +32,7 @@ public class TWEDistance
     @Override
     public double distance(final Instance a,
         final Instance b,
-        final double limit,
-        final PerformanceStats stats) {
+        final double limit) {
 
         checkData(a, b);
 

@@ -43,20 +43,16 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     }
 
     @Override
-    public double distance(final Instance a, final Instance b) {
+    public final double distance(final Instance a, final Instance b) {
         return distance(a, b, getMaxDistance());
     }
 
     @Override
-    public double distance(final Instance a, final Instance b, final double limit) {
-        // must override this or distance(a,b,limit,stats) else infinite recursion
-        return distance(a, b, limit, null);
-    }
+    public abstract double distance(final Instance a, final Instance b, final double limit);
 
     @Override
-    public double distance(final Instance a, final Instance b, final double limit,
+    public final double distance(final Instance a, final Instance b, final double limit,
         final PerformanceStats stats) {
-        // must override this or distance(a,b,limit) else infinite recursion
         return distance(a, b, limit);
     }
 
@@ -71,7 +67,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     }
 
     @Override
-    public double distance(final Instance a, final Instance b, final PerformanceStats stats) throws Exception {
+    public final double distance(final Instance a, final Instance b, final PerformanceStats stats) throws Exception {
         return distance(a, b, getMaxDistance(), stats);
     }
 

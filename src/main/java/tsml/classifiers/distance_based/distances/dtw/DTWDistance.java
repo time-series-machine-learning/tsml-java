@@ -2,7 +2,9 @@ package tsml.classifiers.distance_based.distances.dtw;
 
 
 import javax.rmi.CORBA.Util;
+import tsml.classifiers.distance_based.distances.ArrayBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -14,78 +16,12 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends BaseDistanceMeasure implements DTW {
-
-    // the distance matrix produced by the distance function
-    private double[][] matrix;
-    // whether to keep the distance matrix
-    private boolean keepMatrix = false;
-    private int windowSize = -1;
-    private double windowSizePercentage = -1;
-    private boolean windowSizeInPercentage = false;
+public class DTWDistance extends WarpingDistanceMeasure implements DTW {
 
     public DTWDistance() {}
 
-    public int getWindowSize() {
-        return windowSize;
-    }
-
     @Override
-    public void setWindowSizePercentage(final double percentage) {
-        this.windowSizePercentage = percentage;
-        windowSizeInPercentage = true;
-    }
-
-    @Override
-    public double getWindowSizePercentage() {
-        return windowSizePercentage;
-    }
-
-    public void setWindowSize(int windowSize) {
-        this.windowSize = windowSize;
-        windowSizeInPercentage = false;
-    }
-
-    public double[][] getMatrix() {
-        return matrix;
-    }
-
-    protected void setMatrix(double[][] matrix) {
-        if(keepMatrix) {
-            this.matrix = matrix;
-        }
-    }
-
-    public boolean isKeepMatrix() {
-        return keepMatrix;
-    }
-
-    public void setKeepMatrix(final boolean keepMatrix) {
-        this.keepMatrix = keepMatrix;
-    }
-
-    @Override
-    public void clean() {
-        super.clean();
-        cleanDistanceMatrix();
-    }
-
-    public void cleanDistanceMatrix() {
-        matrix = null;
-    }
-
-    @Override
-    public boolean isWindowSizeInPercentage() {
-        return windowSizeInPercentage;
-    }
-
-    @Override
-    public double distance(Instance ai, Instance bi, final double limit) {
-
-        checkData(ai, bi);
-
-        double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
-        double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
+    public double distance(double[] a, double[] b, final double limit) {
 
         int aLength = a.length - 1;
         int bLength = b.length - 1;
@@ -102,27 +38,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
-        final int windowSize;
-        if(windowSizeInPercentage) {
-            if(windowSizePercentage > 1) {
-                throw new IllegalArgumentException("window percentage size larger than 1");
-            }
-            if(windowSizePercentage < 0) {
-                windowSize = aLength - 1;
-            } else {
-                windowSize = (int) (windowSizePercentage * (aLength - 1));
-            }
-        } else {
-            if(this.windowSize > aLength - 1) {
-                throw new IllegalArgumentException("window size larger than series length: " + this.windowSize + " vs"
-                    + " " + (aLength - 1));
-            }
-            if(this.windowSize < 0) {
-                windowSize = aLength - 1;
-            } else {
-                windowSize = this.windowSize;
-            }
-        }
+        final int windowSize = findWindowSize(aLength);
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
@@ -149,6 +65,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         }
         if(keepMatrix) {
             matrix = new double[aLength][bLength];
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
         if(end > start && insideLimit) {
@@ -186,8 +103,8 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
             }
             for(int j = start; j <= end; j++) {
                 // compute squared distance of feature vectors
-                final double topLeft = j > 0 ? prevRow[j - 1] : Double.POSITIVE_INFINITY;
-                final double left = j > 0 ? row[j - 1] : Double.POSITIVE_INFINITY;
+                final double topLeft = prevRow[j - 1];
+                final double left = row[j - 1];
                 final double top = prevRow[j];
                 final double cost = Utilities.min(top, left, topLeft) + Math.pow(a[i] - b[j], 2);
 
