@@ -10,16 +10,16 @@ Contributors: goastler
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 
 public interface DTW extends DistanceMeasureable {
-    void setWarpingWindow(int warpingWindow);
-    int getWarpingWindow();
-    void setWarpingWindowPercentage(double percentage);
-    double getWarpingWindowPercentage();
-    boolean isWarpingWindowInPercentage();
+    void setWindowSize(int windowSize);
+    int getWindowSize();
+    void setWindowSizePercentage(double percentage);
+    double getWindowSizePercentage();
+    boolean isWindowSizeInPercentage();
     static String getWarpingWindowFlag() {
         return "w";
     }
-    double[][] getDistanceMatrix();
-    boolean isKeepDistanceMatrix();
-    void setKeepDistanceMatrix(boolean state);
+    double[][] getMatrix();
+    boolean isKeepMatrix();
+    void setKeepMatrix(boolean state);
     void cleanDistanceMatrix();
 }

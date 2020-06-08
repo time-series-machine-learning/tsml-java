@@ -7,6 +7,7 @@ Contributors: goastler
     
 */
 
+import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -39,14 +40,13 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     private String name = getClass().getSimpleName();
 
     protected void setName(String name) {
-        if(name == null) throw new NullPointerException();
+        Assert.assertNotNull(name);
         this.name = name;
     }
 
     @Override
     public void setInstances(Instances data) {
         super.setInstances(data);
-        HashFilter.hashInstances(data);
         distanceFunction.setInstances(data);
         try {
             transformer.setInputFormat(data);
@@ -65,7 +65,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     protected void setDistanceFunction(DistanceFunction distanceFunction) {
-        if(distanceFunction == null) throw new NullPointerException();
+        Assert.assertNotNull(distanceFunction);
         this.distanceFunction = distanceFunction;
     }
 
@@ -74,41 +74,38 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     protected void setTransformer(Filter transformer) {
-        if(transformer == null) throw new NullPointerException();
+        Assert.assertNotNull(transformer);
         this.transformer = transformer;
     }
 
     @Override
-    public double distance(final Instance a, final Instance b, final double limit,
-                           final PerformanceStats stats) {
+    public double distance(final Instance a, final Instance b, final double limit) {
         try {
-            final Instance firstTransformed = Utilities.filter(a, transformer);
-            final Instance secondTransformed = Utilities.filter(b, transformer);
-            return distanceFunction.distance(firstTransformed, secondTransformed, limit, stats);
+            final Instance at = Utilities.filter(a, transformer);
+            final Instance bt = Utilities.filter(b, transformer);
+            return distanceFunction.distance(at, bt, limit);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override public ParamSet getParams() {
-        return super.getParams().add(getTransformerFlag(), getTransformer()).add(DistanceMeasureable.getDistanceFunctionFlag(),
-                                                                  getDistanceFunction());
+        return super.getParams().add(TRANSFORMER_FLAG, transformer).add(DistanceMeasureable.DISTANCE_MEASURE_FLAG,
+                                                                  distanceFunction);
     }
 
-    public static String getTransformerFlag() {
-        return "t";
-    }
+    public static final String TRANSFORMER_FLAG = "t";
 
     @Override
     public void setTraining(final boolean training) {
         super.setTraining(training);
         if(transformer instanceof CachedFilter) {
-            // always enable cache read, doesn't matter if the cache is empty
-            ((CachedFilter) transformer).getCache().setRead(true);
-            // disable the cache writing if not in training mode
-            // don't want to keep instances / transformation from the test data as the cache will explode along with
-            // your computer
-            ((CachedFilter) transformer).getCache().setWrite(training);
+            if(((CachedFilter) transformer).getCache().isRead()) {
+                // disable the cache writing if not in training mode
+                // don't want to keep instances / transformation from the test data as the cache will explode along with
+                // your computer
+                ((CachedFilter) transformer).getCache().setWrite(training);
+            }
         }
     }
 

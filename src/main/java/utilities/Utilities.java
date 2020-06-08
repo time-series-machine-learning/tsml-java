@@ -42,6 +42,10 @@ public class Utilities {
 //        return result;
 //    }
 
+    public static double squaredDifference(double[] a, int i, double[] b, int j) {
+        return Math.pow(a[i] - b[j], 2);
+    }
+
     public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
         int sum = 0;
         while(iterator.hasNext()) {

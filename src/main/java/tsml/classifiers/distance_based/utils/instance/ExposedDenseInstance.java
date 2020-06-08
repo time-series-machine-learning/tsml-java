@@ -15,7 +15,7 @@ public class ExposedDenseInstance extends DenseInstance {
         return m_AttValues;
     }
 
-    public static double[] extractAttributes(Instance instance) {
+    public static double[] extractAttributeValuesAndClassLabel(Instance instance) {
         final ExposedDenseInstance exposedDenseInstance = new ExposedDenseInstance(instance);
         return exposedDenseInstance.toDoubleArray();
     }

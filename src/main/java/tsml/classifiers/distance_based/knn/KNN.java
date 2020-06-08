@@ -65,7 +65,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     // whether to early abandon on distance measure calculations
     private boolean earlyAbandon = true;
     // the distance function
-    private DistanceFunction distanceFunction = new DTWDistance(0);
+    private DistanceFunction distanceFunction = new DTWDistance();
     // track the train time
     private StopWatch trainTimer = new StopWatch();
     // track the memory
@@ -173,11 +173,11 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                     .add(getEarlyAbandonFlag(), earlyAbandon)
                     .add(getKFlag(), k)
                     .add(getRandomTieBreakFlag(), randomTieBreak)
-                    .add(DistanceMeasureable.getDistanceFunctionFlag(), distanceFunction);
+                    .add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction, DistanceFunction.class);
+        ParamHandler.setParam(params, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
         ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
         ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
         ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);

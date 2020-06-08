@@ -8,9 +8,7 @@ import weka.core.neighboursearch.PerformanceStats;
 
 public interface DistanceMeasureable extends Serializable, DistanceFunction, ParamHandler {
 
-    static String getDistanceFunctionFlag() {
-        return "d";
-    }
+    String DISTANCE_MEASURE_FLAG = "d";
 
     // the maximum distance the distance measure could produce
     double getMaxDistance();

@@ -143,8 +143,8 @@ public class ParamSpaceTest {
 
     public ParamSpace buildParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DistanceMeasureable.getDistanceFunctionFlag(), lDmParams);
-        params.add(DistanceMeasureable.getDistanceFunctionFlag(), wDmParams);
+        params.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, lDmParams);
+        params.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, wDmParams);
         return params;
     }
 

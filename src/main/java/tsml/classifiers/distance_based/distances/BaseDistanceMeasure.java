@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
+import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
@@ -24,10 +25,12 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     private transient boolean training = true;
 
     // optional check for data in the correct format
-    protected void checkData(Instance first, Instance second) {
-        if(!dataHasBeenSet) {
-            throw new IllegalStateException("must call setInstances first to setup the distance measure");
-        }
+    protected void checkData(Instance a, Instance b) {
+        Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
+        Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
+//        if(!dataHasBeenSet) {
+//            throw new IllegalStateException("must call setInstances first to setup the distance measure");
+//        }
     }
 
     @Override

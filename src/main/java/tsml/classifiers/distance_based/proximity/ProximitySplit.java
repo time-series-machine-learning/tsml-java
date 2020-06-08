@@ -155,7 +155,7 @@ public class ProximitySplit implements DefaultClassifier {
         RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
         ParamSet paramSet = iterator.next();
         // there is only one distance function in the ParamSet returned
-        List<Object> list = paramSet.get(DistanceMeasureable.getDistanceFunctionFlag());
+        List<Object> list = paramSet.get(DistanceMeasureable.DISTANCE_MEASURE_FLAG);
         Assert.assertEquals(1, list.size());
         // cast it into shape
         Object obj = list.get(0);

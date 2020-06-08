@@ -7,15 +7,11 @@ Contributors: goastler
     
 */
 
-import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.filters.Derivative;
-import weka.core.Instances;
 
 public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 
@@ -28,49 +24,49 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
         setDistanceFunction(dtw);
     }
 
-    public DDTWDistance(int warpingWindow) {
+    public DDTWDistance(int WindowSize) {
         this();
-        setWarpingWindow(warpingWindow);
+        setWindowSize(WindowSize);
     }
 
     @Override
-    public void setWarpingWindowPercentage(final double percentage) {
-        dtw.setWarpingWindowPercentage(percentage);
+    public void setWindowSizePercentage(final double percentage) {
+        dtw.setWindowSizePercentage(percentage);
     }
 
     @Override
-    public double getWarpingWindowPercentage() {
-        return dtw.getWarpingWindowPercentage();
+    public double getWindowSizePercentage() {
+        return dtw.getWindowSizePercentage();
     }
 
     @Override
-    public boolean isWarpingWindowInPercentage() {
-        return dtw.isWarpingWindowInPercentage();
+    public boolean isWindowSizeInPercentage() {
+        return dtw.isWindowSizeInPercentage();
     }
 
     @Override
-    public int getWarpingWindow() {
-        return dtw.getWarpingWindow();
+    public int getWindowSize() {
+        return dtw.getWindowSize();
     }
 
     @Override
-    public void setWarpingWindow(int warpingWindow) {
-        dtw.setWarpingWindow(warpingWindow);
+    public void setWindowSize(int WindowSize) {
+        dtw.setWindowSize(WindowSize);
     }
 
     @Override
-    public double[][] getDistanceMatrix() {
-        return dtw.getDistanceMatrix();
+    public double[][] getMatrix() {
+        return dtw.getMatrix();
     }
 
     @Override
-    public boolean isKeepDistanceMatrix() {
-        return dtw.isKeepDistanceMatrix();
+    public boolean isKeepMatrix() {
+        return dtw.isKeepMatrix();
     }
 
     @Override
-    public void setKeepDistanceMatrix(boolean state) {
-        dtw.setKeepDistanceMatrix(state);
+    public void setKeepMatrix(boolean state) {
+        dtw.setKeepMatrix(state);
     }
 
     @Override

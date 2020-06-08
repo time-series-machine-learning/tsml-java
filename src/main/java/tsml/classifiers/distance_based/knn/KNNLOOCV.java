@@ -211,37 +211,37 @@ public class KNNLOOCV
 
         public static KNNLOOCV buildEd1nnV1() {
             KNNLOOCV knn = build1nnV1();
-            knn.setDistanceFunction(new DTWDistance(0));
+            knn.setDistanceFunction(new DTWDistance()); // todo ed
             return knn;
         }
 
         public static KNNLOOCV buildDtw1nnV1() {
             KNNLOOCV knn = build1nnV1();
-            knn.setDistanceFunction(new DTWDistance(-1));
+            knn.setDistanceFunction(new DTWDistance()); // todo full
             return knn;
         }
 
         public static KNNLOOCV buildDdtw1nnV1() {
             KNNLOOCV knn = build1nnV1();
-            knn.setDistanceFunction(new DDTWDistance(-1));
+            knn.setDistanceFunction(new DDTWDistance()); // todo full
             return knn;
         }
 
         public static KNNLOOCV buildEd1nnV2() {
             KNNLOOCV knn = build1nnV2();
-            knn.setDistanceFunction(new DTWDistance(0));
+            knn.setDistanceFunction(new DTWDistance()); // todo ed
             return knn;
         }
 
         public static KNNLOOCV buildDtw1nnV2() {
             KNNLOOCV knn = build1nnV2();
-            knn.setDistanceFunction(new DTWDistance(-1));
+            knn.setDistanceFunction(new DTWDistance()); // todo full
             return knn;
         }
 
         public static KNNLOOCV buildDdtw1nnV2() {
             KNNLOOCV knn = build1nnV2();
-            knn.setDistanceFunction(new DDTWDistance(-1));
+            knn.setDistanceFunction(new DDTWDistance()); // todo full
             return knn;
         }
 

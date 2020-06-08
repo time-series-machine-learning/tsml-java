@@ -44,14 +44,14 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DTWDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DTWDistance()),
             buildDtwParams(data));
         return space;
     }
 
     public static ParamSpace buildDdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new DDTWDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DDTWDistance()),
             buildDtwParams(data));
         return space;
     }
@@ -59,7 +59,7 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildErpParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(ERPDistance.getPenaltyFlag(), new DoubleDistribution(0,1) {
+        subSpace.add(ERPDistance.PENALTY_FLAG, new DoubleDistribution(0,1) {
 
             @Override
             public Double sample() {
@@ -69,14 +69,14 @@ public class ContinuousDistanceFunctionConfigs {
 //        subSpace.add(ERPDistance.getPenaltyFlag(), new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt(len / 4 + 1), so range is from 0 to len / 4 inclusively
         // above doesn't consider class value, so -1 from len
-        subSpace.add(ERPDistance.getBandSizeFlag(), new UniformIntDistribution(0,
+        subSpace.add(ERPDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
             (data.numAttributes() - 1) / 4));
         return subSpace;
     }
 
     public static ParamSpace buildErpSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new ERPDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new ERPDistance()),
             buildErpParams(data));
         return space;
     }
@@ -94,7 +94,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildLcssSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new LCSSDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new LCSSDistance()),
             buildLcssParams(data));
         return space;
     }
@@ -107,7 +107,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWdtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new WDTWDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDTWDistance()),
             buildWdtwParams());
         return space;
     }
@@ -115,7 +115,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWddtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.getDistanceFunctionFlag(), Lists.newArrayList(new WDDTWDistance()),
+        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDDTWDistance()),
             buildWdtwParams());
         return space;
     }

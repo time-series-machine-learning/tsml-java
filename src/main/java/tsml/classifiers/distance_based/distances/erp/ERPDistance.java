@@ -1,10 +1,10 @@
 package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * ERP distance measure.
@@ -14,142 +14,181 @@ import weka.core.neighboursearch.PerformanceStats;
 public class ERPDistance extends BaseDistanceMeasure {
 
     private double penalty = 0;
-    private int bandSize = 0;
+    private int windowSize = 0;
+    private double[][] matrix;
+    private boolean keepMatrix = false;
 
-    public static String getPenaltyFlag() {
-        return "p";
-    }
+    public static final String PENALTY_FLAG = "p";
 
-    public static String getBandSizeFlag() {
-        return "b";
-    }
+    public static final String WINDOW_SIZE_FLAG = "w";
 
     public double getPenalty() {
         return penalty;
     }
 
-    public void setPenalty(double g) {
-        this.penalty = g;
+    public void setPenalty(double penalty) {
+        this.penalty = penalty;
     }
 
+    public double[][] getMatrix() {
+        return matrix;
+    }
     @Override
-    public double distance(final Instance a,
-        final Instance b,
-        final double limit,
-        final PerformanceStats stats) {
+    public double distance(final Instance ai,
+        final Instance bi,
+        final double limit) {
 
-        checkData(a, b);
+        checkData(ai, bi);
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+        double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
+        double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
+
+        int aLength = a.length - 1;
+        int bLength = b.length - 1;
+
+        // put a or first as the longest time series
+        if(bLength > aLength) {
+            double[] tmp = a;
+            a = b;
+            b = tmp;
+            int tmpLength = aLength;
+            aLength = bLength;
+            bLength = tmpLength;
+        }
 
         // Current and previous columns of the matrix
-        double[] curr = new double[bLength];
-        double[] prev = new double[bLength];
+        double[] row = new double[bLength];
+        double[] prevRow = new double[bLength];
+        if(keepMatrix) {
+            matrix = new double[aLength][bLength];
+        }
 
         // size of edit distance band
         // bandsize is the maximum allowed distance to the diagonal
-        //        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
-        int band = getBandSize();
-        if(band < 0) {
-            band = aLength + 1;
+        int windowSize = this.windowSize;
+        if(windowSize < 0) {
+            windowSize = aLength - 1;
         }
 
-        // g parameters for local usage
-        double gValue = penalty;
+        boolean tooBig = true;
+        int start = 1;
+        int end = windowSize;
+        if(end + 1 < bLength) {
+            row[end + 1] = Double.POSITIVE_INFINITY;
+        }
+        row[0] = 0; // top left cell of matrix is always 0
 
-        for(int i = 0;
-            i < aLength;
-            i++) {
-            // Swap current and prev arrays. We'll just overwrite the new curr.
-            {
-                double[] temp = prev;
-                prev = curr;
-                curr = temp;
+        // populate first row
+        for(int j = start; j <= end; j++) {
+            final double cost = row[j - 1] + Math.pow(b[j] - penalty, 2);
+            row[j] = cost;
+            if(tooBig && cost < limit) {
+                tooBig = false;
             }
-            int l = i - (band + 1);
-            if(l < 0) {
-                l = 0;
+        }
+        // populate matrix
+        if(keepMatrix) {
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
+        }
+        // Swap current and prevRow arrays. We'll just overwrite the new row.
+        {
+            double[] temp = prevRow;
+            prevRow = row;
+            row = temp;
+        }
+        // check if the limit has been hit IFF first row was populated
+        if(windowSize > 0 && tooBig) {
+            return Double.POSITIVE_INFINITY;
+        }
+        // populate remaining rows
+        for(int i = 1; i < aLength; i++) {
+            tooBig = true;
+            // start and end of window
+            start = Math.max(0, i - windowSize);
+            end = Math.min(bLength - 1, i + windowSize);
+            // must set the value before and after the window to inf if available as the following row will use these
+            // in top / left / top-left comparisons
+            if(start - 1 >= 0) {
+                row[start - 1] = Double.POSITIVE_INFINITY;
             }
-            int r = i + (band + 1);
-            if(r > (bLength - 1)) {
-                r = (bLength - 1);
+            if(end + 1 < bLength) {
+                row[end + 1] = Double.POSITIVE_INFINITY;
             }
+            // when l == 0 neither left nor top left can be picked, therefore it must use top
+            if(start == 0) {
+                row[start] = prevRow[start] + Math.pow(a[i] - penalty, 2);
+                start++;
+            }
+            for(int j = start; j <= end; j++) {
+                // compute squared distance of feature vectors
+                final double v1 = a[i];
+                final double v2 = b[j];
+                final double leftPenalty = Math.pow(v1 - penalty, 2);
+                final double topPenalty = Math.pow(v2 - penalty, 2);
+                final double topLeftPenalty = Math.pow(v1 - v2, 2);
+                final double topLeft = prevRow[j - 1] + topLeftPenalty;
+                final double left = row[j - 1] + topPenalty;
+                final double top = prevRow[j] + leftPenalty;
+                final double cost;
 
-            boolean tooBig = true;
-
-            for(int j = l;
-                j <= r;
-                j++) {
-                if(Math.abs(i - j) <= band) {
-                    // compute squared distance of feature vectors
-                    double val1 = a.value(i);
-                    double val2 = gValue;
-                    double diff = (val1 - val2);
-                    final double dist1 = diff * diff;
-
-                    val1 = gValue;
-                    val2 = b.value(j);
-                    diff = (val1 - val2);
-                    final double dist2 = diff * diff;
-
-                    val1 = a.value(i);
-                    val2 = b.value(j);
-                    diff = (val1 - val2);
-                    final double dist12 = diff * diff;
-
-                    final double cost;
-
-                    if((i + j) != 0) {
-                        if((i == 0) || ((j != 0) && (((prev[j - 1] + dist12) > (curr[j - 1] + dist2)) && (
-                            (curr[j - 1] + dist2) < (prev[j] + dist1))))) {
-                            // del
-                            cost = curr[j - 1] + dist2;
-                        } else if((j == 0) || ((i != 0) && (((prev[j - 1] + dist12) > (prev[j] + dist1)) && (
-                            (prev[j] + dist1) < (curr[j - 1] + dist2))))) {
-                            // ins
-                            cost = prev[j] + dist1;
-                        } else {
-                            // match
-                            cost = prev[j - 1] + dist12;
-                        }
-                    } else {
-                        cost = 0;
-                    }
-
-                    curr[j] = cost;
-
-                    if(tooBig && cost < limit) {
-                        tooBig = false;
-                    }
+                if(topLeft > left && left < top) {
+                    // del
+                    cost = left;
+                } else if(topLeft > top && top < left) {
+                    // ins
+                    cost = top;
                 } else {
-                    curr[j] = Double.POSITIVE_INFINITY; // outside band
+                    // match
+                    cost = topLeft;
                 }
+
+                row[j] = cost;
+
+                if(tooBig && cost < limit) {
+                    tooBig = false;
+                }
+            }
+            if(keepMatrix) {
+                System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(tooBig) {
                 return Double.POSITIVE_INFINITY;
             }
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
+            }
         }
 
-        return curr[bLength - 1];
+        return prevRow[bLength - 1];
     }
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getPenaltyFlag(), penalty).add(getBandSizeFlag(), bandSize);
+        return super.getParams().add(PENALTY_FLAG, penalty).add(WINDOW_SIZE_FLAG, windowSize);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getPenaltyFlag(), this::setPenalty, Double.class);
-        ParamHandler.setParam(param, getBandSizeFlag(), this::setBandSize, Integer.class);
+        ParamHandler.setParam(param, PENALTY_FLAG, this::setPenalty, Double.class);
+        ParamHandler.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer.class);
     }
 
-    public int getBandSize() {
-        return bandSize;
+    public int getWindowSize() {
+        return windowSize;
     }
 
-    public void setBandSize(final int bandSize) {
-        this.bandSize = bandSize;
+    public void setWindowSize(final int windowSize) {
+        this.windowSize = windowSize;
+    }
+
+    public boolean isKeepMatrix() {
+        return keepMatrix;
+    }
+
+    public void setKeepMatrix(final boolean keepMatrix) {
+        this.keepMatrix = keepMatrix;
     }
 }

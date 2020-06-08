@@ -1,19 +1,10 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
-import static utilities.Utilities.extractTimeSeries;
-
-import distance.elastic.ERP;
-import distance.elastic.LCSS;
-import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.dtw.DTWTest;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import utilities.InstanceTools;
 import utilities.Utilities;
-import weka.core.Debug.Random;
 import weka.core.Instance;
-import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**

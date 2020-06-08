@@ -40,8 +40,8 @@ public class TransformDistanceMeasure extends TransformedDistanceMeasure impleme
 
     @Override public void setParams(final ParamSet param) {
         super.setParams(param);
-        ParamHandler.setParam(param, getTransformerFlag(), this::setTransformer, Filter.class);
-        ParamHandler.setParam(param, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction,
+        ParamHandler.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Filter.class);
+        ParamHandler.setParam(param, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction,
                               DistanceFunction.class);
     }
 
