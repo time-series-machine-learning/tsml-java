@@ -30,12 +30,12 @@ public class TWEDistance
     }
 
     @Override
-    public double distance(final Instance first,
-        final Instance second,
+    public double distance(final Instance a,
+        final Instance b,
         final double limit,
         final PerformanceStats stats) {
 
-        checkData(first, second);
+        checkData(a, b);
 
         /*This code is faithful to the c version, so uses a redundant
  * Multidimensional representation. The c code does not describe what the
@@ -44,8 +44,8 @@ public class TWEDistance
  * and initialise them accordingly.
  */
 
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
         int dim = 1;
         double dist, disti1, distj1;
         double[][] ta = new double[aLength][dim];
@@ -64,10 +64,10 @@ public class TWEDistance
         int i, j, k;
         //Copy over values
         for(i = 0; i < aLength; i++) {
-            ta[i][0] = first.value(i);
+            ta[i][0] = a.value(i);
         }
         for(i = 0; i < bLength; i++) {
-            tb[i][0] = second.value(i);
+            tb[i][0] = b.value(i);
         }
 
         /* allocations in c

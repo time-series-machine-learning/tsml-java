@@ -297,7 +297,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void setSeed(int seed) { 
         seedClassifier=true;
         this.seed = seed;
-        rand=new DebuggingRandom(seed);
+        rand=new Random(seed);
     }
 
     /**

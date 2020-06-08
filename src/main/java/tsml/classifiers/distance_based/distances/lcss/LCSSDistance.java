@@ -86,15 +86,15 @@ public class LCSSDistance extends BaseDistanceMeasure {
     }
 
     @Override
-    public double distance(final Instance first,
-        final Instance second,
+    public double distance(final Instance a,
+        final Instance b,
         double limit,
         final PerformanceStats stats) {
 
-        checkData(first, second);
+        checkData(a, b);
 
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // 22/10/19 goastler - limit LCSS such that if any value in the current window is larger than the limit then we can stop here, no point in doing the extra work
         if(limit != Double.POSITIVE_INFINITY) { // check if there's a limit set
@@ -118,7 +118,7 @@ public class LCSSDistance extends BaseDistanceMeasure {
                 } else if(j >= bLength) {
                     j = i + warpingWindow;
                 } else {
-                    if(second.value(j) + this.epsilon >= first.value(i) && second.value(j) - epsilon <= first
+                    if(b.value(j) + this.epsilon >= a.value(i) && b.value(j) - epsilon <= a
                         .value(i)) {
                         lcss[i + 1][j + 1] = lcss[i][j] + 1;
 //                    } else if(lcss[i][j + 1] > lcss[i + 1][j]) {

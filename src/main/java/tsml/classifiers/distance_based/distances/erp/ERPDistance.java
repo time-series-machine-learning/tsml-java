@@ -33,15 +33,15 @@ public class ERPDistance extends BaseDistanceMeasure {
     }
 
     @Override
-    public double distance(final Instance first,
-        final Instance second,
+    public double distance(final Instance a,
+        final Instance b,
         final double limit,
         final PerformanceStats stats) {
 
-        checkData(first, second);
+        checkData(a, b);
 
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // Current and previous columns of the matrix
         double[] curr = new double[bLength];
@@ -83,18 +83,18 @@ public class ERPDistance extends BaseDistanceMeasure {
                 j++) {
                 if(Math.abs(i - j) <= band) {
                     // compute squared distance of feature vectors
-                    double val1 = first.value(i);
+                    double val1 = a.value(i);
                     double val2 = gValue;
                     double diff = (val1 - val2);
                     final double dist1 = diff * diff;
 
                     val1 = gValue;
-                    val2 = second.value(j);
+                    val2 = b.value(j);
                     diff = (val1 - val2);
                     final double dist2 = diff * diff;
 
-                    val1 = first.value(i);
-                    val2 = second.value(j);
+                    val1 = a.value(i);
+                    val2 = b.value(j);
                     diff = (val1 - val2);
                     final double dist12 = diff * diff;
 

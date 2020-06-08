@@ -39,15 +39,15 @@ public class WDTWDistance
     private double[] weightVector;
 
     @Override
-    public double distance(final Instance first,
-                           final Instance second,
+    public double distance(final Instance a,
+                           final Instance b,
                            final double limit,
                            final PerformanceStats stats) {
 
-        checkData(first, second);
+        checkData(a, b);
 
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
         if(seriesLength < 0 || seriesLength != aLength) {
             generateWeights(aLength);
         }
@@ -56,7 +56,7 @@ public class WDTWDistance
         double[][] distances = new double[aLength][bLength];
 
         //first value
-        distances[0][0] = weightVector[0] * (first.value(0) - second.value(0)) * (first.value(0) - second.value(0));
+        distances[0][0] = weightVector[0] * (a.value(0) - b.value(0)) * (a.value(0) - b.value(0));
 
         //early abandon if first values is larger than cut off
         if (distances[0][0] > limit) {
@@ -66,13 +66,13 @@ public class WDTWDistance
         //top row
         for (int i = 1; i < bLength; i++) {
             distances[0][i] =
-                distances[0][i - 1] + weightVector[i] * (first.value(0) - second.value(i)) * (first.value(0) - second.value(i)); //edited by Jay
+                distances[0][i - 1] + weightVector[i] * (a.value(0) - b.value(i)) * (a.value(0) - b.value(i)); //edited by Jay
         }
 
         //first column
         for (int i = 1; i < aLength; i++) {
             distances[i][0] =
-                distances[i - 1][0] + weightVector[i] * (first.value(i) - second.value(0)) * (first.value(i) - second.value(0)); //edited by Jay
+                distances[i - 1][0] + weightVector[i] * (a.value(i) - b.value(0)) * (a.value(i) - b.value(0)); //edited by Jay
         }
 
         //warp rest
@@ -84,7 +84,7 @@ public class WDTWDistance
                 //calculate distance_measures
                 minDistance = Math.min(distances[i][j - 1], Math.min(distances[i - 1][j], distances[i - 1][j - 1]));
                 distances[i][j] =
-                    minDistance + weightVector[Math.abs(i - j)] * (first.value(i) - second.value(j)) * (first.value(i) - second.value(j));
+                    minDistance + weightVector[Math.abs(i - j)] * (a.value(i) - b.value(j)) * (a.value(i) - b.value(j));
 
                 if (overflow && distances[i][j] < limit) {
                     overflow = false; // because there's evidence that the path can continue

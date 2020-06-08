@@ -12,63 +12,21 @@ public interface DistanceMeasureable extends Serializable, DistanceFunction, Par
         return "d";
     }
 
-//    // the maximum distance the distance measure could produce
-//    default double getMaxDistance() {
-//        return Double.POSITIVE_INFINITY;
-//    }
-
     // the maximum distance the distance measure could produce
-    static double getMaxDistance() {
-        return Double.POSITIVE_INFINITY;
-    }
+    double getMaxDistance();
 
     // whether the distance measure is symmetric (i.e. dist from inst A to inst B == dist from inst B to inst A
-    default boolean isSymmetric() {
-        return true;
-    }
+    boolean isSymmetric();
 
-    default double distance(final Instance first, final Instance second) {
-        return distance(first, second, getMaxDistance());
-    }
+    double distance(final Instance a, final Instance b);
 
-    default double distance(final Instance first, final Instance second, final double limit) {
-        return distance(first, second, limit, null);
-    }
+    double distance(final Instance a, final Instance b, final double limit);
 
     @Override
-    default double distance(final Instance first, final Instance second, final PerformanceStats stats)
-        throws Exception {
-        return distance(first, second, getMaxDistance(), stats);
-    }
+    double distance(final Instance a, final Instance b, final PerformanceStats stats)
+        throws Exception;
 
     String getName();
-
-    // default implementations of fussy methods around distance measures
-
-    @Override
-    default String getAttributeIndices() {
-        return null;
-    }
-
-    @Override
-    default void setAttributeIndices(final String value) {
-
-    }
-
-    @Override
-    default boolean getInvertSelection() {
-        return false;
-    }
-
-    @Override
-    default void setInvertSelection(final boolean value) {
-
-    }
-
-    @Override
-    default void postProcessDistances(final double[] distances) {
-
-    }
 
     boolean isTraining();
 

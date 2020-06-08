@@ -79,12 +79,12 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     @Override
-    public double distance(final Instance first, final Instance second, final double cutOffValue,
+    public double distance(final Instance a, final Instance b, final double limit,
                            final PerformanceStats stats) {
         try {
-            final Instance firstTransformed = Utilities.filter(first, transformer);
-            final Instance secondTransformed = Utilities.filter(second, transformer);
-            return distanceFunction.distance(firstTransformed, secondTransformed, cutOffValue, stats);
+            final Instance firstTransformed = Utilities.filter(a, transformer);
+            final Instance secondTransformed = Utilities.filter(b, transformer);
+            return distanceFunction.distance(firstTransformed, secondTransformed, limit, stats);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
