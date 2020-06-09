@@ -5,12 +5,15 @@ import weka.core.Instance;
 
 public abstract class ArrayBasedDistanceMeasure extends BaseDistanceMeasure {
 
-    public double distance(final Instance ai, final Instance bi, final double limit) {
-        checkData(ai, bi);
+    protected final double findDistance(final Instance ai, final Instance bi, final double limit) {
         final double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
         final double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
         return distance(a, b, limit);
     }
 
-    public abstract double distance(double[] a, double[] b, final double limit);
+    public final double distance(final double[] a, final double[] b, final double limit) {
+        return findDistance(a, b, limit);
+    }
+
+    protected abstract double findDistance(final double[] a, final double[] b, final double limit);
 }

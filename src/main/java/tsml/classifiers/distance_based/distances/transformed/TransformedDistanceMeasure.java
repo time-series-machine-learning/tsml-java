@@ -79,7 +79,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     @Override
-    public double distance(final Instance a, final Instance b, final double limit) {
+    public double findDistance(final Instance a, final Instance b, final double limit) {
         try {
             final Instance at = Utilities.filter(a, transformer);
             final Instance bt = Utilities.filter(b, transformer);

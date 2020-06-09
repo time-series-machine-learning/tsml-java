@@ -4,20 +4,8 @@ public abstract class WarpingDistanceMeasure extends ArrayBasedDistanceMeasure {
     private int windowSize = -1;
     private double windowSizePercentage = -1;
     private boolean windowSizeInPercentage = false;
-    // the distance matrix produced by the distance function
-    protected double[][] matrix;
     // whether to keep the distance matrix
     protected boolean keepMatrix = false;
-
-    public double[][] getMatrix() {
-        return matrix;
-    }
-
-    protected void setMatrix(double[][] matrix) {
-        if(keepMatrix) {
-            this.matrix = matrix;
-        }
-    }
 
     public boolean isKeepMatrix() {
         return keepMatrix;
@@ -27,9 +15,7 @@ public abstract class WarpingDistanceMeasure extends ArrayBasedDistanceMeasure {
         this.keepMatrix = keepMatrix;
     }
 
-    public void cleanDistanceMatrix() {
-        matrix = null;
-    }
+    public abstract void cleanDistanceMatrix();
 
     @Override
     public void clean() {
@@ -63,9 +49,6 @@ public abstract class WarpingDistanceMeasure extends ArrayBasedDistanceMeasure {
         }
         return windowSize;
     }
-
-    @Override
-    public abstract double distance(double[] a, double[] b, final double limit);
 
     public int getWindowSize() {
         return windowSize;

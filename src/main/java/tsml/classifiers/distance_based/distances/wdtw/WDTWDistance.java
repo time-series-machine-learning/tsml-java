@@ -1,8 +1,10 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -12,7 +14,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class WDTWDistance
-    extends BaseDistanceMeasure implements WDTW {
+    extends DoubleBasedWarpingDistanceMeasure implements WDTW {
 
     @Override
     public double getG() {
@@ -39,63 +41,95 @@ public class WDTWDistance
     private double[] weightVector;
 
     @Override
-    public double distance(final Instance a,
-                           final Instance b,
-                           final double limit) {
+    public double findDistance(final double[] a, final double[] b, final double limit) {
 
-        checkData(a, b);
+        int aLength = a.length - 1;
+        int bLength = b.length - 1;
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
-        if(seriesLength < 0 || seriesLength != aLength) {
+        if(seriesLength != aLength) {
             generateWeights(aLength);
         }
 
-        //create empty array
-        double[][] distances = new double[aLength][bLength];
+        // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
+        // Full DTW
+        final int windowSize = findWindowSize(aLength);
 
-        //first value
-        distances[0][0] = weightVector[0] * (a.value(0) - b.value(0)) * (a.value(0) - b.value(0));
-
-        //early abandon if first values is larger than cut off
-        if (distances[0][0] > limit) {
+        double[] row = new double[bLength];
+        double[] prevRow = new double[bLength];
+        double min = Double.POSITIVE_INFINITY;
+        // top left cell of matrix will simply be the sq diff
+        row[0] = weightVector[0] * Math.pow(a[0] - b[0], 2);
+        // start and end of window
+        // start at the next cell of the first row
+        int start = 1;
+        // end at window or bLength, whichever smallest
+        int end = Math.min(bLength - 1, windowSize);
+        // must set the value before and after the window to inf if available as the following row will use these
+        // in top / left / top-left comparisons
+        if(end + 1 < bLength) {
+            row[end + 1] = Double.POSITIVE_INFINITY;
+        }
+        // the first row is populated from the sq diff + the cell before
+        for(int j = start; j <= end; j++) {
+            double cost = row[j - 1] + weightVector[j] * Math.pow(a[0] - b[j], 2);
+            row[j] = cost;
+            min = Math.min(min, cost);
+        }
+        if(keepMatrix) {
+            matrix = new double[aLength][bLength];
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
+        }
+        // early abandon if work has been done populating the first row for >1 entry
+        if(end > start && min > limit) {
             return Double.POSITIVE_INFINITY;
         }
-
-        //top row
-        for (int i = 1; i < bLength; i++) {
-            distances[0][i] =
-                distances[0][i - 1] + weightVector[i] * (a.value(0) - b.value(i)) * (a.value(0) - b.value(i)); //edited by Jay
-        }
-
-        //first column
-        for (int i = 1; i < aLength; i++) {
-            distances[i][0] =
-                distances[i - 1][0] + weightVector[i] * (a.value(i) - b.value(0)) * (a.value(i) - b.value(0)); //edited by Jay
-        }
-
-        //warp rest
-        double minDistance;
-        for (int i = 1; i < aLength; i++) {
-            boolean overflow = true;
-
-            for (int j = 1; j < bLength; j++) {
-                //calculate distance_measures
-                minDistance = Math.min(distances[i][j - 1], Math.min(distances[i - 1][j], distances[i - 1][j - 1]));
-                distances[i][j] =
-                    minDistance + weightVector[Math.abs(i - j)] * (a.value(i) - b.value(j)) * (a.value(i) - b.value(j));
-
-                if (overflow && distances[i][j] < limit) {
-                    overflow = false; // because there's evidence that the path can continue
-                }
+        for(int i = 1; i < aLength; i++) {
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
             }
-
-            //early abandon
-            if (overflow) {
+            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+            min = Double.POSITIVE_INFINITY;
+            // start and end of window
+            start = Math.max(0, i - windowSize);
+            end = Math.min(bLength - 1, i + windowSize);
+            // must set the value before and after the window to inf if available as the following row will use these
+            // in top / left / top-left comparisons
+            if(start - 1 >= 0) {
+                row[start - 1] = Double.POSITIVE_INFINITY;
+            }
+            if(end + 1 < bLength) {
+                row[end + 1] = Double.POSITIVE_INFINITY;
+            }
+            // if assessing the left most column then only top is the option - not left or left-top
+            if(start == 0) {
+                final double cost = prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a[i] - b[start], 2);
+                row[start] = cost;
+                min = Math.min(min, cost);
+                // shift to next cell
+                start++;
+            }
+            for(int j = start; j <= end; j++) {
+                // compute squared distance of feature vectors
+                final double topLeft = prevRow[j - 1];
+                final double left = row[j - 1];
+                final double top = prevRow[j];
+                final double cost =
+                    Math.min(top, Math.min(left, topLeft)) + weightVector[Math.abs(i - j)] * Math.pow(a[i] - b[j], 2);
+                row[j] = cost;
+                min = Math.min(min, cost);
+            }
+            if(keepMatrix) {
+                System.arraycopy(row, 0, matrix[i], 0, row.length);
+            }
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
             }
         }
-        return distances[aLength - 1][bLength - 1];
+        //Find the minimum distance at the end points, within the warping window.
+        return row[bLength - 1];
     }
 
     @Override public ParamSet getParams() {

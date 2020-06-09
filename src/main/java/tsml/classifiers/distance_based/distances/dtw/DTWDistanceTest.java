@@ -1,5 +1,7 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
+import static tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.runRandomDistanceFunctionTests;
+
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;

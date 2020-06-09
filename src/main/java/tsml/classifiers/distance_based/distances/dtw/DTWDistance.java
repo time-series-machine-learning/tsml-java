@@ -4,6 +4,7 @@ package tsml.classifiers.distance_based.distances.dtw;
 import javax.rmi.CORBA.Util;
 import tsml.classifiers.distance_based.distances.ArrayBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
@@ -16,25 +17,15 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends WarpingDistanceMeasure implements DTW {
+public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DTW {
 
     public DTWDistance() {}
 
     @Override
-    public double distance(double[] a, double[] b, final double limit) {
+    public double findDistance(final double[] a, final double[] b, final double limit) {
 
         int aLength = a.length - 1;
         int bLength = b.length - 1;
-
-        // put a or first as the longest time series
-        if(bLength > aLength) {
-            double[] tmp = a;
-            a = b;
-            b = tmp;
-            int tmpLength = aLength;
-            aLength = bLength;
-            bLength = tmpLength;
-        }
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -42,7 +33,7 @@ public class DTWDistance extends WarpingDistanceMeasure implements DTW {
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-        boolean insideLimit = true;
+        double min = Double.POSITIVE_INFINITY;
         // top left cell of matrix will simply be the sq diff
         row[0] = Math.pow(a[0] - b[0], 2);
         // start and end of window
@@ -59,27 +50,25 @@ public class DTWDistance extends WarpingDistanceMeasure implements DTW {
         for(int j = start; j <= end; j++) {
             double cost = row[j - 1] + Math.pow(a[0] - b[j], 2);
             row[j] = cost;
-            if(insideLimit && cost < limit) {
-                insideLimit = false;
-            }
+            min = Math.min(min, cost);
         }
         if(keepMatrix) {
             matrix = new double[aLength][bLength];
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && insideLimit) {
+        if(end > start && min > limit) {
             return Double.POSITIVE_INFINITY;
         }
-        // Swap current and prevRow arrays. We'll just overwrite the new row.
-        {
-            double[] temp = prevRow;
-            prevRow = row;
-            row = temp;
-        }
         for(int i = 1; i < aLength; i++) {
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
+            }
             // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
-            insideLimit = true;
+            min = Double.POSITIVE_INFINITY;
             // start and end of window
             start = Math.max(0, i - windowSize);
             end = Math.min(bLength - 1, i + windowSize);
@@ -95,9 +84,7 @@ public class DTWDistance extends WarpingDistanceMeasure implements DTW {
             if(start == 0) {
                 final double cost = prevRow[start] + Math.pow(a[i] - b[start], 2);
                 row[start] = cost;
-                if(insideLimit && cost < limit) {
-                    insideLimit = false;
-                }
+                min = Math.min(min, cost);
                 // shift to next cell
                 start++;
             }
@@ -106,29 +93,19 @@ public class DTWDistance extends WarpingDistanceMeasure implements DTW {
                 final double topLeft = prevRow[j - 1];
                 final double left = row[j - 1];
                 final double top = prevRow[j];
-                final double cost = Utilities.min(top, left, topLeft) + Math.pow(a[i] - b[j], 2);
-
+                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a[i] - b[j], 2);
                 row[j] = cost;
-
-                if(insideLimit && cost < limit) {
-                    insideLimit = false;
-                }
+                min = Math.min(min, cost);
             }
             if(keepMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
-            if(insideLimit) {
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
-            }
-            // Swap current and prevRow arrays. We'll just overwrite the new row.
-            {
-                double[] temp = prevRow;
-                prevRow = row;
-                row = temp;
             }
         }
         //Find the minimum distance at the end points, within the warping window.
-        return prevRow[bLength - 1];
+        return row[bLength - 1];
     }
 
     @Override

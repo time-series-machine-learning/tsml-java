@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
@@ -12,7 +13,7 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class ERPDistance extends WarpingDistanceMeasure {
+public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
     private double penalty = 0;
 
@@ -29,32 +30,19 @@ public class ERPDistance extends WarpingDistanceMeasure {
     }
 
     @Override
-    public double distance(double[] a,
-        double[] b,
-        final double limit) {
+    public double findDistance(final double[] a, final double[] b, final double limit) {
 
         int aLength = a.length - 1;
         int bLength = b.length - 1;
 
-        // put a or first as the longest time series
-        if(bLength > aLength) {
-            double[] tmp = a;
-            a = b;
-            b = tmp;
-            int tmpLength = aLength;
-            aLength = bLength;
-            bLength = tmpLength;
-        }
-
         // Current and previous columns of the matrix
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-
+        double min = Double.POSITIVE_INFINITY;
         // size of edit distance band
         // bandsize is the maximum allowed distance to the diagonal
         final int windowSize = findWindowSize(aLength);
 
-        boolean insideLimit = true;
         int start = 1;
         int end = Math.min(bLength - 1, windowSize);
         if(end + 1 < bLength) {
@@ -66,9 +54,7 @@ public class ERPDistance extends WarpingDistanceMeasure {
         for(int j = start; j <= end; j++) {
             final double cost = row[j - 1] + Math.pow(b[j] - penalty, 2);
             row[j] = cost;
-            if(insideLimit && cost < limit) {
-                insideLimit = false;
-            }
+            min = Math.min(min, cost);
         }
         // populate matrix
         if(keepMatrix) {
@@ -76,22 +62,18 @@ public class ERPDistance extends WarpingDistanceMeasure {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && insideLimit) {
-            return Double.POSITIVE_INFINITY;
-        }
-        // Swap current and prevRow arrays. We'll just overwrite the new row.
-        {
-            double[] temp = prevRow;
-            prevRow = row;
-            row = temp;
-        }
-        // check if the limit has been hit IFF first row was populated
-        if(windowSize > 0 && insideLimit) {
+        if(end > start && min > limit) {
             return Double.POSITIVE_INFINITY;
         }
         // populate remaining rows
         for(int i = 1; i < aLength; i++) {
-            insideLimit = true;
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
+            }
+            min = Double.POSITIVE_INFINITY;
             // start and end of window
             start = Math.max(0, i - windowSize);
             end = Math.min(bLength - 1, i + windowSize);
@@ -107,9 +89,7 @@ public class ERPDistance extends WarpingDistanceMeasure {
             if(start == 0) {
                 final double cost = prevRow[start] + Math.pow(a[i] - penalty, 2);
                 row[start] = cost;
-                if(insideLimit && cost < limit) {
-                    insideLimit = false;
-                }
+                min = Math.min(min, cost);
                 start++;
             }
             for(int j = start; j <= end; j++) {
@@ -134,28 +114,19 @@ public class ERPDistance extends WarpingDistanceMeasure {
                     // match
                     cost = topLeft;
                 }
-
                 row[j] = cost;
 
-                if(insideLimit && cost < limit) {
-                    insideLimit = false;
-                }
+                min = Math.min(min, cost);
             }
             if(keepMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
-            if(insideLimit) {
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
-            }
-            // Swap current and prevRow arrays. We'll just overwrite the new row.
-            {
-                double[] temp = prevRow;
-                prevRow = row;
-                row = temp;
             }
         }
 
-        return prevRow[bLength - 1];
+        return row[bLength - 1];
     }
 
     @Override

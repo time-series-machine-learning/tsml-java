@@ -23,6 +23,9 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     private transient Instances data;
     // is this in training phase or testing phase
     private transient boolean training = true;
+    // whether to set the first instance to the longest instance when calling the distance function
+    private transient boolean longestInstanceFirst = true;
+
 
     // optional check for data in the correct format
     protected void checkData(Instance a, Instance b) {
@@ -30,7 +33,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
         Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
 //        if(!dataHasBeenSet) {
 //            throw new IllegalStateException("must call setInstances first to setup the distance measure");
-//        }
+//        } todo do we need this? some dm's might need to look at the instances first perhaps
     }
 
     @Override
@@ -48,7 +51,18 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     }
 
     @Override
-    public abstract double distance(final Instance a, final Instance b, final double limit);
+    public final double distance(Instance a, Instance b, final double limit) {
+        checkData(a, b);
+        // put a or first as the longest time series
+        if(longestInstanceFirst && b.numAttributes() > a.numAttributes()) {
+            Instance tmp = a;
+            a = b;
+            b = tmp;
+        }
+        return findDistance(a, b, limit);
+    }
+
+    protected abstract double findDistance(final Instance a, final Instance b, final double limit);
 
     @Override
     public final double distance(final Instance a, final Instance b, final double limit,
@@ -138,5 +152,13 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     @Override
     public void setTraining(final boolean training) {
         this.training = training;
+    }
+
+    public boolean isLongestInstanceFirst() {
+        return longestInstanceFirst;
+    }
+
+    protected void setLongestInstanceFirst(final boolean longestInstanceFirst) {
+        this.longestInstanceFirst = longestInstanceFirst;
     }
 }

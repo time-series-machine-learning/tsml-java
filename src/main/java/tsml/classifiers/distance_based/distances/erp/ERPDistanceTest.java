@@ -1,11 +1,19 @@
 package tsml.classifiers.distance_based.distances.erp;
 
+import distance.elastic.DistanceMeasure;
+import experiments.data.DatasetLoading;
+import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import utilities.InstanceTools;
+import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -52,14 +60,35 @@ public class ERPDistanceTest {
         Assert.assertEquals(distance, 189, 0);
     }
 
-    @Test
-    public void testRandomSetups() {
+    public interface DistanceFinder {
+        double[] findDistance(Random random, int min, int max, int length, Instance ai, Instance bi, double limit);
+    }
+
+    public static void runGunPointDistanceFunctionTests(ParamSpace space) throws Exception {
+        final Instances[] instances = DatasetLoading.sampleGunPoint(0);
+        final Instances data = instances[0];
+        data.addAll(instances[1]);
+        for(int i = 1; i < data.size(); i++) {
+            final Instance a = data.get(i);
+            for(int j = 0; j < i; j++) {
+                final Instance b = data.get(j);
+                final GridSearchIterator iterator = new GridSearchIterator(space);
+                while(iterator.hasNext()) {
+                    final ParamSet paramSet = iterator.next();
+                    final List<Object> list = paramSet.get(DistanceMeasureable.DISTANCE_MEASURE_FLAG);
+                    Assert.assertEquals(list.size(), 1);
+                    final DistanceFunction df = (DistanceFunction) list.get(0);
+                    final double distance = df.distance(a, b);
+                }
+            }
+        }
+    }
+
+    public static void runRandomDistanceFunctionTests(DistanceFinder df) {
         final int min = -5;
         final int max = 5;
         final int length = 100;
         final int count = 10000;
-        final double[] resultsOrig = new double[count];
-        final double[] resultsCustom = new double[count];
         int limitCount = 0;
         for(int i = 0; i < count; i++) {
             final Random random = new Random(i);
@@ -70,28 +99,36 @@ public class ERPDistanceTest {
             final Instances instances = InstanceTools.toWekaInstances(new double[][]{a, b}, new double[] {1,1});
             final Instance ai = instances.get(0);
             final Instance bi = instances.get(1);
-            final double penalty = Math.abs(max - min) * random.nextDouble();
-            int window;
-            if(random.nextBoolean()) {
-                window = random.nextInt(100);
-            } else {
-                window = -1;
-            }
             double limit = Double.POSITIVE_INFINITY;
             if(random.nextBoolean()) {
                 limit = random.nextDouble() * 1000;
             }
-            resultsOrig[i] = origErp(ai, bi, limit, window, penalty);
-            if(resultsOrig[i] == Double.POSITIVE_INFINITY) {
+            final double[] distances = df.findDistance(random, min, max, length, ai, bi, limit);
+            if(distances[0] == Double.POSITIVE_INFINITY) {
                 limitCount++;
             }
-            final ERPDistance df = new ERPDistance();
-            df.setPenalty(penalty);
-            df.setWindowSize(window);
-            this.df.setKeepMatrix(true);
-            resultsCustom[i] = df.distance(ai, bi, limit);
+            for(int j = 1; j < distances.length; j++) {
+                Assert.assertEquals(distances[0], distances[j], 0);
+            }
         }
-        Assert.assertArrayEquals(resultsCustom,  resultsOrig, 0d);
+    }
+
+    @Test
+    public void testRandomSetups() {
+        runRandomDistanceFunctionTests((random, min, max, length, ai, bi, limit) -> {
+            final double penalty = Math.abs(max - min) * random.nextDouble();
+            int window;
+            if(random.nextBoolean()) {
+                window = random.nextInt(length);
+            } else {
+                window = -1;
+            }
+            final ERPDistance df = new ERPDistance();
+            df.setKeepMatrix(true);
+            df.setWindowSize(window);
+            df.setPenalty(penalty);
+            return new double[] {df.distance(ai, bi, limit), origErp(ai, bi, limit, window, penalty)};
+        });
     }
 
     public static double[] buildRandomArray(Random random, int length, double min, double max) {

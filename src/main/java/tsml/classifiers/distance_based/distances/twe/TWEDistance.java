@@ -2,7 +2,9 @@ package tsml.classifiers.distance_based.distances.twe;
 
 import distance.elastic.TWE;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.distance_based.distances.ArrayBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import utilities.Utilities;
@@ -16,7 +18,7 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class TWEDistance
-    extends BaseDistanceMeasure {
+    extends DoubleBasedWarpingDistanceMeasure {
 
     private double lambda;
     private double nu;
@@ -30,171 +32,83 @@ public class TWEDistance
     }
 
     @Override
-    public double distance(final Instance a,
-        final Instance b,
-        final double limit) {
+    public double findDistance(final double[] a, final double[] b, final double limit) {
+        int aLength = a.length - 1;
+        int bLength = b.length - 1;
 
-        checkData(a, b);
-
-        /*This code is faithful to the c version, so uses a redundant
- * Multidimensional representation. The c code does not describe what the
-            arguments
- * tsB and tsA are. We assume they are the time stamps (i.e. index sets),
- * and initialise them accordingly.
- */
-
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
-        int dim = 1;
-        double dist, disti1, distj1;
-        double[][] ta = new double[aLength][dim];
-        double[][] tb = new double[bLength][dim];
-        double[] tsa = new double[aLength];
-        double[] tsb = new double[bLength];
-        for(int i = 0; i < tsa.length; i++) {
-            tsa[i] = (i + 1);
-        }
-        for(int i = 0; i < tsb.length; i++) {
-            tsb[i] = (i + 1);
-        }
-
-        int r = ta.length;
-        int c = tb.length;
-        int i, j, k;
-        //Copy over values
-        for(i = 0; i < aLength; i++) {
-            ta[i][0] = a.value(i);
-        }
-        for(i = 0; i < bLength; i++) {
-            tb[i][0] = b.value(i);
-        }
-
-        /* allocations in c
-	double **D = (double **)calloc(r+1, sizeof(double*));
-	double *Di1 = (double *)calloc(r+1, sizeof(double));
-	double *Dj1 = (double *)calloc(c+1, sizeof(double));
-	for(i=0; i<=r; i++) {
-		D[i]=(double *)calloc(c+1, sizeof(double));
-	}
-*/
-        double[][] D = new double[r + 1][c + 1];
-        double[] Di1 = new double[r + 1];
-        double[] Dj1 = new double[c + 1];
+        double[] row = new double[bLength + 1];
+        double[] prevRow = new double[bLength + 1];
+        double[] Dj1 = new double[bLength + 1];
+        double min = Double.POSITIVE_INFINITY;
         // local costs initializations
-        for(j = 1; j <= c; j++) {
-            distj1 = 0;
-            for(k = 0; k < dim; k++) {
-                if(j > 1) {
-                    //CHANGE AJB 8/1/16: Only use power of 2 for speed up,
-                    distj1 += (tb[j - 2][k] - tb[j - 1][k]) * (tb[j - 2][k] - tb[j - 1][k]);
-                    // OLD VERSION                    distj1+=Math.pow(Math.abs(tb[j-2][k]-tb[j-1][k]),degree);
-                    // in c:               distj1+=pow(fabs(tb[j-2][k]-tb[j-1][k]),degree);
-                } else {
-                    distj1 += tb[j - 1][k] * tb[j - 1][k];
-                }
+        for(int j = 1; j <= bLength; j++) {
+            final double distj1;
+            if(j > 1) {
+                distj1 = Math.pow(b[j - 2] - b[j - 1], 2);
+            } else {
+                distj1 = Math.pow(b[j - 1], 2);
             }
-            //OLD              		distj1+=Math.pow(Math.abs(tb[j-1][k]),degree);
             Dj1[j] = (distj1);
         }
 
-        for(i = 1; i <= r; i++) {
-            disti1 = 0;
-            for(k = 0; k < dim; k++) {
-                if(i > 1) {
-                    disti1 += (ta[i - 2][k] - ta[i - 1][k]) * (ta[i - 2][k] - ta[i - 1][k]);
-                }
-                // OLD                 disti1+=Math.pow(Math.abs(ta[i-2][k]-ta[i-1][k]),degree);
-                else {
-                    disti1 += (ta[i - 1][k]) * (ta[i - 1][k]);
-                }
-            }
-            //OLD                  disti1+=Math.pow(Math.abs(ta[i-1][k]),degree);
-
-            Di1[i] = (disti1);
-
-            for(j = 1; j <= c; j++) {
-                dist = 0;
-                for(k = 0; k < dim; k++) {
-                    dist += (ta[i - 1][k] - tb[j - 1][k]) * (ta[i - 1][k] - tb[j - 1][k]);
-                    //                  dist+=Math.pow(Math.abs(ta[i-1][k]-tb[j-1][k]),degree);
-                    if(i > 1 && j > 1) {
-                        dist += (ta[i - 2][k] - tb[j - 2][k]) * (ta[i - 2][k] - tb[j - 2][k]);
-                    }
-                    //                    dist+=Math.pow(Math.abs(ta[i-2][k]-tb[j-2][k]),degree);
-                }
-                D[i][j] = (dist);
-            }
-        }// for i
-
         // border of the cost matrix initialization
-        D[0][0] = 0;
-        for(i = 1; i <= r; i++) {
-//            D[i][0] = Double.POSITIVE_INFINITY;
-            D[i][0] = D[i - 1][0] + Di1[i];
+        row[0] = 0;
+        for(int j = 1; j <= bLength; j++) {
+            // todo see PR334
+            row[j] = row[j - 1] + Dj1[j];
+            min = Math.min(min, row[j]);
         }
-        for(j = 1; j <= c; j++) {
-//            D[0][j] = Double.POSITIVE_INFINITY;
-            D[0][j] = D[0][j - 1] + Dj1[j];
+        if(keepMatrix) {
+            matrix = new double[aLength][bLength + 1];
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
-
-        double dmin, htrans, dist0;
-        int iback;
-
-        for(i = 1; i <= r; i++) {
-            for(j = 1; j <= c; j++) {
-                htrans = Math.abs((tsa[i - 1] - tsb[j - 1]));
+        if(min > limit) {
+            return Double.POSITIVE_INFINITY;
+        }
+        for(int i = 1; i <= aLength; i++) {
+            {
+                double[] tmp = row;
+                row = prevRow;
+                prevRow = tmp;
+            }
+            // cost init
+            final double disti1;
+            if(i > 1) {
+                disti1 = Math.pow(a[i - 2] - a[i - 1], 2);
+            } else {
+                disti1 = Math.pow(a[i - 1], 2);
+            }
+            // border init
+            double cost = prevRow[0] + disti1;
+            row[0] = cost;
+            min = Math.min(min, cost);
+            for(int j = 1; j <= bLength; j++) {
+                double htrans = Math.abs(i - j);
                 if(j > 1 && i > 1) {
-                    htrans += Math.abs((tsa[i - 2] - tsb[j - 2]));
+                    htrans += Math.abs((i - 1) - (j - 1));
                 }
-                dist0 = D[i - 1][j - 1] + nu * htrans + D[i][j];
-                dmin = dist0;
-                if(i > 1) {
-                    htrans = ((tsa[i - 1] - tsa[i - 2]));
-                } else {
-                    htrans = tsa[i - 1];
+                double dist = Math.pow(a[i - 1] - b[j - 1], 2);
+                if(i > 1 && j > 1) {
+                    dist += Math.pow(a[i - 2] - b[j - 2], 2);
                 }
-                dist = Di1[i] + D[i - 1][j] + lambda + nu * htrans;
-                if(dmin > dist) {
-                    dmin = dist;
-                }
-                if(j > 1) {
-                    htrans = (tsb[j - 1] - tsb[j - 2]);
-                } else {
-                    htrans = tsb[j - 1];
-                }
-                dist = Dj1[j] + D[i][j - 1] + lambda + nu * htrans;
-                if(dmin > dist) {
-                    dmin = dist;
-                }
-                D[i][j] = dmin;
+                final double topLeft = prevRow[j - 1] + nu * htrans + dist;
+                htrans = Math.min(i, 1);
+                final double top = disti1 + prevRow[j] + lambda + nu * htrans;
+                htrans = Math.min(j, 1);
+                final double left = Dj1[j] + row[j - 1] + lambda + nu * htrans;
+                cost = Math.max(topLeft, Math.max(left, top));
+                row[j] = cost;
+                min = Math.min(min, cost);
+            }
+            if(keepMatrix) {
+                System.arraycopy(row, 0, matrix[i], 0, row.length);
+            }
+            if(min > limit) {
+                return Double.POSITIVE_INFINITY;
             }
         }
 
-        dist = D[r][c];
-        return dist;
-    }
-
-    public static void main(String[] args) throws Exception {
-        Instances instances = DatasetLoading.sampleGunPoint(0)[0];
-        TWE theirs = new TWE();
-        double nu = 0.01;
-        double lambda = 0.011111111111111111;
-        TWEDistance ours = new TWEDistance();
-        ours.setNu(nu);
-        ours.setLambda(lambda);
-        ours.setInstances(instances);
-        for(int i = 1; i < instances.size(); i++) {
-            for(int j = 0; j < i; j++) {
-                Instance i1 = instances.get(i);
-                Instance i2 = instances.get(j);
-                double theirDistance = theirs.distance(Utilities.extractTimeSeries(i1), Utilities.extractTimeSeries(i2),
-                    Double.POSITIVE_INFINITY, nu, lambda);
-                double ourDistance = ours.distance(i1, i2, Double.POSITIVE_INFINITY);
-                if(ourDistance != theirDistance) {
-                    System.out.println("oops");
-                }
-            }
-        }
+        return row[bLength];
     }
 
     public double getLambda() {

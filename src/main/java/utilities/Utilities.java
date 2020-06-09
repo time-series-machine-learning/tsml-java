@@ -42,10 +42,6 @@ public class Utilities {
 //        return result;
 //    }
 
-    public static double squaredDifference(double[] a, int i, double[] b, int j) {
-        return Math.pow(a[i] - b[j], 2);
-    }
-
     public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
         int sum = 0;
         while(iterator.hasNext()) {
@@ -169,13 +165,29 @@ public class Utilities {
         }
     }
 
-    public static final double min(double... values) {
-        double min = values[0];
-        for(int i = 1; i < values.length; i++) {
-            min = Math.min(min, values[i]);
-        }
-        return min;
-    }
+//    public static int max(int a, int b, int c) {
+//        return Math.max(a, Math.max(b, c));
+//    }
+//
+//    public static int min(int a, int b, int c) {
+//        return Math.min(a, Math.min(b, c));
+//    }
+//
+//    public static double min(double a, double b, double c) {
+//        return Math.min(a, Math.min(b, c));
+//    }
+//
+//    public static double max(double a, double b, double c) {
+//        return Math.max(a, Math.max(b, c));
+//    }
+
+//    public static final double min(double... values) {
+//        double min = values[0];
+//        for(int i = 1; i < values.length; i++) {
+//            min = Math.min(min, values[i]);
+//        }
+//        return min;
+//    }
 
     public static final double sum(double[] array, int start, int end) {
         double sum = 0;
@@ -282,27 +294,27 @@ public class Utilities {
         return map;
     }
 
-    public static int max(int... values) {
-        int max = values[0];
-        for(int i = 0; i < values.length; i++) {
-            final int value = values[i];
-            if(value > max) {
-                max = value;
-            }
-        }
-        return max;
-    }
+//    public static int max(int... values) {
+//        int max = values[0];
+//        for(int i = 0; i < values.length; i++) {
+//            final int value = values[i];
+//            if(value > max) {
+//                max = value;
+//            }
+//        }
+//        return max;
+//    }
 
-    public static int min(int... values) {
-        int min = values[0];
-        for(int i = 0; i < values.length; i++) {
-            final int value = values[i];
-            if(value < min) {
-                min = value;
-            }
-        }
-        return min;
-    }
+//    public static int min(int... values) {
+//        int min = values[0];
+//        for(int i = 0; i < values.length; i++) {
+//            final int value = values[i];
+//            if(value < min) {
+//                min = value;
+//            }
+//        }
+//        return min;
+//    }
 
     public static double roundExact(double value, int places) {
         if (places < 0) throw new IllegalArgumentException();
