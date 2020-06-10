@@ -71,7 +71,6 @@ public class DTWDistanceTest {
         Assert.assertEquals(distance, 212, 0);
     }
 
-
     private static DistanceFinder buildDistanceFinder() {
         return new DistanceFinder() {
             private GridSearchIterator iterator;
@@ -89,7 +88,6 @@ public class DTWDistanceTest {
                 for(int i = 0; i < distances.length; i++) {
                     Assert.assertTrue(iterator.hasNext());
                     final ParamSet paramSet = iterator.next();
-                    final double penalty = (double) paramSet.get(ERPDistance.PENALTY_FLAG).get(0);
                     final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
                     final DTWDistance dtw = new DTWDistance();
                     dtw.setWindowSize(window);

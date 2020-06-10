@@ -1,27 +1,71 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
+import java.util.Random;
+import org.junit.Assert;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceFinder;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import weka.core.Instance;
+import weka.core.Instances;
 
 public class LCSSDistanceTest {
 
+    private static DistanceFinder buildDistanceFinder() {
+        return new DistanceFinder() {
+            private GridSearchIterator iterator;
+            private Instances data;
+
+            @Override
+            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+                final Instance bi, final double limit) {
+                if(data != this.data) {
+                    this.data = data;
+                    final ParamSpace space = DistanceMeasureConfigs.buildLcssParams(data);
+                    iterator = new GridSearchIterator(space);
+                }
+                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
+                for(int i = 0; i < distances.length; i++) {
+                    Assert.assertTrue(iterator.hasNext());
+                    final ParamSet paramSet = iterator.next();
+                    final double epsilon = (double) paramSet.get(LCSSDistance.getEpsilonFlag()).get(0);
+                    final int window = (int) paramSet.get(LCSSDistance.getDeltaFlag()).get(0);
+                    final LCSSDistance df = new LCSSDistance();
+                    df.setEpsilon(epsilon);
+                    df.setWindowSize(window);
+                    df.setKeepMatrix(true);
+                    distances[i][0] = df.distance(ai, bi, limit);
+                    distances[i][1] = origLcss(ai, bi, limit, window, epsilon);
+                }
+                return distances;
+            }
+        };
+    }
+
     @Test
-    public void testRandomSetups() {
-        ERPDistanceTest.buildRandomDataset((random, min, max, length, ai, bi, limit) -> {
-            double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
-            double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
-            final LCSSDistance df = new LCSSDistance();
-            double epsilon = random.nextDouble() * Math.abs(min - max) + Math.min(min, max);
-            int window = random.nextInt(length);
-            df.setEpsilon(epsilon);
-            df.setWindowSize(window);
-            return new double[] {
-                df.distance(ai, bi, limit),
-                origLcss(ai, bi, limit, window, epsilon),
-            };
-        });
+    public void testBeef() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnBeef(buildDistanceFinder());
+    }
+
+    @Test
+    public void testGunPoint() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnGunPoint(buildDistanceFinder());
+    }
+
+    @Test
+    public void testItalyPowerDemand() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnItalyPowerDemand(buildDistanceFinder());
+    }
+
+    @Test
+    public void testRandomDataset() {
+        ERPDistanceTest.testDistanceFunctionsOnRandomDataset(buildDistanceFinder());
     }
 
     private static double origLcss(Instance a, Instance b, double limit, int delta, double epsilon) {
