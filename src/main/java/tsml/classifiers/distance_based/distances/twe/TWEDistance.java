@@ -38,24 +38,24 @@ public class TWEDistance
 
         double[] row = new double[bLength + 1];
         double[] prevRow = new double[bLength + 1];
-        double[] Dj1 = new double[bLength + 1];
+        double[] bCosts = new double[bLength + 1];
         double min = Double.POSITIVE_INFINITY;
         // local costs initializations
         for(int j = 1; j <= bLength; j++) {
-            final double distj1;
+            final double bCost;
             if(j > 1) {
-                distj1 = Math.pow(b[j - 2] - b[j - 1], 2);
+                bCost = Math.pow(b[j - 2] - b[j - 1], 2);
             } else {
-                distj1 = Math.pow(b[j - 1], 2);
+                bCost = Math.pow(b[j - 1], 2);
             }
-            Dj1[j] = (distj1);
+            bCosts[j] = bCost;
         }
 
         // border of the cost matrix initialization
         row[0] = 0;
         for(int j = 1; j <= bLength; j++) {
             // todo see PR334
-            row[j] = row[j - 1] + Dj1[j];
+            row[j] = row[j - 1] + bCosts[j];
             min = Math.min(min, row[j]);
         }
         if(keepMatrix) {
@@ -95,7 +95,7 @@ public class TWEDistance
                 htrans = Math.min(i, 1);
                 final double top = disti1 + prevRow[j] + lambda + nu * htrans;
                 htrans = Math.min(j, 1);
-                final double left = Dj1[j] + row[j - 1] + lambda + nu * htrans;
+                final double left = bCosts[j] + row[j - 1] + lambda + nu * htrans;
                 cost = Math.max(topLeft, Math.max(left, top));
                 row[j] = cost;
                 min = Math.min(min, cost);

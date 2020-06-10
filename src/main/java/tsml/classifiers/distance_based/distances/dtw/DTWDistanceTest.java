@@ -1,17 +1,17 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import static tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.runRandomDistanceFunctionTests;
-
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceFinder;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import utilities.InstanceTools;
-import utilities.Utilities;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -71,44 +71,55 @@ public class DTWDistanceTest {
         Assert.assertEquals(distance, 212, 0);
     }
 
+
+    private static DistanceFinder buildDistanceFinder() {
+        return new DistanceFinder() {
+            private GridSearchIterator iterator;
+            private Instances data;
+
+            @Override
+            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+                final Instance bi, final double limit) {
+                if(data != this.data) {
+                    this.data = data;
+                    final ParamSpace space = DistanceMeasureConfigs.buildErpParams(data);
+                    iterator = new GridSearchIterator(space);
+                }
+                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
+                for(int i = 0; i < distances.length; i++) {
+                    Assert.assertTrue(iterator.hasNext());
+                    final ParamSet paramSet = iterator.next();
+                    final double penalty = (double) paramSet.get(ERPDistance.PENALTY_FLAG).get(0);
+                    final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
+                    final DTWDistance dtw = new DTWDistance();
+                    dtw.setWindowSize(window);
+                    dtw.setKeepMatrix(true);
+                    distances[i][0] = dtw.distance(ai, bi, limit);
+                    distances[i][1] = origDtw(ai, bi, limit, window);
+                }
+                return distances;
+            }
+        };
+    }
+
     @Test
-    public void testRandomSetups() {
-        final int min = -5;
-        final int max = 5;
-        final int length = 100;
-        final int count = 10000;
-        final double[] resultsOrig = new double[count];
-        final double[] resultsCustom = new double[count];
-        int limitCount = 0;
-        for(int i = 0; i < count; i++) {
-            final Random random = new Random(i);
-            final double[] a = ERPDistanceTest.buildRandomArray(random, length, min, max);
-            final double[] b = ERPDistanceTest.buildRandomArray(random, length, min, max);
-            a[a.length - 1] = 1;
-            b[b.length - 1] = 1;
-            final Instances instances = InstanceTools.toWekaInstances(new double[][]{a, b}, new double[] {1,1});
-            final Instance ai = instances.get(0);
-            final Instance bi = instances.get(1);
-            int window;
-            if(random.nextBoolean()) {
-                window = random.nextInt(length);
-            } else {
-                window = -1;
-            }
-            double limit = Double.POSITIVE_INFINITY;
-            if(random.nextBoolean()) {
-                limit = random.nextDouble() * 1000;
-            }
-            resultsOrig[i] = origDtw(ai, bi, limit, window);
-            if(resultsOrig[i] == Double.POSITIVE_INFINITY) {
-                limitCount++;
-            }
-            final DTWDistance df = new DTWDistance();
-            df.setKeepMatrix(true);
-            df.setWindowSize(window);
-            resultsCustom[i] = df.distance(ai, bi, limit);
-        }
-        Assert.assertArrayEquals(resultsCustom,  resultsOrig, 0d);
+    public void testBeef() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnBeef(buildDistanceFinder());
+    }
+
+    @Test
+    public void testGunPoint() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnGunPoint(buildDistanceFinder());
+    }
+
+    @Test
+    public void testItalyPowerDemand() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnItalyPowerDemand(buildDistanceFinder());
+    }
+
+    @Test
+    public void testRandomDataset() {
+        ERPDistanceTest.testDistanceFunctionsOnRandomDataset(buildDistanceFinder());
     }
 
     private static double origDtw(Instance first, Instance second, double limit, int windowSize) {

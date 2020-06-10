@@ -1,21 +1,15 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
-import static tsml.classifiers.distance_based.distances.lcss.LCSSDistance.approxEqual;
-
-import com.google.gson.annotations.Expose;
-import java.util.Random;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
-import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceFinder;
 import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
-import utilities.Utilities;
 import weka.core.Instance;
 
 public class LCSSDistanceTest {
 
     @Test
     public void testRandomSetups() {
-        ERPDistanceTest.runRandomDistanceFunctionTests((random, min, max, length, ai, bi, limit) -> {
+        ERPDistanceTest.buildRandomDataset((random, min, max, length, ai, bi, limit) -> {
             double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
             double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
             final LCSSDistance df = new LCSSDistance();

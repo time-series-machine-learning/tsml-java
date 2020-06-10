@@ -111,8 +111,20 @@ public class DatasetLoading {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
 
+    public static Instances loadItalyPowerDemand() throws Exception {
+        final Instances[] instances = sampleItalyPowerDemand(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
+    }
+
     public static Instances[] sampleGunPoint(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "GunPoint", seed);
+    }
+
+    public static Instances loadGunPoint() throws Exception {
+        final Instances[] instances = sampleGunPoint(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
     }
 
     /**
@@ -130,6 +142,12 @@ public class DatasetLoading {
      */
     public static Instances[] sampleBeef(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "Beef", seed);
+    }
+
+    public static Instances loadBeef() throws Exception {
+        final Instances[] instances = sampleBeef(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
     }
 
     /**

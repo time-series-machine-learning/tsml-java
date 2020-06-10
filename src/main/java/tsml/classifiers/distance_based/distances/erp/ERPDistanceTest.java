@@ -2,18 +2,20 @@ package tsml.classifiers.distance_based.distances.erp;
 
 import distance.elastic.DistanceMeasure;
 import experiments.data.DatasetLoading;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.dimensions.DiscreteParameterDimension;
+import tsml.classifiers.distance_based.utils.params.dimensions.ParameterDimension;
 import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import utilities.InstanceTools;
-import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -61,74 +63,105 @@ public class ERPDistanceTest {
     }
 
     public interface DistanceFinder {
-        double[] findDistance(Random random, int min, int max, int length, Instance ai, Instance bi, double limit);
+        double[][] findDistance(Random random, Instances data, Instance ai, Instance bi, double limit);
     }
 
-    public static void runGunPointDistanceFunctionTests(ParamSpace space) throws Exception {
-        final Instances[] instances = DatasetLoading.sampleGunPoint(0);
-        final Instances data = instances[0];
-        data.addAll(instances[1]);
-        for(int i = 1; i < data.size(); i++) {
+    public static void testDistanceFunctionsOnGunPoint(DistanceFinder df) throws Exception {
+        testDistanceFunctionOnDataset(DatasetLoading.loadGunPoint(), df);
+    }
+
+    public static void testDistanceFunctionsOnBeef(DistanceFinder df) throws Exception {
+        testDistanceFunctionOnDataset(DatasetLoading.loadBeef(), df);
+    }
+
+    public static void testDistanceFunctionsOnItalyPowerDemand(DistanceFinder df) throws Exception {
+        testDistanceFunctionOnDataset(DatasetLoading.loadItalyPowerDemand(), df);
+    }
+
+    public static void testDistanceFunctionsOnRandomDataset(DistanceFinder df) {
+        testDistanceFunctionOnDataset(buildRandomDataset(new Random(0), -5, 5, 100, 100, 2), df);
+    }
+
+    public static void testDistanceFunctionOnDataset(Instances data, DistanceFinder df) {
+        Random random = new Random(0);
+        for(int i = 0; i < data.size(); i++) {
             final Instance a = data.get(i);
             for(int j = 0; j < i; j++) {
                 final Instance b = data.get(j);
-                final GridSearchIterator iterator = new GridSearchIterator(space);
-                while(iterator.hasNext()) {
-                    final ParamSet paramSet = iterator.next();
-                    final List<Object> list = paramSet.get(DistanceMeasureable.DISTANCE_MEASURE_FLAG);
-                    Assert.assertEquals(list.size(), 1);
-                    final DistanceFunction df = (DistanceFunction) list.get(0);
-                    final double distance = df.distance(a, b);
+                double limit = Double.POSITIVE_INFINITY;
+                double[][] distances = df.findDistance(random, data, a, b, limit);
+                for(int k = 0; k < distances.length; k++) {
+                    Assert.assertArrayEquals(distances[0], distances[k], 0);
+                }
+                limit = random.nextDouble() * 2 * data.numAttributes() - 1;
+                distances = df.findDistance(random, data, a, b, limit);
+                for(int k = 0; k < distances.length; k++) {
+                    Assert.assertArrayEquals(distances[0], distances[k], 0);
                 }
             }
         }
     }
 
-    public static void runRandomDistanceFunctionTests(DistanceFinder df) {
-        final int min = -5;
-        final int max = 5;
-        final int length = 100;
-        final int count = 10000;
-        int limitCount = 0;
+    public static Instances buildRandomDataset(Random random, double min, double max, int length, int count, int numClasses) {
+        double[][] data = new double[count][];
+        double[] labels = new double[count];
         for(int i = 0; i < count; i++) {
-            final Random random = new Random(i);
             final double[] a = buildRandomArray(random, length, min, max);
-            final double[] b = buildRandomArray(random, length, min, max);
-            a[a.length - 1] = 1;
-            b[b.length - 1] = 1;
-            final Instances instances = InstanceTools.toWekaInstances(new double[][]{a, b}, new double[] {1,1});
-            final Instance ai = instances.get(0);
-            final Instance bi = instances.get(1);
-            double limit = Double.POSITIVE_INFINITY;
-            if(random.nextBoolean()) {
-                limit = random.nextDouble() * 1000;
-            }
-            final double[] distances = df.findDistance(random, min, max, length, ai, bi, limit);
-            if(distances[0] == Double.POSITIVE_INFINITY) {
-                limitCount++;
-            }
-            for(int j = 1; j < distances.length; j++) {
-                Assert.assertEquals(distances[0], distances[j], 0);
-            }
+            labels[i] = random.nextInt(numClasses);
+            data[i] = a;
         }
+        return InstanceTools.toWekaInstances(data, labels);
+    }
+
+    private static DistanceFinder buildDistanceFinder() {
+        return new DistanceFinder() {
+            private GridSearchIterator iterator;
+            private Instances data;
+
+            @Override
+            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+                final Instance bi, final double limit) {
+                if(data != this.data) {
+                    this.data = data;
+                    final ParamSpace space = DistanceMeasureConfigs.buildErpParams(data);
+                    iterator = new GridSearchIterator(space);
+                }
+                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
+                for(int i = 0; i < distances.length; i++) {
+                    Assert.assertTrue(iterator.hasNext());
+                    final ParamSet paramSet = iterator.next();
+                    final double penalty = (double) paramSet.get(ERPDistance.PENALTY_FLAG).get(0);
+                    final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
+                    final ERPDistance erpDistance = new ERPDistance();
+                    erpDistance.setWindowSize(window);
+                    erpDistance.setPenalty(penalty);
+                    erpDistance.setKeepMatrix(true);
+                    distances[i][0] = erpDistance.distance(ai, bi, limit);
+                    distances[i][1] = origErp(ai, bi, limit, window, penalty);
+                }
+                return distances;
+            }
+        };
     }
 
     @Test
-    public void testRandomSetups() {
-        runRandomDistanceFunctionTests((random, min, max, length, ai, bi, limit) -> {
-            final double penalty = Math.abs(max - min) * random.nextDouble();
-            int window;
-            if(random.nextBoolean()) {
-                window = random.nextInt(length);
-            } else {
-                window = -1;
-            }
-            final ERPDistance df = new ERPDistance();
-            df.setKeepMatrix(true);
-            df.setWindowSize(window);
-            df.setPenalty(penalty);
-            return new double[] {df.distance(ai, bi, limit), origErp(ai, bi, limit, window, penalty)};
-        });
+    public void testBeef() throws Exception {
+        testDistanceFunctionsOnBeef(buildDistanceFinder());
+    }
+
+    @Test
+    public void testGunPoint() throws Exception {
+        testDistanceFunctionsOnGunPoint(buildDistanceFinder());
+    }
+
+    @Test
+    public void testItalyPowerDemand() throws Exception {
+        testDistanceFunctionsOnItalyPowerDemand(buildDistanceFinder());
+    }
+
+    @Test
+    public void testRandomDataset() throws Exception {
+        testDistanceFunctionsOnRandomDataset(buildDistanceFinder());
     }
 
     public static double[] buildRandomArray(Random random, int length, double min, double max) {
