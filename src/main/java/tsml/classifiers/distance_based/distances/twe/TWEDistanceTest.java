@@ -43,9 +43,7 @@ public class TWEDistanceTest {
                     final TWEDistance df = new TWEDistance();
                     df.setLambda(lambda);
                     df.setNu(nu);
-                    df.distance(ai, bi, limit);
-//                    origTwed(ai, bi, limit, lambda, nu);
-//                    Assert.assertEquals(df.distance(ai, bi, limit), origTwed(ai, bi, limit, lambda, nu), 0);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origTwed(ai, bi, limit, lambda, nu), 0);
                 }
             }
         };
@@ -202,9 +200,9 @@ public class TWEDistanceTest {
             for(int m = 0; m < D[i].length; m++) {
                 min = Math.min(min, D[i][m]);
             }
-//            if(min > limit) {
-//                return Double.POSITIVE_INFINITY;
-//            }
+            if(min > limit) {
+                return Double.POSITIVE_INFINITY;
+            }
         }
         dist = D[r][c];
         return dist;
