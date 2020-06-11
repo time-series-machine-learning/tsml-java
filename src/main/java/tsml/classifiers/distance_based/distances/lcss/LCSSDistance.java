@@ -51,15 +51,16 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
         if(limit != Double.POSITIVE_INFINITY) { // check if there's a limit set
             // if so then reverse engineer the max LCSS distance and replace the limit
             // this is just the inverse of the return value integer rounded to an LCSS distance
-            limit = (int) ((1 - limit) * aLength) + 1; // todo
+            limit = (int) ((1 - limit) * aLength) + 1; // must have plus 1 due to int rounding. Otherwise the value
+            // is potentially slightly too low, causing *early* early abandon
         }
-
 
         int[] row = new int[bLength];
         int[] prevRow = new int[bLength];
-        double min = Double.POSITIVE_INFINITY;
+        // init min to top left cell
+        double min = approxEqual(a[0], b[0], epsilon) ? 1 : 0;
         // top left cell of matrix will simply be the sq diff
-        row[0] = approxEqual(a[0], b[0], epsilon) ? 1 : 0;
+        row[0] = (int) min;
         // start and end of window
         // start at the next cell of the first row
         int start = 1;

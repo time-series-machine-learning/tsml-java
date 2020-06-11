@@ -24,18 +24,19 @@ public class LCSSDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = DistanceMeasureConfigs.buildErpParams(data);
+                    space = DistanceMeasureConfigs.buildLcssParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
+//                int i = 0;
                 while(iterator.hasNext()) {
+//                    System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
                     final double epsilon = (double) paramSet.get(LCSSDistance.getEpsilonFlag()).get(0);
                     final int window = (int) paramSet.get(LCSSDistance.getDeltaFlag()).get(0);
                     final LCSSDistance df = new LCSSDistance();
                     df.setEpsilon(epsilon);
                     df.setWindowSize(window);
-                    Assert.assertEquals(df.distance(ai, bi, limit), origLcss(ai, bi, limit, window,
-                        epsilon), 0);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origLcss(ai, bi, limit, window, epsilon), 0);
                 }
             }
         };
@@ -100,7 +101,7 @@ public class LCSSDistanceTest {
                         lcss[i + 1][j + 1] = Math.max(lcss[i + 1][j], Math.max(lcss[i][j], lcss[i][j + 1]));
                     }
                     // if this value is less than the limit then fast-fail the limit overflow
-                    if(tooBig && lcss[i + 1][j + 1] < limit) {
+                    if(tooBig && lcss[i + 1][j + 1] <= limit) {
                         tooBig = false;
                     }
                 }

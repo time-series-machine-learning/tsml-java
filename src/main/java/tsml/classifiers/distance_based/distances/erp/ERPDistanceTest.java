@@ -82,6 +82,7 @@ public class ERPDistanceTest {
         for(int i = 0, count = 0; i < data.size(); i++) {
             final Instance a = data.get(random.nextInt(data.size()));
             for(int j = 0; j < i; j++, count++) {
+//                System.out.println(count);
                 final Instance b = data.get(random.nextInt(data.size()));
                 double limit = Double.POSITIVE_INFINITY;
                 df.findDistance(random, data, a, b, limit);
@@ -127,8 +128,7 @@ public class ERPDistanceTest {
                     final ERPDistance df = new ERPDistance();
                     df.setWindowSize(window);
                     df.setPenalty(penalty);
-                    Assert.assertEquals(df.distance(ai, bi, limit), origErp(ai, bi, limit, window,
-                        penalty), 0);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origErp(ai, bi, limit, window, penalty), 0);
                 }
             }
         };
