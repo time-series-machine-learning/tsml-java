@@ -39,7 +39,6 @@ public class TWEDistance
         double[] row = new double[bLength + 1];
         double[] prevRow = new double[bLength + 1];
         double[] bCosts = new double[bLength + 1];
-        double min = Double.POSITIVE_INFINITY;
         // local costs initializations
         for(int j = 1; j <= bLength; j++) {
             final double bCost;
@@ -52,18 +51,16 @@ public class TWEDistance
         }
 
         // border of the cost matrix initialization
-        row[0] = 0;
+        double min = 0;
+        row[0] = min;
         for(int j = 1; j <= bLength; j++) {
             // todo see PR334
             row[j] = row[j - 1] + bCosts[j];
-            min = Math.min(min, row[j]);
+            // no need for early abandon check as top left cell is already 0
         }
         if(keepMatrix) {
             matrix = new double[aLength][bLength + 1];
             System.arraycopy(row, 0, matrix[0], 0, row.length);
-        }
-        if(min > limit) {
-            return Double.POSITIVE_INFINITY;
         }
         for(int i = 1; i <= aLength; i++) {
             {

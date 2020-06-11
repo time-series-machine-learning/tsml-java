@@ -108,9 +108,9 @@ public class MSMDistance
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-        double min = Double.POSITIVE_INFINITY;
         // top left cell of matrix will simply be the sq diff
-        row[0] = Math.abs(a[0] - b[0]);
+        double min = Math.abs(a[0] - b[0]);
+        row[0] = min;
         // start and end of window
         // start at the next cell of the first row
         int start = 1;
@@ -132,7 +132,7 @@ public class MSMDistance
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && min > limit) {
+        if(min > limit) {
             return Double.POSITIVE_INFINITY;
         }
         for(int i = 1; i < aLength; i++) {

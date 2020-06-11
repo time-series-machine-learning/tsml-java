@@ -4,6 +4,7 @@ import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;
@@ -28,17 +29,7 @@ public class WDTWDistance
 
     private double g = 0.05;
 
-    private void generateWeights(int length) {
-        seriesLength = length;
-        double halfLength = (double) seriesLength / 2;
-        weightVector = new double[seriesLength];
-        for (int i = 0; i < seriesLength; i++) {
-            weightVector[i] = 1 / (1 + Math.exp(-g * (i - halfLength)));
-        }
-    }
-
-    private int seriesLength = -1;
-    private double[] weightVector;
+    private double[] weightVector = new double[0];
 
     @Override
     public double findDistance(final double[] a, final double[] b, final double limit) {
@@ -46,8 +37,13 @@ public class WDTWDistance
         int aLength = a.length - 1;
         int bLength = b.length - 1;
 
-        if(seriesLength != aLength) {
-            generateWeights(aLength);
+        // generate weights
+        if(aLength != weightVector.length) {
+            final double halfLength = (double) aLength / 2;
+            weightVector = new double[aLength];
+            for (int i = 0; i < aLength; i++) {
+                weightVector[i] = 1d / (1d + Math.exp(-g * (i - halfLength)));
+            }
         }
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
@@ -56,9 +52,9 @@ public class WDTWDistance
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-        double min = Double.POSITIVE_INFINITY;
         // top left cell of matrix will simply be the sq diff
-        row[0] = weightVector[0] * Math.pow(a[0] - b[0], 2);
+        double min = weightVector[0] * Utilities.sqDiff(a[0], b[0]);
+        row[0] = min;
         // start and end of window
         // start at the next cell of the first row
         int start = 1;
@@ -80,7 +76,7 @@ public class WDTWDistance
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && min > limit) {
+        if(min > limit) {
             return Double.POSITIVE_INFINITY;
         }
         for(int i = 1; i < aLength; i++) {
@@ -105,7 +101,8 @@ public class WDTWDistance
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                final double cost = prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a[i] - b[start], 2);
+                final double cost =
+                    prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a[i] - b[start], 2);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell

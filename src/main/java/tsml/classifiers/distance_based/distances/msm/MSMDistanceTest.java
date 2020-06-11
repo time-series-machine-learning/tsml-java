@@ -1,8 +1,68 @@
 package tsml.classifiers.distance_based.distances.msm;
 
+import java.util.Random;
+import org.junit.Assert;
+import org.junit.Test;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import weka.core.Instance;
+import weka.core.Instances;
 
 public class MSMDistanceTest {
+
+
+    private static DistanceTester buildDistanceFinder() {
+        return new DistanceTester() {
+            private ParamSpace space;
+            private Instances data;
+
+            @Override
+            public void findDistance(final Random random, final Instances data, final Instance ai,
+                final Instance bi, final double limit) {
+                if(data != this.data) {
+                    this.data = data;
+                    space = DistanceMeasureConfigs.buildMsmParams();
+                }
+                final GridSearchIterator iterator = new GridSearchIterator(space);
+//                                int i = 0;
+                while(iterator.hasNext()) {
+//                                        System.out.println("i:" + i++);
+                    final ParamSet paramSet = iterator.next();
+                    final double cost = (double) paramSet.get(MSMDistance.getCostFlag()).get(0);
+                    // doesn't test window, MSM originally doesn't have window
+//                    final int window = (int) paramSet.get(MSMDistance.).get(0);
+                    final MSMDistance df = new MSMDistance();
+                    df.setCost(cost);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origMsm(ai, bi, limit, cost), 0);
+                }
+            }
+        };
+    }
+
+    @Test
+    public void testBeef() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnBeef(buildDistanceFinder());
+    }
+
+    @Test
+    public void testGunPoint() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnGunPoint(buildDistanceFinder());
+    }
+
+    @Test
+    public void testItalyPowerDemand() throws Exception {
+        ERPDistanceTest.testDistanceFunctionsOnItalyPowerDemand(buildDistanceFinder());
+    }
+
+    @Test
+    public void testRandomDataset() {
+        ERPDistanceTest.testDistanceFunctionsOnRandomDataset(buildDistanceFinder());
+    }
 
     private static double findCost(double newPoint, double x, double y, double c) {
         double dist = 0;
@@ -17,7 +77,7 @@ public class MSMDistanceTest {
         return dist;
     }
 
-    private static double msmOrig(Instance a, Instance b, double limit, double c) {
+    private static double origMsm(Instance a, Instance b, double limit, double c) {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
@@ -43,10 +103,6 @@ public class MSMDistanceTest {
                 d2 = cost[i - 1][j] + findCost(a.value(i), a.value(i - 1), b.value(j), c);
                 d3 = cost[i][j - 1] + findCost(b.value(j), a.value(i), b.value(j - 1), c);
                 cost[i][j] = Math.min(d1, Math.min(d2, d3));
-
-                if(cost[i][j] >= limit) {
-                    cost[i][j] = Double.POSITIVE_INFINITY;
-                }
 
                 if(cost[i][j] < min) {
                     min = cost[i][j];

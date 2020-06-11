@@ -87,7 +87,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && min > limit) {
+        if(min > limit) {
             return Double.POSITIVE_INFINITY;
         }
         for(int i = 1; i < aLength; i++) {

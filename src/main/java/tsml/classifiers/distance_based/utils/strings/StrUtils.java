@@ -20,6 +20,20 @@ import java.util.function.Function;
 
 public class StrUtils {
 
+    public static String toString(double[][] matrix) {
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for(double[] row : matrix) {
+            if(first) {
+                first = false;
+            } else {
+                builder.append(System.lineSeparator());
+            }
+            builder.append(Arrays.toString(row));
+        }
+        return builder.toString();
+    }
+
     public static String durationToHmsString(Duration duration) {
         return duration.toString().substring(2)
             //            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
