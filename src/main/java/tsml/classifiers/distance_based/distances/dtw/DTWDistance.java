@@ -33,9 +33,10 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-        double min = Double.POSITIVE_INFINITY;
         // top left cell of matrix will simply be the sq diff
-        row[0] = Math.pow(a[0] - b[0], 2);
+        // min can be init'd to the top left cell
+        double min = Math.pow(a[0] - b[0], 2);
+        row[0] = min;
         // start and end of window
         // start at the next cell of the first row
         int start = 1;

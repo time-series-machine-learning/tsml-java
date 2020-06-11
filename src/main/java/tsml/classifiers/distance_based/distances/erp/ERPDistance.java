@@ -38,7 +38,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
         // Current and previous columns of the matrix
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
-        double min = Double.POSITIVE_INFINITY;
+        double min;
         // size of edit distance band
         // bandsize is the maximum allowed distance to the diagonal
         final int windowSize = findWindowSize(aLength);
@@ -49,22 +49,18 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
             row[end + 1] = Double.POSITIVE_INFINITY;
         }
         row[0] = 0; // top left cell of matrix is always 0
-
         // populate first row
         for(int j = start; j <= end; j++) {
             final double cost = row[j - 1] + Math.pow(b[j] - penalty, 2);
             row[j] = cost;
-            min = Math.min(min, cost);
+            // no need to update min as top left cell is already zero, can't get lower
         }
         // populate matrix
         if(keepMatrix) {
             matrix = new double[aLength][bLength];
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
-        // early abandon if work has been done populating the first row for >1 entry
-        if(end > start && min > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
+        // no need to check for early abandon here as the min is zero because of the top left cell
         // populate remaining rows
         for(int i = 1; i < aLength; i++) {
             // Swap current and prevRow arrays. We'll just overwrite the new row.
