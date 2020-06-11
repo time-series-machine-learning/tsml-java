@@ -4,11 +4,8 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
-import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceFinder;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
@@ -17,33 +14,29 @@ import weka.core.Instances;
 
 public class LCSSDistanceTest {
 
-    private static DistanceFinder buildDistanceFinder() {
-        return new DistanceFinder() {
-            private GridSearchIterator iterator;
+    private static DistanceTester buildDistanceFinder() {
+        return new DistanceTester() {
+            private ParamSpace space;
             private Instances data;
 
             @Override
-            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+            public void findDistance(final Random random, final Instances data, final Instance ai,
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    final ParamSpace space = DistanceMeasureConfigs.buildLcssParams(data);
-                    iterator = new GridSearchIterator(space);
+                    space = DistanceMeasureConfigs.buildErpParams(data);
                 }
-                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
-                for(int i = 0; i < distances.length; i++) {
-                    Assert.assertTrue(iterator.hasNext());
+                final GridSearchIterator iterator = new GridSearchIterator(space);
+                while(iterator.hasNext()) {
                     final ParamSet paramSet = iterator.next();
                     final double epsilon = (double) paramSet.get(LCSSDistance.getEpsilonFlag()).get(0);
                     final int window = (int) paramSet.get(LCSSDistance.getDeltaFlag()).get(0);
                     final LCSSDistance df = new LCSSDistance();
                     df.setEpsilon(epsilon);
                     df.setWindowSize(window);
-                    df.setKeepMatrix(true);
-                    distances[i][0] = df.distance(ai, bi, limit);
-                    distances[i][1] = origLcss(ai, bi, limit, window, epsilon);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origLcss(ai, bi, limit, window,
+                        epsilon), 0);
                 }
-                return distances;
             }
         };
     }

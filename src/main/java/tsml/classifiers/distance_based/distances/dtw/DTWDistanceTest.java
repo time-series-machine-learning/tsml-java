@@ -7,7 +7,7 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
-import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceFinder;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
@@ -71,31 +71,27 @@ public class DTWDistanceTest {
         Assert.assertEquals(distance, 212, 0);
     }
 
-    private static DistanceFinder buildDistanceFinder() {
-        return new DistanceFinder() {
-            private GridSearchIterator iterator;
+    private static DistanceTester buildDistanceFinder() {
+        return new DistanceTester() {
+            private ParamSpace space;
             private Instances data;
 
             @Override
-            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+            public void findDistance(final Random random, final Instances data, final Instance ai,
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    final ParamSpace space = DistanceMeasureConfigs.buildErpParams(data);
-                    iterator = new GridSearchIterator(space);
+                    space = DistanceMeasureConfigs.buildErpParams(data);
                 }
-                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
-                for(int i = 0; i < distances.length; i++) {
-                    Assert.assertTrue(iterator.hasNext());
+                final GridSearchIterator iterator = new GridSearchIterator(space);
+                while(iterator.hasNext()) {
                     final ParamSet paramSet = iterator.next();
                     final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
-                    final DTWDistance dtw = new DTWDistance();
-                    dtw.setWindowSize(window);
-                    dtw.setKeepMatrix(true);
-                    distances[i][0] = dtw.distance(ai, bi, limit);
-                    distances[i][1] = origDtw(ai, bi, limit, window);
+                    final DTWDistance df = new DTWDistance();
+                    df.setWindowSize(window);
+                    df.setKeepMatrix(true);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origDtw(ai, bi, limit, window), 0);
                 }
-                return distances;
             }
         };
     }

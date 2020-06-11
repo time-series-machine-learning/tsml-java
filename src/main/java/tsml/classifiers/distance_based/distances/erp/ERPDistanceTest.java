@@ -1,9 +1,6 @@
 package tsml.classifiers.distance_based.distances.erp;
 
-import distance.elastic.DistanceMeasure;
 import experiments.data.DatasetLoading;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,8 +9,6 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.dimensions.DiscreteParameterDimension;
-import tsml.classifiers.distance_based.utils.params.dimensions.ParameterDimension;
 import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
 import utilities.InstanceTools;
 import weka.core.Instance;
@@ -62,41 +57,40 @@ public class ERPDistanceTest {
         Assert.assertEquals(distance, 189, 0);
     }
 
-    public interface DistanceFinder {
-        double[][] findDistance(Random random, Instances data, Instance ai, Instance bi, double limit);
+    public interface DistanceTester {
+        void findDistance(Random random, Instances data, Instance ai, Instance bi, double limit);
     }
 
-    public static void testDistanceFunctionsOnGunPoint(DistanceFinder df) throws Exception {
+    public static void testDistanceFunctionsOnGunPoint(DistanceTester df) throws Exception {
         testDistanceFunctionOnDataset(DatasetLoading.loadGunPoint(), df);
     }
 
-    public static void testDistanceFunctionsOnBeef(DistanceFinder df) throws Exception {
+    public static void testDistanceFunctionsOnBeef(DistanceTester df) throws Exception {
         testDistanceFunctionOnDataset(DatasetLoading.loadBeef(), df);
     }
 
-    public static void testDistanceFunctionsOnItalyPowerDemand(DistanceFinder df) throws Exception {
+    public static void testDistanceFunctionsOnItalyPowerDemand(DistanceTester df) throws Exception {
         testDistanceFunctionOnDataset(DatasetLoading.loadItalyPowerDemand(), df);
     }
 
-    public static void testDistanceFunctionsOnRandomDataset(DistanceFinder df) {
+    public static void testDistanceFunctionsOnRandomDataset(DistanceTester df) {
         testDistanceFunctionOnDataset(buildRandomDataset(new Random(0), -5, 5, 100, 100, 2), df);
     }
 
-    public static void testDistanceFunctionOnDataset(Instances data, DistanceFinder df) {
+    public static void testDistanceFunctionOnDataset(Instances data, DistanceTester df) {
         Random random = new Random(0);
-        for(int i = 0; i < data.size(); i++) {
-            final Instance a = data.get(i);
-            for(int j = 0; j < i; j++) {
-                final Instance b = data.get(j);
+        for(int i = 0, count = 0; i < data.size(); i++) {
+            final Instance a = data.get(random.nextInt(data.size()));
+            for(int j = 0; j < i; j++, count++) {
+                final Instance b = data.get(random.nextInt(data.size()));
                 double limit = Double.POSITIVE_INFINITY;
-                double[][] distances = df.findDistance(random, data, a, b, limit);
-                for(int k = 0; k < distances.length; k++) {
-                    Assert.assertArrayEquals(distances[0], distances[k], 0);
-                }
+                df.findDistance(random, data, a, b, limit);
                 limit = random.nextDouble() * 2 * data.numAttributes() - 1;
-                distances = df.findDistance(random, data, a, b, limit);
-                for(int k = 0; k < distances.length; k++) {
-                    Assert.assertArrayEquals(distances[0], distances[k], 0);
+                df.findDistance(random, data, a, b, limit);
+                if(count == 30 * data.numClasses()) {
+                    // central limit theorem, have probably hit all cases 30 times
+                    // sufficient trial of dataset providing 30 cases of each class (ish) tried
+                    return;
                 }
             }
         }
@@ -113,33 +107,29 @@ public class ERPDistanceTest {
         return InstanceTools.toWekaInstances(data, labels);
     }
 
-    private static DistanceFinder buildDistanceFinder() {
-        return new DistanceFinder() {
-            private GridSearchIterator iterator;
+    private static DistanceTester buildDistanceFinder() {
+        return new DistanceTester() {
+            private ParamSpace space;
             private Instances data;
 
             @Override
-            public double[][] findDistance(final Random random, final Instances data, final Instance ai,
+            public void findDistance(final Random random, final Instances data, final Instance ai,
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    final ParamSpace space = DistanceMeasureConfigs.buildErpParams(data);
-                    iterator = new GridSearchIterator(space);
+                    space = DistanceMeasureConfigs.buildErpParams(data);
                 }
-                double[][] distances = new double[iterator.getIndexedParameterSpace().size()][2];
-                for(int i = 0; i < distances.length; i++) {
-                    Assert.assertTrue(iterator.hasNext());
+                final GridSearchIterator iterator = new GridSearchIterator(space);
+                while(iterator.hasNext()) {
                     final ParamSet paramSet = iterator.next();
                     final double penalty = (double) paramSet.get(ERPDistance.PENALTY_FLAG).get(0);
                     final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
-                    final ERPDistance erpDistance = new ERPDistance();
-                    erpDistance.setWindowSize(window);
-                    erpDistance.setPenalty(penalty);
-                    erpDistance.setKeepMatrix(true);
-                    distances[i][0] = erpDistance.distance(ai, bi, limit);
-                    distances[i][1] = origErp(ai, bi, limit, window, penalty);
+                    final ERPDistance df = new ERPDistance();
+                    df.setWindowSize(window);
+                    df.setPenalty(penalty);
+                    Assert.assertEquals(df.distance(ai, bi, limit), origErp(ai, bi, limit, window,
+                        penalty), 0);
                 }
-                return distances;
             }
         };
     }
