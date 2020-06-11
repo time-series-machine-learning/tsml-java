@@ -53,7 +53,7 @@ public class WDTWDistance
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
-        double min = weightVector[0] * Utilities.sqDiff(a[0], b[0]);
+        double min = weightVector[0] * Math.pow(a[0] - b[0], 2);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
