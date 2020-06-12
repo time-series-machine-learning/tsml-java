@@ -6,7 +6,6 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
-import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
@@ -33,11 +32,11 @@ public class MSMDistanceTest {
                 while(iterator.hasNext()) {
 //                                        System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
-                    final double cost = (double) paramSet.get(MSMDistance.getCostFlag()).get(0);
+                    final double cost = (double) paramSet.get(MSMDistance.C_FLAG).get(0);
                     // doesn't test window, MSM originally doesn't have window
 //                    final int window = (int) paramSet.get(MSMDistance.).get(0);
                     final MSMDistance df = new MSMDistance();
-                    df.setCost(cost);
+                    df.setC(cost);
                     Assert.assertEquals(df.distance(ai, bi, limit), origMsm(ai, bi, limit, cost), 0);
                 }
             }

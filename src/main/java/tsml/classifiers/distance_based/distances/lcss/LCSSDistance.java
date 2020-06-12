@@ -16,15 +16,9 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
     private double epsilon = 0.01;
 
-    public static String getEpsilonFlag() {
-        return "e";
-    }
+    public static final String EPSILON_FLAG = "e";
 
-    public static String getDeltaFlag() {
-        return "d";
-    }
-
-    public static boolean approxEqual(double a, double b, double epsilon) {
+    private static boolean approxEqual(double a, double b, double epsilon) {
         return Math.abs(a - b) <= epsilon;
     }
 
@@ -149,12 +143,12 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getEpsilonFlag(), epsilon);
+        return super.getParams().add(EPSILON_FLAG, epsilon);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getEpsilonFlag(), this::setEpsilon, Double.class);
+        ParamHandler.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
         super.setParams(param);
     }
 }

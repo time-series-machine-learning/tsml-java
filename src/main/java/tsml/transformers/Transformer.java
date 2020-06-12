@@ -1,5 +1,7 @@
 package tsml.transformers;
 
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
@@ -17,7 +19,7 @@ import weka.core.Instances;
  * @author Tony Bagnall 1/1/2020
  *
  */
-public interface Transformer extends CapabilitiesHandler{
+public interface Transformer extends CapabilitiesHandler, ParamHandler {
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform

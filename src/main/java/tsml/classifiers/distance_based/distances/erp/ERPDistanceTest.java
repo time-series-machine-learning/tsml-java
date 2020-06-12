@@ -28,7 +28,7 @@ public class ERPDistanceTest {
     @Test
     public void testFullWarpA() {
         df.setWindowSize(-1);
-        df.setPenalty(1.5);
+        df.setG(1.5);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 182, 0);
     }
@@ -36,7 +36,7 @@ public class ERPDistanceTest {
     @Test
     public void testFullWarpB() {
         df.setWindowSize(-1);
-        df.setPenalty(2);
+        df.setG(2);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 175, 0);
     }
@@ -44,7 +44,7 @@ public class ERPDistanceTest {
     @Test
     public void testConstrainedWarpA() {
         df.setWindowSize(1);
-        df.setPenalty(1.5);
+        df.setG(1.5);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 189.5, 0);
     }
@@ -52,7 +52,7 @@ public class ERPDistanceTest {
     @Test
     public void testConstrainedWarpB() {
         df.setWindowSize(1);
-        df.setPenalty(2);
+        df.setG(2);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 189, 0);
     }
@@ -126,11 +126,11 @@ public class ERPDistanceTest {
                 while(iterator.hasNext()) {
 //                    System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
-                    final double penalty = (double) paramSet.get(ERPDistance.PENALTY_FLAG).get(0);
+                    final double penalty = (double) paramSet.get(ERPDistance.G_FLAG).get(0);
                     final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
                     final ERPDistance df = new ERPDistance();
                     df.setWindowSize(window);
-                    df.setPenalty(penalty);
+                    df.setG(penalty);
                     Assert.assertEquals(df.distance(ai, bi, limit), origErp(ai, bi, limit, window, penalty), 0);
                 }
             }

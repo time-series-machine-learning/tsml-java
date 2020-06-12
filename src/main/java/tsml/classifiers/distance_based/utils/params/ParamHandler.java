@@ -52,7 +52,7 @@ public interface ParamHandler
      * @throws Exception
      */
     @Override
-    default void setOptions(String... options) throws
+    default void setOptions(String[] options) throws
                                       Exception {
         setOptionsList(new ArrayList<>(Arrays.asList(options)));
     }
@@ -62,9 +62,14 @@ public interface ParamHandler
         return Collections.enumeration(listParams());
     }
 
-    void setParams(ParamSet paramSet);
+    default void setParams(ParamSet paramSet) {
+        // OVERRIDE THIS
+    }
 
-    ParamSet getParams();
+    default ParamSet getParams() {
+        // OVERRIDE THIS
+        return new ParamSet();
+    }
 
     /**
      * Set parameter using name, a setter and a class type of the parameter. This is a utility method so you don't

@@ -4,6 +4,7 @@ import com.beust.jcommander.internal.Lists;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 
 /**
@@ -20,7 +21,7 @@ public class ParamSetTest {
         int aValue = 1;
         ParamSet paramSet = new ParamSet(aFlag, aValue);
         String[] options = paramSet.getOptions();
-        Assert.assertArrayEquals(options, new String[] {"-" + aFlag, String.valueOf(aValue)});
+        Assert.assertArrayEquals(options, new String[] {"-" + aFlag, "\"" + String.valueOf(aValue) + "\""});
         ParamSet other = new ParamSet();
         try {
             other.setOptions(options);
@@ -63,7 +64,7 @@ public class ParamSetTest {
         int aValue = 1;
         ParamSet paramSet = new ParamSet(aFlag, aValue);
 //        System.out.println(paramSet);
-        Assert.assertEquals(paramSet.toString(), "-a, 1");
+        Assert.assertEquals(paramSet.toString(), "-a, \"1\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);
@@ -81,7 +82,7 @@ public class ParamSetTest {
         paramSet.add(aFlag, anotherAValue);
         paramSet.add(aFlag, yetAnotherAValue);
 //        System.out.println(paramSet);
-        String out = "-a, 1, -a, 3.3, -a, \"\\\"not another!\\\"\"";
+        String out = "-a, \"1\", -a, \"3.3\", -a, \"\\\"not another!\\\"\"";
         Assert.assertEquals(paramSet.toString(), out);
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 3);
@@ -96,16 +97,16 @@ public class ParamSetTest {
     public void testAddNameAndValueAndParamSet() {
         String aFlag = "a";
         LCSSDistance aValue = new LCSSDistance();
-        String bFlag = LCSSDistance.getDeltaFlag();
+        String bFlag = WarpingDistanceMeasure.WINDOW_SIZE_FLAG;
         int bValue = 5;
-        String cFlag = LCSSDistance.getEpsilonFlag();
+        String cFlag = LCSSDistance.EPSILON_FLAG;
         double cValue = 0.2;
         ParamSet subParamSetB = new ParamSet(bFlag, bValue);
         ParamSet subParamSetC = new ParamSet(cFlag, cValue);
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
 //        System.out.println(paramSet);
         Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
-            + "-d \"5\" -e \"0.2\"\"");
+            + "-e \"0.2\" -ws \"5\"\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);

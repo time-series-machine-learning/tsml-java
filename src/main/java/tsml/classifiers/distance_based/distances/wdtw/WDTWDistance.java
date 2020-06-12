@@ -125,11 +125,11 @@ public class WDTWDistance
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(WDTW.getGFlag(), g);
+        return super.getParams().add(WDTW.G_FLAG, g);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, WDTW.getGFlag(), this::setG, Double.class);
+        ParamHandler.setParam(param, WDTW.G_FLAG, this::setG, Double.class);
     }
 }

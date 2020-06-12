@@ -31,8 +31,8 @@ public class LCSSDistanceTest {
                 while(iterator.hasNext()) {
 //                    System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
-                    final double epsilon = (double) paramSet.get(LCSSDistance.getEpsilonFlag()).get(0);
-                    final int window = (int) paramSet.get(LCSSDistance.getDeltaFlag()).get(0);
+                    final double epsilon = (double) paramSet.get(LCSSDistance.EPSILON_FLAG).get(0);
+                    final int window = (int) paramSet.get(LCSSDistance.WINDOW_SIZE_FLAG).get(0);
                     final LCSSDistance df = new LCSSDistance();
                     df.setEpsilon(epsilon);
                     df.setWindowSize(window);

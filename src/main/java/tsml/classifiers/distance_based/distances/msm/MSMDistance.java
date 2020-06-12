@@ -13,22 +13,20 @@ public class MSMDistance
     extends DoubleBasedWarpingDistanceMeasure {
 
 
-    private double cost = 1;
+    private double c = 1;
 
     public MSMDistance() {
 
     }
 
-    public static String getCostFlag() {
-        return "c";
+    public static final String C_FLAG = "c";
+
+    public double getC() {
+        return c;
     }
 
-    public double getCost() {
-        return cost;
-    }
-
-    public void setCost(double cost) {
-        this.cost = cost;
+    public void setC(double c) {
+        this.c = c;
     }
 
     private double findCost(double newPoint, double x, double y) {
@@ -36,9 +34,9 @@ public class MSMDistance
 
         if(((x <= newPoint) && (newPoint <= y)) ||
             ((y <= newPoint) && (newPoint <= x))) {
-            dist = cost;
+            dist = c;
         } else {
-            dist = cost + Math.min(Math.abs(newPoint - x), Math.abs(newPoint - y));
+            dist = c + Math.min(Math.abs(newPoint - x), Math.abs(newPoint - y));
         }
 
         return dist;
@@ -135,11 +133,12 @@ public class MSMDistance
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getCostFlag(), cost);
+        return super.getParams().add(C_FLAG, c);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getCostFlag(), this::setCost, Double.class);
+        ParamHandler.setParam(param, C_FLAG, this::setC, Double.class);
+        super.setParams(param);
     }
 }

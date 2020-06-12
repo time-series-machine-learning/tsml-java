@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.transformers.Indexer.IndexedInstance;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -17,7 +19,7 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler, abostrom
  */
-public class CachedTransformer implements TrainableTransformer {
+public class CachedTransformer implements ParamHandler, TrainableTransformer {
 
     // the filter to cache the output of
     private Transformer transformer;
@@ -31,6 +33,8 @@ public class CachedTransformer implements TrainableTransformer {
         setTransformer(transformer);
         reset();
     }
+
+
 
     public void reset() {
         isFit = false;
@@ -94,4 +98,16 @@ public class CachedTransformer implements TrainableTransformer {
     public boolean isFit() {
         return isFit;
     }
+
+    @Override
+    public void setParams(final ParamSet paramSet) {
+        ParamHandler.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+    }
+
+    @Override
+    public ParamSet getParams() {
+        return new ParamSet().add(TRANSFORMER_FLAG, transformer);
+    }
+
+    public static final String TRANSFORMER_FLAG = "f";
 }

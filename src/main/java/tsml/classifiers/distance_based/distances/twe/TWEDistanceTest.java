@@ -36,8 +36,8 @@ public class TWEDistanceTest {
                 while(iterator.hasNext()) {
 //                                                            System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
-                    final double nu = (double) paramSet.get(TWEDistance.getNuFlag()).get(0);
-                    final double lambda = (double) paramSet.get(TWEDistance.getLambdaFlag()).get(0);
+                    final double nu = (double) paramSet.get(TWEDistance.NU_FLAG).get(0);
+                    final double lambda = (double) paramSet.get(TWEDistance.LAMBDA_FLAG).get(0);
                     // doesn't test window, MSM originally doesn't have window
                     //                    final int window = (int) paramSet.get(MSMDistance.).get(0);
                     final TWEDistance df = new TWEDistance();

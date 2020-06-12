@@ -28,7 +28,7 @@ public class DistanceMeasureConfigs {
 
     public static ParamSpace buildEdParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DTW.getWarpingWindowFlag(), new ArrayList<>(Arrays.asList(0)));
+        params.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new ArrayList<>(Arrays.asList(0)));
         return params;
     }
 
@@ -39,7 +39,7 @@ public class DistanceMeasureConfigs {
 
     public static ParamSpace buildFullDtwParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DTW.getWarpingWindowFlag(), new ArrayList<>(Arrays.asList(-1)));
+        params.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new ArrayList<>(Arrays.asList(-1)));
         return params;
     }
 
@@ -56,7 +56,7 @@ public class DistanceMeasureConfigs {
 
     public static ParamSpace buildDtwParamsV1(Instances instances) {
         ParamSpace params = new ParamSpace();
-        params.add(DTW.getWarpingWindowFlag(),
+        params.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG,
             ArrayUtilities.unique(incrementalRange(0, instances.numAttributes() - 1, 100)));
         return params;
     }
@@ -67,7 +67,7 @@ public class DistanceMeasureConfigs {
     }
 
     public static ParamSpace buildDtwParamsV2(Instances instances) {
-        return new ParamSpace().add(DTW.getWarpingWindowFlag(), ArrayUtilities.unique(ArrayUtilities.range(0,
+        return new ParamSpace().add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, ArrayUtilities.unique(ArrayUtilities.range(0,
             instances.numAttributes() - 1, 100)));
     }
 
@@ -101,7 +101,7 @@ public class DistanceMeasureConfigs {
         }
         List<Double> gValuesUnique = ArrayUtilities.unique(gValues);
         ParamSpace params = new ParamSpace();
-        params.add(WDTW.getGFlag(), gValuesUnique);
+        params.add(WDTW.G_FLAG, gValuesUnique);
         return params;
     }
 
@@ -117,7 +117,7 @@ public class DistanceMeasureConfigs {
         }
         List<Double> gValuesUnique = ArrayUtilities.unique(gValues);
         ParamSpace params = new ParamSpace();
-        params.add(WDTW.getGFlag(), gValuesUnique);
+        params.add(WDTW.G_FLAG, gValuesUnique);
         return params;
     }
 
@@ -152,8 +152,8 @@ public class DistanceMeasureConfigs {
         List<Double> epsilonValuesUnique = ArrayUtilities.unique(epsilonValues);
         List<Integer> deltaValuesUnique = ArrayUtilities.unique(deltaValues);
         ParamSpace params = new ParamSpace();
-        params.add(LCSSDistance.getEpsilonFlag(), epsilonValuesUnique);
-        params.add(LCSSDistance.getDeltaFlag(), deltaValuesUnique);
+        params.add(LCSSDistance.EPSILON_FLAG, epsilonValuesUnique);
+        params.add(LCSSDistance.WINDOW_SIZE_FLAG, deltaValuesUnique);
         return params;
     }
 
@@ -192,8 +192,8 @@ public class DistanceMeasureConfigs {
         List<Double> nuValuesUnique = ArrayUtilities.unique(nuValues);
         List<Double> lambdaValuesUnique = ArrayUtilities.unique(lambdaValues);
         ParamSpace params = new ParamSpace();
-        params.add(TWEDistance.getLambdaFlag(), lambdaValuesUnique);
-        params.add(TWEDistance.getNuFlag(), nuValuesUnique);
+        params.add(TWEDistance.LAMBDA_FLAG, lambdaValuesUnique);
+        params.add(TWEDistance.NU_FLAG, nuValuesUnique);
         return params;
     }
 
@@ -211,7 +211,7 @@ public class DistanceMeasureConfigs {
         List<Integer> bandSizeValuesUnique = ArrayUtilities.unique(bandSizeValues);
         ParamSpace params = new ParamSpace();
         params.add(ERPDistance.WINDOW_SIZE_FLAG, bandSizeValuesUnique);
-        params.add(ERPDistance.PENALTY_FLAG, penaltyValuesUnique);
+        params.add(ERPDistance.G_FLAG, penaltyValuesUnique);
         return params;
     }
 
@@ -326,7 +326,7 @@ public class DistanceMeasureConfigs {
         };
         List<Double> costValuesUnique = ArrayUtilities.unique(costValues);
         ParamSpace params = new ParamSpace();
-        params.add(MSMDistance.getCostFlag(), costValuesUnique);
+        params.add(MSMDistance.C_FLAG, costValuesUnique);
         return params;
     }
 

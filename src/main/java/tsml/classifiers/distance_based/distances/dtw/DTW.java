@@ -15,9 +15,6 @@ public interface DTW extends DistanceMeasureable {
     void setWindowSizePercentage(double percentage);
     double getWindowSizePercentage();
     boolean isWindowSizeInPercentage();
-    static String getWarpingWindowFlag() {
-        return "w";
-    }
     double[][] getMatrix();
     boolean isKeepMatrix();
     void setKeepMatrix(boolean state);

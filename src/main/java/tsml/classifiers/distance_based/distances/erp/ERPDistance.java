@@ -11,16 +11,15 @@ import tsml.classifiers.distance_based.utils.params.ParamSet;
  */
 public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
-    public static final String PENALTY_FLAG = "p";
-    public static final String WINDOW_SIZE_FLAG = "w";
-    private double penalty = 0;
+    public static final String G_FLAG = "g";
+    private double g = 0;
 
-    public double getPenalty() {
-        return penalty;
+    public double getG() {
+        return g;
     }
 
-    public void setPenalty(double penalty) {
-        this.penalty = penalty;
+    public void setG(double g) {
+        this.g = g;
     }
 
     @Override
@@ -45,7 +44,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
         row[0] = 0; // top left cell of matrix is always 0
         // populate first row
         for(int j = start; j <= end; j++) {
-            final double cost = row[j - 1] + Math.pow(b[j] - penalty, 2);
+            final double cost = row[j - 1] + Math.pow(b[j] - g, 2);
             row[j] = cost;
             // no need to update min as top left cell is already zero, can't get lower
         }
@@ -77,7 +76,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
             }
             // when l == 0 neither left nor top left can be picked, therefore it must use top
             if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a[i] - penalty, 2);
+                final double cost = prevRow[start] + Math.pow(a[i] - g, 2);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 start++;
@@ -86,8 +85,8 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
                 // compute squared distance of feature vectors
                 final double v1 = a[i];
                 final double v2 = b[j];
-                final double leftPenalty = Math.pow(v1 - penalty, 2);
-                final double topPenalty = Math.pow(v2 - penalty, 2);
+                final double leftPenalty = Math.pow(v1 - g, 2);
+                final double topPenalty = Math.pow(v2 - g, 2);
                 final double topLeftPenalty = Math.pow(v1 - v2, 2);
                 final double topLeft = prevRow[j - 1] + topLeftPenalty;
                 final double left = row[j - 1] + topPenalty;
@@ -121,13 +120,13 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(PENALTY_FLAG, penalty).add(WINDOW_SIZE_FLAG, getWindowSize());
+        return super.getParams().add(G_FLAG, g);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, PENALTY_FLAG, this::setPenalty, Double.class);
-        ParamHandler.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer.class);
+        super.setParams(param);
+        ParamHandler.setParam(param, G_FLAG, this::setG, Double.class);
     }
 
 }

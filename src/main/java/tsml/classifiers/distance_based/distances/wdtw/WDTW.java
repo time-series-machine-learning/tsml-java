@@ -10,9 +10,7 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 
 public interface WDTW extends DistanceMeasureable {
 
-    static String getGFlag() {
-        return "g";
-    }
+    public static final String G_FLAG = "g";
 
     double getG();
 

@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.proximity;
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -37,7 +38,7 @@ public class ContinuousDistanceFunctionConfigs {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(DTW.getWarpingWindowFlag(), new UniformIntDistribution(0,
+        subSpace.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
             (data.numAttributes()) / 4 - 1));
         return subSpace;
     }
@@ -59,7 +60,7 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildErpParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(ERPDistance.PENALTY_FLAG, new DoubleDistribution(0,1) {
+        subSpace.add(ERPDistance.G_FLAG, new DoubleDistribution(0,1) {
 
             @Override
             public Double sample() {
@@ -84,10 +85,10 @@ public class ContinuousDistanceFunctionConfigs {
     public static ParamSpace buildLcssParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(LCSSDistance.getEpsilonFlag(), new UniformDoubleDistribution(0.2 * std, std));
+        subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(LCSSDistance.getDeltaFlag(), new UniformIntDistribution(0,
+        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
             data.numAttributes() / 4 - 1));
         return subSpace;
     }
@@ -101,7 +102,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWdtwParams() {
         final ParamSpace subSpace = new ParamSpace();
-        subSpace.add(WDTW.getGFlag(), new UniformDoubleDistribution(0d, 1d));
+        subSpace.add(WDTW.G_FLAG, new UniformDoubleDistribution(0d, 1d));
         return subSpace;
     }
 

@@ -15,13 +15,8 @@ public class TWEDistance
     private double lambda;
     private double nu;
 
-    public static String getNuFlag() {
-        return "n";
-    }
-
-    public static String getLambdaFlag() {
-        return "l";
-    }
+    public static final String NU_FLAG = "n";
+    public static final String LAMBDA_FLAG = "l";
 
     @Override
     public double findDistance(final double[] a, final double[] b, final double limit) {
@@ -174,13 +169,13 @@ public class TWEDistance
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getNuFlag(), nu).add(getLambdaFlag(), lambda);
+        return super.getParams().add(NU_FLAG, nu).add(LAMBDA_FLAG, lambda);
     }
 
     @Override
     public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getNuFlag(), this::setNu, Double.class);
-        ParamHandler.setParam(param, getLambdaFlag(), this::setLambda, Double.class);
+        ParamHandler.setParam(param, NU_FLAG, this::setNu, Double.class);
+        ParamHandler.setParam(param, LAMBDA_FLAG, this::setLambda, Double.class);
     }
 
 }

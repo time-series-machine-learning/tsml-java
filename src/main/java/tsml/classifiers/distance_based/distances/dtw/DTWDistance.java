@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.distances.dtw;
 
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 
@@ -103,13 +104,4 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
         return row[bLength - 1];
     }
 
-    @Override
-    public ParamSet getParams() {
-        return super.getParams().add(DTW.getWarpingWindowFlag(), getWindowSize());
-    }
-
-    @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, DTW.getWarpingWindowFlag(), this::setWindowSize, Integer.class);
-    }
 }

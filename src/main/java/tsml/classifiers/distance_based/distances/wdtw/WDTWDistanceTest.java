@@ -34,7 +34,7 @@ public class WDTWDistanceTest {
                 while(iterator.hasNext()) {
 //                                                            System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
-                    final double g = (double) paramSet.get(WDTW.getGFlag()).get(0);
+                    final double g = (double) paramSet.get(WDTW.G_FLAG).get(0);
                     // doesn't test window, MSM originally doesn't have window
                     //                    final int window = (int) paramSet.get(MSMDistance.).get(0);
                     final WDTWDistance df = new WDTWDistance();
