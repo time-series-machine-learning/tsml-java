@@ -374,7 +374,7 @@ public class StrUtils {
            value instanceof Long ||
            value instanceof Character ||
            value instanceof Boolean) {
-            str = String.valueOf(value);
+            str = "\"" + String.valueOf(value) + "\"";
         } else if(value instanceof String) {
             str = "\"\\\"" + value + "\\\"\"";
         } else {

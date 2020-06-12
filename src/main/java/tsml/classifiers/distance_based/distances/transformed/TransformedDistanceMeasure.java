@@ -10,6 +10,7 @@ Contributors: goastler
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.transformers.CachedTransformer;
 import tsml.transformers.TrainableTransformer;
@@ -19,8 +20,6 @@ import weka.core.Instances;
 import tsml.transformers.Transformer;
 
 public class TransformedDistanceMeasure extends BaseDistanceMeasure implements TransformedDistanceMeasureable {
-
-    // todo get and set params
 
     public TransformedDistanceMeasure(String name, Transformer transformer,
         DistanceFunction distanceFunction) {
@@ -87,6 +86,13 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
 
     @Override public ParamSet getParams() {
         return super.getParams().add(TRANSFORMER_FLAG, transformer).add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, distanceFunction);
+    }
+
+    @Override
+    public void setParams(final ParamSet param) {
+        ParamHandler.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+        ParamHandler.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        super.setParams(param);
     }
 
     public static final String TRANSFORMER_FLAG = "t";

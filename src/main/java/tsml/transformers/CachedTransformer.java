@@ -22,25 +22,26 @@ public class CachedTransformer implements TrainableTransformer {
     // the filter to cache the output of
     private Transformer transformer;
     private final Indexer indexer = new Indexer();
-    private boolean isFit = false;
+    private boolean isFit;
 
     // the cache to store instances against their corresponding transform output
     private List<Instance> cache;
 
     public CachedTransformer(Transformer transformer) {
         setTransformer(transformer);
+        reset();
     }
 
-    @Override
-    public boolean isFit() {
-        return isFit;
+    public void reset() {
+        isFit = false;
+        cache = null;
+        indexer.reset();
     }
 
     @Override
     public void fit(final Instances data) {
-        indexer.transform(data);
-        isFit = true;
-        cache = new ArrayList<>(data.size());
+        indexer.fit(data);
+        cache = new ArrayList<>(indexer.size());
     }
 
     @Override
@@ -66,12 +67,14 @@ public class CachedTransformer implements TrainableTransformer {
     public Instance transform(Instance inst) {
         if(inst instanceof IndexedInstance) {
             // the instance is from the fitted data so fetch from cache if possible
-            return cache.get(((IndexedInstance) inst).getIndex());
-        } else {
-            // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
-            // be added to cache)
-            return transformer.transform(inst);
+            final int index = ((IndexedInstance) inst).getIndex();
+            if(index >= 0) {
+                return cache.get(index);
+            }
         }
+        // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
+        // be added to cache)
+        return transformer.transform(inst);
     }
 
     @Override
@@ -87,4 +90,8 @@ public class CachedTransformer implements TrainableTransformer {
         return cache;
     }
 
+    @Override
+    public boolean isFit() {
+        return isFit;
+    }
 }

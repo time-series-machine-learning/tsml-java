@@ -30,9 +30,9 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     protected void checkData(Instance a, Instance b) {
         Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
         Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
-//        if(!dataHasBeenSet) {
-//            throw new IllegalStateException("must call setInstances first to setup the distance measure");
-//        } todo do we need this? some dm's might need to look at the instances first perhaps
+        if(!dataHasBeenSet) {
+            throw new IllegalStateException("must call setInstances first to setup the distance measure");
+        }
     }
 
     @Override

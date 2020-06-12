@@ -104,7 +104,8 @@ public class ParamSetTest {
         ParamSet subParamSetC = new ParamSet(cFlag, cValue);
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
 //        System.out.println(paramSet);
-        Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance -d 5 -e 0.2\"");
+        Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
+            + "-d \"5\" -e \"0.2\"\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);
