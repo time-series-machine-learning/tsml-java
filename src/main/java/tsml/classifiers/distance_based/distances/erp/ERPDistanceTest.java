@@ -80,20 +80,20 @@ public class ERPDistanceTest {
     public static void testDistanceFunctionOnDataset(Instances data, DistanceTester df) {
         Random random = new Random(0);
         for(int i = 0; i < data.size(); i++) {
-            final Instance a = data.get(i);
-//            final Instance a = data.get(random.nextInt(data.size()));
+//            final Instance a = data.get(i);
+            final Instance a = data.get(random.nextInt(data.size()));
             for(int j = 0; j < i; j++) {
-                final Instance b = data.get(j);
-//                final Instance b = data.get(random.nextInt(data.size()));
+//                final Instance b = data.get(j);
+                final Instance b = data.get(random.nextInt(data.size()));
                 double limit = random.nextDouble() * 2 * data.numAttributes() - 1;
                 df.findDistance(random, data, a, b, limit);
                 limit = Double.POSITIVE_INFINITY;
                 df.findDistance(random, data, a, b, limit);
-//                if(i == 30) {
+                if(i == 30) {
 //                     central limit theorem
 //                     sufficient trial of dataset providing 30 cases tried
-//                    return;
-//                }
+                    return;
+                }
             }
         }
     }
