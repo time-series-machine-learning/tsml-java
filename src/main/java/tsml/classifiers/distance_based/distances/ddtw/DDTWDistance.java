@@ -73,12 +73,4 @@ public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
     public void cleanDistanceMatrix() {
         dtw.cleanDistanceMatrix();
     }
-
-    @Override public ParamSet getParams() {
-        return dtw.getParams(); // not including super params as we handle them manually in this class
-    }
-
-    @Override public void setParams(final ParamSet param) {
-        dtw.setParams(param); // not including super params as we handle them manually in this class
-    }
 }

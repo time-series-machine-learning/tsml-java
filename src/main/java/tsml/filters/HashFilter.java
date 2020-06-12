@@ -117,4 +117,35 @@ public class HashFilter extends SimpleBatchFilter {
         hashInstances(dataset);
         return dataset.get(index);
     }
+
+    public static class IndexedInstance extends DenseInstance {
+        private int index;
+
+        private IndexedInstance(final int index, final Instance instance) {
+            super(instance);
+            this.index = index;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        private void setIndex(int index) {
+            this.index = index;
+        }
+    }
+
+    public static void indexInstances(Instances instances) {
+        for(int i = 0; i < instances.size(); i++) {
+            Instance instance = instances.get(i);
+            if(instance instanceof IndexedInstance) {
+                if(((IndexedInstance) instance).getIndex() != i) {
+                    ((IndexedInstance) instance).setIndex(i);
+                }
+            } else {
+                instance = new IndexedInstance(i, instance);
+                instances.set(i, instance);
+            }
+        }
+    }
 }

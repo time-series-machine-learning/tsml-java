@@ -103,6 +103,7 @@ public class Derivative
 
     public Instances process(Instances data) throws Exception {
         Assert.assertEquals(data.numAttributes() - 1, data.classIndex());
+        
         Instances output = determineOutputFormat(data);
 
         // for each data, get distance to each shapelet and create new instance
