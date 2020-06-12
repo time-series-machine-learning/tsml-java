@@ -152,7 +152,7 @@ public class EnsembleSelection extends CAWPE {
         if(this.transform==null){
             this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = Filter.useFilter(data,transform);
+            this.trainInsts = transform.transform(data); //TODO: this could call fit?
         }
         
         //init

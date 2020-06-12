@@ -18,13 +18,13 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-import weka.filters.Filter;
+import tsml.transformers.Transformer;
 
 public class TransformedDistanceMeasure extends BaseDistanceMeasure implements TransformedDistanceMeasureable {
 
     // todo get and set params
 
-    public TransformedDistanceMeasure(String name, Filter transformer,
+    public TransformedDistanceMeasure(String name, Transformer transformer,
         DistanceFunction distanceFunction) {
         setName(name);
         setDistanceFunction(distanceFunction);
@@ -36,7 +36,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     private DistanceFunction distanceFunction;
-    private Filter transformer;
+    private Transformer transformer;
     private String name = getClass().getSimpleName();
 
     protected void setName(String name) {
@@ -48,11 +48,6 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     public void setInstances(Instances data) {
         super.setInstances(data);
         distanceFunction.setInstances(data);
-        try {
-            transformer.setInputFormat(data);
-        } catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     @Override
@@ -69,7 +64,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
         this.distanceFunction = distanceFunction;
     }
 
-    public Filter getTransformer() {
+    public Transformer getTransformer() {
         return transformer;
     }
 
@@ -81,9 +76,9 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     @Override
     public double findDistance(final Instance a, final Instance b, final double limit) {
         try {
-            final Instance at = Utilities.filter(a, transformer);
-            final Instance bt = Utilities.filter(b, transformer);
-            return distanceFunction.distance(at, bt, limit);
+            final Instance firstTransformed = transformer.transform(first);
+            final Instance secondTransformed = transformer.transform(second);
+            return distanceFunction.distance(firstTransformed, secondTransformed, cutOffValue, stats);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }

@@ -6,7 +6,6 @@ import java.time.Duration;
 import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.filters.Derivative;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.OptionHandler;

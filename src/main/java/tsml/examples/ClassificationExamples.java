@@ -30,7 +30,7 @@ import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.dictionary_based.SAXVSM;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.distance_based.DD_DTW;
-import tsml.classifiers.dictionary_based.BagOfPatterns;
+import tsml.classifiers.dictionary_based.BagOfPatternsClassifier;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import java.io.File;
@@ -168,7 +168,7 @@ public class ClassificationExamples {
                 c=new TSBF();
                 break;
             case "BOP": case "BoP": case "BagOfPatterns":
-                c=new BagOfPatterns();
+                c=new BagOfPatternsClassifier();
                 break;
              case "BOSS": case "BOSSEnsemble": 
                 c=new BOSS();

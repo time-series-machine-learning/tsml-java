@@ -44,6 +44,8 @@ public class StatisticalUtilities {
     }
 
 
+    
+
     public static double pStdDev(Instances input){
         if(input.classIndex() != input.numAttributes() - 1) {
             throw new IllegalArgumentException("class value must be at the end");
@@ -129,9 +131,7 @@ public class StatisticalUtilities {
         double[] normalizedVector = new double[vector.length];
 
         for (int i = 0; i < vector.length; i++) {
-            if (std != 0) {
-                normalizedVector[i] = (vector[i] - mean) / std;
-            }
+            normalizedVector[i] = !NumUtils.isNearlyEqual(std, 0.0) ? (vector[i] - mean) / std : 0;
         }
 
         return normalizedVector;
@@ -141,6 +141,54 @@ public class StatisticalUtilities {
         return StatisticalUtilities.normalize(vector, false);
     }
     
+
+    //Aaron: I'm not confident in the others...I may have written those too... lol
+    public static double[] norm(double[] patt){
+        double mean =0,sum =0 ,sumSq =0,var = 0;
+        for(int i=0; i< patt.length; ++i){
+            sum = patt[i];
+            sumSq = patt[i]*patt[i];
+        }
+
+        double size= patt.length;
+		var = (sumSq - sum * sum / size) / size;
+        mean = sum / size;
+        
+        double[] out = new double[patt.length];
+        if(NumUtils.isNearlyEqual(var, 0.0)){
+            for(int i=0; i<patt.length; ++i)
+                out[i] = 0.0;
+        }
+        else{
+            double stdv = Math.sqrt(var);
+            for(int i=0; i<patt.length; ++i)
+                out[i] = (patt[i] - mean) / stdv;
+        }
+
+        return out;
+    }
+
+    public static void normInPlace(double[] r){
+        double sum=0,sumSq=0,mean=0,stdev=0;
+        for(int i=0;i<r.length;i++){
+                sum+=r[i];
+                sumSq+=r[i]*r[i];
+        }
+        stdev=(sumSq-sum*sum/r.length)/r.length;
+        mean=sum/r.length;
+        if(stdev==0){
+            for (int j = 0; j < r.length; ++j)
+                r[j] = 0;
+        }
+        else{
+            stdev=Math.sqrt(stdev);
+            for(int i=0;i<r.length;i++)
+                r[i]=(r[i]-mean)/stdev;
+        }
+    }
+    
+
+
     public static void normalize2D(double[][] data, boolean classVal)
     {
         int offset = classVal ? 1 : 0;

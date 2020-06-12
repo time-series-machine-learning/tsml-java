@@ -11,7 +11,9 @@ import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.filters.Derivative;
+import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.transformers.Derivative;
+import weka.core.Instances;
 
 public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
 

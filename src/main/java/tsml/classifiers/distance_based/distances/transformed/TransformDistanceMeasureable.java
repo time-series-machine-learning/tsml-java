@@ -7,10 +7,10 @@ Contributors: goastler
     
 */
 
+import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
-import weka.filters.Filter;
 
 public interface TransformDistanceMeasureable extends TransformedDistanceMeasureable {
-    void setTransformer(Filter transformer);
+    void setTransformer(Transformer transformer);
     void setDistanceFunction(DistanceFunction distanceFunction);
 }

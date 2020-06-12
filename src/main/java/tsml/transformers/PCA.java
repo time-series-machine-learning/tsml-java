@@ -22,12 +22,11 @@ import java.io.File;
  *
  * @author Tony Bagnall (ajb)
  */
-public class PCA implements Transformer {
+public class PCA implements TrainableTransformer {
 
     private int numAttributesToKeep; //changed this to constructor as you could change number of atts to keep after fitting
     private PrincipalComponents pca;
     private boolean isFit = false;
-    private boolean removeRedundant = false;
     private ConstantAttributeRemover remover;
 
     public PCA(){
@@ -56,6 +55,11 @@ public class PCA implements Transformer {
         {
             throw new RuntimeException(" Error in Transformers/PCA when fitting the PCA transform");
         }
+    }
+
+    @Override
+    public boolean isFit(){
+        return isFit;
     }
 
     @Override

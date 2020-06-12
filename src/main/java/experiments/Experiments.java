@@ -86,7 +86,7 @@ import weka.core.Instances;
  Use --help to see all the optional parameters, and more information about each of them.
 
  If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
- directly, instead of building the String[] args and calling main like a lot of legacy code does.
+ directly.
  *
  * @author James Large (james.large@uea.ac.uk), Tony Bagnall (anthony.bagnall@uea.ac.uk)
  */
@@ -141,52 +141,41 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }else{
             int folds=30;
+            String[] settings=new String[8];
+            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
+ //           String classifier=classifiers[2];
+            String classifier="STC";
+
+//
+            settings[0]="-dp=E:\\Data Working Area\\DomenicHeartbeat";//Where to get data
+            settings[1]="-rp=E:\\Temp\\";//Where to write results
+            settings[2]="-gtf=false"; //Whether to generate train files or not
+            settings[3]="-cn="+classifier; //Classifier name
+            settings[4]="-dn="; //Problem file
+            settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[6]="-ctr=60s";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[7]="-d=true";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
 
 
+            String[] probFiles= {"HB"};
+//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            System.out.println("Manually set args:");
+            for (String str : settings)
+                System.out.println("\t"+str);
+            System.out.println("");
             boolean threaded=false;
             if(threaded){
-                String[] settings=new String[6];
-                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
-//                settings[0]="-dp=Z:\\RotFDebug\\UCINorm\\";//Where to get data
-                settings[1]="-rp=E:\\Results Working Area\\HC Variants\\";//Where to write results
-                settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=HC-TED2"; //Classifier name
-                settings[5]="1";
-                settings[4]="-dn="+"ItalyPowerDemand"; //Problem file
-                settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-                folds=30;
-                String classifier="HIVE-COTE";
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
-//                String[] probFiles= {"Chinatown"};
-                String[] probFiles= DatasetLists.tscProblems112;
+//                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
-
-
             }else{//Local run without args, mainly for debugging
-                String[] settings=new String[6];
-//Location of data set
-                settings[0]="-dp=Z:\\ArchiveData\\Univariate_arff\\";//Where to get data
-                settings[1]="-rp=Z:\\ReferenceResults\\";//Where to write results
-                settings[2]="-gtf=false"; //Whether to generate train files or not
-                settings[3]="-cn=TS-CHIEF"; //Classifier name
-//                for(String str:DatasetLists.tscProblems78){
-                settings[4]="-dn="+""; //Problem file, added below
-                settings[5]="-f=";//Fold number, added below (fold number 1 is stored as testFold0.csv, its a cluster thing)
-//                settings[6]="--force=true";
-//                settings[7]="-ctrs=0";
-//                settings[8]="-tb=true";
-                System.out.println("Manually set args:");
-                for (String str : settings)
-                    System.out.println("\t"+str);
-                System.out.println("");
-                String[] probFiles= {"NonInvasiveFetalECGThorax1"}; //DatasetLists.ReducedUCI;
-                folds=30;
                 for(String prob:probFiles){
                     settings[4]="-dn="+prob;
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+//                        System.out.println("Sequential experiment with "+expSettings);
                         setupAndRunExperiment(expSettings);
                     }
                 }
@@ -233,7 +222,6 @@ public class Experiments  {
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
-
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
