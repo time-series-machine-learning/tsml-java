@@ -79,6 +79,7 @@ public class ERPDistanceTest {
 
     public static void testDistanceFunctionOnDataset(Instances data, DistanceTester df) {
         Random random = new Random(0);
+        final int score = data.size() * data.numAttributes();
         for(int i = 0; i < data.size(); i++) {
 //            final Instance a = data.get(i);
             final Instance a = data.get(random.nextInt(data.size()));
@@ -89,7 +90,8 @@ public class ERPDistanceTest {
                 df.findDistance(random, data, a, b, limit);
                 limit = Double.POSITIVE_INFINITY;
                 df.findDistance(random, data, a, b, limit);
-                if(i == 30) {
+                // quick exit for speedy unit testing. Turn this off to do full blown testing (takes ~1hr)
+                if(((i + 2) * (i + 1) / 2 + (j + 1)) * data.numAttributes() >= 50000) {
 //                     central limit theorem
 //                     sufficient trial of dataset providing 30 cases tried
                     return;
