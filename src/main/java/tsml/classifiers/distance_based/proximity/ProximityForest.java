@@ -8,8 +8,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
+import tsml.classifiers.distance_based.proximity.ProximityTree.Config;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Config;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
@@ -34,43 +35,47 @@ import weka.core.Instances;
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest,
     TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory {
 
-    public static final Config<ProximityForest> CONFIG_DEFAULT = new Config<ProximityForest>() {
-        @Override
-        public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-            proximityForest.setOOB(false);
-            proximityForest.setCV(false);
-            proximityForest.setTrainTimeLimit(0);
-            proximityForest.setTestTimeLimit(0);
-            proximityForest.setNumTreeLimit(100);
-            proximityForest.setProximityTreeConfig(ProximityTree.CONFIG_DEFAULT);
-            proximityForest.setUseDistributionInVoting(false);
-            return proximityForest;
-        }
-    };
-    public static final Config<ProximityForest> CONFIG_R1 = new Config<ProximityForest>() {
-        @Override
-        public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-            CONFIG_DEFAULT.applyConfigTo(proximityForest);
-            proximityForest.setProximityTreeConfig(ProximityTree.CONFIG_R1);
-            return proximityForest;
-        }
-    };
-    public static final Config<ProximityForest> CONFIG_R5 = new Config<ProximityForest>() {
-        @Override
-        public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-            CONFIG_DEFAULT.applyConfigTo(proximityForest);
-            proximityForest.setProximityTreeConfig(ProximityTree.CONFIG_R5);
-            return proximityForest;
-        }
-    };
-    public static final Config<ProximityForest> CONFIG_R10 = new Config<ProximityForest>() {
-        @Override
-        public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-            CONFIG_DEFAULT.applyConfigTo(proximityForest);
-            proximityForest.setProximityTreeConfig(ProximityTree.CONFIG_R10);
-            return proximityForest;
-        }
-    };
+    public enum Config implements Configurer<ProximityForest> {
+        DEFAULT() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
+                proximityForest.setOOB(false);
+                proximityForest.setCV(false);
+                proximityForest.setTrainTimeLimit(0);
+                proximityForest.setTestTimeLimit(0);
+                proximityForest.setNumTreeLimit(100);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.DEFAULT);
+                proximityForest.setUseDistributionInVoting(false);
+                return proximityForest;
+            }
+        },
+        R1() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
+                DEFAULT.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.R1);
+                return proximityForest;
+            }
+        },
+        R5() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
+                DEFAULT.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.R5);
+                return proximityForest;
+            }
+        },
+        R10() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
+                DEFAULT.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.R10);
+                return proximityForest;
+            }
+        },
+        ;
+    }
+
     // the timer for contracting the estimate of train error
     private final StopWatch trainEstimateTimer = new StopWatch();
     // train timer for contracting train
@@ -95,7 +100,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the longest tree build time for predicting train time requirements
     private long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
-    private Config<ProximityTree> proximityTreeConfig;
+    private Configurer<ProximityTree> proximityTreeConfig;
     // whether to use distributions in voting or predictions
     private boolean useDistributionInVoting;
     // the instances used in OOB training
@@ -115,7 +120,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     public ProximityForest() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        CONFIG_DEFAULT.applyConfigTo(this);
+        Config.DEFAULT.applyConfigTo(this);
     }
 
     public static void main(String[] args) throws Exception {
@@ -125,7 +130,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             ProximityForest classifier = new ProximityForest();
             classifier.setEstimateOwnPerformance(false);
             classifier.setSeed(seed);
-            CONFIG_R1.applyConfigTo(classifier);
+            Config.R1.applyConfigTo(classifier);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/datasets/uni2018/",
                 "GunPoint", seed));
@@ -333,12 +338,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         this.numTreeLimit = numTreeLimit;
     }
 
-    public Config<ProximityTree> getProximityTreeConfig() {
+    public Configurer<ProximityTree> getProximityTreeConfig() {
         return proximityTreeConfig;
     }
 
     public void setProximityTreeConfig(
-        final Config<ProximityTree> proximityTreeConfig) {
+        final Configurer<ProximityTree> proximityTreeConfig) {
         Assert.assertNotNull(proximityTreeConfig);
         this.proximityTreeConfig = proximityTreeConfig;
     }

@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Config;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
 import tsml.classifiers.distance_based.utils.classifier_mixins.DefaultClassifier;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap.DiscardType;
@@ -31,46 +31,49 @@ import weka.core.Instances;
 public class ProximitySplit implements DefaultClassifier {
 
     // the various configs for this classifier
-    public static final Config<ProximitySplit> CONFIG_DEFAULT = new Config<ProximitySplit>() {
+    public enum Config implements Configurer<ProximitySplit> {
+        DEFAULT() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
+                proximitySplit.setR(5);
+                proximitySplit.setRandomTieBreakDistances(true);
+                proximitySplit.setRandomTieBreakR(false);
+                proximitySplit.setEarlyAbandonDistances(false);
+                proximitySplit.setScorer(new GiniImpurityEntropy());
+                proximitySplit.setScore(-1);
+                proximitySplit.setRandomR(false);
+                proximitySplit.setExemplarCheckOriginal(true);
+                proximitySplit.setMatchOriginalPFRandomCalls(false);
+                return proximitySplit;
+            }
+        },
+        R1() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
+                DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit.setR(1);
+                return proximitySplit;
+            }
+        },
+        R5() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
+                DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit.setR(5);
+                return proximitySplit;
+            }
+        },
+        R10() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
+                DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit.setR(10);
+                return proximitySplit;
+            }
+        }
+        ;
+    }
 
-        @Override
-        public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-            proximitySplit.setR(5);
-            proximitySplit.setRandomTieBreakDistances(true);
-            proximitySplit.setRandomTieBreakR(false);
-            proximitySplit.setEarlyAbandonDistances(false);
-            proximitySplit.setScorer(new GiniImpurityEntropy());
-            proximitySplit.setScore(-1);
-            proximitySplit.setRandomR(false);
-            proximitySplit.setExemplarCheckOriginal(true);
-            proximitySplit.setMatchOriginalPFRandomCalls(false);
-            return proximitySplit;
-        }
-    };
-    public static final Config<ProximitySplit> CONFIG_R1 = new Config<ProximitySplit>() {
-        @Override
-        public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-            CONFIG_DEFAULT.applyConfigTo(proximitySplit);
-            proximitySplit.setR(1);
-            return proximitySplit;
-        }
-    };
-    public static final Config<ProximitySplit> CONFIG_R5 = new Config<ProximitySplit>() {
-        @Override
-        public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-            CONFIG_DEFAULT.applyConfigTo(proximitySplit);
-            proximitySplit.setR(5);
-            return proximitySplit;
-        }
-    };
-    public static final Config<ProximitySplit> CONFIG_R10 = new Config<ProximitySplit>() {
-        @Override
-        public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-            CONFIG_DEFAULT.applyConfigTo(proximitySplit);
-            proximitySplit.setR(10);
-            return proximitySplit;
-        }
-    };
     // whether to early abandon distance measurements for distance between instances (data) and exemplars
     private boolean earlyAbandonDistances;
     // the distance function for comparing instances to exemplars
@@ -118,7 +121,7 @@ public class ProximitySplit implements DefaultClassifier {
      */
     public ProximitySplit(Random random) {
         setRandom(random);
-        CONFIG_DEFAULT.applyConfigTo(this);
+        Config.DEFAULT.applyConfigTo(this);
     }
 
     /**

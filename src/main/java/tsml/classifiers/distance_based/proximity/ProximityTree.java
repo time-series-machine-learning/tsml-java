@@ -7,8 +7,9 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.Assert;
+import tsml.classifiers.distance_based.proximity.ProximitySplit.Config;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Config;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
@@ -35,53 +36,57 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     TimedTrain, TimedTest, WatchedMemory {
 
     // the various configs for this classifier
-    public static final Config<ProximityTree> CONFIG_DEFAULT = new Config<ProximityTree>() {
-        @Override
-        public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-            proximityTree.setBreadthFirst(false);
-            proximityTree.setTrainTimeLimit(0);
-            proximityTree.setTestTimeLimit(0);
-            proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
-                DistanceFunctionSpaceBuilder.ED,
-                DistanceFunctionSpaceBuilder.FULL_DTW,
-                DistanceFunctionSpaceBuilder.DTW,
-                DistanceFunctionSpaceBuilder.FULL_DDTW,
-                DistanceFunctionSpaceBuilder.DDTW,
-                DistanceFunctionSpaceBuilder.WDTW,
-                DistanceFunctionSpaceBuilder.WDDTW,
-                DistanceFunctionSpaceBuilder.LCSS,
-                DistanceFunctionSpaceBuilder.ERP,
-                DistanceFunctionSpaceBuilder.TWED,
-                DistanceFunctionSpaceBuilder.MSM
-            ));
-            proximityTree.setProximitySplitConfig(ProximitySplit.CONFIG_DEFAULT);
-            return proximityTree;
-        }
-    };
-    public static final Config<ProximityTree> CONFIG_R1 = new Config<ProximityTree>() {
-        @Override
-        public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-            CONFIG_DEFAULT.applyConfigTo(proximityTree);
-            proximityTree.setProximitySplitConfig(ProximitySplit.CONFIG_R1);
-            return proximityTree;
-        }
-    };
-    public static final Config<ProximityTree> CONFIG_R5 = new Config<ProximityTree>() {
-        @Override
-        public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-            CONFIG_DEFAULT.applyConfigTo(proximityTree);
-            proximityTree.setProximitySplitConfig(ProximitySplit.CONFIG_R5);
-            return proximityTree;
-        }
-    };
-    public static final Config<ProximityTree> CONFIG_R10 = new Config<ProximityTree>() {
-        @Override
-        public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-            CONFIG_DEFAULT.applyConfigTo(proximityTree);
-            proximityTree.setProximitySplitConfig(ProximitySplit.CONFIG_R10);
-            return proximityTree;
-        }
-    };
+    public enum Config implements Configurer<ProximityTree> {
+        DEFAULT() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
+                proximityTree.setBreadthFirst(false);
+                proximityTree.setTrainTimeLimit(0);
+                proximityTree.setTestTimeLimit(0);
+                proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
+                    DistanceFunctionSpaceBuilder.ED,
+                    DistanceFunctionSpaceBuilder.FULL_DTW,
+                    DistanceFunctionSpaceBuilder.DTW,
+                    DistanceFunctionSpaceBuilder.FULL_DDTW,
+                    DistanceFunctionSpaceBuilder.DDTW,
+                    DistanceFunctionSpaceBuilder.WDTW,
+                    DistanceFunctionSpaceBuilder.WDDTW,
+                    DistanceFunctionSpaceBuilder.LCSS,
+                    DistanceFunctionSpaceBuilder.ERP,
+                    DistanceFunctionSpaceBuilder.TWED,
+                    DistanceFunctionSpaceBuilder.MSM
+                ));
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.DEFAULT);
+                return proximityTree;
+            }
+        },
+        R1() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
+                Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R1);
+                return proximityTree;
+            }
+        },
+        R5() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
+                Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5);
+                return proximityTree;
+            }
+        },
+        R10() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
+                Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10);
+                return proximityTree;
+            }
+        },
+        ;
+    }
+
     // train timer
     private final StopWatch trainTimer = new StopWatch();
     // test / predict timer
@@ -107,11 +112,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the list of distance function space builders to produce distance functions in splits
     private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
     // method of setting up split config
-    private Config<ProximitySplit> proximitySplitConfig;
+    private Configurer<ProximitySplit> proximitySplitConfig;
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        CONFIG_DEFAULT.applyConfigTo(this);
+        Config.DEFAULT.applyConfigTo(this);
     }
 
     public static void main(String[] args) throws Exception {
@@ -119,18 +124,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
-            CONFIG_R1.applyConfigTo(classifier);
+            Config.R1.applyConfigTo(classifier);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
 
-    public Config<ProximitySplit> getProximitySplitConfig() {
+    public Configurer<ProximitySplit> getProximitySplitConfig() {
         return proximitySplitConfig;
     }
 
     public void setProximitySplitConfig(
-        final Config<ProximitySplit> proximitySplitConfig) {
+        final Configurer<ProximitySplit> proximitySplitConfig) {
         Assert.assertNotNull(proximitySplitConfig);
         this.proximitySplitConfig = proximitySplitConfig;
     }
