@@ -1,12 +1,8 @@
 package tsml.classifiers.distance_based.distances.erp;
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import weka.core.Instance;
 
 /**
  * ERP distance measure.
@@ -15,11 +11,9 @@ import weka.core.Instance;
  */
 public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
-    private double penalty = 0;
-
     public static final String PENALTY_FLAG = "p";
-
     public static final String WINDOW_SIZE_FLAG = "w";
+    private double penalty = 0;
 
     public double getPenalty() {
         return penalty;

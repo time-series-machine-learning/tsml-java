@@ -1,7 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.DenseInstance;

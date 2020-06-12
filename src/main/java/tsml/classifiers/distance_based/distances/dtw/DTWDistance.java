@@ -1,16 +1,9 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 
-import javax.rmi.CORBA.Util;
-import tsml.classifiers.distance_based.distances.ArrayBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import utilities.Utilities;
-import weka.core.Instance;
 
 /**
  * DTW distance measure.
@@ -19,7 +12,8 @@ import weka.core.Instance;
  */
 public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DTW {
 
-    public DTWDistance() {}
+    public DTWDistance() {
+    }
 
     @Override
     public double findDistance(final double[] a, final double[] b, final double limit) {

@@ -1,13 +1,13 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
+import tsml.transformers.Indexer;
 import weka.core.Instance;
 
 public abstract class ArrayBasedDistanceMeasure extends BaseDistanceMeasure {
 
     protected final double findDistance(final Instance ai, final Instance bi, final double limit) {
-        final double[] a = ExposedDenseInstance.extractAttributeValuesAndClassLabel(ai);
-        final double[] b = ExposedDenseInstance.extractAttributeValuesAndClassLabel(bi);
+        final double[] a = Indexer.extractAttributeValuesAndClassLabel(ai);
+        final double[] b = Indexer.extractAttributeValuesAndClassLabel(bi);
         return distance(a, b, limit);
     }
 

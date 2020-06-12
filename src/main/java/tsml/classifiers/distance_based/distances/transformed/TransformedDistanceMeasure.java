@@ -11,13 +11,11 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.filters.CachedFilter;
-import tsml.filters.HashFilter;
-import tsml.filters.Utilities;
+import tsml.transformers.CachedTransformer;
+import tsml.transformers.TrainableTransformer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.neighboursearch.PerformanceStats;
 import tsml.transformers.Transformer;
 
 public class TransformedDistanceMeasure extends BaseDistanceMeasure implements TransformedDistanceMeasureable {
@@ -48,6 +46,9 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     public void setInstances(Instances data) {
         super.setInstances(data);
         distanceFunction.setInstances(data);
+        if(transformer instanceof TrainableTransformer) {
+            ((TrainableTransformer) transformer).fit(data);
+        }
     }
 
     @Override
@@ -68,7 +69,7 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
         return transformer;
     }
 
-    protected void setTransformer(Filter transformer) {
+    protected void setTransformer(Transformer transformer) {
         Assert.assertNotNull(transformer);
         this.transformer = transformer;
     }
@@ -76,32 +77,18 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     @Override
     public double findDistance(final Instance a, final Instance b, final double limit) {
         try {
-            final Instance firstTransformed = transformer.transform(first);
-            final Instance secondTransformed = transformer.transform(second);
-            return distanceFunction.distance(firstTransformed, secondTransformed, cutOffValue, stats);
+            final Instance firstTransformed = transformer.transform(a);
+            final Instance secondTransformed = transformer.transform(b);
+            return distanceFunction.distance(firstTransformed, secondTransformed, limit);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override public ParamSet getParams() {
-        return super.getParams().add(TRANSFORMER_FLAG, transformer).add(DistanceMeasureable.DISTANCE_MEASURE_FLAG,
-                                                                  distanceFunction);
+        return super.getParams().add(TRANSFORMER_FLAG, transformer).add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, distanceFunction);
     }
 
     public static final String TRANSFORMER_FLAG = "t";
-
-    @Override
-    public void setTraining(final boolean training) {
-        super.setTraining(training);
-        if(transformer instanceof CachedFilter) {
-            if(((CachedFilter) transformer).getCache().isRead()) {
-                // disable the cache writing if not in training mode
-                // don't want to keep instances / transformation from the test data as the cache will explode along with
-                // your computer
-                ((CachedFilter) transformer).getCache().setWrite(training);
-            }
-        }
-    }
 
 }

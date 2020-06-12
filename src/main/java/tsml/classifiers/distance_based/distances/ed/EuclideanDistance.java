@@ -1,10 +1,6 @@
 package tsml.classifiers.distance_based.distances.ed;
 
 import tsml.classifiers.distance_based.distances.ArrayBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.utils.instance.ExposedDenseInstance;
-import utilities.Utilities;
-import weka.core.Instance;
 
 public class EuclideanDistance extends ArrayBasedDistanceMeasure {
 

@@ -1,13 +1,8 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.IntBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import utilities.Utilities;
-import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * LCSS distance measure.
@@ -27,6 +22,10 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
     public static String getDeltaFlag() {
         return "d";
+    }
+
+    public static boolean approxEqual(double a, double b, double epsilon) {
+        return Math.abs(a - b) <= epsilon;
     }
 
     public double getEpsilon() {
@@ -150,17 +149,12 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return null;
-//        return super.getParams().add(getEpsilonFlag(), epsilon).add(getDeltaFlag(), delta);
+        return super.getParams().add(getEpsilonFlag(), epsilon);
     }
 
     @Override
     public void setParams(final ParamSet param) {
         ParamHandler.setParam(param, getEpsilonFlag(), this::setEpsilon, Double.class);
-//        ParamHandler.setParam(param, getDeltaFlag(), this::setDelta, Integer.class);
-    }
-
-    public static boolean approxEqual(double a, double b, double epsilon) {
-        return Math.abs(a - b) <= epsilon;
+        super.setParams(param);
     }
 }

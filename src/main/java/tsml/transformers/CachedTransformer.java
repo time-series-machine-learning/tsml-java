@@ -1,8 +1,12 @@
 package tsml.transformers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
+import tsml.transformers.Indexer.IndexedInstance;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -13,24 +17,30 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler, abostrom
  */
-public class CachedTransformer implements Transformer {
+public class CachedTransformer implements TrainableTransformer {
 
     // the filter to cache the output of
     private Transformer transformer;
+    private final Indexer indexer = new Indexer();
+    private boolean isFit = false;
 
-    private HashTransformer hasher = new HashTransformer();
-
-
-    // the cache to store instances against their corresponding output
-    private Map<Instance, Instance> cache;
+    // the cache to store instances against their corresponding transform output
+    private List<Instance> cache;
 
     public CachedTransformer(Transformer transformer) {
-        this(transformer, new HashMap<>());
+        setTransformer(transformer);
     }
 
-    public CachedTransformer(Transformer transformer, Map<Instance, Instance> cache) {
-        this.transformer = transformer;
-        this.cache = cache;
+    @Override
+    public boolean isFit() {
+        return isFit;
+    }
+
+    @Override
+    public void fit(final Instances data) {
+        indexer.transform(data);
+        isFit = true;
+        cache = new ArrayList<>(data.size());
     }
 
     @Override
@@ -42,20 +52,27 @@ public class CachedTransformer implements Transformer {
         return transformer.getCapabilities();
     }
 
-    @Override
-    public Instance transform(Instance inst) {
-       
-        //hash the instnace before we check whether it is in the map or not.
-        inst = hasher.transform(inst);
-        
-        //if the key is not in the map, transform and store it.
-        if(!cache.containsKey(inst)){
-            cache.put(inst, transformer.transform(inst));
-        }
-       
-        return cache.get(inst);
+    public void setTransformer(final Transformer transformer) {
+        Assert.assertNotNull(transformer);
+        this.transformer = transformer;
     }
 
+    public void setCache(final List<Instance> cache) {
+        Assert.assertNotNull(cache);
+        this.cache = cache;
+    }
+
+    @Override
+    public Instance transform(Instance inst) {
+        if(inst instanceof IndexedInstance) {
+            // the instance is from the fitted data so fetch from cache if possible
+            return cache.get(((IndexedInstance) inst).getIndex());
+        } else {
+            // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
+            // be added to cache)
+            return transformer.transform(inst);
+        }
+    }
 
     @Override
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
@@ -66,10 +83,8 @@ public class CachedTransformer implements Transformer {
         return transformer;
     }
 
-
-    public Map<Instance, Instance> getCache() {
+    public List<Instance> getCache() {
         return cache;
     }
-
 
 }

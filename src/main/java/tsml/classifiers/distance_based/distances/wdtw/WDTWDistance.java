@@ -1,13 +1,8 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import utilities.Utilities;
-import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * WDTW distance measure.
@@ -16,6 +11,9 @@ import weka.core.neighboursearch.PerformanceStats;
  */
 public class WDTWDistance
     extends DoubleBasedWarpingDistanceMeasure implements WDTW {
+
+    private double g = 0.05;
+    private double[] weightVector = new double[0];
 
     @Override
     public double getG() {
@@ -27,10 +25,6 @@ public class WDTWDistance
         this.g = g;
     }
 
-    private double g = 0.05;
-
-    private double[] weightVector = new double[0];
-
     @Override
     public double findDistance(final double[] a, final double[] b, final double limit) {
 
@@ -41,7 +35,7 @@ public class WDTWDistance
         if(aLength != weightVector.length) {
             final double halfLength = (double) aLength / 2;
             weightVector = new double[aLength];
-            for (int i = 0; i < aLength; i++) {
+            for(int i = 0; i < aLength; i++) {
                 weightVector[i] = 1d / (1d + Math.exp(-g * (i - halfLength)));
             }
         }
@@ -129,11 +123,13 @@ public class WDTWDistance
         return row[bLength - 1];
     }
 
-    @Override public ParamSet getParams() {
+    @Override
+    public ParamSet getParams() {
         return super.getParams().add(WDTW.getGFlag(), g);
     }
 
-    @Override public void setParams(final ParamSet param) {
+    @Override
+    public void setParams(final ParamSet param) {
         ParamHandler.setParam(param, WDTW.getGFlag(), this::setG, Double.class);
     }
 }
