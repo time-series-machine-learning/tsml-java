@@ -96,7 +96,7 @@ public class MSMDistanceTest {
         // Main Loop
         double min;
         for(int i = 1; i < aLength; i++) {
-            min = limit;
+            min = Double.POSITIVE_INFINITY;
             for(int j = 1; j < bLength; j++) {
                 double d1, d2, d3;
                 d1 = cost[i - 1][j - 1] + Math.abs(a.value(i) - b.value(j));
@@ -104,11 +104,11 @@ public class MSMDistanceTest {
                 d3 = cost[i][j - 1] + findCost(b.value(j), a.value(i), b.value(j - 1), c);
                 cost[i][j] = Math.min(d1, Math.min(d2, d3));
 
-                if(cost[i][j] < min) {
-                    min = cost[i][j];
-                }
             }
-            if(min >= limit) {
+            for(int j = 0; j < bLength; j++) {
+                min = Math.min(min, cost[i][j]);
+            }
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
             }
         }
