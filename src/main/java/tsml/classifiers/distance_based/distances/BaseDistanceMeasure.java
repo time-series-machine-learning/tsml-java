@@ -25,12 +25,15 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     // whether to set the first instance to the longest instance when calling the distance function
     private transient boolean longestInstanceFirst = true;
 
+    protected boolean requiresDataToBeSet() {
+        return false;
+    }
 
     // optional check for data in the correct format
     protected void checkData(Instance a, Instance b) {
         Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
         Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
-        if(!dataHasBeenSet) {
+        if(requiresDataToBeSet() && !dataHasBeenSet) {
             throw new IllegalStateException("must call setInstances first to setup the distance measure");
         }
     }

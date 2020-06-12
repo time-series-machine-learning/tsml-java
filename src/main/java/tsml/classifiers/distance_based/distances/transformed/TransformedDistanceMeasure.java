@@ -36,6 +36,11 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     private Transformer transformer;
     private String name = getClass().getSimpleName();
 
+    @Override
+    protected boolean requiresDataToBeSet() {
+        return true;
+    }
+
     protected void setName(String name) {
         Assert.assertNotNull(name);
         this.name = name;
