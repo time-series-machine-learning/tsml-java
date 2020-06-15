@@ -203,7 +203,7 @@ public class ProximitySplit implements DefaultClassifier {
             // splits which score the same will not be kept, only 1 will be kept at any point in time
             map.setHardLimit(1);
             // discard the youngest split. i.e. if there's 2 splits which score 0.4, the newest split will be discarded
-            map.setDiscardType(DiscardType.YOUNGEST);
+            map.setDiscardType(DiscardType.NEWEST);
         }
         // randomly set R if enabled
         if(randomR) {
@@ -363,7 +363,7 @@ public class ProximitySplit implements DefaultClassifier {
             // only keep 1 partition at any point in time, even if multiple partitions are equally close
             distanceToPartitionIndexMap.setHardLimit(1);
             // discard the newest on tie break situation
-            distanceToPartitionIndexMap.setDiscardType(DiscardType.YOUNGEST);
+            distanceToPartitionIndexMap.setDiscardType(DiscardType.NEWEST);
         }
         // loop through exemplar groups
         for(int i = 0; i < exemplarGroups.size(); i++) {

@@ -66,7 +66,7 @@ public class PrunedMultimapTest {
     @Test
     public void testHardLimitDiscardYoungest() {
         map.setHardLimit(2);
-        map.setDiscardType(DiscardType.YOUNGEST);
+        map.setDiscardType(DiscardType.NEWEST);
         map.put(1, "a");
         Assert.assertEquals(1, map.size());
         Assert.assertTrue(map.containsValue("a"));

@@ -2,12 +2,7 @@ package tsml.classifiers.distance_based.proximity;
 
 import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.proximity.ProximitySplit.Config;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
@@ -27,13 +22,29 @@ import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Purpose: proximity tree
  * <p>
  * Contributors: goastler
  */
 public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain,
-    TimedTrain, TimedTest, WatchedMemory {
+                                                             TimedTrain, TimedTest, WatchedMemory {
+
+    public static void main(String[] args) throws Exception {
+        for(int i = 0; i < 1; i++) {
+            int seed = i;
+            ProximityTree classifier = new ProximityTree();
+            classifier.setSeed(seed);
+            Config.R1.applyConfigTo(classifier);
+            //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        }
+    }
 
     // the various configs for this classifier
     public enum Config implements Configurer<ProximityTree> {
@@ -44,17 +55,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 proximityTree.setTrainTimeLimit(0);
                 proximityTree.setTestTimeLimit(0);
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
-                    DistanceFunctionSpaceBuilder.ED,
-                    DistanceFunctionSpaceBuilder.FULL_DTW,
-                    DistanceFunctionSpaceBuilder.DTW,
-                    DistanceFunctionSpaceBuilder.FULL_DDTW,
-                    DistanceFunctionSpaceBuilder.DDTW,
-                    DistanceFunctionSpaceBuilder.WDTW,
-                    DistanceFunctionSpaceBuilder.WDDTW,
-                    DistanceFunctionSpaceBuilder.LCSS,
-                    DistanceFunctionSpaceBuilder.ERP,
-                    DistanceFunctionSpaceBuilder.TWED,
-                    DistanceFunctionSpaceBuilder.MSM
+                        DistanceFunctionSpaceBuilder.ED,
+                        DistanceFunctionSpaceBuilder.FULL_DTW,
+                        DistanceFunctionSpaceBuilder.DTW,
+                        DistanceFunctionSpaceBuilder.FULL_DDTW,
+                        DistanceFunctionSpaceBuilder.DDTW,
+                        DistanceFunctionSpaceBuilder.WDTW,
+                        DistanceFunctionSpaceBuilder.WDDTW,
+                        DistanceFunctionSpaceBuilder.LCSS,
+                        DistanceFunctionSpaceBuilder.ERP,
+                        DistanceFunctionSpaceBuilder.TWED,
+                        DistanceFunctionSpaceBuilder.MSM
                 ));
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.DEFAULT);
                 return proximityTree;
@@ -87,6 +98,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         ;
     }
 
+    public ProximityTree() {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        Config.DEFAULT.applyConfigTo(this);
+    }
+
     // train timer
     private final StopWatch trainTimer = new StopWatch();
     // test / predict timer
@@ -114,28 +130,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // method of setting up split config
     private Configurer<ProximitySplit> proximitySplitConfig;
 
-    public ProximityTree() {
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        Config.DEFAULT.applyConfigTo(this);
-    }
-
-    public static void main(String[] args) throws Exception {
-        for(int i = 0; i < 1; i++) {
-            int seed = i;
-            ProximityTree classifier = new ProximityTree();
-            classifier.setSeed(seed);
-            Config.R1.applyConfigTo(classifier);
-            //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
-        }
-    }
-
     public Configurer<ProximitySplit> getProximitySplitConfig() {
         return proximitySplitConfig;
     }
 
     public void setProximitySplitConfig(
-        final Configurer<ProximitySplit> proximitySplitConfig) {
+            final Configurer<ProximitySplit> proximitySplitConfig) {
         Assert.assertNotNull(proximitySplitConfig);
         this.proximitySplitConfig = proximitySplitConfig;
     }
@@ -145,7 +145,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     public ProximityTree setDistanceFunctionSpaceBuilders(
-        final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
+            final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
         return this;
     }
@@ -185,14 +185,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         trainTimeLimitNanos = nanos;
     }
 
-    private long findNodeBuildTime(TreeNode<ProximitySplit> node, long time) {
-        // assume that the time taken to build a node is proportional to the amount of instances at the node
-        final Instances data = node.getElement().getData();
-        final long timePerInstance = time / data.size();
-        return Math.max(maxTimePerInstanceForNodeBuilding, timePerInstance + 1); // add 1 to account for precision
-        // error in div operation
-    }
-
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         // start monitoring resources
@@ -215,11 +207,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
         while(
             // there's remaining nodes to be built
-            !nodeBuildQueue.isEmpty()
+                !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
                 insideTrainTimeLimit(trainTimer.lap() +
-                    maxTimePerInstanceForNodeBuilding * nodeBuildQueue.peekFirst().getElement().getData().size())
+                                     maxTimePerInstanceForNodeBuilding *
+                                     nodeBuildQueue.peekFirst().getElement().getData().size())
         ) {
             // time how long it takes to build the node
             trainStageTimer.resetAndStart();
@@ -240,6 +233,38 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
+    }
+
+    /**
+     * setup a node with some given data
+     *
+     * @param data
+     * @param parent
+     * @return
+     */
+    private TreeNode<ProximitySplit> setupNode(Instances data, TreeNode<ProximitySplit> parent) {
+        // split the data into multiple partitions, housed in a ProximitySplit object
+        final ProximitySplit split = setupSplit(data);
+        // build a new node
+        final TreeNode<ProximitySplit> node = new BaseTreeNode<>(split, parent);
+        return node;
+    }
+
+    /**
+     * setup the child nodes given the parent node
+     *
+     * @param parent
+     * @return
+     */
+    private List<TreeNode<ProximitySplit>> setupChildNodes(TreeNode<ProximitySplit> parent) {
+        final List<Instances> partitions = parent.getElement().getPartitions();
+        List<TreeNode<ProximitySplit>> children = new ArrayList<>(partitions.size());
+        // for each child
+        for(Instances partition : partitions) {
+            // setup the node
+            children.add(setupNode(partition, parent));
+        }
+        return children;
     }
 
     /**
@@ -272,36 +297,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
     }
 
-    /**
-     * setup the child nodes given the parent node
-     *
-     * @param parent
-     * @return
-     */
-    private List<TreeNode<ProximitySplit>> setupChildNodes(TreeNode<ProximitySplit> parent) {
-        final List<Instances> partitions = parent.getElement().getPartitions();
-        List<TreeNode<ProximitySplit>> children = new ArrayList<>(partitions.size());
-        // for each child
-        for(Instances partition : partitions) {
-            // setup the node
-            children.add(setupNode(partition, parent));
-        }
-        return children;
-    }
-
-    /**
-     * setup a node with some given data
-     *
-     * @param data
-     * @param parent
-     * @return
-     */
-    private TreeNode<ProximitySplit> setupNode(Instances data, TreeNode<ProximitySplit> parent) {
-        // split the data into multiple partitions, housed in a ProximitySplit object
-        final ProximitySplit split = setupSplit(data);
-        // build a new node
-        final TreeNode<ProximitySplit> node = new BaseTreeNode<>(split, parent);
-        return node;
+    private long findNodeBuildTime(TreeNode<ProximitySplit> node, long time) {
+        // assume that the time taken to build a node is proportional to the amount of instances at the node
+        final Instances data = node.getElement().getData();
+        final long timePerInstance = time / data.size();
+        return Math.max(maxTimePerInstanceForNodeBuilding, timePerInstance + 1); // add 1 to account for precision
+        // error in div operation
     }
 
     /**
@@ -334,7 +335,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         ProximitySplit split = node.getElement();
         // traverse the tree downwards from root
         while(
-            !node.isLeaf()
+                !node.isLeaf()
                 &&
                 insideTestTimeLimit(testTimer.getTime() + longestPredictTime)
         ) {

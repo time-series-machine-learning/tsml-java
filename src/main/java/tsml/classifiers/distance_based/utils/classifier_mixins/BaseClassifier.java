@@ -30,10 +30,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
-    // method of listening for when rebuilding
-    private RebuildListener rebuildListener = (final Instances trainData) -> {};
-    // has buildClassifier ever been called?
-    private boolean firstBuild = true;
 
     public BaseClassifier() {
 
@@ -43,32 +39,10 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         super(a);
     }
 
-    public boolean isFirstBuild() {
-        return firstBuild;
-    }
-
-    protected BaseClassifier setFirstBuild(final boolean firstBuild) {
-        this.firstBuild = firstBuild;
-        return this;
-    }
-
-    public interface RebuildListener {
-        void onRebuild(final Instances trainData);
-    }
-
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        final boolean firstBuild = isFirstBuild();
-        final boolean rebuild = isRebuild();
-        final Logger logger = getLogger();
-        if(rebuild || firstBuild) {
-            logger.info(() -> {
-                if(firstBuild) {
-                    return "first build";
-                } else {
-                    return "rebuilding";
-                }
-            });
+        if(rebuild) {
+            logger.info("fresh build");
             Assert.assertNotNull(trainData);
             // reset train results
             trainResults = new ClassifierResults();
@@ -78,15 +52,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             }
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(trainData);
-            // we're no longer rebuilding
-            // assume all subclasses would have save this value before calling this method
-            setRebuild(false);
-            // this is the first build
-            setFirstBuild(false);
-            // notify the rebuild listener that we're rebuilding so anything requiring train data knowledge can be
-            // setup (this is helpful when tuning over a data dependent range. The range would be setup inside this
-            // method and set corresponding variables in this classifier)
-            rebuildListener.onRebuild(trainData);
         }
     }
 
@@ -95,16 +60,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         Assert.assertNotNull(classifierName);
         super.setClassifierName(classifierName);
         logger = LogUtils.buildLogger(classifierName);
-    }
-
-    public RebuildListener getRebuildListener() {
-        return rebuildListener;
-    }
-
-    public BaseClassifier setRebuildListener(
-        final RebuildListener rebuildListener) {
-        this.rebuildListener = rebuildListener;
-        return this;
     }
 
     @Override
@@ -149,8 +104,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public double[] distributionForInstance(final Instance instance) throws Exception {
-        throw new UnsupportedOperationException();
-    }
+    public abstract double[] distributionForInstance(final Instance instance) throws Exception;
 
 }

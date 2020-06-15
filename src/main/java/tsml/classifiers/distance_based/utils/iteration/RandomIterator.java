@@ -12,7 +12,7 @@ import utilities.ArrayUtilities;
  * <p>
  * Contributors: goastler
  */
-public abstract class RandomIterator<A> extends BaseRandom implements RandomIteration<A> {
+public class RandomIterator<A> extends BaseRandom implements RandomIteration<A> {
 
     private List<A> list;
     private List<Integer> indices;
@@ -94,6 +94,11 @@ public abstract class RandomIterator<A> extends BaseRandom implements RandomIter
     public RandomIterator(Random random, List<A> list) {
         super(random);
         setList(list);
+    }
+
+    public RandomIterator(Random random, List<A> list, boolean replacement) {
+        this(random, list);
+        setReplacement(replacement);
     }
 
     public int nextIndex() {

@@ -17,7 +17,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
     private Random random = null;
     private final TreeMap<K, Collection<V>> backingMap;
     private final ListMultimap<K, V> listMultimap;
-    private DiscardType discardType = DiscardType.YOUNGEST;
+    private DiscardType discardType = DiscardType.NEWEST;
 
     public DiscardType getDiscardType() {
         return discardType;
@@ -31,7 +31,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
 
     public enum DiscardType {
         OLDEST,
-        YOUNGEST,
+        NEWEST,
         RANDOM,
     }
 
@@ -117,7 +117,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
                         values.remove(0);
                     }
                     break;
-                case YOUNGEST:
+                case NEWEST:
                     for(int i = 0; i < diff; i++) {
                         values.remove(values.size() - 1);
                     }
@@ -136,7 +136,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
         }
     }
 
-    protected void prune() {
+    public void prune() {
         if(!isEmpty()) {
             if(hasSoftLimit()) {
                 softPrune(softLimit);
@@ -199,8 +199,13 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
         setHardLimit(-1);
     }
 
-    public void disableLimit() {
+    public void disableSoftLimit() {
         setSoftLimit(-1);
+    }
+
+    public void disableLimits() {
+        disableHardLimit();
+        disableSoftLimit();
     }
 
     @Override

@@ -42,13 +42,14 @@ public class LogUtils {
 
         @Override
         public String format(final LogRecord logRecord) {
-            String separator = " | ";
-            return logRecord.getSequenceNumber() + separator +
-                logRecord.getLevel() + separator +
-                logRecord.getLoggerName() + separator +
-                logRecord.getSourceClassName() + separator +
-                logRecord.getSourceMethodName() + System.lineSeparator() +
-                logRecord.getMessage() + System.lineSeparator();
+//            String separator = " | ";
+//            return logRecord.getSequenceNumber() + separator +
+//                logRecord.getLevel() + separator +
+//                logRecord.getLoggerName() + separator +
+//                logRecord.getSourceClassName() + separator +
+//                logRecord.getSourceMethodName() + System.lineSeparator() +
+//                logRecord.getMessage() + System.lineSeparator();
+            return logRecord.getMessage() + System.lineSeparator();
         }
     }
 

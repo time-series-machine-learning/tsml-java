@@ -28,6 +28,10 @@ public class RandomListIterator<A> extends RandomIterator<A> implements DefaultL
         super(random, list);
     }
 
+    public RandomListIterator(final Random random, final List<A> list, boolean replacement) {
+        super(random, list, replacement);
+    }
+
     // todo implement other list iterator funcs
 
     @Override

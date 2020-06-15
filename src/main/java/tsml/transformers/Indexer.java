@@ -74,12 +74,23 @@ public class Indexer implements TrainableTransformer {
             setIndex(index);
         }
 
+        public IndexedInstance(IndexedInstance instance) {
+            super(instance);
+            setIndex(instance.index);
+        }
+
         public int getIndex() {
             return index;
         }
 
         private void setIndex(final int index) {
             this.index = index;
+        }
+
+        @Override public String toString() {
+            return "IndexedInstance{" +
+                   "index=" + index +
+                   '}';
         }
 
         @Override
@@ -104,6 +115,11 @@ public class Indexer implements TrainableTransformer {
         public int hashCode() {
             return index;
         }
+
+        @Override
+        public Object copy() {
+            return new IndexedInstance(this);
+        }
     }
 
     public static double[] extractAttributeValuesAndClassLabel(Instance instance) {
@@ -111,5 +127,9 @@ public class Indexer implements TrainableTransformer {
             instance = new IndexedInstance(instance, -1);
         }
         return instance.toDoubleArray();
+    }
+
+    public static void index(Instances instances) {
+        new Indexer().fit(instances);
     }
 }
