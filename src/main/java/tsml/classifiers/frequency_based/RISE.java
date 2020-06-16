@@ -944,23 +944,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         ArrayList<Attribute>attributes = new ArrayList<>();
         ArrayList<Integer> intervalAttIndexes = new ArrayList<>();
 
-        /*startEndPoints.add(new int[2]);
-        if(startEndPoints.size() == 1){
-            startEndPoints.get(startEndPoints.size() - 1)[0] = 0;
-            startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1;
-        }else{
-            startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((trainingData.numAttributes() - 1)- minIntervalLength);
-            //This avoid calling nextInt(0)
-            if(startEndPoints.get(startEndPoints.size() - 1)[0] == (trainingData.numAttributes() - 1) - 1 - minIntervalLength)
-                startEndPoints.get(startEndPoints.size() - 1)[1] = trainingData.numAttributes() - 1 - 1;
-            else{
-                startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((trainingData.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0]);
-                if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
-                    startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
-                startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
-            }
-        }*/
-
         startEndPoints = selectStartEndPoints(startEndPoints, intervalMethod);
 
         int nearestPowerOfTwo = startEndPoints.get(startEndPoints.size() - 1)[1] - startEndPoints.get(startEndPoints.size() - 1)[0];
