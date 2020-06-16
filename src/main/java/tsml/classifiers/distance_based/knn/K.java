@@ -2,8 +2,8 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.proximity.ProximityTree;
+import org.junit.Assert;
+import tsml.classifiers.distance_based.distances.ed.EuclideanDistance;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
 import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
@@ -12,26 +12,27 @@ import tsml.classifiers.distance_based.utils.collections.PrunedMultimap.DiscardT
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.iteration.RandomIterator;
-import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import tsml.transformers.Indexer;
+import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.Map.Entry;
 
-public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTrainEstimate, ContractedTest, ContractedTrain {
+public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTrainEstimate, ContractedTest,
+                                                 ContractedTrain, WatchedMemory {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -52,10 +53,12 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
                 k.setTestTimeLimit(0);
                 k.setTrainTimeLimit(0);
                 k.setEstimateOwnPerformance(false);
-                k.setK(1);
-                k.setOptimiseK(false);
-                k.setkMax(-1);
-                k.setDistanceFunction(new DTWDistance());
+//                k.setK(1);
+//                k.setOptimiseK(false);
+//                k.setKMax(-1);
+                k.setKMax(10);
+                k.setOptimiseK(true);
+                k.setDistanceFunction(new EuclideanDistance());
                 return k;
             }
         },
@@ -67,14 +70,15 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         Config.DEFAULT.applyConfigTo(this);
     }
 
+    private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private final StopWatch testTimer = new StopWatch();
     private final StopWatch trainTimer = new StopWatch();
     private final StopWatch trainEstimateTimer = new StopWatch();
     private final StopWatch trainStageTimer = new StopWatch();
     private final StopWatch testStageTimer = new StopWatch();
-    private transient Instances trainData;
-    private Iterator<Searcher> targetIterator;
-    private List<Searcher> searchers;
+    private List<Indexer.IndexedInstance> trainData;
+    private List<Search> searches;
+    private ListIterator<Search> targetSearchIterator;
     private DistanceFunction distanceFunction;
     private int k;
     private int kMax;
@@ -83,104 +87,152 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
     private long testTimeLimit;
     private long longestNeighbourComparisonTimeTrain;
     private long longestNeighbourComparisonTimeTest;
+    private long comparisonCount;
 
     @Override
-    public void buildClassifier(final Instances trainData) throws Exception {
+    public void buildClassifier(Instances trainData) throws Exception {
+        memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
         super.buildClassifier(trainData);
         // index the train data
-        Indexer.index(trainData);
         if(isRebuild()) {
             trainTimer.resetAndStart();
             trainEstimateTimer.resetAndStop();
-            this.trainData = trainData;
+            this.trainData = Indexer.index(trainData);
             if(getEstimateOwnPerformance()) {
-                // each row should have its own iterator
-                searchers = new ArrayList<>(trainData.size());
-                for(Instance instance : trainData) {
-                    searchers.add(new Searcher(instance, new RandomIterator<>(rand, trainData, false)));
+                // need a matrix of pairwise distances between instances. The matrix will be symmetrical, therefore
+                // only need to consider instances in the lower or upper triangle discounting the main diagonal as
+                // this include self comparisons (going against LOOCV).
+                // the searches, one per instance to search their corresponding neighbourhood
+                searches = new ArrayList<>(trainData.size());
+                // the neighbourhood for each instance. As only the lower or upper triangle is being considered the
+                // neighbourhood can be expanded by one for every instance (i.e. row of the matrix) looked at,
+                // forming the lower triangle
+                final List<Indexer.IndexedInstance> neighbourhood = new ArrayList<>(trainData.size());
+                // method of iterating through the searches
+                targetSearchIterator = new RandomIterator<>(rand, new ArrayList<>(trainData.size()), true);
+                // for each row of the matrix (i.e. neighbourhood search)
+                for(int i = 0; i < trainData.size(); i++) {
+                    final Indexer.IndexedInstance instance = (Indexer.IndexedInstance) trainData.get(i);
+                    final ArrayList<Indexer.IndexedInstance> neighbourhoodCopy = new ArrayList<>(neighbourhood);
+                    final Search search = new Search(instance, neighbourhoodCopy,
+                                                     new RandomIterator<>(rand, neighbourhoodCopy, false));
+                    if(i > 0) {
+                        // neighbourhood is not empty, add the search to the iterator
+                        targetSearchIterator.add(search);
+                    }
+                    neighbourhood.add(instance);
+                    searches.add(search);
                 }
-                // generate an iterator to iterate over the rows
-                targetIterator = new RandomIterator<>(rand, searchers, true);
-                longestNeighbourComparisonTimeTrain = 0;
             }
+            comparisonCount = 0;
+            longestNeighbourComparisonTimeTrain = 0;
         }
         if(estimateOwnPerformance) {
             trainEstimateTimer.start();
             trainTimer.stop();
-            while(targetIterator.hasNext() && insideTrainTimeLimit(
+            while(targetSearchIterator.hasNext() && insideTrainTimeLimit(
                     trainTimer.getTime() + trainEstimateTimer.getTime() + longestNeighbourComparisonTimeTrain)) {
+                // start another stage
+                comparisonCount++;
+//                System.out.println(comparisonCount);
                 trainStageTimer.resetAndStart();
-                final Searcher targetSearcher = targetIterator.next();
-                final Iterator<Instance> targetSearcherCandidateIterator = targetSearcher.getIterator();
-                final Instance candidate = targetSearcherCandidateIterator.next();
-                if(!targetSearcherCandidateIterator.hasNext()) {
-                    targetIterator.remove();
+                // fetch the next target
+                final Search targetSearch = targetSearchIterator.next();
+                final Indexer.IndexedInstance target = (Indexer.IndexedInstance) targetSearch.getTarget();
+                // get the remaining candidate neighbours for the target search
+                final List<Indexer.IndexedInstance> neighbourhood = targetSearch.getNeighbourhood();
+                // pick one candidate
+                final Iterator<Indexer.IndexedInstance> neighbourIterator = targetSearch.getIterator();
+                // remove that candidate, as it should not be assessed as a potential neighbour again
+                final Indexer.IndexedInstance candidate = neighbourIterator.next();
+                // remove the search from the iterator if there's no more neighbours to assess
+                if(!neighbourIterator.hasNext()) {
+                    targetSearchIterator.remove();
                 }
-                if(!(candidate instanceof Indexer.IndexedInstance)) {
-                    throw new IllegalStateException("instance should be indexed");
-                }
-                final Searcher candidateSearcher = searchers.get(((Indexer.IndexedInstance) candidate).getIndex());
-                final Instance target = targetSearcher.getTarget();
-                if(candidate == target) {
-                    continue;
-                }
-                final double limit = Math.max(targetSearcher.getLimit(), candidateSearcher.getLimit());
+//                System.out.println(target.getIndex() + "," + candidate.getIndex());
+                // find the search associated with the candidate
+                final Search candidateSearch = searches.get(candidate.getIndex());
+                // find the max limit of both the candidate's neighbour search and the target's neighbour search
+                final double limit = Math.max(targetSearch.getLimit(), candidateSearch.getLimit());
+                // find the distance between the target and candidate
                 final double distance = distanceFunction.distance(target, candidate, limit);
-                targetSearcher.add(candidate, distance);
-                candidateSearcher.add(target, distance);
+                // add the candidate to the target's neighbourhood
+                targetSearch.add(candidate, distance);
+                // add the target to the candidate's neighbourhood
+                candidateSearch.add(target, distance);
+                // stage complete
                 trainStageTimer.stop();
-                longestNeighbourComparisonTimeTrain = Math.max(longestNeighbourComparisonTimeTrain,
-                                                               trainStageTimer.getTime());
+                longestNeighbourComparisonTimeTrain = Math.max(longestNeighbourComparisonTimeTrain, trainStageTimer.getTime());
                 trainEstimateTimer.lap();
+            }
+            // if all work was completed
+            if(!targetSearchIterator.hasNext()) {
+                // check every search has seen every possible neighbour
+                for(Search search : searches) {
+                    Assert.assertEquals(this.trainData.size() - 1, search.getNeighbourCount());
+                }
             }
             // get the prediction of each searcher and add to train results for LOOCV.
             // need to optimise k here, looking at most at k smallest distances for each searcher (i.e. each left out
             // instance.
-            final PrunedMultimap<Double, KResults> trainResultsMap = PrunedMultimap.descSoftSingle();
-            for(int k = kMax; k > 0; k++) {
-                final ClassifierResults results = new ClassifierResults();
-                for(Searcher searcher : searchers) {
-                    final PrunedMultimap<Double, Instance> distanceMap = searcher.getDistanceMap();
-                    distanceMap.setDiscardType(DiscardType.NEWEST);
-                    distanceMap.setHardLimit(k);
-                    distanceMap.prune();
-                    final double[] distribution = searcher.predict();
-                    final int prediction = Utilities.argMax(distribution, rand);
-                    final long testTime = searcher.getTestTime();
-                    final double classValue = searcher.getTarget().classValue();
-                    results.addPrediction(classValue, distribution, prediction, testTime, "");
+            if(optimiseK) {
+                final PrunedMultimap<Double, KNeighbourResults> trainResultsMap = PrunedMultimap.descSoftSingle();
+                for(int k = kMax; k > 0; k--) {
+                    final KNeighbourResults kNeighbourResults = buildKNeighbourResults(k);
+                    trainResultsMap.put(kNeighbourResults.getResults().getAcc(), kNeighbourResults);
                 }
-                trainResultsMap.put(results.getAcc(), new KResults(results, k));
+                final KNeighbourResults bestKNeighbourResults = RandomUtils.choice(trainResultsMap.values(), getRandom());
+                setK(bestKNeighbourResults.k);
+                trainResults = bestKNeighbourResults.results;
+            } else {
+                trainResults = buildKNeighbourResults(k).getResults();
             }
-            final KResults bestKResults = RandomUtils.choice(trainResultsMap.values(), getRandom());
-            setK(bestKResults.k);
-            trainResults = bestKResults.results;
             ResultUtils.setInfo(trainResults, this, trainData);
             trainTimer.start();
             trainEstimateTimer.stop();
         }
+        setTraining(false);
         trainTimer.stop();
         trainEstimateTimer.checkStopped();
+        memoryWatcher.stop();
+    }
+
+    private KNeighbourResults buildKNeighbourResults(int k) {
+        final ClassifierResults results = new ClassifierResults();
+        for(Search search : searches) {
+            final PrunedMultimap<Double, Instance> distanceMap = search.getDistanceMap();
+            distanceMap.setDiscardType(DiscardType.NEWEST);
+            distanceMap.setHardLimit(k);
+            distanceMap.prune();
+            final double[] distribution = search.predict();
+            final int prediction = Utilities.argMax(distribution, rand);
+            final long testTime = search.getTestTime();
+            final double classValue = search.getTarget().classValue();
+            results.addPrediction(classValue, distribution, prediction, testTime, "");
+        }
+        return new KNeighbourResults(results, k);
     }
 
     @Override
-    public double[] distributionForInstance(final Instance instance) throws Exception {
+    public double[] distributionForInstance(final Instance target) throws Exception {
         testTimer.resetAndStart();
         longestNeighbourComparisonTimeTest = 0;
-        final Searcher searcher = new Searcher(instance, new RandomIterator<>(getRandom(), trainData));
-        while(searcher.getIterator().hasNext() && insideTestTimeLimit(
+        final List<Indexer.IndexedInstance> neighbourhood = new ArrayList<>(trainData);
+        final Iterator<Indexer.IndexedInstance> iterator = new RandomIterator<>(rand, neighbourhood, false);
+        final Search search = new Search(target, neighbourhood, iterator);
+        while(iterator.hasNext() && insideTestTimeLimit(
                 testTimer.getTime() + longestNeighbourComparisonTimeTest)) {
             testStageTimer.resetAndStart();
-            final Instance candidate = searcher.getIterator().next();
-            final double distance = distanceFunction.distance(instance, candidate, searcher.getLimit());
-            searcher.add(candidate, distance);
+            final Instance candidate = iterator.next();
+            final double distance = distanceFunction.distance(target, candidate, search.getLimit());
+            search.add(candidate, distance);
             testStageTimer.stop();
             longestNeighbourComparisonTimeTest = Math.max(longestNeighbourComparisonTimeTest, testStageTimer.getTime());
             testTimer.lap();
         }
-        final double[] distribution = searcher.predict();
+        final double[] distribution = search.predict();
         testTimer.stop();
         return distribution;
     }
@@ -193,11 +245,11 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         this.optimiseK = optimiseK;
     }
 
-    public int getkMax() {
+    public int getKMax() {
         return kMax;
     }
 
-    public void setkMax(final int kMax) {
+    public void setKMax(final int kMax) {
         this.kMax = kMax;
     }
 
@@ -244,13 +296,17 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         return trainEstimateTimer;
     }
 
+    @Override public MemoryWatcher getMemoryWatcher() {
+        return memoryWatcher;
+    }
+
     public void setDistanceFunction(final DistanceFunction distanceFunction) {
         this.distanceFunction = distanceFunction;
     }
 
-    private static class KResults {
+    private static class KNeighbourResults {
 
-        KResults(final ClassifierResults results, final int k) {
+        KNeighbourResults(final ClassifierResults results, final int k) {
             this.results = results;
             this.k = k;
         }
@@ -267,39 +323,47 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         }
     }
 
-    private class Searcher implements TimedTest {
+    private class Search implements TimedTest {
 
-        private Searcher(final Instance target, final Iterator<Instance> iterator) {
+        private Search(final Instance target, final List<Indexer.IndexedInstance> neighbourhood,
+                       final Iterator<Indexer.IndexedInstance> iterator) {
             this.target = target;
+            this.neighbourhood = neighbourhood;
             this.iterator = iterator;
             distanceMap = PrunedMultimap.asc();
-            if(optimiseK && kMax > 0) {
+            if(isTraining() && optimiseK && kMax > 0) {
                 distanceMap.setSoftLimit(kMax);
             } else if(k > 0) {
                 distanceMap.setSoftLimit(k);
             } else {
-                distanceMap.disableLimits();
+                distanceMap.disableSoftLimit();
             }
             limit = Double.POSITIVE_INFINITY;
         }
 
         private final Instance target;
         private final PrunedMultimap<Double, Instance> distanceMap;
-        private final Iterator<Instance> iterator;
+        private final List<Indexer.IndexedInstance> neighbourhood;
+        private final Iterator<Indexer.IndexedInstance> iterator;
         private final StopWatch testTimer = new StopWatch();
         private double limit;
+        private int neighbourCount = 0;
 
         public void add(Instance instance, double distance) {
             distanceMap.put(distance, instance);
-            limit = Math.min(limit, distanceMap.lastKey());
+            // only update the limit if we've hit max number of neighbours
+            if(distanceMap.size() >= distanceMap.getSoftLimit()) {
+                limit = Math.min(limit, distanceMap.lastKey());
+            }
+            neighbourCount++;
         }
 
         public Instance getTarget() {
             return target;
         }
 
-        public Iterator<Instance> getIterator() {
-            return iterator;
+        public List<Indexer.IndexedInstance> getNeighbourhood() {
+            return neighbourhood;
         }
 
         public double getLimit() {
@@ -318,6 +382,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
                 final Double distance = entry.getKey();
                 distribution[(int) neighbour.classValue()]++;
             }
+            ArrayUtilities.normaliseInPlace(distribution);
             testTimer.stop();
             return distribution;
         }
@@ -326,12 +391,33 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             return testTimer;
         }
 
+        @Override
+        public int hashCode() {
+            return target.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if(o instanceof Search) {
+                return hashCode() == o.hashCode();
+            } else {
+                return false;
+            }
+        }
+
         @Override public String toString() {
             return "Searcher{" +
                    "target=" + target +
                    '}';
         }
 
+        public int getNeighbourCount() {
+            return neighbourCount;
+        }
+
+        public Iterator<Indexer.IndexedInstance> getIterator() {
+            return iterator;
+        }
     }
 
     public DistanceFunction getDistanceFunction() {

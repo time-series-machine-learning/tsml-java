@@ -1,133 +1,121 @@
 package tsml.classifiers.distance_based.utils.iteration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.io.Serializable;
+import java.util.*;
+
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.random.BaseRandom;
-import utilities.ArrayUtilities;
+import tsml.classifiers.distance_based.utils.random.RandomSource;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public class RandomIterator<A> extends BaseRandom implements RandomIteration<A> {
+public class RandomIterator<A> extends BaseRandom implements RandomSource, DefaultListIterator<A>, Serializable {
 
-    private List<A> list;
-    private List<Integer> indices;
+    private Collection<A> collection;
     private int index = -1;
     private boolean nextIndexSetup = false;
-    protected boolean replacement = true;
-
-    protected boolean isNextIndexSetup() {
-        return nextIndexSetup;
-    }
-
-    protected RandomIterator<A> setNextIndexSetup(final boolean nextIndexSetup) {
-        this.nextIndexSetup = nextIndexSetup;
-        return this;
-    }
-
-    protected List<Integer> getIndices() {
-        return indices;
-    }
-
-    protected RandomIterator<A> setIndices(final List<Integer> indices) {
-        this.indices = indices;
-        return this;
-    }
-
-    protected int getIndex() {
-        return index;
-    }
-
-    protected RandomIterator<A> setIndex(final int index) {
-        this.index = index;
-        return this;
-    }
+    protected boolean withReplacement = true;
+    private Iterator<A> iterator;
 
     public boolean withReplacement() {
-        return replacement;
+        return withReplacement;
     }
 
-    public RandomIterator<A> setReplacement(final boolean replacement) {
-        this.replacement = replacement;
-        return this;
+    public void setWithReplacement(final boolean withReplacement) {
+        this.withReplacement = withReplacement;
     }
 
-    public List<A> getList() {
-        return list;
+    public Collection<A> getCollection() {
+        return collection;
     }
 
-    public void setList(final List<A> list) {
-        Assert.assertNotNull(list);
-        this.list = list;
-        setIndices(ArrayUtilities.sequence(list.size()));
+    public void setCollection(final Collection<A> collection) {
+        Assert.assertNotNull(collection);
+        this.collection = collection;
     }
-
 
     protected void setRandomIndex() {
-        if(!isNextIndexSetup()) {
-            if(getIndices().isEmpty()) {
-                setIndex(-1);
+        if(!nextIndexSetup) {
+            if(collection.isEmpty()) {
+                index = -1;
             } else {
-                setIndex(getRandom().nextInt(getIndices().size()));
+                index = getRandom().nextInt(collection.size());
             }
-            setNextIndexSetup(true);
+            nextIndexSetup = true;
         }
     }
 
-    public RandomIterator(int seed) {
-        this(seed, new ArrayList<>());
-    }
-
     public RandomIterator(Random random) {
-        this(random, new ArrayList<>());
+        this(random, new ArrayList<>(), false);
     }
 
-    public RandomIterator(int seed, List<A> list) {
-        super(seed);
-        setList(list);
+    public RandomIterator(Random random, Collection<A> collection) {
+        this(random, collection, false);
     }
 
-    public RandomIterator(Random random, List<A> list) {
+    public RandomIterator(Random random, Collection<A> collection, boolean withReplacement) {
         super(random);
-        setList(list);
-    }
-
-    public RandomIterator(Random random, List<A> list, boolean replacement) {
-        this(random, list);
-        setReplacement(replacement);
+        setCollection(collection);
+        setWithReplacement(withReplacement);
     }
 
     public int nextIndex() {
         setRandomIndex();
-        return getIndex();
+        return index;
     }
 
     public A next() {
         int index = nextIndex();
-        if(withReplacement()) {
-            index = getIndices().remove(index);
+        nextIndexSetup = false;
+        A element = null;
+        if(collection instanceof List) {
+            element = ((List<A>) collection).get(index);
         } else {
-            index = getIndices().get(index);
+            iterator = collection.iterator();
+            for(int i = 0; i <= index; i++) {
+                if(!iterator.hasNext()) {
+                    throw new IllegalStateException();
+                }
+                element = iterator.next();
+            }
         }
-        A element = getList().get(index);
-        setNextIndexSetup(false);
+        if(!withReplacement) {
+            forceRemove();
+        }
         return element;
     }
 
     @Override
     public boolean hasNext() {
-        return !getIndices().isEmpty();
+        return !collection.isEmpty();
     }
 
-    public void remove() {
-        if(!withReplacement()) {
-            getIndices().remove(getIndex());
+    private void forceRemove() {
+        if(collection instanceof List) {
+            ((List<A>) collection).remove(index);
+        } else {
+            iterator.remove();
         }
     }
 
-    // todo checks on multiple next / remove calls
+    public void remove() {
+        if(withReplacement) {
+            forceRemove();
+        }
+    }
+
+    @Override public void set(final A a) {
+        if(collection instanceof List) {
+            ((List<A>) collection).set(index, a);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override public void add(final A a) {
+        collection.add(a);
+    }
 }

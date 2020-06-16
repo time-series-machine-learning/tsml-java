@@ -295,8 +295,13 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
         listMultimap.forEach(action);
     }
 
-    @Override
-    public String toString() {
-        return listMultimap.toString();
+    @Override public String toString() {
+        return "PrunedMultimap{" +
+               "softLimit=" + softLimit +
+               ", hardLimit=" + hardLimit +
+               ", size=" + listMultimap.size() +
+               ", discardType=" + discardType +
+               ", listMultimap=" + listMultimap +
+               '}';
     }
 }

@@ -1,15 +1,10 @@
 package tsml.classifiers.distance_based.utils.random;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Function;
+import java.util.*;
+
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
-import utilities.ArrayUtilities;
-import utilities.Utilities;
+import tsml.classifiers.distance_based.utils.iteration.RandomIterator;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -20,89 +15,57 @@ public class RandomUtils {
 
     private RandomUtils() {}
 
-    /**
-     * this function gets the next seed from the rng, sources a random number from the rng and then sets the seed.
-     * This ensures a sequence of seeds for each random number produced. This is helpful because usually you would
-     * have to track how many calls / of what type you make to the rng if you want to find what the 100th random
-     * number was. With this method, we set the seed each time before sourcing a number from the rng. These seeds can
-     * be logged for direct access to the 100th random number, for example - which is much more convenient. The
-     * result from this function contains both the sourced random number and the seed which has been applied to the
-     * rng. Take this seed and apply it to a different rng with the same rng source operation (e.g. nextInt) will
-     * return the same result.
-     * @param <A>
-     * @param random
-     * @param func
-     * @return
-     */
-    public static <A> RandomResult<A> getRandAndSwitchSeed(Random random,  Function<Random, A> func) {
-        int seed = random.nextInt(); // todo go through code and replace with this call?
-        random.setSeed(seed);
-        A result = func.apply(random);
-        return new RandomResult<A>(result, seed);
-    }
-
-    public static class RandomResult<A> {
-        private final A result;
-        private final int seed;
-
-        public RandomResult(A result, int seed) {
-            this.result = result;
-            this.seed = seed;
-        }
-
-        public A getResult() {
-            return result;
-        }
-
-        public int getSeed() {
-            return seed;
-        }
-    }
-
-    /**
-     * randomly choose n elements from a list
-     * @param list
-     * @param random
-     * @param numChoices
-     * @param <A>
-     * @return
-     */
-    public static <A> List<A> choice(List<A> list, Random random, int numChoices) {
+    public static List<Integer> choiceIndex(int size, Random random, int numChoices,
+                                                              boolean withReplacement) {
+        Assert.assertTrue(size > 0);
         Assert.assertNotNull(random);
-        Assert.assertNotNull(list);
         Assert.assertTrue(numChoices > 0);
-        final int size = list.size();
-        if(size <= 0) {
-            throw new IllegalArgumentException("empty list");
-        } else if(size == 1) {
-            return list;
-        } else if(numChoices == 1) {
-            int index = random.nextInt(size);
-            return new ArrayList<>(Collections.singletonList(list.get(index)));
+        if(size == 1) {
+            return new ArrayList<>(Collections.singletonList(0));
         }
-        final List<A> choices = new ArrayList<>();
-        final List<Integer> indices = CollectionUtils.sequence(list.size());
-        for(int i = 0; i < numChoices; i++) {
-            int indexOfIndex = random.nextInt(indices.size());
-            final int index = indices.remove(indexOfIndex);
-            final A value = list.get(index);
-            choices.add(value);
+        final List<Integer> indices = CollectionUtils.sequence(size);
+        final RandomIterator<Integer> iterator = new RandomIterator<>(random, indices);
+        final List<Integer> choices = new ArrayList<>();
+        for(int i = 0; i < size; i++) {
+            Assert.assertTrue(iterator.hasNext());
+            choices.add(iterator.next());
         }
         return choices;
     }
 
-    /**
-     * randomly choose 1 element from  a list
-     * @param list
-     * @param random
-     * @param <A>
-     * @return
-     */
-    public static <A> A choice(List<A> list, Random random) {
-        return choice(list, random, 1).get(0);
+    public static Integer choiceIndex(int size, Random random) {
+        return choiceIndex(size, random, 1, false).get(0);
     }
 
-    public static <A> A choice(Iterable<A> iterable, Random random) {
-        return choice(ArrayUtilities.drain(iterable), random);
+    public static List<Integer> choiceIndex(int size, Random random, int numChoices) {
+        return choiceIndex(size, random, numChoices, false);
     }
+
+    public static <A> List<A> choice(Collection<A> collection, Random random, int numChoices, boolean withReplacement) {
+        final List<Integer> indices = choiceIndex(collection.size(), random, numChoices, withReplacement);
+        final List<A> chosen = new ArrayList<>();
+        for(Integer index : indices) {
+            A element = null;
+            if(collection instanceof List) {
+                element = ((List<A>) collection).get(index);
+            } else {
+                final Iterator<A> iterator = collection.iterator();
+                for(int i = 0; i <= index; i++) {
+                    Assert.assertTrue(iterator.hasNext());
+                    element = iterator.next();
+                }
+            }
+            chosen.add(element);
+        }
+        return chosen;
+    }
+
+    public static <A> List<A> choice(Collection<A> collection, Random random, int numChoices) {
+        return choice(collection, random, numChoices, false);
+    }
+
+    public static <A> A choice(Collection<A> collection, Random random) {
+        return choice(collection, random, 1, false).get(0);
+    }
+
 }

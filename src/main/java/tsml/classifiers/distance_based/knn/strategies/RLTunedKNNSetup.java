@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.dimensions.IndexedParameterSpace;
@@ -14,7 +15,6 @@ import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
-import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instances;
 
@@ -125,8 +125,8 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         public Iterator<EnhancedAbstractClassifier> apply(List<EnhancedAbstractClassifier> benchmarks) {
             // use a random iterator to explore the improveable benchmarks
             getLogger().info(() -> "building new improveable benchmark iterator for " + benchmarks.size() + " benchmarks");
-            RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(
-                rlTunedClassifier.getSeed(), new ArrayList<>(
+            RandomIterator<EnhancedAbstractClassifier> iterator = new RandomIterator<>(new Random(
+                rlTunedClassifier.getSeed()), new ArrayList<>(
                 RLTunedKNNSetup.this.improveableBenchmarks));
             return iterator;
         }

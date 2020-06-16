@@ -30,6 +30,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
+    // training / testing mode
+    private boolean training = false;
 
     public BaseClassifier() {
 
@@ -41,6 +43,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
+        setTraining(true);
         if(rebuild) {
             logger.info("fresh build");
             Assert.assertNotNull(trainData);
@@ -106,4 +109,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public abstract double[] distributionForInstance(final Instance instance) throws Exception;
 
+    public boolean isTraining() {
+        return training;
+    }
+
+    protected void setTraining(final boolean training) {
+        this.training = training;
+    }
 }
