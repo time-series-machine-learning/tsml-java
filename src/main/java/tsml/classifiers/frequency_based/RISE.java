@@ -148,8 +148,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private long lastCheckpointTime = 0;    //Time since last checkpoint in nanos.
 
     //Updated work
+    public boolean printStartEndPoints = false;
     private ArrayList<int[]> startEndPoints = null;
-    private int intervalMethod = 3;
+    private int intervalMethod = 4;
+    private int partitions = 2;
 
 
 
@@ -952,14 +954,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             startEndPoints.add(new int[2]);
             if(startEndPoints.size() == 1){
                 startEndPoints.get(startEndPoints.size() - 1)[0] = 0;
-                startEndPoints.get(startEndPoints.size() - 1)[1] = data.numAttributes() - 1;
+                startEndPoints.get(startEndPoints.size() - 1)[1] = data.numAttributes() - 2;
             }else{
-                startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((data.numAttributes() - 1)- minIntervalLength);
+                startEndPoints.get(startEndPoints.size() - 1)[0]=rand.nextInt((data.numAttributes() - 2)- minIntervalLength);
                 //This avoid calling nextInt(0)
-                if(startEndPoints.get(startEndPoints.size() - 1)[0] == (data.numAttributes() - 1) - 1 - minIntervalLength)
+                if(startEndPoints.get(startEndPoints.size() - 1)[0] == (data.numAttributes() - 2) - 1 - minIntervalLength)
                     startEndPoints.get(startEndPoints.size() - 1)[1] = data.numAttributes() - 1 - 1;
                 else{
-                    startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0]);
+                    startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 2) - startEndPoints.get(startEndPoints.size() - 1)[0]);
                     if(startEndPoints.get(startEndPoints.size() - 1)[1] < minIntervalLength)
                         startEndPoints.get(startEndPoints.size() - 1)[1] = minIntervalLength;
                     startEndPoints.get(startEndPoints.size() - 1)[1] += startEndPoints.get(startEndPoints.size() - 1)[0];
@@ -968,15 +970,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
         if(x == 1){
             startEndPoints.add(new int[2]);
-            startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
+            startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 2) - minIntervalLength); //Start point
             int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
-                    ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
+                    ? maxIntervalLength : (data.numAttributes() - 2) - startEndPoints.get(startEndPoints.size() - 1)[0];
             int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
             startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
         }
         if(x == 2){
             startEndPoints.add(new int[2]);
-            startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength) + minIntervalLength;
+            startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 2) - minIntervalLength) + minIntervalLength;
             int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
                     ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
             int length;
@@ -1002,7 +1004,40 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 startEndPoints.get(startEndPoints.size() - 1)[0] = startEndPoints.get(startEndPoints.size() - 1)[1] - length;
             }
         }
+        if(x == 4){
+            //Need to error check partitions <= numAtts;
+            int n = startEndPoints.size();
+            int length = rand.nextInt((data.numAttributes() - 2) - minIntervalLength);
+            //Which one we're on.
+            double temp = (double)n/(double)partitions;
+            temp = temp - Math.floor(temp);
+            temp = temp + ((1.0/partitions)/2);
+            //Anchor point.
+            double anchorPoint = Math.floor(((data.numAttributes() - 1)/1.0)*temp);
+            //StartEndPoints.
+            startEndPoints.add(new int[2]);
+            startEndPoints.get(startEndPoints.size() - 1)[0] = (int) Math.floor(anchorPoint - (length * temp));
+            startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
+            //System.out.println("%: " + temp + "\tAnchor: " + anchorPoint + "\tStartEnd: " + (int) Math.floor(anchorPoint - (length * temp)) + " - " + (startEndPoints.get(startEndPoints.size() - 1)[0] + length));
+        }
+        if(printStartEndPoints){
+            printStartEndPoints();
+        }
         return startEndPoints;
+    }
+
+    private void printStartEndPoints() {
+        for (int i = 0; i < data.numAttributes() - 1; i++) {
+            if(i < startEndPoints.get(startEndPoints.size() - 1)[0] || i > startEndPoints.get(startEndPoints.size() - 1)[1]){
+                System.out.print("0");
+            }else{
+                System.out.print("1");
+            }
+            if(i < data.numAttributes() - 1){
+                System.out.print(", ");
+            }
+        }
+        System.out.println();
     }
 
     private boolean getTuneTransform(){
@@ -1420,8 +1455,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     public static void main(String[] args) {
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[2] + "/" + DatasetLists.tscProblems112[2] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[2] + "/" + DatasetLists.tscProblems112[2] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[11] + "/" + DatasetLists.tscProblems112[11] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[11] + "/" + DatasetLists.tscProblems112[11] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
@@ -1436,18 +1471,19 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         System.out.println("Number of attributes: " + (data.numAttributes() - 1));
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
-        /*try {
+        try {
             RISE = new RISE();
-            RISE.setTransformType(TransformType.AF);
+            RISE.setTransformType(TransformType.ACF_FFT);
+            RISE.setIntervalMethod(4);
             cr = sse.evaluate(RISE, data);
-            System.out.println("AF");
+            System.out.println(RISE.getTransformType().toString());
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
-        }*/
+        }
 
-        try {
+        /*try {
             RISE = new RISE();
             RISE.setTuneTransform(true);
             RISE.setTransformsToTuneWith(new TransformType[]{TransformType.FFT, TransformType.ACF});
@@ -1457,7 +1493,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
 
         /*RISE = new RISE();
         for (int i = 0; i < TransformType.values().length; i++) {

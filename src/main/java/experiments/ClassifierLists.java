@@ -226,7 +226,7 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE"};
+    public static String[] frequency= {"RISE", "RISE_option4"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -234,6 +234,9 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "RISE":
+                c=new RISE();
+                break;
+            case "RISE_option4":
                 c=new RISE();
                 break;
             default:
