@@ -141,7 +141,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
 //            isBuilt()
 //            &&
-            !skipFinalCheckpoint);
+                                                                !skipFinalCheckpoint);
 //        memoryWatcher.unsuspend();
 //        trainTimer.unsuspend(); todo fix
         return result;

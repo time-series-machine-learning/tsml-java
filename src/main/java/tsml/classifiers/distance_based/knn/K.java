@@ -120,7 +120,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
                     final Indexer.IndexedInstance instance = (Indexer.IndexedInstance) trainData.get(i);
                     final ArrayList<Indexer.IndexedInstance> neighbourhoodCopy = new ArrayList<>(neighbourhood);
                     final Search search = new Search(instance, neighbourhoodCopy,
-                                                     new RandomIterator<>(rand, neighbourhoodCopy, false));
+                                                     new RandomIterator<>(rand, neighbourhoodCopy, false), true);
                     if(i > 0) {
                         // neighbourhood is not empty, add the search to the iterator
                         targetSearchIterator.add(search);
@@ -238,7 +238,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         longestNeighbourComparisonTimeTest = 0;
         final List<Indexer.IndexedInstance> neighbourhood = new ArrayList<>(trainData);
         final Iterator<Indexer.IndexedInstance> iterator = new RandomIterator<>(rand, neighbourhood, false);
-        final Search search = new Search(target, neighbourhood, iterator);
+        final Search search = new Search(target, neighbourhood, iterator, false);
         while(iterator.hasNext() && insideTestTimeLimit(
                 testTimer.getTime() + longestNeighbourComparisonTimeTest)) {
             testStageTimer.resetAndStart();
@@ -351,12 +351,12 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
     private class Search implements TimedTest {
 
         private Search(final Instance target, final List<Indexer.IndexedInstance> neighbourhood,
-                       final Iterator<Indexer.IndexedInstance> iterator) {
+                       final Iterator<Indexer.IndexedInstance> iterator, boolean training) {
             this.target = target;
             this.neighbourhood = neighbourhood;
             this.iterator = iterator;
             distanceMap = PrunedMultimap.asc();
-            if(isTraining() && optimiseK && kMax > 0) {
+            if(training && optimiseK && kMax > 0) {
                 distanceMap.setSoftLimit(kMax);
             } else if(k > 0) {
                 distanceMap.setSoftLimit(k);

@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.utils.logging;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
@@ -42,14 +43,14 @@ public class LogUtils {
 
         @Override
         public String format(final LogRecord logRecord) {
-//            String separator = " | ";
+            String separator = " | ";
 //            return logRecord.getSequenceNumber() + separator +
 //                logRecord.getLevel() + separator +
 //                logRecord.getLoggerName() + separator +
 //                logRecord.getSourceClassName() + separator +
 //                logRecord.getSourceMethodName() + System.lineSeparator() +
 //                logRecord.getMessage() + System.lineSeparator();
-            return logRecord.getMessage() + System.lineSeparator();
+            return LocalDateTime.now() + separator + logRecord.getLoggerName() + separator + logRecord.getMessage() + System.lineSeparator();
         }
     }
 
@@ -85,7 +86,7 @@ public class LogUtils {
 
     public static void logTimeContract(long timeNanos, long limitNanos, Logger logger, String name) {
         if(limitNanos > 0) {
-            logger.info(() -> {
+            logger.fine(() -> {
                 Duration limit = Duration.ofNanos(limitNanos);
                 Duration time = Duration.ofNanos(timeNanos);
                 Duration diff = limit.minus(time);

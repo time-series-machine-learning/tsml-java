@@ -68,6 +68,13 @@ public class Utils {
         System.out.println("overall mem: " + overallMemoryWatcher.toString());
     }
 
+    public static void addPredictions(Classifier classifier, Instances testData, ClassifierResults results)
+            throws Exception {
+        for(Instance test : testData) {
+            addPrediction(classifier, test, results);
+        }
+    }
+
     public static void addPrediction(Classifier classifier, Instance test, ClassifierResults results) throws Exception {
         final double classValue = test.classValue();
         test.setClassMissing();

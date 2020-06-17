@@ -1,16 +1,16 @@
 package tsml.classifiers.distance_based.utils.classifier_mixins;
 
 import evaluation.storage.ClassifierResults;
+
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.random.RandomSource;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -25,13 +25,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     Loggable, DefaultClassifier {
 
     // method of logging
-    private Logger logger = LogUtils.buildLogger(this);
+    protected final static Logger logger = LogUtils.buildLogger(MethodHandles.lookup().lookupClass());
     // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
-    // training / testing mode
-    private boolean training = false;
 
     public BaseClassifier() {
 
@@ -43,9 +41,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        setTraining(true);
         if(rebuild) {
-            logger.info("fresh build");
+            logger.fine("building from scratch");
             Assert.assertNotNull(trainData);
             // reset train results
             trainResults = new ClassifierResults();
@@ -62,7 +59,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void setClassifierName(String classifierName) {
         Assert.assertNotNull(classifierName);
         super.setClassifierName(classifierName);
-        logger = LogUtils.buildLogger(classifierName);
     }
 
     @Override
@@ -109,11 +105,4 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public abstract double[] distributionForInstance(final Instance instance) throws Exception;
 
-    public boolean isTraining() {
-        return training;
-    }
-
-    protected void setTraining(final boolean training) {
-        this.training = training;
-    }
 }

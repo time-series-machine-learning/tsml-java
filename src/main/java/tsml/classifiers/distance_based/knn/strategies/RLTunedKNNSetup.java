@@ -225,14 +225,14 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
             if(!isImproveable(classifier)) {
                 // put it in the unimproveable pile
                 rlTunedClassifier
-                    .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
+                        .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
                 CollectionUtils.put(classifier, unimproveableBenchmarks);
                 // we won't be using that benchmark again
                 result = false;
             } else {
                 // else the classifier can be improved, so put it in the improveable pile
                 rlTunedClassifier
-                    .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
+                        .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
                 CollectionUtils.put(classifier, nextImproveableBenchmarks);
                 // we will be using that benchmark again
                 result = true;
