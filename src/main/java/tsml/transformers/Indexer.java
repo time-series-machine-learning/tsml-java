@@ -4,6 +4,9 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Purpose: transforms a set of instances into a set of hashed instances. This allows them to reliably be cached.
  * <p>
@@ -90,6 +93,7 @@ public class Indexer implements TrainableTransformer {
         @Override public String toString() {
             return "IndexedInstance{" +
                    "index=" + index +
+                   ", label=" + classValue() +
                    '}';
         }
 
@@ -129,7 +133,13 @@ public class Indexer implements TrainableTransformer {
         return instance.toDoubleArray();
     }
 
-    public static void index(Instances instances) {
+    public static List<IndexedInstance> index(Instances instances) {
         new Indexer().fit(instances);
+        List<IndexedInstance> list = new ArrayList<>();
+        for(Instance instance : instances) {
+            list.add((IndexedInstance) instance);
+        }
+        return list;
     }
+
 }

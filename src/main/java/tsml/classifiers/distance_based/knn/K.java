@@ -57,6 +57,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
 //                k.setOptimiseK(false);
 //                k.setKMax(-1);
                 k.setKMax(10);
+                k.setComparisonCountLimit(-1);
                 k.setOptimiseK(true);
                 k.setDistanceFunction(new EuclideanDistance());
                 return k;
@@ -88,6 +89,8 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
     private long longestNeighbourComparisonTimeTrain;
     private long longestNeighbourComparisonTimeTest;
     private long comparisonCount;
+    private long comparisonCountLimit;
+
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
@@ -133,7 +136,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             trainEstimateTimer.start();
             trainTimer.stop();
             while(targetSearchIterator.hasNext() && insideTrainTimeLimit(
-                    trainTimer.getTime() + trainEstimateTimer.getTime() + longestNeighbourComparisonTimeTrain)) {
+                    trainTimer.getTime() + trainEstimateTimer.getTime() + longestNeighbourComparisonTimeTrain) && insideComparisonCountLimit()) {
                 // start another stage
                 comparisonCount++;
 //                System.out.println(comparisonCount);
@@ -189,6 +192,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             } else {
                 trainResults = buildKNeighbourResults(k).getResults();
             }
+            System.out.println(comparisonCount);
             ResultUtils.setInfo(trainResults, this, trainData);
             trainTimer.start();
             trainEstimateTimer.stop();
@@ -197,6 +201,14 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         trainTimer.stop();
         trainEstimateTimer.checkStopped();
         memoryWatcher.stop();
+    }
+
+    public boolean hasComparisonCountLimit() {
+        return comparisonCountLimit > 0;
+    }
+
+    public boolean insideComparisonCountLimit() {
+        return !hasComparisonCountLimit() || comparisonCount < comparisonCountLimit;
     }
 
     private KNeighbourResults buildKNeighbourResults(int k) {
@@ -213,6 +225,11 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             results.addPrediction(classValue, distribution, prediction, testTime, "");
         }
         return new KNeighbourResults(results, k);
+    }
+
+    public static int getMaxComparisonCount(int numInstances) {
+        // the size of the lower triangle of the distance matrix
+        return numInstances * (numInstances + 1) / 2 - numInstances;
     }
 
     @Override
@@ -304,6 +321,14 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         this.distanceFunction = distanceFunction;
     }
 
+    public long getComparisonCountLimit() {
+        return comparisonCountLimit;
+    }
+
+    public void setComparisonCountLimit(final long comparisonCountLimit) {
+        this.comparisonCountLimit = comparisonCountLimit;
+    }
+
     private static class KNeighbourResults {
 
         KNeighbourResults(final ClassifierResults results, final int k) {
@@ -377,12 +402,16 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         public double[] predict() {
             testTimer.resetAndStart();
             double[] distribution = new double[getNumClasses()];
-            for(Entry<Double, Instance> entry : distanceMap.entries()) {
-                final Instance neighbour = entry.getValue();
-                final Double distance = entry.getKey();
-                distribution[(int) neighbour.classValue()]++;
+            if(distanceMap.isEmpty()) {
+                distribution = ArrayUtilities.uniformDistribution(distribution.length);
+            } else {
+                for(Entry<Double, Instance> entry : distanceMap.entries()) {
+                    final Instance neighbour = entry.getValue();
+                    final Double distance = entry.getKey();
+                    distribution[(int) neighbour.classValue()]++;
+                }
+                ArrayUtilities.normaliseInPlace(distribution);
             }
-            ArrayUtilities.normaliseInPlace(distribution);
             testTimer.stop();
             return distribution;
         }

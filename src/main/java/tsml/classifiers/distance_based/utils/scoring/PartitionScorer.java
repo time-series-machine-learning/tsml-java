@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.scoring;
 
-import utilities.Utilities;
 import weka.core.Instances;
 
 import java.util.List;
@@ -8,10 +7,10 @@ import java.util.List;
 /**
  * Purpose: score the partitioning of some data into subsets.
  */
-public interface Scorer {
+public interface PartitionScorer {
     double findScore(Instances parent, List<Instances> children);
 
-    class GiniImpurity implements Scorer {
+    class GiniImpurity implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
@@ -19,7 +18,7 @@ public interface Scorer {
         }
     }
 
-    class InfoGain implements Scorer {
+    class InfoGain implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
@@ -27,7 +26,7 @@ public interface Scorer {
         }
     }
 
-    class GiniImpurityEntropy implements Scorer {
+    class GiniImpurityEntropy implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
@@ -35,7 +34,7 @@ public interface Scorer {
         }
     }
 
-    class InfoGainEntropy implements Scorer {
+    class InfoGainEntropy implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {

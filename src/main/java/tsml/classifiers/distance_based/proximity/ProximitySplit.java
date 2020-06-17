@@ -15,8 +15,8 @@ import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
-import tsml.classifiers.distance_based.utils.scoring.Scorer;
-import tsml.classifiers.distance_based.utils.scoring.Scorer.GiniImpurityEntropy;
+import tsml.classifiers.distance_based.utils.scoring.PartitionScorer;
+import tsml.classifiers.distance_based.utils.scoring.PartitionScorer.GiniImpurityEntropy;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -39,7 +39,7 @@ public class ProximitySplit implements DefaultClassifier {
                 proximitySplit.setRandomTieBreakDistances(true);
                 proximitySplit.setRandomTieBreakR(false);
                 proximitySplit.setEarlyAbandonDistances(false);
-                proximitySplit.setScorer(new GiniImpurityEntropy());
+                proximitySplit.setPartitionScorer(new GiniImpurityEntropy());
                 proximitySplit.setScore(-1);
                 proximitySplit.setRandomR(false);
                 proximitySplit.setExemplarCheckOriginal(true);
@@ -96,7 +96,7 @@ public class ProximitySplit implements DefaultClassifier {
     // the random source
     private Random random;
     // a method of scoring the split of data into partitions
-    private Scorer scorer;
+    private PartitionScorer partitionScorer;
     // the score of this split
     private double score;
     // the data at this split (i.e. before being partitioned)
@@ -105,9 +105,9 @@ public class ProximitySplit implements DefaultClassifier {
     private List<Instances> partitions;
     // the distance function space builders. Several distance function spaces depend on the input data to compute
     // parameters. These builders take a set of data and compute the spaces from the data
-    private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
+    private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
     // the distance function space builder chosen for this split
-    private DistanceFunctionSpaceBuilder distanceFunctionSpaceBuilder;
+    private ParamSpaceBuilder distanceFunctionSpaceBuilder;
     // the distance function space chosen for this split
     private ParamSpace distanceFunctionSpace;
     // whether to match the original Proximity Forest results exactly. This is only useful if mirroring PF parameters
@@ -237,7 +237,7 @@ public class ProximitySplit implements DefaultClassifier {
                 ((DistanceMeasureable) distanceFunction).setTraining(false);
             }
             // find the score of this split attempt, i.e. how good it is
-            double score = scorer.findScore(data, partitions);
+            double score = partitionScorer.findScore(data, partitions);
             // chuck into a container to keep for later
             SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions,
                 score);
@@ -305,13 +305,13 @@ public class ProximitySplit implements DefaultClassifier {
         return stringBuilder.toString();
     }
 
-    public Scorer getScorer() {
-        return scorer;
+    public PartitionScorer getPartitionScorer() {
+        return partitionScorer;
     }
 
-    public void setScorer(final Scorer scorer) {
-        Assert.assertNotNull(scorer);
-        this.scorer = scorer;
+    public void setPartitionScorer(final PartitionScorer partitionScorer) {
+        Assert.assertNotNull(partitionScorer);
+        this.partitionScorer = partitionScorer;
     }
 
     public Random getRandom() {
@@ -471,12 +471,12 @@ public class ProximitySplit implements DefaultClassifier {
         this.r = r;
     }
 
-    public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
+    public List<ParamSpaceBuilder> getDistanceFunctionSpaceBuilders() {
         return distanceFunctionSpaceBuilders;
     }
 
     public void setDistanceFunctionSpaceBuilders(
-        final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
+        final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
         Assert.assertNotNull(distanceFunctionSpaceBuilders);
         Assert.assertFalse(distanceFunctionSpaceBuilders.isEmpty());
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
@@ -490,7 +490,7 @@ public class ProximitySplit implements DefaultClassifier {
         this.randomTieBreakR = randomTieBreakR;
     }
 
-    public DistanceFunctionSpaceBuilder getDistanceFunctionSpaceBuilder() {
+    public ParamSpaceBuilder getDistanceFunctionSpaceBuilder() {
         return distanceFunctionSpaceBuilder;
     }
 

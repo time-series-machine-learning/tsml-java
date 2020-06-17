@@ -55,17 +55,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 proximityTree.setTrainTimeLimit(0);
                 proximityTree.setTestTimeLimit(0);
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
-                        DistanceFunctionSpaceBuilder.ED,
-                        DistanceFunctionSpaceBuilder.FULL_DTW,
-                        DistanceFunctionSpaceBuilder.DTW,
-                        DistanceFunctionSpaceBuilder.FULL_DDTW,
-                        DistanceFunctionSpaceBuilder.DDTW,
-                        DistanceFunctionSpaceBuilder.WDTW,
-                        DistanceFunctionSpaceBuilder.WDDTW,
-                        DistanceFunctionSpaceBuilder.LCSS,
-                        DistanceFunctionSpaceBuilder.ERP,
-                        DistanceFunctionSpaceBuilder.TWED,
-                        DistanceFunctionSpaceBuilder.MSM
+                        ParamSpaceBuilder.ED,
+                        ParamSpaceBuilder.FULL_DTW,
+                        ParamSpaceBuilder.DTW,
+                        ParamSpaceBuilder.FULL_DDTW,
+                        ParamSpaceBuilder.DDTW,
+                        ParamSpaceBuilder.WDTW,
+                        ParamSpaceBuilder.WDDTW,
+                        ParamSpaceBuilder.LCSS,
+                        ParamSpaceBuilder.ERP,
+                        ParamSpaceBuilder.TWED,
+                        ParamSpaceBuilder.MSM
                 ));
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.DEFAULT);
                 return proximityTree;
@@ -126,7 +126,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // whether to build in breadth first or depth first order
     private boolean breadthFirst;
     // the list of distance function space builders to produce distance functions in splits
-    private List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders;
+    private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
     // method of setting up split config
     private Configurer<ProximitySplit> proximitySplitConfig;
 
@@ -140,12 +140,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.proximitySplitConfig = proximitySplitConfig;
     }
 
-    public List<DistanceFunctionSpaceBuilder> getDistanceFunctionSpaceBuilders() {
+    public List<ParamSpaceBuilder> getDistanceFunctionSpaceBuilders() {
         return distanceFunctionSpaceBuilders;
     }
 
     public ProximityTree setDistanceFunctionSpaceBuilders(
-            final List<DistanceFunctionSpaceBuilder> distanceFunctionSpaceBuilders) {
+            final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
         return this;
     }
