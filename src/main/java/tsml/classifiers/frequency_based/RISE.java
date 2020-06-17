@@ -23,6 +23,7 @@ import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Tuneable;
+import tsml.classifiers.distance_based.knn.KNN;
 import tsml.filters.*;
 import tsml.transformers.*;
 import weka.classifiers.AbstractClassifier;
@@ -82,6 +83,8 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 
 public class RISE extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
 
+    boolean tune = false;
+    TransformType[] transforms = {TransformType.ACF_FFT};
     //maxIntervalLength is used when contract is set. Via the timer the interval space is constricted to prevent breach
     // on contract.
     private int maxIntervalLength = 0;
@@ -116,7 +119,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private ArrayList<ArrayList<Integer>> intervalsAttIndexes = null;
     private ArrayList<Integer> rawIntervalIndexes = null;
     private PowerSpectrum PS;
-    private TransformType transformType = TransformType.ACF_PS;
+    private TransformType transformType = TransformType.ACF_FFT;
     private Instances data = null;
 
     /** If trainAccuracy is required, there are two mechanisms to obtain it:
@@ -146,7 +149,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     //Updated work
     private ArrayList<int[]> startEndPoints = null;
-    private int intervalMethod = 0;
+    private int intervalMethod = 3;
 
 
 
@@ -165,7 +168,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         this(0);
     }
 
-    public enum TransformType {ACF, FACF, PS, FFT, MFCC, SPEC, AF, FACF_FFT, ACF_FFT, ACF_PS, ACF_PS_AR, MFCC_FFT, MFCC_ACF, SPEC_MFCC, AF_MFCC, AF_FFT, AF_FFT_MFCC}
+    public enum TransformType {ACF, FFT, MFCC, SPEC, AF, ACF_FFT, MFCC_FFT, MFCC_ACF, SPEC_MFCC, AF_MFCC, AF_FFT, AF_FFT_MFCC}
 
     /**
      * Function used to reset internal state of classifier.
@@ -272,6 +275,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         if(DEFAULT_MAXLAG < maxLag)
             maxLag = DEFAULT_MAXLAG;
         return maxLag;
+    }
+
+    public TransformType getTransformType(){
+        return this.transformType;
     }
 
     /**
@@ -430,14 +437,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                     System.out.println(" Exception in Combo="+e+" max lag =" + (instances.get(0).numAttributes()-1/4));
                 }
                 break;
-            case PS:
-                try {
-                    PS.useFFT();
-                    temp = PS.transform(instances);
-                } catch (Exception ex) {
-                    System.out.println("FFT failed (could be build or classify) \n" + ex);
-                }
-                break;
             case FFT:
                 Fast_FFT Fast_FFT = new Fast_FFT();
                 try {
@@ -486,47 +485,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
-            case ACF_PS:
-                temp = transformInstances(instances, TransformType.PS);
-                temp.setClassIndex(-1);
-                temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
-                temp.setClassIndex(temp.numAttributes()-1);
-                break;
             case ACF_FFT:
                 temp = transformInstances(instances, TransformType.FFT);
                 temp.setClassIndex(-1);
                 temp.deleteAttributeAt(temp.numAttributes()-1);
                 temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.ACF));
-                temp.setClassIndex(temp.numAttributes()-1);
-                break;
-            case FACF_FFT:
-                temp = transformInstances(instances, TransformType.FACF);
-                try{
-                    temp.setClassIndex(-1);
-                }catch(Exception e){
-                    temp.setClassIndex(-1);
-                }
-                temp.setClassIndex(-1);
-                temp.deleteAttributeAt(temp.numAttributes()-1);
-                temp = Instances.mergeInstances(temp, transformInstances(instances, TransformType.FFT));
-                temp.setClassIndex(temp.numAttributes()-1);
-                break;
-            case ACF_PS_AR:
-                temp = transformInstances(instances, TransformType.ACF_PS);
-                temp.setClassIndex(-1);
-                temp.deleteAttributeAt(temp.numAttributes()-1);
-
-                ARMA arma=new ARMA();
-                arma.setMaxLag(getMaxLag(instances));
-                arma.setUseAIC(false);
-                Instances arData = null;
-                try {
-                    arData = arma.transform(instances);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                temp = Instances.mergeInstances(temp, arData);
                 temp.setClassIndex(temp.numAttributes()-1);
                 break;
             case SPEC_MFCC:
@@ -707,6 +670,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
         }
 
+        if(getTuneTransform()){
+            tuneTransform(data);
+        }
+
         if (getEstimateOwnPerformance()) {
             estimateOwnPerformance(data);
             initialise();
@@ -747,6 +714,11 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
             }
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
+            try{
+                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
+            }catch(Exception e){
+                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
+            }
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
             //Add dependant variable to model (time taken).
@@ -1031,6 +1003,54 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
         }
         return startEndPoints;
+    }
+
+    private boolean getTuneTransform(){
+        return tune;
+    }
+
+    public void setTransformsToTuneWith(TransformType[] transforms){
+        this.transforms = transforms;
+    }
+
+    public void setTuneTransform(boolean x){
+        tune = x;
+    }
+    private void tuneTransform(Instances trainingData){
+        System.out.println("Tuning");
+
+        ClassifierResults cr = new ClassifierResults();
+        double acc = 0.0;
+        double cAcc = 0.0;
+        int index = 0;
+        int numFolds = 5;
+        RISE c = new RISE();
+        for (int i = 0; i < transforms.length; i++) {
+            System.out.print(transforms[i] + "\t\t\t");
+            //Instances temp = ((RISE)c).transformInstances(trainingData, TransformType.values()[i]);
+            for (int j = 0; j < numFolds; j++) {
+                SingleSampleEvaluator sse = new SingleSampleEvaluator(j, false, false);
+                /*KNN knn = new KNN();
+                knn.setSeed(j);*/
+                ((RISE)c).setTransformType(transforms[i]);
+                try {
+                    sse.setPropInstancesInTrain(0.50);
+                    cr = sse.evaluate(c, trainingData);
+                    cAcc += cr.getAcc() * (1.0/numFolds);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.print(cAcc);
+            if(cAcc > acc){
+                System.out.print("\tTrue");
+                acc = cAcc;
+                index = i;
+            }
+            System.out.println();
+            cAcc = 0;
+        }
+        this.setTransformType(TransformType.values()[index]);
     }
 
     /**
@@ -1400,8 +1420,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     public static void main(String[] args) {
 
-        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[88] + "/" + DatasetLists.tscProblems112[88] + "_TRAIN");
-        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[88] + "/" + DatasetLists.tscProblems112[88] + "_TEST");
+        Instances dataTrain = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[2] + "/" + DatasetLists.tscProblems112[2] + "_TRAIN");
+        Instances dataTest = loadDataNullable("Z:/ArchiveData/Univariate_arff" + "/" + DatasetLists.tscProblems112[2] + "/" + DatasetLists.tscProblems112[2] + "_TEST");
         Instances data = dataTrain;
         data.addAll(dataTest);
 
@@ -1429,14 +1449,26 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
         try {
             RISE = new RISE();
-            RISE.setTransformType(TransformType.AF_FFT_MFCC);
+            RISE.setTuneTransform(true);
+            RISE.setTransformsToTuneWith(new TransformType[]{TransformType.FFT, TransformType.ACF});
             cr = sse.evaluate(RISE, data);
-            System.out.println("MFCC_AF");
+            System.out.println(RISE.getTransformType().toString());
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        /*RISE = new RISE();
+        for (int i = 0; i < TransformType.values().length; i++) {
+            RISE.setTransformType(TransformType.values()[i]);
+            try {
+                cr = sse.evaluate(RISE, data);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println(RISE.getTransformType().toString() + "\t" + "Acc: " + cr.getAcc() + "\t" + "Build time: " + cr.getBuildTimeInNanos());
+        }*/
     }
  }
 
