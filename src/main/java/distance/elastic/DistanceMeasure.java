@@ -292,7 +292,7 @@ public class DistanceMeasure {
 			}
 							
 			dist = this.distance(query, exemplar);
-			System.out.println(Utilities.roundExact(dist, 8));
+//			System.out.println(Utilities.roundExact(dist, 8));
 			if (dist < bsf) {
 				bsf = dist;
 				closest_nodes.clear();
