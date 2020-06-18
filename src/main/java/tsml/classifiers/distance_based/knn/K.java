@@ -197,7 +197,6 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             trainTimer.start();
             trainEstimateTimer.stop();
         }
-        setTraining(false);
         trainTimer.stop();
         trainEstimateTimer.checkStopped();
         memoryWatcher.stop();
