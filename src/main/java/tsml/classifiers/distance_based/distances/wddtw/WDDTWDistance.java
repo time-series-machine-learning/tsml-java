@@ -17,7 +17,6 @@ public class WDDTWDistance extends TransformedDistanceMeasure implements WDTW {
 
     // Global derivative function which is cached, i.e. if you ask it to convert the same instance twice it will
     // instead fetch from the cache the second time
-    private CachedTransformer derivativeCache;
     private WDTW wdtw;
 
     public WDDTWDistance() {
