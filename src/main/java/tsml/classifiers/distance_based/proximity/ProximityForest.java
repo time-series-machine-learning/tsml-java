@@ -115,17 +115,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        ORIG_R5_CV() {
-            @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = DEFAULT.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
-                proximityForest.setEstimateOwnPerformance(true);
-                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
-                return proximityForest;
-            }
-        },
         ORIG_R5_OOB_D() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
@@ -146,18 +135,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
                 proximityForest.setEstimateOwnPerformance(true);
                 proximityForest.setTrainEstimateMethod(new OutOfBag(true));
-                proximityForest.setUseDistributionInVoting(true);
-                return proximityForest;
-            }
-        },
-        ORIG_R5_CV_D() {
-            @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = DEFAULT.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
-                proximityForest.setEstimateOwnPerformance(true);
-                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
                 proximityForest.setUseDistributionInVoting(true);
                 return proximityForest;
             }
@@ -186,18 +163,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        ORIG_R5_CV_W() {
-            @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = DEFAULT.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
-                proximityForest.setEstimateOwnPerformance(true);
-                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
-                proximityForest.setWeightTreesByTrainEstimate(true);
-                return proximityForest;
-            }
-        },
         ORIG_R5_OOB_WD() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
@@ -221,6 +186,41 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setTrainEstimateMethod(new OutOfBag(true));
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV_D() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV_W() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }
         },
