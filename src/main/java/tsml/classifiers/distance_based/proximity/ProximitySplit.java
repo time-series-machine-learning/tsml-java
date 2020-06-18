@@ -7,8 +7,7 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.DefaultClassifier;
+import tsml.classifiers.distance_based.utils.classifier_mixins.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap.DiscardType;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -17,6 +16,7 @@ import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterat
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.scoring.PartitionScorer;
 import tsml.classifiers.distance_based.utils.scoring.PartitionScorer.GiniImpurityEntropy;
+import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -28,16 +28,17 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public class ProximitySplit implements DefaultClassifier {
+public class ProximitySplit extends BaseClassifier {
 
     // the various configs for this classifier
-    public enum Config implements Configurer<ProximitySplit> {
+    public enum Config implements EnumBasedClassifierConfigurer<ProximitySplit> {
         DEFAULT() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(5);
                 proximitySplit.setRandomTieBreakDistances(true);
-                proximitySplit.setRandomTieBreakR(false);
+                proximitySplit.setRandomTieBreakCandidates(false);
                 proximitySplit.setEarlyAbandonDistances(false);
                 proximitySplit.setPartitionScorer(new GiniImpurityEntropy());
                 proximitySplit.setScore(-1);
@@ -47,26 +48,29 @@ public class ProximitySplit implements DefaultClassifier {
                 return proximitySplit;
             }
         },
-        R1() {
+        ORIG_R1() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-                DEFAULT.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(1);
                 return proximitySplit;
             }
         },
-        R5() {
+        ORIG_R5() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-                DEFAULT.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(5);
                 return proximitySplit;
             }
         },
-        R10() {
+        ORIG_R10() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(final B proximitySplit) {
-                DEFAULT.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(10);
                 return proximitySplit;
             }
@@ -86,15 +90,13 @@ public class ProximitySplit implements DefaultClassifier {
     private boolean randomTieBreakDistances;
     // whether to random tie break R. R splits are considered during building this split. If multiple splits have the
     // same score, which should be chosen?
-    private boolean randomTieBreakR;
+    private boolean randomTieBreakCandidates;
     // the number of splits to consider for this split
     private int r;
     // whether to choose the number of splits randomly
     private boolean randomR; // todo random r
     // the max number of splits to be considered. This only matters when using randomR
     private int maxR;
-    // the random source
-    private Random random;
     // a method of scoring the split of data into partitions
     private PartitionScorer partitionScorer;
     // the score of this split
@@ -166,15 +168,8 @@ public class ProximitySplit implements DefaultClassifier {
     }
 
     @Override
-    public void buildClassifier(final Instances data) throws Exception {
-        setData(data);
-        buildClassifier();
-    }
-
-    /**
-     * build the split using the data provided
-     */
-    public void buildClassifier() throws Exception {
+    public void buildClassifier(Instances trainData) throws Exception {
+        Indexer.index(trainData);
         // small helper class to contain a split. This is used to temporarily hold split results while this function
         // compares R splits to pick the best
         class SplitCandididate {
@@ -185,7 +180,7 @@ public class ProximitySplit implements DefaultClassifier {
             public final double score;
 
             SplitCandididate(final List<List<Instance>> exemplars, final DistanceFunction distanceFunction,
-                final List<Instances> partitions, final double score) {
+                             final List<Instances> partitions, final double score) {
                 this.exemplars = exemplars;
                 this.distanceFunction = distanceFunction;
                 this.partitions = partitions;
@@ -196,7 +191,7 @@ public class ProximitySplit implements DefaultClassifier {
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(data);
         // make a map to store the best X splits
         final PrunedMultimap<Double, SplitCandididate> map = PrunedMultimap.desc();
-        if(randomTieBreakR) {
+        if(randomTieBreakCandidates) {
             // splits which score the same will be kept, then random choice between them
             map.setSoftLimit(1);
         } else {
@@ -208,7 +203,7 @@ public class ProximitySplit implements DefaultClassifier {
         // randomly set R if enabled
         if(randomR) {
             maxR = r;
-            r = random.nextInt(maxR + 1) + 1;
+            r = rand.nextInt(maxR + 1) + 1;
         }
         // for every split attempt
         for(int i = 0; i < r; i++) {
@@ -240,17 +235,24 @@ public class ProximitySplit implements DefaultClassifier {
             double score = partitionScorer.findScore(data, partitions);
             // chuck into a container to keep for later
             SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions,
-                score);
+                                                                     score);
             // add it to the map. The map will handle whether the split attempt was any good and should be kept
             map.put(score, splitCandididate);
         }
         // choose the best of the R splits. The map handles the tie break if necessary
-        SplitCandididate choice = RandomUtils.choice(new ArrayList<>(map.values()), random);
+        SplitCandididate choice = RandomUtils.choice(new ArrayList<>(map.values()), rand);
         // populate the fields of this split from the split attempt
         setPartitions(choice.partitions);
         setDistanceFunction(choice.distanceFunction);
         setExemplarGroups(choice.exemplars);
         setScore(choice.score);
+    }
+
+    /**
+     * build the split using the data provided
+     */
+    public void buildClassifier() throws Exception {
+        buildClassifier(data);
     }
 
     public Instances getPartitionFor(Instance instance) {
@@ -314,15 +316,6 @@ public class ProximitySplit implements DefaultClassifier {
         this.partitionScorer = partitionScorer;
     }
 
-    public Random getRandom() {
-        return random;
-    }
-
-    public void setRandom(final Random random) {
-        Assert.assertNotNull(random);
-        this.random = random;
-    }
-
     public double getScore() {
         return score;
     }
@@ -346,7 +339,7 @@ public class ProximitySplit implements DefaultClassifier {
                 final List<Instance> group = exemplarGroups.get(i);
                 // for each exemplar
                 for(Instance exemplar : group) {
-                    if(exemplar == instance) {
+                    if(exemplar.equals(instance)) {
                         return i;
                     }
                 }
@@ -370,7 +363,7 @@ public class ProximitySplit implements DefaultClassifier {
             // for each exemplar in the current group
             for(Instance exemplar : exemplarGroups.get(i)) {
                 // check the instance isn't an exemplar
-                if(exemplarCheckOriginal && exemplar == instance) {
+                if(exemplarCheckOriginal && exemplar.equals(instance)) {
                     return i;
                 }
                 // find the distance
@@ -482,12 +475,12 @@ public class ProximitySplit implements DefaultClassifier {
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
     }
 
-    public boolean isRandomTieBreakR() {
-        return randomTieBreakR;
+    public boolean isRandomTieBreakCandidates() {
+        return randomTieBreakCandidates;
     }
 
-    public void setRandomTieBreakR(final boolean randomTieBreakR) {
-        this.randomTieBreakR = randomTieBreakR;
+    public void setRandomTieBreakCandidates(final boolean randomTieBreakCandidates) {
+        this.randomTieBreakCandidates = randomTieBreakCandidates;
     }
 
     public ParamSpaceBuilder getDistanceFunctionSpaceBuilder() {

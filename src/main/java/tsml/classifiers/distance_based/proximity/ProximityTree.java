@@ -3,9 +3,7 @@ package tsml.classifiers.distance_based.proximity;
 import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.*;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.collections.tree.Tree;
@@ -17,6 +15,7 @@ import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
+import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -26,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Purpose: proximity tree
@@ -40,17 +40,19 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
-            Config.R1.applyConfigTo(classifier);
+            Config.ORIG_R5.applyConfigTo(classifier);
+            classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
         }
     }
 
     // the various configs for this classifier
-    public enum Config implements Configurer<ProximityTree> {
+    public enum Config implements EnumBasedClassifierConfigurer<ProximityTree> {
         DEFAULT() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = super.applyConfigTo(proximityTree);
                 proximityTree.setBreadthFirst(false);
                 proximityTree.setTrainTimeLimit(0);
                 proximityTree.setTestTimeLimit(0);
@@ -71,27 +73,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
-        R1() {
+        ORIG_R1() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-                Config.DEFAULT.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R1);
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R1);
                 return proximityTree;
             }
         },
-        R5() {
+        ORIG_R5() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-                Config.DEFAULT.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5);
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R5);
                 return proximityTree;
             }
         },
-        R10() {
+        ORIG_R10() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(final B proximityTree) {
-                Config.DEFAULT.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10);
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R10);
                 return proximityTree;
             }
         },
@@ -205,6 +210,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // add the root node to the build queue
             nodeBuildQueue.add(root);
         }
+        Indexer.index(trainData);
         while(
             // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
