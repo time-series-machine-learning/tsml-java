@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.*;
+
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
@@ -24,6 +26,8 @@ public class LogUtils {
             name = ((Class) object).getSimpleName();
         } else if(object instanceof String) {
             name = (String) object;
+        } else if(object instanceof EnhancedAbstractClassifier) {
+            name = ((EnhancedAbstractClassifier) object).getClassifierName();
         } else {
             name = object.getClass().getSimpleName() + "_" + object.hashCode();
         }
