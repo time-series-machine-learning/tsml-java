@@ -3,15 +3,8 @@ package tsml.classifiers.distance_based.proximity;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
+import tsml.classifiers.distance_based.utils.classifier_mixins.*;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.logging.LogUtils;
@@ -28,52 +21,228 @@ import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest,
-    TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory {
+                                                               TimedTrain, TimedTrainEstimate, TimedTest,
+                                                               WatchedMemory {
 
-    public enum Config implements Configurer<ProximityForest> {
+    public static void main(String[] args) throws Exception {
+        for(int i = 0; i < 1; i++) {
+            int seed = i;
+            ProximityForest classifier = new ProximityForest();
+            classifier.setEstimateOwnPerformance(false);
+            classifier.setSeed(seed);
+            Config.ORIG_R5_CV.applyConfigTo(classifier);
+            //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+            Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/uni2018/",
+                                                                          "GunPoint", seed));
+            //            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+        }
+        //        Thread.sleep(10000);
+    }
+
+    public enum Config implements EnumBasedClassifierConfigurer<ProximityForest> {
         DEFAULT() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setTrainEstimateMethod(new OutOfBag(true));
                 proximityForest.setTrainTimeLimit(0);
                 proximityForest.setTestTimeLimit(0);
-                proximityForest.setNumTreeLimit(100);
+                proximityForest.setNumTreeLimit(10);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.DEFAULT);
                 proximityForest.setUseDistributionInVoting(false);
+                proximityForest.setWeightTreesByTrainEstimate(false);
                 return proximityForest;
             }
         },
-        R1() {
+        ORIG_R1() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-                DEFAULT.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R1);
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R1);
                 return proximityForest;
             }
         },
-        R5() {
+        ORIG_R5() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-                DEFAULT.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R5);
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
                 return proximityForest;
             }
         },
-        R10() {
+        ORIG_R10() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(final B proximityForest) {
-                DEFAULT.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R10);
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R10);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(false));
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_R() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(true));
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_D() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(false));
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_R_D() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(true));
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV_D() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_W() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(false));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_R_W() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(true));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV_W() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_WD() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(false));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_OOB_R_WD() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new OutOfBag(true));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                proximityForest.setUseDistributionInVoting(true);
+                return proximityForest;
+            }
+        },
+        ORIG_R5_CV_WD() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = DEFAULT.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.ORIG_R5);
+                proximityForest.setEstimateOwnPerformance(true);
+                proximityForest.setTrainEstimateMethod(new CrossValidation(10));
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                proximityForest.setUseDistributionInVoting(true);
                 return proximityForest;
             }
         },
         ;
+    }
+
+    public ProximityForest() {
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        Config.DEFAULT.applyConfigTo(this);
     }
 
     // the timer for contracting the estimate of train error
@@ -107,8 +276,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private List<ClassifierResults> treeTrainResults;
     // type of train estimate
     private TrainEstimateMethod trainEstimateMethod;
+    // todo which stat to weight trees by
     // test set indices for each tree
     private List<Instances> treeOobTestDatas;
+    // whether to weight trees by their train estimate (if enabled)
+    private boolean weightTreesByTrainEstimate;
 
     public TrainEstimateMethod getTrainEstimateMethod() {
         return trainEstimateMethod;
@@ -119,33 +291,13 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         this.trainEstimateMethod = trainEstimateMethod;
     }
 
-    public ProximityForest() {
-        super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        Config.DEFAULT.applyConfigTo(this);
-    }
-
-    public static void main(String[] args) throws Exception {
-        Thread.sleep(10000);
-        for(int i = 0; i < 1; i++) {
-            int seed = i;
-            ProximityForest classifier = new ProximityForest();
-            classifier.setEstimateOwnPerformance(false);
-            classifier.setSeed(seed);
-            Config.R1.applyConfigTo(classifier);
-            //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/datasets/uni2018/",
-                "GunPoint", seed));
-            //            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
-        }
-        //        Thread.sleep(10000);
-    }
-
     @Override
     public void buildClassifier(final Instances trainData) throws Exception {
         // kick off resource monitors
         memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
+        final Logger logger = getLogger();
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
         if(isRebuild()) {
             // reset variables
@@ -167,16 +319,15 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 treeOobTestDatas = null;
             }
         }
-        Indexer.index(trainData); // todo overhead of multiple calls per contract
+        Indexer.index(trainData); // todo overhead of multiple calls per run
         while(
-            insideNumTreeLimit()
+                insideNumTreeLimit()
                 &&
                 insideTrainTimeLimit(trainTimer.lap() + longestTrainStageTimeNanos)
         ) {
             LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
             trainStageTimer.resetAndStart();
             int treeIndex = trees.size();
-            logger.fine("building tree " + treeIndex);
             ProximityTree tree = new ProximityTree();
             trees.add(tree);
             proximityTreeConfig.applyConfigTo(tree);
@@ -186,77 +337,86 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 trainTimer.stop();
                 ClassifierResults results;
                 if(trainEstimateMethod instanceof OutOfBag) {
+                    logger.fine(() -> "out-of-bagging tree " + treeIndex);
                     // build a new oob train / test data
                     final Instances oobTrain = new Instances(trainData, 0);
-                    final List<Integer> oobTrainIndices = new ArrayList<>();
-                    final Set<Integer> oobTestSetIndices = new HashSet<>(ArrayUtilities.sequence(trainData.size()));
+                    final Set<Instance> oobTestSet = new HashSet<>(trainData.size());
+                    oobTestSet.addAll(trainData);
                     for(int i = 0; i < trainData.size(); i++) {
                         int index = rand.nextInt(trainData.size());
                         Instance instance = trainData.get(index);
                         oobTrain.add(instance);
-                        oobTrainIndices.add(index);
-                        oobTestSetIndices.remove(index);
+                        oobTestSet.remove(instance);
                     }
                     // quick check that oob test / train are independent
-                    for(Integer i : oobTrainIndices) {
-                        Assert.assertFalse(oobTestSetIndices.contains(i));
+                    for(Instance i : oobTrain) {
+                        Assert.assertFalse(oobTestSet.contains(i));
                     }
-                    final List<Integer> oobTestIndices = new ArrayList<>(oobTestSetIndices);
-                    treeOobTestDatas.add(oobTestIndices);
                     final Instances oobTest = new Instances(trainData, 0);
-                    for(int index : oobTestIndices) {
-                        oobTest.add(trainData.get(index));
-                    }
+                    oobTest.addAll(oobTestSet);
+                    treeOobTestDatas.add(oobTest);
                     tree.buildClassifier(oobTrain);
                     results = new ClassifierResults();
-                    treeTrainResults.add(results);
                     Utils.addPredictions(tree, oobTest, results);
                     if(((OutOfBag) trainEstimateMethod).isRebuildAfterBagging()) {
+                        logger.fine(() -> "rebuilding tree " + treeIndex);
                         tree.buildClassifier(trainData);
                     }
                 } else if(trainEstimateMethod instanceof CrossValidation) {
+                    logger.fine(() -> "cross validating tree " + treeIndex);
                     CrossValidationEvaluator evaluator = new CrossValidationEvaluator();
                     evaluator.setSeed(seed);
                     evaluator.setCloneData(true);
-                    evaluator.setSetClassMissing(true);
+                    evaluator.setSetClassMissing(false);
                     evaluator.setNumFolds(((CrossValidation) trainEstimateMethod).getNumFolds());
                     results = evaluator.evaluate(tree, trainData);
+                    logger.fine(() -> "building tree " + treeIndex);
                     tree.buildClassifier(trainData);
                 } else {
                     throw new UnsupportedOperationException("unknown trainEstimateMethod: " + trainEstimateMethod);
                 }
+                treeTrainResults.add(results);
                 trainTimer.start();
                 trainEstimateTimer.stop();
                 ResultUtils.setInfo(results, tree, trainData);
                 results.setErrorEstimateMethod(trainEstimateMethod.toString());
                 results.setErrorEstimateTime(trainStageTimer.lap());
             } else {
+                logger.fine(() -> "building tree " + treeIndex);
                 tree.buildClassifier(trainData);
             }
             trainStageTimer.stop();
             longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getTime());
         }
-        logger.info("finished building trees");
+        logger.fine("finished building trees");
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
-        if(getEstimateOwnPerformance()) {
+        if(estimateOwnPerformance) {
+            logger.fine("finalising train estimate");
             trainEstimateTimer.start();
             final double[][] finalDistributions = new double[trainData.size()][];
             final long[] times = new long[trainData.size()];
             for(int j = 0; j < trees.size(); j++) {
                 final ProximityTree tree = trees.get(j);
-                final List<Integer> oobTestIndices = treeOobTestDatas.get(j);
+                final Instances treeTrainEstimateData;
+                if(trainEstimateMethod instanceof OutOfBag) {
+                    treeTrainEstimateData = treeOobTestDatas.get(j);
+                } else if(trainEstimateMethod instanceof CrossValidation) {
+                    treeTrainEstimateData = trainData;
+                } else {
+                    throw new UnsupportedOperationException("unknown trainEstimateMethod: " + trainEstimateMethod);
+                }
                 final ClassifierResults treeTrainResults = this.treeTrainResults.get(j);
-                for(int i = 0; i < oobTestIndices.size(); i++) {
+                for(int i = 0; i < treeTrainEstimateData.size(); i++) {
                     long time = System.nanoTime();
-                    int index = oobTestIndices.get(i);
-                    double[] distribution = treeTrainResults.getProbabilityDistribution(i);
-                    if(finalDistributions[index] == null) {
-                        finalDistributions[index] = new double[getNumClasses()];
+                    final int instanceIndex = ((Indexer.IndexedInstance) treeTrainEstimateData.get(i)).getIndex();
+                    final double[] distribution = treeTrainResults.getProbabilityDistribution(i);
+                    if(finalDistributions[instanceIndex] == null) {
+                        finalDistributions[instanceIndex] = new double[getNumClasses()];
                     }
-                    vote(finalDistributions[index], distribution, treeTrainResults);
+                    vote(finalDistributions[instanceIndex], distribution, treeTrainResults);
                     time = System.nanoTime() - time;
                     time += treeTrainResults.getPredictionTime(i);
-                    times[index] = time;
+                    times[instanceIndex] = time;
                 }
             }
             for(int i = 0; i < finalDistributions.length; i++) {
@@ -285,25 +445,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         if(estimateOwnPerformance) {
             ResultUtils.setInfo(trainResults, this, trainData);
         }
-        logger.info("build complete");
-    }
-
-    private void vote(double[] finalDistribution, double[] distribution, double weight) {
-        if(useDistributionInVoting) {
-            ArrayUtilities.addInPlace(finalDistribution, distribution);
-        } else {
-            // majority vote
-            double index = Utilities.argMax(distribution, rand);
-            finalDistribution[(int) index] += weight;
-        }
-    }
-
-    private void vote(double[] finalDistribution, double[] distribution) {
-        vote(finalDistribution, distribution, 1);
-    }
-
-    private void vote(double[] finalDistribution, double[] distribution, ClassifierResults results) {
-        vote(finalDistribution, distribution, results.getAcc());
+        logger.fine("build complete");
     }
 
     @Override
@@ -313,17 +455,17 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         final double[] finalDistribution = new double[getNumClasses()];
         for(int i = 0;
             i < trees.size()
-                &&
-                (testTimeLimitNanos <= 0 || testTimer.lap() + longestTestStageTimeNanos < testTimeLimitNanos)
-            ; i++) {
+            &&
+            (testTimeLimitNanos <= 0 || testTimer.lap() + longestTestStageTimeNanos < testTimeLimitNanos)
+                ; i++) {
             testStageTimer.resetAndStart();
             ProximityTree tree = trees.get(i);
             final double[] distribution = tree.distributionForInstance(instance);
-            if(getEstimateOwnPerformance()) {
-                vote(finalDistribution, distribution, treeTrainResults.get(i));
-            } else {
-                vote(finalDistribution, distribution);
+            ClassifierResults treeTrainResult = null;
+            if(estimateOwnPerformance) {
+                treeTrainResult = treeTrainResults.get(i);
             }
+            vote(finalDistribution, distribution, treeTrainResult);
             testStageTimer.stop();
             longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getTime());
         }
@@ -332,12 +474,32 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         return finalDistribution;
     }
 
+    public boolean insideNumTreeLimit() {
+        return !hasNumTreeLimit() || trees.size() < numTreeLimit;
+    }
+
     public boolean hasNumTreeLimit() {
         return numTreeLimit > 0;
     }
 
-    public boolean insideNumTreeLimit() {
-        return !hasNumTreeLimit() || trees.size() < numTreeLimit;
+    private void vote(double[] finalDistribution, double[] distribution, ClassifierResults treeTrainResults) {
+        double weight = 1;
+        if(weightTreesByTrainEstimate && treeTrainResults != null) {
+            weight = treeTrainResults.getAcc();
+        }
+        if(useDistributionInVoting) {
+            if(weightTreesByTrainEstimate) {
+                ArrayUtilities.multiplyInPlace(distribution, weight);
+            }
+            ArrayUtilities.addInPlace(finalDistribution, distribution);
+        } else {
+            // majority vote
+            if(!weightTreesByTrainEstimate) {
+                weight = 1;
+            }
+            double index = Utilities.argMax(distribution, rand);
+            finalDistribution[(int) index] += weight;
+        }
     }
 
     public int getNumTreeLimit() {
@@ -353,7 +515,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     public void setProximityTreeConfig(
-        final Configurer<ProximityTree> proximityTreeConfig) {
+            final Configurer<ProximityTree> proximityTreeConfig) {
         Assert.assertNotNull(proximityTreeConfig);
         this.proximityTreeConfig = proximityTreeConfig;
     }
@@ -374,22 +536,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     @Override
     public void setTrainTimeLimit(final long nanos) {
         trainTimeLimitNanos = nanos;
-    }
-
-    public boolean isOOB() {
-        return oob;
-    }
-
-    public void setOOB(final boolean oob) {
-        this.oob = oob;
-    }
-
-    public boolean isCV() {
-        return cv;
-    }
-
-    public void setCV(final boolean cv) {
-        this.cv = cv;
     }
 
     @Override
@@ -421,5 +567,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     public StopWatch getTestTimer() {
         return testTimer;
     }
+
+    public boolean isWeightTreesByTrainEstimate() {
+        return weightTreesByTrainEstimate;
+    }
+
+    public void setWeightTreesByTrainEstimate(final boolean weightTreesByTrainEstimate) {
+        this.weightTreesByTrainEstimate = weightTreesByTrainEstimate;
+    }
+
 
 }
