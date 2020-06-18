@@ -35,11 +35,6 @@ public class Derivative implements Transformer, Serializable {
     // instead fetch from the cache the second time
     private static CachedTransformer GLOBAL_CACHE;
 
-    // prefix for dataset name
-    public static String getPrefix() {
-        return "der_";
-    }
-
     public static Derivative getGlobalInstance() {
         if (INSTANCE == null) {
             INSTANCE = new Derivative();
@@ -85,7 +80,10 @@ public class Derivative implements Transformer, Serializable {
 
     @Override
     public Instance transform(Instance inst) {
-        return new DenseInstance(1, getDerivative(inst.toDoubleArray(), true));// class value has now been removed - be careful!
+        final double[] derivative = getDerivative(inst.toDoubleArray(), true);
+        final Instance copy = new DenseInstance(inst.weight(), derivative);
+        copy.setDataset(inst.dataset());
+        return copy;
     }
 
 

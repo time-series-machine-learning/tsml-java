@@ -13,9 +13,8 @@ import java.util.List;
  * Contributors: goastler, abostrom
  */
 
-public class Indexer implements TrainableTransformer {
+public class Indexer extends BaseTrainableTransformer {
 
-    private boolean isFit;
     private int index;
 
     public Indexer() {
@@ -23,8 +22,8 @@ public class Indexer implements TrainableTransformer {
     }
 
     public void reset() {
-        index = 0;
-        isFit = false;
+        super.reset();
+        index = -1;
     }
 
     @Override
@@ -32,17 +31,13 @@ public class Indexer implements TrainableTransformer {
         return new Instances(inputFormat, 0);
     }
 
-    @Override
-    public boolean isFit() {
-        return isFit;
-    }
-
     public int size() {
-        return index;
+        return index + 1;
     }
 
     @Override
     public void fit(final Instances data) {
+        super.fit(data);
         // find max index
         for(int i = 0; i < data.size(); i++) {
             final Instance instance = data.get(i);
@@ -54,8 +49,9 @@ public class Indexer implements TrainableTransformer {
         for(int i = 0; i < data.size(); i++) {
             Instance inst = data.get(i);
             if(!(inst instanceof IndexedInstance)) {
-                inst = new IndexedInstance(inst, index);
                 index++;
+                inst = new IndexedInstance(inst, index);
+                inst.setDataset(data);
                 data.set(i, inst);
             }
         }
@@ -63,6 +59,9 @@ public class Indexer implements TrainableTransformer {
 
     @Override
     public IndexedInstance transform(Instance inst) {
+        if(!isFit()) {
+            throw new IllegalStateException("must be fitted first");
+        }
         if(inst instanceof IndexedInstance) {
             return (IndexedInstance) inst;
         }
@@ -75,11 +74,16 @@ public class Indexer implements TrainableTransformer {
         public IndexedInstance(final Instance instance, final int index) {
             super(instance);
             setIndex(index);
+            setDataset(instance.dataset());
         }
 
         public IndexedInstance(IndexedInstance instance) {
-            super(instance);
-            setIndex(instance.index);
+            this(instance, instance.getIndex());
+        }
+
+        public IndexedInstance(double weight, double[] attValues, int index) {
+            super(weight, attValues);
+            setIndex(index);
         }
 
         public int getIndex() {
@@ -121,7 +125,7 @@ public class Indexer implements TrainableTransformer {
         }
 
         @Override
-        public Object copy() {
+        public IndexedInstance copy() {
             return new IndexedInstance(this);
         }
     }

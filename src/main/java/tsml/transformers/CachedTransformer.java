@@ -19,33 +19,34 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler, abostrom
  */
-public class CachedTransformer implements ParamHandler, TrainableTransformer {
+public class CachedTransformer extends BaseTrainableTransformer {
 
     // the filter to cache the output of
     private Transformer transformer;
     private final Indexer indexer = new Indexer();
-    private boolean isFit;
 
     // the cache to store instances against their corresponding transform output
-    private List<Instance> cache;
+    private Map<IndexedInstance, IndexedInstance> cache;
 
     public CachedTransformer(Transformer transformer) {
         setTransformer(transformer);
         reset();
     }
 
-
-
     public void reset() {
-        isFit = false;
+        super.reset();
         cache = null;
         indexer.reset();
     }
 
     @Override
     public void fit(final Instances data) {
+        super.fit(data);
         indexer.fit(data);
-        cache = new ArrayList<>(indexer.size());
+        // make the cache match the size of the data (as that is the max expected cache entries at any point in time)
+        // . Load factor of 1 should mean if no more than data size instances are added, the hashmap will not expand
+        // and waste cpu time
+        cache = new HashMap<>(data.size(), 1);
     }
 
     @Override
@@ -62,23 +63,36 @@ public class CachedTransformer implements ParamHandler, TrainableTransformer {
         this.transformer = transformer;
     }
 
-    public void setCache(final List<Instance> cache) {
+    public void setCache(final Map<IndexedInstance, IndexedInstance> cache) {
         Assert.assertNotNull(cache);
         this.cache = cache;
     }
 
     @Override
-    public Instance transform(Instance inst) {
-        if(inst instanceof IndexedInstance) {
-            // the instance is from the fitted data so fetch from cache if possible
-            final int index = ((IndexedInstance) inst).getIndex();
-            if(index >= 0) {
-                return cache.get(index);
-            }
+    public IndexedInstance transform(Instance instance) {
+        if(!isFit()) {
+            throw new IllegalStateException("must be fitted first");
         }
-        // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
-        // be added to cache)
-        return transformer.transform(inst);
+        IndexedInstance transformedInstance = null;
+        int index = -1;
+        if(instance instanceof IndexedInstance) {
+            // the instance is from the fitted data so fetch from cache if possible
+            index = ((IndexedInstance) instance).getIndex();
+        }
+        if(index >= 0) {
+            // if index is non-negative then the instance is from the fitted data and is eligible for caching
+            transformedInstance = cache.get(instance);
+            // if not instance is present in cache then transform and add
+            if(transformedInstance == null) {
+                transformedInstance = new IndexedInstance(transformer.transform(instance), index);
+                cache.put((IndexedInstance) instance, transformedInstance);
+            }
+        } else {
+            // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
+            // be added to cache)
+            transformedInstance = new IndexedInstance(transformer.transform(instance), -1);
+        }
+        return transformedInstance;
     }
 
     @Override
@@ -90,13 +104,8 @@ public class CachedTransformer implements ParamHandler, TrainableTransformer {
         return transformer;
     }
 
-    public List<Instance> getCache() {
+    public Map<IndexedInstance, IndexedInstance> getCache() {
         return cache;
-    }
-
-    @Override
-    public boolean isFit() {
-        return isFit;
     }
 
     @Override
