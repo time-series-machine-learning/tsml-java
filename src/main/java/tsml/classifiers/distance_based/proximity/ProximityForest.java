@@ -59,7 +59,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setTrainEstimateMethod(new OutOfBag(true));
                 proximityForest.setTrainTimeLimit(0);
                 proximityForest.setTestTimeLimit(0);
-                proximityForest.setNumTreeLimit(10);
+                proximityForest.setNumTreeLimit(100);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.DEFAULT);
                 proximityForest.setUseDistributionInVoting(false);
                 proximityForest.setWeightTreesByTrainEstimate(false);
