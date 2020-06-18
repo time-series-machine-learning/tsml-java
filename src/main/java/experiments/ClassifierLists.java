@@ -226,7 +226,7 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE", "RISE_option4"};
+    public static String[] frequency= {"RISE", "RISE_5Partitions"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -236,8 +236,9 @@ public class ClassifierLists {
             case "RISE":
                 c=new RISE();
                 break;
-            case "RISE_option4":
+            case "RISE_5Partitions":
                 c=new RISE();
+                ((RISE)c).setIntervalMethod(4);
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");

@@ -151,7 +151,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     public boolean printStartEndPoints = false;
     private ArrayList<int[]> startEndPoints = null;
     private int intervalMethod = 4;
-    private int partitions = 2;
+    private int partitions = 5;
 
 
 

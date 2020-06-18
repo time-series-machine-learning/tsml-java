@@ -784,15 +784,15 @@ public class DatasetLists {
 		 "MixedShapesRegularTrain",
 		 "MixedShapesSmallTrain",
 		 "MoteStrain", // 20,1252,84,2
-		 "NonInvasiveFetalECGThorax1", // 1800,1965,750,42
-		 "NonInvasiveFetalECGThorax2", // 1800,1965,750,42
+		 //"NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+		 //"NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 		 "OliveOil", // 30,30,570,4
 		 "OSULeaf", // 200,242,427,6
 		 "PhalangesOutlinesCorrect", // 1800,858,80,2
 		 "Phoneme",//1896,214, 1024
-		 "PigAirwayPressure",
-		 "PigArtPressure",
-		 "PigCVP",
+		 //"PigAirwayPressure",
+		 //"PigArtPressure",
+		 /*"PigCVP",
 		 "Plane", // 105,105,144,7
 		 "PowerCons",
 		 "ProximalPhalanxOutlineAgeGroup", // 400,205,80,3
@@ -830,7 +830,7 @@ public class DatasetLists {
 		 "WordSynonyms", // 267,638,270,25
 		 "Worms", //77, 181,900,5
 		 "WormsTwoClass",//77, 181,900,5
-		 "Yoga" // 300,3000,426,2
+		 "Yoga" // 300,3000,426,2*/
  };
 	//</editor-fold>
 
