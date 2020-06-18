@@ -46,7 +46,7 @@ public class Utils {
                 ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
-                System.out.println(trainResults.writeSummaryResultsToString());
+                System.out.println(trainResults.writeFullResultsToString());
             }
         }
         timer.resetAndStart();
@@ -61,7 +61,7 @@ public class Utils {
         System.out.println("test time: " + timer.getTime());
         System.out.println("test mem: " + memoryWatcher.toString());
         System.out.println("test results:");
-        System.out.println(testResults.writeSummaryResultsToString());
+        System.out.println(testResults.writeFullResultsToString());
         overallMemoryWatcher.stop();
         overallTimer.stop();
         System.out.println("overall time: " + overallTimer.getTime());

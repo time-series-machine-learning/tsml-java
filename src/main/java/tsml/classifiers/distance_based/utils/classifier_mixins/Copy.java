@@ -237,14 +237,22 @@ public interface Copy extends Serializable {
      * @throws NoSuchFieldException
      * @throws IllegalAccessException
      */
-    static Object setFieldValue(Object object, String fieldName, Object value)
+    static void setFieldValue(Object object, String fieldName, Object value)
         throws NoSuchFieldException, IllegalAccessException {
         Field field = getField(object, fieldName);
         boolean accessible = field.isAccessible();
         field.setAccessible(true);
         field.set(object, value);
         field.setAccessible(accessible);
-        return object;
+    }
+
+    static Object getFieldValue(Object object, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        Field field = getField(object, fieldName);
+        boolean accessible = field.isAccessible();
+        field.setAccessible(true);
+        final Object value = field.get(object);
+        field.setAccessible(accessible);
+        return value;
     }
 
     /**

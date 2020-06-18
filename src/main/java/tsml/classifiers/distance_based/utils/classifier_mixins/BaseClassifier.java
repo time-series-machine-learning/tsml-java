@@ -4,6 +4,7 @@ import evaluation.storage.ClassifierResults;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -23,9 +24,8 @@ import weka.core.Instances;
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy, TrainEstimateable,
     Loggable, DefaultClassifier {
-
     // method of logging
-    protected final static Logger logger = LogUtils.buildLogger(MethodHandles.lookup().lookupClass());
+    private Logger logger = LogUtils.buildLogger(this);
     // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
     // whether the seed has been set
@@ -37,6 +37,21 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     public BaseClassifier(boolean a) {
         super(a);
+    }
+
+    private void setLogLevelFromDebug() {
+        if(logger != null) {
+            if(debug) {
+                logger.setLevel(Level.FINE);
+            } else {
+                logger.setLevel(Level.OFF);
+            }
+        }
+    }
+
+    @Override public void setDebug(final boolean b) {
+        super.setDebug(b);
+        setLogLevelFromDebug();
     }
 
     @Override
@@ -59,6 +74,12 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void setClassifierName(String classifierName) {
         Assert.assertNotNull(classifierName);
         super.setClassifierName(classifierName);
+        buildLogger();
+    }
+
+    private void buildLogger() {
+        logger = LogUtils.buildLogger(classifierName);
+        setLogLevelFromDebug();
     }
 
     @Override
