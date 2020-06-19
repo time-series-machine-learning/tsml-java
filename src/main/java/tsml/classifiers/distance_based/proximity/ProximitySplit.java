@@ -1,13 +1,10 @@
 package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.classifier_mixins.*;
+import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifier_mixins.EnumBasedClassifierConfigurer;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap.DiscardType;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
@@ -23,6 +20,11 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 /**
  * Purpose: perform a split using several exemplar instances to partition the data based upon proximity.
  * <p>
@@ -32,11 +34,10 @@ public class ProximitySplit extends BaseClassifier {
 
     // the various configs for this classifier
     public enum Config implements EnumBasedClassifierConfigurer<ProximitySplit> {
-        DEFAULT() {
+        R1() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
                 proximitySplit = super.applyConfigTo(proximitySplit);
-                proximitySplit.setR(5);
                 proximitySplit.setRandomTieBreakDistances(true);
                 proximitySplit.setRandomTieBreakCandidates(false);
                 proximitySplit.setEarlyAbandonDistances(false);
@@ -45,37 +46,54 @@ public class ProximitySplit extends BaseClassifier {
                 proximitySplit.setRandomR(false);
                 proximitySplit.setExemplarCheckOriginal(true);
                 proximitySplit.setMatchOriginalPFRandomCalls(false);
-                return proximitySplit;
-            }
-        },
-        ORIG_R1() {
-            @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(1);
                 return proximitySplit;
             }
         },
-        ORIG_R5() {
+        R5() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit = R1.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(5);
                 return proximitySplit;
             }
         },
-        ORIG_R10() {
+        R10() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = DEFAULT.applyConfigTo(proximitySplit);
+                proximitySplit = R1.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(10);
                 return proximitySplit;
             }
+        },
+        RR5() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = R5.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomR(true);
+                return proximitySplit;
+            }
+        },
+        RR10() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = R10.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomR(true);
+                return proximitySplit;
+            }
         }
-        ;
+    }
+
+    /**
+     * @param random the random source
+     */
+    public ProximitySplit(Random random) {
+        setRandom(random);
+        Config.R5.applyConfigTo(this);
     }
 
     // whether to early abandon distance measurements for distance between instances (data) and exemplars
@@ -119,52 +137,10 @@ public class ProximitySplit extends BaseClassifier {
     private boolean exemplarCheckOriginal;
 
     /**
-     * @param random the random source
+     * build the split using the data provided
      */
-    public ProximitySplit(Random random) {
-        setRandom(random);
-        Config.DEFAULT.applyConfigTo(this);
-    }
-
-    /**
-     * pick exemplars from the given dataset
-     *
-     * @param instancesByClass a map of class labels to instances
-     */
-    private void pickExemplars(final Map<Double, Instances> instancesByClass) {
-        // pick one exemplar per class
-        List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
-        for(Double classLabel : instancesByClass.keySet()) {
-            final Instances instanceClass = instancesByClass.get(classLabel);
-            final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
-            // orig pf always calls for a random number even if the instances has only one instance. The choice
-            // function doesn't source a random number given a list of size 1, therefore the random number call must
-            // be made here to match orig pf random number sequence
-            if(instanceClass.size() == 1) {
-                getRandom().nextInt(1);
-            }
-            exemplars.add(Lists.newArrayList(exemplar));
-        }
-        setExemplarGroups(exemplars);
-    }
-
-    /**
-     * pick the distance function
-     */
-    private void pickDistanceFunction() {
-        // pick a random space
-        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
-        // built that space
-        distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
-        // randomly pick the distance function / parameters from that space
-        RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
-        ParamSet paramSet = iterator.next();
-        // there is only one distance function in the ParamSet returned
-        List<Object> list = paramSet.get(DistanceMeasureable.DISTANCE_MEASURE_FLAG);
-        Assert.assertEquals(1, list.size());
-        // cast it into shape
-        Object obj = list.get(0);
-        setDistanceFunction((DistanceFunction) obj);
+    public void buildClassifier() throws Exception {
+        buildClassifier(data);
     }
 
     @Override
@@ -174,11 +150,6 @@ public class ProximitySplit extends BaseClassifier {
         // compares R splits to pick the best
         class SplitCandididate {
 
-            public final List<List<Instance>> exemplars;
-            public final DistanceFunction distanceFunction;
-            public final List<Instances> partitions;
-            public final double score;
-
             SplitCandididate(final List<List<Instance>> exemplars, final DistanceFunction distanceFunction,
                              final List<Instances> partitions, final double score) {
                 this.exemplars = exemplars;
@@ -186,6 +157,11 @@ public class ProximitySplit extends BaseClassifier {
                 this.partitions = partitions;
                 this.score = score;
             }
+
+            public final List<List<Instance>> exemplars;
+            public final DistanceFunction distanceFunction;
+            public final List<Instances> partitions;
+            public final double score;
         }
         // change the view of the data into per class
         final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(data);
@@ -249,79 +225,44 @@ public class ProximitySplit extends BaseClassifier {
     }
 
     /**
-     * build the split using the data provided
+     * pick the distance function
      */
-    public void buildClassifier() throws Exception {
-        buildClassifier(data);
+    private void pickDistanceFunction() {
+        // pick a random space
+        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
+        // built that space
+        distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
+        // randomly pick the distance function / parameters from that space
+        RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
+        ParamSet paramSet = iterator.next();
+        // there is only one distance function in the ParamSet returned
+        List<Object> list = paramSet.get(DistanceMeasureable.DISTANCE_MEASURE_FLAG);
+        Assert.assertEquals(1, list.size());
+        // cast it into shape
+        Object obj = list.get(0);
+        setDistanceFunction((DistanceFunction) obj);
     }
 
-    public Instances getPartitionFor(Instance instance) {
-        final int index = getPartitionIndexFor(instance);
-        return partitions.get(index);
-    }
-
-    @Override
-    public double[] distributionForInstance(Instance instance) {
-        int index = getPartitionIndexFor(instance);
-        return distributionForInstance(instance, index);
-    }
-
-    public List<Instances> getPartitions() {
-        return partitions;
-    }
-
-    private void setPartitions(List<Instances> partitions) {
-        Assert.assertNotNull(partitions);
-        this.partitions = partitions;
-    }
-
-    public Instances getData() {
-        return data;
-    }
-
-    public void setData(Instances data) {
-        Assert.assertNotNull(data);
-        this.data = data;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(getClass().getSimpleName() + "{" +
-            "score=" + score +
-            ", dataSize=" + data.size());
-        stringBuilder.append(", df=");
-        if(distanceFunction != null) {
-            stringBuilder.append(distanceFunction.toString());
-        } else {
-            stringBuilder.append("null");
-        }
-        if(partitions != null) {
-            int i = 0;
-            for(Instances instances : partitions) {
-                stringBuilder.append(", p" + i + "=" + instances.size());
-                i++;
+    /**
+     * pick exemplars from the given dataset
+     *
+     * @param instancesByClass a map of class labels to instances
+     */
+    private void pickExemplars(final Map<Double, Instances> instancesByClass) {
+        // pick one exemplar per class
+        List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
+        for(Double classLabel : instancesByClass.keySet()) {
+            final Instances instanceClass = instancesByClass.get(classLabel);
+            final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
+            // orig pf always calls for a random number even if the instances has only one instance. The choice
+            // function doesn't source a random number given a list of size 1, therefore the random number call must
+            // be made here to match orig pf random number sequence
+            if(instanceClass.size() == 1) {
+                getRandom().nextInt(1);
             }
+            exemplars.add(Lists.newArrayList(exemplar));
         }
-        stringBuilder.append("}");
-        return stringBuilder.toString();
-    }
-
-    public PartitionScorer getPartitionScorer() {
-        return partitionScorer;
-    }
-
-    public void setPartitionScorer(final PartitionScorer partitionScorer) {
-        Assert.assertNotNull(partitionScorer);
-        this.partitionScorer = partitionScorer;
-    }
-
-    public double getScore() {
-        return score;
-    }
-
-    protected void setScore(final double score) {
-        this.score = score;
+        setExemplarGroups(exemplars);
     }
 
     /**
@@ -395,6 +336,12 @@ public class ProximitySplit extends BaseClassifier {
         return closestPartitionIndex;
     }
 
+    @Override
+    public double[] distributionForInstance(Instance instance) {
+        int index = getPartitionIndexFor(instance);
+        return distributionForInstance(instance, index);
+    }
+
     /**
      * find the distribution for the given instance and partition index it belongs to
      *
@@ -415,6 +362,69 @@ public class ProximitySplit extends BaseClassifier {
         }
         ArrayUtilities.normaliseInPlace(distribution);
         return distribution;
+    }
+
+    public Instances getPartitionFor(Instance instance) {
+        final int index = getPartitionIndexFor(instance);
+        return partitions.get(index);
+    }
+
+    public List<Instances> getPartitions() {
+        return partitions;
+    }
+
+    private void setPartitions(List<Instances> partitions) {
+        Assert.assertNotNull(partitions);
+        this.partitions = partitions;
+    }
+
+    public Instances getData() {
+        return data;
+    }
+
+    public void setData(Instances data) {
+        Assert.assertNotNull(data);
+        this.data = data;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(getClass().getSimpleName() + "{" +
+                             "score=" + score +
+                             ", dataSize=" + data.size());
+        stringBuilder.append(", df=");
+        if(distanceFunction != null) {
+            stringBuilder.append(distanceFunction.toString());
+        } else {
+            stringBuilder.append("null");
+        }
+        if(partitions != null) {
+            int i = 0;
+            for(Instances instances : partitions) {
+                stringBuilder.append(", p" + i + "=" + instances.size());
+                i++;
+            }
+        }
+        stringBuilder.append("}");
+        return stringBuilder.toString();
+    }
+
+    public PartitionScorer getPartitionScorer() {
+        return partitionScorer;
+    }
+
+    public void setPartitionScorer(final PartitionScorer partitionScorer) {
+        Assert.assertNotNull(partitionScorer);
+        this.partitionScorer = partitionScorer;
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    protected void setScore(final double score) {
+        this.score = score;
     }
 
     public boolean isEarlyAbandonDistances() {
@@ -469,7 +479,7 @@ public class ProximitySplit extends BaseClassifier {
     }
 
     public void setDistanceFunctionSpaceBuilders(
-        final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
+            final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
         Assert.assertNotNull(distanceFunctionSpaceBuilders);
         Assert.assertFalse(distanceFunctionSpaceBuilders.isEmpty());
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;

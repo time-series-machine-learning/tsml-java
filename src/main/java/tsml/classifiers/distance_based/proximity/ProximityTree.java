@@ -3,7 +3,10 @@ package tsml.classifiers.distance_based.proximity;
 import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifier_mixins.*;
+import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
+import tsml.classifiers.distance_based.utils.classifier_mixins.EnumBasedClassifierConfigurer;
+import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.collections.tree.Tree;
@@ -40,7 +43,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
-            Config.ORIG_R5.applyConfigTo(classifier);
+            Config.R5.applyConfigTo(classifier);
             classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
@@ -49,7 +52,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     // the various configs for this classifier
     public enum Config implements EnumBasedClassifierConfigurer<ProximityTree> {
-        DEFAULT() {
+        R1() {
             @Override
             public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
                 proximityTree = super.applyConfigTo(proximityTree);
@@ -69,34 +72,43 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         ParamSpaceBuilder.TWED,
                         ParamSpaceBuilder.MSM
                 ));
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.DEFAULT);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R1);
                 return proximityTree;
             }
         },
-        ORIG_R1() {
+        R5() {
             @Override
             public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = R1.applyConfigTo(proximityTree);
                 proximityTree = super.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R1);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5);
                 return proximityTree;
             }
         },
-        ORIG_R5() {
+        R10() {
             @Override
             public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = R1.applyConfigTo(proximityTree);
                 proximityTree = super.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R5);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10);
                 return proximityTree;
             }
         },
-        ORIG_R10() {
+        RR5() {
             @Override
             public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = Config.DEFAULT.applyConfigTo(proximityTree);
+                proximityTree = R5.applyConfigTo(proximityTree);
                 proximityTree = super.applyConfigTo(proximityTree);
-                proximityTree.setProximitySplitConfig(ProximitySplit.Config.ORIG_R10);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.RR5);
+                return proximityTree;
+            }
+        },
+        RR10() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = R10.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.RR10);
                 return proximityTree;
             }
         },
@@ -105,7 +117,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        Config.DEFAULT.applyConfigTo(this);
+        Config.R5.applyConfigTo(this);
     }
 
     // train timer
