@@ -37,6 +37,7 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import utilities.FileUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -253,6 +254,20 @@ public class Experiments  {
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
+        FileUtils.FileLock testLock = null;
+        FileUtils.FileLock trainLock = null;
+        try {
+            testLock = new FileUtils.FileLock(expSettings.testFoldFileName);
+            if(testLock.isLocked()) {
+                if(expSettings.generateErrorEstimateOnTrainSet) {
+                    trainLock = new FileUtils.FileLock(expSettings.trainFoldFileName);
+                }
+            }
+        } catch(Exception e) {
+            LOGGER.info("test / train file locked");
+            return null;
+        }
+
         try {
             ClassifierResults trainResults = training(expSettings, classifier, trainSet);
             postTrainingOperations(expSettings, classifier);
@@ -265,6 +280,10 @@ public class Experiments  {
             LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
             e.printStackTrace();
             return null; //error state
+        }
+        testLock.unlock();
+        if(expSettings.generateErrorEstimateOnTrainSet) {
+            trainLock.unlock();
         }
 
         return experimentResults;
