@@ -1690,7 +1690,7 @@ public class ClassifierResultsAnalysis {
 
                             double[] t2 = c1res;
                             c1res = c2res;
-                            c2res = c1res;
+                            c2res = t2;
                         }
 
                         String pwFolderName = outPath + c1name + "vs" + c2name + "/";
