@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.msm;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * MSM distance measure.
@@ -43,10 +44,10 @@ public class MSMDistance
     }
 
     @Override
-    public double findDistance(double[] a, double[] b, final double limit) {
+    public double findDistance(Instance a, Instance b, final double limit) {
 
-        int aLength = a.length - 1;
-        int bLength = b.length - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -55,7 +56,7 @@ public class MSMDistance
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
-        double min = Math.abs(a[0] - b[0]);
+        double min = Math.abs(a.value(0) - b.value(0));
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -69,7 +70,7 @@ public class MSMDistance
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + findCost(b[j], a[0], b[j - 1]);
+            double cost = row[j - 1] + findCost(b.value(j), a.value(0), b.value(j - 1));
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -102,18 +103,21 @@ public class MSMDistance
                 row[end + 1] = Double.POSITIVE_INFINITY;
             }
             // if assessing the left most column then only top is the option - not left or left-top
+            final double ai = a.value(i);
+            final double aiPrev = a.value(i - 1);
             if(start == 0) {
-                final double cost = prevRow[start] + findCost(a[i], a[i - 1], b[start]);
+                final double cost = prevRow[start] + findCost(ai, aiPrev, b.value(start));
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
                 start++;
             }
             for(int j = start; j <= end; j++) {
+                final double bj = b.value(j);
                 // compute squared distance of feature vectors
-                final double topLeft = prevRow[j - 1] + Math.abs(a[i] - b[j]);
-                final double top = prevRow[j] + findCost(a[i], a[i - 1], b[j]);
-                final double left = row[j - 1] + findCost(b[j], a[i], b[j - 1]);
+                final double topLeft = prevRow[j - 1] + Math.abs(ai - bj);
+                final double top = prevRow[j] + findCost(ai, aiPrev, bj);
+                final double left = row[j - 1] + findCost(bj, ai, b.value(j - 1));
                 final double cost = Math.min(top, Math.min(left, topLeft));
 
                 row[j] = cost;

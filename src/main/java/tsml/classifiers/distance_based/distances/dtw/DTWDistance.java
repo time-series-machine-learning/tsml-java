@@ -5,6 +5,7 @@ import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasu
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * DTW distance measure.
@@ -16,11 +17,10 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
     public DTWDistance() {
     }
 
-    @Override
-    public double findDistance(final double[] a, final double[] b, final double limit) {
+    @Override protected double findDistance(final Instance a, final Instance b, final double limit) {
 
-        int aLength = a.length - 1;
-        int bLength = b.length - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -30,7 +30,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
         // min can be init'd to the top left cell
-        double min = Math.pow(a[0] - b[0], 2);
+        double min = Math.pow(a.value(0) - b.value(0), 2);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -44,7 +44,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + Math.pow(a[0] - b[j], 2);
+            double cost = row[j - 1] + Math.pow(a.value(0) - b.value(j), 2);
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -78,7 +78,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a[i] - b[start], 2);
+                final double cost = prevRow[start] + Math.pow(a.value(i) - b.value(0), 2);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
@@ -89,7 +89,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
                 final double topLeft = prevRow[j - 1];
                 final double left = row[j - 1];
                 final double top = prevRow[j];
-                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a[i] - b[j], 2);
+                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a.value(i) - b.value(j), 2);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }

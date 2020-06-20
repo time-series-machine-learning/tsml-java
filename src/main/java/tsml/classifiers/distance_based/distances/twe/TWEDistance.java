@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.twe;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * TWED distance measure.
@@ -19,10 +20,10 @@ public class TWEDistance
     public static final String LAMBDA_FLAG = "l";
 
     @Override
-    public double findDistance(final double[] a, final double[] b, final double limit) {
+    public double findDistance(final Instance a, final Instance b, final double limit) {
 
-        final int aLength = a.length - 1;
-        final int bLength = b.length - 1;
+        final int aLength = a.numAttributes() - 1;
+        final int bLength = b.numAttributes() - 1;
 
         final int windowSize = findWindowSize(aLength + 1);
 
@@ -33,7 +34,7 @@ public class TWEDistance
         // border of the cost matrix initialization
         // top left is already 0 so don't bother checking for early abandon
         row[0] = 0;
-        jCosts[1] = Math.pow(b[0], 2);
+        jCosts[1] = Math.pow(b.value(0), 2);
         row[1] = jCosts[1];
         // start at the next cell
         int start = 2;
@@ -46,7 +47,7 @@ public class TWEDistance
         }
         for(int j = start; j <= end; j++) {
             //CHANGE AJB 8/1/16: Only use power of 2 for speed up,
-            cost = Math.pow(b[j - 2] - b[j - 1], 2);
+            cost = Math.pow(b.value(j - 2) - b.value(j - 1), 2);
             jCosts[j] = cost;
             row[j] = row[j - 1] + jCosts[j];
         }
@@ -70,7 +71,7 @@ public class TWEDistance
         if(end + 1 < bLength + 1) {
             row[end + 1] = Double.POSITIVE_INFINITY;
         }
-        iCost = Math.pow(a[0], 2);
+        iCost = Math.pow(a.value(0), 2);
         double min = Double.POSITIVE_INFINITY;
         if(start == 0) {
             row[0] = prevRow[0] + iCost;
@@ -78,7 +79,7 @@ public class TWEDistance
             start++;
         }
         for(int j = start; j <= end; j++) {
-            dist = Math.pow(a[0] - b[j - 1], 2);
+            dist = Math.pow(a.value(0) - b.value(j - 1), 2);
             htrans = Math.abs((1 - j));
             left = prevRow[j - 1] + nu * htrans + dist;
             top = iCost + prevRow[j] + lambda + nu;
@@ -111,7 +112,7 @@ public class TWEDistance
             if(end + 1 < bLength + 1) {
                 row[end + 1] = Double.POSITIVE_INFINITY;
             }
-            iCost = Math.pow(a[i - 2] - a[i - 1], 2);
+            iCost = Math.pow(a.value(i - 2) - a.value(i - 1), 2);
             if(start == 0) {
                 cost = prevRow[0] + iCost;
                 row[0] = cost;
@@ -119,7 +120,7 @@ public class TWEDistance
                 start++;
             }
             if(start == 1) {
-                dist = Math.pow(a[i - 1] - b[0], 2);
+                dist = Math.pow(a.value(i - 1) - b.value(0), 2);
                 htrans = i - 1;
                 left = prevRow[0] + nu * htrans + dist;
                 top = iCost + prevRow[1] + lambda + nu;
@@ -130,7 +131,7 @@ public class TWEDistance
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                dist = Math.pow(a[i - 1] - b[j - 1], 2) + Math.pow(a[i - 2] - b[j - 2], 2);
+                dist = Math.pow(a.value(i - 1) - b.value(j - 1), 2) + Math.pow(a.value(i - 2) - b.value(j - 2), 2);
                 htrans = Math.abs(i - j) * 2;
                 left = prevRow[j - 1] + nu * htrans + dist;
                 top = iCost + prevRow[j] + lambda + nu;

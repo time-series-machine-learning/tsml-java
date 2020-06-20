@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.wdtw;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * WDTW distance measure.
@@ -26,10 +27,10 @@ public class WDTWDistance
     }
 
     @Override
-    public double findDistance(final double[] a, final double[] b, final double limit) {
+    public double findDistance(final Instance a, final Instance b, final double limit) {
 
-        int aLength = a.length - 1;
-        int bLength = b.length - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // generate weights
         if(aLength != weightVector.length) {
@@ -47,7 +48,7 @@ public class WDTWDistance
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
-        double min = weightVector[0] * Math.pow(a[0] - b[0], 2);
+        double min = weightVector[0] * Math.pow(a.value(0) - b.value(0), 2);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -61,7 +62,7 @@ public class WDTWDistance
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + weightVector[j] * Math.pow(a[0] - b[j], 2);
+            double cost = row[j - 1] + weightVector[j] * Math.pow(a.value(0) - b.value(j), 2);
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -96,7 +97,7 @@ public class WDTWDistance
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
                 final double cost =
-                    prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a[i] - b[start], 2);
+                    prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a.value(i) - b.value(start), 2);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
@@ -108,7 +109,7 @@ public class WDTWDistance
                 final double left = row[j - 1];
                 final double top = prevRow[j];
                 final double cost =
-                    Math.min(top, Math.min(left, topLeft)) + weightVector[Math.abs(i - j)] * Math.pow(a[i] - b[j], 2);
+                    Math.min(top, Math.min(left, topLeft)) + weightVector[Math.abs(i - j)] * Math.pow(a.value(i) - b.value(j), 2);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }

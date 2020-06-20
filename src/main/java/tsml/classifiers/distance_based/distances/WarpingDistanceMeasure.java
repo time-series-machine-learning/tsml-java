@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.distances;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 
-public abstract class WarpingDistanceMeasure extends ArrayBasedDistanceMeasure {
+public abstract class WarpingDistanceMeasure extends BaseDistanceMeasure {
     private int windowSize = -1;
     private double windowSizePercentage = -1;
     private boolean windowSizeInPercentage = false;

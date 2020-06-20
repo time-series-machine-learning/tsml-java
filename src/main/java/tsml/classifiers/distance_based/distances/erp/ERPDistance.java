@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.erp;
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * ERP distance measure.
@@ -23,10 +24,10 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
     }
 
     @Override
-    public double findDistance(final double[] a, final double[] b, final double limit) {
+    public double findDistance(final Instance a, final Instance b, final double limit) {
 
-        int aLength = a.length - 1;
-        int bLength = b.length - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // Current and previous columns of the matrix
         double[] row = new double[bLength];
@@ -44,7 +45,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
         row[0] = 0; // top left cell of matrix is always 0
         // populate first row
         for(int j = start; j <= end; j++) {
-            final double cost = row[j - 1] + Math.pow(b[j] - g, 2);
+            final double cost = row[j - 1] + Math.pow(b.value(j) - g, 2);
             row[j] = cost;
             // no need to update min as top left cell is already zero, can't get lower
         }
@@ -76,15 +77,15 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
             }
             // when l == 0 neither left nor top left can be picked, therefore it must use top
             if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a[i] - g, 2);
+                final double cost = prevRow[start] + Math.pow(a.value(i) - g, 2);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 start++;
             }
             for(int j = start; j <= end; j++) {
                 // compute squared distance of feature vectors
-                final double v1 = a[i];
-                final double v2 = b[j];
+                final double v1 = a.value(i);
+                final double v2 = b.value(j);
                 final double leftPenalty = Math.pow(v1 - g, 2);
                 final double topPenalty = Math.pow(v2 - g, 2);
                 final double topLeftPenalty = Math.pow(v1 - v2, 2);

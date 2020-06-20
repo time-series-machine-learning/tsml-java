@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.lcss;
 import tsml.classifiers.distance_based.distances.IntBasedWarpingDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
+import weka.core.Instance;
 
 /**
  * LCSS distance measure.
@@ -31,10 +32,10 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
     }
 
     @Override
-    public double findDistance(final double[] a, final double[] b, double limit) {
+    public double findDistance(final Instance a, final Instance b, double limit) {
 
-        int aLength = a.length - 1;
-        int bLength = b.length - 1;
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -51,7 +52,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
         int[] row = new int[bLength];
         int[] prevRow = new int[bLength];
         // init min to top left cell
-        double min = approxEqual(a[0], b[0], epsilon) ? 1 : 0;
+        double min = approxEqual(a.value(0), b.value(0), epsilon) ? 1 : 0;
         // top left cell of matrix will simply be the sq diff
         row[0] = (int) min;
         // start and end of window
@@ -67,7 +68,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
         // the first row is populated from the cell before
         for(int j = start; j <= end; j++) {
             final int cost;
-            if(approxEqual(a[0], b[j], epsilon)) {
+            if(approxEqual(a.value(0), b.value(j), epsilon)) {
                 cost = 1;
             } else {
                 cost = row[j - 1];
@@ -106,7 +107,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
                 final int cost;
-                if(approxEqual(a[i], b[start], epsilon)) {
+                if(approxEqual(a.value(i), b.value(start), epsilon)) {
                     cost = 1;
                 } else {
                     cost = prevRow[start];
@@ -119,7 +120,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
             for(int j = start; j <= end; j++) {
                 final int cost;
                 final int topLeft = prevRow[j - 1];
-                if(approxEqual(a[i], b[j], epsilon)) {
+                if(approxEqual(a.value(i), b.value(j), epsilon)) {
                     cost = topLeft + 1;
                 } else {
                     final int top = prevRow[j];
