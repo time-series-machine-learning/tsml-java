@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.logging.Loggable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import utilities.FileUtils;
@@ -92,7 +93,7 @@ import weka.core.Instances;
  */
 public class Experiments  {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = LogUtils.buildLogger(Experiments.class);
 
     public static boolean debug = false;
 
@@ -214,6 +215,9 @@ public class Experiments  {
         if(classifier instanceof Loggable) {
             ((Loggable) classifier).getLogger().setLevel(expSettings.logLevel);
         }
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) classifier).setDebug(debug);
+        }
 
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
         //Check whether results already exists, if so and force evaluation is false: just quit
@@ -223,7 +227,7 @@ public class Experiments  {
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
-        LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
+        LOGGER.info("Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
         return results;
     }
@@ -269,10 +273,13 @@ public class Experiments  {
         }
 
         try {
+            LOGGER.info("training...");
             ClassifierResults trainResults = training(expSettings, classifier, trainSet);
+            LOGGER.info("training done");
             postTrainingOperations(expSettings, classifier);
+            LOGGER.info("testing...");
             ClassifierResults testResults = testing(expSettings, classifier, testSet, trainResults);
-
+            LOGGER.info("testing done");
             experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
