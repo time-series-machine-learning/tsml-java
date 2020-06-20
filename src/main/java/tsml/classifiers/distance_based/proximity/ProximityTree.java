@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.proximity;
 
 import com.google.common.collect.Lists;
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
@@ -13,6 +14,7 @@ import tsml.classifiers.distance_based.utils.collections.tree.Tree;
 import tsml.classifiers.distance_based.utils.collections.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
+import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
@@ -251,6 +253,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
+        ResultUtils.setInfo(trainResults, this, trainData);
     }
 
     /**

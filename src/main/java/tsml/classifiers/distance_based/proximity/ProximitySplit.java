@@ -11,6 +11,7 @@ import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.random.RandomUtils;
+import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.scoring.PartitionScorer;
 import tsml.classifiers.distance_based.utils.scoring.PartitionScorer.GiniImpurityEntropy;
 import tsml.transformers.Indexer;
@@ -145,6 +146,7 @@ public class ProximitySplit extends BaseClassifier {
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
+        super.buildClassifier(trainData);
         Indexer.index(trainData);
         // small helper class to contain a split. This is used to temporarily hold split results while this function
         // compares R splits to pick the best
@@ -222,6 +224,7 @@ public class ProximitySplit extends BaseClassifier {
         setDistanceFunction(choice.distanceFunction);
         setExemplarGroups(choice.exemplars);
         setScore(choice.score);
+        ResultUtils.setInfo(trainResults, this, trainData);
     }
 
     /**

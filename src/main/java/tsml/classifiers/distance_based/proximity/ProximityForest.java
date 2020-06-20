@@ -351,13 +351,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trees = new ArrayList<>(numTreeLimit);
             longestTrainStageTimeNanos = 0;
             if(estimateOwnPerformance) {
-                trainResults = new ClassifierResults();
                 treeTrainResults = new ArrayList<>(numTreeLimit);
                 if(trainEstimateMethod instanceof OutOfBag) {
                     treeOobTestDatas = new ArrayList<>(numTreeLimit);
                 }
             } else {
-                trainResults = null;
                 treeTrainResults = null;
                 treeOobTestDatas = null;
             }
@@ -485,9 +483,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         }
         trainTimer.stop();
         memoryWatcher.stop();
-        if(estimateOwnPerformance) {
-            ResultUtils.setInfo(trainResults, this, trainData);
-        }
+        ResultUtils.setInfo(trainResults, this, trainData);
         logger.fine("build complete");
     }
 
