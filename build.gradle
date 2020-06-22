@@ -1,6 +1,24 @@
 plugins {
+    id 'com.gradle.build-scan' version '1.16'
     id 'java'
     id 'application'
+}
+
+// publish the build scan
+buildScan {
+    // accept license
+    licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+    licenseAgree = 'yes'
+    // publish build scans for only CI instances
+    if (System.getenv("CI")) {
+        publishAlways()
+        tag "CI"
+    }
+    // add commit id
+    background {
+        def commitId = "git rev-parse --verify HEAD".execute().text.trim()
+        value "Git Commit ID", commitId
+    }
 }
 
 version '0.1.0'
