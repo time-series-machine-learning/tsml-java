@@ -56,10 +56,9 @@ public class StopWatchTest {
     @Test
     public void testLap() throws InterruptedException {
         long sleepTime = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
-        long tolerance = TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
+        long tolerance = TimeUnit.NANOSECONDS.convert(500, TimeUnit.MILLISECONDS);
 //        System.out.println("t: " + tolerance);
 //        System.out.println("s: " + sleepTime);
-        long offset = 0;
         stopWatch.start();
         for(int i = 1; i <= 5; i++) {
             long sleep = TimeUnit.MILLISECONDS.convert(sleepTime, TimeUnit.NANOSECONDS);
