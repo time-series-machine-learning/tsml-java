@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.params;
 
-import com.beust.jcommander.internal.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
+
 import org.junit.Assert;
-import org.junit.Test;
-import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.Utils;
 
@@ -112,8 +111,202 @@ public class ParamSet implements ParamHandler {
      * @return
      */
     public List<Object> get(String name) {
-        return paramMap.get(name);
+        List<Object> list = paramMap.get(name);
+        return list;
     }
+
+    public Object getSingle(String name) {
+        final List<Object> list = get(name);
+        if(list == null) {
+            return null;
+        }
+        Assert.assertEquals(1, list.size());
+        return list.get(0);
+    }
+
+    public List<Object> getOrDefault(String name, List<Object> defaultValue) {
+        final List<Object> list = get(name);
+        if(list == null) {
+            return defaultValue;
+        } else {
+            return list;
+        }
+    }
+
+    public Object getSingleOrDefault(String name, Object defaultValue) {
+        final Object value = getSingle(name);
+        if(value == null) {
+            return defaultValue;
+        } else {
+            return value;
+        }
+    }
+
+    public <A> A getSingleOrDefault(String name, A defaultValue, Function<String, A> fromString) {
+        Object value = getSingleOrDefault(name, defaultValue);
+        if(value == null) {
+            return defaultValue;
+        }
+        value = StrUtils.cast(value, fromString);
+        return (A) value;
+    }
+
+    public <A> A getSingle(String name, Function<String, A> fromString) {
+        Object value = getSingle(name);
+        if(value == null) {
+            return null;
+        }
+        value = StrUtils.cast(value, fromString);
+        return (A) value;
+    }
+
+    public <A> List<A> get(String name, Function<String, A> fromString) {
+        final List<Object> list = get(name);
+        if(list == null) {
+            return null;
+        }
+        List<A> result = new ArrayList<>();
+        for(Object value : list) {
+            value = StrUtils.cast(value, fromString);
+            result.add((A) value);
+        }
+        return result;
+    }
+
+    public <A> List<A> getOrDefault(String name, List<A> defaultValue, Function<String, A> fromString) {
+        final List<Object> list = get(name);
+        if(list == null) {
+            return defaultValue;
+        }
+        List<A> result = new ArrayList<>();
+        for(Object value : list) {
+            value = StrUtils.cast(value, fromString);
+            result.add((A) value);
+        }
+        return result;
+    }
+
+    public Integer getSingleOrDefault(String name, int defaultValue) {
+        return getSingleOrDefault(name, defaultValue, Integer::parseInt);
+    }
+
+    public Integer get(String name) {
+        return get
+    }
+
+    public List<Integer> getOrDefault(String name, List<Integer> defaultValue) {
+        return getOrDefault(name, defaultValue, Integer::parseInt);
+    }
+
+    public List<Double> getOrDefault(String name, List<Double> defaultValue) {
+        return getOrDefault(name, defaultValue, Double::parseDouble);
+    }
+
+    public List<Short> getOrDefault(String name, List<Short> defaultValue) {
+        return getOrDefault(name, defaultValue, Short::parseShort);
+    }
+
+    public List<Float> getOrDefault(String name, List<Float> defaultValue) {
+        return getOrDefault(name, defaultValue, Float::parseFloat);
+    }
+
+    public List<Long> getOrDefault(String name, List<Long> defaultValue) {
+        return getOrDefault(name, defaultValue, Long::parseLong);
+    }
+
+    public List<Byte> getOrDefault(String name, List<Byte> defaultValue) {
+        return getOrDefault(name, defaultValue, Byte::parseByte);
+    }
+
+    public List<String> getOrDefault(String name, List<String> defaultValue) {
+        return getOrDefault(name, defaultValue, String::valueOf);
+    }
+
+//    public <A> A getSingleOrDefault(String name, A defaultValue, Function<String, ? extends A> fromString) {
+//        final List<Object> list = get(name);
+//        if(list == null) {
+//            return defaultValue;
+//        } else {
+//            Assert.assertEquals(1, list.size());
+//            final Object valueObj = list.get(0);
+//            final A result;
+//            if(valueObj instanceof String) {
+//                result = fromString.apply((String) valueObj);
+//            } else {
+//                result = (A) valueObj;
+//            }
+//            return result;
+//        }
+//    }
+//
+//    public String getSingleOrDefault(String name, String defaultValue) {
+//        return getSingleOrDefault(name, defaultValue, s -> s);
+//    }
+
+//    public static void abc(ParamSet paramSet, String flag, Consumer<Integer> setter) {
+//        final List<Object> list = paramSet.get(flag);
+//        for(Object value : list) {
+//            final int valueInt;
+//            if(value instanceof String) {
+//                valueInt = Integer.parseInt((String) value);
+//            } else if(value instanceof Integer) {
+//                valueInt = (Integer) value;
+//            } else {
+//                throw new IllegalArgumentException();
+//            }
+//            setter.accept(valueInt);
+//        }
+//    }
+//
+//    public <A> List<A> getOrDefault(String name, List<A> defaultValue) {
+//        Assert.assertFalse(defaultValue.isEmpty());
+//        final List<Object> list = get(name);
+//        final List<A> results = new ArrayList<>();
+//        for(Object value : list) {
+//            results.add(value);
+//        }
+//        return results;
+//    }
+//
+//    public <A> A getSingleOrDefault(String name, A defaultValue) {
+//        final List<A> list = getOrDefault(name, Collections.singletonList(defaultValue));
+//        Assert.assertEquals(1, list.size());
+//        return list.get(0);
+//    }
+
+//    public static int getOrDefault(ParamSet paramSet, String flag, int defaultValue) {
+//        final List<Object> list = paramSet.get(flag);
+//        if(list == null) {
+//            return defaultValue;
+//        }
+//        final Object value = list.get(0);
+//        final int result;
+//        if(value instanceof String) {
+//            result = Integer.parseInt((String) value);
+//        } else if(value instanceof Integer) {
+//            result = (Integer) value;
+//        } else {
+//            throw new IllegalArgumentException();
+//        }
+//        return result;
+//    }
+//
+//    public static double getOrDefault(ParamSet paramSet, String flag, double defaultValue) {
+//        final List<Object> list = paramSet.get(flag);
+//        if(list == null) {
+//            return defaultValue;
+//        }
+//        final Object value = list.get(0);
+//        final int result;
+//        if(value instanceof String) {
+//            result = Integer.parseInt((String) value);
+//        } else if(value instanceof Integer) {
+//            result = (Integer) value;
+//        } else {
+//            throw new IllegalArgumentException();
+//        }
+//        return result;
+//    }
 
     public ParamSet add(String name, Object value) {
         paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);

@@ -106,6 +106,10 @@ public interface ParamHandler
         }
     }
 
+    static void setParam(ParamSet params, String name, Consumer<Double> setter) {
+
+    }
+
     default Set<String> listParams() {
         // todo use getParams to populate this
         throw new UnsupportedOperationException("param list not specified");

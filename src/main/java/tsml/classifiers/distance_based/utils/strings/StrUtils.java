@@ -282,8 +282,14 @@ public class StrUtils {
         return fromOptionValue(option, Object.class);
     }
 
-    public static <A> A fromOptionValue(String option, Class<? super A> baseClass) throws
-                                                                                      Exception {
+    public static <A> A cast(Object value, Function<String, A> fromString) {
+        if(value instanceof String) {
+            value = fromString.apply((String) value);
+        }
+        return (A) value;
+    }
+
+    public static <A> A fromOptionValue(String option, Class<? super A> baseClass) throws Exception {
         if(option.equals("null")) {
             return null;
         }
