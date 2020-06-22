@@ -84,3 +84,9 @@ task fatJar(type: Jar) {
 
 jar.finalizedBy(fatJar)
 jar.finalizedBy(copyDepsToBuild)
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+}
