@@ -10,9 +10,8 @@ Contributors: goastler
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.transformers.CachedTransformer;
 import tsml.transformers.TrainableTransformer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -94,9 +93,9 @@ public class TransformedDistanceMeasure extends BaseDistanceMeasure implements T
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
-        ParamHandler.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+    public void setParams(final ParamSet param) throws Exception {
+        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+        ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
         super.setParams(param);
     }
 

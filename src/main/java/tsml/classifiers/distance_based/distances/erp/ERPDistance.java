@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
@@ -125,9 +125,9 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
     }
 
     @Override
-    public void setParams(final ParamSet param) {
+    public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandler.setParam(param, G_FLAG, this::setG, Double.class);
+        ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double.class);
     }
 
 }

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
@@ -130,7 +130,8 @@ public class WDTWDistance
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, WDTW.G_FLAG, this::setG, Double.class);
+    public void setParams(final ParamSet param) throws Exception {
+        super.setParams(param);
+        ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG, Double.class);
     }
 }

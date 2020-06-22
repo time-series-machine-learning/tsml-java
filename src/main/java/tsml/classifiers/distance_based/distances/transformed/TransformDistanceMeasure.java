@@ -7,14 +7,11 @@ Contributors: goastler
     
 */
 
-import java.util.function.Function;
-
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
-import weka.core.Instance;
 
 public class TransformDistanceMeasure extends TransformedDistanceMeasure implements TransformDistanceMeasureable {
 
@@ -38,10 +35,11 @@ public class TransformDistanceMeasure extends TransformedDistanceMeasure impleme
         super.setName(name);
     }
 
-    @Override public void setParams(final ParamSet param) {
+    @Override public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandler.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
-        ParamHandler.setParam(param, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+        ParamHandlerUtils
+                .setParam(param, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
     }
 
 }

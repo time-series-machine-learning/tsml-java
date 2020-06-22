@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.proximity;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 
 public class CrossValidation extends BaseTrainEstimateMethod {
@@ -24,8 +24,8 @@ public class CrossValidation extends BaseTrainEstimateMethod {
         return super.getParams().add(NUM_FOLDS_FLAG, numFolds);
     }
 
-    @Override public void setParams(final ParamSet paramSet) {
+    @Override public void setParams(final ParamSet paramSet) throws Exception {
         super.setParams(paramSet);
-        ParamHandler.setParam(paramSet, NUM_FOLDS_FLAG, this::setNumFolds, Integer.class);
+        ParamHandlerUtils.setParam(paramSet, NUM_FOLDS_FLAG, this::setNumFolds, Integer.class);
     }
 }

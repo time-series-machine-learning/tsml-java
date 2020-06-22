@@ -1,12 +1,10 @@
 package tsml.transformers;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.transformers.Indexer.IndexedInstance;
 import weka.core.Capabilities;
@@ -109,8 +107,9 @@ public class CachedTransformer extends BaseTrainableTransformer {
     }
 
     @Override
-    public void setParams(final ParamSet paramSet) {
-        ParamHandler.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+    public void setParams(final ParamSet paramSet) throws Exception {
+        super.setParams(paramSet);
+        ParamHandlerUtils.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
     }
 
     @Override

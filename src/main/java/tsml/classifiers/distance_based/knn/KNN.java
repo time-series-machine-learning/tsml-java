@@ -5,6 +5,7 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
@@ -14,7 +15,6 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -176,11 +176,12 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                     .add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, distanceFunction);
     }
 
-    @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
-        ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
-        ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
-        ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
+    @Override public void setParams(final ParamSet params) throws Exception {
+        ParamHandlerUtils
+                .setParam(params, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandlerUtils.setParam(params, getKFlag(), this::setK, Integer.class);
+        ParamHandlerUtils.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
+        ParamHandlerUtils.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
     }
 
     @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {

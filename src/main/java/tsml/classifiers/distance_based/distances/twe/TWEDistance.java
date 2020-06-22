@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.twe;
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
@@ -174,9 +174,10 @@ public class TWEDistance
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, NU_FLAG, this::setNu, Double.class);
-        ParamHandler.setParam(param, LAMBDA_FLAG, this::setLambda, Double.class);
+    public void setParams(final ParamSet param) throws Exception {
+        super.setParams(param);
+        ParamHandlerUtils.setParam(param, NU_FLAG, this::setNu, Double.class);
+        ParamHandlerUtils.setParam(param, LAMBDA_FLAG, this::setLambda, Double.class);
     }
 
 }

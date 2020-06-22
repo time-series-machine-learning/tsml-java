@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.msm;
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
@@ -141,8 +141,8 @@ public class MSMDistance
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, C_FLAG, this::setC, Double.class);
+    public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
+        ParamHandlerUtils.setParam(param, C_FLAG, this::setC, Double.class);
     }
 }

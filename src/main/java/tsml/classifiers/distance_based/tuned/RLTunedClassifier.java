@@ -5,6 +5,7 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
@@ -19,7 +20,6 @@ import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
 import utilities.*;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -236,11 +236,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                                     .add(TRAIN_SETUP_FUNCTION_FLAG, trainSetupFunction);
     }
 
-    @Override public void setParams(final ParamSet params) {
+    @Override public void setParams(final ParamSet params) throws Exception {
 //        TrainTimeContractable.super.setParams(params);
-        ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
-                              TrainSetupFunction.class); //
+        ParamHandlerUtils.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
+        ParamHandlerUtils.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
+                                   TrainSetupFunction.class); //
         // todo
         // finish params
     }

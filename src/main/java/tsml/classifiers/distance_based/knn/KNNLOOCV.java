@@ -12,6 +12,7 @@ import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIt
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.iteration.RandomIterator;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
@@ -21,7 +22,6 @@ import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.cache.BiCache;
 import tsml.classifiers.distance_based.utils.collections.cache.SymmetricBiCache;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -417,11 +417,11 @@ public class KNNLOOCV
             ;
     }
 
-    @Override public void setParams(final ParamSet params) {
+    @Override public void setParams(final ParamSet params) throws Exception {
         super.setParams(params);
-        ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
-        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
-                              NeighbourIteratorBuilder.class);
+        ParamHandlerUtils.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
+        ParamHandlerUtils.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
+                                   NeighbourIteratorBuilder.class);
 //        TrainTimeContractable.super.setParams(params);
     }
 

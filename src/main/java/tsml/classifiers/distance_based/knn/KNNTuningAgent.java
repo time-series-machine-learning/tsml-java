@@ -50,7 +50,11 @@ public class KNNTuningAgent extends BaseTuningAgent {
         final EnhancedAbstractClassifier classifier = classifierBuilder.build();
         final ParamSet paramSet = paramSetIterator.next();
         if(classifier instanceof ParamHandler) {
-            ((ParamHandler) classifier).setParams(paramSet);
+            try {
+                ((ParamHandler) classifier).setParams(paramSet);
+            } catch(Exception e) {
+                throw new IllegalStateException(e);
+            }
         } else {
             try {
                 classifier.setOptions(paramSet.getOptions());

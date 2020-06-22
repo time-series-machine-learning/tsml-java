@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 
 public abstract class WarpingDistanceMeasure extends BaseDistanceMeasure {
@@ -79,10 +79,10 @@ public abstract class WarpingDistanceMeasure extends BaseDistanceMeasure {
     public static final String WINDOW_SIZE_PERCENTAGE_FLAG = "wsp";
 
     @Override
-    public void setParams(final ParamSet param) {
+    public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandler.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer.class);
-        ParamHandler.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double.class);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer.class);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double.class);
     }
 
     @Override

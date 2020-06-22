@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.proximity;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 
 public class OutOfBag extends BaseTrainEstimateMethod {
@@ -23,9 +23,9 @@ public class OutOfBag extends BaseTrainEstimateMethod {
         return super.getParams().add(REBUILD_FLAG, rebuildAfterBagging);
     }
 
-    @Override public void setParams(final ParamSet paramSet) {
+    @Override public void setParams(final ParamSet paramSet) throws Exception {
         super.setParams(paramSet);
-        ParamHandler.setParam(paramSet, REBUILD_FLAG, this::setRebuildAfterBagging, Boolean.class);
+        ParamHandlerUtils.setParam(paramSet, REBUILD_FLAG, this::setRebuildAfterBagging, Boolean.class);
     }
 }
 

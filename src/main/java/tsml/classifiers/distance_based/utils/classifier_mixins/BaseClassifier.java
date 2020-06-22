@@ -93,7 +93,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public void setParams(ParamSet params) {
+    public void setParams(ParamSet params) throws Exception {
         Assert.assertNotNull(params);
     }
 

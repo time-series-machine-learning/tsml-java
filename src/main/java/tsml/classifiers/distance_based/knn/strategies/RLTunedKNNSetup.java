@@ -525,7 +525,11 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
             ParamSet paramSet = paramSetIterator.next();
             paramCount.set(paramCount.get() + 1);
             final KNNLOOCV knn = knnSupplier.get();
-            knn.setParams(paramSet);
+            try {
+                knn.setParams(paramSet);
+            } catch(Exception e) {
+                throw new IllegalStateException(e);
+            }
             final String name = knn.getClassifierName() + "_" + (id++);
             knn.setClassifierName(name);
             knn.setNeighbourLimit(neighbourCount.get());

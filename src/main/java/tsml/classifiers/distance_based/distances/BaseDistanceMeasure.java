@@ -138,7 +138,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
         data.add(ins);
     }
 
-    @Override public void setParams(final ParamSet param) {
+    @Override public void setParams(final ParamSet param) throws Exception {
 
     }
 

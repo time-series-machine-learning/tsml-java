@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
 import tsml.classifiers.distance_based.distances.IntBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
@@ -148,8 +148,8 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
+    public void setParams(final ParamSet param) throws Exception {
+        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
         super.setParams(param);
     }
 }

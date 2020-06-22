@@ -62,52 +62,13 @@ public interface ParamHandler
         return Collections.enumeration(listParams());
     }
 
-    default void setParams(ParamSet paramSet) {
+    default void setParams(ParamSet paramSet) throws Exception {
         // OVERRIDE THIS
     }
 
     default ParamSet getParams() {
         // OVERRIDE THIS
         return new ParamSet();
-    }
-
-    /**
-     * Set parameter using name, a setter and a class type of the parameter. This is a utility method so you don't
-     * have to keep typing out the parameter propogation code every time you set a parameter from options.
-     * @param params
-     * @param name
-     * @param setter
-     * @param clazz
-     * @param <A>
-     */
-    static <A> void setParam(ParamSet params, String name, Consumer<A> setter, Class<? extends A> clazz) { // todo
-        // replace
-        // get the values associated with the name
-        List<Object> paramSets = params.get(name);
-        // if no values found then bail
-        if(paramSets == null) {
-            return;
-        }
-        // otherwise try and set each value
-        for(Object value : paramSets) {
-            // value may be a string if it's come from getOptions() or from cmdline.
-            // need to convert string to the clazz type IF the clazz type is a primitive.
-            // there shouldn't be clazz of type non-primitive, this should have been converted from string to object
-            // earlier.
-            try {
-                setter.accept((clazz.cast(value)));
-            } catch(ClassCastException e) {
-                IllegalStateException exception = new IllegalStateException(
-                    "Cannot cast {" + value + "} to class {" + clazz.getSimpleName() + "} for"
-                        + " parameter {" + name + "}");
-                exception.addSuppressed(e);
-                throw exception;
-            }
-        }
-    }
-
-    static void setParam(ParamSet params, String name, Consumer<Double> setter) {
-
     }
 
     default Set<String> listParams() {

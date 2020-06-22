@@ -40,7 +40,8 @@ public class WDDTWDistance extends TransformedDistanceMeasure implements WDTW {
         return wdtw.getParams(); // not including super params as we handle them manually in this class
     }
 
-    @Override public void setParams(final ParamSet param) {
+    @Override public void setParams(final ParamSet param) throws Exception {
+        super.setParams(param);
         wdtw.setParams(param); // not including super params as we handle them manually in this class
     }
 }
