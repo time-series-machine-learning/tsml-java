@@ -1,18 +1,14 @@
 package tsml.classifiers.distance_based.distances.twe;
 
-import distance.elastic.TWE;
-import experiments.data.DatasetLoading;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
-import tsml.classifiers.distance_based.distances.msm.MSMDistance;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
-import utilities.Utilities;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearchIterator;
 import weka.core.Instance;
 import weka.core.Instances;
 

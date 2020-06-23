@@ -1,8 +1,8 @@
 package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
 
 /**

@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.Indexer.IndexedInstance;
 import weka.core.Capabilities;
 import weka.core.Instance;

@@ -6,11 +6,9 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
-import tsml.classifiers.distance_based.distances.msm.MSMDistance;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.params.iteration.GridSearchIterator;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearchIterator;
 import weka.core.Instance;
 import weka.core.Instances;
 

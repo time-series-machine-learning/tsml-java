@@ -3,8 +3,7 @@ package tsml.classifiers.distance_based.distances.wddtw;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.transformers.CachedTransformer;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.Derivative;
 
 

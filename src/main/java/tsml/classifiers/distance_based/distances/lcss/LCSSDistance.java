@@ -1,8 +1,8 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
 import tsml.classifiers.distance_based.distances.IntBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
 
 /**

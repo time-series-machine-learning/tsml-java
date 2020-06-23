@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.utils.system.timing;
 
-import tsml.classifiers.distance_based.utils.classifier_mixins.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
 
 public interface TimedTest extends TestTimeable {
     StopWatch getTestTimer();

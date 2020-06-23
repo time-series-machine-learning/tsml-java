@@ -3,9 +3,9 @@ package tsml.classifiers.distance_based.knn;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.proximity.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import weka.core.Instances;
 
 import java.util.Iterator;

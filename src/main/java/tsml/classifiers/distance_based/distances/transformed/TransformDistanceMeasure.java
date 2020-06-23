@@ -8,8 +8,8 @@ Contributors: goastler
 */
 
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
 

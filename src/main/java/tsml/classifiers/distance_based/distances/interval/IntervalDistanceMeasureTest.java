@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.ed.EuclideanDistance;
-import tsml.classifiers.distance_based.utils.intervals.Interval;
+import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import weka.core.Instance;
 import weka.core.Instances;
 

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.proximity;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 
 public class OutOfBag extends BaseTrainEstimateMethod {
     public OutOfBag(final boolean rebuildAfterBagging) {

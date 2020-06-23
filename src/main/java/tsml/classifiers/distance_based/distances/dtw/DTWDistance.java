@@ -2,9 +2,6 @@ package tsml.classifiers.distance_based.distances.dtw;
 
 
 import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
 import weka.core.Instance;
 
 /**

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.proximity;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import weka.core.Instances;
 
 /**

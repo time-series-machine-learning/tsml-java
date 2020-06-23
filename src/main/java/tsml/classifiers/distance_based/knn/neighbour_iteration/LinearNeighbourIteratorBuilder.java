@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn.neighbour_iteration;
 
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
-import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
+import tsml.classifiers.distance_based.utils.collections.iteration.LinearListIterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;

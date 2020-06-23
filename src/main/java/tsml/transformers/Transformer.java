@@ -1,7 +1,6 @@
 package tsml.transformers;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;

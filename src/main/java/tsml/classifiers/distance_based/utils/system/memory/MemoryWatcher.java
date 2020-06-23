@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.classifiers.Copy;
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
 
 /**

@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 
 public abstract class WarpingDistanceMeasure extends BaseDistanceMeasure {
     private int windowSize = -1;

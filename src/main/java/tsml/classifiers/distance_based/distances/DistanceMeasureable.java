@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
 import java.io.Serializable;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.neighboursearch.PerformanceStats;

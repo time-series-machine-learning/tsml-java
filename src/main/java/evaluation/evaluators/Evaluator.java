@@ -15,7 +15,7 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.Copy;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;

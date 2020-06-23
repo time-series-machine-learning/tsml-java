@@ -14,7 +14,6 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.random.DebuggingRandom;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 

@@ -14,9 +14,6 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-
 import java.util.concurrent.TimeUnit;
 
 /**

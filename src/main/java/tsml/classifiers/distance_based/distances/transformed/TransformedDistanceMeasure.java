@@ -10,8 +10,8 @@ Contributors: goastler
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureable;
-import tsml.classifiers.distance_based.utils.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.TrainableTransformer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;

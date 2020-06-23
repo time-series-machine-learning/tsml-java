@@ -1,20 +1,19 @@
 package tsml.classifiers.distance_based.proximity;
 
 import com.google.common.collect.Lists;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.EnumBasedClassifierConfigurer;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Utils;
+import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.Configurer;
+import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
+import tsml.classifiers.distance_based.utils.classifiers.Utils;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.collections.tree.Tree;
 import tsml.classifiers.distance_based.utils.collections.tree.TreeNode;
-import tsml.classifiers.distance_based.utils.contracting.ContractedTest;
-import tsml.classifiers.distance_based.utils.contracting.ContractedTrain;
-import tsml.classifiers.distance_based.utils.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
+import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;

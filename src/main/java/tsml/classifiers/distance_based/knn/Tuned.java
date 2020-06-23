@@ -4,19 +4,13 @@ import evaluation.storage.ClassifierResults;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.proximity.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Configurer;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.scoring.ResultsScorer;
-import weka.classifiers.Classifier;
+import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.Configurer;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.stats.scoring.ResultsScorer;
 import weka.core.Instance;
 import weka.core.Instances;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeMap;
 
 public class Tuned extends BaseClassifier {
 
