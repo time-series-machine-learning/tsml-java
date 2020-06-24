@@ -8,6 +8,16 @@ import weka.core.Instances;
 import java.util.Enumeration;
 
 public class IntervalInstance implements Instance {
+
+    public static Instances extractInterval(Instances data, Interval interval) {
+        Instances intervaledData = new Instances(data, data.size());
+        for(Instance instance : data) {
+            final IntervalInstance intervalInstance = new IntervalInstance(interval, instance);
+            intervaledData.add(intervalInstance);
+        }
+        return intervaledData;
+    }
+
     private Interval interval;
     private Instance instance;
 
@@ -31,6 +41,7 @@ public class IntervalInstance implements Instance {
 
     public void setInstance(final Instance instance) {
         Assert.assertNotNull(instance);
+        Assert.assertEquals(instance.numAttributes() - 1, instance.classIndex());
         this.instance = instance;
     }
 
@@ -199,7 +210,12 @@ public class IntervalInstance implements Instance {
     }
 
     @Override public double[] toDoubleArray() {
-        return instance.toDoubleArray();
+        double[] values = new double[interval.size()];
+        for(int i = 0; i < values.length; i++) {
+            final int translated = interval.translate(i);
+            values[i] = instance.value(translated);
+        }
+        return values;
     }
 
     @Override public String toStringNoWeight(final int afterDecimalPoint) {
@@ -252,5 +268,12 @@ public class IntervalInstance implements Instance {
 
     @Override public IntervalInstance copy() {
         return new IntervalInstance(interval, instance);
+    }
+
+    @Override public String toString() {
+        return "IntervalInstance{" +
+               "interval=" + interval +
+               ", instance=" + instance +
+               '}';
     }
 }

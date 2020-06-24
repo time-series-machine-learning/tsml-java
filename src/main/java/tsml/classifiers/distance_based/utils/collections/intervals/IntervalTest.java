@@ -7,62 +7,57 @@ import org.junit.Test;
 public class IntervalTest {
 
     private Interval interval;
+    private int start;
+    private int length;
 
     @Before
     public void before() {
         interval = new Interval();
-        interval.setStart(50);
-        interval.setEnd(60);
-    }
-
-    private void reverseInterval() {
-        final int end = interval.getEnd();
-        interval.setEnd(interval.getStart());
-        interval.setStart(end);
+        this.start = 50;
+        this.length = 11;
+        interval.setStart(start);
+        interval.setLength(length);
     }
 
     @Test
     public void testIntervalSize() {
-        Assert.assertEquals(11, interval.size());
+        Assert.assertEquals(length, interval.size());
     }
 
     @Test
-    public void testReversedIntervalSize() {
-        reverseInterval();
-        Assert.assertEquals(11, interval.size());
-    }
-
-    @Test
-    public void testIntervalIndexToAttributeIndex() {
-        for(int i = 0; i < 11; i++) {
+    public void testTranslate() {
+        for(int i = 0; i < length; i++) {
             final int index = interval.translate(i);
-            Assert.assertEquals(i + interval.getStart(), index);
+            Assert.assertEquals(i + start, index);
         }
     }
 
     @Test
-    public void testAttributeIndexToIntervalIndex() {
-        for(int i = 0; i < 11; i++) {
-            final int index = interval.inverseTranslate(i + interval.getStart());
+    public void testInverseTranslate() {
+        for(int i = 0; i < length; i++) {
+            final int index = interval.inverseTranslate(i + start);
             Assert.assertEquals(i, index);
         }
     }
 
-    @Test
-    public void testReversedIntervalIndexToAttributeIndex() {
-        reverseInterval();
-        for(int i = 0; i < 11; i++) {
-            final int index = interval.translate(i);
-            Assert.assertEquals(interval.getStart() - i, index);
-        }
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testInverseTranslateOutOfBoundsAbove() {
+        interval.inverseTranslate(start + length);
     }
 
-    @Test
-    public void testReversedAttributeIndexToIntervalIndex() {
-        reverseInterval();
-        for(int i = 0; i < 11; i++) {
-            final int index = interval.inverseTranslate(interval.getStart() - i);
-            Assert.assertEquals(i, index);
-        }
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testInverseTranslateOutOfBoundsBelow() {
+        interval.inverseTranslate(start - 1);
+    }
+
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testTranslateOutOfBoundsAbove() {
+        interval.translate(length);
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testTranslateOutOfBoundsBelow() {
+        interval.translate(-1);
     }
 }

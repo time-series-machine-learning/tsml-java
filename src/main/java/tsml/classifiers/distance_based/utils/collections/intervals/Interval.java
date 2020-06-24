@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.intervals;
 
+import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -12,25 +13,26 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
  */
 public class Interval implements ParamHandler {
     private int start;
-    private int end;
+    private int length;
     public static final String START_FLAG = "s";
-    public static final String END_FLAG = "e";
+    public static final String LENGTH_FLAG = "l";
 
     public Interval() {
-        this(-1, -1);
+        this(0, 0);
     }
 
-    public Interval(final int start, final int end) {
-        setEnd(end);
+    public Interval(final int start, final int length) {
+        setLength(length);
         setStart(start);
     }
 
-    public int getEnd() {
-        return end;
+    public int getLength() {
+        return length;
     }
 
-    public void setEnd(final int end) {
-        this.end = end;
+    public void setLength(final int length) {
+        Assert.assertTrue(length >= 0);
+        this.length = length;
     }
 
     public int getStart() {
@@ -38,11 +40,12 @@ public class Interval implements ParamHandler {
     }
 
     public void setStart(final int start) {
+        Assert.assertTrue(start >= 0);
         this.start = start;
     }
 
     public int size() {
-        return Math.abs(end - start) + 1;
+        return length;
     }
 
     /**
@@ -51,16 +54,13 @@ public class Interval implements ParamHandler {
      * @return
      */
     public int translate(int index) {
-        index = adjustIndex(index);
-        index += Math.min(start, end);
-        return index;
-    }
-
-    public int adjustIndex(int index) {
-        if(start > end) {
-            index = size() - index - 1;
+        if(index > length - 1) {
+            throw new ArrayIndexOutOfBoundsException(index);
         }
-        return index;
+        if(index < 0) {
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+        return index + start;
     }
 
     /**
@@ -69,18 +69,29 @@ public class Interval implements ParamHandler {
      * @return
      */
     public int inverseTranslate(int index) {
-        index -= Math.min(start, end);
-        index = adjustIndex(index);
-        return index;
+        if(index > start + length - 1) {
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+        if(index < start) {
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+        return index - start;
     }
 
     @Override public ParamSet getParams() {
-        return ParamHandler.super.getParams().add(START_FLAG, start).add(END_FLAG, end);
+        return ParamHandler.super.getParams().add(START_FLAG, start).add(LENGTH_FLAG, length);
     }
 
     @Override public void setParams(final ParamSet paramSet) throws Exception {
         ParamHandler.super.setParams(paramSet);
         ParamHandlerUtils.setParam(paramSet, START_FLAG, this::setStart, Integer.class);
-        ParamHandlerUtils.setParam(paramSet, END_FLAG, this::setEnd, Integer.class);
+        ParamHandlerUtils.setParam(paramSet, LENGTH_FLAG, this::setLength, Integer.class);
+    }
+
+    @Override public String toString() {
+        return "Interval{" +
+               "start=" + start +
+               ", length=" + length +
+               '}';
     }
 }
