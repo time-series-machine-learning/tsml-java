@@ -19,7 +19,6 @@ import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
-import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -92,6 +91,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 proximityTree = R1.applyConfigTo(proximityTree);
                 proximityTree = super.applyConfigTo(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10);
+                return proximityTree;
+            }
+        },
+        R5_I() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = R1.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5_I);
                 return proximityTree;
             }
         },
@@ -223,7 +231,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // add the root node to the build queue
             nodeBuildQueue.add(root);
         }
-        Indexer.index(trainData);
         while(
             // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
@@ -231,7 +238,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // there is enough time for another split to be built
                 insideTrainTimeLimit(trainTimer.lap() +
                                      maxTimePerInstanceForNodeBuilding *
-                                     nodeBuildQueue.peekFirst().getElement().getData().size())
+                                     nodeBuildQueue.peekFirst().getElement().getTrainData().size())
         ) {
             // time how long it takes to build the node
             trainStageTimer.resetAndStart();
@@ -306,7 +313,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
             // check the stopping condition hasn't been hit
             // check the data at the node is not pure
-            if(!Utilities.isHomogeneous(node.getElement().getData())) {
+            if(!Utilities.isHomogeneous(node.getElement().getTrainData())) {
                 // if not hit the stopping condition then add node to the build queue
                 if(breadthFirst) {
                     nodeBuildQueue.addLast(node);
@@ -319,7 +326,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private long findNodeBuildTime(TreeNode<ProximitySplit> node, long time) {
         // assume that the time taken to build a node is proportional to the amount of instances at the node
-        final Instances data = node.getElement().getData();
+        final Instances data = node.getElement().getTrainData();
         final long timePerInstance = time / data.size();
         return Math.max(maxTimePerInstanceForNodeBuilding, timePerInstance + 1); // add 1 to account for precision
         // error in div operation
@@ -333,7 +340,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
      */
     private ProximitySplit setupSplit(Instances data) {
         ProximitySplit split = new ProximitySplit(getRandom());
-        split.setData(data);
+        split.setTrainData(data);
         split.setDistanceFunctionSpaceBuilders(distanceFunctionSpaceBuilders);
         proximitySplitConfig.applyConfigTo(split);
         return split;

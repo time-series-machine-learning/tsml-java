@@ -6,7 +6,6 @@ import java.util.Map;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.transformers.Indexer.IndexedInstance;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -21,10 +20,9 @@ public class CachedTransformer extends BaseTrainableTransformer {
 
     // the filter to cache the output of
     private Transformer transformer;
-    private final Indexer indexer = new Indexer();
 
     // the cache to store instances against their corresponding transform output
-    private Map<IndexedInstance, IndexedInstance> cache;
+    private Map<Instance, Instance> cache;
 
     public CachedTransformer(Transformer transformer) {
         setTransformer(transformer);
@@ -34,13 +32,11 @@ public class CachedTransformer extends BaseTrainableTransformer {
     public void reset() {
         super.reset();
         cache = null;
-        indexer.reset();
     }
 
     @Override
     public void fit(final Instances data) {
         super.fit(data);
-        indexer.fit(data);
         // make the cache match the size of the data (as that is the max expected cache entries at any point in time)
         // . Load factor of 1 should mean if no more than data size instances are added, the hashmap will not expand
         // and waste cpu time
@@ -61,34 +57,21 @@ public class CachedTransformer extends BaseTrainableTransformer {
         this.transformer = transformer;
     }
 
-    public void setCache(final Map<IndexedInstance, IndexedInstance> cache) {
+    public void setCache(final Map<Instance, Instance> cache) {
         Assert.assertNotNull(cache);
         this.cache = cache;
     }
 
     @Override
-    public IndexedInstance transform(Instance instance) {
+    public Instance transform(Instance instance) {
         if(!isFit()) {
             throw new IllegalStateException("must be fitted first");
         }
-        IndexedInstance transformedInstance = null;
-        int index = -1;
-        if(instance instanceof IndexedInstance) {
-            // the instance is from the fitted data so fetch from cache if possible
-            index = ((IndexedInstance) instance).getIndex();
-        }
-        if(index >= 0) {
-            // if index is non-negative then the instance is from the fitted data and is eligible for caching
-            transformedInstance = cache.get(instance);
-            // if not instance is present in cache then transform and add
-            if(transformedInstance == null) {
-                transformedInstance = new IndexedInstance(transformer.transform(instance), index);
-                cache.put((IndexedInstance) instance, transformedInstance);
-            }
-        } else {
-            // otherwise transform the unseen instance (this would be a test instance, i.e. not in cache / should not
-            // be added to cache)
-            transformedInstance = new IndexedInstance(transformer.transform(instance), -1);
+        Instance transformedInstance = cache.get(instance);
+        // if not instance is present in cache then transform and add
+        if(transformedInstance == null) {
+            transformedInstance = transformer.transform(instance);
+            cache.put(instance, transformedInstance);
         }
         return transformedInstance;
     }
@@ -102,7 +85,7 @@ public class CachedTransformer extends BaseTrainableTransformer {
         return transformer;
     }
 
-    public Map<IndexedInstance, IndexedInstance> getCache() {
+    public Map<Instance, Instance> getCache() {
         return cache;
     }
 

@@ -20,7 +20,6 @@ import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
-import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -76,8 +75,9 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
     private final StopWatch trainEstimateTimer = new StopWatch();
     private final StopWatch trainStageTimer = new StopWatch();
     private final StopWatch testStageTimer = new StopWatch();
-    private List<Indexer.IndexedInstance> trainData;
+    private List<Instance> trainData;
     private List<Search> searches;
+    private Map<Instance, Search> searchLookup;
     private ListIterator<Search> targetSearchIterator;
     private DistanceFunction distanceFunction;
     private int k;
@@ -101,31 +101,33 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
         if(isRebuild()) {
             trainTimer.resetAndStart();
             trainEstimateTimer.resetAndStop();
-            this.trainData = Indexer.index(trainData);
+            this.trainData = trainData;
             if(getEstimateOwnPerformance()) {
                 // need a matrix of pairwise distances between instances. The matrix will be symmetrical, therefore
                 // only need to consider instances in the lower or upper triangle discounting the main diagonal as
                 // this include self comparisons (going against LOOCV).
                 // the searches, one per instance to search their corresponding neighbourhood
                 searches = new ArrayList<>(trainData.size());
+                searchLookup = new HashMap<>(trainData.size(), 1);
                 // the neighbourhood for each instance. As only the lower or upper triangle is being considered the
                 // neighbourhood can be expanded by one for every instance (i.e. row of the matrix) looked at,
                 // forming the lower triangle
-                final List<Indexer.IndexedInstance> neighbourhood = new ArrayList<>(trainData.size());
+                final List<Instance> neighbourhood = new ArrayList<>(trainData.size());
                 // method of iterating through the searches
                 targetSearchIterator = new RandomIterator<>(rand, new ArrayList<>(trainData.size()), true);
                 // for each row of the matrix (i.e. neighbourhood search)
                 for(int i = 0; i < trainData.size(); i++) {
-                    final Indexer.IndexedInstance instance = (Indexer.IndexedInstance) trainData.get(i);
-                    final ArrayList<Indexer.IndexedInstance> neighbourhoodCopy = new ArrayList<>(neighbourhood);
-                    final Search search = new Search(instance, neighbourhoodCopy,
+                    final Instance target = trainData.get(i);
+                    final ArrayList<Instance> neighbourhoodCopy = new ArrayList<>(neighbourhood);
+                    final Search search = new Search(target, neighbourhoodCopy,
                                                      new RandomIterator<>(rand, neighbourhoodCopy, false), true);
                     if(i > 0) {
                         // neighbourhood is not empty, add the search to the iterator
                         targetSearchIterator.add(search);
                     }
-                    neighbourhood.add(instance);
+                    neighbourhood.add(target);
                     searches.add(search);
+                    searchLookup.put(target, search);
                 }
             }
             comparisonCount = 0;
@@ -142,20 +144,20 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
                 trainStageTimer.resetAndStart();
                 // fetch the next target
                 final Search targetSearch = targetSearchIterator.next();
-                final Indexer.IndexedInstance target = (Indexer.IndexedInstance) targetSearch.getTarget();
+                final Instance target = (Instance) targetSearch.getTarget();
                 // get the remaining candidate neighbours for the target search
-                final List<Indexer.IndexedInstance> neighbourhood = targetSearch.getNeighbourhood();
+                final List<Instance> neighbourhood = targetSearch.getNeighbourhood();
                 // pick one candidate
-                final Iterator<Indexer.IndexedInstance> neighbourIterator = targetSearch.getIterator();
+                final Iterator<Instance> neighbourIterator = targetSearch.getIterator();
                 // remove that candidate, as it should not be assessed as a potential neighbour again
-                final Indexer.IndexedInstance candidate = neighbourIterator.next();
+                final Instance candidate = neighbourIterator.next();
                 // remove the search from the iterator if there's no more neighbours to assess
                 if(!neighbourIterator.hasNext()) {
                     targetSearchIterator.remove();
                 }
 //                System.out.println(target.getIndex() + "," + candidate.getIndex());
                 // find the search associated with the candidate
-                final Search candidateSearch = searches.get(candidate.getIndex());
+                final Search candidateSearch = searchLookup.get(candidate);
                 // find the max limit of both the candidate's neighbour search and the target's neighbour search
                 final double limit = Math.max(targetSearch.getLimit(), candidateSearch.getLimit());
                 // find the distance between the target and candidate
@@ -234,8 +236,8 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
     public double[] distributionForInstance(final Instance target) throws Exception {
         testTimer.resetAndStart();
         longestNeighbourComparisonTimeTest = 0;
-        final List<Indexer.IndexedInstance> neighbourhood = new ArrayList<>(trainData);
-        final Iterator<Indexer.IndexedInstance> iterator = new RandomIterator<>(rand, neighbourhood, false);
+        final List<Instance> neighbourhood = new ArrayList<>(trainData);
+        final Iterator<Instance> iterator = new RandomIterator<>(rand, neighbourhood, false);
         final Search search = new Search(target, neighbourhood, iterator, false);
         while(iterator.hasNext() && insideTestTimeLimit(
                 testTimer.getTime() + longestNeighbourComparisonTimeTest)) {
@@ -348,8 +350,8 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
 
     private class Search implements TimedTest {
 
-        private Search(final Instance target, final List<Indexer.IndexedInstance> neighbourhood,
-                       final Iterator<Indexer.IndexedInstance> iterator, boolean training) {
+        private Search(final Instance target, final List<Instance> neighbourhood,
+                       final Iterator<Instance> iterator, boolean training) {
             this.target = target;
             this.neighbourhood = neighbourhood;
             this.iterator = iterator;
@@ -366,8 +368,8 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
 
         private final Instance target;
         private final PrunedMultimap<Double, Instance> distanceMap;
-        private final List<Indexer.IndexedInstance> neighbourhood;
-        private final Iterator<Indexer.IndexedInstance> iterator;
+        private final List<Instance> neighbourhood;
+        private final Iterator<Instance> iterator;
         private final StopWatch testTimer = new StopWatch();
         private double limit;
         private int neighbourCount = 0;
@@ -385,7 +387,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             return target;
         }
 
-        public List<Indexer.IndexedInstance> getNeighbourhood() {
+        public List<Instance> getNeighbourhood() {
             return neighbourhood;
         }
 
@@ -442,7 +444,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
             return neighbourCount;
         }
 
-        public Iterator<Indexer.IndexedInstance> getIterator() {
+        public Iterator<Instance> getIterator() {
             return iterator;
         }
     }
