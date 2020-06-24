@@ -1747,12 +1747,10 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
                 buildTimeDuplicateWarningPrinted = true;
             }
 
-            if (classifierName.toLowerCase().equals("tapnet")) buildTime = (long)Double.parseDouble(parts[1]);
-            else buildTime = Long.parseLong(parts[1]);
+            buildTime = Long.parseLong(parts[1]);
         }
         if (parts.length > 2)
-            if (classifierName.toLowerCase().equals("tapnet")) testTime = (long)Double.parseDouble(parts[2]);
-            else testTime = Long.parseLong(parts[2]);
+            testTime = Long.parseLong(parts[2]);
         if (parts.length > 3)
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4)
