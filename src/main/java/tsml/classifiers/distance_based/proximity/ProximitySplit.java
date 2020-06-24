@@ -235,6 +235,7 @@ public class ProximitySplit extends BaseClassifier {
         }
         // backup the train data as modifications may be made during splitting (e.g. if doing intervals)
         final Instances origTrainData = new Instances(trainData);
+        modifiedTrainData = null;
         // for every split attempt
         for(int i = 0; i < r; i++) {
             // pick the (optional) interval
@@ -290,11 +291,7 @@ public class ProximitySplit extends BaseClassifier {
         final RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
         final ParamSet paramSet = iterator.next();
         // there is only one distance function in the ParamSet returned
-        DistanceFunction df = (DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
-        // setup interval
-        if(randomIntervals) {
-
-        }
+        final DistanceFunction df = (DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
         setDistanceFunction(df);
     }
 
