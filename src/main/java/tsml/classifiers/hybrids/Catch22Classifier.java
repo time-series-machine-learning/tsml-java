@@ -36,6 +36,9 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
  *
  * Implementation based on C and Matlab code provided on authors github:
  * https://github.com/chlubba/catch22
+ *
+ * @author Matthew Middlehurst
+ *
  */
 public class Catch22Classifier extends EnhancedAbstractClassifier {
 
@@ -114,7 +117,7 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
             c.buildClassifier(train);
             accuracy = ClassifierTools.accuracy(test, c);
 
-            System.out.println("tsml.transformers.Catch22 accuracy on " + i + " " + dataset + " fold " + fold + " = "
+            System.out.println("Catch22Classifier accuracy on " + i + " " + dataset + " fold " + fold + " = "
                     + accuracy);
         }
     }

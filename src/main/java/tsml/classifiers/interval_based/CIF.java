@@ -124,7 +124,6 @@ public class CIF extends EnhancedAbstractClassifier
     private int seriesLength;
 
     /** Multivariate **/
-    private boolean isMultivariate = false;
     private int numColumns;
     private ArrayList<ArrayList<Integer>> intervalColumns;
 
@@ -170,6 +169,8 @@ public class CIF extends EnhancedAbstractClassifier
     public void setBagging(boolean b){
         bagging = b;
     }
+
+    public void setEstimator(EstimatorMethod e) { estimator = e; }
 
     /**
      * @return String written to results files

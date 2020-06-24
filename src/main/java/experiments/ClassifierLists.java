@@ -152,7 +152,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -185,7 +185,9 @@ public class ClassifierLists {
                 break;
             case "WEASEL":
                 c = new WEASEL();
-
+                break;
+            case "TDE":
+                c = new TDE();
                 break;
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");

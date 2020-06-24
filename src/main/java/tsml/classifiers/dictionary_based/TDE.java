@@ -73,6 +73,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private double maxWinLenProportion = 1;
     private double maxWinSearchProportion = 0.25;
 
+    private boolean cutoff = false;
+    private double cutoffThreshold = 0.7;
+
     private transient LinkedList<IndividualTDE>[] classifiers;
     private int numSeries;
     private int[] numClassifiers;
@@ -85,6 +88,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private boolean checkpoint = false;
     private long checkpointTime = 0;
     private long checkpointTimeDiff = 0;
+    private ArrayList<Integer>[] checkpointIDs;
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
@@ -109,6 +113,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private int[] classifiersBuilt;
     private int[] lowestAccIdx;
     private double[] lowestAcc;
+    private double maxAcc;
 
     protected static final long serialVersionUID = 22555L;
 
@@ -212,6 +217,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         parametersConsideredPerChannel = saved.parametersConsideredPerChannel;
         maxEnsembleSize = saved.maxEnsembleSize;
         histogramIntersection = saved.histogramIntersection;
+        useBigrams = saved.useBigrams;
         trainProportion = saved.trainProportion;
         bayesianParameterSelection = saved.bayesianParameterSelection;
         initialRandomParameters = saved.initialRandomParameters;
@@ -221,11 +227,14 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         parametersRemaining = saved.parametersRemaining;
         maxWinLenProportion = saved.maxWinLenProportion;
         maxWinSearchProportion = saved.maxWinSearchProportion;
+        cutoff = saved.cutoff;
+        cutoffThreshold = saved.cutoffThreshold;
         numSeries = saved.numSeries;
         numClassifiers = saved.numClassifiers;
         currentSeries = saved.currentSeries;
         isMultivariate = saved.isMultivariate;
         seriesHeader = saved.seriesHeader;
+        checkpointIDs = saved.checkpointIDs;
         trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
@@ -240,6 +249,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
+        maxAcc = saved.maxAcc;
 
         trainResults = saved.trainResults;
         seed = saved.seed;
@@ -250,23 +260,27 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         classifiers = new LinkedList[numSeries];
         for (int n = 0; n < numSeries; n++) {
             classifiers[n] = new LinkedList();
-            for (int i = 0; i < saved.numClassifiers[n]; i++) {
-                System.out.println("Loading IndividualTDE" + n + "-" + i + ".ser");
+            System.out.println(checkpointIDs[n]);
+            for (int i = 0; i < maxEnsembleSize; i++) {
+                if (!checkpointIDs[n].contains(i)) {
+                    System.out.println("Loading IndividualTDE" + n + "-" + i + ".ser");
 
-                FileInputStream fis = new FileInputStream(checkpointPath + "IndividualTDE" + n + "-" + i + ".ser");
-                try (ObjectInputStream in = new ObjectInputStream(fis)) {
-                    Object indv = in.readObject();
+                    FileInputStream fis = new FileInputStream(checkpointPath + "IndividualTDE" + n + "-" + i + ".ser");
+                    try (ObjectInputStream in = new ObjectInputStream(fis)) {
+                        Object indv = in.readObject();
 
-                    if (!(indv instanceof IndividualTDE))
-                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of IndividualTDE");
-                    IndividualTDE ser = ((IndividualTDE) indv);
-                    classifiers[n].add(ser);
+                        if (!(indv instanceof IndividualTDE))
+                            throw new Exception("The SER file " + n + "-" + i + " is not an instance of IndividualTDE");
+                        IndividualTDE ser = ((IndividualTDE) indv);
+                        classifiers[n].add(ser);
+                    }
                 }
             }
         }
 
         checkpointTime = saved.checkpointTime;
         checkpointTimeDiff = saved.checkpointTimeDiff + (System.nanoTime() - checkpointTime);
+        checkContracts();
     }
 
     @Override
@@ -276,6 +290,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     public void setParametersConsidered(int size) {
         parametersConsidered = size;
+    }
+
+    public void setParametersConsideredPerChannel(int size) {
+        parametersConsideredPerChannel = size;
     }
 
     public void setMaxEnsembleSize(int size) {
@@ -317,6 +335,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     public void setUseBigrams(boolean b) { useBigrams = b; }
 
     public void setUseIGB(boolean[] arr) { useIGB = arr; }
+
+    public void setCutoff(boolean b) { cutoff = b; }
+
+    public void setCutoffThreshold(double d) { cutoffThreshold = d; }
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
@@ -362,7 +384,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             if (isMultivariate) {
                 numSeries = numDimensions(data);
                 classifiers = new LinkedList[numSeries];
-
                 for (int n = 0; n < numSeries; n++) {
                     classifiers[n] = new LinkedList<>();
                 }
@@ -372,6 +393,16 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 if (parametersConsideredPerChannel > 0) {
                     parametersConsidered = parametersConsideredPerChannel * numSeries;
                 }
+
+                if (checkpoint){
+                    checkpointIDs = new ArrayList[numSeries];
+                    for (int n = 0; n < numSeries; n++) {
+                        checkpointIDs[n] = new ArrayList<>();
+                        for (int i = 0; i < maxEnsembleSize; i++){
+                            checkpointIDs[n].add(i);
+                        }
+                    }
+                }
             }
             //Univariate
             else {
@@ -379,6 +410,14 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 classifiers = new LinkedList[1];
                 classifiers[0] = new LinkedList<>();
                 numClassifiers = new int[1];
+
+                if (checkpoint){
+                    checkpointIDs = new ArrayList[1];
+                    checkpointIDs[0] = new ArrayList<>();
+                    for (int i = 0; i < maxEnsembleSize; i++){
+                        checkpointIDs[0].add(i);
+                    }
+                }
             }
 
             rand = new Random(seed);
@@ -389,6 +428,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             lowestAccIdx = new int[numSeries];
             lowestAcc = new double[numSeries];
             for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
+            maxAcc = 0;
 
             if (getEstimateOwnPerformance()) {
                 trainDistributions = new double[data.numInstances()][data.numClasses()];
@@ -446,11 +486,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         //build classifiers up to a set size
         while ((underContractTime || sum(classifiersBuilt) < parametersConsidered)
                 && sum(parametersRemaining) > 0) {
+
             long indivBuildTime = System.nanoTime();
             boolean checkpointChange = false;
             double[] parameters = selectParameters();
             if (parameters == null) {
                 nextSeries();
+                checkContracts();
                 continue;
             }
 
@@ -473,23 +515,51 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(accuracy);
             if (trainTimeContract) paramTime[currentSeries].add((double) (System.nanoTime() - indivBuildTime));
 
-            if (numClassifiers[currentSeries] < maxEnsembleSize) {
-                if (accuracy < lowestAcc[currentSeries]) {
-                    lowestAccIdx[currentSeries] = classifiersBuilt[currentSeries];
-                    lowestAcc[currentSeries] = accuracy;
+            if (cutoff && indiv.getAccuracy() > maxAcc) {
+                maxAcc = indiv.getAccuracy();
+                for (int n = 0; n < numSeries; n++) {
+                    //get rid of any extras that dont fall within the new max threshold
+                    Iterator<IndividualTDE> it = classifiers[n].iterator();
+                    while (it.hasNext()) {
+                        IndividualTDE b = it.next();
+                        if (b.getAccuracy() < maxAcc * cutoffThreshold) {
+                            it.remove();
+                            numClassifiers[n]--;
+
+                            if (checkpoint){
+                                checkpointIDs[n].add(b.getEnsembleID());
+                            }
+                        }
+                    }
                 }
-                classifiers[currentSeries].add(indiv);
-                numClassifiers[currentSeries]++;
+            }
 
-            } else if (accuracy > lowestAcc[currentSeries]) {
-                double[] newLowestAcc = findMinEnsembleAcc();
-                lowestAccIdx[currentSeries] = (int) newLowestAcc[0];
-                lowestAcc[currentSeries] = newLowestAcc[1];
+            if (!cutoff || indiv.getAccuracy() >= maxAcc * cutoffThreshold) {
+                if (numClassifiers[currentSeries] < maxEnsembleSize) {
+                    if (accuracy < lowestAcc[currentSeries]) {
+                        lowestAccIdx[currentSeries] = classifiers[currentSeries].size();
+                        lowestAcc[currentSeries] = accuracy;
+                    }
+                    classifiers[currentSeries].add(indiv);
+                    numClassifiers[currentSeries]++;
 
-                classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
-                classifiers[currentSeries].add(lowestAccIdx[currentSeries], indiv);
+                    if (checkpoint){
+                        indiv.setEnsembleID(checkpointIDs[currentSeries].remove(0));
+                        checkpointChange = true;
+                    }
+                } else if (accuracy > lowestAcc[currentSeries]) {
+                    double[] newLowestAcc = findMinEnsembleAcc();
+                    lowestAccIdx[currentSeries] = (int) newLowestAcc[0];
+                    lowestAcc[currentSeries] = newLowestAcc[1];
 
-                checkpointChange = true;
+                    IndividualTDE rm = classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
+                    classifiers[currentSeries].add(lowestAccIdx[currentSeries], indiv);
+
+                    if (checkpoint){
+                        indiv.setEnsembleID(rm.getEnsembleID());
+                        checkpointChange = true;
+                    }
+                }
             }
 
             classifiersBuilt[currentSeries]++;
@@ -500,60 +570,47 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
 
             if (checkpoint) {
-                if (classifiersBuilt[currentSeries] <= maxEnsembleSize) {
-                    checkpoint(prev, -1, true);
-                } else {
-                    checkpoint(prev, lowestAccIdx[prev], checkpointChange);
-                }
+                checkpoint(prev, indiv, checkpointChange);
             }
 
             checkContracts();
         }
     }
 
-    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv) {
-        if (checkpointPath != null) {
-            try {
-                File f = new File(checkpointPath);
-                if (!f.isDirectory())
-                    f.mkdirs();
-                //time the checkpoint occured
-                checkpointTime = System.nanoTime();
+    private void checkpoint(int seriesNo, IndividualTDE classifier, boolean saveIndiv) {
+        try {
+            File f = new File(checkpointPath);
+            if (!f.isDirectory())
+                f.mkdirs();
+            //time the checkpoint occured
+            checkpointTime = System.nanoTime();
 
-                if (saveIndiv) {
-                    if (seriesNo >= 0) {
-                        if (classifierNo < 0) classifierNo = classifiers[seriesNo].size() - 1;
-
-                        //save the last build individual classifier
-                        IndividualTDE indiv = classifiers[seriesNo].get(classifierNo);
-
-                        FileOutputStream fos = new FileOutputStream(checkpointPath + "IndividualTDE"
-                                + seriesNo + "-" + classifierNo + ".ser");
-                        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
-                            out.writeObject(indiv);
-                            out.close();
-                            fos.close();
-                        }
-                    }
+            if (saveIndiv) {
+                FileOutputStream fos = new FileOutputStream(checkpointPath + "IndividualTDE"
+                        + seriesNo + "-" + classifier.getEnsembleID() + ".ser");
+                try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                    out.writeObject(classifier);
+                    out.close();
+                    fos.close();
                 }
-
-                //dont take into account time spent serialising into build time
-                checkpointTimeDiff += System.nanoTime() - checkpointTime;
-                checkpointTime = System.nanoTime();
-
-                //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "TDEtemp.ser");
-
-                File file = new File(checkpointPath + "TDEtemp.ser");
-                File file2 = new File(checkpointPath + "TDE.ser");
-                file2.delete();
-                file.renameTo(file2);
-
-                checkpointTimeDiff += System.nanoTime() - checkpointTime;
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Serialisation to " + checkpointPath + " FAILED");
             }
+
+            //dont take into account time spent serialising into build time
+            checkpointTimeDiff += System.nanoTime() - checkpointTime;
+            checkpointTime = System.nanoTime();
+
+            //save this, classifiers and train data not included
+            saveToFile(checkpointPath + "TDEtemp.ser");
+
+            File file = new File(checkpointPath + "TDEtemp.ser");
+            File file2 = new File(checkpointPath + "TDE.ser");
+            file2.delete();
+            file.renameTo(file2);
+
+            checkpointTimeDiff += System.nanoTime() - checkpointTime;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Serialisation to " + checkpointPath + " FAILED");
         }
     }
 
@@ -1023,6 +1080,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         c = new TDE();
         c.setSeed(fold);
+        c.setCutoff(true);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
@@ -1049,6 +1107,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
         c.setCleanupCheckpointFiles(true);
         c.setCheckpointPath("D:\\");
+        c.setCutoff(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1057,15 +1116,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
-        //Output 18/03/20
+        //Output 24/06/20
         /*
             TDE accuracy on ItalyPowerDemand fold 0 = 0.9484936831875608
             Train accuracy on ItalyPowerDemand fold 0 = 0.9552238805970149
-            TDE accuracy on ERing fold 0 = 0.9666666666666667
-            Train accuracy on ERing fold 0 = 0.8666666666666667
+            TDE accuracy on ERing fold 0 = 0.9481481481481482
+            Train accuracy on ERing fold 0 = 0.9
             Contract 1 Min Checkpoint TDE accuracy on ItalyPowerDemand fold 0 = 0.9523809523809523
-            Build time on ItalyPowerDemand fold 0 = 8 seconds
-            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9703703703703703
+            Build time on ItalyPowerDemand fold 0 = 7 seconds
+            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9629629629629629
             Build time on ERing fold 0 = 60 seconds
         */
     }
