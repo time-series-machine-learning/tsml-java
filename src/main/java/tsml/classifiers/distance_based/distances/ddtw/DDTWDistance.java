@@ -9,10 +9,10 @@ Contributors: goastler
 
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.transformers.Derivative;
 
-public class DDTWDistance extends TransformedDistanceMeasure implements DTW {
+public class DDTWDistance extends BaseTransformDistanceMeasure implements DTW {
 
     private final DTW dtw;
 

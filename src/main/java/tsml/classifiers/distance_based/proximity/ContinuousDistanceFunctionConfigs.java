@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.proximity;
 
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -44,15 +44,15 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DTWDistance()),
-            buildDtwParams(data));
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DTWDistance()),
+                  buildDtwParams(data));
         return space;
     }
 
     public static ParamSpace buildDdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DDTWDistance()),
-            buildDtwParams(data));
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DDTWDistance()),
+                  buildDtwParams(data));
         return space;
     }
 
@@ -76,8 +76,8 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildErpSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new ERPDistance()),
-            buildErpParams(data));
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new ERPDistance()),
+                  buildErpParams(data));
         return space;
     }
 
@@ -94,8 +94,8 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildLcssSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new LCSSDistance()),
-            buildLcssParams(data));
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new LCSSDistance()),
+                  buildLcssParams(data));
         return space;
     }
 
@@ -107,16 +107,16 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWdtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDTWDistance()),
-            buildWdtwParams());
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDTWDistance()),
+                  buildWdtwParams());
         return space;
     }
 
 
     public static ParamSpace buildWddtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDDTWDistance()),
-            buildWdtwParams());
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDDTWDistance()),
+                  buildWdtwParams());
         return space;
     }
 

@@ -7,9 +7,9 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 
-public interface DTW extends DistanceMeasureable {
+public interface DTW extends DistanceMeasure {
     void setWindowSize(int windowSize);
     int getWindowSize();
     void setWindowSizePercentage(double percentage);

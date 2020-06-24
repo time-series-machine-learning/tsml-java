@@ -4,9 +4,10 @@ import java.io.Serializable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
+import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
-public interface DistanceMeasureable extends Serializable, DistanceFunction, ParamHandler {
+public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHandler {
 
     String DISTANCE_MEASURE_FLAG = "d";
 
@@ -26,7 +27,8 @@ public interface DistanceMeasureable extends Serializable, DistanceFunction, Par
 
     String getName();
 
-    boolean isTraining();
+    void setName(String name);
 
-    void setTraining(boolean state);
+    // the fit function
+    void setInstances(Instances data);
 }

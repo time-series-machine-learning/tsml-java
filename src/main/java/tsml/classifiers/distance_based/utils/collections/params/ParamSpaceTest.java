@@ -6,7 +6,7 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -143,8 +143,8 @@ public class ParamSpaceTest {
 
     public ParamSpace buildParams() {
         ParamSpace params = new ParamSpace();
-        params.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, lDmParams);
-        params.add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, wDmParams);
+        params.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, lDmParams);
+        params.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, wDmParams);
         return params;
     }
 

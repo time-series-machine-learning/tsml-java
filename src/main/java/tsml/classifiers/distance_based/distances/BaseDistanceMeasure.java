@@ -9,41 +9,82 @@ import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * Abstract distance measure. This takes the weka interface for DistanceFunction and implements some default methods,
- * adding several checks and balances also. All distance measures should extends this class.
+ * adding several checks and balances also. All distance measures should extends this class. This is loosely based on
+ * the Transformer pattern whereby the user optionally "fits" some data and can then proceed to use the distance
+ * measure. Simple distance measures need not fit at all, therefore the fit method is empty for those implementations
+ * . fit() should always be called before any distance measurements.
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseDistanceMeasure implements DistanceMeasureable {
+public abstract class BaseDistanceMeasure implements DistanceMeasure {
+
+    public BaseDistanceMeasure() {
+        setName(getClass().getSimpleName());
+        setLongestInstanceFirst(true);
+        setStoreData(true);
+        setInvertSelection(false);
+    }
 
     // check for whether setInstances has been called before doing any distance measurements
-    private transient boolean dataHasBeenSet = false;
-    // the data which was passed to setInstances
-    private transient Instances data;
-    // is this in training phase or testing phase
-    private transient boolean training = true;
+    private boolean fitted;
     // whether to set the first instance to the longest instance when calling the distance function
-    private transient boolean longestInstanceFirst = true;
-
-    protected boolean requiresDataToBeSet() {
-        return false;
-    }
-
-    // optional check for data in the correct format
-    protected void checkData(Instance a, Instance b) {
-        Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
-        Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
-        if(requiresDataToBeSet() && !dataHasBeenSet) {
-            throw new IllegalStateException("must call setInstances first to setup the distance measure");
-        }
-    }
+    private boolean longestInstanceFirst;
+    // the name of this distance measure
+    private String name;
+    // whether to store the fitted data
+    private boolean storeData;
+    // the stored data
+    private Instances data;
+    // whether to invert the distance measure. false --> the smaller the distance the more similar. true --> the
+    // larger the distance the more similar
+    private boolean invert;
 
     @Override
+    public String toString() {
+        return getName() + " " + StrUtils.join(" ", getOptions());
+    }
+
+    /**
+     * clean up any data collected during fitting
+     */
+    public void clean() {
+        fitted = false;
+        data = null;
+    }
+
+    public boolean isLongestInstanceFirst() {
+        return longestInstanceFirst;
+    }
+
+    protected void setLongestInstanceFirst(final boolean longestInstanceFirst) {
+        this.longestInstanceFirst = longestInstanceFirst;
+    }    @Override
     public double getMaxDistance() {
         return Double.POSITIVE_INFINITY;
     }
 
+    /**
+     * whether the fit method has been called
+     *
+     * @return
+     */
+    public boolean isFitted() {
+        return fitted;
+    }
+
+    private void setFitted(final boolean fitted) {
+        this.fitted = fitted;
+    }    /**
+     * whether the distance measure is symmetric, i.e. dist(a,b) == dist(b,a)
+     *
+     * @return
+     */
     public boolean isSymmetric() {
         return true;
+    }
+
+    @Override public Instances getInstances() {
+        return data;
     }
 
     @Override
@@ -53,8 +94,15 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
 
     @Override
     public final double distance(Instance a, Instance b, final double limit) {
-        checkData(a, b);
-        // put a or first as the longest time series
+        // if this distance measure requires fitting but hasn't been fitted
+        if(!fitted) {
+            // invalid state
+            throw new IllegalStateException("must fit first to setup the distance measure");
+        }
+        // make sure class labels are at the end
+        Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
+        Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
+        // put a as the longest time series
         if(longestInstanceFirst && b.numAttributes() > a.numAttributes()) {
             Instance tmp = a;
             a = b;
@@ -66,8 +114,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     protected abstract double findDistance(final Instance a, final Instance b, final double limit);
 
     @Override
-    public final double distance(final Instance a, final Instance b, final double limit,
-        final PerformanceStats stats) {
+    public final double distance(final Instance a, final Instance b, final double limit, final PerformanceStats stats) {
         return distance(a, b, limit);
     }
 
@@ -78,7 +125,12 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
 
     @Override
     public String getName() {
-        return getClass().getSimpleName();
+        return name;
+    }
+
+    @Override public void setName(final String name) {
+        Assert.assertNotNull(name);
+        this.name = name;
     }
 
     @Override
@@ -87,54 +139,49 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
     }
 
     @Override
-    public String toString() {
-        return getName() + " " + StrUtils.join(" ", getOptions());
-    }
-
-    @Override
-    public Instances getInstances() {
-        return data;
-    }
-
-    @Override
     public void setAttributeIndices(final String value) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getAttributeIndices() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setInvertSelection(final boolean value) {
-
+        invert = value;
     }
 
     @Override
     public boolean getInvertSelection() {
-        return false;
+        return invert;
     }
 
-    @Override
-    public void setInstances(final Instances data) {
-        this.data = data;
-        dataHasBeenSet = true;
-        if(data != null) {
-            if(data.classIndex() != data.numAttributes() - 1) {
-                throw new IllegalStateException("class value must be at the end");
-            }
+    /**
+     * fit the distance measure to this data. This is the equivalent of fit()
+     *
+     * @param data
+     */
+    public void setInstances(Instances data) {
+        Assert.assertNotNull(data);
+        if(storeData) {
+            this.data = data;
         }
-    }
-
-    public void clean() {
-        data = null;
-        dataHasBeenSet = false;
+        fitted = true;
+        if(data.classIndex() != data.numAttributes() - 1) {
+            throw new IllegalStateException("class value must be at the end");
+        }
     }
 
     @Override
     public void update(final Instance ins) {
-        data.add(ins);
+        if(!fitted) {
+            throw new IllegalStateException("not fitted");
+        }
+        if(storeData) {
+            data.add(ins);
+        }
     }
 
     @Override public void setParams(final ParamSet param) throws Exception {
@@ -145,21 +192,11 @@ public abstract class BaseDistanceMeasure implements DistanceMeasureable {
         return new ParamSet();
     }
 
-    @Override
-    public boolean isTraining() {
-        return training;
+    public boolean isStoreData() {
+        return storeData;
     }
 
-    @Override
-    public void setTraining(final boolean training) {
-        this.training = training;
-    }
-
-    public boolean isLongestInstanceFirst() {
-        return longestInstanceFirst;
-    }
-
-    protected void setLongestInstanceFirst(final boolean longestInstanceFirst) {
-        this.longestInstanceFirst = longestInstanceFirst;
+    public void setStoreData(final boolean storeData) {
+        this.storeData = storeData;
     }
 }

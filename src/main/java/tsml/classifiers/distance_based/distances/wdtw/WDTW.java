@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -8,7 +8,7 @@ import tsml.classifiers.distance_based.distances.DistanceMeasureable;
  * Contributors: goastler
  */
 
-public interface WDTW extends DistanceMeasureable {
+public interface WDTW extends DistanceMeasure {
 
     public static final String G_FLAG = "g";
 

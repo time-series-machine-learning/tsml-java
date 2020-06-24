@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
@@ -173,12 +173,12 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                     .add(getEarlyAbandonFlag(), earlyAbandon)
                     .add(getKFlag(), k)
                     .add(getRandomTieBreakFlag(), randomTieBreak)
-                    .add(DistanceMeasureable.DISTANCE_MEASURE_FLAG, distanceFunction);
+                    .add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
     }
 
     @Override public void setParams(final ParamSet params) throws Exception {
         ParamHandlerUtils
-                .setParam(params, DistanceMeasureable.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+                .setParam(params, DistanceMeasure.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
         ParamHandlerUtils.setParam(params, getKFlag(), this::setK, Integer.class);
         ParamHandlerUtils.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
         ParamHandlerUtils.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
