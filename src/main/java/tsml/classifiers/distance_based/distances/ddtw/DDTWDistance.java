@@ -14,7 +14,7 @@ import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.transformed.TransformedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.params.ParamSet;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.filters.Derivative;
+import tsml.transformers.Derivative;
 import weka.core.Instances;
 
 import java.util.Arrays;

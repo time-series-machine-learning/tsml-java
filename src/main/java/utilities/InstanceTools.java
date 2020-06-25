@@ -151,7 +151,8 @@ public class InstanceTools {
      * @return Instances[] with two elements; [0] is the output training instances, [1] output test instances
      */
     public static Instances[] resampleTrainAndTestInstances(Instances train, Instances test, long seed){
-        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it introduced a bug indiagnostics elsewhere
+        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it
+            // introduced a bug in diagnostics elsewhere
             Instances newTrain = new Instances(train);
             Instances newTest = new Instances(test);
             return new Instances[]{newTrain,newTest};
@@ -967,4 +968,178 @@ public class InstanceTools {
 
         return newInst;
     }
+
+    /* Surprised these don't exist */
+    public static double sum(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x;
+            }
+        }
+        return sumSq;
+    }
+
+    public static double sumSq(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x * x;
+            }
+        }
+        return sumSq;
+    }
+
+    public static int argmax(Instance inst){
+        double max = Double.MIN_VALUE;
+        int arg = -1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x > max){
+                    max = x;
+                    arg = j;
+                }
+            }
+        }
+        return arg;
+    }
+
+    public static double max(Instance inst){
+        return inst.value(argmax(inst));
+    }
+
+    public static int argmin(Instance inst){
+        double min = Double.MAX_VALUE;
+        int arg =-1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x < min){
+                    min = x;
+                    arg = j;
+                }
+
+            }
+        }
+        return arg;
+    }
+
+    public static double min(Instance inst){
+        return inst.value(argmin(inst));
+    }
+
+
+
+    public static double mean(Instance inst){
+        double mean = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                mean +=x;
+            }
+            else
+                k++;
+        }
+
+        return mean / (double)(inst.numAttributes() - 1 - k);
+    }
+
+
+    public static double variance(Instance inst, double mean){
+        double var = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                var += Math.pow(x-mean, 2);
+            }
+            else
+                k++;
+        }
+
+        return var / (double)(inst.numAttributes() - 1 - k);
+    }
+
+    public static double kurtosis(Instance inst, double mean, double std){
+        double kurt = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                kurt += Math.pow(x-mean, 4);
+            }
+            else
+                k++;
+        }
+
+        kurt /= Math.pow(std, 4);
+        return kurt / (double)(inst.numAttributes() - 1 - k);
+    }
+
+
+    public static double skew(Instance inst, double mean, double std){
+        double skew = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                skew += Math.pow(x-mean, 3);
+            }
+            else
+                k++;
+        }
+
+        skew /= Math.pow(std, 3);
+        return skew / (double)(inst.numAttributes() - 1 - k);
+    }
+
+    public static double slope(Instance inst, double sum, double sumXX){
+        double sumXY= 0;
+        int k =0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                sumXY += inst.value(j) *  j;
+            }
+            else
+                k++;
+        }
+        double length = (double)(inst.numAttributes() - k);
+
+        double sqsum = sum*sum;
+        //slope
+        double slope = sumXY-sqsum/length;
+        double denom=sumXX-sqsum/length;
+        if(denom!=0)
+            slope/=denom;
+        else
+            slope=0;
+
+        //if(standardDeviation == 0)
+        //slope=0;
+
+        return slope;
+    }
+
+    public static double[] ConvertInstanceToArrayRemovingClassValue(Instance inst, int c) {
+        double[]  d = inst.toDoubleArray();
+        double[] temp;
+
+		if (c >= 0) {
+			temp = new double[d.length - 1];
+			System.arraycopy(d, 0, temp, 0, c);
+			d = temp;
+        }
+
+        return d;
+
+    }
+
+    public static double[] ConvertInstanceToArrayRemovingClassValue(Instance inst) {
+        return ConvertInstanceToArrayRemovingClassValue(inst, inst.classIndex());
+    }
+
 }

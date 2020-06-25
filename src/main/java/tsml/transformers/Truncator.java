@@ -23,9 +23,10 @@ import java.util.ArrayList;
  *  todo: decide on whether to clone or not
  * @author Tony Bagnall 1/1/2020
  */
-public class Truncator implements Transformer{
+public class Truncator implements TrainableTransformer{
 
     int shortestSeriesLength=Integer.MAX_VALUE;
+    private boolean isFit;
 
     /**
      * Determine the length of the shortest series in the data
@@ -51,6 +52,8 @@ public class Truncator implements Transformer{
                     shortestSeriesLength = l;
             }
         }
+
+        isFit = true;
     }
 
     /**
@@ -258,6 +261,11 @@ public class Truncator implements Transformer{
         System.out.println(" Test 2, multivariate data with no padding");
 
 
+    }
+
+    @Override
+    public boolean isFit() {
+        return isFit;
     }
 
 }

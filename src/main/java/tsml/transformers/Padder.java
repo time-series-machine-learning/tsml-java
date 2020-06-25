@@ -17,11 +17,13 @@ import weka.core.Instances;
  * todo: test all
  * @author Tony Bagnall 18/4/2020
  */
-public class Padder implements Transformer{
+public class Padder implements TrainableTransformer{
 
     private int finalNumberOfAttributes;
     enum PaddingType{FLAT,NOISE}
     private PaddingType padType=PaddingType.FLAT;
+
+    private boolean isFit;
     /**
      * Finds the length all series will be padded to. Not currently required, but this could be enhanced to remove
      * instances with lengths that could be considered outliers.
@@ -35,6 +37,13 @@ public class Padder implements Transformer{
         }
         else
             finalNumberOfAttributes=data.numAttributes()-1;
+
+        isFit = true;
+    }
+
+    @Override
+    public boolean isFit() {
+        return isFit;
     }
 
     /**
@@ -64,4 +73,6 @@ public class Padder implements Transformer{
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         return null;
     }
+
+
 }

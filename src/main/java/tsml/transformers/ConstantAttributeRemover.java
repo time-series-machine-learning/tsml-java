@@ -9,10 +9,10 @@ import utilities.NumUtils;
 
 
 
-public class ConstantAttributeRemover implements Transformer {
+public class ConstantAttributeRemover implements TrainableTransformer {
 
     ArrayList<Integer> attsToRemove;
-
+    boolean isFit;
 
     private boolean IsAttributeConstant(final Instances data, final int attToCheck){
 
@@ -39,7 +39,12 @@ public class ConstantAttributeRemover implements Transformer {
     @Override
     public void fit(final Instances data) {
         attsToRemove = FindConstantAtts(data);
-        System.out.println(attsToRemove);
+        isFit = true;
+    }
+
+    @Override 
+    public boolean isFit(){
+        return isFit;
     }
 
     @Override

@@ -69,8 +69,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
         if(this.transform==null){
             this.trainInsts = new Instances(data);
         }else{
-            transform.setInputFormat(data);
-            this.trainInsts  = Filter.useFilter(data,transform);
+            this.trainInsts  = transform.transform(data);
         }
         
         //init
