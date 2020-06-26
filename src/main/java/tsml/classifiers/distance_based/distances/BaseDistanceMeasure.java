@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
@@ -21,7 +22,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasure {
     public BaseDistanceMeasure() {
         setName(getClass().getSimpleName());
         setLongestInstanceFirst(true);
-        setStoreData(true);
+        setStoreData(false);
         setInvertSelection(false);
     }
 
@@ -199,4 +200,5 @@ public abstract class BaseDistanceMeasure implements DistanceMeasure {
     public void setStoreData(final boolean storeData) {
         this.storeData = storeData;
     }
+
 }

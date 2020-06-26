@@ -29,10 +29,8 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
     }
 
     public BaseTransformDistanceMeasure() {
-        final EuclideanDistance ed = new EuclideanDistance();
-        setName(ed.getName());
-        setDistanceFunction(ed);
-        setTransformer(null);
+        this("", null, new EuclideanDistance());
+        setName(getClass().getSimpleName());
     }
 
     public static final String TRANSFORMER_FLAG = "t";
@@ -75,10 +73,6 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    public boolean isSingleTransformer() {
-        return altTransformer == null;
     }
 
     @Override

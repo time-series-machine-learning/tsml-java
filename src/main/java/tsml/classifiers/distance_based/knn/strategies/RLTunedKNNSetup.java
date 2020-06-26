@@ -500,7 +500,7 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         finalBenchmarks.setSoftLimit(1);
         final int seed = rlTunedClassifier.getSeed();
         paramSpace = paramSpaceBuilder.apply(trainData);
-        paramSetIterator = new RandomSearchIterator(seed, this.paramSpace, seed).setReplacement(true);
+        paramSetIterator = new RandomSearchIterator(new Random(seed), this.paramSpace, seed).setReplacement(true);
         fullParamSpaceSize = new IndexedParameterSpace(this.paramSpace).size();
         fullNeighbourhoodSize = trainData.size(); // todo check all seeds set
         maxNeighbourhoodSize = findLimit(fullNeighbourhoodSize, neighbourhoodSizeLimit, neighbourhoodSizeLimitPercentage);

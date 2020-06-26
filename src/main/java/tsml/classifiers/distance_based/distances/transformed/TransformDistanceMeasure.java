@@ -18,4 +18,10 @@ public interface TransformDistanceMeasure extends DistanceMeasure {
     void setDistanceFunction(DistanceFunction distanceFunction);
     void setTransformer(Transformer transformer);
     void setAltTransformer(Transformer transformer);
+    default boolean isSingleTransformer() {
+        return getAltTransformer() == null;
+    }
+    default boolean isAltTransformer() {
+        return !isSingleTransformer();
+    }
 }

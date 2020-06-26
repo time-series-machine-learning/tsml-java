@@ -31,4 +31,13 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHa
 
     // the fit function
     void setInstances(Instances data);
+
+
+    static String getName(DistanceFunction df) {
+        if(df instanceof DistanceMeasure) {
+            return ((DistanceMeasure) df).getName();
+        } else {
+            return df.getClass().getSimpleName();
+        }
+    }
 }
