@@ -49,7 +49,6 @@ public class CachedTransformer extends BaseTrainableTransformer {
 
     // the cache to store instances against their corresponding transform output
     private Map<Instance, TransformedInstance> cache;
-//    private final Indexer indexer = new Indexer();
 
     public CachedTransformer(Transformer transformer) {
         setTransformer(transformer);
@@ -66,7 +65,6 @@ public class CachedTransformer extends BaseTrainableTransformer {
     @Override
     public void fit(final Instances data) {
         super.fit(data);
-//        indexer.fit(data);
         // make the cache match the size of the data (as that is the max expected cache entries at any point in time)
         // . Load factor of 1 should mean if no more than data size instances are added, the hashmap will not expand
         // and waste cpu time
@@ -100,9 +98,6 @@ public class CachedTransformer extends BaseTrainableTransformer {
         if(!isFit()) {
             throw new IllegalStateException("must be fitted first");
         }
-//        if(!(instance instanceof Indexer.IndexedInstance)) {
-//            return transformer.transform(instance);
-//        }
         TransformedInstance transformedInstance = cache.get(instance);
         Instance transform;
         if(transformedInstance == null) {
