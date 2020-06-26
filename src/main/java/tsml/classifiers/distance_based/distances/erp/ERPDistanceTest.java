@@ -2,6 +2,8 @@ package tsml.classifiers.distance_based.distances.erp;
 
 import experiments.data.DatasetLoading;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,20 +82,25 @@ public class ERPDistanceTest {
     public static void testDistanceFunctionOnDataset(Instances data, DistanceTester df) {
         Random random = new Random(0);
         final int score = data.size() * data.numAttributes();
+        int instanceCount = 0;
+        int attributeCount = 0;
+        final long timeStamp = System.nanoTime();
+        final long timeLimit = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
         for(int i = 0; i < data.size(); i++) {
 //            final Instance a = data.get(i);
             final Instance a = data.get(random.nextInt(data.size()));
             for(int j = 0; j < i; j++) {
-//                final Instance b = data.get(j);
+                instanceCount++;
+                attributeCount += Math.pow(data.numAttributes(), 2);
+                //                final Instance b = data.get(j);
                 final Instance b = data.get(random.nextInt(data.size()));
                 double limit = random.nextDouble() * 2 * data.numAttributes() - 1;
                 df.findDistance(random, data, a, b, limit);
                 limit = Double.POSITIVE_INFINITY;
                 df.findDistance(random, data, a, b, limit);
                 // quick exit for speedy unit testing. Turn this off to do full blown testing (takes ~1hr)
-                if(((i + 2) * (i + 1) / 2 + (j + 1)) * data.numAttributes() >= 50000) {
-//                     central limit theorem
-//                     sufficient trial of dataset providing 30 cases tried
+                if(System.nanoTime() - timeStamp > timeLimit && instanceCount >= 10) {
+                    System.out.println(instanceCount);
                     return;
                 }
             }
