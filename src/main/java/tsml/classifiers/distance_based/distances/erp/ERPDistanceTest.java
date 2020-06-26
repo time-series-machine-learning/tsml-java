@@ -100,7 +100,6 @@ public class ERPDistanceTest {
                 df.findDistance(random, data, a, b, limit);
                 // quick exit for speedy unit testing. Turn this off to do full blown testing (takes ~1hr)
                 if(System.nanoTime() - timeStamp > timeLimit && instanceCount >= 10) {
-                    System.out.println(instanceCount);
                     return;
                 }
             }
