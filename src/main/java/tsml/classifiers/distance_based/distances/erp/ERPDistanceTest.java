@@ -85,7 +85,7 @@ public class ERPDistanceTest {
         int instanceCount = 0;
         int attributeCount = 0;
         final long timeStamp = System.nanoTime();
-        final long timeLimit = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
+        final long timeLimit = TimeUnit.NANOSECONDS.convert(2500, TimeUnit.MILLISECONDS);
         for(int i = 0; i < data.size(); i++) {
 //            final Instance a = data.get(i);
             final Instance a = data.get(random.nextInt(data.size()));
@@ -100,6 +100,7 @@ public class ERPDistanceTest {
                 df.findDistance(random, data, a, b, limit);
                 // quick exit for speedy unit testing. Turn this off to do full blown testing (takes ~1hr)
                 if(System.nanoTime() - timeStamp > timeLimit && instanceCount >= 10) {
+//                    System.out.println(instanceCount);
                     return;
                 }
             }
