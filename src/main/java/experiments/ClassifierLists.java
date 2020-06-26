@@ -99,7 +99,11 @@ public class ClassifierLists {
         "ORIG_PF",
         "PF_RR5",
         "PF_RR10",
+        "PF_R1_I",
         "PF_R5_I",
+        "PF_R10_I",
+        "PF_RR5_I",
+        "PF_RR10_I",
         "PF_R5_T10",
         "PF_R5_T20",
         "PF_R5_T50",
@@ -133,8 +137,20 @@ public class ClassifierLists {
             case "PF_R10":
                 c = ProximityForest.Config.R10.applyConfigTo(new ProximityForest());
                 break;
+            case "PF_R1_I":
+                c = ProximityForest.Config.R1_I.applyConfigTo(new ProximityForest());
+                break;
             case "PF_R5_I":
                 c = ProximityForest.Config.R5_I.applyConfigTo(new ProximityForest());
+                break;
+            case "PF_R10_I":
+                c = ProximityForest.Config.R10_I.applyConfigTo(new ProximityForest());
+                break;
+            case "PF_RR5_I":
+                c = ProximityForest.Config.RR5_I.applyConfigTo(new ProximityForest());
+                break;
+            case "PF_RR10_I":
+                c = ProximityForest.Config.RR10_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_RR5":
                 c = ProximityForest.Config.RR5.applyConfigTo(new ProximityForest());

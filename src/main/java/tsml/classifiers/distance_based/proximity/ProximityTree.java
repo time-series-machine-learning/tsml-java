@@ -97,9 +97,45 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         R5_I() {
             @Override
             public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = R1.applyConfigTo(proximityTree);
+                proximityTree = R5.applyConfigTo(proximityTree);
                 proximityTree = super.applyConfigTo(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5_I);
+                return proximityTree;
+            }
+        },
+        R10_I() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = R10.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10_I);
+                return proximityTree;
+            }
+        },
+        R1_I() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = R1.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R1_I);
+                return proximityTree;
+            }
+        },
+        RR5_I() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = RR5.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R5_I);
+                return proximityTree;
+            }
+        },
+        RR10_I() {
+            @Override
+            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
+                proximityTree = RR10.applyConfigTo(proximityTree);
+                proximityTree = super.applyConfigTo(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.R10_I);
                 return proximityTree;
             }
         },

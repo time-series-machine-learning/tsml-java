@@ -5,6 +5,7 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
@@ -17,6 +18,7 @@ import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer.GiniImpurityEntropy;
+import tsml.transformers.Indexer;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
 import tsml.transformers.Transformer;
@@ -96,12 +98,53 @@ public class ProximitySplit extends BaseClassifier {
                 return proximitySplit;
             }
         },
+        R1_I() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = R1.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
+                return proximitySplit;
+            }
+        },
         R5_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
                 proximitySplit = R5.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
+                return proximitySplit;
+            }
+        },
+        R10_I() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = R10.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
+                return proximitySplit;
+            }
+        },
+        RR5_I() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = RR5.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
+                return proximitySplit;
+            }
+        },
+        RR10_I() {
+            @Override
+            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
+                proximitySplit = RR10.applyConfigTo(proximitySplit);
+                proximitySplit = super.applyConfigTo(proximitySplit);
+                proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
             }
         }
@@ -167,7 +210,68 @@ public class ProximitySplit extends BaseClassifier {
      * build the split using the data provided
      */
     public void buildClassifier() throws Exception {
-        buildClassifier(trainData);
+        super.buildClassifier(trainData);
+        Indexer.index(trainData);
+        // make a map to store the best X splits
+        final PrunedMultimap<Double, SplitCandididate> map = PrunedMultimap.desc();
+        if(randomTieBreakCandidates) {
+            // splits which score the same will be kept, then random choice between them
+            map.setSoftLimit(1);
+        } else {
+            // splits which score the same will not be kept, only 1 will be kept at any point in time
+            map.setHardLimit(1);
+            // discard the youngest split. i.e. if there's 2 splits which score 0.4, the newest split will be discarded
+            map.setDiscardType(DiscardType.NEWEST);
+        }
+        // randomly set R if enabled
+        if(randomR) {
+            maxR = r;
+            r = rand.nextInt(maxR + 1) + 1;
+        }
+        // backup the train data as modifications may be made during splitting (e.g. if doing intervals)
+        final Instances origTrainData = new Instances(trainData);
+        modifiedTrainData = null;
+        // change the view of the data into per class
+        final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(this.trainData);
+        // for every split attempt
+        for(int i = 0; i < r; i++) {
+            // pick the distance function
+            pickDistanceFunction();
+            // pick the exemplars
+            pickExemplars();
+            // setup the partitions
+            List<Instances> partitions = Lists.newArrayList(exemplarGroups.size());
+            for(List<Instance> group : exemplarGroups) {
+                partitions.add(new Instances(this.trainData, 0));
+            }
+            distanceFunction.setInstances(this.trainData);
+            // go through every instance and find which partition it should go into. This should be the partition
+            // with the closest exemplar associate
+            for(int j = 0; j < this.trainData.size(); j++) {
+                final Instance instance = this.trainData.get(j);
+                final int index = getPartitionIndexFor(instance);
+                final Instances closestPartition = partitions.get(index);
+                closestPartition.add(instance);
+            }
+            // find the score of this split attempt, i.e. how good it is
+            double score = partitionScorer.findScore(this.trainData, partitions);
+            // chuck into a container to keep for later
+            SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions, score, intervalTransform);
+            // add it to the map. The map will handle whether the split attempt was any good and should be kept
+            map.put(score, splitCandididate);
+        }
+        // choose the best of the R splits. The map handles the tie break if necessary
+        SplitCandididate choice = RandomUtils.choice(new ArrayList<>(map.values()), rand);
+        // populate the fields of this split from the split attempt
+        setPartitions(choice.getPartitions());
+        setDistanceFunction(choice.getDistanceFunction());
+        setExemplarGroups(choice.getExemplars());
+        setScore(choice.getScore());
+        setIntervalTransform(choice.getIntervalTransform());
+        // move any modified version of the train data elsewhere so the trainData is set back to the original
+        modifiedTrainData = trainData;
+        trainData = origTrainData;
+        ResultUtils.setInfo(trainResults, this, trainData);
     }
 
     // small helper class to contain a split. This is used to temporarily hold split results while
@@ -214,90 +318,17 @@ public class ProximitySplit extends BaseClassifier {
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        super.buildClassifier(trainData);
-        // change the view of the data into per class
-        final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(this.trainData);
-        // make a map to store the best X splits
-        final PrunedMultimap<Double, SplitCandididate> map = PrunedMultimap.desc();
-        if(randomTieBreakCandidates) {
-            // splits which score the same will be kept, then random choice between them
-            map.setSoftLimit(1);
-        } else {
-            // splits which score the same will not be kept, only 1 will be kept at any point in time
-            map.setHardLimit(1);
-            // discard the youngest split. i.e. if there's 2 splits which score 0.4, the newest split will be discarded
-            map.setDiscardType(DiscardType.NEWEST);
-        }
-        // randomly set R if enabled
-        if(randomR) {
-            maxR = r;
-            r = rand.nextInt(maxR + 1) + 1;
-        }
-        // backup the train data as modifications may be made during splitting (e.g. if doing intervals)
-        final Instances origTrainData = new Instances(trainData);
-        modifiedTrainData = null;
-        // for every split attempt
-        for(int i = 0; i < r; i++) {
-            // pick the (optional) interval
-            pickInterval();
-            // pick the distance function
-            pickDistanceFunction();
-            // pick the exemplars
-            pickExemplars(instancesByClass);
-            // setup the partitions
-            List<Instances> partitions = Lists.newArrayList(exemplarGroups.size());
-            for(List<Instance> group : exemplarGroups) {
-                partitions.add(new Instances(this.trainData, 0));
-            }
-            distanceFunction.setInstances(this.trainData);
-            // go through every instance and find which partition it should go into. This should be the partition
-            // with the closest exemplar associate
-            for(int j = 0; j < this.trainData.size(); j++) {
-                final Instance instance = this.trainData.get(j);
-                final int index = getPartitionIndexFor(instance);
-                final Instances closestPartition = partitions.get(index);
-                closestPartition.add(instance);
-            }
-            // find the score of this split attempt, i.e. how good it is
-            double score = partitionScorer.findScore(this.trainData, partitions);
-            // chuck into a container to keep for later
-            SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions, score, intervalTransform);
-            // add it to the map. The map will handle whether the split attempt was any good and should be kept
-            map.put(score, splitCandididate);
-        }
-        // choose the best of the R splits. The map handles the tie break if necessary
-        SplitCandididate choice = RandomUtils.choice(new ArrayList<>(map.values()), rand);
-        // populate the fields of this split from the split attempt
-        setPartitions(choice.getPartitions());
-        setDistanceFunction(choice.getDistanceFunction());
-        setExemplarGroups(choice.getExemplars());
-        setScore(choice.getScore());
-        setIntervalTransform(choice.getIntervalTransform());
-        // move any modified version of the train data elsewhere so the trainData is set back to the original
-        modifiedTrainData = trainData;
-        trainData = origTrainData;
-        ResultUtils.setInfo(trainResults, this, trainData);
+        setTrainData(trainData);
+        buildClassifier();
     }
 
     /**
      * pick the distance function
      */
     private void pickDistanceFunction() {
-        // pick a random space
-        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
-        // built that space
-        distanceFunctionSpace = distanceFunctionSpaceBuilder.build(trainData);
-        // randomly pick the distance function / parameters from that space
-        final RandomSearchIterator iterator = new RandomSearchIterator(getRandom(), distanceFunctionSpace);
-        final ParamSet paramSet = iterator.next();
-        // there is only one distance function in the ParamSet returned
-        final DistanceFunction df = (DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
-        setDistanceFunction(df);
-    }
-
-    private void pickInterval() {
-        final IntervalTransform intervalTransform;
+        Instances dataForBuilding = trainData;
         if(randomIntervals) {
+            Assert.assertTrue(minIntervalSize > 0);
             // suppose we're looking at instances of length 41.
             // the last value is the class label, therefore there's a ts of 40.
             // the max length of an interval is therefore numAttributes() - 1. +1 for random call is cancelled out
@@ -306,6 +337,7 @@ public class ProximitySplit extends BaseClassifier {
             // 37. The min size can be subtracted from the rand call and added after to ensure rand numbers between
             // min and max length (3 and 40).
             final int length = rand.nextInt(trainData.numAttributes() - minIntervalSize) + minIntervalSize;
+            Assert.assertTrue(length > 0);
             // the start point is dependent on the length. Max length of 40 then the start can only be 0. Min length
             // of 3 then the start can be anywhere between 0..37 inclusively.
             // The start can therefore lie anywhere from 0 to tsLen - intervalLen inclusively. (shortest interval
@@ -313,24 +345,39 @@ public class ProximitySplit extends BaseClassifier {
             // including the class label
             final int start = rand.nextInt(trainData.numAttributes() - length);
             final Interval interval = new Interval(start, length);
-            intervalTransform = new IntervalTransform(interval);
-        } else {
-            intervalTransform = this.intervalTransform;
+            setIntervalTransform(new IntervalTransform(interval));
+            dataForBuilding = intervalTransform.transform(trainData);
         }
-        if(intervalTransform != null) {
-            intervalTransform.fit(trainData);
-            trainData = intervalTransform.transform(trainData);
+        // pick a random space
+        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
+        // built that space
+        distanceFunctionSpace = distanceFunctionSpaceBuilder.build(dataForBuilding);
+        // randomly pick the distance function / parameters from that space
+        final ParamSet paramSet = RandomSearchIterator.choice(rand, distanceFunctionSpace);
+        // there is only one distance function in the ParamSet returned
+        DistanceFunction distanceFunction = (DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
+        if(randomIntervals) {
+            if(distanceFunction instanceof TransformDistanceMeasure) {
+                final TransformDistanceMeasure tdf = (TransformDistanceMeasure) distanceFunction;
+                tdf.setTransformer(new TransformPipeline(Lists.newArrayList(tdf.getTransformer(), intervalTransform)));
+                if(tdf.isAltTransformer()) {
+                    tdf.setAltTransformer(new TransformPipeline(Lists.newArrayList(tdf.getAltTransformer(), intervalTransform)));
+                }
+            } else {
+                distanceFunction = new BaseTransformDistanceMeasure(DistanceMeasure.getName(distanceFunction), intervalTransform, distanceFunction);
+            }
         }
+        setDistanceFunction(distanceFunction);
     }
 
     /**
      * pick exemplars from the given dataset
-     *
-     * @param instancesByClass a map of class labels to instances
      */
-    private void pickExemplars(final Map<Double, Instances> instancesByClass) {
+    private void pickExemplars() {
+        // change the view of the data into per class
+        final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(this.trainData);
         // pick one exemplar per class
-        List<List<Instance>> exemplars = Lists.newArrayList(instancesByClass.size());
+        List<List<Instance>> exemplarGroups = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
             final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
@@ -340,9 +387,9 @@ public class ProximitySplit extends BaseClassifier {
             if(instanceClass.size() == 1) {
                 getRandom().nextInt(1);
             }
-            exemplars.add(Lists.newArrayList(exemplar));
+            exemplarGroups.add(Lists.newArrayList(exemplar));
         }
-        setExemplarGroups(exemplars);
+        setExemplarGroups(exemplarGroups);
     }
 
     /**
@@ -611,6 +658,9 @@ public class ProximitySplit extends BaseClassifier {
 
     public void setRandomIntervals(final boolean randomIntervals) {
         this.randomIntervals = randomIntervals;
+        if(randomIntervals && minIntervalSize <= 0) {
+            setMinIntervalSize(3);
+        }
     }
 
     public void setMaxR(final int maxR) {

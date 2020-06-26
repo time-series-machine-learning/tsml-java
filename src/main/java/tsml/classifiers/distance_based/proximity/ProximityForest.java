@@ -18,6 +18,7 @@ import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
+import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -81,6 +82,42 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest = R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.R5_I);
+                return proximityForest;
+            }
+        },
+        R10_I() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = R10.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.R10_I);
+                return proximityForest;
+            }
+        },
+        R1_I() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.R1_I);
+                return proximityForest;
+            }
+        },
+        RR5_I() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR5_I);
+                return proximityForest;
+            }
+        },
+        RR10_I() {
+            @Override
+            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
+                proximityForest = R10.applyConfigTo(proximityForest);
+                proximityForest = super.applyConfigTo(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR10_I);
                 return proximityForest;
             }
         },
@@ -329,8 +366,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private List<Instances> treeOobTestDatas;
     // whether to weight trees by their train estimate (if enabled)
     private boolean weightTreesByTrainEstimate;
-    // map of train instances to corresponding index in the train data
-    private Map<Instance, Integer> instanceIndices;
 
     public TrainEstimateMethod getTrainEstimateMethod() {
         return trainEstimateMethod;
@@ -355,10 +390,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             memoryWatcher.resetAndStart();
             trainTimer.resetAndStart();
             super.buildClassifier(trainData);
-            instanceIndices = new HashMap<>(trainData.size(), 1);
-            for(int i = 0; i < trainData.size(); i++) {
-                instanceIndices.put(trainData.get(i), i);
-            }
             trees = new ArrayList<>(numTreeLimit);
             longestTrainStageTimeNanos = 0;
             if(estimateOwnPerformance) {
@@ -371,6 +402,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 treeOobTestDatas = null;
             }
         }
+        Indexer.index(trainData);
         while(
                 insideNumTreeLimit()
                 &&
@@ -460,7 +492,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 for(int i = 0; i < treeTrainEstimateData.size(); i++) {
                     long time = System.nanoTime();
                     final Instance instance = treeTrainEstimateData.get(i);
-                    final int instanceIndex = instanceIndices.get(instance);
+                    final int instanceIndex = ((Indexer.IndexedInstance) instance).getIndex();
                     final double[] distribution = treeTrainResults.getProbabilityDistribution(i);
                     if(finalDistributions[instanceIndex] == null) {
                         finalDistributions[instanceIndex] = new double[getNumClasses()];
