@@ -6,6 +6,8 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceTest;
 
+import java.util.Random;
+
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
@@ -17,7 +19,7 @@ public class RandomSearchIteratorTest {
     public void testIteration() {
         ParamSpace space = new ParamSpaceTest().build2DContinuousSpace();
         final int limit = 10;
-        RandomSearchIterator iterator = new RandomSearchIterator(0, space, limit);
+        RandomSearchIterator iterator = new RandomSearchIterator(new Random(0), space, limit);
         iterator.setRandom(new ParamSpaceTest().buildRandom());
         StringBuilder stringBuilder = new StringBuilder();
         int count = 0;

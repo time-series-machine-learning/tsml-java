@@ -5,12 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.iteration.RandomIteration;
+import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParameterDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
-import tsml.classifiers.distance_based.utils.system.random.BaseRandom;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 
 /**
@@ -19,7 +18,7 @@ import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
  * <p>
  * Contributors: goastler
  */
-public class RandomSearchIterator extends BaseRandom implements RandomIteration<ParamSet> {
+public class RandomSearchIterator extends RandomIterator<ParamSet> {
 
     private ParamSpace paramSpace;
     private static final int DEFAULT_ITERATION_LIMIT = 100;
@@ -31,9 +30,8 @@ public class RandomSearchIterator extends BaseRandom implements RandomIteration<
         return iterationCount;
     }
 
-    protected RandomSearchIterator setIterationCount(final int iterationCount) {
+    protected void setIterationCount(final int iterationCount) {
         this.iterationCount = iterationCount;
-        return this;
     }
 
     public boolean hasIterationLimit() {
@@ -56,19 +54,6 @@ public class RandomSearchIterator extends BaseRandom implements RandomIteration<
         setParamSpace(paramSpace);
         setReplacement(replacement);
         setIterationLimit(numIterations);
-    }
-
-    public RandomSearchIterator(int seed, ParamSpace paramSpace, int iterationLimit) {
-        this(seed, paramSpace, iterationLimit, false);
-    }
-
-    public RandomSearchIterator(int seed, final ParamSpace paramSpace, final int iterationLimit, boolean replacement) {
-        super(seed);
-        setup(paramSpace, replacement, iterationLimit);
-    }
-
-    public RandomSearchIterator(int seed, final ParamSpace paramSpace) {
-        this(seed, paramSpace, DEFAULT_ITERATION_LIMIT, false);
     }
 
     public RandomSearchIterator(Random random, ParamSpace paramSpace, int iterationLimit) {
@@ -164,6 +149,16 @@ public class RandomSearchIterator extends BaseRandom implements RandomIteration<
     public RandomSearchIterator setIterationLimit(final int iterationLimit) {
         this.iterationLimit = iterationLimit;
         return this;
+    }
+
+    public static ParamSet choice(Random random, ParamSpace paramSpace) {
+        return choice(random, paramSpace, 1).get(0);
+    }
+
+    public static List<ParamSet> choice(Random random, ParamSpace paramSpace, int numChoices) {
+        final RandomSearchIterator iterator = new RandomSearchIterator(random, paramSpace);
+        iterator.setIterationLimit(numChoices);
+        return RandomUtils.choice(iterator, numChoices);
     }
 
 }

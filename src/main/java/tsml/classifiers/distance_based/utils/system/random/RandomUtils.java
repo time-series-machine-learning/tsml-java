@@ -68,4 +68,18 @@ public class RandomUtils {
         return choice(collection, random, 1, false).get(0);
     }
 
+    public static <A> List<A> choice(RandomIterator<A> iterator, int numChoices) {
+        List<A> choices = new ArrayList<>();
+        for(int i = 0; i < numChoices; i++) {
+            Assert.assertTrue(iterator.hasNext());
+            final A choice = iterator.next();
+            choices.add(choice);
+        }
+        return choices;
+    }
+
+    public static <A> A choice(RandomIterator<A> iterator) {
+        return choice(iterator, 1).get(0);
+    }
+
 }
