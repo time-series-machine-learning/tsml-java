@@ -18,29 +18,62 @@ import weka.core.Instances;
  */
 public class CachedTransformer extends BaseTrainableTransformer {
 
+    public boolean isCacheFittedDataOnly() {
+        return cacheFittedDataOnly;
+    }
+
+    public void setCacheFittedDataOnly(final boolean cacheFittedDataOnly) {
+        this.cacheFittedDataOnly = cacheFittedDataOnly;
+    }
+
+    public static class TransformedInstance {
+        private TransformedInstance(final Instance instance) {
+            this.instance = instance;
+        }
+
+        private Instance instance;
+
+        public Instance getInstance() {
+            return instance;
+        }
+
+        public void setInstance(final Instance instance) {
+            this.instance = instance;
+        }
+    }
+
     // the filter to cache the output of
     private Transformer transformer;
+    // whether to only cache instances from the fit() call OR all instances handed to the transform method
+    private boolean cacheFittedDataOnly;
 
     // the cache to store instances against their corresponding transform output
-    private Map<Instance, Instance> cache;
+    private Map<Instance, TransformedInstance> cache;
+//    private final Indexer indexer = new Indexer();
 
     public CachedTransformer(Transformer transformer) {
         setTransformer(transformer);
+        setCacheFittedDataOnly(true);
         reset();
     }
 
     public void reset() {
         super.reset();
         cache = null;
+//        indexer.reset();
     }
 
     @Override
     public void fit(final Instances data) {
         super.fit(data);
+//        indexer.fit(data);
         // make the cache match the size of the data (as that is the max expected cache entries at any point in time)
         // . Load factor of 1 should mean if no more than data size instances are added, the hashmap will not expand
         // and waste cpu time
         cache = new HashMap<>(data.size(), 1);
+        for(Instance instance : data) {
+            cache.put(instance, new TransformedInstance(null));
+        }
     }
 
     @Override
@@ -57,7 +90,7 @@ public class CachedTransformer extends BaseTrainableTransformer {
         this.transformer = transformer;
     }
 
-    public void setCache(final Map<Instance, Instance> cache) {
+    public void setCache(final Map<Instance, TransformedInstance> cache) {
         Assert.assertNotNull(cache);
         this.cache = cache;
     }
@@ -67,13 +100,24 @@ public class CachedTransformer extends BaseTrainableTransformer {
         if(!isFit()) {
             throw new IllegalStateException("must be fitted first");
         }
-        Instance transformedInstance = cache.get(instance);
-        // if not instance is present in cache then transform and add
+//        if(!(instance instanceof Indexer.IndexedInstance)) {
+//            return transformer.transform(instance);
+//        }
+        TransformedInstance transformedInstance = cache.get(instance);
+        Instance transform;
         if(transformedInstance == null) {
-            transformedInstance = transformer.transform(instance);
-            cache.put(instance, transformedInstance);
+            transform = transformer.transform(instance);
+            if(!cacheFittedDataOnly) {
+                cache.put(instance, new TransformedInstance(transform));
+            }
+        } else {
+            transform = transformedInstance.getInstance();
+            if(transform == null) {
+                transform = transformer.transform(instance);
+                transformedInstance.setInstance(transform);
+            }
         }
-        return transformedInstance;
+        return transform;
     }
 
     @Override
@@ -85,7 +129,7 @@ public class CachedTransformer extends BaseTrainableTransformer {
         return transformer;
     }
 
-    public Map<Instance, Instance> getCache() {
+    public Map<Instance, TransformedInstance> getCache() {
         return cache;
     }
 
