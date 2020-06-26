@@ -103,9 +103,12 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
     }
 
     @Override public ParamSet getParams() {
-        final ParamSet paramSet = super.getParams().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
+        final ParamSet paramSet = super.getParams();
         paramSet.add(TRANSFORMER_FLAG, transformer);
-        paramSet.add(ALT_TRANSFORMER_FLAG, altTransformer);
+        if(isAltTransformer()) {
+            paramSet.add(ALT_TRANSFORMER_FLAG, altTransformer);
+        }
+        paramSet.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
         return paramSet;
     }
 
