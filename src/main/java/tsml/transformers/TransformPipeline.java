@@ -5,6 +5,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TransformPipeline extends BaseTrainableTransformer {
@@ -12,7 +13,11 @@ public class TransformPipeline extends BaseTrainableTransformer {
     private List<Transformer> transformers;
 
     public TransformPipeline() {
-        setTransformers(new ArrayList<>());
+        this(new ArrayList<>());
+    }
+
+    public TransformPipeline(List<Transformer> transformers) {
+        setTransformers(transformers);
     }
 
     public List<Transformer> getTransformers() {
@@ -24,11 +29,39 @@ public class TransformPipeline extends BaseTrainableTransformer {
         this.transformers = transformers;
     }
 
-    @Override public void fit(final Instances data) {
+    @Override public void fit(Instances data) {
         super.fit(data);
-        for(Transformer transformer : transformers) {
+        // to avoid doing needless transforms, find which of the transformers (if any) need fitting and record their indices
+        List<Integer> indices = new ArrayList<>();
+        for(int i = 0; i < transformers.size(); i++) {
+            final Transformer transformer = transformers.get(i);
             if(transformer instanceof TrainableTransformer) {
-                ((TrainableTransformer) transformer).fit(data);
+                indices.add(i);
+            }
+        }
+        // if there are transformers which need fitting
+        if(!indices.isEmpty()) {
+            int prevIndex = -1;
+            for(int j = 0; j < indices.size(); j++) {
+                // find the index of the next transformer which needs fitting
+                final Integer index = indices.get(j);
+                // fitTransform all transformers before that
+                for(int i = prevIndex + 1; i <= index; i++) {
+                    final Transformer transformer = transformers.get(i);
+                    // if the transformer requires fitting then fitTransform it
+                    if(transformer instanceof TrainableTransformer) {
+                        // unless it's the last transformer, in which case the data will not be used afterwards so no need to transform after the fit operation
+                        if(j == indices.size() - 1) {
+                            ((TrainableTransformer) transformer).fit(data);
+                        } else {
+                            data = ((TrainableTransformer) transformer).fitTransform(data);
+                        }
+                    } else {
+                        // the transformer cannot be fitted, so just transform the data
+                        data = transformer.transform(data);
+                    }
+                }
+                prevIndex = index;
             }
         }
     }
@@ -54,7 +87,8 @@ public class TransformPipeline extends BaseTrainableTransformer {
         return data;
     }
 
-    public boolean add(Transformer transformer) {
+    public boolean append(Transformer transformer) {
         return transformers.add(transformer);
     }
+
 }
