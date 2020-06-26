@@ -95,11 +95,6 @@ public abstract class BaseDistanceMeasure implements DistanceMeasure {
 
     @Override
     public final double distance(Instance a, Instance b, final double limit) {
-        // if this distance measure requires fitting but hasn't been fitted
-        if(!fitted) {
-            // invalid state
-            throw new IllegalStateException("must fit first to setup the distance measure");
-        }
         // make sure class labels are at the end
         Assert.assertEquals(a.numAttributes() - 1, a.classIndex());
         Assert.assertEquals(b.numAttributes() - 1, b.classIndex());
