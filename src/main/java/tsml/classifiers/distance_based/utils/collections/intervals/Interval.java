@@ -26,6 +26,10 @@ public class Interval implements ParamHandler {
         setStart(start);
     }
 
+    public boolean contains(int index) {
+        return start <= index && index < start + length;
+    }
+
     public int getLength() {
         return length;
     }
@@ -48,17 +52,23 @@ public class Interval implements ParamHandler {
         return length;
     }
 
+    public int translate(int index) {
+        return translate(index, true);
+    }
+
     /**
      * map interval index to instance index
      * @param index
      * @return
      */
-    public int translate(int index) {
-        if(index > length - 1) {
-            throw new ArrayIndexOutOfBoundsException(index);
-        }
-        if(index < 0) {
-            throw new ArrayIndexOutOfBoundsException(index);
+    public int translate(int index, boolean check) {
+        if(check) {
+            if(index > length - 1) {
+                throw new ArrayIndexOutOfBoundsException(index);
+            }
+            if(index < 0) {
+                throw new ArrayIndexOutOfBoundsException(index);
+            }
         }
         return index + start;
     }
@@ -69,11 +79,17 @@ public class Interval implements ParamHandler {
      * @return
      */
     public int inverseTranslate(int index) {
-        if(index > start + length - 1) {
-            throw new ArrayIndexOutOfBoundsException(index);
-        }
-        if(index < start) {
-            throw new ArrayIndexOutOfBoundsException(index);
+        return inverseTranslate(index, true);
+    }
+
+    public int inverseTranslate(int index, boolean check) {
+        if(check) {
+            if(index > start + length - 1) {
+                throw new ArrayIndexOutOfBoundsException(index);
+            }
+            if(index < start) {
+                throw new ArrayIndexOutOfBoundsException(index);
+            }
         }
         return index - start;
     }
@@ -93,5 +109,9 @@ public class Interval implements ParamHandler {
                "start=" + start +
                ", length=" + length +
                '}';
+    }
+
+    public int getEnd() {
+        return start + length - 1;
     }
 }

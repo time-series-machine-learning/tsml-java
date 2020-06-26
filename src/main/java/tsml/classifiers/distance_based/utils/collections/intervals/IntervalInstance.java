@@ -1,38 +1,135 @@
 package tsml.classifiers.distance_based.utils.collections.intervals;
 
-import org.junit.Assert;
+import core.contracts.Dataset;
+import experiments.data.DatasetLoading;
 import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Arrays;
 import java.util.Enumeration;
 
 public class IntervalInstance implements Instance {
-
-    public static Instances extractInterval(Instances data, Interval interval) {
-        Instances intervaledData = new Instances(data, data.size());
-        for(Instance instance : data) {
-            final IntervalInstance intervalInstance = new IntervalInstance(interval, instance);
-            intervaledData.add(intervalInstance);
-        }
-        return intervaledData;
+    public IntervalInstance(Interval interval, Instance instance) {
+        this(instance, interval);
     }
 
-    private Interval interval;
-    private Instance instance;
-
-    public IntervalInstance(final Interval interval, final Instance instance) {
-        setInstance(instance);
+    public IntervalInstance(final Instance instance, Interval interval) {
+        setDataset(instance.dataset());
         setInterval(interval);
+        setInstance(instance);
     }
+
+    public IntervalInstance(IntervalInstance intervalInstance) {
+        this(intervalInstance.instance, intervalInstance.interval);
+        setDataset(intervalInstance.dataset);
+    }
+
+    private Instance instance;
+    private Interval interval;
+    private Instances dataset;
 
     public Interval getInterval() {
         return interval;
     }
 
     public void setInterval(final Interval interval) {
-        Assert.assertNotNull(interval);
         this.interval = interval;
+    }
+
+    @Override public double value(int attIndex) {
+        if(attIndex == interval.size() || attIndex == classIndex()) {
+            return instance.classValue();
+        }
+        attIndex = interval.translate(attIndex);
+        return instance.value(attIndex);
+    }
+
+    @Override public int numAttributes() {
+        return interval.size() + 1; // +1 for class label
+    }
+
+    @Override public int numClasses() {
+        return dataset.numClasses();
+    }
+
+    @Override public int numValues() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public void replaceMissingValues(final double[] array) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public void setClassMissing() {
+        instance.setClassMissing();
+    }
+
+    @Override public void setClassValue(final double value) {
+        instance.setClassValue(value);
+    }
+
+    @Override public void setClassValue(final String value) {
+        instance.setClassValue(value);
+    }
+
+    @Override public void setDataset(final Instances instances) {
+        dataset = instances;
+    }
+
+    @Override public void setMissing(int attIndex) {
+        attIndex = interval.translate(attIndex);
+        instance.setMissing(attIndex);
+    }
+
+    @Override public void setMissing(final Attribute att) {
+        instance.setMissing(att);
+    }
+
+    @Override public double[] toDoubleArray() {
+        final double[] array = new double[interval.size() + 1];
+        for(int i = 0; i < interval.size(); i++) {
+            array[i] = value(i);
+        }
+        array[array.length - 1] = value(array.length - 1);
+        return array;
+    }
+
+    @Override public String toStringNoWeight(final int afterDecimalPoint) {
+        return instance.toStringNoWeight(afterDecimalPoint);
+    }
+
+    @Override public String toStringNoWeight() {
+        return instance.toStringNoWeight();
+    }
+
+    @Override public String toStringMaxDecimalDigits(final int afterDecimalPoint) {
+        return instance.toStringMaxDecimalDigits(afterDecimalPoint);
+    }
+
+    @Override public String toString(final int attIndex, final int afterDecimalPoint) {
+        return instance.toString(attIndex, afterDecimalPoint);
+    }
+
+    @Override public String toString(final int attIndex) {
+        return instance.toString(attIndex);
+    }
+
+    @Override public String toString(final Attribute att, final int afterDecimalPoint) {
+        return instance.toString(att, afterDecimalPoint);
+    }
+
+    @Override public String toString(final Attribute att) {
+        return instance.toString(att);
+    }
+
+    @Override public String toString() {
+        return "IntervalInstance{" +
+                       "interval=" + interval +
+                       ", label=" + classValue() +
+                       ", atts=" + Arrays.toString(toDoubleArray()) +
+                       "}";
     }
 
     public Instance getInstance() {
@@ -40,9 +137,11 @@ public class IntervalInstance implements Instance {
     }
 
     public void setInstance(final Instance instance) {
-        Assert.assertNotNull(instance);
-        Assert.assertEquals(instance.numAttributes() - 1, instance.classIndex());
         this.instance = instance;
+    }
+
+    @Override public Attribute classAttribute() {
+        return instance.classAttribute();
     }
 
     @Override public Attribute attribute(int index) {
@@ -55,10 +154,6 @@ public class IntervalInstance implements Instance {
         return instance.attributeSparse(indexOfIndex);
     }
 
-    @Override public Attribute classAttribute() {
-        return instance.classAttribute();
-    }
-
     @Override public int classIndex() {
         return interval.size();
     }
@@ -68,7 +163,8 @@ public class IntervalInstance implements Instance {
     }
 
     @Override public double classValue() {
-        return instance.classValue();
+        final int i = classIndex();
+        return value(i);
     }
 
     @Override public Instances dataset() {
@@ -124,46 +220,6 @@ public class IntervalInstance implements Instance {
         return instance.mergeInstance(inst);
     }
 
-    @Override public int numAttributes() {
-        return interval.size() + 1; // +1 for class value
-    }
-
-    @Override public int numClasses() {
-        return instance.numClasses();
-    }
-
-    @Override public int numValues() {
-        return instance.numValues();
-    }
-
-    @Override public void replaceMissingValues(final double[] array) {
-        instance.replaceMissingValues(array);
-    }
-
-    @Override public void setClassMissing() {
-        instance.setClassMissing();
-    }
-
-    @Override public void setClassValue(final double value) {
-        instance.setClassValue(value);
-    }
-
-    @Override public void setClassValue(final String value) {
-        instance.setClassValue(value);
-    }
-
-    @Override public void setDataset(final Instances instances) {
-        instance.setDataset(instances);
-    }
-
-    @Override public void setMissing(final int attIndex) {
-        instance.setMissing(attIndex);
-    }
-
-    @Override public void setMissing(final Attribute att) {
-        instance.setMissing(att);
-    }
-
     @Override public void setValue(int attIndex, final double value) {
         attIndex = interval.translate(attIndex);
         instance.setValue(attIndex, value);
@@ -197,7 +253,7 @@ public class IntervalInstance implements Instance {
     }
 
     @Override public Instances relationalValue(final Attribute att) {
-        return instance.relationalValue(att);
+        return relationalValue(att);
     }
 
     @Override public String stringValue(int attIndex) {
@@ -207,50 +263,6 @@ public class IntervalInstance implements Instance {
 
     @Override public String stringValue(final Attribute att) {
         return instance.stringValue(att);
-    }
-
-    @Override public double[] toDoubleArray() {
-        double[] values = new double[interval.size()];
-        for(int i = 0; i < values.length; i++) {
-            final int translated = interval.translate(i);
-            values[i] = instance.value(translated);
-        }
-        return values;
-    }
-
-    @Override public String toStringNoWeight(final int afterDecimalPoint) {
-        return instance.toStringNoWeight(afterDecimalPoint);
-    }
-
-    @Override public String toStringNoWeight() {
-        return instance.toStringNoWeight();
-    }
-
-    @Override public String toStringMaxDecimalDigits(final int afterDecimalPoint) {
-        return instance.toStringMaxDecimalDigits(afterDecimalPoint);
-    }
-
-    @Override public String toString(int attIndex, final int afterDecimalPoint) {
-        attIndex = interval.translate(attIndex);
-        return instance.toString(attIndex, afterDecimalPoint);
-    }
-
-    @Override public String toString(int attIndex) {
-        attIndex = interval.translate(attIndex);
-        return instance.toString(attIndex);
-    }
-
-    @Override public String toString(final Attribute att, final int afterDecimalPoint) {
-        return instance.toString(att, afterDecimalPoint);
-    }
-
-    @Override public String toString(final Attribute att) {
-        return instance.toString(att);
-    }
-
-    @Override public double value(int attIndex) {
-        attIndex = interval.translate(attIndex);
-        return instance.value(attIndex);
     }
 
     @Override public double valueSparse(int indexOfIndex) {
@@ -267,13 +279,6 @@ public class IntervalInstance implements Instance {
     }
 
     @Override public IntervalInstance copy() {
-        return new IntervalInstance(interval, instance);
-    }
-
-    @Override public String toString() {
-        return "IntervalInstance{" +
-               "interval=" + interval +
-               ", instance=" + instance +
-               '}';
+        return new IntervalInstance(this);
     }
 }
