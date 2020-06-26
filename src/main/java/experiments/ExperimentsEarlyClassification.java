@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameters;
 import com.google.common.testing.GcFinalization;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.evaluators.StratifiedResamplesEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLists;
@@ -388,19 +389,9 @@ public class ExperimentsEarlyClassification {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                for (double i = 0.05; i < 1.01; i += 0.05) {
-                    i = Math.round(i * 100.0) / 100.0;
-
-                    String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
-                            PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + i + "%testFold"
-                            + expSettings.foldId + ".csv";
-                    if (!expSettings.forceEvaluation && CollateResults.validateSingleFoldFile(path)) {
-                        continue;
-                    }
-
-                    Instances shortData = shortenInstances(testSet, i, true);
-
-                    testResults = evaluateClassifier(expSettings, classifier, shortData);
+                boolean earlyClassiifer = false;
+                if (earlyClassiifer){
+                    testResults = evaluateEarlyClassifier(expSettings, classifier, testSet);
                     testResults.setParas(trainResults.getParas());
                     testResults.turnOffZeroTimingsErrors();
                     testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
@@ -411,6 +402,32 @@ public class ExperimentsEarlyClassification {
 
                     writeResults(expSettings, testResults, expSettings.testFoldFileName, "test");
                     LOGGER.log(Level.FINE, "Test results written");
+                }
+                else {
+                    for (double i = 0.05; i < 1.01; i += 0.05) {
+                        i = Math.round(i * 100.0) / 100.0;
+
+                        String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
+                                PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + (i*100) + "%testFold"
+                                + expSettings.foldId + ".csv";
+                        if (!expSettings.forceEvaluation && CollateResults.validateSingleFoldFile(path)) {
+                            continue;
+                        }
+
+                        Instances shortData = shortenInstances(testSet, i, true);
+
+                        testResults = evaluateClassifier(expSettings, classifier, shortData);
+                        testResults.setParas(trainResults.getParas());
+                        testResults.turnOffZeroTimingsErrors();
+                        testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
+                        testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
+                        testResults.turnOnZeroTimingsErrors();
+                        testResults.setMemory(trainResults.getMemory());
+                        LOGGER.log(Level.FINE, "Testing complete");
+
+                        writeResults(expSettings, testResults, path, "test");
+                        LOGGER.log(Level.FINE, "Test results written");
+                    }
                 }
             }
             else {
@@ -722,6 +739,12 @@ public class ExperimentsEarlyClassification {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
+
+        return eval.evaluate(classifier, testSet);
+    }
+
+    public static ClassifierResults evaluateEarlyClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
         ClassifierResults res = new ClassifierResults(testSet.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
         res.setClassifierName(classifier.getClass().getSimpleName());

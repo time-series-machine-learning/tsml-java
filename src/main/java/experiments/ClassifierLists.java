@@ -60,6 +60,7 @@ import weka.classifiers.trees.RandomForest;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -91,7 +92,7 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","PF","FastElasticEnsemble",
             "DD_DTW","DTD_C","CID_DTW","NN_CID"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
@@ -120,7 +121,7 @@ public class ClassifierLists {
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;
-            case "ProximityForest":
+            case "ProximityForest": case "PF":
                 c = new ProximityForestWrapper();
                 break;
             case "FastElasticEnsemble":
@@ -264,6 +265,7 @@ public class ClassifierLists {
                 break;
             case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setTrainTimeLimit(1, TimeUnit.HOURS);
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();
