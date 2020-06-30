@@ -23,9 +23,8 @@ import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Tuneable;
-import tsml.classifiers.distance_based.knn.KNN;
-import tsml.filters.*;
 import tsml.transformers.*;
+import tsml.transformers.FFT;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -442,7 +441,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             case FFT:
                 Fast_FFT Fast_FFT = new Fast_FFT();
                 try {
-                    int nfft = (int)FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2;
+                    int nfft = (int) FFT.MathsPower2.roundPow2(instances.numAttributes()-1) * 2;
                     Fast_FFT.setNFFT(nfft);
                     temp = Fast_FFT.transform(instances);
                 } catch (Exception e) {
