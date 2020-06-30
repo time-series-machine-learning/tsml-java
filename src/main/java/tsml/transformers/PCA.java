@@ -36,7 +36,7 @@ public class PCA implements TrainableTransformer {
     public PCA(int attsToKeep){
         pca = new PrincipalComponents();
         numAttributesToKeep = Math.max(1, attsToKeep);
-        
+
         System.out.println(numAttributesToKeep);
     }
 
@@ -47,7 +47,7 @@ public class PCA implements TrainableTransformer {
         try{
             //Build the evaluator
             //this method is sets the names of the componenets used.
-            pca.setMaximumAttributeNames(numAttributesToKeep); 
+            pca.setMaximumAttributeNames(numAttributesToKeep);
             pca.setVarianceCovered(1.0);
             pca.buildEvaluator(data);
             isFit = true;
@@ -68,12 +68,12 @@ public class PCA implements TrainableTransformer {
         if(!isFit)
             throw new RuntimeException("Fit PCA before transforming");
 
-           
+
 
         Instances newData= null;
         try {
             newData = pca.transformedData(data);
-            
+
             if(remover == null){
                 remover = new ConstantAttributeRemover();
                 remover.fit(newData);
@@ -129,8 +129,8 @@ public class PCA implements TrainableTransformer {
 
         /*Instances train= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TRAIN.arff");
         Instances test= DatasetLoading.loadData("Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TEST.arff");*/
-        
-        
+
+
         /*PCA pca=new PCA(1);
         pca.fit(train);
         Instances trans=pca.transform(train);
