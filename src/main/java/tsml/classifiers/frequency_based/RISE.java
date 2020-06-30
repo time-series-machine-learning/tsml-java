@@ -150,8 +150,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     //Updated work
     public boolean printStartEndPoints = false;
     private ArrayList<int[]> startEndPoints = null;
-    private int intervalMethod = 4;
-    private int partitions = 5;
+    private int intervalMethod = 3;
+    private int partitions = 1;
 
 
 
@@ -1013,7 +1013,12 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             temp = temp - Math.floor(temp);
             temp = temp + ((1.0/partitions)/2);
             //Anchor point.
-            double anchorPoint = Math.floor(((data.numAttributes() - 1)/1.0)*temp);
+            double anchorPoint = 0;
+            if(partitions == 1){
+                anchorPoint = (data.numAttributes() -1) / 2;
+            }else {
+                anchorPoint = Math.floor(((data.numAttributes() - 1) / 1.0) * temp);
+            }
             //StartEndPoints.
             startEndPoints.add(new int[2]);
             startEndPoints.get(startEndPoints.size() - 1)[0] = (int) Math.floor(anchorPoint - (length * temp));
