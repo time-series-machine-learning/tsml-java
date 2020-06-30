@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 
+import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
@@ -730,7 +731,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         }
 
         //map of <word, level> => count
-        public static class SPBag extends HashMap<ComparablePair<BitWordInt, Integer>, Double> {
+        public static class SPBag extends HashMap<ComparablePair<BitWord, Integer>, Double> {
             double classVal;
 
             public SPBag() {
@@ -1042,7 +1043,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         }
 
         protected BitWordInt createWord(double[] dft) {
-            BitWordInt word = new BitWordInt(wordLength);
+            BitWordInt word = new BitWordInt();
             for (int l = 0; l < wordLength; ++l) {//for each letter
                 for (int bp = 0; bp < alphabetSize; ++bp) {//run through breakpoints until right one found
                     if (dft[l] <= breakpoints[l][bp]) {
@@ -1123,7 +1124,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
                 if (val == null)
                     val = 0.0;
 
-                newSPBag.put(new ComparablePair<BitWordInt, Integer>(shortWord, 0), val + 1.0);
+                newSPBag.put(new ComparablePair<BitWord, Integer>(shortWord, 0), val + 1.0);
             }
 
             return newSPBag;
@@ -1187,7 +1188,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
         }
 
         protected void applyPyramidWeights(SPBag bag) {
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> ent : bag.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> ent : bag.entrySet()) {
                 //find level that this quadrant is on
                 int quadrant = ent.getKey().var2;
                 int qEnd = 0; 
@@ -1214,7 +1215,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
                 int pos = wInd + (windowSize/2); //use the middle of the window as its position
                 int quadrant = qStart + (pos/quadrantSize); 
 
-                ComparablePair<BitWordInt, Integer> key = new ComparablePair<>(word, quadrant);
+                ComparablePair<BitWord, Integer> key = new ComparablePair<>(word, quadrant);
                 Double val = bag.get(key);
 
                 if (val == null)
@@ -1263,7 +1264,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
@@ -1285,7 +1286,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
@@ -1307,7 +1308,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
             double sim = 0.0;
 
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)

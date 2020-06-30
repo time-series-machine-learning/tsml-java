@@ -23,7 +23,6 @@ import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Tuneable;
-import tsml.filters.*;
 import tsml.transformers.*;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;

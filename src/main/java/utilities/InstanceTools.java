@@ -742,6 +742,14 @@ public class InstanceTools {
         }
         return instancesByClass;
     }
+    public static double[] classCounts(Instances instances) {
+        double[] counts = new double[instances.numClasses()];
+        for(Instance instance : instances) {
+            counts[(int) instance.classValue()]++;
+        }
+        return counts;
+    }
+
 
     public static double[] classDistribution(Instances instances) {
         double[] distribution = new double[instances.numClasses()];
