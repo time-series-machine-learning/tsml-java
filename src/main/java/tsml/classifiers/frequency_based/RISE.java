@@ -889,7 +889,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             if (seedClassifier)
                 rise.setSeed(seed * 100);
             if (trainTimeContract) {//Set the contract for each fold
-                rise.setTrainTimeLimit(trainContractTimeNanos/(numFolds-2));
+                rise.setTrainTimeLimit((long)(((double) timer.forestTimeLimit * perForBag) / (numFolds - 2)));
             }
             rise.setEstimateOwnPerformance(false);
             trainResults = cv.evaluate(rise, data);
