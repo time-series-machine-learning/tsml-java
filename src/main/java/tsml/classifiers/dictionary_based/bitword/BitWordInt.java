@@ -27,9 +27,9 @@ import java.util.Arrays;
  * 
  * @author James Large
  */
-public class BitWordInt implements Comparable<BitWordInt>, Serializable{
+public class BitWordInt implements BitWord {
 
-    protected static final long serialVersionUID = 22573L;
+    protected static final long serialVersionUID = 1L;
 
     public enum PrintFormat {
         RAW,            //simple decimal integer value
@@ -73,7 +73,12 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
 
     public BitWordInt() {
         word = 0;
-        length = 32;
+        length = 0;
+    }
+
+    public BitWordInt(BitWord bw) {
+        this.word = bw.getWord().intValue();
+        this.length = bw.getLength();
     }
 
     public BitWordInt(BitWordInt bw) {
@@ -81,25 +86,16 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         this.length = bw.length;
     }
 
-    public BitWordInt(int length) {//throws Exception {
-//        if (length > MAX_LENGTH)
-//            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + length);
-
-        word = 0;
-        length = length;
-    }
-
-
     public BitWordInt(int [] letters) throws Exception {
         setWord(letters);
     }
 
-    public int getWord() { return word; }
-    public int getLength() { return length; }
+    public Number getWord() { return word; }
+    public byte getLength() { return length; }
 
-    public void setWord(int [] letters) {// throws Exception {
-//         if (letters.length > MAX_LENGTH)
-//            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
+    public void setWord(int [] letters) throws Exception {
+        if (letters.length > MAX_LENGTH)
+            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
 
         word = 0;
         length = (byte)letters.length;
@@ -129,12 +125,10 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
         int shift = WORD_SPACE-(length*BITS_PER_LETTER); //first shift, increment latter
         for (int i = length-1; i > -1; --i) {
             //left shift to left end to remove earlier letters, right shift to right end to remove latter
-            letters[length-1-i] = (int)(word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
 
             shift += BITS_PER_LETTER;
         }
-
-
 
         return letters;
     }
@@ -149,23 +143,18 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
     }
 
     @Override
-    public int compareTo(BitWordInt o) {
-        return Integer.compare(word, o.word);
-    }
+    public int compareTo(BitWord o) { return Long.compare(word, o.getWord().longValue()); }
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof BitWordInt)
-            return compareTo((BitWordInt)other) == 0;
+        if (other instanceof BitWord)
+            return compareTo((BitWord)other) == 0;
         return false;
     }
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 29 * hash + this.word;
-        hash = 29 * hash + this.length;
-        return hash;
+        return Integer.hashCode(word);
     }
 
     public String buildString() {
@@ -200,8 +189,6 @@ public class BitWordInt implements Comparable<BitWordInt>, Serializable{
     public static void main(String [] args) throws Exception {
         quickTest();
         //buildMasks();
-
-
     }
 
     private static void buildMasks() {
