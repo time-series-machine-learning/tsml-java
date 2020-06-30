@@ -401,7 +401,7 @@ public class IndividualBOSS extends AbstractClassifier implements Serializable, 
     }
 
     protected BitWordInt createWord(double[] dft) {
-        BitWordInt word = new BitWordInt(wordLength);
+        BitWordInt word = new BitWordInt();
         for (int l = 0; l < wordLength; ++l) //for each letter
             for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
                 if (dft[l] <= breakpoints[l][bp]) {
