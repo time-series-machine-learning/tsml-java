@@ -56,12 +56,12 @@ import weka.classifiers.meta.RotationForest;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
-import tsml.filters.MatrixProfile;
+import tsml.transformers.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 import javax.management.Notification;
 
@@ -138,236 +138,239 @@ CHANGE: Ranomise the shape completely!
 
 */
 public class SimulationExperiments {
-    static boolean local=false;
-    static int []casesPerClass={50,50};
-    static int seriesLength=500;
-    static double trainProp=0.5;
-    static boolean normalize=true;
-    static String[] allClassifiers={ //Benchmarks
-        "ED", "RotF","DTW",
-        //Whole series
-//        "DD_DTW","DTD_C",
-        "EE","HESCA",
-        //Interval
-        "TSF",
-//        "TSBF","LPS",
-        //Shapelet
-//        "FastShapelets","LearnShapelets",
-        "ST",
-        //Dictionary        "BOP",
-        "BOSS",
-        //Spectral
-        "RISE",
-        //Combos
-        "FLATCOTE","HIVECOTE"};
-    static String[] allSimulators={"WholeSeriesElastic","Interval","Shapelet","Dictionary","ARMA"};
-    
-    
-    public static Classifier setClassifier(String str) throws RuntimeException{
-        
+    static boolean local = false;
+    static int[] casesPerClass = { 50, 50 };
+    static int seriesLength = 500;
+    static double trainProp = 0.5;
+    static boolean normalize = true;
+    static String[] allClassifiers = { // Benchmarks
+            "ED", "RotF", "DTW",
+            // Whole series
+            // "DD_DTW","DTD_C",
+            "EE", "HESCA",
+            // Interval
+            "TSF",
+            // "TSBF","LPS",
+            // Shapelet
+            // "FastShapelets","LearnShapelets",
+            "ST",
+            // Dictionary "BOP",
+            "BOSS",
+            // Spectral
+            "RISE",
+            // Combos
+            "FLATCOTE", "HIVECOTE" };
+    static String[] allSimulators = { "WholeSeriesElastic", "Interval", "Shapelet", "Dictionary", "ARMA" };
+
+    public static Classifier setClassifier(String str) throws RuntimeException {
+
         Classifier c;
-        switch(str){
-            case "ED": case "MP_ED":
-                c=new kNN(1);
+        switch (str) {
+            case "ED":
+            case "MP_ED":
+                c = new kNN(1);
                 break;
             case "HESCA":
-                c=new CAWPE();
+                c = new CAWPE();
                 break;
             case "RotF":
-                c=new RotationForest();
+                c = new RotationForest();
                 break;
-            case "DTW": case "MP_DTW":
-                c=new DTW1NN();
+            case "DTW":
+            case "MP_DTW":
+                c = new DTW1NN();
                 break;
-             case "DD_DTW":
-                c=new DD_DTW();
-                break;               
-            case "DTD_C":    
-                c=new DTD_C();
-                break;               
-            case "EE":    
-                c=new ElasticEnsemble();
-                break;                          
+            case "DD_DTW":
+                c = new DD_DTW();
+                break;
+            case "DTD_C":
+                c = new DTD_C();
+                break;
+            case "EE":
+                c = new ElasticEnsemble();
+                break;
             case "TSF":
-                c=new TSF();
+                c = new TSF();
                 break;
             case "TSBF":
-                c=new TSBF();
+                c = new TSBF();
                 break;
             case "LPS":
-                c=new LPS();
+                c = new LPS();
                 break;
             case "FastShapelets":
-                c=new FastShapelets();
+                c = new FastShapelets();
                 break;
             case "ST":
-                c=new ShapeletTransformClassifier();
-                if(local)
-                    ((ShapeletTransformClassifier)c).setOneMinuteLimit();
+                c = new ShapeletTransformClassifier();
+                if (local)
+                    ((ShapeletTransformClassifier) c).setOneMinuteLimit();
                 else
-                   ((ShapeletTransformClassifier)c).setOneHourLimit();
-//                ((ShapeletTransformClassifier)c).setOneMinuteLimit();//DEBUG
+                    ((ShapeletTransformClassifier) c).setOneHourLimit();
+                // ((ShapeletTransformClassifier)c).setOneMinuteLimit();//DEBUG
                 break;
             case "BOP":
-                c=new BagOfPatterns();
+                c = new BagOfPatternsClassifier();
                 break;
             case "BOSS":
-                c=new BOSS();
+                c = new BOSS();
                 break;
             case "COTE":
             case "FLATCOTE":
-                c=new FlatCote();
+                c = new FlatCote();
                 break;
             case "HIVECOTE":
-                c=new HiveCote();
-//                ((HiveCote)c).setNosHours(2);
+                c = new HiveCote();
+                // ((HiveCote)c).setNosHours(2);
                 break;
             default:
-                throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
+                throw new RuntimeException(" UNKNOWN CLASSIFIER " + str);
         }
         return c;
     }
-    
-    public static void setStandardGlobalParameters(String str){
-         switch(str){
-            case "ARMA": case "AR": case "Spectral":
-                casesPerClass=new int[]{200,200};
-                seriesLength=200;
-                trainProp=0.1;
+
+    public static void setStandardGlobalParameters(String str) {
+        switch (str) {
+            case "ARMA":
+            case "AR":
+            case "Spectral":
+                casesPerClass = new int[] { 200, 200 };
+                seriesLength = 200;
+                trainProp = 0.1;
                 Model.setDefaultSigma(1);
                 break;
-            case "Shapelet": 
-                casesPerClass=new int[]{250,250};
-                seriesLength=300;
-                trainProp=0.1;
+            case "Shapelet":
+                casesPerClass = new int[] { 250, 250 };
+                seriesLength = 300;
+                trainProp = 0.1;
                 Model.setDefaultSigma(1);
                 break;
             case "Dictionary":
-                casesPerClass=new int[]{200,200};
-                seriesLength=1500;
-                trainProp=0.1;
-                SimulateDictionaryData.setShapeletsPerClass(new int[]{5,10});
+                casesPerClass = new int[] { 200, 200 };
+                seriesLength = 1500;
+                trainProp = 0.1;
+                SimulateDictionaryData.setShapeletsPerClass(new int[] { 5, 10 });
                 SimulateDictionaryData.setShapeletLength(29);
- //               SimulateDictionaryData.checkGlobalSeedForIntervals();
+                // SimulateDictionaryData.checkGlobalSeedForIntervals();
                 Model.setDefaultSigma(1);
-               break; 
+                break;
             case "Interval":
-                seriesLength=1000;
-                trainProp=0.1;
-                casesPerClass=new int[]{200,200};
+                seriesLength = 1000;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 200, 200 };
                 Model.setDefaultSigma(1);
-//                SimulateIntervalData.setAmp(1);
+                // SimulateIntervalData.setAmp(1);
                 SimulateIntervalData.setNosIntervals(3);
                 SimulateIntervalData.setNoiseToSignal(10);
                 break;
-           case "WholeSeriesElastic":
+            case "WholeSeriesElastic":
             case "WholeSeries":
-                seriesLength=100;
-                trainProp=0.1;
-                casesPerClass=new int[]{100,100};
+                seriesLength = 100;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 100, 100 };
                 Model.setDefaultSigma(1);
                 ElasticModel.setBaseAndAmp(-2, 4);
                 ElasticModel.setWarpPercent(0.4);
- //               SimulateWholeSeriesElastic.
+                // SimulateWholeSeriesElastic.
                 break;
             case "MatrixProfile":
-                seriesLength=150;
-                trainProp=0.1;
-                casesPerClass=new int[]{50,50};
+                seriesLength = 150;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 50, 50 };
                 Model.setDefaultSigma(1);
                 break;
-        default:
+            default:
                 throw new RuntimeException(" UNKNOWN SIMULATOR ");
-            
-        }       
+
+        }
     }
-    
-    
-    public static Instances simulateData(String str,int seed) throws RuntimeException{
+
+    public static Instances simulateData(String str, int seed) throws RuntimeException {
         Instances data;
-//        for(int:)
+        // for(int:)
         Model.setGlobalRandomSeed(seed);
-        switch(str){
-            case "ARMA": case "AR": case "SPECTRAL":
-                
-                  data=SimulateSpectralData.generateSpectralEmbeddedData(seriesLength, casesPerClass);
-//                 data=SimulateSpectralData.generateARDataSet(seriesLength, casesPerClass, true);
+        switch (str) {
+            case "ARMA":
+            case "AR":
+            case "SPECTRAL":
+
+                data = SimulateSpectralData.generateSpectralEmbeddedData(seriesLength, casesPerClass);
+                // data=SimulateSpectralData.generateARDataSet(seriesLength, casesPerClass,
+                // true);
                 break;
-            case "Shapelet": 
-                data=SimulateShapeletData.generateShapeletData(seriesLength,casesPerClass);
+            case "Shapelet":
+                data = SimulateShapeletData.generateShapeletData(seriesLength, casesPerClass);
                 break;
             case "Dictionary":
-                data=SimulateDictionaryData.generateDictionaryData(seriesLength,casesPerClass);
-               break; 
-            case "Interval":    
-                data=SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
-                break;        
-                        
-            case "WholeSeries":
-                data=SimulateWholeSeriesData.generateWholeSeriesdData(seriesLength,casesPerClass);
+                data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass);
                 break;
-           case "WholeSeriesElastic":
-                data=SimulateElasticData.generateElasticData(seriesLength,casesPerClass);
-                break;
-           case "MatrixProfile":
-                data=SimulateMatrixProfileData.generateMatrixProfileData(seriesLength,casesPerClass);
+            case "Interval":
+                data = SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
                 break;
 
-           
-           default:
-                throw new RuntimeException(" UNKNOWN SIMULATOR "+str);
-            
+            case "WholeSeries":
+                data = SimulateWholeSeriesData.generateWholeSeriesdData(seriesLength, casesPerClass);
+                break;
+            case "WholeSeriesElastic":
+                data = SimulateElasticData.generateElasticData(seriesLength, casesPerClass);
+                break;
+            case "MatrixProfile":
+                data = SimulateMatrixProfileData.generateMatrixProfileData(seriesLength, casesPerClass);
+                break;
+
+            default:
+                throw new RuntimeException(" UNKNOWN SIMULATOR " + str);
+
         }
         return data;
     }
-    
 
-//arg[0]: simulator
-//arg[1]: classifier
-//arg[2]: fold number    
-    public static double runSimulationExperiment(String[] args,boolean useStandard) throws Exception{
-        String simulator=args[0];
-        if(useStandard)
+    // arg[0]: simulator
+    // arg[1]: classifier
+    // arg[2]: fold number
+    public static double runSimulationExperiment(String[] args, boolean useStandard) throws Exception {
+        String simulator = args[0];
+        if (useStandard)
             setStandardGlobalParameters(simulator);
-        String classifier=args[1];
-        Classifier c=setClassifier(classifier);
-        int fold=Integer.parseInt(args[2])-1;
-        String resultsPath=args[3];
+        String classifier = args[1];
+        Classifier c = setClassifier(classifier);
+        int fold = Integer.parseInt(args[2]) - 1;
+        String resultsPath = args[3];
 
-//Set up the train and test files
-        File f=new File(resultsPath+simulator);
-        if(!f.exists())
+        // Set up the train and test files
+        File f = new File(resultsPath + simulator);
+        if (!f.exists())
             f.mkdirs();
-        String predictions= resultsPath+simulator+"/"+classifier;
-        f=new File(predictions);
-        if(!f.exists())
+        String predictions = resultsPath + simulator + "/" + classifier;
+        f = new File(predictions);
+        if (!f.exists())
             f.mkdir();
-//Check whether fold already exists, if so, dont do it, just quit
-        f=new File(predictions+"/testFold"+fold+".csv");
-        if(!f.exists() || f.length()==0){
-//Do the experiment: find train preds through cross validation
-//Then generate all test predictions            
-            Instances data=simulateData(args[0],fold);
-            Instances[] split=InstanceTools.resampleInstances(data, fold,trainProp);
-            System.out.println(" Train size ="+split[0].numInstances()+" test size ="+split[1].numInstances());
-    //Check if it is MP or not
-            if(classifier.contains("MP_")){
+        // Check whether fold already exists, if so, dont do it, just quit
+        f = new File(predictions + "/testFold" + fold + ".csv");
+        if (!f.exists() || f.length() == 0) {
+            // Do the experiment: find train preds through cross validation
+            // Then generate all test predictions
+            Instances data = simulateData(args[0], fold);
+            Instances[] split = InstanceTools.resampleInstances(data, fold, trainProp);
+            System.out.println(" Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+            // Check if it is MP or not
+            if (classifier.contains("MP_")) {
                 try {
                     System.out.println("MAtrix profile run ....");
-                    MatrixProfile mp=new MatrixProfile(29);
-                    split[0]=mp.process(split[0]);
-                    split[1]=mp.process(split[1]);
+                    MatrixProfile mp = new MatrixProfile(29);
+                    split[0] = mp.transform(split[0]);
+                    split[1] = mp.transform(split[1]);
                 } catch (Exception ex) {
                     Logger.getLogger(SimulationExperiments.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
             }
-            
-            else if(normalize){
-                
-                NormalizeCase nc= new NormalizeCase();
-                split[0]=nc.process(split[0]);
-                split[0]=nc.process(split[1]);
+
+            else if (normalize) {
+
+                NormalizeCase nc = new NormalizeCase();
+                split[0] = nc.transform(split[0]);
+                split[1] = nc.transform(split[1]);
             }
 
             double acc=singleSampleExperiment(split[0],split[1],c,fold,predictions);
@@ -560,7 +563,7 @@ public class SimulationExperiments {
                         c=new LearnShapelets();
                         break;
                     case "BOP":
-                        c=new BagOfPatterns();
+                        c=new BagOfPatternsClassifier();
                         break;
                     case "BOSS":
                         c=new BOSS();

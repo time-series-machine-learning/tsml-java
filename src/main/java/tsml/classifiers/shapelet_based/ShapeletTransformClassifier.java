@@ -33,6 +33,7 @@ import utilities.InstanceTools;
 import weka.Run;
 import weka.core.*;
 import weka.classifiers.Classifier;
+import tsml.transformers.PCA;
 import tsml.transformers.ShapeletTransform;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions.ShapeletTransformOptions;
@@ -77,11 +78,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     /** Redundant features in the shapelet space are removed prior to building the classifier **/
     int[] redundantFeatures;
 
-    /** PCA Option: not currently implemented, as it has not been debugged
+    // PCA Option: not currently implemented, as it has not been debugged
     private boolean performPCA=false;
     private PCA pca;
     private int numPCAFeatures=100;
-    */
+    
 
 
 
@@ -155,7 +156,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 
     }
-/* Not debugged, doesnt currently work
+// Not debugged, doesnt currently work
     public void usePCA(){
         setPCA(true);
     }
@@ -164,11 +165,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     }
     public void setPCA(boolean b, int numberEigenvectorsToRetain) {
         performPCA = b;
-        pca=new PCA();
         numPCAFeatures=numberEigenvectorsToRetain;
-        pca.setNumAttributesToKeep(numPCAFeatures);
+        pca=new PCA(numPCAFeatures);
     }
-*/
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
     // can classifier handle the data?
@@ -246,18 +246,21 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
 
-
-
         //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
-/*
         if(performPCA){
-            pca.setNumAttributesToKeep(shapeletData.numAttributes()-1);
+            setPCA(performPCA, Math.min(shapeletData.numAttributes()-1, numPCAFeatures)); //update eigen values to reflect min (this will override old PCA)
             pca.fit(shapeletData);
+            System.out.println("BEFOOOREEE");
+            System.out.println(shapeletData);
             shapeletData=pca.transform(shapeletData);
-            System.out.println(shapeletData.toString());
+            System.out.println("AFTEEEER");
+            System.out.println(shapeletData);
         }
-*/
+
 //Here get the train estimate directly from classifier using cv for now
+        if(classifier instanceof EnhancedAbstractClassifier)
+            ((EnhancedAbstractClassifier)classifier).setDebug(debug);
+        printLineDebug("Entering build classifier with classifier contract = "+classifierContractTime);
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
         trainResults.setBuildTime(System.nanoTime()-startTime);
@@ -274,10 +277,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*        if(performPCA){
+        if(performPCA){
             temp=pca.transform(temp);
         }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
         return classifier.classifyInstance(test);
@@ -290,10 +293,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
-/*         if(performPCA){
+         if(performPCA){
              temp=pca.transform(temp);
          }
-*/
+
         Instance test  = temp.get(0);
         shapeletData.remove(0);
 
@@ -705,6 +708,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         String preds=saveLocation+datasetName;
         System.out.println("Data Loaded");
         ShapeletTransformClassifier st= new ShapeletTransformClassifier();
+
         //st.saveResults(trainS, testS);
         st.setShapeletOutputFilePath(saveLocation+datasetName+"Shapelets.csv");
         st.setMinuteLimit(2);
@@ -714,6 +718,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
         st.configureDefaultShapeletTransform();
         st.configureTrainTimeContract(train,st.trainContractTimeNanos);
+
         Instances stTrain=st.transform.fitTransform(train);
         long t2= System.currentTimeMillis();
         System.out.println("BUILD TIME "+((t2-t1)/1000)+" Secs");

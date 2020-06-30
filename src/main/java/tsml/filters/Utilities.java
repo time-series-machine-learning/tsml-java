@@ -4,8 +4,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 
-import java.util.Arrays;
-
 import static utilities.Utilities.toInstances;
 
 public class Utilities {

@@ -18,10 +18,12 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
@@ -33,15 +35,11 @@ import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.LPS;
-import tsml.classifiers.multivariate.MultivariateShapeletTransformClassifier;
-import tsml.classifiers.multivariate.NN_DTW_A;
-import tsml.classifiers.multivariate.NN_DTW_D;
-import tsml.classifiers.multivariate.NN_DTW_I;
-import tsml.classifiers.multivariate.NN_ED_I;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -94,7 +92,7 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
             "DD_DTW","DTD_C","CID_DTW","NN_CID"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
@@ -103,8 +101,13 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "DTW":
+            case "ED":
                 c = new KNN();
+                break;
+            case "DTW":
+                c = new DTW_kNN();
+                ((DTW_kNN)c).optimiseWindow(false);
+                ((DTW_kNN)c).setMaxR(1.0);
                 break;
             case "DTWCV":
                 c = new DTWCV();
@@ -150,7 +153,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -158,7 +161,7 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "BOP":
-                c=new BagOfPatterns();
+                c=new BagOfPatternsClassifier();
                 break;
             case "SAXVSM":
                 c=new SAXVSM();
@@ -183,7 +186,9 @@ public class ClassifierLists {
                 break;
             case "WEASEL":
                 c = new WEASEL();
-
+                break;
+            case "TDE":
+                c = new TDE();
                 break;
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
@@ -279,7 +284,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -302,6 +307,14 @@ public class ClassifierLists {
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
+            case "catch22":
+                c = new Catch22Classifier();
+                ((Catch22Classifier) c).setSeed(fold);
+                RandomForest r = new RandomForest();
+                r.setSeed(fold);
+                r.setNumTrees(500);
+                ((Catch22Classifier) c).setClassifier(r);
+                break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between array hybrids and the switch statement ");
@@ -315,7 +328,7 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I","HIVE-COTEn_I"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -339,6 +352,9 @@ public class ClassifierLists {
             case "ED_I":
                 c=new NN_ED_I();
                 break;
+            case "ED_D":
+                c=new NN_ED_D();
+                break;
             case "DTW_I":
                 c=new NN_DTW_I();
                 break;
@@ -347,6 +363,29 @@ public class ClassifierLists {
                 break;
             case "DTW_A":
                 c=new NN_DTW_A();
+                break;
+            case "HC_I":
+                c=new MultivariateHiveCote(exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "CBOSS_I":
+                c=new MultivariateSingleEnsemble("cBOSS", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "RISE_I":
+                c=new MultivariateSingleEnsemble("RISE", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "STC_I":
+                c=new MultivariateSingleEnsemble("STC", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                ((EnhancedAbstractClassifier)c).setDebug(true);
+
+                break;
+            case "TSF_I":
+                c=new MultivariateSingleEnsemble("TSF", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "PF_I":
+                c=new MultivariateSingleEnsemble("ProximityForest", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
+                break;
+            case "TS-CHIEF_I":
+                c=new MultivariateSingleEnsemble("TSCHIEF", exp.resultsWriteLocation, exp.datasetName, exp.foldId);
                 break;
             case "HIVE-COTE_I":
                 if(canLoadFromFile){
@@ -361,7 +400,37 @@ public class ClassifierLists {
                 else
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
-                break;            default:
+                break;
+            case "HIVE-COTEn_I":
+                if(canLoadFromFile){
+                    String[] cls={"TSF_I","cBOSS_I","RISE_I","STC_I","TSFn_I","cBOSSn_I","RISEn_I","STCn_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-PF_I":
+                if(canLoadFromFile){
+                    String[] cls={"PF_I","TSF_I","cBOSS_I","RISE_I","STC_I"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+
+                default:
                 System.out.println("Unknown multivariate classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between multivariateBased and the switch statement ");
                 throw new UnsupportedOperationException("Unknown multivariate classifier, should not be able to get here "
@@ -667,10 +736,18 @@ public class ClassifierLists {
             System.out.println("Unknown classifier "+classifier+" it is not in any of the sublists ");
             throw new UnsupportedOperationException("Unknown classifier "+classifier+" it is not in any of the sublists on ClassifierLists ");
         }
-        if(c instanceof Randomizable)
+        if (c instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) c).setSeed(exp.foldId);
+            ((EnhancedAbstractClassifier) c).setDebug(exp.debug);
+        } 
+        else if (c instanceof Randomizable) {
+            //normal weka classifiers that aren't EnhancedAbstractClassifiers
+            //EAC's setSeed sets up a random object internally too. 
             ((Randomizable)c).setSeed(exp.foldId);
+        }
         return c;
     }
+
 
     /**
      * This method redproduces the old usage exactly as it was in old experiments.java.

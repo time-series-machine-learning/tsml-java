@@ -14,6 +14,7 @@
  */
 package tsml.classifiers.multivariate;
 
+import tsml.classifiers.distance_based.NN_CID;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW_D;
 import static utilities.InstanceTools.findMinDistance;
 import utilities.generic_storage.Pair;

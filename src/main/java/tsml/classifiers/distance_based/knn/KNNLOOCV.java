@@ -17,7 +17,7 @@ import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClas
 import tsml.classifiers.distance_based.utils.iteration.LinearListIterator;
 import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
 import tsml.classifiers.distance_based.utils.params.ParamSpace;
-import tsml.filters.HashFilter;
+import tsml.transformers.HashTransformer;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.cache.Cache;
 import tsml.classifiers.distance_based.utils.cache.SymmetricCache;
@@ -461,7 +461,7 @@ public class KNNLOOCV
             trainEstimateTimer.resetAndEnable();
             if(getEstimateOwnPerformance()) {
                 if(isCheckpointSavingEnabled()) { // was needed for caching
-                    HashFilter.hashInstances(trainData);
+                    HashTransformer.hashInstances(trainData);
                 }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());
