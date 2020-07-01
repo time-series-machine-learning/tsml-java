@@ -154,24 +154,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private int[] oobCounts;
     private double[][] trainDistributions;
 
-   /** If trainAccuracy is required, there are three mechanisms to obtain it:
-    * 1. bagging == true: use the OOB accuracy from the final model
-    * 2. bagging == false,estimator=CV: do a 10x CV on the train set with a clone
-    * of this classifier
-    * 3. bagging == false,estimator=OOB: build an OOB model just to get the OOB
-    * accuracy estimate
-    */
-    enum EstimatorMethod{CV,OOB}
-    private EstimatorMethod estimator=EstimatorMethod.CV;
-    public void setEstimatorMethod(String str){
-        String s=str.toUpperCase();
-        if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
-        else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else
-            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
-    }
 
 
     /**** Checkpointing variables *****/
@@ -182,7 +164,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
 
     private long checkpointTimeElapsed= 0;
-
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos = 0;
     transient private long finalBuildtrainContractTimeNanos = 0;
