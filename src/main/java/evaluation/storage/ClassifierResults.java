@@ -72,7 +72,7 @@ import weka.core.Randomizable;
  *   6 - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
  *   7 - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
  *   8 - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
- *   9 - get/setBuildAndEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *   9 - get/setBuildPlusEstimateTime(long) (time to train on full data, AND estimate error on it)
  *
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
@@ -1032,6 +1032,8 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     public void setErrorEstimateTime(long errorEstimateTime) {
         this.errorEstimateTime = errorEstimateTime;
     }
+
+
 
 
     /**
