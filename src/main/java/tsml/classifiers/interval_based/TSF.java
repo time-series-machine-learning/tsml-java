@@ -125,9 +125,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /** Primary parameters potentially tunable*/   
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
-    //Not required
-    private int maxClassifiers = 1000;
-
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
     private int numIntervals=0;
     private transient Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
@@ -251,7 +248,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      
      
 //<editor-fold defaultstate="collapsed" desc="results reported in Info Sciences paper">        
-    static double[] reportedResults={
+    static double[] reportedErrorResults ={
         0.2659,
         0.2302,
         0.2333,
@@ -385,34 +382,19 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             //path checkpoint files will be saved to
             printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
-            //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        //initialise variables
+        //else initialise variables
         else {
             seriesLength = data.numAttributes() - 1;
             numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
             printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers+"\n");
-//Set up instances size and format.
             trees = new ArrayList(numClassifiers);
-
-            /** Set up for train estimates **/
-            if(getEstimateOwnPerformance()) {
-                trainDistributions= new double[data.numInstances()][data.numClasses()];
-            }
-
-            /** Set up for Bagging if required **/
             if(bagging){
                 inBag=new ArrayList();
-                oobCounts=new int[data.numInstances()];
                 printLineDebug("TSF is using Bagging");
             }
-
-/*            //cancel loop using time instead of number built.
-            if (trainTimeContract){
-                numClassifiers = 0;
-            }
- */        intervals = new ArrayList();
-           lastCheckpointTime=startTime;
+            intervals = new ArrayList();
+            lastCheckpointTime=startTime;
         }
 
 
@@ -440,13 +422,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         testHolder =new Instances(result,0);       
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
-//Need to hard code this because log(m)+1 is sig worse than sqrt(m) is worse than using all!
-
         int classifiersBuilt = trees.size();
 
         /** For each base classifier
          *      generate random intervals
-         *      do the transfrorms
+         *      do the transforms
          *      build the classifier
          * */
         while(withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)){
@@ -468,9 +448,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             //2. Generate and store attributes
             for(int j=0;j<numIntervals;j++){
-                //For each instance
                 for(int k=0;k<data.numInstances();k++){
-                    //extract the interval
+                    //extract the interval, work out the features
                     double[] series=data.instance(k).toDoubleArray();
                     FeatureSet f= new FeatureSet();
                     f.setFeatures(series, interval[j][0], interval[j][1]);
@@ -488,17 +467,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 boolean[] bag = new boolean[result.numInstances()];
                 Instances bagData = result.resampleWithWeights(rand, bag);
                 tree.buildClassifier(bagData);
-                if(getEstimateOwnPerformance()){
-                    for(int j=0;j<result.numInstances();j++){
-                        if(bag[j])
-                            continue;
-                        double[] newProbs = tree.distributionForInstance(result.instance(j));
-                        oobCounts[j]++;
-                        for(int k=0;k<newProbs.length;k++)
-                            trainDistributions[j][k]+=newProbs[k];
-                         
-                    }
-                }
                 inBag.add(bag);
             }
             else
@@ -513,14 +481,12 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 {
                     if(System.nanoTime()-lastCheckpointTime>checkpointTime){
                         saveToFile(checkpointPath);
-//                        checkpoint(startTime);
                         lastCheckpointTime=System.nanoTime();
                     }
                 }
                 else {    //Default checkpoint every 100 trees
                     if(classifiersBuilt%100 == 0 && classifiersBuilt>0)
                         saveToFile(checkpointPath);
-//                        checkpoint(startTime);
                 }
             }
         }
@@ -532,6 +498,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
         /** Estimate accuracy stage: Three scenarios
          * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
          *  If we built on all data (bagging ==false) we estimate either
@@ -544,10 +511,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             estimateOwnPerformance(data);
             long est2=System.nanoTime();
             trainResults.setErrorEstimateTime(est2-est1);
-
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         }
-
-
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished TSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
@@ -555,6 +520,20 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private void estimateOwnPerformance(Instances data) throws Exception {
         if(bagging){
             // Use bag data, counts normalised to probabilities
+            trainDistributions= new double[data.numInstances()][data.numClasses()];
+            oobCounts=new int[data.numInstances()];
+            int treeCount=0;
+            for (boolean[] bag : inBag) {
+                Classifier tree=trees.get(treeCount++);
+                for (int j = 0; j < data.numInstances(); j++) {
+                    if (bag[j])
+                        continue;
+                    double[] newProbs = tree.distributionForInstance(data.instance(j));
+                    oobCounts[j]++;
+                    for (int k = 0; k < newProbs.length; k++)
+                        trainDistributions[j][k] += newProbs[k];
+                }
+            }
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
@@ -567,8 +546,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 predTimes[j]=System.nanoTime()-predTime;
             }
             trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
-
-//DO I NEED TO DO ALL THIS?
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setClassifierName("TSFBagging");
             trainResults.setDatasetName(data.relationName());
@@ -576,12 +553,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setFoldID(seed);
             trainResults.finaliseResults(actuals);
             trainResults.setErrorEstimateMethod("OOB");
+
         }
         //Either do a CV, or bag and get the estimates
         else if(estimator==EstimatorMethod.CV){
-            /** Defaults to 10 or numInstances, whichever is smaller.
-             * Interface TrainAccuracyEstimate
-             * Could this be handled better? */
+            // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds=setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (seedClassifier)
@@ -600,8 +576,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
         else if(estimator==EstimatorMethod.OOB){
-            /** Build a single new TSF using Bagging, and extract the estimate from this
-             */
+            // Build a single new TSF using Bagging, and extract the estimate from this
             TSF tsf=new TSF();
             tsf.copyParameters(this);
             tsf.setSeed(seed);
@@ -617,8 +592,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private void copyParameters(TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
-//        this.trainTimeContract=other.trainTimeContract;
-//        this.trainContractTimeNanos=other.trainContractTimeNanos;
     }
 
 /**
@@ -754,7 +727,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         try{        printLineDebug("Loading TSF" + seed + ".ser");
 
             numClassifiers = saved.numClassifiers;
-            maxClassifiers = saved.maxClassifiers;
             numIntervals = saved.numIntervals;
             //numIntervalsFinder = saved.numIntervalsFinder;
             minIntervalLength = saved.minIntervalLength;
@@ -891,12 +863,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public ParameterSpace getDefaultParameterSearchSpace(){
-       ParameterSpace ps=new ParameterSpace();
+        ParameterSpace ps=new ParameterSpace();
         String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
         ps.addParameter("T", numTrees);
         String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
         ps.addParameter("I", numInterv);
-
         return ps;
     }
 
