@@ -228,20 +228,27 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public void setMemoryLimit(DataUnit unit, long amount){
-        switch (unit){
-            case GIGABYTE:
-                memoryLimit = amount*1073741824;
-                break;
-            case MEGABYTE:
-                memoryLimit = amount*1048576;
-                break;
-            case BYTES:
-                memoryLimit = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid data unit");
+        try {
+            throw new Exception("Memory contract currently unavailable");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
-        memoryContract = true;
+
+//        switch (unit){
+//            case GIGABYTE:
+//                memoryLimit = amount*1073741824;
+//                break;
+//            case MEGABYTE:
+//                memoryLimit = amount*1048576;
+//                break;
+//            case BYTES:
+//                memoryLimit = amount;
+//                break;
+//            default:
+//                throw new InvalidParameterException("Invalid data unit");
+//        }
+//        memoryContract = true;
     }
 
     @Override
@@ -596,7 +603,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated *************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained  = ");
+
+        if (randomCVAccEnsemble)
+            printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated " +
+                "*************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained = " + classifiers[0].size());
 
     }
 
@@ -1498,21 +1508,21 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
 
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
