@@ -4,9 +4,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import experiments.data.DatasetLoading;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import weka.classifiers.meta.RotationForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -178,7 +182,7 @@ public class Resizer implements TrainableTransformer {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
         String dataset_name = "PLAID";
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
@@ -198,6 +202,14 @@ public class Resizer implements TrainableTransformer {
         }
 
         Instances resized_test = rs.transform(test);
+
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+        stc.setTrainTimeLimit(TimeUnit.MINUTES, 5);
+        stc.buildClassifier(resized_train);
+
+        double acc = ClassifierTools.accuracy(resized_test, stc);
+
+        System.out.println(acc);
     }
     
 }
