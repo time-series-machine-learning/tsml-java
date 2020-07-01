@@ -121,24 +121,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private TransformType transformType = TransformType.ACF_FFT;
     private Instances data = null;
 
-    /** If trainAccuracy is required, there are two mechanisms to obtain it:
-     * 2. estimator=CV: do a 10x CV on the train set with a clone
-     * of this classifier
-     * 3. estimator=OOB: build an OOB model just to get the OOB
-     * accuracy estimate
-     */
-    enum EstimatorMethod{CV,OOB}
-    private EstimatorMethod estimator=EstimatorMethod.CV;
-    public void setEstimatorMethod(String str){
-        String s=str.toUpperCase();
-        if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
-        else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else
-            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
-    }
-
 
 /**** Checkpointing variables *****/
     private boolean checkpoint = false;
@@ -676,14 +658,18 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
 
         if (getEstimateOwnPerformance()) {
+            long est1 = System.nanoTime();
             estimateOwnPerformance(data);
+            long est2 = System.nanoTime();
+            trainResults.setErrorEstimateTime(est2 - est1);
+
             initialise();
             timer.reset();
             if(trainTimeContract)
                 this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
-        for (; classifiersBuilt < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); classifiersBuilt++) {
+        for (; classifiersBuilt < numClassifiers && ((classifiersBuilt==0)||(System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime())); classifiersBuilt++) {
             if(debug && classifiersBuilt%100==0)
                 printLineDebug("Building RISE tree "+classifiersBuilt+" time taken = "+(System.nanoTime()-startTime)+" contract ="+trainContractTimeNanos+" nanos");
 
@@ -742,7 +728,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
         }
         if(classifiersBuilt==0){//Not enough time to build a single classifier
-            throw new Exception((" ERROR in RISE, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
+            throw new Exception((" ERROR in RISE, no trees built, this should not happen. Contract time ="+trainContractTimeNanos/1000000000));
         }
 
         if (checkpoint) {
@@ -756,6 +742,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(timer.forestElapsedTime);
         trainResults.setParas(getParameters());
+        if(getEstimateOwnPerformance()){
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+        }
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
         /*for (int i = 0; i < this.startEndPoints.size(); i++) {
@@ -871,12 +860,13 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 }
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
+            trainResults.setClassifierName("RISEOOB");
+            trainResults.setErrorEstimateMethod("OOB");
         }
         else if(estimator==EstimatorMethod.CV) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
-            long est1 = System.nanoTime();
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (seedClassifier)
@@ -893,7 +883,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             rise.setEstimateOwnPerformance(false);
             trainResults = cv.evaluate(rise, data);
             long est2 = System.nanoTime();
-            trainResults.setErrorEstimateTime(est2 - est1);
             trainResults.setClassifierName("RISECV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }

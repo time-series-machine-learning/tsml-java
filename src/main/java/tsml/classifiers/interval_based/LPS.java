@@ -188,8 +188,8 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
       //</editor-fold>  
     
 
-//<editor-fold defaultstate="collapsed" desc="results reported in DAMI paper">        
-    static double[] reportedResults={
+//<editor-fold defaultstate="collapsed" desc="results reported in DAMI paper (errors)">
+    static double[] reportedErrorResults ={
         0.211,
         0.2,
 //        0.004,
@@ -285,12 +285,12 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
         l.setParamSearch(false);
         l.buildClassifier(train);
         double a=ClassifierTools.accuracy(test, l);
-        System.out.println(df.format(1-a)+","+df.format(reportedResults[i])+","+df.format(1-a-reportedResults[i]));
-        if((1-a)<reportedResults[i])
+        System.out.println(df.format(1-a)+","+df.format(reportedErrorResults[i])+","+df.format(1-a- reportedErrorResults[i]));
+        if((1-a)< reportedErrorResults[i])
             b++;
-        if((1-a)==reportedResults[i])
+        if((1-a)== reportedErrorResults[i])
             t++;
-        res.writeLine(s+","+(1-a)+","+reportedResults[i]);
+        res.writeLine(s+","+(1-a)+","+ reportedErrorResults[i]);
      }
      System.out.println("Reported better ="+(problems.length-t-b)+" ties ="+t+" ours better = "+b);
  } 
