@@ -1013,7 +1013,7 @@ public class DatasetLists {
 
                 
 
-//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">    
+	//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">
 		public static String[][] fiveSplits={	
       {			"Adiac",        // 390,391,176,37
 			"ArrowHead",    // 36,175,251,3
@@ -1181,8 +1181,8 @@ public class DatasetLists {
 			"MoteStrain", // 20,1252,84,2
 			"OliveOil", // 30,30,570,4
 			"Plane", // 105,105,144,7
-			"SonyAIBORobotSurface", // 20,601,70,2
-			"SonyAIBORobotSurfaceII", // 27,953,65,2
+			"SonyAIBORobotSurface1", // 20,601,70,2
+			"SonyAIBORobotSurface2", // 27,953,65,2
 			"SyntheticControl", // 300,300,60,6
 			"Trace", // 100,100,275,4
 			"TwoLeadECG", // 23,1139,82,2

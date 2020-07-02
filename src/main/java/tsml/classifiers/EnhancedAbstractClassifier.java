@@ -91,10 +91,18 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
 
+    /**
+     * get the classifier RNG
+     * @return Random
+     */
     public Random getRandom() {
         return rand;
     }
 
+    /**
+     * Set the classifier RNG
+     * @param rand
+     */
     public void setRandom(Random rand) {
         this.rand = rand;
     }
@@ -138,6 +146,24 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)
      */
     protected boolean estimateOwnPerformance = false;
+
+    /** If trainAccuracy is required, there are two options that can be implemented
+     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+     */
+    public enum EstimatorMethod{CV,OOB,NONE}
+    protected EstimatorMethod estimator=EstimatorMethod.NONE;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
+    }
+
+
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
