@@ -455,7 +455,7 @@ public class ExperimentsEarlyClassification {
         if (!f.exists())
             f.mkdirs();
 
-        expSettings.testFoldFileName = fullWriteLocation + "100%testFold" + expSettings.foldId + ".csv";
+        expSettings.testFoldFileName = fullWriteLocation + "100.0%testFold" + expSettings.foldId + ".csv";
         expSettings.trainFoldFileName = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
 
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)
