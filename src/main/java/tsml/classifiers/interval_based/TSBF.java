@@ -95,8 +95,8 @@ information.
 public class TSBF extends EnhancedAbstractClassifier implements ParameterSplittable,TechnicalInformationHandler{
 //Paras
     
-//<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper">        
-    static double[] reportedResults={0.245,
+//<editor-fold defaultstate="collapsed" desc="results reported in PAMI paper (errors)">
+    static double[] reportedErrorResults ={0.245,
 0.287,
 0.009,
 0.336,
@@ -200,10 +200,10 @@ public static void recreatePublishedResults(String datasetPath, String resultsPa
         TSBF tsbf=new TSBF();
         tsbf.searchParameters(true);
         double a=ClassifierTools.singleTrainTestSplitAccuracy(tsbf, train, test);
-        System.out.println(problems[i]+","+reportedResults[i]+","+(1-a));
-        of.writeLine(problems[i]+","+reportedResults[i]+","+(1-a));
-        meanDiff+=reportedResults[i]-(1-a);
-        if(reportedResults[i]<(1-a))
+        System.out.println(problems[i]+","+ reportedErrorResults[i]+","+(1-a));
+        of.writeLine(problems[i]+","+ reportedErrorResults[i]+","+(1-a));
+        meanDiff+= reportedErrorResults[i]-(1-a);
+        if(reportedErrorResults[i]<(1-a))
             publishedBetter++;
     }
     System.out.println("Mean diff ="+meanDiff/problems.length+" Published better ="+publishedBetter);
