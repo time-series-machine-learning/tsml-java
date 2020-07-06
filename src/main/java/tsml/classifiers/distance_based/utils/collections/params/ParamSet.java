@@ -177,8 +177,10 @@ public class ParamSet implements ParamHandler {
     public ParamSet addAll(ParamSet paramSet) {
         for(Entry<String, List<Object>> entry : paramSet.paramMap.entrySet()) {
             String key = entry.getKey();
-            List<Object> value = entry.getValue();
-            add(key, value);
+            List<Object> list = entry.getValue();
+            for(Object value : list) {
+                add(key, value);
+            }
         }
         return this;
     }
