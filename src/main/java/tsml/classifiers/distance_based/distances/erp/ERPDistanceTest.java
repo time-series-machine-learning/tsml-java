@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -128,7 +127,7 @@ public class ERPDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = DistanceMeasureConfigs.buildErpParams(data);
+                    space = ERPDistanceConfigs.buildErpParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                int i = 0;

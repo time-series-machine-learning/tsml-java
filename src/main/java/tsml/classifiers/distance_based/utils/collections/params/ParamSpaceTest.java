@@ -15,7 +15,7 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.Param
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import weka.core.DistanceFunction;
 
-import static tsml.classifiers.distance_based.distances.DistanceMeasureConfigs.newDDTWDistance;
+import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

@@ -1,7 +1,9 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 
-import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
 
 /**
@@ -9,15 +11,20 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DTW {
+public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW {
 
-    public DTWDistance() {
-    }
+    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
+    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
+    private final WarpingParameter warpingParameter = new WarpingParameter();
 
     @Override protected double findDistance(final Instance a, final Instance b, final double limit) {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
+
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -45,8 +52,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
             row[j] = cost;
             min = Math.min(min, cost);
         }
-        if(keepMatrix) {
-            matrix = new double[aLength][bLength];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
@@ -90,7 +96,7 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {
@@ -101,4 +107,35 @@ public class DTWDistance extends DoubleBasedWarpingDistanceMeasure implements DT
         return row[bLength - 1];
     }
 
+    @Override public int getWindowSize() {
+        return warpingParameter.getWindowSize();
+    }
+
+    @Override public void setWindowSize(final int windowSize) {
+        warpingParameter.setWindowSize(windowSize);
+    }
+
+    @Override public double getWindowSizePercentage() {
+        return warpingParameter.getWindowSizePercentage();
+    }
+
+    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
+        warpingParameter.setWindowSizePercentage(windowSizePercentage);
+    }
+
+    @Override public boolean isWindowSizeInPercentage() {
+        return warpingParameter.isWindowSizeInPercentage();
+    }
+
+    @Override public void setParams(final ParamSet param) throws Exception {
+        warpingParameter.setParams(param);
+    }
+
+    @Override public ParamSet getParams() {
+        return warpingParameter.getParams();
+    }
+
+    @Override public int findWindowSize(final int length) {
+        return warpingParameter.findWindowSize(length);
+    }
 }

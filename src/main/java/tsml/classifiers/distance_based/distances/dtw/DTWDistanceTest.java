@@ -4,8 +4,8 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -81,7 +81,7 @@ public class DTWDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = DistanceMeasureConfigs.buildErpParams(data);
+                    space = ERPDistanceConfigs.buildErpParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
                 while(iterator.hasNext()) {
@@ -89,7 +89,7 @@ public class DTWDistanceTest {
                     final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
                     final DTWDistance df = new DTWDistance();
                     df.setWindowSize(window);
-                    df.setKeepMatrix(true);
+                    df.setGenerateDistanceMatrix(true);
                     Assert.assertEquals(df.distance(ai, bi, limit), origDtw(ai, bi, limit, window), 0);
                 }
             }

@@ -1,9 +1,8 @@
-package tsml.classifiers.distance_based.distances.twe;
+package tsml.classifiers.distance_based.distances.twed;
 
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -25,7 +24,7 @@ public class TWEDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = DistanceMeasureConfigs.buildTwedParams();
+                    space = TWEDistanceConfigs.buildTwedParams();
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                                                int i = 0;

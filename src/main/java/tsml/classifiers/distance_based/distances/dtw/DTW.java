@@ -7,16 +7,9 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
 
-public interface DTW extends DistanceMeasure {
-    void setWindowSize(int windowSize);
-    int getWindowSize();
-    void setWindowSizePercentage(double percentage);
-    double getWindowSizePercentage();
-    boolean isWindowSizeInPercentage();
-    double[][] getMatrix();
-    boolean isKeepMatrix();
-    void setKeepMatrix(boolean state);
-    void cleanDistanceMatrix();
+public interface DTW extends WarpingDistanceMeasure {
+
 }

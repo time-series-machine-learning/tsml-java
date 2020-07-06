@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.distances.erp;
 
-import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
@@ -10,10 +12,13 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
+public class ERPDistance extends DoubleMatrixBasedDistanceMeasure implements WarpingDistanceMeasure {
 
     public static final String G_FLAG = "g";
+    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
+    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
     private double g = 0;
+    private final WarpingParameter warpingParameter = new WarpingParameter();
 
     public double getG() {
         return g;
@@ -28,6 +33,10 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
+
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
 
         // Current and previous columns of the matrix
         double[] row = new double[bLength];
@@ -50,8 +59,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
             // no need to update min as top left cell is already zero, can't get lower
         }
         // populate matrix
-        if(keepMatrix) {
-            matrix = new double[aLength][bLength];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // no need to check for early abandon here as the min is zero because of the top left cell
@@ -108,7 +116,7 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {
@@ -121,13 +129,37 @@ public class ERPDistance extends DoubleBasedWarpingDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(G_FLAG, g);
+        return super.getParams().addAll(warpingParameter.getParams()).add(G_FLAG, g);
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
+        warpingParameter.setParams(param);
         ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double.class);
     }
 
+    @Override public int findWindowSize(final int aLength) {
+        return warpingParameter.findWindowSize(aLength);
+    }
+
+    @Override public int getWindowSize() {
+        return warpingParameter.getWindowSize();
+    }
+
+    @Override public void setWindowSize(final int windowSize) {
+        warpingParameter.setWindowSize(windowSize);
+    }
+
+    @Override public double getWindowSizePercentage() {
+        return warpingParameter.getWindowSizePercentage();
+    }
+
+    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
+        warpingParameter.setWindowSizePercentage(windowSizePercentage);
+    }
+
+    @Override public boolean isWindowSizeInPercentage() {
+        return warpingParameter.isWindowSizeInPercentage();
+    }
 }

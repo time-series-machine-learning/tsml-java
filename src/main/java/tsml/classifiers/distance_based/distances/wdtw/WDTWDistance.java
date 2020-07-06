@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
-import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
@@ -11,10 +12,11 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class WDTWDistance
-    extends DoubleBasedWarpingDistanceMeasure implements WDTW {
+    extends DoubleMatrixBasedDistanceMeasure implements WDTW {
 
     private double g = 0.05;
     private double[] weightVector = new double[0];
+    private final WarpingParameter warpingParameter = new WarpingParameter();
 
     @Override
     public double getG() {
@@ -41,6 +43,10 @@ public class WDTWDistance
             }
         }
 
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
+
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
         final int windowSize = findWindowSize(aLength);
@@ -66,8 +72,7 @@ public class WDTWDistance
             row[j] = cost;
             min = Math.min(min, cost);
         }
-        if(keepMatrix) {
-            matrix = new double[aLength][bLength];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
@@ -113,7 +118,7 @@ public class WDTWDistance
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {
@@ -133,5 +138,29 @@ public class WDTWDistance
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
         ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG, Double.class);
+    }
+
+    public int findWindowSize(final int aLength) {
+        return warpingParameter.findWindowSize(aLength);
+    }
+
+    public int getWindowSize() {
+        return warpingParameter.getWindowSize();
+    }
+
+    public void setWindowSize(final int windowSize) {
+        warpingParameter.setWindowSize(windowSize);
+    }
+
+    public double getWindowSizePercentage() {
+        return warpingParameter.getWindowSizePercentage();
+    }
+
+    public void setWindowSizePercentage(final double windowSizePercentage) {
+        warpingParameter.setWindowSizePercentage(windowSizePercentage);
+    }
+
+    public boolean isWindowSizeInPercentage() {
+        return warpingParameter.isWindowSizeInPercentage();
     }
 }

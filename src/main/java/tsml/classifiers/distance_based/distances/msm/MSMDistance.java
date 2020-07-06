@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances.msm;
 
-import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
@@ -11,7 +11,7 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class MSMDistance
-    extends DoubleBasedWarpingDistanceMeasure {
+    extends DoubleMatrixBasedDistanceMeasure {
 
 
     private double c = 1;
@@ -49,9 +49,11 @@ public class MSMDistance
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
 
-        // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
-        // Full DTW
-        final int windowSize = findWindowSize(aLength);
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
+
+        final int windowSize = aLength;
 
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
@@ -74,8 +76,7 @@ public class MSMDistance
             row[j] = cost;
             min = Math.min(min, cost);
         }
-        if(keepMatrix) {
-            matrix = new double[aLength][bLength];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
@@ -123,7 +124,7 @@ public class MSMDistance
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {

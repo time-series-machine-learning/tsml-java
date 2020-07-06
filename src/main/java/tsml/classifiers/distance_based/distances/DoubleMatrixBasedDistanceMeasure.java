@@ -1,16 +1,16 @@
 package tsml.classifiers.distance_based.distances;
 
-public abstract class IntBasedWarpingDistanceMeasure extends WarpingDistanceMeasure {
+public abstract class DoubleMatrixBasedDistanceMeasure extends MatrixBasedDistanceMeasure {
 
     // the distance matrix produced by the distance function
-    protected int[][] matrix;
+    private double[][] matrix;
 
-    public int[][] getMatrix() {
+    public double[][] getDistanceMatrix() {
         return matrix;
     }
 
-    protected void setMatrix(int[][] matrix) {
-        if(keepMatrix) {
+    protected void setDistanceMatrix(double[][] matrix) {
+        if(isGenerateDistanceMatrix()) {
             this.matrix = matrix;
         }
     }

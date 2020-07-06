@@ -1,6 +1,6 @@
-package tsml.classifiers.distance_based.distances.twe;
+package tsml.classifiers.distance_based.distances.twed;
 
-import tsml.classifiers.distance_based.distances.DoubleBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
@@ -11,7 +11,7 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class TWEDistance
-    extends DoubleBasedWarpingDistanceMeasure {
+    extends DoubleMatrixBasedDistanceMeasure {
 
     private double lambda;
     private double nu;
@@ -25,7 +25,11 @@ public class TWEDistance
         final int aLength = a.numAttributes() - 1;
         final int bLength = b.numAttributes() - 1;
 
-        final int windowSize = findWindowSize(aLength + 1);
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
+
+        final int windowSize = aLength + 1;
 
         double[] jCosts = new double[bLength + 1];
         double[] row = new double[bLength + 1];
@@ -51,8 +55,7 @@ public class TWEDistance
             jCosts[j] = cost;
             row[j] = row[j - 1] + jCosts[j];
         }
-        if(keepMatrix) {
-            matrix = new double[aLength + 1][bLength + 1];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         {
@@ -88,7 +91,7 @@ public class TWEDistance
             row[j] = cost;
             min = Math.min(min, cost);
         }
-        if(keepMatrix) {
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[1], 0, row.length);
         }
         if(end > start && min > limit) {
@@ -140,7 +143,7 @@ public class TWEDistance
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {

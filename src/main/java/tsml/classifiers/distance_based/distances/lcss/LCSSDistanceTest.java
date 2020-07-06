@@ -3,7 +3,6 @@ package tsml.classifiers.distance_based.distances.lcss;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -24,7 +23,7 @@ public class LCSSDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = DistanceMeasureConfigs.buildLcssParams(data);
+                    space = LCSSDistanceConfigs.buildLcssParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                int i = 0;

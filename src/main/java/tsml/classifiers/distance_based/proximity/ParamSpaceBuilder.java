@@ -1,6 +1,12 @@
 package tsml.classifiers.distance_based.proximity;
 
-import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
+import tsml.classifiers.distance_based.distances.ed.EuclideanDistanceConfigs;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
+import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
+import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
+import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import weka.core.Instances;
 
@@ -13,16 +19,16 @@ public interface ParamSpaceBuilder {
 
     ParamSpace build(Instances data);
 
-    ParamSpaceBuilder ED = i -> DistanceMeasureConfigs.buildEdSpace();
-    ParamSpaceBuilder DTW = ContinuousDistanceFunctionConfigs::buildDtwSpace;
-    ParamSpaceBuilder FULL_DTW = i -> DistanceMeasureConfigs.buildFullDtwSpace();
-    ParamSpaceBuilder DDTW = ContinuousDistanceFunctionConfigs::buildDdtwSpace;
-    ParamSpaceBuilder FULL_DDTW = i -> DistanceMeasureConfigs.buildFullDdtwSpace();
-    ParamSpaceBuilder LCSS = ContinuousDistanceFunctionConfigs::buildLcssSpace;
-    ParamSpaceBuilder ERP = ContinuousDistanceFunctionConfigs::buildErpSpace;
-    ParamSpaceBuilder MSM = i -> DistanceMeasureConfigs.buildMsmSpace();
-    ParamSpaceBuilder TWED = i -> DistanceMeasureConfigs.buildTwedSpace();
-    ParamSpaceBuilder WDTW = i -> ContinuousDistanceFunctionConfigs.buildWdtwSpace();
-    ParamSpaceBuilder WDDTW = i -> ContinuousDistanceFunctionConfigs.buildWddtwSpace();
+    ParamSpaceBuilder ED = i -> EuclideanDistanceConfigs.buildEdSpace();
+    ParamSpaceBuilder DTW = DTWDistanceConfigs::buildDtwSpaceRestrictedContinuous;
+    ParamSpaceBuilder FULL_DTW = i -> DTWDistanceConfigs.buildDtwFullWindowSpace();
+    ParamSpaceBuilder DDTW = DTWDistanceConfigs::buildDdtwSpaceRestrictedContinuous;
+    ParamSpaceBuilder FULL_DDTW = i -> DTWDistanceConfigs.buildDdtwFullWindowSpace();
+    ParamSpaceBuilder LCSS = LCSSDistanceConfigs::buildLcssSpaceContinuous;
+    ParamSpaceBuilder ERP = ERPDistanceConfigs::buildErpSpaceContinuous;
+    ParamSpaceBuilder MSM = i -> MSMDistanceConfigs.buildMsmSpace();
+    ParamSpaceBuilder TWED = i -> TWEDistanceConfigs.buildTwedSpace();
+    ParamSpaceBuilder WDTW = i -> WDTWDistanceConfigs.buildWdtwSpaceContinuous();
+    ParamSpaceBuilder WDDTW = i -> WDTWDistanceConfigs.buildWddtwSpaceContinuous();
 
 }

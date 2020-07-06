@@ -52,9 +52,9 @@ public class DDTW extends DTW{
 		final DTWDistance df = new DTWDistance();
 		df.setWindowSize(1);
 		df.setInstances(instances);
-		df.setKeepMatrix(true);
+		df.setGenerateDistanceMatrix(true);
 		System.out.println(df.distance(instances.get(0), instances.get(1)));
-		final double[][] matrix = df.getMatrix();
+		final double[][] matrix = df.getDistanceMatrix();
 	}
 	
 }

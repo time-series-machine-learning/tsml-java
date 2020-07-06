@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
-import tsml.classifiers.distance_based.distances.IntBasedWarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.IntMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
@@ -10,8 +11,12 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
+public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
 
+    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
+    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
+
+    private final WarpingParameter warpingParameter = new WarpingParameter();
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance
 
@@ -36,6 +41,11 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
+
+
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final int[][] matrix = generateDistanceMatrix ? new int[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -76,8 +86,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
             row[j] = cost;
             min = Math.min(min, cost);
         }
-        if(keepMatrix) {
-            matrix = new int[aLength][bLength];
+        if(generateDistanceMatrix) {
             System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
         // early abandon if work has been done populating the first row for >1 entry
@@ -131,7 +140,7 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            if(keepMatrix) {
+            if(generateDistanceMatrix) {
                 System.arraycopy(row, 0, matrix[i], 0, row.length);
             }
             if(min > limit) {
@@ -144,12 +153,37 @@ public class LCSSDistance extends IntBasedWarpingDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(EPSILON_FLAG, epsilon);
+        return super.getParams().addAll(warpingParameter.getParams()).add(EPSILON_FLAG, epsilon);
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
         ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
+        warpingParameter.setParams(param);
         super.setParams(param);
+    }
+
+    public int findWindowSize(final int aLength) {
+        return warpingParameter.findWindowSize(aLength);
+    }
+
+    public int getWindowSize() {
+        return warpingParameter.getWindowSize();
+    }
+
+    public void setWindowSize(final int windowSize) {
+        warpingParameter.setWindowSize(windowSize);
+    }
+
+    public double getWindowSizePercentage() {
+        return warpingParameter.getWindowSizePercentage();
+    }
+
+    public void setWindowSizePercentage(final double windowSizePercentage) {
+        warpingParameter.setWindowSizePercentage(windowSizePercentage);
+    }
+
+    public boolean isWindowSizeInPercentage() {
+        return warpingParameter.isWindowSizeInPercentage();
     }
 }

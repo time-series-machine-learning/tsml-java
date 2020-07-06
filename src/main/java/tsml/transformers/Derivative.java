@@ -42,7 +42,7 @@ public class Derivative implements Transformer, Serializable {
         return INSTANCE;
     }
 
-    public static CachedTransformer getGlobalCache() {
+    public static CachedTransformer getGlobalCachedTransformer() {
         if (GLOBAL_CACHE == null) {
             GLOBAL_CACHE = new CachedTransformer(getGlobalInstance());
         }
