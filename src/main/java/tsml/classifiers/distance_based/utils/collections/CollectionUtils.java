@@ -1,10 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -12,6 +8,12 @@ import org.junit.Assert;
 
 public class CollectionUtils {
     private CollectionUtils() {}
+
+    public static <A> ArrayList<A> newArrayList(A... elements) {
+        final ArrayList<A> list = new ArrayList<>(elements.length);
+        list.addAll(Arrays.asList(elements));
+        return list;
+    }
 
     public static <B> void forEachGroup(int groupSize, List<B> list, Consumer<List<B>> consumer) {
         List<B> group;

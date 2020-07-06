@@ -3,12 +3,11 @@ package tsml.classifiers.distance_based.proximity;
 import com.beust.jcommander.internal.Lists;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -51,7 +50,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildDdtwSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DDTWDistance()),
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(DistanceMeasureConfigs.newDDTWDistance()),
                   buildDtwParams(data));
         return space;
     }
@@ -115,7 +114,7 @@ public class ContinuousDistanceFunctionConfigs {
 
     public static ParamSpace buildWddtwSpace() {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new WDDTWDistance()),
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(DistanceMeasureConfigs.newWDDTWDistance()),
                   buildWdtwParams());
         return space;
     }

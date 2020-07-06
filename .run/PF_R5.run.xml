@@ -2,7 +2,8 @@
   <configuration default="false" name="PF_R5" type="Application" factoryName="Application" singleton="false">
     <option name="MAIN_CLASS_NAME" value="experiments.Experiments" />
     <module name="tsml.main" />
-    <option name="PROGRAM_PARAMETERS" value="-rp=results -dp=/bench/phd/datasets/uni2018 -f=1 -gtf=false -l=ALL --force=true -dn=BeetleFly -cn=PF_R5" />
+    <option name="PROGRAM_PARAMETERS" value="-rp=results -dp=/bench/phd/datasets/uni2018 -f=1 -gtf=true -l=ALL --force=true -dn=GunPoint -cn=PF_R5_I" />
+    <option name="VM_PARAMETERS" value="-XX:+UseSerialGC" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="experiments.*" />

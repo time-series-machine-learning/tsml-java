@@ -8,13 +8,14 @@ import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.DiscreteParameterDimension;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParameterDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import weka.core.DistanceFunction;
+
+import static tsml.classifiers.distance_based.distances.DistanceMeasureConfigs.newDDTWDistance;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -129,7 +130,7 @@ public class ParamSpaceTest {
 
     public DiscreteParameterDimension<DistanceFunction> buildWDmParams() {
         DiscreteParameterDimension<DistanceFunction> wDmParams = new DiscreteParameterDimension<>(
-            Arrays.asList(new DTWDistance(), new DDTWDistance()));
+            Arrays.asList(new DTWDistance(), newDDTWDistance()));
         wDmParams.addSubSpace(buildWParams());
         return wDmParams;
     }

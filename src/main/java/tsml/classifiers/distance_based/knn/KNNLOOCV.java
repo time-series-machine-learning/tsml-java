@@ -5,7 +5,6 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasureConfigs;
-import tsml.classifiers.distance_based.distances.ddtw.DDTWDistance;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.LinearNeighbourIteratorBuilder;
 import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIteratorBuilder;
@@ -222,7 +221,7 @@ public class KNNLOOCV
 
         public static KNNLOOCV buildDdtw1nnV1() {
             KNNLOOCV knn = build1nnV1();
-            knn.setDistanceFunction(new DDTWDistance()); // todo full
+            knn.setDistanceFunction(DistanceMeasureConfigs.newDDTWDistance()); // todo full
             return knn;
         }
 
@@ -240,7 +239,7 @@ public class KNNLOOCV
 
         public static KNNLOOCV buildDdtw1nnV2() {
             KNNLOOCV knn = build1nnV2();
-            knn.setDistanceFunction(new DDTWDistance()); // todo full
+            knn.setDistanceFunction(DistanceMeasureConfigs.newDDTWDistance()); // todo full
             return knn;
         }
 

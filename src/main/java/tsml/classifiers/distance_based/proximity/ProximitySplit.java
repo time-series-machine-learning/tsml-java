@@ -5,7 +5,6 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
-import tsml.classifiers.distance_based.distances.wddtw.WDDTWDistance;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
