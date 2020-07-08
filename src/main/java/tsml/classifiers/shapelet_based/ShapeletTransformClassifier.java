@@ -27,10 +27,8 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
-import org.apache.commons.lang3.NotImplementedException;
 import tsml.classifiers.Tuneable;
 import utilities.InstanceTools;
-import weka.Run;
 import weka.core.*;
 import weka.classifiers.Classifier;
 import tsml.transformers.PCA;
@@ -50,51 +48,53 @@ import fileIO.OutFile;
 
 
 /**
- * ShapeletTransformClassifier
- * Builds a time series classifier by first extracting the best numShapeletsInTransform
+ * ShapeletTransformClassifier (STC)
  *
- * By default, performs a shapelet transform through full enumeration (max 1000 shapelets selected)
- *  then classifies with rotation forest.
- * If can be contracted to a maximum run time for shapelets, and can be configured for a different base classifier
+ * Builds a time series classifier by
+ * 1. searching for shapelets in the train data, keeping the best numShapeletsInTransform
+ * 2. creating a new train data were each attribute is the distance (sDist) to the shapelet for that attribute
+ * 3. building a classifier
  *
- * //Subsequence distances in SubsSeqDistance : defines how to do sDist, outcomes should be the same, difference efficiency
+ *STC performs a shapelet transform by searching randomly for shapelets for contractHours (default 1 hour)
+ * or through full enumeration if this is possible in the contractHours. The best numShapeletsInTransform (default 1000)
+ * shapelets are kept. It then classifies with a rotation forest of 200 trees.
+
+ * STC is Contractable and Tuneable, but not Checkpointable yet.
  *
- * 
+ * The transform can be configured with a rannge of ShapeletTransformOptions and the search can be performed with a number
+ * search types. Only FULL and RANDOM are currently supported, but ShapeletSearch.SearchType contains a range of alternatives
+ *
  */
 public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         implements TrainTimeContractable, Tuneable {
-    //Basic pipeline is transform, then build classifier on transformed space
     private ShapeletTransform transform;    //Configurable ST
-   //Default to one hour
-
     private Instances shapeletData;         //Transformed shapelets header info stored here
     private Classifier classifier;          //Final classifier built on transformed shapelet data
 
-/*************** TRANSFORM STRUCTURE SETTINGS *************************************/
+//  ***********************  TRANSFORM STRUCTURE SETTINGS *************************************/
     /** Shapelet transform parameters that can be configured through the STC, stored here **/
     private ShapeletTransformOptions transformOptions=new ShapeletTransformOptions();
     private int numShapeletsInTransform = ShapeletTransform.MAXTRANSFORMSIZE;
-    private ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;//FULL == enumeration, RANDOM =random sampled to train time cotnract
-    /** Redundant features in the shapelet space are removed prior to building the classifier **/
+    private ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;//FULL == enumeration, RANDOM =random sampled to train time contract
+
+    // Redundant features in the shapelet space are removed prior to building the classifier
     int[] redundantFeatures;
 
     // PCA Option: not currently implemented, as it has not been debugged
     private boolean performPCA=false;
     private PCA pca;
     private int numPCAFeatures=100;
-    
 
-
-
-    /****************** CONTRACTING *************************************/
-    /*The contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
-     * through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
-     * If this is zero and no contract time is set, a full evaluation is done.
+    //************************** CONTRACTING *************************************/
+    /* There are two elements to contracting: the shapelet transform contract and the classifier contract.
+    This complicated by the fact the contract time for ST is a parameter to control overfitting.
+    The ST contracting is controlled by the number of shapelets to evaluate. This can either be explicitly set by the user
+    through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
       */
     private boolean trainTimeContract =false;
     private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
-    private int contractHours=1;
-    private long transformContractTime = TimeUnit.NANOSECONDS.convert(contractHours, TimeUnit.HOURS);//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
+    private int transformContractHours =1;// Hours contract for ST, defaults to 1 hour.
+    private long transformContractTime = TimeUnit.NANOSECONDS.convert(transformContractHours, TimeUnit.HOURS);//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
     private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
 
 /**** Shapelet Transform Information *************/
@@ -107,7 +107,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         transformContractTime=t;
     }
     public void setTransformTimeHours(long t){
-        contractHours=(int)t;
+        transformContractHours =(int)t;
         transformContractTime=TimeUnit.NANOSECONDS.convert(t, TimeUnit.HOURS);
     }
 
@@ -248,13 +248,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
         //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
         if(performPCA){
+            printLineDebug("Do a PCA");
+            printLineDebug(" before num features "+(shapeletData.numAttributes()-1));
             setPCA(performPCA, Math.min(shapeletData.numAttributes()-1, numPCAFeatures)); //update eigen values to reflect min (this will override old PCA)
             pca.fit(shapeletData);
-            System.out.println("BEFOOOREEE");
-            System.out.println(shapeletData);
             shapeletData=pca.transform(shapeletData);
-            System.out.println("AFTEEEER");
-            System.out.println(shapeletData);
+            printLineDebug(" after "+(shapeletData.numAttributes()-1));
         }
 
 //Here get the train estimate directly from classifier using cv for now
@@ -647,6 +646,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     public void setClassifier(Classifier c){
         classifier=c;
     }
+
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);

@@ -51,8 +51,7 @@ train set predictions produced internally.
 *there are three components to the time that may be spent building a classifier
 
 * 1. timing
-
-buildTime 
+buildTime
 * the minimum any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
  or nanoTime() at the start and end of the method, stored in trainResults, with
@@ -63,8 +62,6 @@ errorEstimateTime
 * the exact usage of this statistic has not been finalised. Conceptually measures
 * how long is spent estimating the test error from the train data
 buildPlusEstimateTime
-* 
- 
  * 2. Recording train set results
 ClassifierResults trainResults can also store other information about the training,
  including estimate of accuracy, predictions and probabilities. The mechanism for finding
@@ -76,8 +73,9 @@ ClassifierResults trainResults can also store other information about the traini
  
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
- * 
- * @author Tony Bagnall and James Large
+ * Update 1/7/2020:
+ * @author Tony Bagnall and James Large EstimatorMethod estimator moved up from subclasses, since the pattern
+ * appears in multiple forest based ensembles
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,

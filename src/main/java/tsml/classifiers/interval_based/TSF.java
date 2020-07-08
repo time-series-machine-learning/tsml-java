@@ -94,32 +94,29 @@ import weka.core.Utils;
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
  
-* author ajb
+* @version1.0 author Tony Bagnall
 * date 7/10/15  Tony Bagnall
-* update1 14/2/19 Tony Bagnall
- * * A few changes made to enable testing refinements.
- *1. general baseClassifier rather than a hard coded RandomTree. We tested a few
+* update 14/2/19 Tony Bagnall
+ * A few changes made to enable testing refinements.
+ * 1. general baseClassifier rather than a hard coded RandomTree. We tested a few
  *  alternatives, they did not improve things
  * 2. Added setOptions to allow parameter tuning. Tuning on parameters
  *       #trees, #features
  * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
-* @version2.0 13/03/20 contracting, checkpointing and tuneable, Matthew Middlehurst
+*  @version2.0 13/03/20 Matthew Middlehurst. contractable, checkpointable and tuneable,
  * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
  *  results for this classifier on 112 UCR data sets can be found at
  *  www.timeseriesclassification.com/results/ResultsByClassifier/TSF.csv. The first column of results  are on the default
- *  train/terst split. The others are found through stratified resampling of the combined train/test
+ *  train/test split. The others are found through stratified resampling of the combined train/test
  *  individual results on each fold are
  *  timeseriesclassification.com/results/ResultsByClassifier/TSF/Predictions
- *
- *
- *  A note on timings. buildTime does not include time taken to estimate error from the train data, unless bagging is
- *  true, in which case it does. This is a minor bug.
-**/
+ * update 1/7/2020: Tony Bagnall. Sort out correct recording of timing, and tidy up comments. The storage option for
+ * either CV or OOB
+*/
  
 public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
         TrainTimeContractable, Checkpointable, Tuneable , Visualisable{
 //Static defaults
-     
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
  
     /** Primary parameters potentially tunable*/   
@@ -488,13 +485,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         long endTime=System.nanoTime();
         trainResults.setBuildTime(endTime-startTime);
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
-        /** Estimate accuracy stage: Three scenarios
-         * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
-         *  If we built on all data (bagging ==false) we estimate either
-         *  2. with a 10xCV if estimator==EstimatorMethod.CV
-         *  3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
-         *  Note that all this needs to come out of any contract time we specify.
-         */
+        /** Estimate accuracy from Train data
+         * distributions and predictions stored in trainResults */
         if(getEstimateOwnPerformance()){
             long est1=System.nanoTime();
             estimateOwnPerformance(data);
@@ -506,6 +498,18 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         printLineDebug("*************** Finished TSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
 
+    /**
+     * estimating own performance
+     *  Three scenarios
+     *          1. If we bagged the full build (bagging ==true), we estimate using the full build OOB. Assumes the final
+     *          model has already been built
+     *           If we built on all data (bagging ==false) we estimate either
+     *              2. with a 10xCV if estimator==EstimatorMethod.CV
+     *              3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
+     *    Note that all this needs to come out of any contract time we specify.
+     * @param data
+     * @throws Exception from distributionForInstance
+     */
     private void estimateOwnPerformance(Instances data) throws Exception {
         if(bagging){
             // Use bag data, counts normalised to probabilities
