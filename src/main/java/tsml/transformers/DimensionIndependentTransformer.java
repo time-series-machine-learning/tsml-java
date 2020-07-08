@@ -27,6 +27,9 @@ public class DimensionIndependentTransformer implements Transformer {
      * @param t - the transformer to be applied along each dimension.
      */
     public DimensionIndependentTransformer(Transformer t) {
+        if (t instanceof TrainableTransformer) {
+            throw new IllegalArgumentException("t cannot be of type TrainableTransformer.");
+        }
         this.transformer = t;
     }
 
@@ -67,10 +70,6 @@ public class DimensionIndependentTransformer implements Transformer {
         }
         this.dataHeader = result;
         return result;
-    }
-
-    public static void main(String [] args ) {
-        System.out.println("hello");
     }
 }
 
