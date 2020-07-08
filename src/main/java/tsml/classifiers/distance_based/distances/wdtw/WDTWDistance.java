@@ -92,7 +92,7 @@ public class WDTWDistance
             }
 
             //early abandon
-            if (overflow) {
+            if (overflow&&bLength>1){
                 return Double.POSITIVE_INFINITY;
             }
         }
