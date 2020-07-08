@@ -1,4 +1,4 @@
 package tsml.contrib.transformers;
 
-public class PAAMultivariate {
+public class DWTTransformer {
 }
