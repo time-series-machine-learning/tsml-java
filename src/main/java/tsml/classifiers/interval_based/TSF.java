@@ -513,6 +513,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private void estimateOwnPerformance(Instances data) throws Exception {
         if(bagging){
             // Use bag data, counts normalised to probabilities
+            printLineDebug("Finding the OOB estimates");
             trainDistributions= new double[data.numInstances()][data.numClasses()];
             oobCounts=new int[data.numInstances()];
             int treeCount=0;
