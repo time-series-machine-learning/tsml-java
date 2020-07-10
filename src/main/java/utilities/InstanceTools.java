@@ -937,6 +937,7 @@ public class InstanceTools {
 
     public static Instance zNormaliseWithClass(Instance inst){
         Instance newInst = new DenseInstance(inst);
+        newInst.setDataset(inst.dataset());
 
         double meanSum = 0;
         int length = newInst.numAttributes()-1;

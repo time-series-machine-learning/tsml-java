@@ -312,10 +312,23 @@ public class ExperimentsEarlyClassification {
         }
         LOGGER.log(Level.FINE, "Train estimate ready.");
 
-        //Build on the full train data here
         long buildTime = System.nanoTime();
-        classifier.buildClassifier(trainSet);
-        buildTime = System.nanoTime() - buildTime;
+
+        boolean shortenAndAdd = true;
+        if (shortenAndAdd){
+            Instances instances = new Instances(trainSet);
+            for (double i = 0.05; i < 1.01; i += 0.05) {
+                i = Math.round(i * 100.0) / 100.0;
+                instances.addAll(shortenInstances(trainSet, i, true));
+            }
+            classifier.buildClassifier(instances);
+            buildTime = System.nanoTime() - buildTime;
+        }
+        else {
+            //Build on the full train data here
+            classifier.buildClassifier(trainSet);
+            buildTime = System.nanoTime() - buildTime;
+        }
         LOGGER.log(Level.FINE, "Training complete");
 
         // Training done, collect memory monitor results
@@ -389,7 +402,7 @@ public class ExperimentsEarlyClassification {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                boolean earlyClassiifer = false;
+                boolean earlyClassiifer = true;
                 if (earlyClassiifer){
                     testResults = evaluateEarlyClassifier(expSettings, classifier, testSet);
                     testResults.setParas(trainResults.getParas());
@@ -772,6 +785,7 @@ public class ExperimentsEarlyClassification {
             for (int i = 0; i < 20; i++){
                 int newLength = (int)Math.round((i+1)*0.05 * length);
                 Instance newInst = truncateInstance(testinst, length, newLength);
+                newInst = zNormaliseWithClass(newInst);
                 newInst.setDataset(truncatedInstances[i]);
 
                 dist = classifier.distributionForInstance(newInst);

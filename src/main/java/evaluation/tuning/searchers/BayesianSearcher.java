@@ -143,8 +143,8 @@ public class BayesianSearcher extends ParameterSearcher{
                         }
                     }
 
-                    //Expected improvement, probably broken
-
+//                    //Expected improvement, probably broken
+//
 //                    for (Instance inst: parameterPool){
 //                        double mean = gp.classifyInstance(inst);
 //                        double std = gp.getStandardDeviation(inst); //different from sktime std

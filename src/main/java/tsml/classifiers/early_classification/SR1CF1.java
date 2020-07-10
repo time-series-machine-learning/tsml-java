@@ -5,7 +5,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.bayes.BayesNet;
+import weka.classifiers.meta.RotationForest;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -20,14 +20,14 @@ import static utilities.Utilities.argMax;
 
 public class SR1CF1 extends AbstractClassifier {
 
-    private double alpha = 0.9;
+    private double alpha = 0.8;
     private int[] timeStamps;
-    private int numParamValues = 100;
+    private int numParamValues = 200;
 
     private int fullLength;
     private int numInstances;
 
-    private Classifier classifierType = new BayesNet();
+    private Classifier classifierType = new RotationForest();
     private Classifier[] classifiers;
     private double[][][] cvProbabilities;
     private double[] classValues;
@@ -59,6 +59,7 @@ public class SR1CF1 extends AbstractClassifier {
         for (int i = 0; i < timeStamps.length; i++){
             Instances truncatedData = truncateInstances(data, fullLength, timeStamps[i]);
             truncatedData = zNormaliseWithClass(truncatedData);
+
             classifiers[i] = AbstractClassifier.makeCopy(classifierType);
             classifiers[i].buildClassifier(truncatedData);
 
@@ -122,7 +123,6 @@ public class SR1CF1 extends AbstractClassifier {
         }
         if (idx == -1) throw new Exception("Input instance length does not match any given timestamps.");
 
-        instance = zNormaliseWithClass(instance);
         double[] probs = classifiers[idx].distributionForInstance(instance);
 
         if (idx == timeStamps.length-1 || stoppingRule(probs, timeStamps[idx])){
@@ -154,7 +154,7 @@ public class SR1CF1 extends AbstractClassifier {
         for (int i = 0; i < numInstances; i++){
             for (int n = 0; n < timeStamps.length; n++) {
                 if (n == timeStamps.length-1 || stoppingRule(cvProbabilities[n][i], timeStamps[n])) {
-                    gain += alpha *accuracyGain(classValues[i], cvProbabilities[n][i]) +
+                    gain += alpha*accuracyGain(classValues[i], cvProbabilities[n][i]) +
                             (1 - alpha)*earlinessGain(timeStamps[n]);
                     break;
                 }
@@ -174,7 +174,7 @@ public class SR1CF1 extends AbstractClassifier {
 
     public static void main(String[] args) throws Exception{
         int fold = 0;
-        String dataset = "Trace";
+        String dataset = "ItalyPowerDemand";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
@@ -195,6 +195,7 @@ public class SR1CF1 extends AbstractClassifier {
         for (int i = 0; i < 20; i++){
             int newLength = (int)Math.round((i+1)*0.05 * length);
             Instances newData = truncateInstances(test, length, newLength);
+            newData = zNormaliseWithClass(newData);
 
             for (int n = 0; n < test.numInstances(); n++){
                 if (testProbs[n] == null) {
