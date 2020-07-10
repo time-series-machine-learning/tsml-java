@@ -35,6 +35,10 @@ public interface TrainTimeContractable {
      */
     void setTrainTimeLimit(long time);
 
+    default long getTrainContractTimeNanos() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Are we still within contract? Remove default when fully implemented
      * @param start
