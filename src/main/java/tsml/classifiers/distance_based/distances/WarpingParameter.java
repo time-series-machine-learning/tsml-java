@@ -24,10 +24,10 @@ public class WarpingParameter implements
                 result = (int) (windowSizePercentage * (aLength - 1));
             }
         } else {
-            if(this.windowSize > aLength - 1) {
-                throw new IllegalArgumentException("window size larger than series length: " + this.windowSize + " vs"
-                    + " " + (aLength - 1));
-            }
+//            if(this.windowSize > aLength - 1) {
+//                throw new IllegalArgumentException("window size larger than series length: " + this.windowSize + " vs"
+//                    + " " + (aLength - 1));
+//            }
             if(this.windowSize < 0) {
                 result = aLength - 1;
             } else {

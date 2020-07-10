@@ -4,7 +4,7 @@ import distance.elastic.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import weka.core.Instance;
 
-public class EuclideanDistance extends BaseDistanceMeasure {
+public class EDistance extends BaseDistanceMeasure {
 
     public double findDistance(final Instance a, Instance b, final double limit) {
         double sum = 0;

@@ -6,10 +6,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import weka.core.Instances;
 
-public class EuclideanDistanceTest {
+public class EDistanceTest {
     @Test
     public void matchesDtwZeroWindow() {
         DTWDistance dtw = new DTWDistance();
@@ -23,12 +22,12 @@ public class EuclideanDistanceTest {
 
 
     private Instances instances;
-    private EuclideanDistance df;
+    private EDistance df;
 
     @Before
     public void before() {
         instances = buildInstances();
-        df = new EuclideanDistance();
+        df = new EDistance();
         df.setInstances(instances);
     }
 }

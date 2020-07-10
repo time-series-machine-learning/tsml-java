@@ -554,13 +554,20 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     public static void main(String[] args) throws Exception {
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation("/bench/phd/analysis/",  "pfCorrectness3"
+        String root = "/bench/phd/experiments";
+        String expName = "2020_07_06_pf_correctness";
+        String expDir = root + "/" + expName;
+        String version = "v1";
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", "analysis_" + version
             ,  30);
-        mce.setDatasets("/bench/phd/datasets/lists/pf.txt");
-        mce.readInClassifier("PF_R5", "/mnt/sshfs/ada_home/pf/results2/");
-        mce.readInClassifier("ProximityForest", "/bench/phd/results/");
-        mce.setIgnoreMissingResults(true);
-        mce.setUseAccuracyOnly();
+        mce.setDatasets("/bench/phd/datasets/lists/2015_pigless.txt");
+        mce.readInClassifiers(new String[] {"PF_R5", "ORIG_PF_A"}, expDir + "/results_" + version + "/");
+//        mce.readInClassifiers(new String[] {"PF_R5_OOB", "PF_R5_OOB_R", "PF_R5_CV"}, "/home/goastler/bench/phd/experiments/2020_07_06_pf_training_methods/results_v9/");
+//        mce.readInClassifiers(new String[] {"PF_R5_T10", "PF_R5_T20", "PF_R5_T50", "PF_R5", "PF_R5_T200", "PF_R5_T500", "PF_R5_T1000"}, "/home/goastler/bench/phd/experiments/pf training methods/results_v9/");
+//        mce.readInClassifiers("ProximityForest", "/bench/phd/results/");
+        mce.setTestResultsOnly(true);
+        mce.setUseAllStatistics();
+        mce.setIgnoreMissingResults(false);
         mce.setBuildMatlabDiagrams(true, true);
         mce.runComparison();
     }

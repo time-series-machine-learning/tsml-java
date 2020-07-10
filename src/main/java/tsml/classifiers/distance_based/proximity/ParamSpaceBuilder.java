@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.proximity;
 
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
-import tsml.classifiers.distance_based.distances.ed.EuclideanDistanceConfigs;
+import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
 import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
@@ -19,10 +19,10 @@ public interface ParamSpaceBuilder {
 
     ParamSpace build(Instances data);
 
-    ParamSpaceBuilder ED = i -> EuclideanDistanceConfigs.buildEdSpace();
-    ParamSpaceBuilder DTW = DTWDistanceConfigs::buildDtwSpaceRestrictedContinuous;
+    ParamSpaceBuilder ED = i -> EDistanceConfigs.buildEdSpace();
+    ParamSpaceBuilder DTW = DTWDistanceConfigs::buildDtwSpaceContinuous;
     ParamSpaceBuilder FULL_DTW = i -> DTWDistanceConfigs.buildDtwFullWindowSpace();
-    ParamSpaceBuilder DDTW = DTWDistanceConfigs::buildDdtwSpaceRestrictedContinuous;
+    ParamSpaceBuilder DDTW = DTWDistanceConfigs::buildDdtwSpaceContinuous;
     ParamSpaceBuilder FULL_DDTW = i -> DTWDistanceConfigs.buildDdtwFullWindowSpace();
     ParamSpaceBuilder LCSS = LCSSDistanceConfigs::buildLcssSpaceContinuous;
     ParamSpaceBuilder ERP = ERPDistanceConfigs::buildErpSpaceContinuous;

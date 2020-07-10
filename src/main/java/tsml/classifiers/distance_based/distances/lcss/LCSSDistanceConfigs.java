@@ -16,8 +16,7 @@ import static utilities.ArrayUtilities.unique;
 
 public class LCSSDistanceConfigs {
     public static ParamSpace buildLcssSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()),
-                buildLcssParams(instances));
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildLcssParams(instances));
     }
 
     public static ParamSpace buildLcssParams(Instances instances) {
@@ -46,8 +45,22 @@ public class LCSSDistanceConfigs {
 
     public static ParamSpace buildLcssSpaceContinuous(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new LCSSDistance()),
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()),
                   buildLcssParamsContinuous(data));
+        return space;
+    }
+
+    public static ParamSpace buildLcssParamsContinuousUnrestricted(Instances data) {
+        final double std = StatisticalUtilities.pStdDev(data);
+        final ParamSpace subSpace = new ParamSpace();
+        subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.02 * std, std));
+        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1)); // todo adjust this to use length instead of max index
+        return subSpace;
+    }
+
+    public static ParamSpace buildLcssSpaceContinuousUnrestricted(Instances data) {
+        final ParamSpace space = new ParamSpace();
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildLcssParamsContinuousUnrestricted(data));
         return space;
     }
 }

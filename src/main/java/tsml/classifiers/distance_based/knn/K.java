@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.knn;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.distances.ed.EuclideanDistance;
+import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.Utils;
@@ -57,7 +57,7 @@ public class K extends BaseClassifier implements TimedTest, TimedTrain, TimedTra
                 k.setKMax(10);
                 k.setComparisonCountLimit(-1);
                 k.setOptimiseK(true);
-                k.setDistanceFunction(new EuclideanDistance());
+                k.setDistanceFunction(new EDistance());
                 return k;
             }
         },

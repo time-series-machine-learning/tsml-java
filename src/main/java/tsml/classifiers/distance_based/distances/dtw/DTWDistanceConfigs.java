@@ -1,7 +1,5 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import com.beust.jcommander.internal.Lists;
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
@@ -10,6 +8,7 @@ import tsml.classifiers.distance_based.utils.collections.params.distribution.int
 import tsml.transformers.Derivative;
 import weka.core.Instances;
 
+import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_MEASURE_FLAG;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.range;
 import static utilities.ArrayUtilities.unique;
@@ -21,7 +20,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static ParamSpace buildDdtwFullWindowSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG,
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG,
                 newArrayList(newDDTWDistance()),
                 buildDtwFullWindowParams());
     }
@@ -41,7 +40,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static ParamSpace buildDtwSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()),
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()),
                 buildDtwParams(instances));
     }
 
@@ -62,11 +61,11 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static ParamSpace buildDdtwSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(newDDTWDistance()),
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG, newArrayList(newDDTWDistance()),
                 buildDtwParams(instances));
     }
 
-    public static ParamSpace buildDtwParamsRestrictedContinuous(Instances data) {
+    public static ParamSpace buildDtwParamsContinuous(Instances data) {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
@@ -75,17 +74,29 @@ public class DTWDistanceConfigs {
         return subSpace;
     }
 
-    public static ParamSpace buildDtwSpaceRestrictedContinuous(Instances data) {
+    public static ParamSpace buildDtwSpaceContinuous(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(new DTWDistance()),
-                  buildDtwParamsRestrictedContinuous(data));
+        space.add(DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()),
+                  buildDtwParamsContinuous(data));
         return space;
     }
+    
+    public static ParamSpace buildDtwParamsContinuousUnrestricted(Instances data) {
+        return new ParamSpace().add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1)); // todo adjust this to use length instead of max index
+    }
+    
+    public static ParamSpace buildDtwSpaceContinuousUnrestricted(Instances data) {
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()), buildDtwParamsContinuousUnrestricted(data));
+    }
 
-    public static ParamSpace buildDdtwSpaceRestrictedContinuous(Instances data) {
+    public static ParamSpace buildDdtwSpaceContinuousUnrestricted(Instances data) {
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG, newArrayList(newDDTWDistance()), buildDtwParamsContinuousUnrestricted(data));
+    }
+
+    public static ParamSpace buildDdtwSpaceContinuous(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, Lists.newArrayList(newDDTWDistance()),
-                  buildDtwParamsRestrictedContinuous(data));
+        space.add(DISTANCE_MEASURE_FLAG, newArrayList(newDDTWDistance()),
+                  buildDtwParamsContinuous(data));
         return space;
     }
 
@@ -95,7 +106,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static ParamSpace buildDtwFullWindowSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()),
+        return new ParamSpace().add(DISTANCE_MEASURE_FLAG, newArrayList(new DTWDistance()),
                 buildDtwFullWindowParams());
     }
 
@@ -109,4 +120,5 @@ public class DTWDistanceConfigs {
         params.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, newArrayList(-1));
         return params;
     }
+
 }

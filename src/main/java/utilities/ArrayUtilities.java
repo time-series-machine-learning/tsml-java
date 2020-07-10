@@ -253,6 +253,14 @@ public class ArrayUtilities {
         return Arrays.asList(box(array));
     }
 
+    public static double[] unbox(List<Double> list) {
+        double[] array = new double[list.size()];
+        for(int i = 0; i < array.length; i++) {
+            array[i] = list.get(i);
+        }
+        return array;
+    }
+
     public static int[] range(int min, int max, int size) {
         int[] output = new int[size];
         output[0] = min;

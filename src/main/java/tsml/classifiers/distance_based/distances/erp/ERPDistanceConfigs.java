@@ -57,4 +57,18 @@ public class ERPDistanceConfigs {
                   buildErpParamsContinuous(data));
         return space;
     }
+
+    public static ParamSpace buildErpParamsContinuousUnrestricted(Instances data) {
+        final double std = StatisticalUtilities.pStdDev(data);
+        final ParamSpace subSpace = new ParamSpace();
+        subSpace.add(ERPDistance.G_FLAG, new UniformDoubleDistribution(0.02 * std, std));
+        subSpace.add(ERPDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1)); // todo adjust this to use length instead of max index
+        return subSpace;
+    }
+
+
+    public static ParamSpace buildErpSpaceContinuousUnrestricted(Instances instances) {
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new ERPDistance()),
+                buildErpParamsContinuousUnrestricted(instances));
+    }
 }

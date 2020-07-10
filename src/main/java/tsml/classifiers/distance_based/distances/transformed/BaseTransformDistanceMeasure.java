@@ -10,7 +10,7 @@ Contributors: goastler
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.ed.EuclideanDistance;
+import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.TrainableTransformer;
@@ -29,7 +29,7 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
     }
 
     public BaseTransformDistanceMeasure() {
-        this("", null, new EuclideanDistance());
+        this("", null, new EDistance());
         setName(getClass().getSimpleName());
     }
 

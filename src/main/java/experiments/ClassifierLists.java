@@ -22,6 +22,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.proximity.ElasticTransformClassifier;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -121,6 +122,7 @@ public class ClassifierLists {
         "PF_R5_OOB_CV",
         "PF_R5_OOB_CV_D",
         "PF_R5_OOB_CV_WD",
+        "ET2",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -128,6 +130,9 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "ET2":
+                c = new ElasticTransformClassifier();
+                break;
             case "PF_R1":
                 c = ProximityForest.Config.R1.applyConfigTo(new ProximityForest());
                 break;

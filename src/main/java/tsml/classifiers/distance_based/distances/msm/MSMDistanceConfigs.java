@@ -2,8 +2,12 @@ package tsml.classifiers.distance_based.distances.msm;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.MultipleDoubleDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 
 import java.util.List;
+import java.util.Random;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.unique;
@@ -123,4 +127,17 @@ public class MSMDistanceConfigs {
         params.add(MSMDistance.C_FLAG, costValuesUnique);
         return params;
     }
+
+    public static ParamSpace buildMsmParamsContinuous() {
+        DoubleDistribution costParams = new MultipleDoubleDistribution(newArrayList(0.01, 0.1, 1d, 10d, 100d));
+        ParamSpace params = new ParamSpace();
+        params.add(MSMDistance.C_FLAG, costParams);
+        return params;
+    }
+
+    public static ParamSpace buildMsmSpaceContinuous() {
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
+                buildMsmParamsContinuous());
+    }
+
 }
