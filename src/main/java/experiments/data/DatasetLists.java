@@ -1281,13 +1281,7 @@ public class DatasetLists {
                 };  */ 
       //</editor-fold>    
 
- //Large Problems  
-    //<editor-fold defaultstate="collapsed" desc="largProblems:">    
-    public static String[] largeProblems={	
-"HeartbeatBIDMC","MNIST",
-//"CambridgeMEG","KaggleMEG",        
-    };
-                
+
 //Sets used in papers                
                 
 //<editor-fold defaultstate="collapsed" desc="rakthanmanon13fastshapelets">             

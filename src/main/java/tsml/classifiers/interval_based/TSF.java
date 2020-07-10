@@ -27,6 +27,7 @@ import tsml.classifiers.*;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -367,8 +368,14 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
             printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers+"\n");
             trees = new ArrayList(numClassifiers);
+            // Set up for train estimates
+            if(getEstimateOwnPerformance()) {
+                trainDistributions= new double[data.numInstances()][data.numClasses()];
+            }
+            //Set up for bagging
             if(bagging){
-                inBag=new ArrayList<>();
+                inBag=new ArrayList();
+                oobCounts=new int[data.numInstances()];
                 printLineDebug("TSF is using Bagging");
             }
             intervals = new ArrayList();
@@ -394,16 +401,16 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             vals.add(target.value(j));
         atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));
         //create blank instances with the correct class value                
-        Instances result = new Instances("Tree",atts,data.numInstances());
-        result.setClassIndex(result.numAttributes()-1);
+        Instances transformedData = new Instances("Tree",atts,data.numInstances());
+        transformedData.setClassIndex(transformedData.numAttributes()-1);
         for(int i=0;i<data.numInstances();i++){
-            DenseInstance in=new DenseInstance(result.numAttributes());
-            in.setValue(result.numAttributes()-1,data.instance(i).classValue());
-            result.add(in);
+            DenseInstance in=new DenseInstance(transformedData.numAttributes());
+            in.setValue(transformedData.numAttributes()-1,data.instance(i).classValue());
+            transformedData.add(in);
         }
          
-        testHolder =new Instances(result,0);       
-        DenseInstance in=new DenseInstance(result.numAttributes());
+        testHolder =new Instances(transformedData,0);
+        DenseInstance in=new DenseInstance(transformedData.numAttributes());
         testHolder.add(in);
         int classifiersBuilt = trees.size();
 
@@ -439,9 +446,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                     double[] series=data.instance(k).toDoubleArray();
                     FeatureSet f= new FeatureSet();
                     f.setFeatures(series, interval[j][0], interval[j][1]);
-                    result.instance(k).setValue(j*3, f.mean);
-                    result.instance(k).setValue(j*3+1, f.stDev);
-                    result.instance(k).setValue(j*3+2, f.slope);
+                    transformedData.instance(k).setValue(j*3, f.mean);
+                    transformedData.instance(k).setValue(j*3+1, f.stDev);
+                    transformedData.instance(k).setValue(j*3+2, f.slope);
                 }
             }
             //3. Create and build tree using all the features.
@@ -450,13 +457,27 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 ((Randomizable)tree).setSeed(seed*(classifiersBuilt+1));
 
             if(bagging){
-                boolean[] bag = new boolean[result.numInstances()];
-                Instances bagData = result.resampleWithWeights(rand, bag);
+                long t1=System.nanoTime();
+                boolean[] bag = new boolean[transformedData.numInstances()];
+                Instances bagData = transformedData.resampleWithWeights(rand, bag);
                 tree.buildClassifier(bagData);
                 inBag.add(bag);
+                if(getEstimateOwnPerformance()){
+                    for(int j=0;j<transformedData.numInstances();j++){
+                        if(bag[j])
+                            continue;
+                        double[] newProbs = tree.distributionForInstance(transformedData.instance(j));
+                        oobCounts[j]++;
+                        for(int k=0;k<newProbs.length;k++)
+                            trainDistributions[j][k]+=newProbs[k];
+                    }
+                }
+                long t2=System.nanoTime();
+                if(getEstimateOwnPerformance())
+                    trainResults.setErrorEstimateTime(t2-t1+trainResults.getErrorEstimateTime());
             }
             else
-                tree.buildClassifier(result);
+                tree.buildClassifier(transformedData);
 
             intervals.add(interval);
             trees.add(tree);
@@ -491,7 +512,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             long est1=System.nanoTime();
             estimateOwnPerformance(data);
             long est2=System.nanoTime();
-            trainResults.setErrorEstimateTime(est2-est1);
+            if(bagging)
+                trainResults.setErrorEstimateTime(est2-est1+trainResults.getErrorEstimateTime());
+            else
+                trainResults.setErrorEstimateTime(est2-est1);
+
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         }
         trainResults.setParas(getParameters());
@@ -514,24 +539,12 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if(bagging){
             // Use bag data, counts normalised to probabilities
             printLineDebug("Finding the OOB estimates");
-            trainDistributions= new double[data.numInstances()][data.numClasses()];
-            oobCounts=new int[data.numInstances()];
-            int treeCount=0;
-            for (boolean[] bag : inBag) {
-                Classifier tree=trees.get(treeCount++);
-                for (int j = 0; j < data.numInstances(); j++) {
-                    if (bag[j])
-                        continue;
-                    double[] newProbs = tree.distributionForInstance(data.instance(j));
-                    oobCounts[j]++;
-                    for (int k = 0; k < newProbs.length; k++)
-                        trainDistributions[j][k] += newProbs[k];
-                }
-            }
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
             for(int j=0;j<data.numInstances();j++){
+
+
                 long predTime = System.nanoTime();
                 for(int k=0;k<trainDistributions[j].length;k++)
                     if(oobCounts[j]>0)
