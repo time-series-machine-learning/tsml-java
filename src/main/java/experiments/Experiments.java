@@ -141,8 +141,8 @@ public class Experiments  {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunExperiment(expSettings);
         }else{
-            int folds=30;
-            String[] settings=new String[8];
+            int folds=1;
+            String[] settings=new String[9];
             String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
  //           String classifier=classifiers[2];
             String classifier="STC";
@@ -154,9 +154,9 @@ public class Experiments  {
             settings[3]="-cn="+classifier; //Classifier name
             settings[4]="-dn="; //Problem file
             settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[6]="-ctr=60s";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[6]="-ctr=600s";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             settings[7]="-d=true";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-
+            settings[8]="--force=true";
 
             String[] probFiles= {"HB"};
 //            String[] probFiles= DatasetLists.fixedLengthMultivariate;

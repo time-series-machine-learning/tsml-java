@@ -34,7 +34,7 @@ import weka.core.Instances;
  *
  * @author raj09hxu
  */
-public class IndependentDimensionEnsemble extends AbstractClassifier{
+public class DimensionIndependentEnsemble extends AbstractClassifier{
     
     protected ModuleWeightingScheme weightingScheme = new EqualWeighting();
     protected ModuleVotingScheme votingScheme = new MajorityVote();
@@ -52,7 +52,7 @@ public class IndependentDimensionEnsemble extends AbstractClassifier{
     
     double[] priorWeights;
     
-    public IndependentDimensionEnsemble(Classifier cla){
+    public DimensionIndependentEnsemble(Classifier cla){
         original_model = cla;
     }
    

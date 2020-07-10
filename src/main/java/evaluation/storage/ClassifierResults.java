@@ -64,15 +64,16 @@ import weka.core.Randomizable;
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
- *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
- *    - get/setBuildTime(long)
- *    - get/setTestTime(long)
- *    - get/setBenchmarkTime(long)
- *    - get/setMemory(long)
- *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
- *    - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
- *    - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
- *    - get/setBuildAndEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *   1 - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
+ *   2 - get/setBuildTime(long)
+ *   3 - get/setTestTime(long)
+ *   4 - get/setBenchmarkTime(long)
+ *   5 - get/setMemory(long)
+ *   6 - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
+ *   7 - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
+ *   8 - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
+ *   9 - get/setBuildPlusEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  *
@@ -978,6 +979,8 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     }
 
 
+
+
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
@@ -1691,11 +1694,14 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
 
                 buildTimeDuplicateWarningPrinted = true;
             }
-
-            buildTime = Long.parseLong(parts[1]);
+            double temp=Double.parseDouble(parts[1]);
+            buildTime = (long)temp;
         }
-        if (parts.length > 2)
-            testTime = Long.parseLong(parts[2]);
+        if (parts.length > 2) {
+            double temp=Double.parseDouble(parts[2]);
+            testTime = (long)temp;
+        }
+
         if (parts.length > 3)
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4)
@@ -1738,13 +1744,14 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
             + "," + errorEstimateMethod
             + "," + errorEstimateTime
             + "," + buildPlusEstimateTime
+/*   The below was added by @goastler, but is not used by anyone else
             + "," + os
             + "," + cpuInfo
             + "," + meanMemoryUsageInBytes
             + "," + stdDevMemoryUsageInBytes
             + "," + garbageCollectionTimeInMillis
             + "," + memoryReadingCount
-            ;
+*/            ;
 
         return res;
     }

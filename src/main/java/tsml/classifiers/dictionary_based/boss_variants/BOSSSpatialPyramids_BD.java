@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
@@ -589,9 +590,9 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         for (int i =0; i < quadrants; ++i) {
             bagquadrants[i] = (BOSSSpatialPyramidsIndividual.SPBag) bag.clone();
             
-            Iterator<Entry<ComparablePair<BitWordInt, Integer>, Double>> iter = bagquadrants[i].entrySet().iterator();
+            Iterator<Entry<ComparablePair<BitWord, Integer>, Double>> iter = bagquadrants[i].entrySet().iterator();
             while (iter.hasNext()) {
-                Entry<ComparablePair<BitWordInt, Integer>, Double> entry = iter.next();
+                Entry<ComparablePair<BitWord, Integer>, Double> entry = iter.next();
                 if (entry.getKey().var2 != i) 
                     iter.remove();
             }
@@ -601,11 +602,11 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         //building the dense histograms back up... holy shit
         double[][] hists = new double[quadrants][bagquadrants[0].size()];
         int wordindex = 0;
-        for (Entry<ComparablePair<BitWordInt, Integer>, Double> level0entry : bagquadrants[0].entrySet()) {
+        for (Entry<ComparablePair<BitWord, Integer>, Double> level0entry : bagquadrants[0].entrySet()) {
             hists[0][wordindex] = level0entry.getValue();            
             
             for (int i =1; i < quadrants; ++i)
-                for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : bagquadrants[i].entrySet())
+                for (Entry<ComparablePair<BitWord, Integer>, Double> entry : bagquadrants[i].entrySet())
                     if (entry.getKey().var1 == level0entry.getKey().var1)
                         hists[i][wordindex] = entry.getValue();
                 
@@ -616,9 +617,9 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         OutFile out = new OutFile(dset+"hists.csv");
         
         //  headers
-        for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : bag.entrySet())
+        for (Entry<ComparablePair<BitWord, Integer>, Double> entry : bag.entrySet())
             if (entry.getKey().var2 == 0) //lowest level
-                out.writeString("," + entry.getKey().var1.buildString());
+                out.writeString("," + ((BitWordInt)entry.getKey().var1).buildString());
         
         out.writeLine("");
         //  values
@@ -785,7 +786,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         }
 
         //map of <word, level> => count
-        public static class SPBag extends HashMap<ComparablePair<BitWordInt, Integer>, Double> {
+        public static class SPBag extends HashMap<ComparablePair<BitWord, Integer>, Double> {
             double classVal;
 
             public SPBag() {
@@ -1097,7 +1098,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         }
 
         protected BitWordInt createWord(double[] dft) {
-            BitWordInt word = new BitWordInt(wordLength);
+            BitWordInt word = new BitWordInt();
             for (int l = 0; l < wordLength; ++l) {//for each letter
                 for (int bp = 0; bp < alphabetSize; ++bp) {//run through breakpoints until right one found
                     if (dft[l] <= breakpoints[l][bp]) {
@@ -1178,7 +1179,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
                 if (val == null)
                     val = 0.0;
 
-                newSPBag.put(new ComparablePair<BitWordInt, Integer>(shortWord, 0), val + 1.0);
+                newSPBag.put(new ComparablePair<BitWord, Integer>(shortWord, 0), val + 1.0);
             }
 
             return newSPBag;
@@ -1242,7 +1243,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         }
 
         protected void applyPyramidWeights(SPBag bag) {
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> ent : bag.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> ent : bag.entrySet()) {
                 //find level that this quadrant is on
                 int quadrant = ent.getKey().var2;
                 int qEnd = 0; 
@@ -1269,7 +1270,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
                 int pos = wInd + (windowSize/2); //use the middle of the window as its position
                 int quadrant = qStart + (pos/quadrantSize); 
 
-                ComparablePair<BitWordInt, Integer> key = new ComparablePair<>(word, quadrant);
+                ComparablePair<BitWord, Integer> key = new ComparablePair<>(word, quadrant);
                 Double val = bag.get(key);
 
                 if (val == null)
@@ -1318,7 +1319,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)
@@ -1340,7 +1341,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
             double dist = 0.0;
 
             //find dist only from values in instA
-            for (Entry<ComparablePair<BitWordInt, Integer>, Double> entry : instA.entrySet()) {
+            for (Entry<ComparablePair<BitWord, Integer>, Double> entry : instA.entrySet()) {
                 Double valA = entry.getValue();
                 Double valB = instB.get(entry.getKey());
                 if (valB == null)

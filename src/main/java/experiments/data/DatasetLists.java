@@ -43,7 +43,43 @@ import java.util.zip.ZipOutputStream;
  * @author ajb
  */
 public class DatasetLists {
-    
+
+	//TSC data sets added since 2018 release
+	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
+	public static String[] newUnivariate= {
+			"AsphaltObstacles",
+			"AsphaltPavementType",
+			"AsphaltRegularity",
+			"Colposcopy",
+			"SharePriceIncrease",
+			"RightWhaleCalls",
+			"CatsDogs",
+			"AbnormalHeartbeat",
+			"DucksAndGeese",
+			"UrbanSound",
+			"FruitFlies",
+			"BinaryHeartbeat",
+			"InsectSound",
+			"MosquitoSound",
+			"ElectricDeviceDetection"
+	};
+	//</editor-fold>
+
+
+
+	//<editor-fold defaultstate="collapsed" desc=" new multivariate tsc Problems">
+	public static String[] newMultivariate= {
+			"AsphaltObstaclesCoordinates",
+			"AsphaltPavementTypeCoordinates",
+			"AsphaltRegularityCoordinates",
+			"EyesOpenShut",
+			"CounterMovementJump",
+			"Tiselac",
+
+
+	};
+	//</editor-fold>
+
 /*    public static String clusterPath="/gpfs/home/ajb/";
     public static String dropboxPath="C:/Users/ajb/Dropbox/";    
     public static String beastPath="//cmptscsvr.cmp.uea.ac.uk/ueatsc/Data/";
@@ -231,7 +267,8 @@ public class DatasetLists {
                 };   
       //</editor-fold>    
 
-   public static String[] variableLengthUnivariate ={
+	//<editor-fold defaultstate="collapsed" desc="Variable length univariate datasets">
+	public static String[] variableLengthUnivariate ={
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -244,6 +281,8 @@ public class DatasetLists {
         "PLAID",
         "ShakeGestureWiimoteZ"
    };
+	//</editor-fold>
+
 	int[][] minMaxUnivariate={{11,385,2,369},
 	{8,369,2,385},
 	{33,326,2,385},
@@ -256,6 +295,7 @@ public class DatasetLists {
 	{100,1344,134,1000},
 	{41,385,40,369}};
 
+	//<editor-fold defaultstate="collapsed" desc="Variable length multivariate datasets">
    public static String[] variableLengthMultivariate ={
 		"AsphaltObstaclesCoordinates",
 				"AsphaltPavementTypeCoordinates",
@@ -265,6 +305,8 @@ public class DatasetLists {
 				"JapaneseVowels",
 				"SpokenArabicDigits"
 	};
+	//</editor-fold>
+
    int[][] minMaxMultivariate={
 		{96,1543,66,2370},
 		{95,4200,66,2371},
@@ -273,6 +315,8 @@ public class DatasetLists {
 		{7,26,7,28},
 		{4,92,7,83}
 		};
+
+	//<editor-fold defaultstate="collapsed" desc="Fixed length multivariate datasets">
 	public static String[] fixedLengthMultivariate = {
 			"ArticularyWordRecognition", //Index 0
 			"AtrialFibrillation",//1
@@ -301,7 +345,10 @@ public class DatasetLists {
 			"StandWalkJump",
 			"UWaveGestureLibrary"
 	};
-   public static String[] missingValue2018Problems={
+	//</editor-fold>
+
+	//<editor-fold defaultstate="collapsed" desc="missing value univariate datasets">
+	public static String[] missingValueUnivariate ={
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -318,6 +365,8 @@ public class DatasetLists {
         "PLAID",
         "ShakeGestureWiimoteZ"
    };
+	//</editor-fold>
+
  //TSC data sets for bakeoff redux 
     //<editor-fold defaultstate="collapsed" desc="tsc Problems 2018 ">    
 		public static String[] equalLengthProblems={	
@@ -438,9 +487,9 @@ public class DatasetLists {
                 };   
       //</editor-fold>    
 
-   
-   
-   public static String[] newFor2018Problems={
+
+	//<editor-fold defaultstate="collapsed" desc="tsc Problems new in 2018 release">
+	public static String[] newFor2018Problems={
         "ACSF1",
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
@@ -485,9 +534,11 @@ public class DatasetLists {
         "SmoothSubspace",
         "UMD",
    };
-                
+	//</editor-fold>
 
-   public static String[] newFor2018Problems_noMissingValues={
+
+	//<editor-fold defaultstate="collapsed" desc="tsc Problems new in 2018 release no missing">
+	public static String[] newFor2018Problems_noMissingValues={
         "ACSF1",
         "BME",
         "Chinatown",
@@ -516,9 +567,10 @@ public class DatasetLists {
         "SmoothSubspace",
         "UMD",
    };
-   
-     
-//TSC data sets before relaunch in 2018 
+	//</editor-fold>
+
+
+	//TSC data sets before relaunch in 2018
     //<editor-fold defaultstate="collapsed" desc="tsc Problems prior to relaunch in 2018 ">    
 		public static String[] tscProblems2017={	
                     "AALTDChallenge",
@@ -961,7 +1013,7 @@ public class DatasetLists {
 
                 
 
-//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">    
+	//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">
 		public static String[][] fiveSplits={	
       {			"Adiac",        // 390,391,176,37
 			"ArrowHead",    // 36,175,251,3
@@ -1129,8 +1181,8 @@ public class DatasetLists {
 			"MoteStrain", // 20,1252,84,2
 			"OliveOil", // 30,30,570,4
 			"Plane", // 105,105,144,7
-			"SonyAIBORobotSurface", // 20,601,70,2
-			"SonyAIBORobotSurfaceII", // 27,953,65,2
+			"SonyAIBORobotSurface1", // 20,601,70,2
+			"SonyAIBORobotSurface2", // 27,953,65,2
 			"SyntheticControl", // 300,300,60,6
 			"Trace", // 100,100,275,4
 			"TwoLeadECG", // 23,1139,82,2
@@ -1229,13 +1281,7 @@ public class DatasetLists {
                 };  */ 
       //</editor-fold>    
 
- //Large Problems  
-    //<editor-fold defaultstate="collapsed" desc="largProblems:">    
-    public static String[] largeProblems={	
-"HeartbeatBIDMC","MNIST",
-//"CambridgeMEG","KaggleMEG",        
-    };
-                
+
 //Sets used in papers                
                 
 //<editor-fold defaultstate="collapsed" desc="rakthanmanon13fastshapelets">             

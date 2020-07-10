@@ -200,7 +200,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
     
     public MultipleClassifierEvaluation setIgnoreMissingDistributions(boolean ignoreMissingDistributions) {
-        resultsCollection.setCleanResults(ignoreMissingDistributions);
+        resultsCollection.setIgnoreMissingDistributions(ignoreMissingDistributions);
         return this;
     }
     
