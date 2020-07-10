@@ -12,6 +12,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 
+/**
+ * This class is used to extract subsequences of a time series by extracting
+ * neighbouring data points about each data point. For example, if a time
+ * series has data points 1,2,3,4,5 and subsequenceLength is 3, This transformer
+ * would produce the following output:
+ *
+ * {{1,1,2},{1,2,3},{2,3,4},{3,4,5},{4,5,5}}
+ *
+ * Used mainly by ShapeDTW1NN.
+ *
+ */
 public class SubsequenceTransformer implements Transformer {
 
     private int subsequenceLength;
@@ -19,7 +30,6 @@ public class SubsequenceTransformer implements Transformer {
     public SubsequenceTransformer(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
     }
-
 
     @Override
     public Instance transform(Instance inst) {

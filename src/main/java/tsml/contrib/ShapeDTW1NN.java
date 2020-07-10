@@ -11,13 +11,21 @@ import weka.core.Instances;
 import java.util.concurrent.TimeUnit;
 import tsml.classifiers.multivariate.NN_DTW_D;
 
-
+/**
+ * The ShapeDTW classifier works by initially extracting a set of subsequences
+ * describing local neighbourhoods around each data point in a time series.
+ * These subsequences are then passed into a shape descriptor function that
+ * transforms these local neighbourhoods into a new representation. This
+ * new representation is then sent into DTW with 1-NN.
+ *
+ * @author Vincent Nicholson
+ *
+ */
 public class ShapeDTW1NN extends EnhancedAbstractClassifier {
 
     // hyper-parameters
     private int subsequenceLength;
-    // if shapeDescriptors has length>1, then its a 'compound' shape descriptor.
-    // if null, then its the 'raw' shape descriptor.
+    // if shapeDescriptor is null, then its the 'raw' shape descriptor.
     // Supported Transformers are the following:
     // null - raw
     // PAA
@@ -25,30 +33,30 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
     // Derivative
     // Slope
     // HOG1D
-    // 2 of these transformers
-    private Transformer [] shapeDescriptors;
+    // Compound (class that performs two transformers and concatenates their results together).
+    private Transformer shapeDescriptor;
     // Transformer for extracting the neighbourhoods
     private SubsequenceTransformer subsequenceTransformer;
     // NN_DTW_D for performing classification on the training data
     private NN_DTW_D nnDtwD;
-    // internal attributes
-    private int numClasses;
 
     /**
-     * Private constructor so that ShapeDTW can be used out-of-the-box
+     * Private constructor with settings:
+     * subsequenceLength = 30
+     * shapeDescriptorFunction = null (so 'raw' is used)
      */
     public ShapeDTW1NN() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceLength = 30;
-        this.shapeDescriptors = null;
+        this.shapeDescriptor = null;
         this.subsequenceTransformer = new SubsequenceTransformer(subsequenceLength);
         this.nnDtwD = new NN_DTW_D();
     }
 
-    public ShapeDTW1NN(int subsequenceLength,Transformer [] shapeDescriptors) {
+    public ShapeDTW1NN(int subsequenceLength,Transformer shapeDescriptor) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceLength = subsequenceLength;
-        this.shapeDescriptors = shapeDescriptors;
+        this.shapeDescriptor = shapeDescriptor;
         this.subsequenceTransformer = new SubsequenceTransformer(subsequenceLength);
         this.nnDtwD = new NN_DTW_D();
     }
@@ -57,38 +65,48 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         return subsequenceLength;
     }
 
-    public Transformer [] getShapeDescriptors() {
-        return shapeDescriptors;
+    public Transformer getShapeDescriptors() {
+        return shapeDescriptor;
     }
 
     public void setSubsequenceLength(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
     }
 
-    public void setShapeDescriptors(Transformer [] shapeDescriptors) {
-        this.shapeDescriptors = shapeDescriptors;
+    public void setShapeDescriptors(Transformer shapeDescriptors) {
+        this.shapeDescriptor = shapeDescriptors;
     }
 
+    /**
+     * Private method for performing the subsequence extraction on a set of instances as
+     * well as the shape descriptor function (if not null).
+     *
+     * @param data
+     * @return
+     */
     private Instances preprocessData(Instances data) {
         Instances transformedData = this.subsequenceTransformer.transform(data);
-        if (this.shapeDescriptors == null) {
+        //If shape descriptor is null aka 'raw', use the subsequences.
+        if (this.shapeDescriptor == null) {
             return transformedData;
         }
-        for(int i=0;i<this.shapeDescriptors.length;i++) {
-            transformedData = this.shapeDescriptors[i].transform(transformedData);
-        }
-        return transformedData;
+        return this.shapeDescriptor.transform(transformedData);
     }
 
+    /**
+     * Private method for performing the subsequence extraction on an instance as
+     * well as the shape descriptor function (if not null).
+     *
+     * @param data
+     * @return
+     */
     private Instance preprocessData(Instance data) {
         Instance transformedData = this.subsequenceTransformer.transform(data);
-        if (this.shapeDescriptors == null) {
+        //If shape descriptor is null aka 'raw', use the subsequences.
+        if (this.shapeDescriptor == null) {
             return transformedData;
         }
-        for(int i=0;i<this.shapeDescriptors.length;i++) {
-            transformedData = this.shapeDescriptors[i].transform(transformedData);
-        }
-        return transformedData;
+        return this.shapeDescriptor.transform(transformedData);
     }
 
     @Override
@@ -117,5 +135,4 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         Instance transformedData = this.preprocessData(testInst);
         return this.nnDtwD.classifyInstance(transformedData);
     }
-
 }

@@ -7,13 +7,14 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 
-/*
+/**
  * This class uses a univariate transformer on a multivariate dataset by executing
  * the transformer along each dimension of a time series.
  *
  * @author Vincent Nicholson
  *
- * */
+ *
+ */
 public class DimensionIndependentTransformer implements Transformer {
 
     private Transformer transformer;
