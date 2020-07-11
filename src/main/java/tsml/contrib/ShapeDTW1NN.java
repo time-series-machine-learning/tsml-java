@@ -98,7 +98,7 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
             return transformedData;
         }
         this.d = new DimensionIndependentTransformer(this.shapeDescriptor);
-        Instances res = d.transform(transformedData);
+        Instances res = this.d.transform(transformedData);
         return res;
     }
 
@@ -154,7 +154,7 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         Derivative de = new Derivative();
         SlopeTransformer sl = new SlopeTransformer();
         HOG1DTransformer h = new HOG1DTransformer();
-        ShapeDTW1NN s = new ShapeDTW1NN(30,null);
+        ShapeDTW1NN s = new ShapeDTW1NN(30,h);
         System.out.println(calculateAccuracy(s,data));
     }
 

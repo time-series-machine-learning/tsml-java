@@ -165,17 +165,21 @@ public class SlopeTransformer implements Transformer {
 
     @Override
     public Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
-        //Check that the class variable is at the end and exists
-        if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
-            throw new IllegalArgumentException("cannot handle class values not at end");
+        //If the class index exists.
+        if(inputFormat.classIndex() >= 0) {
+            if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
+                throw new IllegalArgumentException("cannot handle class values not at end");
+            }
         }
         ArrayList<Attribute> attributes = new ArrayList<>();
         // Create a list of attributes
         for(int i = 0; i<numIntervals; i++) {
             attributes.add(new Attribute("SlopeGradient_" + i));
         }
-        // Add the class attribute
-        attributes.add(inputFormat.classAttribute());
+        // Add the class attribute (if it exists)
+        if(inputFormat.classIndex() >= 0) {
+            attributes.add(inputFormat.classAttribute());
+        }
         Instances result = new Instances("Slope" + inputFormat.relationName(), attributes, inputFormat.numInstances());
         result.setClassIndex(result.numAttributes() - 1);
         return result;
