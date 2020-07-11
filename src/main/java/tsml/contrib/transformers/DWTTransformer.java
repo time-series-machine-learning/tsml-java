@@ -61,7 +61,7 @@ public class DWTTransformer implements Transformer {
             newInstance.setValue(j, waveletCoeffs[j]);
         // Set the class value
         if (inst.classIndex() >= 0)
-            newInstance.setValue(inst.classIndex(), inst.classValue());
+            newInstance.setValue(newInstance.numAttributes()-1, inst.classValue());
 
         return newInstance;
     }

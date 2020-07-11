@@ -41,9 +41,20 @@ public class DimensionIndependentTransformer implements Transformer {
     @Override
     public Instance transform(Instance inst) {
         Instances dimensions = inst.relationalValue(0);
+        //Stick the class value at the end of the dimension (if it has one)
+        if(inst.classIndex() == 1) {
+            dimensions.insertAttributeAt(inst.attribute(1),dimensions.numAttributes());
+            dimensions.setClassIndex(dimensions.numAttributes()-1);
+            for(Instance i:dimensions) {
+                i.setValue(dimensions.numAttributes()-1,inst.classValue());
+            }
+        }
         Instances transformedInsts = transformer.transform(dimensions);
+        //Remove the class value from transformedInsts
+        transformedInsts.setClassIndex(-1);
+        transformedInsts.deleteAttributeAt(transformedInsts.numAttributes()-1);
+        //Create the new Instance object
         Instance res = new DenseInstance(2);
-
         res.setDataset(dataHeader);
         int index = res.attribute(0).addRelation(transformedInsts);
         res.setValue(0,index);
@@ -56,8 +67,17 @@ public class DimensionIndependentTransformer implements Transformer {
 
     @Override
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
+        //Get the relation and set the class index.
+        Instances relationalAtt = data.attribute(0).relation();
+        if(data.classIndex() == 1) {
+            relationalAtt.insertAttributeAt(data.attribute(1),relationalAtt.numAttributes());
+            relationalAtt.setClassIndex(relationalAtt.numAttributes()-1);
+        }
         // Create the relation from the transformer
-        Instances outputFormat = transformer.determineOutputFormat(data.attribute(0).relation());
+        Instances outputFormat = transformer.determineOutputFormat(relationalAtt);
+        //Remove the class value in the relation (you don't want it there)
+        outputFormat.setClassIndex(-1);
+        outputFormat.deleteAttributeAt(outputFormat.numAttributes()-1);
         // Just 2 attributes, the relational attribute and the class value (if it has one).
         ArrayList<Attribute> attributes = new ArrayList<>();
         attributes.add(new Attribute("relationalAtt",outputFormat));

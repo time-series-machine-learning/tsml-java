@@ -113,7 +113,7 @@ public class SubsequenceTransformer implements Transformer {
         }
         //Set up instances size and format.
         //Create the relation.
-        Instances relation = createRelation(inputFormat.numAttributes());
+        Instances relation = createRelation(inputFormat.numAttributes()-1);
         //Create an arraylist of 2 containing the relational attribute and the class label.
         ArrayList<Attribute> newAtts = new ArrayList<>();
         newAtts.add(new Attribute("relationalAtt", relation));

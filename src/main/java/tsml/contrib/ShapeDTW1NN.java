@@ -1,9 +1,15 @@
 package tsml.contrib;
 
+import experiments.data.DatasetLoading;
+import statistics.simulators.DictionaryModel;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.contrib.transformers.DWTTransformer;
+import tsml.contrib.transformers.HOG1DTransformer;
+import tsml.contrib.transformers.SlopeTransformer;
 import tsml.contrib.transformers.SubsequenceTransformer;
 import tsml.transformers.Derivative;
+import tsml.transformers.DimensionIndependentTransformer;
 import tsml.transformers.PAA;
 import tsml.transformers.Transformer;
 import weka.core.Instance;
@@ -39,6 +45,7 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
     private SubsequenceTransformer subsequenceTransformer;
     // NN_DTW_D for performing classification on the training data
     private NN_DTW_D nnDtwD;
+    private DimensionIndependentTransformer d;
 
     /**
      * Private constructor with settings:
@@ -79,7 +86,7 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
 
     /**
      * Private method for performing the subsequence extraction on a set of instances as
-     * well as the shape descriptor function (if not null).
+     * well as the shape descriptor function for training (if not null).
      *
      * @param data
      * @return
@@ -90,12 +97,14 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         if (this.shapeDescriptor == null) {
             return transformedData;
         }
-        return this.shapeDescriptor.transform(transformedData);
+        this.d = new DimensionIndependentTransformer(this.shapeDescriptor);
+        Instances res = d.transform(transformedData);
+        return res;
     }
 
     /**
      * Private method for performing the subsequence extraction on an instance as
-     * well as the shape descriptor function (if not null).
+     * well as the shape descriptor function for testing (if not null).
      *
      * @param data
      * @return
@@ -106,7 +115,8 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         if (this.shapeDescriptor == null) {
             return transformedData;
         }
-        return this.shapeDescriptor.transform(transformedData);
+        Instance res = this.d.transform(transformedData);
+        return res;
     }
 
     @Override
@@ -134,5 +144,32 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
     public double classifyInstance(Instance testInst) throws Exception {
         Instance transformedData = this.preprocessData(testInst);
         return this.nnDtwD.classifyInstance(transformedData);
+    }
+
+    public static void main(String[] args) throws Exception {
+        Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
+
+        PAA p = new PAA();
+        DWTTransformer d = new DWTTransformer();
+        Derivative de = new Derivative();
+        SlopeTransformer sl = new SlopeTransformer();
+        HOG1DTransformer h = new HOG1DTransformer();
+        ShapeDTW1NN s = new ShapeDTW1NN(30,null);
+        System.out.println(calculateAccuracy(s,data));
+    }
+
+    private static double calculateAccuracy(ShapeDTW1NN s, Instances [] data) throws Exception {
+        Instances train = data[0];
+        Instances test = data[1];
+
+        s.buildClassifier(train);
+        int correct = 0;
+        for(int i=0;i<test.numInstances();i++) {
+            double predict = s.classifyInstance(test.get(i));
+            if(predict == test.get(i).classValue()) {
+                correct++;
+            }
+        }
+        return (double) correct/(double) test.numInstances();
     }
 }
