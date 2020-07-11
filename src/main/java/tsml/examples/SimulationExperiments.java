@@ -27,7 +27,7 @@ import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.distance_based.DD_DTW;
-import tsml.classifiers.dictionary_based.BagOfPatterns;
+import tsml.classifiers.dictionary_based.BagOfPatternsClassifier;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import fileIO.OutFile;
 import statistics.simulators.Model;
@@ -130,7 +130,7 @@ public class SimulationExperiments {
                 ((LearnShapelets)c).setParamSearch(true);
                 break;
             case "BOP":
-                c=new BagOfPatterns();
+                c=new BagOfPatternsClassifier();
                 break;
             case "BOSS":
                 c=new BOSS();
@@ -355,7 +355,7 @@ public class SimulationExperiments {
                         c=new LearnShapelets();
                         break;
                     case "BOP":
-                        c=new BagOfPatterns();
+                        c=new BagOfPatternsClassifier();
                         break;
                     case "BOSS":
                         c=new BOSS();

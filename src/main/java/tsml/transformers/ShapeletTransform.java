@@ -26,6 +26,7 @@ import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality.Shapele
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
+import utilities.NumUtils;
 import utilities.class_counts.ClassCounts;
 import utilities.rescalers.SeriesRescaler;
 import weka.core.*;
@@ -60,7 +61,7 @@ import java.util.logging.Logger;
  *
  * Refactored version for
  */
-public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,Transformer {
+public class ShapeletTransform  implements Serializable,TechnicalInformationHandler,TrainableTransformer {
 //Global defaults. Max should be a lambda set to series length
     public final static int MAXTRANSFORMSIZE = 1000;
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
@@ -727,7 +728,7 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
             //if we're here then evaluate the shapelet distance. if they're equal in the comparator it means same length, same IG.
             double dist = this.shapeletDistance.distanceToShapelet(shape);
             //if we hit a shapelet we nearly match with 1e-6 match with stop checking.  
-            if(isNearlyEqual(dist, 0.0)){
+            if(NumUtils.isNearlyEqual(dist, 0.0)){
                 return true; //this means we should not add the shapelet.
             }
         }
@@ -735,12 +736,6 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
         return false;    
     }
     
-    private static boolean isNearlyEqual(double a, double b){
-        double eps = 1e-6;
-        return Math.abs(a - b) < eps;
-    }
-    
-
     /**
      * protected method to remove self-similar shapelets from an ArrayList (i.e.
      * if they come from the same series and have overlapping indicies)
@@ -1387,6 +1382,11 @@ public class ShapeletTransform  implements Serializable,TechnicalInformationHand
     }
     public boolean getSuppressOutput() {
         return this.supressOutput;
+    }
+
+    @Override
+    public boolean isFit() {
+        return searchComplete;
     }
 
 }

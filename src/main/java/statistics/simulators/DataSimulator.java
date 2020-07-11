@@ -20,7 +20,7 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 /**
  *
@@ -93,7 +93,7 @@ public class DataSimulator {
             for(int i=0;i<casesPerClass.length;i++)
                 casesPerClass[i]=nosPerClass;
         }
-        ArrayList<Attribute> atts=new ArrayList();
+        ArrayList<Attribute> atts=new ArrayList<>();
         nosClasses=casesPerClass.length;
         int totalCases=casesPerClass[0];
         for(int i=1;i<casesPerClass.length;i++)
@@ -149,8 +149,8 @@ public class DataSimulator {
         data[1]=generateDataSet();
  //Normalise
         NormalizeCase nc= new NormalizeCase();
-        data[0]=nc.process(data[0]);
-        data[1]=nc.process(data[1]);
+        data[0]=nc.transform(data[0]);
+        data[1]=nc.transform(data[1]);
             return data;
         
         

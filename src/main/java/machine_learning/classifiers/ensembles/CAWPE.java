@@ -19,6 +19,8 @@ import experiments.Experiments;
 import evaluation.MultipleClassifierEvaluation;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.ensembles.weightings.TrainAccByClass;
+import tsml.transformers.SAX;
+import tsml.transformers.Transformer;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
 
 import java.io.File;
@@ -41,7 +43,6 @@ import weka.core.Instances;
 import weka.filters.SimpleBatchFilter;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import tsml.filters.SAX;
 import weka.classifiers.functions.Logistic;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.TechnicalInformation;
@@ -328,8 +329,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         CAWPE cawpe = new CAWPE();
 
         //Setting a transform (not used in CAWPE paper, mostly for COTE/HiveCOTE or particular applications)
-        SimpleBatchFilter transform = new SAX();
-        cawpe.setTransform(transform);
+        Transformer transform = new SAX();
+        //TODO: come back and fix this!
+        //cawpe.setTransform(transform);
         cawpe.setTransform(null); //back to null for this example
 
         //Setting member classifiers
@@ -598,8 +600,10 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
+                        exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
+                        exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
 //                        exp.performTimingBenchmark = true;
-                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp,data[0],data[1],c);
                     }
                 }
             }

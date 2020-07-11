@@ -1033,7 +1033,7 @@ public class RotationForest
    * generates a permutation of the attributes.
    *
    * @param numAttributes       the number of attributes.
-   * @param classAttribute     the index of the class attribute.
+   * @param classAttributes     the index of the class attribute.
    * @param random 	        the random number generator.
    * @return a permutation of the attributes
    */

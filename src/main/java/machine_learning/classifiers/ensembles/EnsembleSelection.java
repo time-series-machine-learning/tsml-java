@@ -152,7 +152,7 @@ public class EnsembleSelection extends CAWPE {
         if(this.transform==null){
             this.trainInsts = new Instances(data);
         }else{
-            this.trainInsts = Filter.useFilter(data,transform);
+            this.trainInsts = transform.transform(data); //TODO: this could call fit?
         }
         
         //init
@@ -412,7 +412,10 @@ public class EnsembleSelection extends CAWPE {
                     exp.datasetName = dset;
                     exp.foldId = fold;
                     exp.generateErrorEstimateOnTrainSet = true;
-                    Experiments.runExperiment(exp,data[0],data[1],c,predictions);
+                    exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
+                    exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
+//                        exp.performTimingBenchmark = true;
+                    Experiments.runExperiment(exp,data[0],data[1],c);
                 }
             }
         }

@@ -101,9 +101,9 @@ public class MSMDistance extends EuclideanDistance{
      * Exact code from the authors downloaded from
      * http://omega.uta.edu/~athitsos/msm/
      *
-     * @param a instance 1 as array
-     * @param b instance 2 as array
-     * //@param cutOffValue used for early abandon
+     * @param first instance 1 as array
+     * @param second instance 2 as array
+     * @param cutOffValue used for early abandon
      * @return distance between instances
      */
     public double MSM_Distance(double[] a, double[] b){

@@ -20,18 +20,18 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.filters.shapelet_filters.ShapeletFilter;
+import tsml.transformers.Transformer;
 import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
-import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.dayNano;
 import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.nanoToOp;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchFactory;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
 import weka.core.converters.ArffSaver;
-import weka.filters.SimpleBatchFilter;
 
 /**
  *
@@ -78,10 +78,11 @@ public class TransformExperiments {
         else 
             LOGGER.setLevel(Level.INFO);
         LOGGER.log(Level.FINE, expSettings.toString());
-        
+
+        long hrs = TimeUnit.HOURS.convert(expSettings.contractTrainTimeNanos, TimeUnit.NANOSECONDS);
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + expSettings.contractTrainTimeHours + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + hrs + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -95,7 +96,7 @@ public class TransformExperiments {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at "+transformWriteLocation+", exiting.");
         }
         else{
-            SimpleBatchFilter transformer = TransformLists.setTransform(expSettings);
+            Transformer transformer = TransformLists.setTransform(expSettings);
             Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
              
             runExperiment(expSettings, data[0], data[1], transformer, transformWriteLocation, additionalWriteLocation);
@@ -104,7 +105,7 @@ public class TransformExperiments {
     }
     
     
-    public static void runExperiment(ExperimentalArguments expSettings, Instances train, Instances test, SimpleBatchFilter transformer, String fullWriteLocation, String additionalDataFilePath) throws Exception{
+    public static void runExperiment(ExperimentalArguments expSettings, Instances train, Instances test, Transformer transformer, String fullWriteLocation, String additionalDataFilePath) throws Exception{
         
             //this is hacky, but will do.
             Instances[] transforms = setContractDataAndProcess(expSettings, train, test, transformer);
@@ -131,7 +132,7 @@ public class TransformExperiments {
     }
     
     
-    private static Instances[] setContractDataAndProcess(ExperimentalArguments expSettings, Instances train, Instances test, SimpleBatchFilter transformer){
+    private static Instances[] setContractDataAndProcess(ExperimentalArguments expSettings, Instances train, Instances test, Transformer transformer){
         
         Instances[] out = new Instances[2];
         
@@ -151,8 +152,8 @@ public class TransformExperiments {
                 int numShapeletsInTransform=st.getNumberOfShapelets();
                 
                 long numShapeletsToSearchFor = 0;
-                if(expSettings.contractTrainTimeHours > 0){
-                    long time  = expSettings.contractTrainTimeHours *  (dayNano/24); //time in nanoseconds for the number of hours we want to run for.
+                if(expSettings.contractTrainTimeNanos > 0){
+                    long time  = expSettings.contractTrainTimeNanos; //time in nanoseconds for the number of hours we want to run for.
                     
                     //proportion of operations we can perform in time frame.
                     BigInteger opCountTarget = new BigInteger(Long.toString(time / nanoToOp));
@@ -199,7 +200,7 @@ public class TransformExperiments {
         return out;
     }
 
-    private static void writeAdditionalTransformData(ExperimentalArguments expSettings, SimpleBatchFilter transformer, String additionalDataFilePath) {
+    private static void writeAdditionalTransformData(ExperimentalArguments expSettings, Transformer transformer, String additionalDataFilePath) {
                     
                     
         switch(expSettings.classifierName){

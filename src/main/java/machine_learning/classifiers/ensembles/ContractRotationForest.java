@@ -48,7 +48,6 @@ import weka.filters.unsupervised.instance.RemovePercentage;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import evaluation.storage.ClassifierResults;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -87,9 +86,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
-//Added features
-    long contractTime=0;
+    private boolean trainTimeContract = false;
+    transient private long trainContractTimeNanos =0;
     double contractHours=0;    //Defaults to no contract
+    //Added features
     double estSingleTree;
     int numTrees=0;
     int minNumTrees=50;
@@ -265,18 +265,19 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     // can classifier handle the data? These default capabilities
     // only allow real valued series and classification. To be adjusted
         getCapabilities().testWithFail(data);
-        long startTime=System.nanoTime(); 
+        long startTime=System.nanoTime();
+    //Set up the results file
+        super.buildClassifier(data);
         String relationName=data.relationName();
         data = new Instances( data );
         File file = new File(checkpointPath + "RotF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && file.exists()){
-        //path checkpoint files will be saved to
+        if (checkpoint && file.exists()){ //Configure from file
             printLineDebug("Loading from checkpoint file");
-            loadFromFile(checkpointPath + "TSF" + seed + ".ser");
+            loadFromFile(checkpointPath + "RotF" + seed + ".ser");
  //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        else{
+        else{   //Initialise
             if (baseClassifier == null) {
                 throw new Exception("A base classifier has not been specified!");
             }
@@ -295,10 +296,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
 
         if (getEstimateOwnPerformance()) {
-            findTrainAcc(data);
-            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((contractTime * (1.0 / perForBag))));
-            numTrees = 0;
-
+            estimateOwnPerformance(data);
+            this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((trainContractTimeNanos * (1.0 / perForBag))));
+//Do we need to do this again?
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
@@ -306,6 +306,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             projectionFilters =new ArrayList<>();
             reducedHeaders = new ArrayList<>();
             classifiers=new ArrayList<>();
+            numTrees = 0;
         }
 
         rand = new Random(seed);
@@ -342,7 +343,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 //Re-estimate even if loading serialised, may be different hardware ....
         estSingleTree=tm.estimateSingleTreeHours(n,m);
         printLineDebug("n ="+n+" m = "+m+" estSingleTree = "+estSingleTree);
-        printLineDebug("Contract time ="+contractHours+" hours ");
+        printLineDebug("Contract time ="+trainContractTimeNanos/1000000000+" seconds  and contractHours "+contractHours);
         int maxAtts=m;
 //CASE 1: think we can build the minimum number of trees with full data.
         if(contractHours==0 || (estSingleTree*minNumTrees)<contractHours){
@@ -354,9 +355,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
             int batchSize=1;//setBatchSize(estSingleTree);    //Set larger for smaller data
 //            if(debug)
 //                System.out.println("Batch size = "+batchSize);
-            long startBuild=System.currentTimeMillis(); 
+            long startBuild=System.nanoTime();
             while((contractHours==0 || timeUsed<contractHours) && numTrees<maxNumTrees){
-                long singleTreeStartTime=System.currentTimeMillis();
+                long singleTreeStartTime=System.nanoTime();
                 if(buildFullTree)
                     size=m;
                 else{
@@ -369,9 +370,9 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
                 for(int i=0;i<batchSize;i++)
                     buildTreeAttSample(data,instancesOfClass,numTrees++,m);
             //Update time used
-                long newTime=System.currentTimeMillis(); 
-                timeUsed=(newTime-startBuild)/(1000.0*60.0*60.0);
-                treeTime=(newTime-singleTreeStartTime)/(1000.0*60.0*60.0);
+                long newTime=System.nanoTime();
+                timeUsed=(newTime-startBuild)/(1000000000.0*60.0*60.0);
+                treeTime=(newTime-singleTreeStartTime)/(1000000000.0*60.0*60.0);
                 
             //  Update single tree estimate                
                 estSingleTree=updateTreeTime(estSingleTree,treeTime,alpha,size,m);
@@ -502,7 +503,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         return bags;
     }
 
-    private void findTrainAcc(Instances data) throws Exception {
+    private void estimateOwnPerformance(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
@@ -518,7 +519,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         ArrayList[] testIndexs = new ArrayList[maxNumTrees];
         double[] bagAccuracies = new double[maxNumTrees];
 
-        this.contractTime = (long) ((double) contractTime * perForBag);
+        this.trainContractTimeNanos = (long) ((double) trainContractTimeNanos * perForBag);
 
         //Grimness starts here.
         rand = new Random(seed);
@@ -1381,27 +1382,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         return result;
     }
 
-    @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        switch(time){
-            case NANOSECONDS:
-                contractHours=((double)amount)/60.0/60.0/1e+9;
-                break;
-            case MINUTES:
-                contractHours=((double)amount)/60.0;
-                break;
-            case DAYS:
-                contractHours=((double)amount*24.0);
-                break;
-            case HOURS: default:
-                contractHours=((double)amount);
-                break;
-        }
-    }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             checkpointPath = path;
             checkpoint = true;
@@ -1412,7 +1396,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     @Override
     public void copyFromSerObject(Object obj) throws Exception {
         if(!(obj instanceof ContractRotationForest))
-            throw new Exception("The SER file is not am instance of ContractRotationForest"); //To change body of generated methods, choose Tools | Templates.
+            throw new Exception("The SER file is not an instance of ContractRotationForest"); //To change body of generated methods, choose Tools | Templates.
         ContractRotationForest saved= ((ContractRotationForest)obj);
 
 //Copy RotationForest attributes
@@ -1448,12 +1432,18 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
      * abstract method from TrainTimeContractable interface
      * @param amount
      */
-    @Override
+    @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
-        contractTime = amount;
-        contractHours=amount/1000000000/60/60;
+        printLineDebug(" Setting ContractRotationForest contract to be "+amount);
+
+        if(amount>0) {
+            trainContractTimeNanos = amount;
+            trainTimeContract = true;
+            contractHours=trainContractTimeNanos/1000000000/60.0/60.0;
+        }
+        else
+            trainTimeContract = false;
     }
-  
   /**
    * Main method for testing this class.
    *

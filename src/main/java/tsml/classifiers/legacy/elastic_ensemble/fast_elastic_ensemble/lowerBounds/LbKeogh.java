@@ -15,7 +15,7 @@
 package tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.lowerBounds;
 
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
-import tsml.filters.Derivative;
+import tsml.transformers.Derivative;
 import weka.core.Instance;
 
 import java.util.ArrayDeque;

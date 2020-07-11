@@ -14,7 +14,6 @@
  */
 package tsml.classifiers.dictionary_based.boss_variants;
 
-import fileIO.OutFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream; 
@@ -26,7 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import tsml.classifiers.dictionary_based.BOSSIndividual;
+import tsml.classifiers.dictionary_based.IndividualBOSS;
 import utilities.InstanceTools;
 import tsml.classifiers.SaveParameterInfo;
 import weka.core.Capabilities;
@@ -34,7 +33,6 @@ import weka.classifiers.Classifier;
 import weka.core.TechnicalInformation;
 
 import java.util.Map.Entry;
-import java.util.Set;
 
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import utilities.ClassifierTools;
@@ -640,7 +638,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
      * 
      * @author James Large
      */
-    public static class BOSSC45Individual extends BOSSIndividual {
+    public static class BOSSC45Individual extends IndividualBOSS {
 
         public boolean buildBags = true;
         public boolean buildForest = true;

@@ -17,9 +17,11 @@ package utilities.generic_storage;
 import java.util.Objects;
 
 public class ComparableKeyPair<T1 extends Comparable<T1>, T2 extends Comparable<T2> >
-implements Comparable<ComparableKeyPair<T1, T2>>{
+    implements Comparable<ComparableKeyPair<T1, T2>>{
+
     public final T1 var1;
     public final T2 var2;
+
     public ComparableKeyPair(T1 t1, T2 t2){
         var1 = t1;
         var2 = t2;
