@@ -161,7 +161,10 @@ public class DWTTransformer implements Transformer {
             attributes.add(inputFormat.classAttribute());
         }
         Instances result = new Instances("DWT" + inputFormat.relationName(), attributes, inputFormat.numInstances());
-        result.setClassIndex(result.numAttributes() - 1);
+        // Set the class attribute (if it exists)
+        if(inputFormat.classIndex() >= 0) {
+            result.setClassIndex(result.numAttributes() - 1);
+        }
         return result;
     }
 

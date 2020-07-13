@@ -181,7 +181,10 @@ public class SlopeTransformer implements Transformer {
             attributes.add(inputFormat.classAttribute());
         }
         Instances result = new Instances("Slope" + inputFormat.relationName(), attributes, inputFormat.numInstances());
-        result.setClassIndex(result.numAttributes() - 1);
+        // Set the class attribute (if it exists)
+        if(inputFormat.classIndex() >= 0) {
+            result.setClassIndex(result.numAttributes() - 1);
+        }
         return result;
     }
 }
