@@ -45,8 +45,6 @@ import fileIO.OutFile;
 import statistics.distributions.NormalDistribution;
 import machine_learning.classifiers.kNN;
 
-import javax.xml.namespace.QName;
-import javax.xml.xpath.XPath;
 
 /**
  * @author ajb

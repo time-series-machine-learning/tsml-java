@@ -1,5 +1,7 @@
 package tsml.data_containers;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -14,7 +16,11 @@ public class TimeSeries {
     private double[] indices;
     MetaData md;
 
-    public void setSeries(double[] d){
+    public TimeSeries(double[] d){
+        series = d;
+    }
+    
+	public void setSeries(double[] d){
         series=d;
     }
     public void setIndices(double[] ind){
@@ -32,5 +38,17 @@ public class TimeSeries {
         Date startDate;
         double increment;  //Base unit to be ....... 1 day?
 
+    }
+
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+
+        for(double val : series){
+            sb.append(val).append(',');
+        }
+
+        return sb.toString();
     }
 }

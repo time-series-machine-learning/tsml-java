@@ -1,5 +1,6 @@
 package tsml.data_containers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,7 +12,42 @@ import java.util.List;
  */
 
 public class TimeSeriesInstance {
-    List<TimeSeries> ts;
+
+    //this ctor can be made way more sophisticated.
+    public TimeSeriesInstance(ArrayList<ArrayList<Double>> series, Double label) {
+        //process the input list to produce TimeSeries Objects.
+
+        //this allows us to pad if need be, or if we want to squarify the data etc.
+        series_channels = new ArrayList<TimeSeries>();
+
+        for(ArrayList<Double> channel : series){
+            //convert List<Double> to double[]
+            series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
+        }
+
+        classLabel = label.intValue();
+    }
+    
+	List<TimeSeries> series_channels;
     Integer classLabel;
+
+    public int getNumChannels(){
+        return series_channels.size();
+    }
+
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Num Channels: ").append(getNumChannels()).append(" Class Label: ").append(classLabel);
+        for(TimeSeries channel : series_channels){
+            sb.append(System.lineSeparator());
+            sb.append(channel.toString());
+        }
+
+        return sb.toString();
+    }
+
 
 }
