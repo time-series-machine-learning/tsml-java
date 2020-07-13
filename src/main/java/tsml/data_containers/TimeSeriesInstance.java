@@ -14,13 +14,13 @@ import java.util.List;
 public class TimeSeriesInstance {
 
     //this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(ArrayList<ArrayList<Double>> series, Double label) {
+    public TimeSeriesInstance(List<List<Double>> series, Double label) {
         //process the input list to produce TimeSeries Objects.
 
         //this allows us to pad if need be, or if we want to squarify the data etc.
         series_channels = new ArrayList<TimeSeries>();
 
-        for(ArrayList<Double> channel : series){
+        for(List<Double> channel : series){
             //convert List<Double> to double[]
             series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
         }

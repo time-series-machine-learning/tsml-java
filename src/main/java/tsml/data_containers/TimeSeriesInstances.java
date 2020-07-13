@@ -19,6 +19,15 @@ public class TimeSeriesInstances {
         series_collection = new ArrayList<>();
     }
 
+    public TimeSeriesInstances(List<List<List<Double>>> raw_data, List<Double> label_indexes){
+        this();
+        
+        int index = 0;
+        for(List<List<Double>> series : raw_data){
+            series_collection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
+        }
+    }
+
 
     public void setClassLabels(List<String> labels){
         classLabels = labels;

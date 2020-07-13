@@ -1,12 +1,17 @@
 package tsml.data_containers.file_readers;
 
 
-import tsml.data_containers.*;
-
-import utilities.generic_storage.Pair;
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
+import tsml.data_containers.TimeSeriesInstances;
+import utilities.generic_storage.Pair;
 
 /**
 File for reading sktime format data
@@ -39,11 +44,11 @@ public class TSReader {
     private boolean missing = false;
     private boolean timeStamps = false;
     private boolean classLabel;
-    private ArrayList<String> classLabels;
+    private List<String> classLabels;
 
-    private ArrayList<ArrayList<ArrayList<Double>>> raw_data;
+    private List<List<List<Double>>> raw_data;
 
-    private ArrayList<Double> raw_labels;
+    private List<Double> raw_labels;
 
     public TSReader(Reader reader) throws IOException{
         m_Tokenizer = new StreamTokenizer(reader);
@@ -60,7 +65,7 @@ public class TSReader {
         raw_labels = new ArrayList<>();
 
         //read each line and extract a data Instance
-        Pair<ArrayList<ArrayList<Double>>, Double> multi_series_and_label;
+        Pair<List<List<Double>>, Double> multi_series_and_label;
         //extract the multivariate series, and the possible label.
         while(( multi_series_and_label = readMultivariateInstance()) != null){
             raw_data.add(multi_series_and_label.var1);
@@ -68,12 +73,7 @@ public class TSReader {
         }
 
         // create timeseries instances object.
-        m_data = new TimeSeriesInstances();
-        int index = 0;
-        for(ArrayList<ArrayList<Double>> series : raw_data){
-            m_data.add(new TimeSeriesInstance(series, raw_labels.get(index++)));
-        }
-
+        m_data = new TimeSeriesInstances(raw_data, raw_labels);
         m_data.setClassLabels(classLabels);
     }
 
@@ -81,13 +81,13 @@ public class TSReader {
         return m_data;
     }
 
-    private Pair<ArrayList<ArrayList<Double>>, Double> readMultivariateInstance() throws IOException {
+    private Pair<List<List<Double>>, Double> readMultivariateInstance() throws IOException {
         getFirstToken();
         if (m_Tokenizer.ttype == StreamTokenizer.TT_EOF) {
             return null;
         }
 
-        ArrayList<ArrayList<Double>> multi_timeSeries = new ArrayList<>();
+        List<List<Double>> multi_timeSeries = new ArrayList<>();
         String classValue ="";
 
 
