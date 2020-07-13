@@ -15,8 +15,14 @@ public class TimeSeriesInstance {
 
     //this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double label) {
-        //process the input list to produce TimeSeries Objects.
+        this(series);
 
+        classLabel = label.intValue();
+    }
+
+
+    public TimeSeriesInstance(List<List<Double>> series){
+        //process the input list to produce TimeSeries Objects.
         //this allows us to pad if need be, or if we want to squarify the data etc.
         series_channels = new ArrayList<TimeSeries>();
 
@@ -24,8 +30,6 @@ public class TimeSeriesInstance {
             //convert List<Double> to double[]
             series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
         }
-
-        classLabel = label.intValue();
     }
     
 	List<TimeSeries> series_channels;

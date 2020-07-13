@@ -28,6 +28,14 @@ public class TimeSeriesInstances {
         }
     }
 
+    public TimeSeriesInstances(List<List<List<Double>>> raw_data){
+        this();
+        
+        for(List<List<Double>> series : raw_data){
+            series_collection.add(new TimeSeriesInstance(series));
+        }
+    }
+
 
     public void setClassLabels(List<String> labels){
         classLabels = labels;
