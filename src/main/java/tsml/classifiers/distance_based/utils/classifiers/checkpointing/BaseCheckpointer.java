@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import utilities.FileUtils;
 
 import java.io.*;
@@ -14,9 +15,9 @@ public class BaseCheckpointer implements Checkpointer {
     private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
     private long lastCheckpointTimeStamp = 0;
     private boolean loadCheckpoint;
-    private final Copier target;
+    private final Object target;
 
-    public BaseCheckpointer(final Copier target) {
+    public BaseCheckpointer(final Object target) {
         this.target = target;
         setLoadCheckpoint(true);
     }
@@ -58,8 +59,8 @@ public class BaseCheckpointer implements Checkpointer {
         return false;
     }
 
-    @Override public final void copyFromSerObject(final Object obj) throws Exception {
-        target.shallowCopyFrom(obj, CheckpointUtils.findSerFields(obj));
+    @Override public final void copyFromSerObject(final Object src) throws Exception {
+        CopierUtils.shallowCopyFrom(src, target, CheckpointUtils.findSerFields(src));
     }
 
     @Override public boolean saveCheckpoint(boolean force) throws Exception {

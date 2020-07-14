@@ -14,6 +14,7 @@
  */
 package tsml.classifiers;
 
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import utilities.FileUtils;
@@ -37,7 +38,7 @@ number
 
  * @author Tony Bagnall 2018, goastler
  */
-public interface Checkpointable extends Serializable, Copier {
+public interface Checkpointable extends Serializable {
 
     /**
      * Store the path to write checkpoint files,
@@ -99,7 +100,7 @@ public interface Checkpointable extends Serializable, Copier {
     }
     //Define how to copy from a loaded object to this object
     default void copyFromSerObject(Object obj) throws Exception {
-        shallowCopyFrom(obj, CheckpointUtils.findSerFields(obj));
+        CopierUtils.shallowCopyFrom(obj, this, CheckpointUtils.findSerFields(obj));
     }
 
 
