@@ -10,12 +10,14 @@ import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import weka.core.Instances;
 
+import java.io.Serializable;
+
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public interface ParamSpaceBuilder {
+public interface ParamSpaceBuilder extends Serializable {
 
     ParamSpace build(Instances data);
 

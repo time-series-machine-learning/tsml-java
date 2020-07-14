@@ -6,6 +6,7 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Objects;
@@ -81,7 +82,7 @@ public class Indexer extends BaseTrainableTransformer {
         this.hashInsteadOfIndex = hashInsteadOfIndex;
     }
 
-    public static class IndexedInstance implements Instance {
+    public static class IndexedInstance implements Instance, Serializable {
 
         public IndexedInstance(Instance instance, int index) {
             setIndex(index);

@@ -52,7 +52,7 @@ public class LogUtils {
 //                logRecord.getSourceClassName() + separator +
 //                logRecord.getSourceMethodName() + System.lineSeparator() +
 //                logRecord.getMessage() + System.lineSeparator();
-            return LocalDateTime.now() + separator + logRecord.getLoggerName() + separator + logRecord.getMessage() + System.lineSeparator();
+            return LocalDateTime.now().toString().replace("T", " ") + separator + logRecord.getLoggerName() + separator + logRecord.getMessage() + System.lineSeparator();
         }
     }
 

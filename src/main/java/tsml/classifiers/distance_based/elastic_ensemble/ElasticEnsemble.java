@@ -307,7 +307,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
+    public boolean saveCheckpoint() throws Exception {
 //        trainTimer.stop();
 //        trainEstimateTimer.stop();
 //        memoryWatcher.stop();
@@ -320,7 +320,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return false;
     }
 
-    public boolean loadFromCheckpoint() {
+    public boolean loadCheckpoint() {
 //        trainTimer.stop(); // todo fix
 //        trainEstimateTimer.stop();
 //        memoryWatcher.stop();
@@ -396,7 +396,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // first lets load from a checkpoint if there is one
-        loadFromCheckpoint();
+        loadCheckpoint();
         // enable the resource trackers
         trainTimer.start();
         memoryWatcher.start();
@@ -457,7 +457,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             // process another constituent
             nextBuildTick();
             // save this to checkpoint
-            saveToCheckpoint();
+            saveCheckpoint();
         }
         // if we're estimating our train
         if(regenerateTrainEstimate) {
@@ -501,7 +501,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // we're built by here
 //        setBuilt(true);
         logger.info("build finished");
-        saveToCheckpoint();
+        saveCheckpoint();
     }
 
     private boolean hasTimeRemainingPerConstituent() {

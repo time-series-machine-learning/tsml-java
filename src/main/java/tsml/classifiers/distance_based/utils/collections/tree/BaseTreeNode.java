@@ -1,9 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.tree;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -105,6 +102,59 @@ public class BaseTreeNode<A> implements TreeNode<A> {
             backlog.addAll(node.getChildren());
         }
         return count;
+    }
+
+    @Override public boolean isEmpty() {
+        return numChildren() == 0;
+    }
+
+    @Override public boolean contains(final Object o) {
+        for(TreeNode<A> child : children) {
+            if(child.contains(o)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override public Iterator<TreeNode<A>> iterator() {
+        return children.iterator();
+    }
+
+    @Override public Object[] toArray() {
+        return children.toArray();
+    }
+
+    @Override public <T> T[] toArray(final T[] ts) {
+        return children.toArray(ts);
+    }
+
+    @Override public boolean add(final TreeNode<A> aTreeNode) {
+        return children.add(aTreeNode);
+    }
+
+    @Override public boolean remove(final Object o) {
+        return children.remove(o);
+    }
+
+    @Override public boolean containsAll(final Collection<?> collection) {
+        return children.containsAll(collection);
+    }
+
+    @Override public boolean addAll(final Collection<? extends TreeNode<A>> collection) {
+        return children.addAll(collection);
+    }
+
+    @Override public boolean removeAll(final Collection<?> collection) {
+        return children.removeAll(collection);
+    }
+
+    @Override public boolean retainAll(final Collection<?> collection) {
+        return children.retainAll(collection);
+    }
+
+    @Override public void clear() {
+        children.clear();
     }
 
     @Override

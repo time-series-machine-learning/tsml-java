@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params.distribution;
 
+import java.io.Serializable;
 import java.util.Random;
 import tsml.classifiers.distance_based.utils.system.random.BaseRandom;
 
@@ -9,7 +10,7 @@ import tsml.classifiers.distance_based.utils.system.random.BaseRandom;
  * Contributors: goastler
  */
 
-public abstract class Distribution<A> extends BaseRandom {
+public abstract class Distribution<A> extends BaseRandom implements Serializable {
 
     public Distribution(final Random random) {
         super(random);

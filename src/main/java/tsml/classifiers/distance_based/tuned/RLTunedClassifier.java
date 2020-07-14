@@ -200,11 +200,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
+    public boolean saveCheckpoint() throws Exception {
         return false;
     }
 
-    public boolean loadFromCheckpoint() {
+    public boolean loadCheckpoint() {
         return false;
     }
 
@@ -585,7 +585,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             final String classifierLoadPath = buildClassifierLoadPath(classifier);
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setLoadPath(classifierLoadPath);
-                ((Checkpointable) classifier).loadFromCheckpoint();
+                ((Checkpointable) classifier).loadCheckpoint();
                 // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
@@ -628,7 +628,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setCheckpointPath(classifierSavePath);
                 ((Checkpointable) classifier).setSkipFinalCheckpoint(false);
-                ((Checkpointable) classifier).saveToCheckpoint();
+                ((Checkpointable) classifier).saveCheckpoint();
             } else {
                 // save classifier manually
                 CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);

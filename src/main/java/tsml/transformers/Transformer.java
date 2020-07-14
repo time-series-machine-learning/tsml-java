@@ -7,6 +7,8 @@ import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serializable;
+
 /**
  * Interface for time series transformers.
  *
@@ -19,7 +21,7 @@ import weka.core.Instances;
  * @author Tony Bagnall 1/1/2020, Aaron Bostrom
  *
  */
-public interface Transformer extends CapabilitiesHandler, ParamHandler {
+public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializable {
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform

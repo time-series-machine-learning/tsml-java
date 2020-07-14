@@ -1,5 +1,6 @@
 package tsml.transformers;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public class CachedTransformer extends BaseTrainableTransformer {
         this.cacheFittedDataOnly = cacheFittedDataOnly;
     }
 
-    public static class TransformedInstance {
+    public static class TransformedInstance implements Serializable {
         private TransformedInstance(final Instance instance) {
             this.instance = instance;
         }

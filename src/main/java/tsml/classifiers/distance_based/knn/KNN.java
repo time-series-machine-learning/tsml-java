@@ -135,7 +135,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
+    public boolean saveCheckpoint() throws Exception {
 //        trainTimer.suspend();
 //        memoryWatcher.suspend();
         boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
@@ -147,7 +147,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return result;
     }
 
-    public boolean loadFromCheckpoint() {
+    public boolean loadCheckpoint() {
 //        trainTimer.suspend(); // todo interface for this
 //        memoryWatcher.suspend();
         boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
@@ -207,7 +207,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // load from a previous checkpoint
-        boolean loadedFromCheckpoint = loadFromCheckpoint();
+        boolean loadedFromCheckpoint = loadCheckpoint();
         // enable resource monitors
         memoryWatcher.start(); // todo can we share emitters in mem watcher?
         trainTimer.start();
@@ -230,7 +230,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         memoryWatcher.stop();
         // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
-            saveToCheckpoint();
+            saveCheckpoint();
         } else {
             // if we've loaded from checkpoint then there's no point in re saving a checkpoint as we haven't done any
             // further work

@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Assert;
+import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
@@ -21,10 +22,10 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copy, TrainEstimateable,
+public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable,
     Loggable, DefaultClassifier {
     // method of logging
-    private Logger logger = LogUtils.buildLogger(this);
+    private transient Logger logger = LogUtils.buildLogger(this);
     // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
     // whether the seed has been set
@@ -57,6 +58,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void buildClassifier(Instances trainData) throws Exception {
         if(rebuild) {
             logger.fine("building from scratch");
+            // reset rebuild
+            rebuild = false;
             Assert.assertNotNull(trainData);
             // reset train results
             trainResults = new ClassifierResults();

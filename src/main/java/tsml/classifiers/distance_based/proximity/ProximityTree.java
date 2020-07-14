@@ -7,6 +7,9 @@ import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
 import tsml.classifiers.distance_based.utils.classifiers.Utils;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.collections.tree.Tree;
@@ -35,8 +38,7 @@ import java.util.logging.Level;
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain,
-                                                             TimedTrain, TimedTest, WatchedMemory {
+public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, TimedTrain, TimedTest, WatchedMemory, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -44,6 +46,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
             Config.R5.applyConfigTo(classifier);
+            classifier.setCheckpointDirPath("checkpoints");
             classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
@@ -191,6 +194,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
     // method of setting up split config
     private Configurer<ProximitySplit> proximitySplitConfig;
+    // checkpoint config
+    private final Checkpointer checkpointer = new BaseCheckpointer(this);
+
+    public Checkpointer getCheckpointer() {
+        return checkpointer;
+    }
 
     public Configurer<ProximitySplit> getProximitySplitConfig() {
         return proximitySplitConfig;
@@ -250,6 +259,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         // start monitoring resources
+        if(loadCheckpoint()) getLogger().info("loaded from checkpoint");
         memoryWatcher.start();
         trainTimer.start();
         if(isRebuild()) {
@@ -291,11 +301,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
             maxTimePerInstanceForNodeBuilding = findNodeBuildTime(node, trainStageTimer.getTime());
+            if(saveCheckpoint()) getLogger().info("saved checkpoint");
         }
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
+        if(saveFinalCheckpoint()) getLogger().info("saved final checkpoint");
     }
 
     /**

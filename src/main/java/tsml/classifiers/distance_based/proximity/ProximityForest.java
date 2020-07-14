@@ -4,10 +4,14 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
+import tsml.classifiers.Checkpointable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
 import tsml.classifiers.distance_based.utils.classifiers.Utils;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
@@ -32,9 +36,7 @@ import java.util.logging.Logger;
  * <p>
  * Contributors: goastler
  */
-public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest,
-                                                               TimedTrain, TimedTrainEstimate, TimedTest,
-                                                               WatchedMemory {
+public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -366,6 +368,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private List<Instances> treeOobTestDatas;
     // whether to weight trees by their train estimate (if enabled)
     private boolean weightTreesByTrainEstimate;
+    // checkpoint config
+    private final Checkpointer checkpointer = new BaseCheckpointer(this);
+
+    @Override public Checkpointer getCheckpointer() {
+        return checkpointer;
+    }
 
     public TrainEstimateMethod getTrainEstimateMethod() {
         return trainEstimateMethod;

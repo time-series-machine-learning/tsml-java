@@ -7,6 +7,9 @@ import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistan
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap.DiscardType;

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.classifiers.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
 
@@ -83,23 +83,6 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             }
             setup = true;
         }
-    }
-
-    /**
-     * deserialise and setup emitters
-     * @param in
-     * @throws ClassNotFoundException
-     * @throws IOException
-     */
-    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException
-    {
-        try {
-            Copy.setFieldValue(this, "logger", LogUtils.buildLogger(this)); // because it was transient
-        } catch(NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalArgumentException(e.toString()); // should never happen
-        }
-        in.defaultReadObject();
-        setupEmitters();
     }
 
     private interface SerNotificationListener extends NotificationListener, Serializable {}

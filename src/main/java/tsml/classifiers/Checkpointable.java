@@ -15,7 +15,7 @@
 package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.classifiers.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import utilities.FileUtils;
 
 import java.io.*;
@@ -37,7 +37,7 @@ number
 
  * @author Tony Bagnall 2018, goastler
  */
-public interface Checkpointable extends Serializable, Copy {
+public interface Checkpointable extends Serializable, Copier {
 
     /**
      * Store the path to write checkpoint files,
@@ -133,7 +133,7 @@ public interface Checkpointable extends Serializable, Copy {
      * @return
      * @throws Exception
      */
-    default boolean saveToCheckpoint() throws
+    default boolean saveCheckpoint() throws
                               Exception {
         throw new UnsupportedOperationException();
     }
@@ -144,7 +144,7 @@ public interface Checkpointable extends Serializable, Copy {
      * @return
      * @throws Exception
      */
-    default boolean loadFromCheckpoint() throws Exception {
+    default boolean loadCheckpoint() throws Exception {
         throw new UnsupportedOperationException();
     }
 

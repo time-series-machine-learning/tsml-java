@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -11,7 +12,7 @@ import tsml.classifiers.distance_based.utils.collections.params.distribution.Dis
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.DiscreteParameterDimension;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParameterDimension;
 
-public class ParamSpace {
+public class ParamSpace implements Serializable {
 
     // 1 to many mapping of param name to list of param dimensions
     private Map<String, List<ParameterDimension<?>>> dimensionMap = new LinkedHashMap<>();

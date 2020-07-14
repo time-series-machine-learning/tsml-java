@@ -15,7 +15,7 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.distance_based.utils.classifiers.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -24,7 +24,7 @@ import weka.core.Randomizable;
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class Evaluator implements Randomizable, Copy {
+public abstract class Evaluator implements Randomizable, Copier {
     
     int seed;
     
@@ -114,7 +114,7 @@ public abstract class Evaluator implements Randomizable, Copy {
     
     public Evaluator cloneEvaluator() {
         try {
-            return (Evaluator) Copy.deepCopy(this);
+            return (Evaluator) Copier.deepCopy(this);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }

@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params.dimensions;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
@@ -10,7 +11,7 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
  * with sub parameter spaces to explore
  * @param <A>
  */
-public abstract class ParameterDimension<A> {
+public abstract class ParameterDimension<A> implements Serializable {
 
     // list of subspaces to explore
     private List<ParamSpace> subSpaces;

@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -11,7 +12,7 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.Index
  * <p>
  * Contributors: goastler
  */
-public class GridSearchIterator implements Iterator<ParamSet> {
+public class GridSearchIterator implements Iterator<ParamSet>, Serializable {
 
     private IndexedParameterSpace indexedParameterSpace;
     private int iterationCount = 0;

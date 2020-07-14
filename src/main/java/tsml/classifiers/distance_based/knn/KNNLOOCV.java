@@ -429,13 +429,13 @@ public class KNNLOOCV
 //        TrainTimeContractable.super.setParams(params);
     }
 
-    public boolean loadFromCheckpoint() {
+    public boolean loadCheckpoint() {
         final StopWatch trainTimer = getTrainTimer();
         final MemoryWatcher memoryWatcher = getMemoryWatcher();
 //        trainTimer.suspend();
 //        trainEstimateTimer.suspend() todo fix;
 //        memoryWatcher.suspend();
-        boolean result = super.loadFromCheckpoint();
+        boolean result = super.loadCheckpoint();
 //        memoryWatcher.unsuspend();
 //        trainEstimateTimer.unsuspend();
 //        trainTimer.unsuspend();
@@ -507,7 +507,7 @@ public class KNNLOOCV
         trainEstimateTimer.start(false);
         while(hasNextBuildTick()) {
             nextBuildTick();
-            saveToCheckpoint();
+            saveCheckpoint();
         }
         trainTimer.checkStopped();
         if(estimateOwnPerformance && regenerateTrainEstimate) {
@@ -538,7 +538,7 @@ public class KNNLOOCV
         }
         regenerateTrainEstimate = false;
 //        setBuilt(true);
-        saveToCheckpoint();
+        saveCheckpoint();
     }
 
     public long getTrainTimeNanos() {

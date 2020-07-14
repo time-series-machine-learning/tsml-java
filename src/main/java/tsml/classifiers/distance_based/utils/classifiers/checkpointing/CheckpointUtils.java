@@ -10,7 +10,8 @@ import tsml.classifiers.Checkpointable;
 
 import java.io.*;
 import java.util.logging.Logger;
-import tsml.classifiers.distance_based.utils.classifiers.Copy;
+
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import utilities.FileUtils.FileLock;
 
 /**
@@ -131,6 +132,6 @@ public class CheckpointUtils {
      * @return
      */
     public static Set<Field> findSerFields(Object obj) {
-        return Copy.findFields(obj.getClass(), TRANSIENT.negate().and(Copy.DEFAULT_FIELDS));
+        return Copier.findFields(obj.getClass(), TRANSIENT.negate().and(Copier.DEFAULT_FIELDS));
     }
 }

@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +38,7 @@ import weka.core.Utils;
  *
  * Contributors: goastler
  */
-public class ParamSet implements ParamHandler {
+public class ParamSet implements ParamHandler, Serializable {
 
     public ParamSet() {
 

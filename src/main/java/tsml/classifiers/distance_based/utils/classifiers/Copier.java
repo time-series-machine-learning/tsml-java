@@ -19,7 +19,7 @@ import java.util.function.Predicate;
  *
  * Contributors: goastler
  */
-public interface Copy extends Serializable {
+public interface Copier extends Serializable {
 
     /**
      * shallow copy an object, creating a new instance
@@ -32,18 +32,18 @@ public interface Copy extends Serializable {
 
     default Object shallowCopy(Collection<Field> fields) throws Exception {
         // get the default constructor
-        Constructor<? extends Copy> noArgsConstructor = getClass().getDeclaredConstructor();
+        Constructor<? extends Copier> noArgsConstructor = getClass().getDeclaredConstructor();
         // find out whether it's accessible from here (no matter if it's not)
         boolean origAccessible = noArgsConstructor.isAccessible();
         // force it to be accessible if not already
         noArgsConstructor.setAccessible(true);
         // use the constructor to build a default instance
-        Copy copy = noArgsConstructor.newInstance();
+        Copier copier = noArgsConstructor.newInstance();
         // set the constructor's accessibility back to what it was
         noArgsConstructor.setAccessible(origAccessible);
         // copy over the fields from the current object to the new instance
-        copy.shallowCopyFrom(this, fields);
-        return copy;
+        copier.shallowCopyFrom(this, fields);
+        return copier;
     }
 
     /**
@@ -69,9 +69,9 @@ public interface Copy extends Serializable {
     }
 
     default Object deepCopy(Collection<Field> fields) throws Exception {
-        Copy copy = getClass().newInstance();
-        copy.deepCopyFrom(this, fields);
-        return copy;
+        Copier copier = getClass().newInstance();
+        copier.deepCopyFrom(this, fields);
+        return copier;
     }
 
     default void deepCopyFrom(Object object) throws
