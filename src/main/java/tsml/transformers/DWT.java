@@ -1,7 +1,6 @@
-package tsml.contrib.transformers;
+package tsml.transformers;
 
 import org.apache.commons.lang3.ArrayUtils;
-import tsml.transformers.Transformer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -17,15 +16,15 @@ import java.util.ArrayList;
  * @author Vincent Nicholson
  *
  */
-public class DWTTransformer implements Transformer {
+public class DWT implements Transformer {
 
     private int numLevels;
 
-    public DWTTransformer() {
+    public DWT() {
         this.numLevels = 3;
     }
 
-    public DWTTransformer(int numLevels) {
+    public DWT(int numLevels) {
         this.numLevels = numLevels;
     }
 
@@ -197,7 +196,7 @@ public class DWTTransformer implements Transformer {
 
     public static void main(String[] args) throws Exception {
         Instances[] data = DatasetLoading.sampleItalyPowerDemand(0);
-        DWTTransformer d = new DWTTransformer(2);
+        DWT d = new DWT(2);
         Instances res = d.determineOutputFormat(data[0]);
         System.out.println(d.transform(data[0]).toString());
     }

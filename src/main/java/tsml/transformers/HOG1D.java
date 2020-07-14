@@ -1,5 +1,6 @@
-package tsml.contrib.transformers;
+package tsml.transformers;
 
+import org.apache.commons.lang3.ArrayUtils;
 import tsml.transformers.Transformer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -10,25 +11,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * This class splits a time series into intervals of approximately equal length.
- * Then within each interval, a least squares regression line is calculated
- * and the gradient of this line is returned. Therefore, this transformer
- * will produce a time series of length numIntervals where each element
- * represents the gradient of the line within each interval.
+ * This class is to calculate the HOG1D transform of a
+ * dataframe of time series data. Works by splitting
+ * the time series num_intervals times, and calculate
+ * a histogram of gradients within each interval.
  *
  * @author Vincent Nicholson
  *
  */
-public class SlopeTransformer implements Transformer {
+public class HOG1D implements Transformer {
 
     private int numIntervals;
+    private int numBins;
+    private double scalingFactor;
 
-    public SlopeTransformer() {
-        this.numIntervals = 8;
+    public HOG1D() {
+        this.numIntervals = 2;
+        this.numBins = 8;
+        this.scalingFactor = 0.1;
     }
 
-    public SlopeTransformer(int numIntervals) {
+    public HOG1D(int numIntervals, int numBins, double scalingFactor) {
         this.numIntervals = numIntervals;
+        this.numBins = numBins;
+        this.scalingFactor = scalingFactor;
     }
 
     public int getNumIntervals() {
@@ -37,6 +43,22 @@ public class SlopeTransformer implements Transformer {
 
     public void setNumIntervals(int numIntervals) {
         this.numIntervals = numIntervals;
+    }
+
+    public int getNumBins() {
+        return this.numBins;
+    }
+
+    public void setNumBins(int numBins) {
+        this.numBins = numBins;
+    }
+
+    public double getScalingFactor() {
+        return scalingFactor;
+    }
+
+    public void setScalingFactor(double scalingFactor) {
+        this.scalingFactor = scalingFactor;
     }
 
     @Override
@@ -50,7 +72,7 @@ public class SlopeTransformer implements Transformer {
             System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
             data=temp;
         }
-        double [] gradients = getGradients(data);
+        double [] gradients = getHOG1Ds(data);
         //Now in DWT form, extract out the terms and set the attributes of new instance
         Instance newInstance;
         int numAtts = gradients.length;
@@ -68,20 +90,25 @@ public class SlopeTransformer implements Transformer {
     }
 
     /**
-     * Private function for getting the gradients of a time series.
+     * Private function for getting the histogram of gradients of a time series.
      *
      * @param inst - the time series to be transformed.
      * @return the transformed inst.
      */
-    private double [] getGradients(double [] inst) {
-        double [] gradients = new double[this.numIntervals];
+    private double [] getHOG1Ds(double [] inst) {
+        double [] [] hog1Ds = new double[this.numIntervals][];
         //Split inst into intervals
         double [] [] intervals = getIntervals(inst);
-        //perform least squares regression on each interval
+        //Extract a histogram of gradients for each interval
         for(int i=0;i<intervals.length;i++) {
-            gradients[i] = getGradient(intervals[i]);
+            hog1Ds[i] = getHOG1D(intervals[i]);
         }
-        return gradients;
+        //Concatenate the HOG1Ds together
+        double [] out = new double [] {};
+        for(int i=hog1Ds.length-1;i>-1;i--) {
+            out = ArrayUtils.addAll(out,hog1Ds[i]);
+        }
+        return out;
     }
 
     /**
@@ -108,59 +135,44 @@ public class SlopeTransformer implements Transformer {
     }
 
     /**
-     * Private method to calculate the gradient of a given interval.
+     * Private method to calculate the HOG of a particular interval.
      *
-     * @param y - an interval.
+     * @param t - an interval.
      * @return
      */
-    private double getGradient(double [] y) {
-        double [] x = new double [y.length];
-        for(int i=1;i<=y.length;i++) {
-            x[i - 1] = i;
+    private double [] getHOG1D(double [] t) {
+        // Pad t on either ends just once.
+        double [] paddedT = ArrayUtils.addAll(new double [] {t[0]},t);
+        paddedT = ArrayUtils.addAll(paddedT,new double [] {t[t.length-1]});
+        // Calculate the gradients over every element in t.
+        double [] gradients = new double [t.length];
+        for(int i=1;i<gradients.length+1;i++) {
+            gradients[(i-1)] = scalingFactor*0.5*(paddedT[(i-1)]-paddedT[(i+1)]);
         }
-        double meanX = calculateMean(x);
-        double meanY = calculateMean(y);
-        //Calculate w which is given as:
-        // w = sum((y-meanY)^2) - sum((x-meanX)^2)
-        double ySquaredDiff = 0.0;
-        for(int i=0;i<y.length;i++) {
-            ySquaredDiff += Math.pow(y[i] - meanY,2);
+        // Then, calculate the orientations given the gradients
+        double [] orientations = new double [gradients.length];
+        for(int i=0;i<gradients.length;i++) {
+            orientations[i] = Math.toDegrees(Math.atan(gradients[i]));
         }
-        double xSquaredDiff = 0.0;
-        for(int i=0;i<y.length;i++) {
-            xSquaredDiff += Math.pow(x[i] - meanX,2);
+        double [] histBins = new double [this.numBins];
+        // Calculate the bin boundaries
+        double inc = 180.0/(double) this.numBins;
+        double current = -90.0;
+        for(int i=0;i<histBins.length;i++) {
+            histBins[i] = current+inc;
+            current += inc;
         }
-        double w = ySquaredDiff - xSquaredDiff;
-        // Calculate r which is given as:
-        // r = 2*sum((x-meanX)(y-meanY))
-        double xyDiff = 0.0;
-        for(int i=0;i<y.length;i++) {
-            xyDiff += (x[i] - meanX) * (y[i] - meanY);
+        // Create the histogram
+        double [] histogram = new double [this.numBins];
+        for(int i=0;i<orientations.length;i++) {
+            for(int j=0;j<histogram.length;j++) {
+                if(orientations[i]<= histBins[j]) {
+                    histogram[j] += 1;
+                    break;
+                }
+            }
         }
-        double r = 2*xyDiff;
-        // The gradient of the least squares regression line.
-        // remove NaNs
-        double m;
-        if (r == 0) {
-            m = 0;
-        } else {
-            m = (w+Math.sqrt(Math.pow(w,2) + Math.pow(r,2))) / r;
-        }
-        return m;
-    }
-
-    /**
-     * Private method for calculating the mean of an array.
-     *
-     * @param arr
-     * @return
-     */
-    private double calculateMean(double [] arr) {
-        double sum = 0.0;
-        for(int i=0;i<arr.length;i++) {
-            sum += arr[i];
-        }
-        return sum/(double)arr.length;
+        return histogram;
     }
 
     @Override
@@ -173,14 +185,14 @@ public class SlopeTransformer implements Transformer {
         }
         ArrayList<Attribute> attributes = new ArrayList<>();
         // Create a list of attributes
-        for(int i = 0; i<numIntervals; i++) {
-            attributes.add(new Attribute("SlopeGradient_" + i));
+        for(int i = 0; i<numBins*numIntervals; i++) {
+            attributes.add(new Attribute("HOG1D_" + i));
         }
         // Add the class attribute (if it exists)
         if(inputFormat.classIndex() >= 0) {
             attributes.add(inputFormat.classAttribute());
         }
-        Instances result = new Instances("Slope" + inputFormat.relationName(), attributes, inputFormat.numInstances());
+        Instances result = new Instances("HOG1D" + inputFormat.relationName(), attributes, inputFormat.numInstances());
         // Set the class attribute (if it exists)
         if(inputFormat.classIndex() >= 0) {
             result.setClassIndex(result.numAttributes() - 1);

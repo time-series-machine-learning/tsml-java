@@ -1,12 +1,12 @@
-package tsml.contrib;
+package tsml.classifiers.distance_based;
 
 import experiments.data.DatasetLoading;
 import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.contrib.transformers.DWTTransformer;
-import tsml.contrib.transformers.HOG1DTransformer;
-import tsml.contrib.transformers.SlopeTransformer;
-import tsml.contrib.transformers.SubsequenceTransformer;
+import tsml.transformers.DWT;
+import tsml.transformers.HOG1D;
+import tsml.transformers.Slope;
+import tsml.transformers.Subsequences;
 import tsml.transformers.*;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -21,12 +21,12 @@ import tsml.classifiers.multivariate.NN_DTW_D;
  * describing local neighbourhoods around each data point in a time series.
  * These subsequences are then passed into a shape descriptor function that
  * transforms these local neighbourhoods into a new representation. This
- * new representation is then sent into DTW with 1-NN.
+ * new representation is then sent into DTW with 1-NN (DTW_D).
  *
  * @author Vincent Nicholson
  *
  */
-public class ShapeDTW1NN extends EnhancedAbstractClassifier {
+public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
 
     // hyper-parameters
     private int subsequenceLength;
@@ -45,7 +45,7 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
     //by. This produces an output in the form compound = (ShapeDescriptor,weightingFactor*secondShapeDescriptor).
     private double weightingFactor = 1.0;
     // Transformer for extracting the neighbourhoods
-    private SubsequenceTransformer subsequenceTransformer;
+    private Subsequences subsequenceTransformer;
     // NN_DTW_D for performing classification on the training data
     private NN_DTW_D nnDtwD;
     //The Dimension independent transformers
@@ -54,9 +54,9 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
     // Another method proposed is to combine the results of two shapeDescriptors together, if this is set to
     // true, then the results of shapeDescriptor and secondShapeDescriptor are concatenated together.
     private boolean useSecondShapeDescriptor = false;
-    private final Transformer [] validTransformers = new Transformer[] {new PAA(), new DWTTransformer(),
-                                                                        new Derivative(), new SlopeTransformer(),
-                                                                        new HOG1DTransformer()};
+    private final Transformer [] validTransformers = new Transformer[] {new PAA(), new DWT(),
+                                                                        new Derivative(), new Slope(),
+                                                                        new HOG1D()};
     // For storing the dataset when creating the compound shape descriptors.
     private Instances compoundDataset;
 
@@ -65,20 +65,20 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
      * subsequenceLength = 30
      * shapeDescriptorFunction = null (so 'raw' is used)
      */
-    public ShapeDTW1NN() {
+    public ShapeDTW_1NN() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceLength = 30;
         this.shapeDescriptor = null;
-        this.subsequenceTransformer = new SubsequenceTransformer(subsequenceLength);
+        this.subsequenceTransformer = new Subsequences(subsequenceLength);
         this.nnDtwD = new NN_DTW_D();
     }
 
-    public ShapeDTW1NN(int subsequenceLength,Transformer shapeDescriptor,boolean useSecondShapeDescriptor,
+    public ShapeDTW_1NN(int subsequenceLength,Transformer shapeDescriptor,boolean useSecondShapeDescriptor,
                        Transformer secondShapeDescriptor) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceLength = subsequenceLength;
         this.shapeDescriptor = shapeDescriptor;
-        this.subsequenceTransformer = new SubsequenceTransformer(subsequenceLength);
+        this.subsequenceTransformer = new Subsequences(subsequenceLength);
         this.nnDtwD = new NN_DTW_D();
         this.secondShapeDescriptor = secondShapeDescriptor;
         this.useSecondShapeDescriptor = useSecondShapeDescriptor;
@@ -341,6 +341,21 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
         if(!found) {
             throw new IllegalArgumentException("Invalid transformer type for shapeDescriptor.");
         }
+        //Check the secondShapeDescriptor function is the correct type.
+        found = false;
+        for(Transformer x: this.validTransformers) {
+            if(this.secondShapeDescriptor == null) {
+                found = true;
+                break;
+            }
+            if(this.secondShapeDescriptor.getClass().equals(x.getClass())) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            throw new IllegalArgumentException("Invalid transformer type for shapeDescriptor.");
+        }
     }
 
     /**
@@ -351,19 +366,29 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
      */
     public static void main(String[] args) throws Exception {
         Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
+        Instances testData = createTestData();
+        // test bad subsequence length
+        // test good subsequence length
+
+        // test bad transformer
+        // test good transformer
+
+        //test combineInstances()
+
+        // test classification functionality
 
         PAA p = new PAA();
-        DWTTransformer d = new DWTTransformer();
+        DWT d = new DWT();
         Derivative de = new Derivative();
-        SlopeTransformer sl = new SlopeTransformer();
-        HOG1DTransformer h = new HOG1DTransformer();
+        Slope sl = new Slope();
+        HOG1D h = new HOG1D();
         PCA pc = new PCA();
-        ShapeDTW1NN s = new ShapeDTW1NN(-1,de,true,sl);
-        s.setWeightingFactor(0.00001);
+        ShapeDTW_1NN s = new ShapeDTW_1NN(30,null,false,sl);
+        //s.setWeightingFactor(0.00001);
         System.out.println(calculateAccuracy(s,data));
     }
 
-    private static double calculateAccuracy(ShapeDTW1NN s, Instances [] data) throws Exception {
+    private static double calculateAccuracy(ShapeDTW_1NN s, Instances [] data) throws Exception {
         Instances train = data[0];
         Instances test = data[1];
 
@@ -376,5 +401,14 @@ public class ShapeDTW1NN extends EnhancedAbstractClassifier {
             }
         }
         return (double) correct/(double) test.numInstances();
+    }
+
+    /**
+     * Function to create test data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createTestData() {
+
     }
 }

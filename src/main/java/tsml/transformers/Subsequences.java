@@ -1,4 +1,4 @@
-package tsml.contrib.transformers;
+package tsml.transformers;
 
 import com.sun.org.apache.xpath.internal.operations.Mult;
 import tsml.transformers.Transformer;
@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 
 /**
- * This class is used to extract subsequences of a time series by extracting
+ * This class is used to extract subsequences (default length = 30) of a time series by extracting
  * neighbouring data points about each data point. For example, if a time
  * series has data points 1,2,3,4,5 and subsequenceLength is 3, This transformer
  * would produce the following output:
@@ -23,11 +23,12 @@ import java.util.Enumeration;
  * Used mainly by ShapeDTW1NN.
  *
  */
-public class SubsequenceTransformer implements Transformer {
+public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
-    public SubsequenceTransformer(int subsequenceLength) {
+    public Subsequences() {this.subsequenceLength = 30;}
+    public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
     }
 
