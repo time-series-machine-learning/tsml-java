@@ -111,6 +111,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     public void setSecondShapeDescriptor(Transformer t) {this.secondShapeDescriptor = t; }
 
     public void setWeightingFactor(double newWeightingFactor) {this.weightingFactor = newWeightingFactor;}
+
     /**
      * Private method for performing the subsequence extraction on a set of instances as
      * well as the shape descriptor function for training (if not null).
@@ -138,7 +139,8 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
                 shapeDesc2 = this.d2.transform(transformedData);
             }
         }
-        return combineInstances(shapeDesc1,shapeDesc2);
+        Instances combinedInsts = combineInstances(shapeDesc1,shapeDesc2);
+        return combinedInsts;
     }
 
     /**
@@ -166,7 +168,8 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
                 shapeDesc2 = this.d2.transform(transformedData);
             }
         }
-        return combineInstances(shapeDesc1,shapeDesc2);
+        Instance combinedInsts = combineInstances(shapeDesc1,shapeDesc2);
+        return combinedInsts;
     }
 
     /**
@@ -241,8 +244,8 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
 
         //  Iterate over each dimension
         for(int i=0;i<rel1.numInstances();i++) {
-            double [] dim1 = rel1.get(0).toDoubleArray();
-            double [] dim2 = rel2.get(0).toDoubleArray();
+            double [] dim1 = rel1.get(i).toDoubleArray();
+            double [] dim2 = rel2.get(i).toDoubleArray();
             //multiply dim2 by a weighting factor
             for(int j=0;j<dim2.length;j++) {
                 dim2[j] = dim2[j]*this.weightingFactor;
@@ -365,29 +368,76 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
+        Instances trainData = createData();
         Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
-        Instances testData = createTestData();
         // test bad subsequence length
+        // this has to be greater than 0.
+        int [] badSubsequences = new int [] {0,-1,-999999999};
+        for(int i=0;i<badSubsequences.length;i++) {
+            try{
+                ShapeDTW_1NN s = new ShapeDTW_1NN(badSubsequences[i],null,false,null);
+                s.buildClassifier(trainData);
+                System.out.println("Test failed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
         // test good subsequence length
-
+        int [] goodSubsequences = new int [] {1,5,999};
+        for(int i=0;i<goodSubsequences.length;i++) {
+            try{
+                ShapeDTW_1NN s = new ShapeDTW_1NN(goodSubsequences[i],null,false,null);
+                s.buildClassifier(trainData);
+                System.out.println("Test passed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
         // test bad transformer
+        // Can only be null, PAA, DWT, Derivative, Slope or HOG1D
+        Transformer [] badTransformer = new Transformer [] {new PCA(),new Cosine(),new FFT()};
+        for(int i=0;i<badTransformer.length;i++) {
+            try{
+                ShapeDTW_1NN s = new ShapeDTW_1NN(30,badTransformer[i],false,null);
+                s.buildClassifier(trainData);
+                System.out.println("Test failed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
         // test good transformer
-
-        //test combineInstances()
-
+        Transformer [] badTransformers = new Transformer[] {new PAA(), null, new HOG1D()};
+        for(int i=0;i<badTransformers.length;i++) {
+            try{
+                ShapeDTW_1NN s = new ShapeDTW_1NN(30,badTransformers[i],false,null);
+                s.buildClassifier(trainData);
+                System.out.println("Test passed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
         // test classification functionality
-
-        PAA p = new PAA();
-        DWT d = new DWT();
-        Derivative de = new Derivative();
-        Slope sl = new Slope();
-        HOG1D h = new HOG1D();
-        PCA pc = new PCA();
-        ShapeDTW_1NN s = new ShapeDTW_1NN(30,null,false,sl);
-        //s.setWeightingFactor(0.00001);
+        Transformer [] allTrans = new Transformer [] {null,new PAA(), new DWT(), new Derivative(), new Slope(),
+                                                      new HOG1D()};
+        for(Transformer t:allTrans) {
+            ShapeDTW_1NN s = new ShapeDTW_1NN(30,t,false,null);
+            System.out.println(calculateAccuracy(s,data));
+            System.out.println("Test passed.");
+        }
+        // Test compound shape descriptor functionality.
+        ShapeDTW_1NN s = new ShapeDTW_1NN(30,null,true,new Slope());
         System.out.println(calculateAccuracy(s,data));
+        System.out.println("Test passed.");
     }
 
+    /**
+     * Function to calculate accuracy purely for testing the functionality of ShapeDTW_1NN.
+     * 
+     * @param s
+     * @param data
+     * @return
+     * @throws Exception
+     */
     private static double calculateAccuracy(ShapeDTW_1NN s, Instances [] data) throws Exception {
         Instances train = data[0];
         Instances test = data[1];
@@ -404,11 +454,53 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     }
 
     /**
-     * Function to create test data for testing purposes.
+     * Function to create data for testing purposes.
      *
      * @return
      */
-    private static Instances createTestData() {
+    private static Instances createData() {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<5;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        //Create the class values
+        ArrayList<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("0");
+        atts.add(new Attribute("class",classes));
+        Instances newInsts = new Instances("Test_dataset",atts,5);
+        newInsts.setClassIndex(newInsts.numAttributes()-1);
 
+        //create the test data
+        double [] test = new double [] {1,2,3,4,5};
+        createInst(test,"1",newInsts);
+        test = new double [] {1,1,2,3,4};
+        createInst(test,"1",newInsts);
+        test = new double [] {2,2,2,3,4};
+        createInst(test,"0",newInsts);
+        test = new double [] {2,3,4,5,6};
+        createInst(test,"0",newInsts);
+        test = new double [] {0,1,1,1,2};
+        createInst(test,"1",newInsts);
+        return newInsts;
     }
+
+    /**
+     * private function for creating an instance from a double array. Used
+     * for testing purposes.
+     *
+     * @param arr
+     * @return
+     */
+    private static void createInst(double [] arr,String classValue, Instances dataset) {
+        Instance inst = new DenseInstance(arr.length+1);
+        for(int i=0;i<arr.length;i++) {
+            inst.setValue(i,arr[i]);
+        }
+        inst.setDataset(dataset);
+        inst.setClassValue(classValue);
+        dataset.add(inst);
+    }
+
 }

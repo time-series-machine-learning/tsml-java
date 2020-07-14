@@ -1,8 +1,5 @@
 package tsml.transformers;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
-import tsml.transformers.Transformer;
-import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -10,7 +7,6 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 
 /**
  * This class is used to extract subsequences (default length = 30) of a time series by extracting
@@ -35,6 +31,7 @@ public class Subsequences implements Transformer {
     @Override
     public Instance transform(Instance inst) {
         double [] timeSeries = inst.toDoubleArray();
+        checkParameters(inst)
         // remove class label
         double[] temp;
         int c = inst.classIndex();
@@ -141,5 +138,67 @@ public class Subsequences implements Transformer {
         // subsequences you extract)
         Instances relation = new Instances("Subsequences", attributes, timeSeriesLength);
         return relation;
+    }
+
+    public static void main(String[] args) {
+        Instances data = createData();
+
+        //test bad SubsequenceLength
+        int [] badSubsequenceLength
+        //test good SubsequenceLength
+
+        //check output
+
+        //check dimensions
+    }
+
+    /**
+     * Function to create data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createData() {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<5;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        //Create the class values
+        ArrayList<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("0");
+        atts.add(new Attribute("class",classes));
+        Instances newInsts = new Instances("Test_dataset",atts,5);
+        newInsts.setClassIndex(newInsts.numAttributes()-1);
+
+        //create the test data
+        double [] test = new double [] {1,2,3,4,5};
+        createInst(test,"1",newInsts);
+        test = new double [] {1,1,2,3,4};
+        createInst(test,"1",newInsts);
+        test = new double [] {2,2,2,3,4};
+        createInst(test,"0",newInsts);
+        test = new double [] {2,3,4,5,6};
+        createInst(test,"0",newInsts);
+        test = new double [] {0,1,1,1,2};
+        createInst(test,"1",newInsts);
+        return newInsts;
+    }
+
+    /**
+     * private function for creating an instance from a double array. Used
+     * for testing purposes.
+     *
+     * @param arr
+     * @return
+     */
+    private static void createInst(double [] arr,String classValue, Instances dataset) {
+        Instance inst = new DenseInstance(arr.length+1);
+        for(int i=0;i<arr.length;i++) {
+            inst.setValue(i,arr[i]);
+        }
+        inst.setDataset(dataset);
+        inst.setClassValue(classValue);
+        dataset.add(inst);
     }
 }
