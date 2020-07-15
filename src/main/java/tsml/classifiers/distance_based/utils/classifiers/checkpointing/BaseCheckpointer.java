@@ -1,18 +1,24 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import utilities.FileUtils;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class BaseCheckpointer implements Checkpointer {
+
+    public static Logger DEFAULT_LOGGER = LogUtils.buildLogger(BaseCheckpointer.class);
+    private static final long serialVersionUID = 1;
+    private Logger logger;
     private String checkpointDirPath;
-    private String checkpointFileName = "checkpoint.ser.gz";
-    private long minCheckpointIntervalNanos = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    private String checkpointFileName;
+    private long minCheckpointIntervalNanos;
     private long lastCheckpointTimeStamp = 0;
     private boolean loadCheckpoint;
     private final Object target;
@@ -20,20 +26,33 @@ public class BaseCheckpointer implements Checkpointer {
     public BaseCheckpointer(final Object target) {
         this.target = target;
         setLoadCheckpoint(true);
+        setLogger(DEFAULT_LOGGER);
+        setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS));
+        setCheckpointFileName("checkpoint.ser.gz");
     }
 
-    public void saveToFile(String filename) throws Exception {
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public void setLogger(final Logger logger) {
+        Assert.assertNotNull(logger);
+        this.logger = logger;
+    }
+
+    public void saveToFile(String path) throws Exception {
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
                 FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
                 GZIPOutputStream gos = new GZIPOutputStream(fos);
                 ObjectOutputStream out = new ObjectOutputStream(gos)) {
             out.writeObject(target);
+            logger.info("saved checkpoint to " + path);
         }
     }
 
-    public void loadFromFile(String filename) throws Exception{
+    public void loadFromFile(String path) throws Exception {
         Object obj = null;
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(filename);
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
                 FileInputStream fis = new FileInputStream(fileLocker.getFile());
                 GZIPInputStream gis = new GZIPInputStream(fis);
                 ObjectInputStream in = new ObjectInputStream(gis)) {
@@ -41,21 +60,25 @@ public class BaseCheckpointer implements Checkpointer {
         }
         if(obj != null) {
             copyFromSerObject(obj);
+            logger.info("loaded checkpoint from " + path);
         }
     }
 
     @Override public boolean loadCheckpoint() throws Exception {
+        final String checkpointFilePath = getCheckpointFilePath();
         if(isCheckpointing()) {
             if(loadCheckpoint) {
                 try {
-                    loadFromFile(getCheckpointFilePath());
+                    loadFromFile(checkpointFilePath);
                     loadCheckpoint = false;
                     return true;
-                } catch(FileNotFoundException ignored) {
-
+                } catch(Exception e) {
+                    logger.severe("failed to load checkpoint from " + checkpointFilePath + " " + e.toString());
+                    throw e;
                 }
             }
         }
+        logger.info("checkpoint loading disabled");
         return false;
     }
 
@@ -65,12 +88,27 @@ public class BaseCheckpointer implements Checkpointer {
 
     @Override public boolean saveCheckpoint(boolean force) throws Exception {
         if(isCheckpointing()) {
-            if(force || isCheckpointIntervalExpired()) {
-                saveToFile(getCheckpointFilePath());
-                lastCheckpointTimeStamp = System.nanoTime();
-                return true;
+            final boolean expired = isCheckpointIntervalExpired();
+            if(force) {
+                logger.info("force saving checkpoint");
+            } else if(expired) {
+                logger.info("checkpoint expired, saving new checkpoint");
+            }
+            if(force || expired) {
+                final String checkpointFilePath = getCheckpointFilePath();
+                try {
+                    saveToFile(checkpointFilePath);
+                    lastCheckpointTimeStamp = System.nanoTime();
+                    return true;
+                } catch(Exception e) {
+                    logger.severe("failed to save checkpoint to " + checkpointFilePath + " " + e.toString());
+                    throw e;
+                }
+            } else {
+                return false;
             }
         }
+        logger.info("checkpoint saving disabled");
         return false;
     }
 

@@ -1,10 +1,13 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.Checkpointable;
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-public interface Checkpointer extends Checkpointable {
+public interface Checkpointer extends Checkpointable, Loggable {
 
     boolean isLoadCheckpoint();
     void setLoadCheckpoint(boolean state);

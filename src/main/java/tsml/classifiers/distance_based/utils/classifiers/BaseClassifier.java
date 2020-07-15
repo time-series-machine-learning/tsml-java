@@ -24,8 +24,9 @@ import weka.core.Instances;
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable,
     Loggable, DefaultClassifier {
+    private static final Logger DEFAULT_LOGGER = LogUtils.buildLogger(BaseClassifier.class);
     // method of logging
-    private transient Logger logger = LogUtils.buildLogger(this);
+    private transient Logger logger = DEFAULT_LOGGER;
     // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
     // whether the seed has been set
@@ -40,12 +41,10 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     private void setLogLevelFromDebug() {
-        if(logger != null) {
-            if(debug) {
-                logger.setLevel(Level.FINE);
-            } else {
-                logger.setLevel(Level.OFF);
-            }
+        if(debug) {
+            logger.setLevel(Level.FINE);
+        } else {
+            logger.setLevel(Level.OFF);
         }
     }
 
@@ -73,20 +72,13 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public void setClassifierName(String classifierName) {
-        Assert.assertNotNull(classifierName);
-        super.setClassifierName(classifierName);
-        buildLogger();
-    }
-
-    private void buildLogger() {
-        logger = LogUtils.buildLogger(classifierName);
-        setLogLevelFromDebug();
-    }
-
-    @Override
     public Logger getLogger() {
         return logger;
+    }
+
+    @Override public void setLogger(final Logger logger) {
+        Assert.assertNotNull(logger);
+        this.logger = logger;
     }
 
     @Override

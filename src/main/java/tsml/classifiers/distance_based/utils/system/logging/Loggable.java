@@ -12,5 +12,7 @@ import java.util.logging.Logger;
 public interface Loggable {
     Logger getLogger();
 
+    default void setLogger(Logger logger) {
 
+    }
 }

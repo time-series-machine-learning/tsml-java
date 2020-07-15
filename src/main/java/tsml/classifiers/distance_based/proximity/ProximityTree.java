@@ -168,6 +168,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         Config.R5.applyConfigTo(this);
     }
 
+    private static final long serialVersionUID = 1;
     // train timer
     private final StopWatch trainTimer = new StopWatch();
     // test / predict timer
@@ -259,7 +260,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         // start monitoring resources
-        if(loadCheckpoint()) getLogger().info("loaded from checkpoint");
+        loadCheckpoint();
         memoryWatcher.start();
         trainTimer.start();
         if(isRebuild()) {
@@ -301,13 +302,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
             maxTimePerInstanceForNodeBuilding = findNodeBuildTime(node, trainStageTimer.getTime());
-            if(saveCheckpoint()) getLogger().info("saved checkpoint");
+            saveCheckpoint();
         }
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
-        if(saveFinalCheckpoint()) getLogger().info("saved final checkpoint");
+        saveFinalCheckpoint();
     }
 
     /**

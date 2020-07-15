@@ -391,6 +391,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.start();
         trainEstimateTimer.checkStopped();
         final Logger logger = getLogger();
+        checkpointer.setLogger(logger);
+        checkpointer.loadCheckpoint();
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
         if(isRebuild()) {
             // reset variables
@@ -420,6 +422,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainStageTimer.resetAndStart();
             int treeIndex = trees.size();
             ProximityTree tree = new ProximityTree();
+            tree.setLogger(logger);
             trees.add(tree);
             proximityTreeConfig.applyConfigTo(tree);
             tree.setRandom(rand);
@@ -478,6 +481,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
             trainStageTimer.stop();
             longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getTime());
+            checkpointer.saveCheckpoint();
         }
         logger.fine("finished building trees");
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
@@ -536,6 +540,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
         logger.fine("build complete");
+        checkpointer.saveFinalCheckpoint();
     }
 
     @Override
