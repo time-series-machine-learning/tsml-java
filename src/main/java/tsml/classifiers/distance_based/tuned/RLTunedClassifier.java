@@ -10,7 +10,6 @@ import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
@@ -200,7 +199,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveCheckpoint() throws Exception {
+    public boolean checkpointIfIntervalExpired() throws Exception {
         return false;
     }
 
@@ -490,7 +489,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
-                this.trainTimer.add(((TrainTimeable) classifier).getTrainTime());
+                this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
@@ -499,7 +498,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTime());
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
             } else {
                 // we already tracked this as part of the train time
             }
@@ -589,7 +588,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
-                    trainTimer.add(((TrainTimeable) classifier).getTrainTime());
+                    trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
                 }
                 if(classifier instanceof TrainEstimateTimeable) {
                     trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
@@ -599,10 +598,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 }
             } else {
                 // load classifier manually
-                classifier =
-                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
+                classifier = null;
+//                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
                 ClassifierResults results = classifier.getTrainResults();
-                trainTimer.add(results.getTrainTime());
+                trainTimer.add(results.getTrainTimeNanos());
                 trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
                 memoryWatcher.add(results);
             }
@@ -628,10 +627,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             if(classifier instanceof Checkpointable) {
                 ((Checkpointable) classifier).setCheckpointPath(classifierSavePath);
                 ((Checkpointable) classifier).setSkipFinalCheckpoint(false);
-                ((Checkpointable) classifier).saveCheckpoint();
+                ((Checkpointable) classifier).checkpointIfIntervalExpired();
             } else {
                 // save classifier manually
-                CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
+//                CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
             }
         }
     }

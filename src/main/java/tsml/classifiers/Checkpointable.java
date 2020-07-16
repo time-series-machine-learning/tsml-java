@@ -134,7 +134,7 @@ public interface Checkpointable extends Serializable {
      * @return
      * @throws Exception
      */
-    default boolean saveCheckpoint() throws
+    default boolean checkpointIfIntervalExpired() throws
                               Exception {
         throw new UnsupportedOperationException();
     }

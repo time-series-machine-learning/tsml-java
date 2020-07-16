@@ -60,18 +60,17 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
      * get whether the train estimate will be regenerated
      * @return
      */
-    public boolean isRegenerateTrainEstimate() {
+    public boolean isRebuildTrainEstimateResults() {
         return regenerateTrainEstimate;
     }
 
     /**
      * set whether the train estimate will be regenerated
-     * @param regenerateTrainEstimate
+     * @param rebuildTrainEstimateResults
      * @return
      */
-    protected ElasticEnsemble setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
-        this.regenerateTrainEstimate = regenerateTrainEstimate;
-        return this;
+    public void setRebuildTrainEstimateResults(boolean rebuildTrainEstimateResults) {
+        this.regenerateTrainEstimate = rebuildTrainEstimateResults;
     }
 
     public static class Factory extends CompileTimeClassifierBuilderFactory<ElasticEnsemble> {
@@ -307,7 +306,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveCheckpoint() throws Exception {
+    public boolean checkpointIfIntervalExpired() throws Exception {
 //        trainTimer.stop();
 //        trainEstimateTimer.stop();
 //        memoryWatcher.stop();
@@ -457,7 +456,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             // process another constituent
             nextBuildTick();
             // save this to checkpoint
-            saveCheckpoint();
+            checkpointIfIntervalExpired();
         }
         // if we're estimating our train
         if(regenerateTrainEstimate) {
@@ -501,7 +500,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // we're built by here
 //        setBuilt(true);
         logger.info("build finished");
-        saveCheckpoint();
+        checkpointIfIntervalExpired();
     }
 
     private boolean hasTimeRemainingPerConstituent() {
@@ -572,14 +571,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // add the constituent's train time onto ours
         if(constituent instanceof TrainTimeable) { // todo these can probs be a util method as similar elsewhere
             // (RLTune)
-            trainTimer.add(((TrainTimeable) constituent).getTrainTime());
+            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
         } else {
             trainTimer.add(constituentTrainTimer);
         }
         // add the constituent's train estimate time onto ours
         if(constituent instanceof TrainEstimateTimeable) {
             // the classifier tracked its time internally
-            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTime());
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
         } else {
             // we already tracked this as part of the train time
         }
@@ -611,7 +610,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             setRemainingTrainTimeNanosPerConstituent();
         }
         // we've adjusted one of the constituents therefore we need to regenerate the train estimate
-        setRegenerateTrainEstimate(true);
+        setRebuildTrainEstimateResults(true);
     }
 
     /**

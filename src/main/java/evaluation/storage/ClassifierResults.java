@@ -156,16 +156,12 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         return memoryReadingCount;
     }
 
-    @Override public long getTrainTime() {
+    @Override public long getTrainTimeNanos() {
         return getBuildTimeInNanos();
     }
 
     @Override public long getTrainEstimateTimeNanos() {
         return getBuildPlusEstimateTime() - getBuildTime();
-    }
-
-    @Override public long getTrainPlusEstimateTimeNanos() {
-        return getBuildPlusEstimateTime();
     }
 
     private String os = "unknown";

@@ -37,7 +37,7 @@ public class Utils {
         classifier.buildClassifier(trainData);
         timer.stop();
         memoryWatcher.stop();
-        System.out.println("end build");
+        System.out.println();
         System.out.println("train time: " + timer.getTime());
         System.out.println("train mem: " + memoryWatcher.toString());
 //        GcFinalization.awaitFullGc();
@@ -58,6 +58,7 @@ public class Utils {
         memoryWatcher.stop();
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
+        System.out.println();
         System.out.println("test time: " + timer.getTime());
         System.out.println("test mem: " + memoryWatcher.toString());
         System.out.println("test results:");

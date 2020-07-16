@@ -53,6 +53,11 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
         this.foldIndexing = null;
         this.numFolds = 10;
     }
+
+    public CrossValidationEvaluator(int numFolds) {
+        this();
+        setNumFolds(numFolds);
+    }
     
     public CrossValidationEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean cloneClassifiers, boolean maintainClassifiers) {
         super(seed,cloneData,setClassMissing, cloneClassifiers, maintainClassifiers);

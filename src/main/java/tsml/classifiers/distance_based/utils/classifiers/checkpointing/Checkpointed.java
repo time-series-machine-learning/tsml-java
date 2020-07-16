@@ -5,36 +5,36 @@ import java.util.concurrent.TimeUnit;
 public interface Checkpointed extends Checkpointer {
     Checkpointer getCheckpointer();
 
-    @Override default void setLoadCheckpoint(boolean state) {
-        getCheckpointer().setLoadCheckpoint(state);
+    @Override default void setLoad(boolean state) {
+        getCheckpointer().setLoad(state);
     }
 
-    @Override default boolean isLoadCheckpoint() {
-        return getCheckpointer().isLoadCheckpoint();
+    @Override default boolean isLoad() {
+        return getCheckpointer().isLoad();
     }
 
     @Override default boolean loadCheckpoint() throws Exception {
         return getCheckpointer().loadCheckpoint();
     }
 
-    @Override default boolean saveCheckpoint(boolean force) throws Exception {
-        return getCheckpointer().saveCheckpoint(force);
+    @Override default boolean checkpointIfWorkDone() throws Exception {
+        return getCheckpointer().checkpointIfWorkDone();
     }
 
-    @Override default boolean saveCheckpoint() throws Exception {
-        return getCheckpointer().saveCheckpoint();
+    @Override default boolean checkpointIfIntervalExpired() throws Exception {
+        return getCheckpointer().checkpointIfIntervalExpired();
     }
 
-    @Override default boolean saveFinalCheckpoint() throws Exception {
-        return getCheckpointer().saveFinalCheckpoint();
+    @Override default boolean checkpoint() throws Exception {
+        return getCheckpointer().checkpoint();
     }
 
     @Override default boolean isCheckpointIntervalExpired() {
         return getCheckpointer().isCheckpointIntervalExpired();
     }
 
-    @Override default boolean isCheckpointing() {
-        return getCheckpointer().isCheckpointing();
+    @Override default boolean isCheckpointPathSet() {
+        return getCheckpointer().isCheckpointPathSet();
     }
 
     @Override default String getCheckpointFileName() {

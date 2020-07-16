@@ -52,7 +52,7 @@ public class LogUtils {
 //                logRecord.getSourceClassName() + separator +
 //                logRecord.getSourceMethodName() + System.lineSeparator() +
 //                logRecord.getMessage() + System.lineSeparator();
-            return LocalDateTime.now().toString().replace("T", " ") + separator + logRecord.getLoggerName() + separator + logRecord.getMessage() + System.lineSeparator();
+            return LocalDateTime.now().toString().replace("T", " ") + separator + logRecord.getMessage() + System.lineSeparator();
         }
     }
 
@@ -95,7 +95,7 @@ public class LogUtils {
                 return StrUtils.durationToHmsString(time) + " elapsed of " + StrUtils.durationToHmsString(limit) +
                     " " + name + " "
                     + "time "
-                    + "limit" + System.lineSeparator() + StrUtils.durationToHmsString(diff) + " train time remaining";
+                    + "limit, " + StrUtils.durationToHmsString(diff) + " train time remaining";
             });
         }
     }

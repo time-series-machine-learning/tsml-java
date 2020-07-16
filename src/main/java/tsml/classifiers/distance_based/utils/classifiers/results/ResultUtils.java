@@ -50,17 +50,17 @@ public class ResultUtils {
     }
 
     public static void setTimeInfo(ClassifierResults results, TrainTimeable obj) {
-        results.setBuildTime(obj.getTrainTime());
+        results.setBuildTime(obj.getTrainTimeNanos());
         if(results.getErrorEstimateTime() < 0) {
             results.setErrorEstimateTime(0);
         }
-        results.setBuildPlusEstimateTime(obj.getTrainTime() + results.getErrorEstimateTime());
+        results.setBuildPlusEstimateTime(obj.getTrainTimeNanos() + results.getErrorEstimateTime());
         results.setTimeUnit(TimeUnit.NANOSECONDS);
     }
 
     public static void setTimeInfo(ClassifierResults results, TrainEstimateTimeable obj) {
         results.setErrorEstimateTime(obj.getTrainEstimateTimeNanos());
-        results.setBuildPlusEstimateTime(obj.getTrainPlusEstimateTimeNanos());
+        results.setBuildPlusEstimateTime(obj.getTrainTimeNanos());
         results.setTimeUnit(TimeUnit.NANOSECONDS);
     }
 

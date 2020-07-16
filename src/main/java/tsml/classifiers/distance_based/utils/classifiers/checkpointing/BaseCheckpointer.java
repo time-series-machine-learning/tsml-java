@@ -3,50 +3,60 @@ package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import utilities.FileUtils;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class BaseCheckpointer implements Checkpointer {
 
     public static Logger DEFAULT_LOGGER = LogUtils.buildLogger(BaseCheckpointer.class);
     private static final long serialVersionUID = 1;
-    private Logger logger;
     private String checkpointDirPath;
     private String checkpointFileName;
     private long minCheckpointIntervalNanos;
     private long lastCheckpointTimeStamp = 0;
-    private boolean loadCheckpoint;
+    private boolean load;
+    // assume work has been done when no loading has occurred
+    private boolean checkpointSinceLoad = true;
     private final Object target;
 
     public BaseCheckpointer(final Object target) {
         this.target = target;
-        setLoadCheckpoint(true);
-        setLogger(DEFAULT_LOGGER);
+        setLoad(true);
         setMinCheckpointIntervalNanos(TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS));
         setCheckpointFileName("checkpoint.ser.gz");
     }
 
     public Logger getLogger() {
-        return logger;
+        if(target instanceof Loggable) {
+            return ((Loggable) target).getLogger();
+        } else {
+            return DEFAULT_LOGGER;
+        }
     }
 
     public void setLogger(final Logger logger) {
-        Assert.assertNotNull(logger);
-        this.logger = logger;
+        throw new UnsupportedOperationException();
     }
 
     public void saveToFile(String path) throws Exception {
-        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(path);
-                FileOutputStream fos = new FileOutputStream(fileLocker.getFile());
+        File tmp = new File(path + ".tmp");
+        File main = new File(path);
+        try (FileUtils.FileLock fileLocker = new FileUtils.FileLock(main);
+                FileOutputStream fos = new FileOutputStream(tmp);
                 GZIPOutputStream gos = new GZIPOutputStream(fos);
                 ObjectOutputStream out = new ObjectOutputStream(gos)) {
             out.writeObject(target);
-            logger.info("saved checkpoint to " + path);
+            Files.move(tmp.toPath(), main.toPath(), REPLACE_EXISTING);
+            getLogger().info("saved checkpoint to " + path);
         }
     }
 
@@ -58,27 +68,24 @@ public class BaseCheckpointer implements Checkpointer {
                 ObjectInputStream in = new ObjectInputStream(gis)) {
             obj = in.readObject();
         }
-        if(obj != null) {
-            copyFromSerObject(obj);
-            logger.info("loaded checkpoint from " + path);
-        }
+        copyFromSerObject(obj);
+        getLogger().info("loaded checkpoint from " + path);
     }
 
     @Override public boolean loadCheckpoint() throws Exception {
         final String checkpointFilePath = getCheckpointFilePath();
-        if(isCheckpointing()) {
-            if(loadCheckpoint) {
-                try {
-                    loadFromFile(checkpointFilePath);
-                    loadCheckpoint = false;
-                    return true;
-                } catch(Exception e) {
-                    logger.severe("failed to load checkpoint from " + checkpointFilePath + " " + e.toString());
-                    throw e;
-                }
+        if(isCheckpointPathSet() && load) {
+            try {
+                loadFromFile(checkpointFilePath);
+                load = false;
+                checkpointSinceLoad = false;
+                return true;
+            } catch(FileNotFoundException e) {
+                getLogger().info("no checkpoint found at " + checkpointFilePath);
+            } catch(Exception e) {
+                getLogger().info("failed to load checkpoint from " + checkpointFilePath + " : " + e.toString());
             }
         }
-        logger.info("checkpoint loading disabled");
         return false;
     }
 
@@ -86,42 +93,44 @@ public class BaseCheckpointer implements Checkpointer {
         CopierUtils.shallowCopyFrom(src, target, CheckpointUtils.findSerFields(src));
     }
 
-    @Override public boolean saveCheckpoint(boolean force) throws Exception {
-        if(isCheckpointing()) {
-            final boolean expired = isCheckpointIntervalExpired();
-            if(force) {
-                logger.info("force saving checkpoint");
-            } else if(expired) {
-                logger.info("checkpoint expired, saving new checkpoint");
-            }
-            if(force || expired) {
-                final String checkpointFilePath = getCheckpointFilePath();
-                try {
-                    saveToFile(checkpointFilePath);
-                    lastCheckpointTimeStamp = System.nanoTime();
-                    return true;
-                } catch(Exception e) {
-                    logger.severe("failed to save checkpoint to " + checkpointFilePath + " " + e.toString());
-                    throw e;
-                }
-            } else {
-                return false;
-            }
-        }
-        logger.info("checkpoint saving disabled");
-        return false;
-    }
-
     public String getCheckpointFilePath() {
         return checkpointDirPath + "/" + checkpointFileName;
     }
 
-    @Override public boolean saveCheckpoint() throws Exception {
-        return saveCheckpoint(false);
+    @Override public boolean checkpointIfIntervalExpired() throws Exception {
+        if(isCheckpointIntervalExpired() && isCheckpointPathSet()) {
+            getLogger().info("checkpoint expired");
+            return saveCheckpoint();
+        }
+        return false;
     }
 
-    @Override public boolean saveFinalCheckpoint() throws Exception {
-        return saveCheckpoint(true);
+    private boolean saveCheckpoint() throws Exception {
+        final String checkpointFilePath = getCheckpointFilePath();
+        try {
+            saveToFile(checkpointFilePath);
+            lastCheckpointTimeStamp = System.nanoTime();
+            checkpointSinceLoad = true;
+            return true;
+        } catch(Exception e) {
+            getLogger().info("failed to save checkpoint to " + checkpointFilePath + " : " + e.toString());
+            throw e;
+        }
+    }
+
+    @Override public boolean checkpoint() throws Exception {
+        if(isCheckpointPathSet()) {
+            getLogger().info("saving checkpoint");
+            return saveCheckpoint();
+        }
+        return false;
+    }
+
+    @Override public boolean checkpointIfWorkDone() throws Exception {
+        if(checkpointSinceLoad) {
+            return checkpoint();
+        }
+        return false;
     }
 
     @Override public String getCheckpointFileName() {
@@ -161,11 +170,12 @@ public class BaseCheckpointer implements Checkpointer {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
-    @Override public boolean isLoadCheckpoint() {
-        return loadCheckpoint;
+    @Override public boolean isLoad() {
+        return load;
     }
 
-    @Override public void setLoadCheckpoint(final boolean loadCheckpoint) {
-        this.loadCheckpoint = loadCheckpoint;
+    @Override public void setLoad(final boolean load) {
+        this.load = load;
     }
+
 }

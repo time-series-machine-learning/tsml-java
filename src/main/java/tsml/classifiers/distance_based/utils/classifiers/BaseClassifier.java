@@ -6,7 +6,6 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Assert;
-import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
@@ -31,9 +30,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
+    // whether to generate train estimate
+    private boolean rebuildTrainEstimateResults = true;
 
     public BaseClassifier() {
-
+        this(false);
     }
 
     public BaseClassifier(boolean a) {
@@ -41,10 +42,12 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     private void setLogLevelFromDebug() {
-        if(debug) {
-            logger.setLevel(Level.FINE);
-        } else {
-            logger.setLevel(Level.OFF);
+        if(logger != null) {
+            if(debug) {
+                logger.setLevel(Level.FINE);
+            } else {
+                logger.setLevel(Level.OFF);
+            }
         }
     }
 
@@ -56,7 +59,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         if(rebuild) {
-            logger.fine("building from scratch");
+            logger.info(() -> "building " + getClassifierName() + " from scratch");
             // reset rebuild
             rebuild = false;
             Assert.assertNotNull(trainData);
@@ -120,4 +123,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public abstract double[] distributionForInstance(final Instance instance) throws Exception;
 
+    public boolean isRebuildTrainEstimateResults() {
+        return rebuildTrainEstimateResults;
+    }
+
+    public void setRebuildTrainEstimateResults(final boolean rebuildTrainEstimateResults) {
+        this.rebuildTrainEstimateResults = rebuildTrainEstimateResults;
+    }
 }

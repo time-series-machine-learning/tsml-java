@@ -20,7 +20,7 @@ public interface ContractedTrain extends TrainTimeContractable, TrainTimeable {
             return 0;
         }
         final long trainTimeLimit = getTrainTimeLimit();
-        final long trainTime = getTrainTime();
+        final long trainTime = getTrainTimeNanos();
         return trainTimeLimit - trainTime;
     }
 }

@@ -155,12 +155,17 @@ public class CopierUtils {
 
     // some default predicates for field types, these are used by default to avoid copying final / static fields and
     // avoid fields annotated with @DisableCopy
-    public static Predicate<Field> FINAL_OR_STATIC = field -> {
+    public static Predicate<Field> STATIC = field -> {
         int modifiers = field.getModifiers();
-        return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers);
+        return Modifier.isStatic(modifiers);
+    };
+    public static Predicate<Field> FINAL = field -> {
+        int modifiers = field.getModifiers();
+        return Modifier.isFinal(modifiers);
     };
     public static Predicate<Field> COPY = field -> field.getAnnotation(DisableCopy.class) == null;
-    public static Predicate<Field> DEFAULT_FIELDS = FINAL_OR_STATIC.negate().and(COPY);
+    // all fields except static and "no copy" fields (i.e. annotated with disable copy)
+    public static Predicate<Field> DEFAULT_FIELDS = STATIC.negate().and(COPY);
 
     /**
      * find all fields in a class

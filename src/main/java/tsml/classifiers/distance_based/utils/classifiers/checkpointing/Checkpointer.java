@@ -9,22 +9,22 @@ import java.util.logging.Logger;
 
 public interface Checkpointer extends Checkpointable, Loggable {
 
-    boolean isLoadCheckpoint();
-    void setLoadCheckpoint(boolean state);
+    boolean isLoad();
+    void setLoad(boolean state);
 
     boolean loadCheckpoint() throws Exception;
 
-    boolean saveCheckpoint(boolean force) throws Exception;
+    boolean checkpointIfIntervalExpired() throws Exception;
 
-    boolean saveCheckpoint() throws Exception;
+    boolean checkpoint() throws Exception;
 
-    boolean saveFinalCheckpoint() throws Exception;
+    boolean checkpointIfWorkDone() throws Exception;
 
     default boolean isCheckpointIntervalExpired() {
         return getLastCheckpointTimeStamp() + getMinCheckpointIntervalNanos() < System.nanoTime();
     }
 
-    default boolean isCheckpointing() {
+    default boolean isCheckpointPathSet() {
         return getCheckpointDirPath() != null;
     }
 

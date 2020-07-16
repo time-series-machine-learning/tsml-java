@@ -4,7 +4,6 @@ import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
@@ -135,25 +134,27 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveCheckpoint() throws Exception {
+    public boolean checkpointIfIntervalExpired() throws Exception {
 //        trainTimer.suspend();
 //        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
+//        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
 //            isBuilt()
 //            &&
-                                                                !skipFinalCheckpoint);
+//                                                                !skipFinalCheckpoint);
 //        memoryWatcher.unsuspend();
 //        trainTimer.unsuspend(); todo fix
-        return result;
+//        return result;
+        return true;
     }
 
     public boolean loadCheckpoint() {
 //        trainTimer.suspend(); // todo interface for this
 //        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
+//        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
 //        memoryWatcher.unsuspend(); todo fix
 //        trainTimer.unsuspend();
-        return result;
+//        return result;
+        return true;
     }
 
     public void setMinCheckpointIntervalNanos(final long nanos) {
@@ -230,7 +231,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         memoryWatcher.stop();
         // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
-            saveCheckpoint();
+            checkpointIfIntervalExpired();
         } else {
             // if we've loaded from checkpoint then there's no point in re saving a checkpoint as we haven't done any
             // further work

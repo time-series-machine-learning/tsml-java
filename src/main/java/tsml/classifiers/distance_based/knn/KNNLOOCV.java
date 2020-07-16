@@ -507,7 +507,7 @@ public class KNNLOOCV
         trainEstimateTimer.start(false);
         while(hasNextBuildTick()) {
             nextBuildTick();
-            saveCheckpoint();
+            checkpointIfIntervalExpired();
         }
         trainTimer.checkStopped();
         if(estimateOwnPerformance && regenerateTrainEstimate) {
@@ -538,7 +538,7 @@ public class KNNLOOCV
         }
         regenerateTrainEstimate = false;
 //        setBuilt(true);
-        saveCheckpoint();
+        checkpointIfIntervalExpired();
     }
 
     public long getTrainTimeNanos() {
