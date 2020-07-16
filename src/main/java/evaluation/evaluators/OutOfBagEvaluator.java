@@ -39,31 +39,32 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
     @Override public ClassifierResults evaluate(Classifier classifier, Instances data) throws Exception {
         final Random random = new Random(seed);
         // build a new oob train / test data
-        inBagTrainData = new Instances(data, data.size());
         inBagTrainDataIndices = new ArrayList<>(data.size());
-        final Set<Instance> oobTestSet = new HashSet<>(data.size());
         final Set<Integer> oobTestSetIndices = new HashSet<>(data.size());
-        oobTestSet.addAll(data);
         oobTestSetIndices.addAll(ArrayUtilities.sequence(data.size()));
         // pick n instances from train data, where n is the size of train data
         for(int i = 0; i < data.size(); i++) {
             int index = random.nextInt(data.size());
             Instance instance = data.get(index);
             inBagTrainDataIndices.add(index);
-            // add instance to the train bag
-            inBagTrainData.add(instance);
-            // remove the train instance from the test bag (if no already)
-            oobTestSet.remove(instance);
+            // remove the train instance from the test bag (if not already)
             oobTestSetIndices.remove(index);
         }
-        // quick check that oob test / train are independent
-        for(Instance i : inBagTrainData) {
-            Assert.assertFalse(oobTestSet.contains(i));
+        // populate in-bag train data
+        inBagTrainData = new Instances(data, inBagTrainDataIndices.size());
+        for(Integer i : inBagTrainDataIndices) {
+            // quick check that oob test / train are independent
+            Assert.assertFalse(oobTestSetIndices.contains(i));
+            Instance instance = data.get(i);
+            inBagTrainData.add(instance);
         }
-        // convert test data from set to instances
-        outOfBagTestData = new Instances(data, oobTestSet.size());
-        outOfBagTestData.addAll(oobTestSet);
+        // populate out-of-bag test data
+        outOfBagTestData = new Instances(data, oobTestSetIndices.size());
         outOfBagTestDataIndices = new ArrayList<>(oobTestSetIndices);
+        for(Integer i : outOfBagTestDataIndices) {
+            Instance instance = data.get(i);
+            outOfBagTestData.add(instance);
+        }
         // build the tree on the oob train
         getLogger().info("training on bagged train data");
         if(cloneClassifier) {
