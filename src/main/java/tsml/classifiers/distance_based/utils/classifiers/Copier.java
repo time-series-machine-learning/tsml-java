@@ -1,14 +1,10 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
 import java.lang.reflect.Constructor;
-import weka.core.SerializedObject;
 
 import java.io.Serializable;
-import java.lang.annotation.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Predicate;
 
 import static tsml.classifiers.distance_based.utils.classifiers.CopierUtils.copyFields;
 import static tsml.classifiers.distance_based.utils.classifiers.CopierUtils.findFields;

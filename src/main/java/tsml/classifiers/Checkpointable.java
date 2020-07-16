@@ -15,8 +15,6 @@
 package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
 import utilities.FileUtils;
 
 import java.io.*;
@@ -100,7 +98,7 @@ public interface Checkpointable extends Serializable {
     }
     //Define how to copy from a loaded object to this object
     default void copyFromSerObject(Object obj) throws Exception {
-        CopierUtils.shallowCopyFrom(obj, this, CheckpointUtils.findSerFields(obj));
+        CopierUtils.shallowCopyFrom(obj, this, CopierUtils.findSerialisableFields(obj));
     }
 
 

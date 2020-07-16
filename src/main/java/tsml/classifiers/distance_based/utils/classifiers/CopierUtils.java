@@ -14,6 +14,8 @@ import java.util.function.Predicate;
 
 public class CopierUtils {
 
+    public static final Predicate<Field> TRANSIENT = field -> Modifier.isTransient(field.getModifiers());
+
     /**
      * shallow copy an object, creating a new instance
      * @return
@@ -57,7 +59,7 @@ public class CopierUtils {
     // these are the same as the above, just deep versions
 
     public static Object deepCopy(Object src) throws Exception {
-        return deepCopy(src, findFields(src.getClass()));
+        return deepCopy(src, findSerialisableFields(src));
     }
 
     public static Object deepCopy(Object src, Collection<Field> fields) throws Exception {
@@ -68,7 +70,7 @@ public class CopierUtils {
 
     public static void deepCopyFrom(Object src, Object dest) throws
             Exception {
-        deepCopyFrom(src, dest, findFields(src.getClass()));
+        deepCopyFrom(src, dest, findSerialisableFields(src));
     }
 
     public static void deepCopyFrom(Object src, Object dest, Collection<Field> fields) throws
@@ -115,7 +117,7 @@ public class CopierUtils {
     }
 
     public static void copyFields(Object src, Object dest, boolean deep) throws Exception {
-        copyFields(src, dest, deep, findFields(dest.getClass(), DEFAULT_FIELDS));
+        copyFields(src, dest, deep, findFields(dest.getClass()));
     }
 
     /**
@@ -168,11 +170,20 @@ public class CopierUtils {
     public static Predicate<Field> DEFAULT_FIELDS = STATIC.negate().and(COPY);
 
     /**
-     * find all fields in a class
+     * find all non static fields in a class
      * @param clazz
      * @return
      */
     public static Set<Field> findFields(Class<?> clazz) {
+        return findFieldsExcept(clazz, DEFAULT_FIELDS);
+    }
+
+    /**
+     * find all fields in a class.
+     * @param clazz
+     * @return
+     */
+    public static Set<Field> findAllFields(Class<?> clazz) {
         Set<Field> fields = new HashSet<>();
         do {
             Collections.addAll(fields, clazz.getDeclaredFields());
@@ -187,8 +198,8 @@ public class CopierUtils {
      * @param predicate
      * @return
      */
-    public static Set<Field> findFields(Class<?> clazz, Predicate<? super Field> predicate) {
-        Set<Field> fields = findFields(clazz);
+    public static Set<Field> findFieldsExcept(Class<?> clazz, Predicate<? super Field> predicate) {
+        Set<Field> fields = findAllFields(clazz);
         fields.removeIf(predicate.negate());
         return fields;
     }
@@ -250,6 +261,15 @@ public class CopierUtils {
         final Object value = field.get(object);
         field.setAccessible(accessible);
         return value;
+    }
+
+    /**
+     * find the fields which are not recorded in serialisation (as these don't need copying)
+     * @param obj
+     * @return
+     */
+    public static Set<Field> findSerialisableFields(Object obj) {
+        return findFieldsExcept(obj.getClass(), TRANSIENT.negate().and(DEFAULT_FIELDS));
     }
 
     /**

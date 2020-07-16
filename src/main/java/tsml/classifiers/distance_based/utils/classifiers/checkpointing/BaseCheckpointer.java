@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
-import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
@@ -90,7 +89,7 @@ public class BaseCheckpointer implements Checkpointer {
     }
 
     @Override public final void copyFromSerObject(final Object src) throws Exception {
-        CopierUtils.shallowCopyFrom(src, target, CheckpointUtils.findSerFields(src));
+        CopierUtils.shallowCopyFrom(src, target, CopierUtils.findSerialisableFields(src));
     }
 
     public String getCheckpointFilePath() {

@@ -50,14 +50,14 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         switch(estimator) {
             case OOB:
                 final OutOfBagEvaluator outOfBagEvaluator = new OutOfBagEvaluator();
-                outOfBagEvaluator.setCloneClassifier(true);
+                outOfBagEvaluator.setCloneClassifier(false);
                 return outOfBagEvaluator;
             case CV:
                 final CrossValidationEvaluator crossValidationEvaluator = new CrossValidationEvaluator();
-                crossValidationEvaluator.setCloneClassifiers(true);
+                crossValidationEvaluator.setCloneClassifiers(false);
                 crossValidationEvaluator.setNumFolds(10);
-                crossValidationEvaluator.setCloneData(true);
-                crossValidationEvaluator.setSetClassMissing(true);
+                crossValidationEvaluator.setCloneData(false);
+                crossValidationEvaluator.setSetClassMissing(false);
                 return crossValidationEvaluator;
             default:
                 throw new UnsupportedOperationException("cannot handle " + estimator);
@@ -101,6 +101,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             }
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(trainData);
+            // first run so set the train estimate to be regenerated
+            setRebuildTrainEstimateResults(true);
         }
     }
 
