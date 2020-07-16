@@ -50,7 +50,7 @@ public class ArrayUtilities {
         double sum = sum(array);
         if(sum == 0) {
             if(ignoreZeroSum) {
-                return array;
+                return uniformDistribution(array.length);
             }
             throw new IllegalArgumentException("sum of zero");
         }
@@ -641,11 +641,10 @@ public class ArrayUtilities {
         double[] result = new double[limit];
         double amount = 1d / limit;
         double sum = 0;
-        for(int i = 0; i < limit - 1; i++) {
+        for(int i = 0; i < limit; i++) {
             result[i] = amount;
             sum += amount;
         }
-        result[limit - 1] = 1d - sum;
         return result;
     }
 }
