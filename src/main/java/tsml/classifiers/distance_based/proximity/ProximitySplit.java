@@ -209,7 +209,6 @@ public class ProximitySplit extends BaseClassifier {
      */
     public void buildClassifier() throws Exception {
         super.buildClassifier(trainData);
-        Indexer.index(trainData);
         // make a map to store the best X splits
         final PrunedMultimap<Double, SplitCandididate> map = PrunedMultimap.desc();
         if(randomTieBreakCandidates) {
@@ -229,8 +228,6 @@ public class ProximitySplit extends BaseClassifier {
         // backup the train data as modifications may be made during splitting (e.g. if doing intervals)
         final Instances origTrainData = new Instances(trainData);
         modifiedTrainData = null;
-        // change the view of the data into per class
-        final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(this.trainData);
         // for every split attempt
         for(int i = 0; i < r; i++) {
             // pick the distance function

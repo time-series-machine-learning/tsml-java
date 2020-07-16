@@ -60,7 +60,6 @@ public class CachedTransformer extends BaseTrainableTransformer {
     public void reset() {
         super.reset();
         cache = null;
-//        indexer.reset();
     }
 
     @Override

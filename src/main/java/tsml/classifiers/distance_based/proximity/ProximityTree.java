@@ -266,14 +266,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // start monitoring resources
         memoryWatcher.start();
         trainTimer.start();
-        if(isRebuild()) {
+        final boolean rebuild = isRebuild();
+        super.buildClassifier(trainData);
+        if(rebuild) {
             // reset resources
             memoryWatcher.resetAndStart();
             trainTimer.resetAndStart();
             tree = new BaseTree<>();
             nodeBuildQueue = new LinkedList<>();
             maxTimePerInstanceForNodeBuilding = 0;
-            super.buildClassifier(trainData);
             // setup the root node
             final TreeNode<ProximitySplit> root = setupNode(trainData, null);
             // add the root node to the tree

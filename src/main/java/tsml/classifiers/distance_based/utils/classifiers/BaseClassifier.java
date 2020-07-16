@@ -6,6 +6,7 @@ import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,6 +16,7 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -47,9 +49,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     protected Evaluator buildEvaluator() {
         switch(estimator) {
             case OOB:
-                return new OutOfBagEvaluator();
+                final OutOfBagEvaluator outOfBagEvaluator = new OutOfBagEvaluator();
+                outOfBagEvaluator.setCloneClassifier(true);
+                return outOfBagEvaluator;
             case CV:
-                return new CrossValidationEvaluator();
+                final CrossValidationEvaluator crossValidationEvaluator = new CrossValidationEvaluator();
+                crossValidationEvaluator.setCloneClassifiers(true);
+                crossValidationEvaluator.setNumFolds(10);
+                crossValidationEvaluator.setCloneData(true);
+                crossValidationEvaluator.setSetClassMissing(true);
+                return crossValidationEvaluator;
             default:
                 throw new UnsupportedOperationException("cannot handle " + estimator);
         }
@@ -72,9 +81,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
+        logger.info(() -> {
+            String msg = "building " + getClassifierName();
+            if(rebuild) {
+                msg += " from scratch";
+            }
+            return msg;
+        });
         if(rebuild) {
-            logger.info(() -> "building " + getClassifierName() + " from scratch");
             // reset rebuild
+            // default behaviour is to rebuild initially, then turn off the rebuild flag. Subsequent calls to buildClassifier will result in further building instead of building from scratch every time. If you need to build from scratch, just call setRebuild(true) before calling this method.
             rebuild = false;
             Assert.assertNotNull(trainData);
             // reset train results

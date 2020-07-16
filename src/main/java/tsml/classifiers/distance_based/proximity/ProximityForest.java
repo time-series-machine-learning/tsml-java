@@ -25,6 +25,7 @@ import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
+import utilities.InstanceTools;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -378,6 +379,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
     // whether to rebuild the tree after a train estimate has been produced. This is for evaluation methods like OOB where the evaluated tree may not need rebuilding
     private boolean rebuildConstituentAfterEvaluation;
+    // the train data
+    private Instances trainData;
+    // map of train data to indices for constructing train estimates
+
 
     @Override public Checkpointer getCheckpointer() {
         return checkpointer;
@@ -414,7 +419,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override
-    public void buildClassifier(final Instances trainData) throws Exception {
+    public void buildClassifier(Instances trainData) throws Exception {
         final Logger logger = getLogger();
         // load from checkpoint
         loadCheckpoint();
@@ -422,14 +427,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
+        final boolean rebuild = isRebuild();
+        super.buildClassifier(trainData);
         // rebuild if set
-        if(isRebuild()) {
-            // reset variables
-            trainEstimateTimer.resetAndStop();
+        if(rebuild) {
+            // reset resouce monitors
             memoryWatcher.resetAndStart();
+            trainEstimateTimer.resetAndStop();
             trainTimer.resetAndStart();
-            // build parent
-            super.buildClassifier(trainData);
             // no constituents to start with
             constituents = new ArrayList<>();
             // first run so set the train estimate to be regenerated
@@ -438,8 +443,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             longestTrainStageTimeNanos = 0;
             LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
         }
-        // index the instances
-        Indexer.index(trainData);
         // lap train timer
         trainTimer.lap();
         // while remaining time / more trees need to be built
@@ -509,29 +512,33 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 final Constituent constituent = constituents.get(j);
                 final Evaluator evaluator = constituent.getEvaluator();
                 final ProximityTree tree = constituent.getProximityTree();
-                Instances trainEstimateData;
+                // the indices of dataInTrainEstimate to trainData. I.e. the 0th instance in dataInTrainEstimate is the trainDataIndices.get(0) 'th instance in the train data.
+                final List<Integer> trainDataIndices;
+                final Instances dataInTrainEstimate;
                 // the train estimate data may be different depending on the evaluation method
                 if(estimator.equals(EstimatorMethod.OOB)) {
-                    trainEstimateData = ((OutOfBagEvaluator) evaluator).getOutOfBagTestData();
+                    dataInTrainEstimate = ((OutOfBagEvaluator) evaluator).getOutOfBagTestData();
+                    trainDataIndices = ((OutOfBagEvaluator) evaluator).getOutOfBagTestDataIndices();
                 } else if(estimator.equals(EstimatorMethod.CV)) {
-                    trainEstimateData = trainData;
+                    dataInTrainEstimate = trainData;
+                    trainDataIndices = ArrayUtilities.sequence(trainData.size());
                 } else {
                     throw new UnsupportedOperationException("cannot get train data from evaluator: " + evaluator);
                 }
                 final ClassifierResults constituentTrainResults = constituent.getEvaluationResults();
                 // add each prediction to the results weighted by the evaluation of the constituent
-                for(int i = 0; i < trainEstimateData.size(); i++) {
+                for(int i = 0; i < dataInTrainEstimate.size(); i++) {
                     long time = System.nanoTime();
-                    final Instance instance = trainEstimateData.get(i);
-                    final int instanceIndex = ((Indexer.IndexedInstance) instance).getIndex();
+                    final Instance instance = dataInTrainEstimate.get(i);
+                    final int instanceIndexInTrainData = trainDataIndices.get(i);
                     double[] distribution = constituentTrainResults.getProbabilityDistribution(i);
                     // weight the vote of this constituent
                     distribution = vote(constituent, instance);
-                    ArrayUtilities.addInPlace(finalDistributions[instanceIndex], distribution);
+                    ArrayUtilities.addInPlace(finalDistributions[instanceIndexInTrainData], distribution);
                     // add onto the prediction time for this instance
                     time = System.nanoTime() - time;
                     time += constituentTrainResults.getPredictionTime(i);
-                    times[instanceIndex] = time;
+                    times[instanceIndexInTrainData] = time;
                 }
             }
             // consolidate / normalise all of the predictions

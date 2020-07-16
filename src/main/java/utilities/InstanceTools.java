@@ -36,6 +36,14 @@ import static utilities.Utilities.normalise;
  */
 public class InstanceTools {
 
+    public static Map<Instance, Integer> indexInstances(Instances instances) {
+        Map<Instance, Integer> instanceIntegerMap = new HashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            instanceIntegerMap.put(instances.get(i), i);
+        }
+        return instanceIntegerMap;
+    }
+
     public static void setClassMissing(Instances data) {
         for(Instance instance : data) {
             instance.setClassMissing();
