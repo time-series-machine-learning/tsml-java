@@ -9,6 +9,12 @@ import java.util.stream.Collectors;
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static double[] oneHot(int length, int index) {
+        final double[] array = new double[length];
+        array[index] = 1;
+        return array;
+    }
+
     public static <A> A extractSingleValueList(List<A> list) {
         if(list.size() != 1) {
             throw new IllegalArgumentException("expected a list with only 1 element");
