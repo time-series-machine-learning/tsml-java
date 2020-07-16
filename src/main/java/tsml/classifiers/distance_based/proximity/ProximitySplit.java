@@ -7,9 +7,6 @@ import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistan
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap.DiscardType;
@@ -20,10 +17,8 @@ import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer.GiniImpurityEntropy;
-import tsml.transformers.Indexer;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
-import tsml.transformers.Transformer;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
@@ -33,7 +28,6 @@ import weka.core.Instances;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * Purpose: perform a split using several exemplar instances to partition the data based upon proximity.
@@ -44,7 +38,7 @@ public class ProximitySplit extends BaseClassifier {
 
     // the various configs for this classifier
     public enum Config implements EnumBasedClassifierConfigurer<ProximitySplit> {
-        R1() {
+        PS_R1() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
                 proximitySplit = super.applyConfigTo(proximitySplit);
@@ -64,86 +58,86 @@ public class ProximitySplit extends BaseClassifier {
                 return proximitySplit;
             }
         },
-        R5() {
+        PS_R5() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R1.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(5);
                 return proximitySplit;
             }
         },
-        R10() {
+        PS_R10() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R1.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setR(10);
                 return proximitySplit;
             }
         },
-        RR5() {
+        PS_RR5() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R5.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R5.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomR(true);
                 return proximitySplit;
             }
         },
-        RR10() {
+        PS_RR10() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R10.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R10.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomR(true);
                 return proximitySplit;
             }
         },
-        R1_I() {
+        PS_R1_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R1.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
             }
         },
-        R5_I() {
+        PS_R5_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R5.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R5.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
             }
         },
-        R10_I() {
+        PS_R10_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = R10.applyConfigTo(proximitySplit);
+                proximitySplit = PS_R10.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
             }
         },
-        RR5_I() {
+        PS_RR5_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = RR5.applyConfigTo(proximitySplit);
+                proximitySplit = PS_RR5.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
             }
         },
-        RR10_I() {
+        PS_RR10_I() {
             @Override
             public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = RR10.applyConfigTo(proximitySplit);
+                proximitySplit = PS_RR10.applyConfigTo(proximitySplit);
                 proximitySplit = super.applyConfigTo(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
@@ -153,7 +147,7 @@ public class ProximitySplit extends BaseClassifier {
     }
 
     public ProximitySplit() {
-        Config.R5.applyConfigTo(this);
+        Config.PS_R5.applyConfigTo(this);
     }
 
     // whether to early abandon distance measurements for distance between instances (data) and exemplars

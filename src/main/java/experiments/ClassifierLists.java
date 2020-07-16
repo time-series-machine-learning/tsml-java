@@ -135,85 +135,85 @@ public class ClassifierLists {
                 c = new ElasticTransformClassifier();
                 break;
             case "PF_R1":
-                c = ProximityForest.Config.R1.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R1.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5":
-                c = ProximityForest.Config.R5.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R10":
-                c = ProximityForest.Config.R10.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R10.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R1_I":
-                c = ProximityForest.Config.R1_I.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R1_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_I":
-                c = ProximityForest.Config.R5_I.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R10_I":
-                c = ProximityForest.Config.R10_I.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R10_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_RR5_I":
-                c = ProximityForest.Config.RR5_I.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_RR5_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_RR10_I":
-                c = ProximityForest.Config.RR10_I.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_RR10_I.applyConfigTo(new ProximityForest());
                 break;
             case "PF_RR5":
-                c = ProximityForest.Config.RR5.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_RR5.applyConfigTo(new ProximityForest());
                 break;
             case "PF_RR10":
-                c = ProximityForest.Config.RR10.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_RR10.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T10":
-                c = ProximityForest.Config.R5_T10.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T10.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T20":
-                c = ProximityForest.Config.R5_T20.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T20.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T50":
-                c = ProximityForest.Config.R5_T50.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T50.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T200":
-                c = ProximityForest.Config.R5_T200.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T200.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T500":
-                c = ProximityForest.Config.R5_T500.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T500.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_T1000":
-                c = ProximityForest.Config.R5_T1000.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_T1000.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB":
-                c = ProximityForest.Config.R5_OOB.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_R":
-                c = ProximityForest.Config.R5_OOB_R.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_R.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_D":
-                c = ProximityForest.Config.R5_OOB_D.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_D.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_R_D":
-                c = ProximityForest.Config.R5_OOB_R_D.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_R_D.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_W":
-                c = ProximityForest.Config.R5_OOB_W.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_W.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_R_W":
-                c = ProximityForest.Config.R5_OOB_R_W.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_R_W.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_WD":
-                c = ProximityForest.Config.R5_OOB_WD.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_WD.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_OOB_R_WD":
-                c = ProximityForest.Config.R5_OOB_R_WD.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_OOB_R_WD.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_CV":
-                c = ProximityForest.Config.R5_CV.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_CV.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_CV_D":
-                c = ProximityForest.Config.R5_CV_D.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_CV_D.applyConfigTo(new ProximityForest());
                 break;
             case "PF_R5_CV_WD":
-                c = ProximityForest.Config.R5_CV_WD.applyConfigTo(new ProximityForest());
+                c = ProximityForest.Config.PF_R5_CV_WD.applyConfigTo(new ProximityForest());
                 break;
             case "ORIG_PF":
                 c = new ProximityForestWrapper();

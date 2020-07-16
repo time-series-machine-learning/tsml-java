@@ -40,6 +40,7 @@ public class Utils {
         System.out.println();
         System.out.println("train time: " + timer.getTime());
         System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println();
 //        GcFinalization.awaitFullGc();
         if(classifier instanceof EnhancedAbstractClassifier) {
             if(((EnhancedAbstractClassifier) classifier).getEstimateOwnPerformance()) {
@@ -47,6 +48,7 @@ public class Utils {
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
                 System.out.println(trainResults.writeFullResultsToString());
+                System.out.println();
             }
         }
         timer.resetAndStart();
@@ -58,7 +60,6 @@ public class Utils {
         memoryWatcher.stop();
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
-        System.out.println();
         System.out.println("test time: " + timer.getTime());
         System.out.println("test mem: " + memoryWatcher.toString());
         System.out.println("test results:");

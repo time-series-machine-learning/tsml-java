@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.proximity;
 
-import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
@@ -23,16 +22,13 @@ import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
-import tsml.transformers.Indexer;
 import utilities.ArrayUtilities;
-import utilities.InstanceTools;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -46,11 +42,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityForest classifier = new ProximityForest();
-            Config.R5_OOB.applyConfigTo(classifier);
+            Config.PF_R5_CV.applyConfigTo(classifier);
             classifier.setEstimateOwnPerformance(true);
             classifier.setSeed(seed);
-            classifier.setEstimatorMethod("OOB");
             classifier.setRebuildConstituentAfterEvaluation(true);
+//            classifier.setNumTreeLimit(2);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/uni2018/", "GunPoint", seed));
@@ -59,7 +55,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     public enum Config implements EnumBasedClassifierConfigurer<ProximityForest> {
-        R1() {
+        PF_R1() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
                 proximityForest = super.applyConfigTo(proximityForest);
@@ -68,172 +64,172 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setEstimatorMethod("none");
                 proximityForest.setNumTreeLimit(100);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R5);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
                 proximityForest.setUseDistributionInVoting(false);
                 proximityForest.setWeightTreesByTrainEstimate(false);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R1);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1);
                 return proximityForest;
             }
         },
-        R5() {
+        PF_R5() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = PF_R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R5);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
                 return proximityForest;
             }
         },
-        R5_I() {
+        PF_R5_I() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = PF_R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R5_I);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_I);
                 return proximityForest;
             }
         },
-        R10_I() {
+        PF_R10_I() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R10.applyConfigTo(proximityForest);
+                proximityForest = PF_R10.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R10_I);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_I);
                 return proximityForest;
             }
         },
-        R1_I() {
+        PF_R1_I() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = PF_R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R1_I);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_I);
                 return proximityForest;
             }
         },
-        RR5_I() {
+        PF_RR5_I() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = PF_R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR5_I);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR5_I);
                 return proximityForest;
             }
         },
-        RR10_I() {
+        PF_RR10_I() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R10.applyConfigTo(proximityForest);
+                proximityForest = PF_R10.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR10_I);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR10_I);
                 return proximityForest;
             }
         },
-        R10() {
+        PF_R10() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R1.applyConfigTo(proximityForest);
+                proximityForest = PF_R1.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.R10);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10);
                 return proximityForest;
             }
         },
-        RR5() {
+        PF_RR5() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR5);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR5);
                 return proximityForest;
             }
         },
-        RR10() {
+        PF_RR10() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R10.applyConfigTo(proximityForest);
+                proximityForest = PF_R10.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.RR10);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR10);
                 return proximityForest;
             }
         },
-        R5_T10() {
+        PF_R5_T10() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(10);
                 return proximityForest;
             }
         },
-        R5_T20() {
+        PF_R5_T20() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(20);
                 return proximityForest;
             }
         },
-        R5_T50() {
+        PF_R5_T50() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(50);
                 return proximityForest;
             }
         },
-        R5_T200() {
+        PF_R5_T200() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(200);
                 return proximityForest;
             }
         },
-        R5_T500() {
+        PF_R5_T500() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(500);
                 return proximityForest;
             }
         },
-        R5_T1000() {
+        PF_R5_T1000() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setNumTreeLimit(1000);
                 return proximityForest;
             }
         },
-        R5_OOB() {
+        PF_R5_OOB() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 return proximityForest;
             }
         },
-        R5_OOB_R() {
+        PF_R5_OOB_R() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 return proximityForest;
             }
         },
-        R5_OOB_D() {
+        PF_R5_OOB_D() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
@@ -241,10 +237,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_OOB_R_D() {
+        PF_R5_OOB_R_D() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
@@ -252,10 +248,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_OOB_W() {
+        PF_R5_OOB_W() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
@@ -263,10 +259,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_OOB_R_W() {
+        PF_R5_OOB_R_W() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
@@ -274,10 +270,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_OOB_WD() {
+        PF_R5_OOB_WD() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
@@ -286,10 +282,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_OOB_R_WD() {
+        PF_R5_OOB_R_WD() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
@@ -298,39 +294,39 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        R5_CV() {
+        PF_R5_CV() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 return proximityForest;
             }
         },
-        R5_CV_D() {
+        PF_R5_CV_D() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setUseDistributionInVoting(true);
                 return proximityForest;
             }
         },
-        R5_CV_W() {
+        PF_R5_CV_W() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }
         },
-        R5_CV_WD() {
+        PF_R5_CV_WD() {
             @Override
             public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = R5.applyConfigTo(proximityForest);
+                proximityForest = PF_R5.applyConfigTo(proximityForest);
                 proximityForest = super.applyConfigTo(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
@@ -343,7 +339,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     public ProximityForest() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        Config.R1.applyConfigTo(this);
+        Config.PF_R1.applyConfigTo(this);
     }
 
     // the timer for contracting the estimate of train error
@@ -437,8 +433,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainTimer.resetAndStart();
             // no constituents to start with
             constituents = new ArrayList<>();
-            // first run so set the train estimate to be regenerated
-            setRebuildTrainEstimateResults(true);
             // zero tree build time so the first tree build will always set the bar
             longestTrainStageTimeNanos = 0;
             LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
@@ -478,12 +472,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 setRebuildTrainEstimateResults(true);
                 // set meta data
                 ResultUtils.setInfo(results, tree, trainData);
+                results.setErrorEstimateMethod(getEstimatorMethod());
                 trainEstimateTimer.stop();
                 results.setErrorEstimateTime(trainStageTimer.getTime());
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
             if(estimator.equals(EstimatorMethod.NONE) || rebuildConstituentAfterEvaluation) {
                 logger.info(() -> "building tree " + treeIndex);
+                tree.setRebuild(true);
                 tree.buildClassifier(trainData);
             }
             // tree fully built
@@ -541,18 +537,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     times[instanceIndexInTrainData] = time;
                 }
             }
-            // consolidate / normalise all of the predictions
-            for(int i = 0; i < finalDistributions.length; i++) {
-                long time = System.nanoTime();
-                // else normalise the sum of distributions from various trees
-                ArrayUtilities.normaliseInPlace(finalDistributions[i]);
-                time = System.nanoTime() - time;
-                times[i] += time;
-            }
             // add the final predictions into the results
             for(int i = 0; i < trainData.size(); i++) {
                 long time = System.nanoTime();
                 double[] distribution = finalDistributions[i];
+                // normalise the distribution as sum of votes has likely pushed sum of distribution >1
+                ArrayUtilities.normaliseInPlace(distribution, true);
                 double prediction = Utilities.argMax(distribution, rand);
                 double classValue = trainData.get(i).classValue();
                 time = System.nanoTime() - time;
@@ -601,12 +591,13 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             int index = Utilities.argMax(distribution, rand);
             distribution = ArrayUtilities.oneHot(distribution.length, index);
         }
-        ClassifierResults treeTrainResult = constituent.getEvaluationResults();
-        double weight = 1;
-        if(weightTreesByTrainEstimate && treeTrainResult != null) {
-            weight = treeTrainResult.getAcc();
+        if(weightTreesByTrainEstimate) {
+            ClassifierResults treeTrainResult = constituent.getEvaluationResults();
+            if(treeTrainResult != null) {
+                double weight = treeTrainResult.getAcc();
+                ArrayUtilities.multiplyInPlace(distribution, weight);
+            }
         }
-        ArrayUtilities.multiplyInPlace(distribution, weight);
         return distribution;
     }
 
