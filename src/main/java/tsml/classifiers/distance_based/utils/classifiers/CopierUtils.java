@@ -59,7 +59,7 @@ public class CopierUtils {
     // these are the same as the above, just deep versions
 
     public static Object deepCopy(Object src) throws Exception {
-        return deepCopy(src, findSerialisableFields(src));
+        return deepCopy(src, findFields(src.getClass()));
     }
 
     public static Object deepCopy(Object src, Collection<Field> fields) throws Exception {
@@ -70,7 +70,7 @@ public class CopierUtils {
 
     public static void deepCopyFrom(Object src, Object dest) throws
             Exception {
-        deepCopyFrom(src, dest, findSerialisableFields(src));
+        deepCopyFrom(src, dest, findFields(src.getClass()));
     }
 
     public static void deepCopyFrom(Object src, Object dest, Collection<Field> fields) throws
@@ -165,9 +165,9 @@ public class CopierUtils {
         int modifiers = field.getModifiers();
         return Modifier.isFinal(modifiers);
     };
-    public static Predicate<Field> COPY = field -> field.getAnnotation(DisableCopy.class) == null;
+    public static Predicate<Field> DISABLE_COPY = field -> field.getAnnotation(DisableCopy.class) == null;
     // all fields except static and "no copy" fields (i.e. annotated with disable copy)
-    public static Predicate<Field> DEFAULT_FIELDS = STATIC.negate().and(COPY);
+    public static Predicate<Field> DEFAULT_FIELDS = STATIC.negate().and(DISABLE_COPY);
 
     /**
      * find all non static fields in a class

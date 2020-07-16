@@ -360,11 +360,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the number of trees
     private int numTreeLimit;
     // the train time limit / contract
-    private long trainTimeLimitNanos;
+    private transient long trainTimeLimitNanos;
     // the test time limit / contract
-    private long testTimeLimitNanos;
+    private transient long testTimeLimitNanos;
     // the longest tree build time for predicting train time requirements
-    private long longestTrainStageTimeNanos;
+    private transient long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
     private Configurer<ProximityTree> proximityTreeConfig;
     // whether to use distributions in voting or predictions
@@ -375,10 +375,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
     // whether to rebuild the tree after a train estimate has been produced. This is for evaluation methods like OOB where the evaluated tree may not need rebuilding
     private boolean rebuildConstituentAfterEvaluation;
-    // the train data
-    private Instances trainData;
-    // map of train data to indices for constructing train estimates
-
 
     @Override public Checkpointer getCheckpointer() {
         return checkpointer;

@@ -184,9 +184,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the tree of splits
     private Tree<ProximitySplit> tree;
     // the train time limit / contract
-    private long trainTimeLimitNanos;
+    private transient long trainTimeLimitNanos;
     // the test time limit / contract
-    private long testTimeLimitNanos;
+    private transient long testTimeLimitNanos;
     // the longest time taken to build a node / split
     private long maxTimePerInstanceForNodeBuilding;
     // the queue of nodes left to build
