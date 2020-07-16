@@ -68,18 +68,10 @@ public class Catch22 implements Transformer {
     public void setOutlierNormalise(boolean b) { this.outlierNorm = b; }
 
     @Override
-    public Instances transform(Instances data) {
-        Instances newInst = determineOutputFormat(data);
-        for (Instance inst: data){
-            newInst.add(transform(inst));
-        }
-        return newInst;
-    }
-
-    @Override
     public Instance transform(Instance inst) {
         double[] arr = extractTimeSeries(inst);
-        double[] featureSet = transform(arr, inst.classValue());
+        double cls = inst.classIndex() >= 0 ? inst.classValue() : Double.MIN_VALUE;
+        double[] featureSet = transform(arr, cls);
         return new DenseInstance(1, featureSet);
     }
 
@@ -89,15 +81,20 @@ public class Catch22 implements Transformer {
         for (int i = 1; i <= 22; i++){
             atts.add(new Attribute("att" + i));
         }
-        atts.add(data.classAttribute());
+        if (data.classIndex() >= 0) atts.add(data.classAttribute());
         Instances transformedData = new Instances("Catch22Transform", atts, data.numInstances());
-        transformedData.setClassIndex(transformedData.numAttributes()-1);
+        if (data.classIndex() >= 0) transformedData.setClassIndex(transformedData.numAttributes()-1);
         return transformedData;
     }
 
+    public double[] transform(double[] series){
+        return transform(series, Double.MIN_VALUE);
+    }
+
     //no class value in series
-    public double[] transform(double[] series, double classVal){
-        double[] featureSet = new double[23];
+    public double[] transform(double[] series, double classValue){
+        int atts = classValue == Double.MIN_VALUE ? 22 : 23;
+        double[] featureSet = new double[atts];
 
         double[] arr;
         double[] outlierArr;
@@ -173,7 +170,7 @@ public class Catch22 implements Transformer {
         featureSet[20] = transitionMatrix3acSumdiagcovSB(arr, ac);
         featureSet[21] = periodicityWangTh001PD(arr);
 
-        featureSet[22] = classVal;
+        if (classValue > Double.MIN_VALUE) featureSet[22] = classValue;
 
         for (int i = 0; i < featureSet.length; i++){
             if (Double.isNaN(featureSet[i]) || Double.isInfinite(featureSet[i])){
@@ -1035,7 +1032,7 @@ public class Catch22 implements Transformer {
         double max = Math.log(ogLength/2);
         double inc = (max - min)/49;
         for (int i = 1; i < 50; i++){
-            int val = (int)Math.round(Math.exp(min + inc*(i)));
+            int val = (int)Math.round(Math.exp(min + inc*i));
             if (val != a.get(a.size()-1)){
                 a.add(val);
             }

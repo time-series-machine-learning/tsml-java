@@ -30,7 +30,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static utilities.InstanceTools.argmax;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
@@ -854,29 +856,47 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     private void findEnsembleTrainEstimate() throws Exception {
-        trainDistributions = new double[train.numInstances()][train.numClasses()];
+        if (estimator == EstimatorMethod.OOB){
 
-        for (int n = 0; n < numSeries; n++) {
-            for (int i = 0; i < numClassifiers[n]; i++) {
-                ArrayList<Integer> trainIdx = classifiers[n].get(i).getSubsampleIndices();
-                ArrayList<Integer> trainPreds = classifiers[n].get(i).getTrainPreds();
-                double weight = classifiers[n].get(i).getWeight();
-                for (int g = 0; g < trainIdx.size(); g++) {
-                    idxSubsampleCount[trainIdx.get(g)] += weight;
-                    trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
+        }
+        else {
+            trainDistributions = new double[train.numInstances()][train.numClasses()];
+
+            for (int n = 0; n < numSeries; n++) {
+                for (int i = 0; i < numClassifiers[n]; i++) {
+                    ArrayList<Integer> trainIdx = classifiers[n].get(i).getSubsampleIndices();
+                    ArrayList<Integer> trainPreds = classifiers[n].get(i).getTrainPreds();
+                    double weight = classifiers[n].get(i).getWeight();
+                    for (int g = 0; g < trainIdx.size(); g++) {
+                        idxSubsampleCount[trainIdx.get(g)] += weight;
+                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
+                    }
                 }
             }
-        }
 
-        for (int i = 0; i < trainDistributions.length; i++) {
-            if (idxSubsampleCount[i] > 0) {
-                for (int n = 0; n < trainDistributions[i].length; n++) {
-                    trainDistributions[i][n] /= idxSubsampleCount[i];
+            for (int i = 0; i < trainDistributions.length; i++) {
+                if (idxSubsampleCount[i] > 0) {
+                    for (int n = 0; n < trainDistributions[i].length; n++) {
+                        trainDistributions[i][n] /= idxSubsampleCount[i];
+                    }
                 }
             }
-        }
 
-        int totalClassifers = sum(numClassifiers);
+            int totalClassifers = sum(numClassifiers);
+            if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
+
+            for (int i = 0; i < train.numInstances(); ++i) {
+                double[] probs;
+
+                if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)) {
+                    probs = trainDistributions[i];
+                } else {
+                    probs = distributionForInstance(i);
+                }
+
+                trainResults.addPrediction(train.get(i).classValue(), probs, argMax(probs, rand), -1, "");
+            }
+        }
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
@@ -884,33 +904,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");
         trainResults.setParas(getParameters());
-
-        if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
-
-        for (int i = 0; i < train.numInstances(); ++i) {
-            double[] probs;
-
-            if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)){
-                probs = trainDistributions[i];
-            }
-            else {
-                probs = distributionForInstance(i);
-            }
-
-            int maxClass = 0;
-            for (int n = 1; n < probs.length; ++n) {
-                if (probs[n] > probs[maxClass]) {
-                    maxClass = n;
-                }
-                else if (probs[n] == probs[maxClass]){
-                    if (rand.nextBoolean()){
-                        maxClass = n;
-                    }
-                }
-            }
-
-            trainResults.addPrediction(train.get(i).classValue(), probs, maxClass, -1, "");
-        }
 
         trainResults.finaliseResults();
     }
