@@ -33,11 +33,7 @@ import java.util.stream.Stream;
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_MEASURE_FLAG;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
-public class ElasticTransform extends BaseTrainableTransformer {
-
-    public void setRandom(final Random random) {
-        this.random = random;
-    }
+public class ElasticTransform extends BaseTrainableTransformer implements Randomizable {
 
     public boolean isRandomIntervals() {
         return randomIntervals;
@@ -49,6 +45,18 @@ public class ElasticTransform extends BaseTrainableTransformer {
 
     public int getMinIntervalLength() {
         return minIntervalLength;
+    }
+
+    private int seed;
+    private Random random;
+
+    public void setSeed(final int seed) {
+        this.seed = seed;
+        random = new Random(seed);
+    }
+
+    public int getSeed() {
+        return seed;
     }
 
     public void setMinIntervalLength(final int minIntervalLength) {
@@ -107,7 +115,6 @@ public class ElasticTransform extends BaseTrainableTransformer {
     );
     private int numFeatures = 1000;
     private List<Feature> features;
-    private Random random;
     private List<ParamSpace> paramSpaces;
     private boolean reset = true;
     private List<List<Double>> transformedTrain;
@@ -249,7 +256,7 @@ public class ElasticTransform extends BaseTrainableTransformer {
                                     "/bench/phd/datasets/uni2018", datasetName,
                                     finalI);
                             ElasticTransform et = new ElasticTransform();
-                            et.setRandom(new Random(finalI));
+                            et.setSeed(finalI);
                             et.setRandomIntervals(randomIntervals);
                             for(int numFeatures : sizes) {
                                 System.out.println(datasetName + " " + finalI + " " + numFeatures + " start");

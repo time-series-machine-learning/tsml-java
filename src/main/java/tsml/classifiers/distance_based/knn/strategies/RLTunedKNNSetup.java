@@ -195,8 +195,9 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 getLogger().info(() -> "finding final classifiers");
                 // randomly pick 1 of the best classifiers
                 final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
-                final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
-                    rlTunedClassifier.getRandom());
+                final List<EnhancedAbstractClassifier> selectedBenchmarks = null;
+//                        Utilities.randPickN(benchmarks, 1,
+//                    rlTunedClassifier.getRandom());
                 if(selectedBenchmarks.size() > 1) {
                     throw new IllegalStateException("there shouldn't be more than 1");
                 }

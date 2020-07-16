@@ -152,11 +152,7 @@ public class ProximitySplit extends BaseClassifier {
         }
     }
 
-    /**
-     * @param random the random source
-     */
-    public ProximitySplit(Random random) {
-        setRandom(random);
+    public ProximitySplit() {
         Config.R5.applyConfigTo(this);
     }
 
@@ -351,7 +347,7 @@ public class ProximitySplit extends BaseClassifier {
             dataForBuilding = intervalTransform.transform(trainData);
         }
         // pick a random space
-        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, getRandom());
+        distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, rand);
         // built that space
         distanceFunctionSpace = distanceFunctionSpaceBuilder.build(dataForBuilding);
         // randomly pick the distance function / parameters from that space
@@ -382,12 +378,12 @@ public class ProximitySplit extends BaseClassifier {
         List<List<Instance>> exemplarGroups = Lists.newArrayList(instancesByClass.size());
         for(Double classLabel : instancesByClass.keySet()) {
             final Instances instanceClass = instancesByClass.get(classLabel);
-            final Instance exemplar = RandomUtils.choice(instanceClass, getRandom());
+            final Instance exemplar = RandomUtils.choice(instanceClass, rand);
             // orig pf always calls for a random number even if the instances has only one instance. The choice
             // function doesn't source a random number given a list of size 1, therefore the random number call must
             // be made here to match orig pf random number sequence
             if(instanceClass.size() == 1) {
-                getRandom().nextInt(1);
+                rand.nextInt(1);
             }
             exemplarGroups.add(Lists.newArrayList(exemplar));
         }
@@ -455,12 +451,12 @@ public class ProximitySplit extends BaseClassifier {
             Assert.assertEquals(numIndices, 1);
         }
         // random pick the best index
-        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, getRandom());
+        final Integer closestPartitionIndex = Utilities.randPickOne(closestPartitionIndices, rand);
         // no-op, but must sample the random source to match orig pf. The orig implementation always samples the
         // random irrelevant of whether the list size is 1 or more. We only sample IFF the list size is larger than 1
         // . Therefore we'll sample the random if the list is exactly equal to 1 in size.
         if(matchOriginalPFRandomCalls && numIndices == 1) {
-            getRandom().nextInt(numIndices);
+            rand.nextInt(numIndices);
         }
         return closestPartitionIndex;
     }

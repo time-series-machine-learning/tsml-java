@@ -15,7 +15,7 @@ public class ElasticTransformClassifier extends BaseClassifier {
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         super.buildClassifier(trainData);
         elasticTransform = new ElasticTransform();
-        elasticTransform.setRandom(rand);
+        elasticTransform.setSeed(rand.nextInt());
         Instances transformed = elasticTransform.fitTransform(trainData);
         final ContractRotationForest rotationForest = new ContractRotationForest();
         rotationForest.setMaxNumTrees(1000);

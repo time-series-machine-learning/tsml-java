@@ -631,10 +631,6 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return votingScheme.distributionForInstance(modules, instance);
     }
 
-    @Override public double classifyInstance(final Instance instance) throws Exception {
-        return Utilities.argMax(distributionForInstance(instance), getRandom());
-    }
-
     public ModuleVotingScheme getVotingScheme() {
         return votingScheme;
     }

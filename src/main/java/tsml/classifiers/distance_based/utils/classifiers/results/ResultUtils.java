@@ -21,6 +21,7 @@ public class ResultUtils {
             results.setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
             results.setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
             results.setParas(((EnhancedAbstractClassifier) classifier).getParameters());
+            results.setErrorEstimateMethod(((EnhancedAbstractClassifier) classifier).getEstimatorMethod());
         } else {
             results.setClassifierName(classifier.getClass().getSimpleName());
             if(classifier instanceof OptionHandler) {

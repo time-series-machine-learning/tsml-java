@@ -1,7 +1,11 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.Evaluator;
+import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,6 +15,7 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -21,11 +26,9 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable,
-    Loggable, DefaultClassifier {
-    private static final Logger DEFAULT_LOGGER = LogUtils.buildLogger(BaseClassifier.class);
+public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable, Loggable {
     // method of logging
-    private transient Logger logger = DEFAULT_LOGGER;
+    private transient Logger logger = LogUtils.buildLogger(getClass());
     // whether we're initialising the classifier, e.g. setting seed
     private boolean rebuild = true;
     // whether the seed has been set
@@ -39,6 +42,17 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     public BaseClassifier(boolean a) {
         super(a);
+    }
+
+    protected Evaluator buildEvaluator() {
+        switch(estimator) {
+            case OOB:
+                return new OutOfBagEvaluator();
+            case CV:
+                return new CrossValidationEvaluator();
+            default:
+                throw new UnsupportedOperationException("cannot handle " + estimator);
+        }
     }
 
     private void setLogLevelFromDebug() {
@@ -114,13 +128,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public void setRandom(Random random) {
-        Assert.assertNotNull(random);
-        rand = random;
-        seedSet = true;
-    }
-
-    @Override
     public abstract double[] distributionForInstance(final Instance instance) throws Exception;
 
     public boolean isRebuildTrainEstimateResults() {
@@ -130,4 +137,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     public void setRebuildTrainEstimateResults(final boolean rebuildTrainEstimateResults) {
         this.rebuildTrainEstimateResults = rebuildTrainEstimateResults;
     }
+
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        double[] distribution = distributionForInstance(instance);
+        return Utilities.argMax(distribution, rand);
+    }
+
 }

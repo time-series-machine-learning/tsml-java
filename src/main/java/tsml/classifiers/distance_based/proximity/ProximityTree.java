@@ -398,7 +398,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
      * @return
      */
     private ProximitySplit setupSplit(Instances data) {
-        ProximitySplit split = new ProximitySplit(getRandom());
+        ProximitySplit split = new ProximitySplit();
+        split.setSeed(rand.nextInt());
         split.setTrainData(data);
         split.setDistanceFunctionSpaceBuilders(distanceFunctionSpaceBuilders);
         proximitySplitConfig.applyConfigTo(split);

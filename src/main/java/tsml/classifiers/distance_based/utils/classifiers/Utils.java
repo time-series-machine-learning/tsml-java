@@ -65,6 +65,7 @@ public class Utils {
         System.out.println(testResults.writeFullResultsToString());
         overallMemoryWatcher.stop();
         overallTimer.stop();
+        System.out.println();
         System.out.println("overall time: " + overallTimer.getTime());
         System.out.println("overall mem: " + overallMemoryWatcher.toString());
     }

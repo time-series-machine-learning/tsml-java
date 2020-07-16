@@ -300,7 +300,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         public double[] predict() {
             predictTimer.resetAndStart();
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
-            final Random random = getRandom();
+            final Random random = null; //getRandom();
             final Logger logger = getLogger();
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
@@ -336,10 +336,6 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
             searcher.add(trainInstance);
         }
         return searcher.predict();
-    }
-
-    @Override public double classifyInstance(final Instance instance) throws Exception {
-        return Utilities.argMax(distributionForInstance(instance), getRandom());
     }
 
     public int getK() {

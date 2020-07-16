@@ -83,7 +83,7 @@ public class KNNTuningAgent extends BaseTuningAgent {
 
     @Override protected boolean isExploitable(final Benchmark benchmark) {
         final EnhancedAbstractClassifier classifier = benchmark.getClassifier();
-        if(!(classifier instanceof K)) {
+        if(!(classifier instanceof KNN)) {
             throw new IllegalStateException("expected only KNN");
         }
         throw new UnsupportedOperationException();
