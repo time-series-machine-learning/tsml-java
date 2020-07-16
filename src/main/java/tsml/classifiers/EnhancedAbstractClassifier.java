@@ -88,23 +88,6 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected transient boolean debug=false;
 
     /**
-     * get the classifier RNG
-     * @return Random
-     */
-    public Random getRandom() {
-        return rand;
-    }
-
-    /**
-     * Set the classifier RNG
-     * @param rand
-     */
-    public void setRandom(Random rand) {
-        this.rand = rand;
-        seedClassifier = false;
-    }
-
-    /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
      * be used to describe this classifier. By default, this will simply be the
      * simple-class-name of the classifier
@@ -156,11 +139,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             estimator=EstimatorMethod.CV;
         else if(s.equals("OOB"))
             estimator=EstimatorMethod.OOB;
+        else if(s.equals("NONE")) {
+            estimator = EstimatorMethod.NONE;
+        }
         else
             throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
     }
 
-
+    public String getEstimatorMethod() {
+        return estimator.name();
+    }
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
@@ -429,5 +417,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void printLineDebug(String s){
         if(debug)
             System.out.println(s);
+    }
+
+    public Random getRandom() {
+        return rand;
     }
 }
