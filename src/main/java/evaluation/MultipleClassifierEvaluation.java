@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
 import utilities.generic_storage.Pair;
@@ -555,12 +557,21 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
     public static void main(String[] args) throws Exception {
         String root = "/bench/phd/experiments";
+//        String expName = "2020_07_06_pf_training_methods";
         String expName = "2020_07_06_pf_correctness";
         String expDir = root + "/" + expName;
         String version = "v1";
+//        String version = "v10";
         MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", "analysis_" + version
             ,  30);
         mce.setDatasets("/bench/phd/datasets/lists/2015_pigless.txt");
+//        String[] classifierNames = new String[] {"PF_R5_OOB", "PF_R5_OOB_D","PF_R5_OOB_W", "PF_R5_OOB_WD", "PF_R5_OOB_R_D", "PF_R5_OOB_R_WD", "PF_R5_OOB_R_W", "PF_R5_OOB_R",  };
+//        String[] cleanedClassifierNames = Arrays.copyOf(classifierNames, classifierNames.length);
+//        for(int i = 0; i < cleanedClassifierNames.length; i++) {
+//            cleanedClassifierNames[i] = cleanedClassifierNames[i].replaceAll("[_]", "-").replaceAll("PF-R5-", "");
+//        }
+//        String classifierResultsPath = expDir + "/results_" + version + "/";
+//        mce.readInClassifiers(classifierNames, cleanedClassifierNames, classifierResultsPath);
         mce.readInClassifiers(new String[] {"PF_R5", "ORIG_PF_A"}, expDir + "/results_" + version + "/");
 //        mce.readInClassifiers(new String[] {"PF_R5_OOB", "PF_R5_OOB_R", "PF_R5_CV"}, "/home/goastler/bench/phd/experiments/2020_07_06_pf_training_methods/results_v9/");
 //        mce.readInClassifiers(new String[] {"PF_R5_T10", "PF_R5_T20", "PF_R5_T50", "PF_R5", "PF_R5_T200", "PF_R5_T500", "PF_R5_T1000"}, "/home/goastler/bench/phd/experiments/pf training methods/results_v9/");
