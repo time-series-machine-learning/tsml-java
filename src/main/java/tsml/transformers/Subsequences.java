@@ -23,6 +23,7 @@ public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
+    private boolean normalise = true;
     public Subsequences() {this.subsequenceLength = 30;}
     public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
@@ -39,6 +40,15 @@ public class Subsequences implements Transformer {
             temp=new double[timeSeries.length-1];
             System.arraycopy(timeSeries,0,temp,0,c); //assumes class attribute is in last index
             timeSeries=temp;
+        }
+        // Normalise the time series
+        double [] temp2;
+        if(normalise) {
+            temp2=new double[timeSeries.length];
+            System.arraycopy(timeSeries,0,temp2,0,timeSeries.length-1);
+            double mean = calculateMean(temp2);
+            double sd = calculateSD(temp2,mean);
+            timeSeries = normaliseArray(temp2,mean,sd);
         }
         // Extract the subsequences.
         double [] [] subsequences = extractSubsequences(timeSeries);
@@ -122,6 +132,51 @@ public class Subsequences implements Transformer {
         newFormat.setClassIndex(newFormat.numAttributes() - 1);
         this.relationalHeader = newFormat;
         return newFormat;
+    }
+
+    /**
+     * Private function to calculate the mean of an array.
+     *
+     * @param arr
+     * @return
+     */
+    private double calculateMean(double [] arr) {
+        double sum = 0.0;
+        for(int i=0;i<arr.length;i++) {
+            sum += arr[i];
+        }
+        return sum/(double)arr.length;
+    }
+
+    /**
+     * Private function to calculate the standard deviation of an array.
+     *
+     * @param arr
+     * @return
+     */
+    private double calculateSD(double [] arr,double mean) {
+        double sum = 0.0;
+        for(int i=0;i<arr.length;i++) {
+            sum += Math.pow(arr[i] - mean,2);
+        }
+        sum = sum / (double) arr.length;
+        return Math.sqrt(sum);
+    }
+
+    /**
+     * Private function for normalising an array.
+     *
+     * @param arr
+     * @param mean
+     * @param sd
+     * @return
+     */
+    private double [] normaliseArray(double [] arr,double mean,double sd) {
+        double [] normalisedArray = new double[arr.length];
+        for(int i=0;i<arr.length;i++) {
+            normalisedArray[i] = (arr[i] - mean)/sd;
+        }
+        return normalisedArray;
     }
 
     /**

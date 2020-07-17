@@ -54,9 +54,9 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     // Another method proposed is to combine the results of two shapeDescriptors together, if this is set to
     // true, then the results of shapeDescriptor and secondShapeDescriptor are concatenated together.
     private boolean useSecondShapeDescriptor = false;
-    private final Transformer [] validTransformers = new Transformer[] {new PAA(), new DWT(),
-                                                                        new Derivative(), new Slope(),
-                                                                        new HOG1D()};
+    private final Transformer [] VALID_TRANSFORMERS = new Transformer[] {new PAA(), new DWT(),
+                                                                         new Derivative(), new Slope(),
+                                                                         new HOG1D()};
     // For storing the dataset when creating the compound shape descriptors.
     private Instances compoundDataset;
 
@@ -331,7 +331,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         }
         //Check the shapeDescriptor function is the correct type.
         boolean found = false;
-        for(Transformer x: this.validTransformers) {
+        for(Transformer x: this.VALID_TRANSFORMERS) {
             if(this.shapeDescriptor == null) {
                 found = true;
                 break;
@@ -346,7 +346,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         }
         //Check the secondShapeDescriptor function is the correct type.
         found = false;
-        for(Transformer x: this.validTransformers) {
+        for(Transformer x: this.VALID_TRANSFORMERS) {
             if(this.secondShapeDescriptor == null) {
                 found = true;
                 break;

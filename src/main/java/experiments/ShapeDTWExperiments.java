@@ -7,13 +7,13 @@ import java.util.Scanner;
 public class ShapeDTWExperiments {
     public static void main(String[] args){
         try {
-            String fileLoc = "C:\\Users\\Vince\\Documents\\Dissertation Repositories\\datasets\\datasetsList.txt";
+            String fileLoc = "C:\\Users\\Vincent Nicholson\\Documents\\DissertationRepositories\\datasets\\datasetsList.txt";
             Scanner scan = new Scanner(new File(fileLoc));
             while(scan.hasNextLine()) {
                 String [] experimentArguments = new String[5];
-                experimentArguments[0] = "--dataPath=C:\\Users\\Vince\\Documents\\Dissertation Repositories\\datasets\\Univariate2018_arff";
-                experimentArguments[1] = "--resultsPath=C:\\Users\\Vince\\Documents\\Dissertation Repositories\\results\\java";
-                experimentArguments[2] = "--classifierName=NN_ShapeDTW_PAA";
+                experimentArguments[0] = "--dataPath=C:\\Users\\Vincent Nicholson\\Documents\\DissertationRepositories\\datasets\\Univariate_arff";
+                experimentArguments[1] = "--resultsPath=C:\\Users\\Vincent Nicholson\\Documents\\DissertationRepositories\\results\\java";
+                experimentArguments[2] = "--classifierName=NN_ShapeDTW_Raw";
                 experimentArguments[3] = "--datasetName=" + scan.nextLine();
                 experimentArguments[4] = "--fold=10";
                 Experiments.main(experimentArguments);
