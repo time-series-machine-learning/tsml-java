@@ -35,7 +35,7 @@ public class Subsequences implements Transformer {
         // remove class label
         double[] temp;
         int c = inst.classIndex();
-        if(!inst.classIsMissing()) {
+        if(inst.classIndex() > 0) {
             temp=new double[timeSeries.length-1];
             System.arraycopy(timeSeries,0,temp,0,c); //assumes class attribute is in last index
             timeSeries=temp;
