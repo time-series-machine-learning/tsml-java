@@ -454,7 +454,7 @@ public class Experiments  {
         // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
         // going to be the case; supply a path and everything will be written there
         if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
+            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/fold" + expSettings.foldId;
 
         f = new File(expSettings.supportingFilePath);
         if (!f.exists())
@@ -983,7 +983,7 @@ public class Experiments  {
         @Parameter(names={"-threads"}, description = "threads")
         private int threads = 1;
 
-        private Level logLevel = null;
+        private Level logLevel = Level.OFF;
 
         public boolean hasTrainContracts() {
             return trainContracts.size() > 0;

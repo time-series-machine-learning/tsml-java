@@ -120,9 +120,10 @@ public class ClassifierLists {
         "PF_R5_OOB_R_W",
         "PF_R5_OOB_WD",
         "PF_R5_OOB_R_WD",
-        "PF_R5_OOB_CV",
-        "PF_R5_OOB_CV_D",
-        "PF_R5_OOB_CV_WD",
+        "PF_R5_CV",
+        "PF_R5_CV_D",
+        "PF_R5_CV_WD",
+        "PF_R5_CV_W",
         "ET2",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
