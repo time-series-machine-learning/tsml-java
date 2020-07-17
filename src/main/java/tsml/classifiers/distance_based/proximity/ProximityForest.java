@@ -551,7 +551,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
         checkpointIfWorkDone();
-        logger.info("build complete");
     }
 
     @Override

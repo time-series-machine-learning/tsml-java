@@ -79,6 +79,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         setLogLevelFromDebug();
     }
 
+    @Override public void setClassifierName(final String classifierName) {
+        super.setClassifierName(classifierName);
+        setLogger(LogUtils.buildLogger(classifierName));
+    }
+
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         logger.info(() -> {
@@ -113,6 +118,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override public void setLogger(final Logger logger) {
         Assert.assertNotNull(logger);
+        // copy logging level
+        logger.setLevel(this.logger.getLevel());
         this.logger = logger;
     }
 

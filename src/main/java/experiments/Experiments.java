@@ -212,11 +212,11 @@ public class Experiments  {
         // The set classifier call is therefore made before defining paths that are dependent on the classifier name
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
 
-        if(classifier instanceof Loggable) {
-            ((Loggable) classifier).getLogger().setLevel(expSettings.logLevel);
-        }
         if(classifier instanceof EnhancedAbstractClassifier) {
             ((EnhancedAbstractClassifier) classifier).setDebug(debug);
+        }
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(expSettings.logLevel);
         }
 
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
@@ -262,11 +262,6 @@ public class Experiments  {
         FileUtils.FileLock trainLock = null;
         try {
             testLock = new FileUtils.FileLock(expSettings.testFoldFileName);
-            if(testLock.isLocked()) {
-                if(expSettings.generateErrorEstimateOnTrainSet) {
-                    trainLock = new FileUtils.FileLock(expSettings.trainFoldFileName);
-                }
-            }
         } catch(Exception e) {
             LOGGER.info("test / train file locked");
             return null;
@@ -289,9 +284,6 @@ public class Experiments  {
             return null; //error state
         }
         testLock.unlock();
-        if(expSettings.generateErrorEstimateOnTrainSet) {
-            trainLock.unlock();
-        }
 
         return experimentResults;
     }
