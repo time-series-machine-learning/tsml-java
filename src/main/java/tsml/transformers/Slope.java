@@ -50,6 +50,7 @@ public class Slope implements Transformer {
             System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
             data=temp;
         }
+        checkParameters(data.length);
         double [] gradients = getGradients(data);
         //Now in DWT form, extract out the terms and set the attributes of new instance
         Instance newInstance;
@@ -186,5 +187,88 @@ public class Slope implements Transformer {
             result.setClassIndex(result.numAttributes() - 1);
         }
         return result;
+    }
+
+    private void checkParameters(int timeSeriesLength) {
+        if(this.numIntervals < 1) {
+            throw new IllegalArgumentException("numIntervals must be greater than zero.");
+        }
+        if(this.numIntervals > timeSeriesLength) {
+            throw new IllegalArgumentException("numIntervals cannot be longer than the time series length.");
+        }
+    }
+
+    /**
+     * Main class for testing.
+     * @param args
+     */
+    public static void main(String[] args) {
+        Instances data = createData(new double [] {1,2,3,4,5});
+        //test bad num_intervals (must be at least 1, cannot be higher than the time series length)
+        int [] badNumIntervals = new int [] {0,-5,6};
+        for(int badNumInterval:badNumIntervals) {
+            try{
+                Slope s = new Slope(badNumInterval);
+                s.transform(data);
+                System.out.println("Test failed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
+        //test good num_levels
+        int [] goodNumIntervals = new int [] {5,3,1};
+        for(int goodNumInterval:goodNumIntervals) {
+            try{
+                Slope s = new Slope(goodNumInterval);
+                s.transform(data);
+                System.out.println("Test passed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
+        //test output of transformer
+        Instances test = createData(new double [] {4,6,10,12,8,6,5,5});
+        Slope s = new Slope(2);
+        Instances res = s.transform(test);
+        double [] resArr = res.get(0).toDoubleArray();
+        System.out.println(Arrays.equals(resArr, new double [] {(5.0+Math.sqrt(41))/4.0,(1.0+Math.sqrt(101))/-10.0}));
+
+        test = createData(new double [] {-5,2.5,1,3,10,-1.5,6,12,-3,0.2});
+        res = s.transform(test);
+        resArr = res.get(0).toDoubleArray();
+        // This is the correct output, but difficult to test if floating point numbers are exactly correct.
+    }
+
+    /**
+     * Function to create data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createData(double [] data) {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<data.length;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        Instances newInsts = new Instances("Test_dataset",atts,1);
+        //create the test data
+        createInst(data,newInsts);
+        return newInsts;
+    }
+
+    /**
+     * private function for creating an instance from a double array. Used
+     * for testing purposes.
+     *
+     * @param arr
+     * @return
+     */
+    private static void createInst(double [] arr,Instances dataset) {
+        Instance inst = new DenseInstance(arr.length);
+        for(int i=0;i<arr.length;i++) {
+            inst.setValue(i,arr[i]);
+        }
+        inst.setDataset(dataset);
+        dataset.add(inst);
     }
 }

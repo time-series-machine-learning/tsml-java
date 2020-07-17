@@ -1,12 +1,10 @@
 package tsml.transformers;
 
 import org.apache.commons.lang3.ArrayUtils;
-import tsml.transformers.Transformer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -198,5 +196,11 @@ public class HOG1D implements Transformer {
             result.setClassIndex(result.numAttributes() - 1);
         }
         return result;
+    }
+
+    public static void main(String[] args) {
+        //test bad num_intervals
+        //test good num_intervals
+        //test 
     }
 }

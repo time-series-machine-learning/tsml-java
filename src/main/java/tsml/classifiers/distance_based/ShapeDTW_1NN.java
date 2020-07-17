@@ -432,7 +432,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
 
     /**
      * Function to calculate accuracy purely for testing the functionality of ShapeDTW_1NN.
-     * 
+     *
      * @param s
      * @param data
      * @return

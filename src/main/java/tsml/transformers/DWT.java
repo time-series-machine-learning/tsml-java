@@ -6,6 +6,7 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This class performs a Haar Wavelet transformation on a given time series. The result
@@ -37,6 +38,7 @@ public class DWT implements Transformer {
 
     @Override
     public Instance transform(Instance inst) {
+        checkParameters();
         double[] data = inst.toDoubleArray();
         //remove class attribute if needed
         double[] temp;
@@ -193,78 +195,71 @@ public class DWT implements Transformer {
         }
     }
 
+    private void checkParameters() {
+        if(this.numLevels < 0) {
+            throw new IllegalArgumentException("numLevels cannot be negative.");
+        }
+    }
+
     public static void main(String[] args) throws Exception {
+        Instances data = createData(new double [] {1,2,3,4,5});
+        // test bad num_levels
+        // num_levels cannot be negative
+        int [] badNumLevels = new int [] {-1,-5,-999};
+        for(int badNumLevel:badNumLevels) {
+            try{
+                DWT d = new DWT(badNumLevel);
+                d.transform(data);
+                System.out.println("Test failed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
         //test good num_levels
-        //test bad num_levels
+        int [] goodNumLevels = new int [] {0,1,999};
+        for(int goodNumLevel:goodNumLevels) {
+            try{
+                DWT d = new DWT(goodNumLevel);
+                d.transform(data);
+                System.out.println("Test passed.");
+            } catch(IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
 
+        //check output
+        data = createData(new double [] {4,6,10,12,8,6,5,5});
         DWT d = new DWT(2);
-        Instances res = d.determineOutputFormat(data[0]);
-        System.out.println(d.transform(data[0]).toString());
+        double [] resArr = d.transform(data).get(0).toDoubleArray();
+        // This is equivalent but rounding errors prevent from checking exactly
+        System.out.println(Arrays.equals(resArr,new double []
+                {16,12,-6,2,-Math.sqrt(2),-Math.sqrt(2),Math.sqrt(2),0}));
+        data = createData(new double [] {-5,2.5,1,3,10,-1.5,6,12,-3});
+        resArr = d.transform(data).get(0).toDoubleArray();
+        // Same issue here
+        System.out.println(Arrays.equals(resArr,new double []
+                {0.75,13.25,-3.25,-4.75,-5.303,-1.414,8.132,-4.243}));
+        //check that num levels being zero does no change
+        data = createData(new double [] {1,2,3,4,5,6,7,8});
+        d = new DWT(0);
+        resArr = d.transform(data).get(0).toDoubleArray();
+        System.out.println(Arrays.equals(data.get(0).toDoubleArray(),resArr));
     }
 
     /**
-     * Function to create train data for testing purposes.
+     * Function to create data for testing purposes.
      *
      * @return
      */
-    private static Instances createTrainData() {
+    private static Instances createData(double [] data) {
         //Create the attributes
         ArrayList<Attribute> atts = new ArrayList<>();
-        for(int i=0;i<5;i++) {
+        for(int i=0;i<data.length;i++) {
             atts.add(new Attribute("test_" + i));
         }
-        //Create the class values
-        ArrayList<String> classes = new ArrayList<>();
-        classes.add("1");
-        classes.add("0");
-        atts.add(new Attribute("class",classes));
-        Instances newInsts = new Instances("Test_dataset",atts,5);
-        newInsts.setClassIndex(newInsts.numAttributes()-1);
-
+        Instances newInsts = new Instances("Test_dataset",atts,1);
         //create the test data
-        double [] test = new double [] {1,2,3,4,5};
-        createInst(test,"1",newInsts);
-        test = new double [] {1,1,2,3,4};
-        createInst(test,"1",newInsts);
-        test = new double [] {2,2,2,3,4};
-        createInst(test,"0",newInsts);
-        test = new double [] {2,3,4,5,6};
-        createInst(test,"0",newInsts);
-        test = new double [] {0,1,1,1,2};
-        createInst(test,"1",newInsts);
-        return newInsts;
-    }
-
-    /**
-     * Function to create test data for testing purposes.
-     *
-     * @return
-     */
-    private static Instances createTestData() {
-        //Create the attributes
-        ArrayList<Attribute> atts = new ArrayList<>();
-        for(int i=0;i<5;i++) {
-            atts.add(new Attribute("test_" + i));
-        }
-        //Create the class values
-        ArrayList<String> classes = new ArrayList<>();
-        classes.add("1");
-        classes.add("0");
-        atts.add(new Attribute("class",classes));
-        Instances newInsts = new Instances("Test_dataset",atts,5);
-        newInsts.setClassIndex(newInsts.numAttributes()-1);
-
-        //create the test data
-        double [] test = new double [] {5,4,3,2,1};
-        createInst(test,"1",newInsts);
-        test = new double [] {1,3,2,4,5};
-        createInst(test,"1",newInsts);
-        test = new double [] {1,1,1,1,2};
-        createInst(test,"0",newInsts);
-        test = new double [] {8,6,4,2,0};
-        createInst(test,"0",newInsts);
-        test = new double [] {4,2,3,4,5};
-        createInst(test,"1",newInsts);
+        createInst(data,newInsts);
         return newInsts;
     }
 
@@ -275,13 +270,12 @@ public class DWT implements Transformer {
      * @param arr
      * @return
      */
-    private static void createInst(double [] arr,String classValue, Instances dataset) {
-        Instance inst = new DenseInstance(arr.length+1);
+    private static void createInst(double [] arr,Instances dataset) {
+        Instance inst = new DenseInstance(arr.length);
         for(int i=0;i<arr.length;i++) {
             inst.setValue(i,arr[i]);
         }
         inst.setDataset(dataset);
-        inst.setClassValue(classValue);
         dataset.add(inst);
     }
 }

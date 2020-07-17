@@ -31,7 +31,7 @@ public class Subsequences implements Transformer {
     @Override
     public Instance transform(Instance inst) {
         double [] timeSeries = inst.toDoubleArray();
-        checkParameters(inst)
+        checkParameters();
         // remove class label
         double[] temp;
         int c = inst.classIndex();
@@ -140,16 +140,52 @@ public class Subsequences implements Transformer {
         return relation;
     }
 
+    private void checkParameters() {
+        if(this.subsequenceLength < 1) {
+            throw new IllegalArgumentException("subsequenceLength cannot be less than 1.");
+        }
+    }
+
     public static void main(String[] args) {
         Instances data = createData();
 
         //test bad SubsequenceLength
-        int [] badSubsequenceLength
+        //has to be greater than 0.
+        int [] badSubsequenceLengths = new int [] {-1,0,-99999999};
+        for(int badSubsequenceLength : badSubsequenceLengths) {
+            try{
+                Subsequences s = new Subsequences(badSubsequenceLength);
+                s.transform(data);
+                System.out.println("Test failed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
         //test good SubsequenceLength
-
+        int [] goodSubsequenceLengths = new int [] {1,50,999};
+        for(int goodSubsequenceLength : goodSubsequenceLengths) {
+            try{
+                Subsequences s = new Subsequences(goodSubsequenceLength);
+                s.transform(data);
+                System.out.println("Test passed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
         //check output
-
-        //check dimensions
+        Subsequences s = new Subsequences(5);
+        Instances res = s.transform(data);
+        Instances inst = res.get(0).relationalValue(0);
+        double [] resArr = inst.get(0).toDoubleArray();
+        System.out.println(Arrays.equals(resArr,new double[] {1,1,1,2,3}));
+        resArr = inst.get(1).toDoubleArray();
+        System.out.println(Arrays.equals(resArr,new double[] {1,1,2,3,4}));
+        resArr = inst.get(2).toDoubleArray();
+        System.out.println(Arrays.equals(resArr,new double[] {1,2,3,4,5}));
+        resArr = inst.get(3).toDoubleArray();
+        System.out.println(Arrays.equals(resArr,new double[] {2,3,4,5,5}));
+        resArr = inst.get(4).toDoubleArray();
+        System.out.println(Arrays.equals(resArr,new double[] {3,4,5,5,5}));
     }
 
     /**
