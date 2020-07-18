@@ -70,6 +70,7 @@ public class HOG1D implements Transformer {
             System.arraycopy(data,0,temp,0,c); //assumes class attribute is in last index
             data=temp;
         }
+        checkParameters(data.length);
         double [] gradients = getHOG1Ds(data);
         //Now in DWT form, extract out the terms and set the attributes of new instance
         Instance newInstance;
@@ -104,7 +105,7 @@ public class HOG1D implements Transformer {
         //Concatenate the HOG1Ds together
         double [] out = new double [] {};
         for(int i=hog1Ds.length-1;i>-1;i--) {
-            out = ArrayUtils.addAll(out,hog1Ds[i]);
+            out = ArrayUtils.addAll(hog1Ds[i],out);
         }
         return out;
     }
@@ -145,7 +146,7 @@ public class HOG1D implements Transformer {
         // Calculate the gradients over every element in t.
         double [] gradients = new double [t.length];
         for(int i=1;i<gradients.length+1;i++) {
-            gradients[(i-1)] = scalingFactor*0.5*(paddedT[(i-1)]-paddedT[(i+1)]);
+            gradients[(i-1)] = scalingFactor*0.5*(paddedT[(i+1)]-paddedT[(i-1)]);
         }
         // Then, calculate the orientations given the gradients
         double [] orientations = new double [gradients.length];
@@ -198,9 +199,119 @@ public class HOG1D implements Transformer {
         return result;
     }
 
+    private void checkParameters(int timeSeriesLength) {
+        if(this.numIntervals < 1) {
+            throw new IllegalArgumentException("numIntervals must be greater than zero.");
+        }
+        if(this.numIntervals > timeSeriesLength) {
+            throw new IllegalArgumentException("numIntervals cannot be longer than the time series length.");
+        }
+        if(this.numBins < 1) {
+            throw new IllegalArgumentException("numBins must be greater than zero.");
+        }
+    }
+
+    /**
+     * Main class for testing.
+     *
+     * @param args
+     */
     public static void main(String[] args) {
-        //test bad num_intervals
-        //test good num_intervals
-        //test 
+        Instances data = createData(new double [] {4,6,10,12,8,6,5,5});
+
+        //test bad numIntervals
+        //has to be greater than 0.
+        //cannot be higher than the time series length
+        int [] badNumIntervals = new int [] {-1,0,-99999999,9};
+        for(int badNumInterval : badNumIntervals) {
+            try{
+                HOG1D h = new HOG1D(badNumInterval,8,0.1);
+                h.transform(data);
+                System.out.println("Test failed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
+        //test good numIntervals
+        int [] goodNumIntervals = new int [] {2,4,8};
+        for(int goodNumInterval : goodNumIntervals) {
+            try{
+                HOG1D h = new HOG1D(goodNumInterval,8,0.1);
+                h.transform(data);
+                System.out.println("Test passed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
+        //test bad numBins
+        //Cannot be less than 1
+        int [] badNumBins = new int [] {0,-5,-999,-687};
+        for(int badNumBin : badNumBins) {
+            try{
+                HOG1D h = new HOG1D(2,badNumBin,0.1);
+                h.transform(data);
+                System.out.println("Test failed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test passed.");
+            }
+        }
+        //test good numBins
+        int [] goodNumBins = new int [] {1,5,12,200};
+        for(int goodNumBin : goodNumBins) {
+            try{
+                HOG1D h = new HOG1D(2,goodNumBin,0.1);
+                h.transform(data);
+                System.out.println("Test passed.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Test failed.");
+            }
+        }
+        //test output
+        HOG1D h = new HOG1D();
+        Instances out = h.transform(data);
+        double [] outArr = out.get(0).toDoubleArray();
+        System.out.println(Arrays.equals(outArr,new double [] {0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0}));
+
+        data = createData(new double [] {-5,2.5,1,3,10,-1.5,6,12,-3,0.2});
+        out = h.transform(data);
+        outArr = out.get(0).toDoubleArray();
+        System.out.println(Arrays.equals(outArr,new double [] {0.0,0.0,0.0,0.0,4.0,1.0,0.0,0.0,0.0,0.0,2.0,0.0,2.0,1.0,0.0,0.0}));
+        //test dimensions (test that output is always of length numBins*numIntervals)
+        h = new HOG1D(6,30,0.1);
+        out = h.transform(data);
+        System.out.println(out.get(0).toDoubleArray().length == 6*30);
+    }
+
+    /**
+     * Function to create data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createData(double [] data) {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<data.length;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        Instances newInsts = new Instances("Test_dataset",atts,1);
+        //create the test data
+        createInst(data,newInsts);
+        return newInsts;
+    }
+
+    /**
+     * private function for creating an instance from a double array. Used
+     * for testing purposes.
+     *
+     * @param arr
+     * @return
+     */
+    private static void createInst(double [] arr,Instances dataset) {
+        Instance inst = new DenseInstance(arr.length);
+        for(int i=0;i<arr.length;i++) {
+            inst.setValue(i,arr[i]);
+        }
+        inst.setDataset(dataset);
+        dataset.add(inst);
     }
 }
