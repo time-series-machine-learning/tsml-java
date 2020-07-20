@@ -402,7 +402,7 @@ public class ExperimentsEarlyClassification {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                boolean earlyClassiifer = true;
+                boolean earlyClassiifer = false;
                 if (earlyClassiifer){
                     testResults = evaluateEarlyClassifier(expSettings, classifier, testSet);
                     testResults.setParas(trainResults.getParas());
@@ -783,7 +783,7 @@ public class ExperimentsEarlyClassification {
             double[] dist = null;
             double earliness = 0;
             for (int i = 0; i < 20; i++){
-                int newLength = (int)Math.round((i+1)*0.05 * length);
+                int newLength = (int)Math.round((i + 1) * 0.05 * length);
                 Instance newInst = truncateInstance(testinst, length, newLength);
                 newInst = zNormaliseWithClass(newInst);
                 newInst.setDataset(truncatedInstances[i]);
