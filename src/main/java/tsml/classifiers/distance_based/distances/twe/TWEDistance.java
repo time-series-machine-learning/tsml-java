@@ -126,10 +126,10 @@ public class TWEDistance
         // border of the cost matrix initialization
         D[0][0] = 0;
         for(i = 1; i <= r; i++) {
-            D[i][0] = D[i - 1][0] + Di1[i];
+            D[i][0] = Double.POSITIVE_INFINITY;
         }
         for(j = 1; j <= c; j++) {
-            D[0][j] = D[0][j - 1] + Dj1[j];
+            D[0][j] = Double.POSITIVE_INFINITY;
         }
 
         double dmin, htrans, dist0;

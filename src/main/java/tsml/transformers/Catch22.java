@@ -12,10 +12,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package tsml.transformers;
 
-import tsml.filters.FFT;
-import tsml.transformers.Transformer;
 import utilities.GenericTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -42,6 +41,8 @@ import static utilities.Utilities.extractTimeSeries;
  *
  * Implementation based on C and Matlab code provided on authors github:
  * https://github.com/chlubba/catch22
+ *
+ * @author Matthew Middlehurst
  */
 public class Catch22 implements Transformer {
 
@@ -65,11 +66,6 @@ public class Catch22 implements Transformer {
     public void setNormalise(boolean b) { this.norm = b; }
 
     public void setOutlierNormalise(boolean b) { this.outlierNorm = b; }
-
-    @Override
-    public void fit(Instances data) {
-        //nothing to fit
-    }
 
     @Override
     public Instances transform(Instances data) {
@@ -429,6 +425,7 @@ public class Catch22 implements Transformer {
 
     //Mean error from a rolling 3-sample mean forecasting
     private static double localSimpleMean3StderrFC(double[] arr){
+        if (arr.length-3 < 3) return 0;
         double[] res = localSimpleMean(arr, 3);
 
         return standardDeviation(res, false);
@@ -581,6 +578,7 @@ public class Catch22 implements Transformer {
 
     //Change in correlation length after iterative differencing
     private static double localSimpleMean1TauresratFC(double[] arr, double[] ac){
+        if (arr.length-1 < 1) return 0;
         double[] res = localSimpleMean(arr, 1);
 
         int length = (int)FFT.MathsPower2.roundPow2((float)res.length);

@@ -34,6 +34,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
     private static double log2 = Math.log(2);
 
     private boolean norm = true;
+    private boolean useEntrance = true;
     private int k = 20;
 
     private int seed = 0;
@@ -68,6 +69,14 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
     @Override
     public void setSeed(int seed) {
         this.seed = seed;
+    }
+
+    public void setNormalise(boolean b){
+        this.norm = b;
+    }
+
+    public void setK(int i){
+        this.k = i;
     }
 
     @Override
@@ -158,7 +167,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         double[] probs = distributionForInstance(instance, info);
 
         int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
+        for (int n = 1; n < probs.length; n++) {
             if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }
@@ -227,7 +236,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         ArrayList<Double> splits = new ArrayList<>();
         ArrayList<Double> gain = new ArrayList<>();
 
-        findSplitsGain(root, splits, gain);
+        if (root.bestSplit > -1) findSplitsGain(root, splits, gain);
 
         ArrayList<Double>[] r = new ArrayList[2];
         r[0] = splits;
@@ -248,7 +257,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
 
     public boolean[] getAttributesUsed(){
         boolean[] attsUsed = new boolean[numAttributes];
-        findAttributesUsed(root, attsUsed);
+        if (root.bestSplit > -1) findAttributesUsed(root, attsUsed);
         return attsUsed;
     }
 

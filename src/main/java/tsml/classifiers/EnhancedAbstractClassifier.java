@@ -19,6 +19,7 @@ import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -50,8 +51,7 @@ train set predictions produced internally.
 *there are three components to the time that may be spent building a classifier
 
 * 1. timing
-
-buildTime 
+buildTime
 * the minimum any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
  or nanoTime() at the start and end of the method, stored in trainResults, with
@@ -62,8 +62,6 @@ errorEstimateTime
 * the exact usage of this statistic has not been finalised. Conceptually measures
 * how long is spent estimating the test error from the train data
 buildPlusEstimateTime
-* 
- 
  * 2. Recording train set results
 ClassifierResults trainResults can also store other information about the training,
  including estimate of accuracy, predictions and probabilities. The mechanism for finding
@@ -75,8 +73,9 @@ ClassifierResults trainResults can also store other information about the traini
  
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
- * 
- * @author Tony Bagnall and James Large
+ * Update 1/7/2020:
+ * @author Tony Bagnall and James Large EstimatorMethod estimator moved up from subclasses, since the pattern
+ * appears in multiple forest based ensembles
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,
@@ -90,10 +89,18 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
 
+    /**
+     * get the classifier RNG
+     * @return Random
+     */
     public Random getRandom() {
         return rand;
     }
 
+    /**
+     * Set the classifier RNG
+     * @param rand
+     */
     public void setRandom(Random rand) {
         this.rand = rand;
     }
@@ -138,6 +145,24 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     protected boolean estimateOwnPerformance = false;
 
+    /** If trainAccuracy is required, there are two options that can be implemented
+     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+     */
+    public enum EstimatorMethod{CV,OOB,NONE}
+    protected EstimatorMethod estimator=EstimatorMethod.NONE;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
+    }
+
+
+
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
@@ -151,7 +176,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         ableToEstimateOwnPerformance = state;
     }
 
-    @Override public void buildClassifier(final Instances trainData) throws
+    @Override
+    public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
@@ -318,9 +344,8 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         Capabilities result = super.getCapabilities();
         result.disableAll();
         // attributes must be numeric
-        // Here add in relational when ready
         result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
+        // Can only handle discrete class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         // instances
         result.setMinimumNumberInstances(1);
@@ -340,6 +365,39 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         if (classifierName == null)
             classifierName = this.getClass().getSimpleName();
         return classifierName;
+    }
+
+    /**
+     * Method to find the best index in a list of doubles. If a tie occurs,
+     * then the best index is chosen randomly.
+     *
+     * @param x a list of doubles.
+     * @return the index of the highest value in x.
+     */
+    public static int findIndexOfMax(double [] x) {
+
+        double currentMax = Double.MIN_VALUE;
+        ArrayList<Integer> bestIndexes = new ArrayList<>();
+
+        //Find the best index(es)
+        for(int i=0;i<x.length;i++) {
+            if(x[i] > currentMax) {
+                bestIndexes.clear();
+                bestIndexes.add(i);
+                currentMax = x[i];
+            } else if(x[i] == currentMax) {
+                bestIndexes.add(i);
+            }
+        }
+
+        //No ties occured
+        if(bestIndexes.size() == 1) {
+            return (int) bestIndexes.get(0);
+        } else {
+            //ties did occur
+            Random rnd = new Random();
+            return bestIndexes.get(rnd.nextInt(bestIndexes.size()));
+        }
     }
     
     /**

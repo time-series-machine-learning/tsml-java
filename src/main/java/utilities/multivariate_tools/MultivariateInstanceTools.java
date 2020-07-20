@@ -14,8 +14,10 @@
  */
 package utilities.multivariate_tools;
 
+import utilities.InstanceTools;
+import utilities.class_counts.TreeSetClassCounts;
 import weka.core.*;
-import tsml.filters.NormalizeCase;
+import tsml.transformers.NormalizeCase;
 
 import java.util.ArrayList;
 
@@ -97,7 +99,7 @@ public class MultivariateInstanceTools {
                     localAtt=0;
             }
             
-            name = "attribute_dimension_" + dim + "_" + localAtt++;
+            name = "attribute_dimension_" + dim + "_" + localAtt++ + data[0].attribute(0).name();
             atts.add(new Attribute(name));
         }
         
@@ -150,8 +152,22 @@ public class MultivariateInstanceTools {
         
         return output;
     }
+
+    public static Instances createRelationFrom(Instances header,  ArrayList<ArrayList<Double>> data){
+        Instances output = new Instances(header, data.size());
+
+        //each dense instance is row/ which is actually a channel.
+        for(int i=0; i< data.size(); i++){
+            int numAttsInChannel = data.get(i).size();
+            output.add(new DenseInstance(numAttsInChannel));
+            for(int j=0; j<numAttsInChannel; j++)
+                output.instance(i).setValue(j, data.get(i).get(j));
+        }
+
+        return output;
+    }
     
-    private static Instances createRelationHeader(int numAttsInChannel, int numChannels){
+    public static Instances createRelationHeader(int numAttsInChannel, int numChannels){
         //construct relational attribute vector.
         ArrayList<Attribute> relational_atts = new ArrayList(numAttsInChannel);
         for (int i = 0; i < numAttsInChannel; i++) {
@@ -281,9 +297,48 @@ public class MultivariateInstanceTools {
        
         return output;
     }
+    
 
-        
+    public static void main(String[] args){
+        String local_path = "D:\\Work\\Data\\Multivariate_arff\\"; //Aarons local path for testing.
+        String dataset_name = "EigenWorms";
+        Instances train = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TRAIN.arff");
+        Instances test  = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TEST.arff");
+        Instances[] resampled = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(train, test, 1);
+        //Instances[] resampled_old = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(train, test, 1);
+
+
+        System.out.println(resampled[1].get(resampled[1].numInstances()-1));
+        //System.out.println("------------------------------");
+        //System.out.println(resampled_old[1].get(resampled_old[1].numInstances()-1));
+    }
+
+
+    /**
+     * 
+     * This wraps the instancetools functionality for resampling. It is extremely fast compared with the old method.
+     * 
+     * @param train
+     * @param test
+     * @param seed
+     * @return
+    */
     public static Instances[] resampleMultivariateTrainAndTestInstances(Instances train, Instances test, long seed){
+        return InstanceTools.resampleTrainAndTestInstances(train, test, seed);
+    }
+
+
+    /**
+     * 
+     * This function is miles slower. Do not use.
+     * 
+     * @param train
+     * @param test
+     * @param seed
+     * @return
+     */
+    @Deprecated
+    public static Instances[] resampleMultivariateTrainAndTestInstances_old(Instances train, Instances test, long seed){
         Instances[] train_channels = splitMultivariateInstances(train);
         Instances[] test_channels = splitMultivariateInstances(test);
         
@@ -291,6 +346,7 @@ public class MultivariateInstanceTools {
         Instances[] resample_test_channels = new Instances[test_channels.length];
         
         for (int i = 0; i < resample_train_channels.length; i++) {
+            System.out.printf("%d / %d \n", i,  resample_train_channels.length);
             Instances[] temp = utilities.InstanceTools.resampleTrainAndTestInstances(train_channels[i], test_channels[i], seed);
             resample_train_channels[i] = temp[0];
             resample_test_channels[i] = temp[1];
@@ -480,13 +536,14 @@ public class MultivariateInstanceTools {
         return output;              
   
   }
-        
-  public static Instances normaliseChannels(Instances data) throws Exception { 
+
+
+  public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
-            
+      
+      NormalizeCase norm = new NormalizeCase();
       for (Instances channel : channels) {
-          NormalizeCase norm = new NormalizeCase();
-          channel = norm.process(channel);
+          channel = norm.transform(channel);
       }
       
       return mergeToMultivariateInstances(channels);

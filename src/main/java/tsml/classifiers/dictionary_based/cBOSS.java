@@ -109,7 +109,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     private boolean cleanupCheckpointFiles = false;
     private boolean loadAndFinish = false;
 
-    private long contractTime = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private boolean underContractTime = false;
 
@@ -217,26 +217,38 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
     public void setTrainTimeLimit(long amount){
-        contractTime = amount;
-        trainTimeContract = true;
+        printLineDebug(" cBOSS setting contract to "+amount);
+        if(amount>0) {
+            trainContractTimeNanos = amount;
+            trainTimeContract = true;
+        }
+        else
+            trainTimeContract = false;
     }
 
     @Override
     public void setMemoryLimit(DataUnit unit, long amount){
-        switch (unit){
-            case GIGABYTE:
-                memoryLimit = amount*1073741824;
-                break;
-            case MEGABYTE:
-                memoryLimit = amount*1048576;
-                break;
-            case BYTES:
-                memoryLimit = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid data unit");
+        try {
+            throw new Exception("Memory contract currently unavailable");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
-        memoryContract = true;
+
+//        switch (unit){
+//            case GIGABYTE:
+//                memoryLimit = amount*1073741824;
+//                break;
+//            case MEGABYTE:
+//                memoryLimit = amount*1048576;
+//                break;
+//            case BYTES:
+//                memoryLimit = amount;
+//                break;
+//            default:
+//                throw new InvalidParameterException("Invalid data unit");
+//        }
+//        memoryContract = true;
     }
 
     @Override
@@ -310,7 +322,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         checkpointTime = saved.checkpointTime;
 //        checkpointTimeDiff = checkpointTimeDiff;
         cleanupCheckpointFiles = saved.cleanupCheckpointFiles;
-        contractTime = saved.contractTime;
+        trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
         memoryLimit = saved.memoryLimit;
@@ -436,9 +448,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
+        trainResults.setBuildTime(System.nanoTime());
+        long startTime=System.nanoTime();
 
         if (data.checkForAttributeType(Attribute.RELATIONAL)) {
             isMultivariate = true;
@@ -455,22 +468,21 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (winInc < 1) winInc = 1;
 
         //path checkpoint files will be saved to
-        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
-        File f = new File(checkpointPath + "BOSS.ser");
-
+//        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
+        File file = new File(checkpointPath + "BOSS" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && f.exists()) {
-            if(debug)
-                System.out.println("Loading from checkpoint file");
-            long time = System.nanoTime();
-            loadFromFile(checkpointPath + "BOSS.ser");
-            if(debug)
-                System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading ser files");
+        if (checkpoint && file.exists()){
+            //path checkpoint files will be saved to
+            printLineDebug("Loading from checkpoint file");
+            loadFromFile(checkpointPath + "BOSS" + seed + ".ser");
+            //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
         //initialise variables
         else {
             if (data.classIndex() != data.numAttributes() - 1)
                 throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
+
+            printLineDebug("Building cBOSS  target number of classifiers = " +ensembleSize);
 
             //Multivariate
             if (isMultivariate) {
@@ -591,6 +603,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
+
+        if (randomCVAccEnsemble)
+            printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated " +
+                "*************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained = " + classifiers[0].size());
 
     }
 
@@ -848,7 +864,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         String name = datasetName + seed + "cBOSS";
 
         if (trainTimeContract){
-            name += ("TTC" + contractTime);
+            name += ("TTC" + trainContractTimeNanos);
         }
         else if (isMultivariate && ensembleSizePerChannel > 0){
             name += ("PC" + (ensembleSizePerChannel*numSeries));
@@ -873,7 +889,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     public void checkContracts(){
-        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < contractTime;
+        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
         underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
     }
 
@@ -962,7 +978,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
                 GaussianProcesses gp = new GaussianProcesses();
                 gp.buildClassifier(prevParameters[currentSeries]);
-                long remainingTime = contractTime - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
+                long remainingTime = trainContractTimeNanos - (System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
                 for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
@@ -1492,21 +1508,21 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
 
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 

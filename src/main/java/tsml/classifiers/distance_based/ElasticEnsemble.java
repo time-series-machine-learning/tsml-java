@@ -26,7 +26,7 @@ import tsml.classifiers.legacy.elastic_ensemble.LCSS1NN;
 import tsml.classifiers.legacy.elastic_ensemble.MSM1NN;
 import tsml.classifiers.legacy.elastic_ensemble.TWE1NN;
 import tsml.classifiers.legacy.elastic_ensemble.WDTW1NN;
-import tsml.filters.Derivative;
+import tsml.transformers.Derivative;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -313,7 +313,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         }
         
         if(usesDer){
-            this.derTrain = df.process(train);
+            this.derTrain = df.transform(train);
         }
         
         if(buildFromFile){
@@ -435,7 +435,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         if(this.usesDer){
             Instances temp = new Instances(derTrain,1);
             temp.add(instance);
-            temp = df.process(temp);
+            temp = df.transform(temp);
             derIns = temp.instance(0);
         }
         
@@ -505,7 +505,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         if(this.usesDer){
             Instances temp = new Instances(derTrain,1);
             temp.add(instance);
-            temp = df.process(temp);
+            temp = df.transform(temp);
             derIns = temp.instance(0);
         }
         

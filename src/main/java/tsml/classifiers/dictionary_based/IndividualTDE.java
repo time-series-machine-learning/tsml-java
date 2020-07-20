@@ -17,6 +17,8 @@ package tsml.classifiers.dictionary_based;
 import com.carrotsearch.hppc.*;
 import com.carrotsearch.hppc.cursors.IntCursor;
 import tsml.classifiers.MultiThreadable;
+import tsml.classifiers.dictionary_based.bitword.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import utilities.generic_storage.SerialisableComparablePair;
 import weka.classifiers.AbstractClassifier;
@@ -41,12 +43,12 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
-    private BitWordLong[/*instance*/][/*windowindex*/] SFAwords;
+    private BitWord[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
     private ArrayList<SPBag> bags;
 
-    //breakpoints to be found by MCB
+    //breakpoints to be found by MCB or IGB
     private double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
     private int windowSize;
@@ -64,6 +66,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     private boolean cleanAfterBuild = false;
     private int seriesLength;
 
+    private int ensembleID = -1;
     private double accuracy = -1;
     private double weight = 1;
     private ArrayList<Integer> subsampleIndices;
@@ -148,7 +151,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     //map of <word, level> => count
-    public static class SPBag extends HashMap<SerialisableComparablePair<BitWordLong, Byte>, Integer> {
+    public static class SPBag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
         double classVal;
 
         public SPBag() {
@@ -171,6 +174,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     public int getLevels() { return levels; }
     public boolean getIGB() { return IGB; }
     public ArrayList<SPBag> getBags() { return bags; }
+    public int getEnsembleID() { return ensembleID; }
     public double getAccuracy() { return accuracy; }
     public double getWeight() { return weight; }
     public ArrayList<Integer> getSubsampleIndices() { return subsampleIndices; }
@@ -181,6 +185,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
     public void setSeed(int i){ seed = i; }
     public void setCleanAfterBuild(boolean b){ cleanAfterBuild = b; }
+    public void setEnsembleID(int i) { ensembleID = i; }
     public void setAccuracy(double d) { accuracy = d; }
     public void setWeight(double d) { weight = d; }
     public void setSubsampleIndices(ArrayList<Integer> arr) { subsampleIndices = arr; }
@@ -587,21 +592,21 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      */
     private SPBag createSPBagSingle(double[][] dfts) {
         SPBag bag = new SPBag();
-        BitWordLong lastWord = new BitWordLong();
-        BitWordLong[] words = new BitWordLong[dfts.length];
+        BitWord lastWord = new BitWordInt();
+        BitWord[] words = new BitWord[dfts.length];
 
         int wInd = 0;
         int trivialMatchCount = 0;
 
         for (double[] d : dfts) {
-            BitWordLong word = createWord(d);
+            BitWord word = createWord(d);
             words[wInd] = word;
 
             if (useBigrams) {
-                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
-                    BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
+                if (wInd - windowSize >= 0) {
+                    BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
-                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
+                    SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
                     Integer val = bag.get(key);
 
                     if (val == null)
@@ -632,8 +637,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return bag;
     }
 
-    private BitWordLong createWord(double[] dft) {
-        BitWordLong word = new BitWordLong();
+    private BitWord createWord(double[] dft) {
+        BitWord word = new BitWordInt();
         for (int l = 0; l < wordLength; ++l) //for each letter
             for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
                 if (dft[l] <= breakpoints[l][bp]) {
@@ -704,25 +709,25 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    private SPBag createSPBagFromWords(int thisWordLength, BitWordLong[] words) {
+    private SPBag createSPBagFromWords(int thisWordLength, BitWord[] words) {
         SPBag bag = new SPBag();
-        BitWordLong lastWord = new BitWordLong();
-        BitWordLong[] newWords = new BitWordLong[words.length];
+        BitWord lastWord = new BitWordInt();
+        BitWord[] newWords = new BitWord[words.length];
 
         int wInd = 0;
         int trivialMatchCount = 0; //keeps track of how many words have been the same so far
 
-        for (BitWordLong w : words) {
-            BitWordLong word = new BitWordLong(w);
+        for (BitWord w : words) {
+            BitWord word = new BitWordInt(w);
             if (wordLength != thisWordLength)
                 word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
             newWords[wInd] = word;
 
             if (useBigrams) {
-                if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
-                    BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
+                if (wInd - windowSize >= 0) {
+                    BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
-                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
+                    SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
                     Integer val = bag.get(key);
 
                     if (val == null)
@@ -770,7 +775,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     private void applyPyramidWeights(SPBag bag) {
-        for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> ent : bag.entrySet()) {
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().var2;
             int qEnd = 0;
@@ -786,7 +791,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private void addWordToPyramid(BitWordLong word, int wInd, SPBag bag) {
+    private void addWordToPyramid(BitWord word, int wInd, SPBag bag) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -798,7 +803,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             int pos = wInd + (windowSize/2); //use the middle of the window as its position
             int quadrant = qStart + (pos/quadrantSize);
 
-            SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
+            SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
             Integer val = bag.get(key);
 
             if (val == null)
@@ -809,9 +814,9 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private BitWordLong[] createSFAwords(Instance inst) {
+    private BitWord[] createSFAwords(Instance inst) {
         double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
-        BitWordLong[] words = new BitWordLong[dfts.length];
+        BitWord[] words = new BitWord[dfts.length];
         for (int window = 0; window < dfts.length; ++window) {
             words[window] = createWord(dfts[window]);//discretisation
         }
@@ -827,7 +832,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         if (IGB) breakpoints = IGB(data);
         else breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
 
-        SFAwords = new BitWordLong[data.numInstances()][];
+        SFAwords = new BitWord[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
         seriesLength = data.numAttributes()-1;
@@ -877,7 +882,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> entry : instA.entrySet()) {
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
             Integer valA = entry.getValue();
             Integer valB = instB.get(entry.getKey());
             if (valB == null)
@@ -899,7 +904,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         double sim = 0.0;
 
-        for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> entry : instA.entrySet()) {
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
             Integer valA = entry.getValue();
             Integer valB = instB.get(entry.getKey());
             if (valB == null)

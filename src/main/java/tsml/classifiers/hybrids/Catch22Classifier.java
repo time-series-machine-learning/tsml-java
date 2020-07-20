@@ -36,6 +36,8 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
  *
  * Implementation based on C and Matlab code provided on authors github:
  * https://github.com/chlubba/catch22
+ *
+ * @author Matthew Middlehurst
  */
 public class Catch22Classifier extends EnhancedAbstractClassifier {
 
@@ -99,8 +101,10 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
         int fold = 0;
         for (int i = 0; i < DatasetLists.tscProblems112.length; i++) {
             String dataset = DatasetLists.tscProblems112[i];
-            Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\" + dataset + "_TRAIN.arff");
-            Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\" + dataset + "_TEST.arff");
+            Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                    + "\\" + dataset + "_TRAIN.arff");
+            Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                    + "\\" + dataset + "_TEST.arff");
             Instances[] data = resampleTrainAndTestInstances(train, test, fold);
             train = data[0];
             test = data[1];
@@ -112,7 +116,8 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
             c.buildClassifier(train);
             accuracy = ClassifierTools.accuracy(test, c);
 
-            System.out.println("Catch22 accuracy on " + i + " " + dataset + " fold " + fold + " = " + accuracy);
+            System.out.println("Catch22Classifier accuracy on " + i + " " + dataset + " fold " + fold + " = "
+                    + accuracy);
         }
     }
 }
