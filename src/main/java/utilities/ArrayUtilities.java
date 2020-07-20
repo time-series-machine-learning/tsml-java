@@ -9,6 +9,22 @@ import java.util.stream.Collectors;
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static double[] intToDouble(int[] input) {
+        double[] output = new double[input.length];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    public static double[][] intToDouble(int[][] input) {
+        double[][] output = new double[input.length][];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = intToDouble(input[i]);
+        }
+        return output;
+    }
+
     public static double[] oneHot(int length, int index) {
         final double[] array = new double[length];
         array[index] = 1;
@@ -64,6 +80,12 @@ public class ArrayUtilities {
         return normaliseInPlace(array, false);
     }
 
+    public static double[] copy(double[] input) {
+        double[] output = new double[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
     public static double[] normalise(double[] array) {
         double[] copy = new double[array.length];
         System.arraycopy(array, 0, copy, 0, array.length);
@@ -77,7 +99,7 @@ public class ArrayUtilities {
             throw new IllegalArgumentException("sum of zero");
         }
         for(int i = 0; i < array.length; i++) {
-            result[i] = array[i] / sum;
+            result[i] = (double) array[i] / sum;
         }
         return result;
     }
@@ -117,10 +139,6 @@ public class ArrayUtilities {
             doubles[i] = array[i];
         }
         return doubles;
-    }
-
-    public static double[] normaliseInPlace(int[] array) {
-        return normaliseInPlace(primitiveIntToDouble(array));
     }
 
     public static void multiplyInPlace(double[] array, double multiplier) {
@@ -646,5 +664,13 @@ public class ArrayUtilities {
             sum += amount;
         }
         return result;
+    }
+
+    public static double[][] normaliseRows(final int[][] input) {
+        double[][] output = new double[input.length][];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = ArrayUtilities.normalise(input[i]);
+        }
+        return output;
     }
 }

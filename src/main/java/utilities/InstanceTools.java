@@ -36,6 +36,15 @@ import static utilities.Utilities.normalise;
  */
 public class InstanceTools {
 
+    public static double[] countClasses(Instances data) {
+        double[] distribution = new double[data.numClasses()];
+        for(Instance instance : data) {
+            final int classValue = (int) instance.classValue();
+            distribution[classValue] += instance.weight();
+        }
+        return distribution;
+    }
+
     public static Map<Instance, Integer> indexInstances(Instances instances) {
         Map<Instance, Integer> instanceIntegerMap = new HashMap<>(instances.size(), 1);
         for(int i = 0; i < instances.size(); i++) {

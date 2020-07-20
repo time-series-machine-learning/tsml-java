@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
-import com.beust.jcommander.internal.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,125 +10,254 @@ import org.junit.Test;
  */
 public class ScoreUtilsTest {
 
+    /////////////////////////////////////////////////////////////////////// info entropy / info score testing
+
     @Test
-    public void testGiniImpurityEntropyImpure() {
-        double score = ScoreUtils.giniImpurityEntropyFromClassCounts(Lists.newArrayList(5, 5));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.5);
+    public void testInfoEntropyImpure() {
+        double v = ScoreUtils.infoEntropy(new int[] {5, 5});
+        Assert.assertEquals(1, v, 0.0);
     }
 
     @Test
-    public void testGiniImpurityEntropyPure() {
-        double score = ScoreUtils.giniImpurityEntropyFromClassCounts(Lists.newArrayList(10, 0));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0);
+    public void testInfoEntropyManyClassImpure() {
+        double v = ScoreUtils.infoEntropy(new int[] {5, 5, 5, 5, 5, 5, 5, 5});
+        Assert.assertEquals(3, v, 0.0);
     }
 
     @Test
-    public void testGiniImpurityEntropyA() {
-        double score = ScoreUtils.giniImpurityEntropyFromClassCounts(Lists.newArrayList(4, 6));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.48);
+    public void testInfoScoreImpure() {
+        double v = ScoreUtils.infoScore(new int[] {5, 5});
+        Assert.assertEquals(0, v, 0.0);
     }
 
     @Test
-    public void testGiniImpurityEntropyB() {
-        double score = ScoreUtils.giniImpurityEntropyFromClassCounts(Lists.newArrayList(1, 9));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.17999999999999994);
+    public void testInfoScoreManyClassImpure() {
+        double v = ScoreUtils.infoScore(new int[] {5, 5, 5, 5, 5, 5, 5, 5});
+        Assert.assertEquals(0, v, 0.0);
+    }
+    
+    @Test
+    public void testInfoEntropyPure() {
+        double v = ScoreUtils.infoEntropy(new int[] {10, 0});
+        Assert.assertEquals(0, v, 0.0);
+    }
+
+    @Test
+    public void testInfoEntropyPureManyClass() {
+        double v = ScoreUtils.infoEntropy(new int[] {10, 0, 0, 0, 0, 0, 0, 0});
+        Assert.assertEquals(0, v, 0.0);
+    }
+
+    @Test
+    public void testInfoScorePure() {
+        double v = ScoreUtils.infoScore(new int[] {10, 0});
+        Assert.assertEquals(1, v, 0.0);
+    }
+
+    @Test
+    public void testInfoScorePureManyClass() {
+        double v = ScoreUtils.infoScore(new int[] {10, 0, 0, 0, 0, 0, 0, 0});
+        Assert.assertEquals(3, v, 0.0);
+    }
+
+    @Test
+    public void testInfoEntropyA() {
+        double v = ScoreUtils.infoEntropy(new int[] {4, 6});
+        Assert.assertEquals(0.9709505944546686, v, 0.0);
+    }
+
+    @Test
+    public void testInfoEntropyB() {
+        double v = ScoreUtils.infoEntropy(new int[] {1, 9});
+        Assert.assertEquals(0.4689955935892812, v, 0.0);
+    }
+
+    //////////////////////////////////////////////////////////////////////////// gini score / gini entropy testing
+
+    @Test
+    public void testGiniImpurityImpure() {
+        double v = ScoreUtils.giniImpurity(new int[] {5, 5});
+        Assert.assertEquals(0.5, v, 0.0);
+    }
+
+    @Test
+    public void testGiniImpurityManyClassImpure() {
+        double v = ScoreUtils.giniImpurity(new int[] {5, 5, 5, 5, 5, 5, 5, 5});
+        Assert.assertEquals(0.875, v, 0.0);
+    }
+
+    @Test
+    public void testGiniScoreImpure() {
+        double v = ScoreUtils.giniScore(new int[] {5, 5});
+        Assert.assertEquals(0, v, 0.0);
+    }
+
+    @Test
+    public void testGiniScoreManyClassImpure() {
+        double v = ScoreUtils.giniScore(new int[] {5, 5, 5, 5, 5, 5, 5, 5});
+        Assert.assertEquals(0, v, 0.0);
     }
 
     @Test
     public void testGiniImpurityPure() {
-        double score = ScoreUtils.giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(8, 0),
-            Lists.newArrayList(0, 4)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.4444444444444444);
+        double v = ScoreUtils.giniImpurity(new int[] {10, 0});
+        Assert.assertEquals(0, v, 0.0);
     }
 
     @Test
-    public void testGiniImpurityImpure() {
-        double score = ScoreUtils.giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(4, 2),
-            Lists.newArrayList(4, 2)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0);
+    public void testGiniScorePure() {
+        double v = ScoreUtils.giniScore(new int[] {10, 0});
+        Assert.assertEquals(1, v, 0.0);
+    }
+
+    @Test
+    public void testGiniImpurityPureManyClass() {
+        double v = ScoreUtils.giniImpurity(new int[] {10, 0, 0, 0, 0, 0, 0, 0});
+        Assert.assertEquals(0, v, 0.0);
+    }
+
+    @Test
+    public void testGiniScorePureManyClass() {
+        double v = ScoreUtils.giniScore(new int[] {10, 0, 0, 0, 0, 0, 0, 0});
+        Assert.assertEquals(1.75, v, 0.0);
     }
 
     @Test
     public void testGiniImpurityA() {
-        double score = ScoreUtils.giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(7, 3),
-            Lists.newArrayList(1, 1)
-        ));
-        // System.out.println(score);
-        Assert.assertEquals(score, 0.011111111111111000, 0.0000000000000001);
+        double v = ScoreUtils.giniImpurity(new int[] {4, 6});
+        Assert.assertEquals(0.48, v, 0.0);
     }
 
     @Test
     public void testGiniImpurityB() {
-        double score = ScoreUtils.giniImpurity(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(7, 1),
-            Lists.newArrayList(1, 3)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.1736111111111111);
+        double v = ScoreUtils.giniImpurity(new int[] {1, 9});
+        Assert.assertEquals(0.17999999999999994, v, 0.0);
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////// gini gain testing
+
+
+    @Test
+    public void testGiniGainPure() {
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {8, 0},
+                        {0, 4},
+                });
+        Assert.assertEquals(0.9182958340544896, v, 0.0);
     }
 
     @Test
-    public void testInfoGainEntropyImpure() {
-        double score = ScoreUtils.infoGainEntropyFromClassCounts(Lists.newArrayList(5, 5));
-        // System.out.println(score);
-        Assert.assertTrue(score == 1);
+    public void testGiniGainImpure() {
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {4, 2},
+                        {2, 4},
+                });
+        Assert.assertEquals(0, v, 0.0);
     }
 
     @Test
-    public void testInfoGainEntropyPure() {
-        double score = ScoreUtils.infoGainEntropyFromClassCounts(Lists.newArrayList(10, 0));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0);
+    public void testGiniGainA() {
+        double v = ScoreUtils.giniGain(new int[] {8, 4},
+                new int[][] {
+                        {7, 3},
+                        {1, 1},
+                });
+        Assert.assertEquals(0.011111111111111127, v, 0.0);
     }
+
+    @Test
+    public void testGiniGainB() {
+        double v = ScoreUtils.giniGain(new int[] {8, 4},
+                new int[][] {
+                        {7, 1},
+                        {1, 3},
+                });
+        Assert.assertEquals(0.17361111111111116, v, 0.0);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////// info gain testing
 
     @Test
     public void testInfoGainPure() {
-        double score = ScoreUtils.infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(8, 0),
-            Lists.newArrayList(0, 4)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.9182958340544896);
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {8, 0},
+                        {0, 4},
+                });
+        Assert.assertEquals(0.9182958340544896, v, 0.0);
     }
 
     @Test
     public void testInfoGainImpure() {
-        double score = ScoreUtils.infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(4, 2),
-            Lists.newArrayList(4, 2)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0);
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {4, 2},
+                        {2, 4},
+                });
+        Assert.assertEquals(0, v, 0.0);
     }
 
     @Test
     public void testInfoGainA() {
-        double score = ScoreUtils.infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(7, 3),
-            Lists.newArrayList(1, 1)
-        ));
-        // System.out.println(score);
-        Assert.assertEquals(score, 0.01722008469557898, 0.0000000000000001);
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {7, 3},
+                        {1, 1},
+                });
+        Assert.assertEquals(v, 0.01722008469557898, 0.0000000000000001);
     }
 
     @Test
     public void testInfoGainB() {
-        double score = ScoreUtils.infoGain(Lists.newArrayList(8, 4), Lists.newArrayList(
-            Lists.newArrayList(7, 1),
-            Lists.newArrayList(1, 3)
-        ));
-        // System.out.println(score);
-        Assert.assertTrue(score == 0.28549349710171434);
+        double v = ScoreUtils.infoGain(new int[] {8, 4},
+                new int[][] {
+                        {7, 1},
+                        {1, 3},
+                });
+        Assert.assertEquals(0.28549349710171434, v, 0.0);
+    }
+
+    //////////////////////////////////////////////////////////////////// test chi square
+
+    @Test
+    public void testChiSquaredImpure() {
+        double v = ScoreUtils.chiSquared(new int[] {8, 4},
+                new int[][] {
+                        {4, 2},
+                        {4, 2},
+                });
+        Assert.assertEquals(0, v, 0.0);
+    }
+
+    @Test
+    public void testChiSquaredPure() {
+        double v = ScoreUtils.chiSquared(new int[] {8, 4},
+                new int[][] {
+                        {8, 0},
+                        {0, 4},
+                });
+        Assert.assertEquals(12, v, 0.0);
+    }
+
+    @Test
+    public void testChiSquaredA() {
+        double v = ScoreUtils.chiSquared(new int[] {8, 4},
+                new int[][] {
+                        {7, 1},
+                        {1, 3},
+                });
+        Assert.assertEquals(4.6875, v, 0.0);
+    }
+
+    @Test
+    public void testChiSquaredB() {
+        double v = ScoreUtils.chiSquared(new int[] {8, 4},
+                new int[][] {
+                        {7, 3},
+                        {1, 1},
+                });
+        Assert.assertEquals(0.30000000000000004, v, 0.0);
     }
 }

@@ -16,7 +16,7 @@ import tsml.classifiers.distance_based.utils.collections.params.iteration.Random
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
-import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer.GiniImpurityEntropy;
+import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer.GiniEntropy;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
 import utilities.ArrayUtilities;
@@ -44,7 +44,7 @@ public class ProximitySplit extends BaseClassifier {
                 proximitySplit.setRandomTieBreakDistances(true);
                 proximitySplit.setRandomTieBreakCandidates(false);
                 proximitySplit.setEarlyAbandonDistances(false);
-                proximitySplit.setPartitionScorer(new GiniImpurityEntropy());
+                proximitySplit.setPartitionScorer(new GiniEntropy());
                 proximitySplit.setScore(-1);
                 proximitySplit.setRandomR(false);
                 proximitySplit.setExemplarCheckOriginal(true);

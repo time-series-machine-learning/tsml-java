@@ -11,11 +11,11 @@ import java.util.List;
 public interface PartitionScorer extends Serializable {
     double findScore(Instances parent, List<Instances> children);
 
-    class GiniImpurity implements PartitionScorer {
+    class GiniGain implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.giniImpurity(parent, children);
+            return ScoreUtils.giniGain(parent, children);
         }
     }
 
@@ -27,19 +27,19 @@ public interface PartitionScorer extends Serializable {
         }
     }
 
-    class GiniImpurityEntropy implements PartitionScorer {
+    class GiniEntropy implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.giniImpurityEntropy(children);
+            return ScoreUtils.giniScore(children);
         }
     }
 
-    class InfoGainEntropy implements PartitionScorer {
+    class InfoEntropy implements PartitionScorer {
 
         @Override
         public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.infoGainEntropy(children);
+            return ScoreUtils.infoScore(children);
         }
     }
 }
