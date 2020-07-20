@@ -23,11 +23,15 @@ public interface ParamSpaceBuilder extends Serializable {
 
     ParamSpaceBuilder ED = i -> EDistanceConfigs.buildEdSpace();
     ParamSpaceBuilder DTW = DTWDistanceConfigs::buildDtwSpaceContinuous;
+    ParamSpaceBuilder UDTW = DTWDistanceConfigs::buildDtwSpaceContinuousUnrestricted;
     ParamSpaceBuilder FULL_DTW = i -> DTWDistanceConfigs.buildDtwFullWindowSpace();
     ParamSpaceBuilder DDTW = DTWDistanceConfigs::buildDdtwSpaceContinuous;
+    ParamSpaceBuilder UDDTW = DTWDistanceConfigs::buildDdtwSpaceContinuousUnrestricted;
     ParamSpaceBuilder FULL_DDTW = i -> DTWDistanceConfigs.buildDdtwFullWindowSpace();
     ParamSpaceBuilder LCSS = LCSSDistanceConfigs::buildLcssSpaceContinuous;
+    ParamSpaceBuilder ULCSS = LCSSDistanceConfigs::buildLcssSpaceContinuousUnrestricted;
     ParamSpaceBuilder ERP = ERPDistanceConfigs::buildErpSpaceContinuous;
+    ParamSpaceBuilder UERP = ERPDistanceConfigs::buildErpSpaceContinuousUnrestricted;
     ParamSpaceBuilder MSM = i -> MSMDistanceConfigs.buildMsmSpace();
     ParamSpaceBuilder TWED = i -> TWEDistanceConfigs.buildTwedSpace();
     ParamSpaceBuilder WDTW = i -> WDTWDistanceConfigs.buildWdtwSpaceContinuous();

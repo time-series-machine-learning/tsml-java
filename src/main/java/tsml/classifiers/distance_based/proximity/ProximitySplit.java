@@ -6,7 +6,7 @@ import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
+import tsml.classifiers.distance_based.utils.classifiers.EnumBasedConfigurer;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap.DiscardType;
@@ -37,11 +37,10 @@ import java.util.Map;
 public class ProximitySplit extends BaseClassifier {
 
     // the various configs for this classifier
-    public enum Config implements EnumBasedClassifierConfigurer<ProximitySplit> {
+    public enum Config implements EnumBasedConfigurer<ProximitySplit> {
         PS_R1() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
                 proximitySplit.setRandomTieBreakDistances(true);
                 proximitySplit.setRandomTieBreakCandidates(false);
                 proximitySplit.setEarlyAbandonDistances(false);
@@ -60,45 +59,40 @@ public class ProximitySplit extends BaseClassifier {
         },
         PS_R5() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
                 proximitySplit.setR(5);
                 return proximitySplit;
             }
         },
         PS_R10() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
                 proximitySplit.setR(10);
                 return proximitySplit;
             }
         },
         PS_RR5() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R5.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R5.configure(proximitySplit);
                 proximitySplit.setRandomR(true);
                 return proximitySplit;
             }
         },
         PS_RR10() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R10.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
                 proximitySplit.setRandomR(true);
                 return proximitySplit;
             }
         },
         PS_R1_I() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R1.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
@@ -106,9 +100,8 @@ public class ProximitySplit extends BaseClassifier {
         },
         PS_R5_I() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R5.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R5.configure(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
@@ -116,9 +109,8 @@ public class ProximitySplit extends BaseClassifier {
         },
         PS_R10_I() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_R10.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
@@ -126,9 +118,8 @@ public class ProximitySplit extends BaseClassifier {
         },
         PS_RR5_I() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_RR5.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_RR5.configure(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
@@ -136,9 +127,8 @@ public class ProximitySplit extends BaseClassifier {
         },
         PS_RR10_I() {
             @Override
-            public <B extends ProximitySplit> B applyConfigTo(B proximitySplit) {
-                proximitySplit = PS_RR10.applyConfigTo(proximitySplit);
-                proximitySplit = super.applyConfigTo(proximitySplit);
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_RR10.configure(proximitySplit);
                 proximitySplit.setRandomIntervals(true);
                 proximitySplit.setMinIntervalSize(3);
                 return proximitySplit;
@@ -147,7 +137,7 @@ public class ProximitySplit extends BaseClassifier {
     }
 
     public ProximitySplit() {
-        Config.PS_R5.applyConfigTo(this);
+        Config.PS_R5.configure(this);
     }
 
     // whether to early abandon distance measurements for distance between instances (data) and exemplars

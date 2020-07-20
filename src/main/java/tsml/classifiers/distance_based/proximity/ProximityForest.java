@@ -7,7 +7,7 @@ import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
-import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
+import tsml.classifiers.distance_based.utils.classifiers.EnumBasedConfigurer;
 import tsml.classifiers.distance_based.utils.classifiers.Utils;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
@@ -42,7 +42,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         for(int i = 0; i < 1; i++) {
             int seed = i;
             ProximityForest classifier = new ProximityForest();
-            Config.PF_R5_CV.applyConfigTo(classifier);
+            Config.PF_R5_CV.configure(classifier);
             classifier.setEstimateOwnPerformance(true);
             classifier.setSeed(seed);
             classifier.setRebuildConstituentAfterEvaluation(true);
@@ -54,11 +54,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         //        Thread.sleep(10000);
     }
 
-    public enum Config implements EnumBasedClassifierConfigurer<ProximityForest> {
+    public enum Config implements EnumBasedConfigurer<ProximityForest> {
         PF_R1() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest.setTrainTimeLimit(0);
                 proximityForest.setTestTimeLimit(0);
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
@@ -71,146 +70,151 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
+        PF_R5_U() {
+            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_U);
+                return classifier;
+            }
+        },
+        PF_R5_OU() {
+            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_OU);
+                return classifier;
+            }
+        },
+        PF_R5_O() {
+            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_O);
+                return classifier;
+            }
+        },
         PF_R5() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R1.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
                 return proximityForest;
             }
         },
         PF_R5_I() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R1.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_I);
                 return proximityForest;
             }
         },
         PF_R10_I() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R10.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_I);
                 return proximityForest;
             }
         },
         PF_R1_I() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R1.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_I);
                 return proximityForest;
             }
         },
         PF_RR5_I() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R1.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR5_I);
                 return proximityForest;
             }
         },
         PF_RR10_I() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R10.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR10_I);
                 return proximityForest;
             }
         },
         PF_R10() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R1.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10);
                 return proximityForest;
             }
         },
         PF_RR5() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR5);
                 return proximityForest;
             }
         },
         PF_RR10() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R10.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_RR10);
                 return proximityForest;
             }
         },
         PF_R5_T10() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(10);
                 return proximityForest;
             }
         },
         PF_R5_T20() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(20);
                 return proximityForest;
             }
         },
         PF_R5_T50() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(50);
                 return proximityForest;
             }
         },
         PF_R5_T200() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(200);
                 return proximityForest;
             }
         },
         PF_R5_T500() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(500);
                 return proximityForest;
             }
         },
         PF_R5_T1000() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setNumTreeLimit(1000);
                 return proximityForest;
             }
         },
         PF_R5_OOB() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 return proximityForest;
@@ -218,9 +222,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_R() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 return proximityForest;
@@ -228,9 +231,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_D() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 proximityForest.setUseDistributionInVoting(true);
@@ -239,9 +241,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_R_D() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setUseDistributionInVoting(true);
@@ -250,9 +251,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_W() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 proximityForest.setWeightTreesByTrainEstimate(true);
@@ -261,9 +261,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_R_W() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setWeightTreesByTrainEstimate(true);
@@ -272,9 +271,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_WD() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 proximityForest.setWeightTreesByTrainEstimate(true);
@@ -284,9 +282,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_OOB_R_WD() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setWeightTreesByTrainEstimate(true);
@@ -296,18 +293,16 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_CV() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 return proximityForest;
             }
         },
         PF_R5_CV_D() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setUseDistributionInVoting(true);
                 return proximityForest;
@@ -315,9 +310,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_CV_W() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
@@ -325,9 +319,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         },
         PF_R5_CV_WD() {
             @Override
-            public <B extends ProximityForest> B applyConfigTo(B proximityForest) {
-                proximityForest = PF_R5.applyConfigTo(proximityForest);
-                proximityForest = super.applyConfigTo(proximityForest);
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setEstimatorMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 proximityForest.setUseDistributionInVoting(true);
@@ -339,7 +332,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     public ProximityForest() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        Config.PF_R1.applyConfigTo(this);
+        Config.PF_R1.configure(this);
     }
 
     // the timer for contracting the estimate of train error
@@ -451,7 +444,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             final Constituent constituent = new Constituent();
             constituent.setProximityTree(tree);
             constituents.add(constituent);
-            proximityTreeConfig.applyConfigTo(tree);
+            proximityTreeConfig.configure(tree);
             tree.setSeed(rand.nextInt());
             // estimate the performance of the tree
             if(!estimator.equals(EstimatorMethod.NONE)) {

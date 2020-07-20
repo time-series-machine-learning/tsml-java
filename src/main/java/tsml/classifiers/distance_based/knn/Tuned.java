@@ -22,7 +22,7 @@ public class Tuned extends BaseClassifier {
 
     public enum Config implements Configurer<Tuned> {
         DEFAULT() {
-            @Override public <B extends Tuned> B applyConfigTo(final B classifier) {
+            @Override public Tuned configure(final Tuned classifier) {
                 return classifier;
             }
         },
@@ -30,7 +30,7 @@ public class Tuned extends BaseClassifier {
     }
 
     public Tuned() {
-        Config.DEFAULT.applyConfigTo(this);
+        Config.DEFAULT.configure(this);
     }
 
     private boolean shouldExplore() {

@@ -3,9 +3,12 @@ package tsml.classifiers.distance_based.utils.stats.scoring;
 import static utilities.Utilities.convert;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.function.Function;
+
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 import weka.core.Instance;
@@ -17,7 +20,20 @@ import weka.core.Instances;
  * Contributors: goastler
  */
 public class ScoreUtils {
-
+    public static void main(String[] args) {
+        int limit = 10;
+        for(int i = 0; i <= limit; i++) {
+            Double[] all = new Double[] {0d, 0d};
+            for(int j = 0; j < i; j++) {
+                all[0] += 1d / limit;
+            }
+            for(int j = i; j < limit; j++) {
+                all[1] += 1d / limit;
+            }
+            final double v = giniImpurityEntropyFromDistribution(Arrays.asList(all));
+            System.out.println(v);
+        }
+    }
 
     private static class ClassCount {
         private List<Integer> counts;

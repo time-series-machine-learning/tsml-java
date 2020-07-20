@@ -93,6 +93,9 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             }
             return msg;
         });
+        if(estimateOwnPerformance && estimator.equals(EstimatorMethod.NONE)) {
+            throw new IllegalStateException("estimator method NONE but estimate own performance enabled!");
+        }
         if(rebuild) {
             // reset rebuild
             // default behaviour is to rebuild initially, then turn off the rebuild flag. Subsequent calls to buildClassifier will result in further building instead of building from scratch every time. If you need to build from scratch, just call setRebuild(true) before calling this method.

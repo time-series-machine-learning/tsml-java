@@ -3,10 +3,7 @@ package tsml.classifiers.distance_based.proximity;
 import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.Configurer;
-import tsml.classifiers.distance_based.utils.classifiers.EnumBasedClassifierConfigurer;
-import tsml.classifiers.distance_based.utils.classifiers.Utils;
+import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
@@ -35,6 +32,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
+
 /**
  * Purpose: proximity tree
  * <p>
@@ -47,7 +46,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             int seed = i;
             ProximityTree classifier = new ProximityTree();
             classifier.setSeed(seed);
-            Config.PT_R5.applyConfigTo(classifier);
+            Config.PT_R5.configureFromEnum(classifier);
             classifier.setCheckpointDirPath("checkpoints");
             classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
@@ -56,11 +55,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     // the various configs for this classifier
-    public enum Config implements EnumBasedClassifierConfigurer<ProximityTree> {
+    public enum Config implements EnumBasedConfigurer<ProximityTree> {
         PT_R1() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
                 proximityTree.setBreadthFirst(false);
                 proximityTree.setTrainTimeLimit(0);
                 proximityTree.setTestTimeLimit(0);
@@ -81,83 +79,138 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R5_O() {
+            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setDistanceFunctionSpaceBuilders(newArrayList(
+                        ParamSpaceBuilder.DTW,
+                        ParamSpaceBuilder.DDTW,
+                        ParamSpaceBuilder.LCSS,
+                        ParamSpaceBuilder.ERP
+                ));
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
+        PT_R5_OU() {
+            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setDistanceFunctionSpaceBuilders(newArrayList(
+                        ParamSpaceBuilder.UDTW,
+                        ParamSpaceBuilder.UDDTW,
+                        ParamSpaceBuilder.ULCSS,
+                        ParamSpaceBuilder.UERP
+                ));
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
+        PT_R5_U() {
+            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setDistanceFunctionSpaceBuilders(newArrayList(
+                        ParamSpaceBuilder.ED,
+                        ParamSpaceBuilder.FULL_DTW,
+                        ParamSpaceBuilder.UDTW,
+                        ParamSpaceBuilder.FULL_DDTW,
+                        ParamSpaceBuilder.UDDTW,
+                        ParamSpaceBuilder.WDTW,
+                        ParamSpaceBuilder.WDDTW,
+                        ParamSpaceBuilder.ULCSS,
+                        ParamSpaceBuilder.UERP,
+                        ParamSpaceBuilder.TWED,
+                        ParamSpaceBuilder.MSM
+                ));
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
         PT_R5() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R1.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R5);
                 return proximityTree;
             }
         },
         PT_R10() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R1.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R10);
                 return proximityTree;
             }
         },
         PT_R5_I() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R5.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R5.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R5_I);
                 return proximityTree;
             }
         },
         PT_R10_I() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R10.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R10.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R10_I);
                 return proximityTree;
             }
         },
         PT_R1_I() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R1.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R1_I);
                 return proximityTree;
             }
         },
         PT_RR5_I() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_RR5.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_RR5.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R5_I);
                 return proximityTree;
             }
         },
         PT_RR10_I() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_RR10.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_RR10.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R10_I);
                 return proximityTree;
             }
         },
         PT_RR5() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R5.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R5.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_RR5);
                 return proximityTree;
             }
         },
         PT_RR10() {
             @Override
-            public <B extends ProximityTree> B applyConfigTo(B proximityTree) {
-                proximityTree = PT_R10.applyConfigTo(proximityTree);
-                proximityTree = super.applyConfigTo(proximityTree);
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R10.configureFromEnum(proximityTree);
                 proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_RR10);
                 return proximityTree;
             }
@@ -167,7 +220,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        Config.PT_R5.applyConfigTo(this);
+        Config.PT_R5.configureFromEnum(this);
     }
 
     private static final long serialVersionUID = 1;
@@ -403,7 +456,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         split.setSeed(rand.nextInt());
         split.setTrainData(data);
         split.setDistanceFunctionSpaceBuilders(distanceFunctionSpaceBuilders);
-        proximitySplitConfig.applyConfigTo(split);
+        proximitySplitConfig.configure(split);
         return split;
     }
 
