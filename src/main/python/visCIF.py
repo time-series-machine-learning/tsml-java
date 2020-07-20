@@ -6,16 +6,18 @@
 
 import sys
 import numpy as np
-from utilities import arrayStringToList
+from utilities import *
 from matplotlib import pyplot as plt
 
-f = open(sys.argv[1] + "temporalImportanceCurves" + sys.argv[2] + ".txt", 'r')
+plt.rcParams["font.family"] = "Calibri"
+
+f = open(sys.argv[1] + 'temporalImportanceCurves' + sys.argv[2] + '.txt', 'r')
 
 curves = []
 names = []
 for i in range(int(sys.argv[3])):
 	names.append(f.readline().strip())
-	curves.append(arrayStringToList(f.readline()))
+	curves.append(array_string_to_list_float(f.readline()))
 	
 f.close()
 
@@ -27,10 +29,10 @@ top_names = [names[i] for i in top]
 	
 for i in range(0,3):
 	plt.plot(top_curves[i], label=top_names[i])
-plt.plot(list(np.mean(curves, axis=0)), '--', linewidth=3, label="Mean Information Gain")
+plt.plot(list(np.mean(curves, axis=0)), '--', linewidth=3, label='Mean Information Gain')
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left',
-           ncol=2, mode="expand", borderaxespad=0.)
-plt.xlabel("Time Point")
-plt.ylabel("Information Gain") 
+           ncol=2, mode='expand', borderaxespad=0.)
+plt.xlabel('Time Point')
+plt.ylabel('Information Gain')
 
-plt.savefig(sys.argv[1] + "temporalImportanceCurves" + sys.argv[2])
+plt.savefig(sys.argv[1] + 'temporalImportanceCurves' + sys.argv[2])

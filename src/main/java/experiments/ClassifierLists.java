@@ -196,7 +196,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","CIF"};
+    public static String[] interval= {"LPS","TSF","CIF","CIF-NoSubsample"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -211,6 +211,10 @@ public class ClassifierLists {
                 break;
             case "CIF":
                 c=new CIF();
+                break;
+            case "CIF-NoSubsample":
+                c=new CIF();
+                ((CIF)c).setAttSubsampleSize(25);
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");

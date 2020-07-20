@@ -9,7 +9,7 @@ public interface Interpretable {
     boolean setInterpretabilitySavePath(String path);
 
     //output summary of how the last classifier prediction was made
-    boolean lastClassifiedInterpretability();
+    boolean lastClassifiedInterpretability() throws Exception;
 
     default boolean createInterpretabilityDirectories(String path){
         File f = new File(path);

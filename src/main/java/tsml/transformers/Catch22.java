@@ -326,28 +326,28 @@ public class Catch22 implements Transformer {
 
     public static String getSummaryStatNameByIndex(int summaryStatIndex) throws Exception {
         switch(summaryStatIndex){
-            case 0: return "histMode5DN";
-            case 1: return "histMode10DN";
-            case 2: return "binaryStatsMeanLongstretch1SB";
-            case 3: return "outlierIncludeP001mdrmdDN";
-            case 4: return "outlierIncludeN001mdrmdDN";
-            case 5: return "f1ecacCO";
-            case 6: return "firstMinacCO";
-            case 7: return "summariesWelchRectArea51SP";
-            case 8: return "summariesWelchRectCentroidSP";
-            case 9: return "localSimpleMean3StderrFC";
-            case 10: return "trev1NumCO";
-            case 11: return "histogramAMIeven25CO";
-            case 12: return "autoMutualInfoStats40GaussianFmmiIN";
-            case 13: return "hrvClassicPnn40MD";
-            case 14: return "binaryStatsDiffLongstretch0SB";
-            case 15: return "motifThreeQuantileHhSB";
-            case 16: return "localSimpleMean1TauresratFC";
-            case 17: return "embed2DistTauDExpfitMeandiffCO";
-            case 18: return "fluctAnal2Dfa5012LogiPropR1SC";
-            case 19: return "fluctAnal2Rsrangefit501LogiPropR1SC";
-            case 20: return "transitionMatrix3acSumdiagcovSB";
-            case 21: return "periodicityWangTh001PD";
+            case 0: return "DN_HistogramMode_5";
+            case 1: return "DN_HistogramMode_10";
+            case 2: return "SB_BinaryStats_mean_longstretch1";
+            case 3: return "DN_OutlierInclude_p_001_mdrmd";
+            case 4: return "DN_OutlierInclude_n_001_mdrmd";
+            case 5: return "CO_f1ecac";
+            case 6: return "CO_FirstMin_ac";
+            case 7: return "SP_Summaries_welch_rect_area_5_1";
+            case 8: return "SP_Summaries_welch_rect_centroid";
+            case 9: return "FC_LocalSimple_mean3_stderr";
+            case 10: return "CO_trev_1_num";
+            case 11: return "CO_HistogramAMI_even_2_5";
+            case 12: return "IN_AutoMutualInfoStats_40_gaussian_fmmi";
+            case 13: return "MD_hrv_classic_pnn40";
+            case 14: return "SB_BinaryStats_diff_longstretch0";
+            case 15: return "SB_MotifThree_quantile_hh";
+            case 16: return "FC_LocalSimple_mean1_tauresrat";
+            case 17: return "CO_Embed2_Dist_tau_d_expfit_meandiff";
+            case 18: return "SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1";
+            case 19: return "SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1";
+            case 20: return "SB_TransitionMatrix_3ac_sumdiagcov";
+            case 21: return "PD_PeriodicityWang_th0_01";
             default: throw new Exception("Invalid Catch22 summary stat index.");
         }
     }

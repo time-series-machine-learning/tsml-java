@@ -938,7 +938,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Runtime.getRuntime().exec("py src/main/python/temporalImportanceCurves.py \"" +
+        Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
 
         return true;

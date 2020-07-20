@@ -29,120 +29,32 @@ import java.util.Arrays;
  */
 public class BitWordLong implements Comparable<BitWordLong>, Serializable {
 
-    protected static final long serialVersionUID = 22573L;
-
-    public enum PrintFormat {
-        RAW,            //simple decimal integer value
-        BINARY,         //as 32 bit binary string
-        LETTERS,        //as char string, has unpacking cost
-        STRING;         //as string of actual characters
-    }
-
-    protected static final String[] alphabet = { "a","b","c","d","e","f","g","h","i","j" };
-
-    protected static String[] alphabetSymbols = { "a","b","c","d" };
+    protected static final long serialVersionUID = 1L;
 
     protected long word;
-    //protected byte length;
 
-    //masks
-    protected static final int POP_MASK = 0b11;
-    protected static final int [] LETTER_MASKS = { //again, assumes alphabetsize = 4 still
-            0b00000000000000000000000000000011,
-            0b00000000000000000000000000001100,
-            0b00000000000000000000000000110000,
-            0b00000000000000000000000011000000,
-            0b00000000000000000000001100000000,
-            0b00000000000000000000110000000000,
-            0b00000000000000000011000000000000,
-            0b00000000000000001100000000000000,
-            0b00000000000000110000000000000000,
-            0b00000000000011000000000000000000,
-            0b00000000001100000000000000000000,
-            0b00000000110000000000000000000000,
-            0b00000011000000000000000000000000,
-            0b00001100000000000000000000000000,
-            0b00110000000000000000000000000000,
-            0b11000000000000000000000000000000
-    };
-
-    //ALPHABETSIZE CURRENTLY ASSUMED TO BE 4, THEREFORE 2 BITS PER LETTER, AND MAX WORD LENGTH 16
+    //ALPHABETSIZE CURRENTLY ASSUMED TO BE 4, THEREFORE 2 BITS PER LETTER, AND MAX WORD LENGTH 32
     public static final int WORD_SPACE = 64; //length of long
     public static final int BITS_PER_LETTER = 2;
     public static final int MAX_LENGTH = 32; //WORD_SPACE/BITS_PER_LETTER;
 
     public BitWordLong() {
         word = 0L;
-        //length = 32;
     }
 
     public BitWordLong(BitWordLong bw) {
         this.word = bw.word;
-        //this.length = bw.length;
-    }
-
-    public BitWordLong(int length) {//throws Exception {
-//        if (length > MAX_LENGTH)
-//            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + length);
-
-        word = 0L;
-        //length = length;
-    }
-
-
-    public BitWordLong(int [] letters) throws Exception {
-        setWord(letters);
     }
 
     public BitWordLong(BitWordLong bw1, BitWordLong bw2){
         word = (bw1.word << 32) | bw2.word;
-        //length = 32;
-    }
-    
-    public void setWord(int [] letters) {// throws Exception {
-//         if (letters.length > MAX_LENGTH)
-//            throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
-         
-         word = 0;
-         //length = (byte)letters.length;
-         
-         packAll(letters);
     }
     
     public void push(int letter) {
-        word = ((Long)word << BITS_PER_LETTER) | letter;
-        //++length;
+        word = (word << BITS_PER_LETTER) | letter;
     }
-    
-    public long pop() {
-        long letter = (Long)word & POP_MASK;
-        shorten(1);
-        return letter;
-    }
-    
-    public void packAll(int [] letters) {
-        for (int i = 0; i < letters.length; ++i)
-            push(letters[i]);
-    }
-    
-//    public int[] unpackAll() {
-//        int [] letters = new int[length];
-//
-//        int shift = WORD_SPACE-(length*BITS_PER_LETTER); //first shift, increment latter
-//        for (int i = length-1; i > -1; --i) {
-//            //left shift to left end to remove earlier letters, right shift to right end to remove latter
-//            letters[length-1-i] = (int)((Long)word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
-//
-//            shift += BITS_PER_LETTER;
-//        }
-//
-//
-//
-//        return letters;
-//    }
     
     public void shorten(int amount) {
-        //length -= amount;
         word = word >>> amount*BITS_PER_LETTER;
     }
 
@@ -151,12 +63,9 @@ public class BitWordLong implements Comparable<BitWordLong>, Serializable {
         return Long.compare(word, o.word);
     }
 
-    public void shortenByFourierCoefficient() {
-        shorten(2); //1 real/imag pair
-    }
-
     public long getWord() { return word; }
-    //public int getLength() { return length; }
+
+    public void setWord(long l) { word = l; }
     
     @Override
     public boolean equals(Object other) {
@@ -167,88 +76,75 @@ public class BitWordLong implements Comparable<BitWordLong>, Serializable {
 
     @Override
     public int hashCode() {
-//        int hash = 7;
-//        hash = 29 * hash + Long.hashCode((Long)this.word);
-//        hash = 29 * hash + this.length;
-//        return hash;
         return Long.hashCode(word);
     }
     
-//    public String buildString() {
-//        int [] letters = unpackAll();
-//        StringBuilder word = new StringBuilder();
-//        for (int i = 0; i < letters.length; ++i)
-//            word.append(alphabet[letters[i]]);
-//        return word.toString();
-//    }
-    
     @Override
     public String toString() {
-        return toString(PrintFormat.BINARY);
+        return String.format("%"+WORD_SPACE+"s", Long.toBinaryString((Long)word)).replace(' ', '0');
     }
-    public String toString(PrintFormat format) {
-        switch (format) {
-            case RAW:
-                return String.valueOf(Long.toString((Long)word));
-            case BINARY: 
-                return String.format("%"+WORD_SPACE+"s", Long.toBinaryString((Long)word)).replace(' ', '0');
-            case LETTERS: {
-                //return Arrays.toString(unpackAll());
-            }
-            case STRING: {
-                //return buildString();
-            }
-            default:
-                return "err"; //impossible with enum, but must have return
+
+    public String toStringUnigram(int length) {
+        long[] letters = new long[length];
+        int shift = 64-(length*2);
+        for (int i = length-1; i > -1; --i) {
+            letters[length-1-i] = (word << shift) >>> 62;
+            shift += 2;
         }
+
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters[i]));
+        }
+
+        return str.toString();
+    }
+
+    public String toStringBigram(int length) {
+        long[] letters = new long[length];
+        int shift = 64-(length*2);
+        for (int i = length-1; i > -1; --i) {
+            letters[length-1-i] = (word << shift) >>> 62;
+            shift += 2;
+        }
+
+        long[] letters2 = new long[length];
+        int shift2 = 32-(length*2);
+        for (int i = length-1; i > -1; --i) {
+            letters2[length-1-i] = (word << shift2) >>> 62;
+            shift2 += 2;
+        }
+
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters2[i]));
+        }
+        str.append("+");
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters[i]));
+        }
+
+        return str.toString();
     }
     
     public static void main(String [] args) throws Exception {
-        quickTest();
-        //buildMasks();
-
-        
-    }
-    
-    private static void buildMasks() {
-        for (int i = 0; i < 16; ++i) {
-            System.out.print("0b");
-            for (int j = 15; j > i; --j)
-                System.out.print("00");
-            System.out.print("11");
-            for (int j = 0; j < i; ++ j)
-                System.out.print("00");
-            System.out.println(",");
-        }
-    }
-    
-    private static void quickTest() throws Exception {
-        int [] letters = {2,1,2,3,2,1,2,0,1,1,2,3,1,2,3,1};
+        int [] letters = {2,1,2,3,0};
         BitWordLong b = new BitWordLong();
         for (int i = 0; i < letters.length; i++){
             b.push(letters[i]);
-            System.out.println(b.toString(BitWordLong.PrintFormat.BINARY));
+            System.out.println(b);
         }
 
-//        b.shorten(6);
-//        System.out.println(b.toString(BitWordLong.PrintFormat.BINARY));
-
-        b.word = ((Long)b.word << 32) | (Long)b.word;
-        System.out.println(b.toString(BitWordLong.PrintFormat.BINARY));
-
-        System.out.println();
-
-        BitWordInt b2 = new BitWordInt();
-        for (int i = 0; i < letters.length; i++){
-            b2.push(letters[i]);
-            System.out.println(b2.toString(BitWordInt.PrintFormat.BINARY));
+        int [] letters2 = {0,3,2,1,3};
+        BitWordLong b2 = new BitWordLong();
+        for (int i = 0; i < letters2.length; i++){
+            b2.push(letters2[i]);
         }
+        BitWordLong b3 = new BitWordLong(b,b2);
+        System.out.println(b3);
 
-        b2.shorten(6);
-        System.out.println(b2.toString(BitWordInt.PrintFormat.BINARY));
-
-        System.out.println(Long.hashCode(10000L));
-        System.out.println(Long.hashCode(10000000000001L));
-        System.out.println(Long.hashCode(1316137241L));
+        System.out.println(b.toStringUnigram(letters.length));
+        System.out.println(b2.toStringUnigram(letters2.length));
+        System.out.println(b3.toStringBigram(letters.length));
     }
 }

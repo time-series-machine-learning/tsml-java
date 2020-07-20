@@ -76,6 +76,9 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     private int seed = 0;
     private Random rand;
 
+    private int lastNNIdx;
+    private SPBag lastNNBag;
+
     private static final long serialVersionUID = 1L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
@@ -172,6 +175,9 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     public double getWeight() { return weight; }
     public ArrayList<Integer> getSubsampleIndices() { return subsampleIndices; }
     public ArrayList<Integer> getTrainPreds() { return trainPreds; }
+    public double[][] getBreakpoints() { return breakpoints; }
+    public int getLastNNIdx() { return lastNNIdx; }
+    public SPBag getLastNNBag() { return lastNNBag; }
 
     public void setSeed(int i){ seed = i; }
     public void setCleanAfterBuild(boolean b){ cleanAfterBuild = b; }
@@ -595,7 +601,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
                     BitWordLong bigram = new BitWordLong(words[wInd - windowSize], word);
 
-                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) 0);
+                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
                     Integer val = bag.get(key);
 
                     if (val == null)
@@ -627,7 +633,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     private BitWordLong createWord(double[] dft) {
-        BitWordLong word = new BitWordLong(wordLength);
+        BitWordLong word = new BitWordLong();
         for (int l = 0; l < wordLength; ++l) //for each letter
             for (int bp = 0; bp < alphabetSize; ++bp) //run through breakpoints until right one found
                 if (dft[l] <= breakpoints[l][bp]) {
@@ -716,7 +722,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 if (wInd - windowSize >= 0 && lastWord.getWord() != 0) {
                     BitWordLong bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
-                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) 0);
+                    SerialisableComparablePair<BitWordLong, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
                     Integer val = bag.get(key);
 
                     if (val == null)
@@ -816,7 +822,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     @Override
     public void buildClassifier(Instances data) throws Exception {
         if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
-            throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
+            throw new Exception("TDE_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         if (IGB) breakpoints = IGB(data);
         else breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
@@ -911,7 +917,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        int nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
             double dist;
@@ -921,11 +927,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = i;
             }
         }
 
-        return nn;
+        lastNNIdx = subsampleIndices.get(nn);
+        lastNNBag = testBag;
+        return bags.get(nn).getClassVal();
     }
 
     /**
@@ -941,7 +949,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        int nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
             if (i == testIndex) //skip 'this' one, leave-one-out
@@ -955,11 +963,17 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = i;
             }
         }
 
-        return nn;
+        return bags.get(nn).getClassVal();
+    }
+
+    public double[] firstWordVis(Instance inst, BitWordLong word) {
+        double[] dft = performMFT(toArrayNoClass(inst))[0];
+        word.setWord(createWord(dft).getWord());
+        return dft;
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{

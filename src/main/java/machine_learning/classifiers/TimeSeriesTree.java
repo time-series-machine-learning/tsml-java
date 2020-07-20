@@ -75,6 +75,18 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         return seed;
     }
 
+    public boolean getNormalise() {
+        return norm;
+    }
+
+    public double getNormStdev(int idx){
+        return stdev[idx];
+    }
+
+    public double getNormMean(int idx){
+        return mean[idx];
+    }
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         numAttributes = data.numAttributes()-1;
@@ -241,9 +253,9 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
     }
 
     private void findAttributesUsed(TreeNode tree, boolean[] attsUsed){
-        //if (!attsUsed[tree.bestSplit]){
+        if (!attsUsed[tree.bestSplit]){
             attsUsed[tree.bestSplit] = true;
-        //}
+        }
 
         for (int i = 0; i < tree.children.length; i++){
             if (tree.children[i].bestSplit > -1){
