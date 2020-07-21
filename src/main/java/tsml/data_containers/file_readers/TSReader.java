@@ -298,7 +298,7 @@ public class TSReader {
             System.out.println("after: " + (System.nanoTime() - time));
 
             TimeSeriesInstances train_data = ts_reader.GetInstances();
-            System.out.println(train_data);
+            //System.out.println(train_data);
         //}
 
         //File f_orig = new File(filepath_orig);
@@ -316,8 +316,11 @@ public class TSReader {
             time = System.nanoTime();
             TSReader ts_reader_multi = new TSReader(new FileReader(f1));
             TimeSeriesInstances train_data_multi = ts_reader_multi.GetInstances();
-            System.out.println(train_data_multi);
+            //System.out.println(train_data_multi);
             System.out.println("after: " + (System.nanoTime() - time));
+
+            System.out.println("Min: " + train_data_multi.getMinLength());
+            System.out.println("Max: " + train_data_multi.getMaxLength());
 
 
             //JAMESL ADDED TESTS

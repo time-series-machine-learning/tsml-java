@@ -16,6 +16,7 @@ public class TimeSeries {
     private double[] indices;
     MetaData md;
 
+
     public TimeSeries(double[] d){
         series = d;
     }

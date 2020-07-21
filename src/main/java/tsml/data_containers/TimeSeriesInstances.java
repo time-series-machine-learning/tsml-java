@@ -9,6 +9,40 @@ import java.util.List;
  */
 public class TimeSeriesInstances {
 
+
+    /* Meta Information  */
+    boolean isEquallySpaced;
+    boolean hasMissing;
+    boolean isEqualLength;
+
+    //this could be by dimension, so could be a list.
+    int minLength;
+    int maxLength;
+
+    public boolean hasMissing(){
+        return hasMissing;
+    }
+
+    public boolean isEuqallySpaced(){
+        return isEquallySpaced;
+    }
+
+    public boolean isEqualLength(){
+        return isEqualLength;
+    }
+
+    public int getMinLength(){
+        return minLength;
+    }
+
+    public int getMaxLength(){
+        return maxLength;
+    }
+
+    /* End Meta Information  */
+
+
+
     List<TimeSeriesInstance> series_collection;
 
     //mapping for class labels. so ["apple","orange"] => [0,1]
@@ -26,8 +60,22 @@ public class TimeSeriesInstances {
         for(List<List<Double>> series : raw_data){
             series_collection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
         }
+
+        calculateLengthBounds();
+        calculateIfMissing();
     }
 
+    private void calculateLengthBounds(){
+        minLength = series_collection.stream().mapToInt(e -> e.minLength).min().getAsInt();
+        maxLength = series_collection.stream().mapToInt(e -> e.maxLength).max().getAsInt();
+        isEqualLength = minLength == maxLength;
+    }
+
+    private void calculateIfMissing(){
+        //if any of the instance have a missing value then this is true.
+        hasMissing = series_collection.stream().map(e ->  e.hasMissing).anyMatch(Boolean::booleanValue);
+    }
+    
     public TimeSeriesInstances(List<List<List<Double>>> raw_data){
         this();
         
@@ -35,7 +83,6 @@ public class TimeSeriesInstances {
             series_collection.add(new TimeSeriesInstance(series));
         }
     }
-
 
     public void setClassLabels(List<String> labels){
         classLabels = labels;

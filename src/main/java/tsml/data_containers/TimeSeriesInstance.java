@@ -1,7 +1,9 @@
 package tsml.data_containers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Data structure able to store a time series instance.
@@ -12,6 +14,17 @@ import java.util.List;
  */
 
 public class TimeSeriesInstance {
+
+    /* Meta Information  */
+    boolean isMultivariate;
+    boolean isEquallySpaced;
+    boolean hasMissing;
+
+    int minLength;
+    int maxLength;
+
+    /* End Meta Information  */
+
 
     //this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double label) {
@@ -30,6 +43,22 @@ public class TimeSeriesInstance {
             //convert List<Double> to double[]
             series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
         }
+
+        isMultivariate = series_channels.size() > 1;
+
+        calculateLengthBounds();
+        calculateIfMissing();
+    }
+
+    private void calculateLengthBounds(){
+        minLength = series_channels.stream().mapToInt(e -> e.getSeries().length).min().getAsInt();
+        maxLength = series_channels.stream().mapToInt(e -> e.getSeries().length).max().getAsInt();
+    }
+
+    private void calculateIfMissing(){
+        //if any of the series have a NaN value, across all dimensions then this is true.
+        hasMissing = series_channels.stream().map(e -> Arrays.stream(e.getSeries()).anyMatch(Double::isNaN))
+                                             .anyMatch(Boolean::booleanValue);
     }
     
 	List<TimeSeries> series_channels;
