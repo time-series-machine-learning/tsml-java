@@ -369,6 +369,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
      */
     public static void main(String[] args) throws Exception {
         Instances trainData = createData();
+
         Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
         // test bad subsequence length
         // this has to be greater than 0.

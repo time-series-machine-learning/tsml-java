@@ -23,7 +23,7 @@ public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
-    private boolean normalise = true;
+    private boolean normalise = false;
     public Subsequences() {this.subsequenceLength = 30;}
     public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
@@ -103,11 +103,12 @@ public class Subsequences implements Transformer {
             // Add the first element
             if(i<padAmount) {
                 valueToAdd = timeSeries[0];
-            } else if (i>(timeSeries.length)) {
+            } else if (i>=padAmount && i<(padAmount+timeSeries.length)) {
+                //Add the original time series element
+                valueToAdd = timeSeries[i-padAmount];
+            } else {
                 // Add the last element
                 valueToAdd = timeSeries[timeSeries.length-1];
-            } else {
-                valueToAdd = timeSeries[i-padAmount];
             }
             newTimeSeries[i] = valueToAdd;
         }
