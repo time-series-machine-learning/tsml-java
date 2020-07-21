@@ -69,4 +69,11 @@ public class DimensionIndependentTransformer implements Transformer {
         this.dataHeader = result;
         return result;
     }
+
+    @Override
+    public Capabilities getCapabilities(){
+        Capabilities c=Transformer.super.getCapabilities();
+        c.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        return c;
+    }
 }
