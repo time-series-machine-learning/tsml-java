@@ -41,7 +41,7 @@ public class ScoreUtils {
      */
     public static double giniImpurity(double[] distribution) {
         checkEntropyInputs(distribution);
-        normaliseInPlace(distribution);
+        normaliseInPlace(distribution, true);
         double entropy = 1;
         for(double proportion : distribution) {
             double score = Math.pow(proportion, 2);
@@ -100,7 +100,7 @@ public class ScoreUtils {
      */
     public static double infoEntropy(double[] distribution) {
         checkEntropyInputs(distribution);
-        normaliseInPlace(distribution);
+        normaliseInPlace(distribution, true);
         double entropy = 0;
         for(double proportion : distribution) {
             double score = proportion * Utilities.log(proportion, 2);
@@ -230,7 +230,7 @@ public class ScoreUtils {
 
     public static double chiSquared(final double[] parentClassCounts, final double[][] childrenClassCounts) {
         checkGainInputs(parentClassCounts, childrenClassCounts);
-        final double[] parentDistribution = normaliseInPlace(copy(parentClassCounts));
+        final double[] parentDistribution = normaliseInPlace(copy(parentClassCounts), true);
         double sum = 0;
         for(int i = 0; i < childrenClassCounts.length; i++) {
             final double childSum = sum(childrenClassCounts[i]);

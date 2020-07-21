@@ -11,35 +11,4 @@ import java.util.List;
 public interface PartitionScorer extends Serializable {
     double findScore(Instances parent, List<Instances> children);
 
-    class GiniGain implements PartitionScorer {
-
-        @Override
-        public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.giniGain(parent, children);
-        }
-    }
-
-    class InfoGain implements PartitionScorer {
-
-        @Override
-        public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.infoGain(parent, children);
-        }
-    }
-
-    class GiniEntropy implements PartitionScorer {
-
-        @Override
-        public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.giniScore(children);
-        }
-    }
-
-    class InfoEntropy implements PartitionScorer {
-
-        @Override
-        public double findScore(final Instances parent, final List<Instances> children) {
-            return ScoreUtils.infoScore(children);
-        }
-    }
 }

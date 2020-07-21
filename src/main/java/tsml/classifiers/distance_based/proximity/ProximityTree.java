@@ -14,6 +14,10 @@ import tsml.classifiers.distance_based.utils.collections.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.stats.scoring.ChiSquaredGain;
+import tsml.classifiers.distance_based.utils.stats.scoring.GiniGain;
+import tsml.classifiers.distance_based.utils.stats.scoring.InfoGain;
+import tsml.classifiers.distance_based.utils.stats.scoring.InfoEntropy;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
@@ -79,8 +83,64 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R5_CHI() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                classifier.setPartitionScorer(new ChiSquaredGain());
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
+        PT_R5_IG() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                classifier.setPartitionScorer(new InfoGain());
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
+        PT_R5_GG() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                classifier.setPartitionScorer(new GiniGain());
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
+        PT_R5_IE() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(classifier.getProximitySplitConfig().and(
+                        new Configurer<ProximitySplit>() {
+                            @Override public <B extends ProximitySplit> B configure(final B classifier) {
+                                classifier.setEarlyAbandonDistances(true);
+                                classifier.setPartitionScorer(new InfoEntropy());
+                                return classifier;
+                            }
+                        }));
+                return classifier;
+            }
+        },
         PT_R5_O() {
-            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
                 classifier = PT_R5.configureFromEnum(classifier);
                 classifier.setDistanceFunctionSpaceBuilders(newArrayList(
                         ParamSpaceBuilder.DTW,
@@ -99,7 +159,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         },
         PT_R5_OU() {
-            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
                 classifier = PT_R5.configureFromEnum(classifier);
                 classifier.setDistanceFunctionSpaceBuilders(newArrayList(
                         ParamSpaceBuilder.UDTW,
@@ -118,7 +178,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         },
         PT_R5_U() {
-            @Override public ProximityTree configureFromEnum(ProximityTree classifier) {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
                 classifier = PT_R5.configureFromEnum(classifier);
                 classifier.setDistanceFunctionSpaceBuilders(newArrayList(
                         ParamSpaceBuilder.ED,

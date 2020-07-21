@@ -16,7 +16,7 @@ import tsml.classifiers.distance_based.utils.collections.params.iteration.Random
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
-import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer.GiniEntropy;
+import tsml.classifiers.distance_based.utils.stats.scoring.GiniEntropy;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
 import utilities.ArrayUtilities;

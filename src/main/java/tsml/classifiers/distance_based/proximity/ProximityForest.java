@@ -70,22 +70,50 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
+        PF_R5_IG() {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_IG);
+                return classifier;
+            }
+        },
+        PF_R5_CHI() {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_CHI);
+                return classifier;
+            }
+        },
+        PF_R5_GG() {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_GG);
+                return classifier;
+            }
+        },
+        PF_R5_IE() {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
+                classifier = PF_R5.configureFromEnum(classifier);
+                classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_IE);
+                return classifier;
+            }
+        },
         PF_R5_U() {
-            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
                 classifier = PF_R5.configureFromEnum(classifier);
                 classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_U);
                 return classifier;
             }
         },
         PF_R5_OU() {
-            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
                 classifier = PF_R5.configureFromEnum(classifier);
                 classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_OU);
                 return classifier;
             }
         },
         PF_R5_O() {
-            @Override public ProximityForest configureFromEnum(ProximityForest classifier) {
+            @Override public <B extends ProximityForest> B configureFromEnum(B  classifier) {
                 classifier = PF_R5.configureFromEnum(classifier);
                 classifier.setProximityTreeConfig(ProximityTree.Config.PT_R5_O);
                 return classifier;
