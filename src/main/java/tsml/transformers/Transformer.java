@@ -1,6 +1,9 @@
 package tsml.transformers;
 
 import org.apache.commons.lang3.NotImplementedException;
+
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
@@ -19,6 +22,9 @@ import weka.core.Instances;
  *
  */
 public interface Transformer extends CapabilitiesHandler{
+
+
+    /********* Instances ************/
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform
@@ -77,4 +83,29 @@ public interface Transformer extends CapabilitiesHandler{
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         return result;
     }
+
+
+    /********* TimeSeriesInstances ************/
+    
+    /**
+     * perform the transform process. Some algorithms may require a fit before transform
+     * (e.g. shapelets, PCA) others may not (FFT, PAA etc).
+     * Should we throw an exception? Default to calling instance transform?
+     * Need to determine where to setOut
+     * @return Instances of transformed data
+     */
+    default TimeSeriesInstances transform(TimeSeriesInstances data){
+        TimeSeriesInstances output = new TimeSeriesInstances();
+        for(TimeSeriesInstance inst : data){
+            output.add(transform(inst));
+        }
+        return output;
+    }
+
+    /**
+     * Transform a new instance into the format described in determineOutputFormat
+     * @param Instance inst
+     * @return transformed Instance
+     */
+    TimeSeriesInstance transform(TimeSeriesInstance inst);
 }
