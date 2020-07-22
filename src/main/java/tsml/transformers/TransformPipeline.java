@@ -20,6 +20,10 @@ public class TransformPipeline extends BaseTrainableTransformer {
         setTransformers(transformers);
     }
 
+    public TransformPipeline(Transformer... transformers) {
+        this(new ArrayList<>(Arrays.asList(transformers)));
+    }
+
     public List<Transformer> getTransformers() {
         return transformers;
     }
@@ -91,4 +95,24 @@ public class TransformPipeline extends BaseTrainableTransformer {
         return transformers.add(transformer);
     }
 
+    /**
+     *
+     * @param a the transformer to append to. If this is already a pipeline transformer then b is added to the list of transformers. If not, a new pipeline transformer is created and a and b are added to the list of transformers (in that order!).
+     * @param b
+     * @return
+     */
+    public static Transformer append(Transformer a, Transformer b) {
+        if(a == null) {
+            return b;
+        }
+        if(b == null) {
+            return a;
+        }
+        if(a instanceof TransformPipeline) {
+            ((TransformPipeline) a).append(b);
+            return a;
+        } else {
+            return new TransformPipeline(a, b);
+        }
+    }
 }

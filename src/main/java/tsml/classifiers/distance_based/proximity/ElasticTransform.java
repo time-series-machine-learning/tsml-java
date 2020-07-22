@@ -4,8 +4,11 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
 import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
+import tsml.classifiers.distance_based.distances.interval.IntervalDistanceMeasure;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
 import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
+import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
@@ -14,6 +17,9 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
 import tsml.transformers.BaseTrainableTransformer;
+import tsml.transformers.IntervalTransform;
+import tsml.transformers.TransformPipeline;
+import tsml.transformers.Transformer;
 import utilities.ArrayUtilities;
 import weka.core.*;
 import weka.core.converters.ArffSaver;
@@ -64,16 +70,13 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
     }
 
     public static class Feature {
-        private Feature(final Instance instance, final DistanceFunction distanceFunction,
-                final Interval interval) {
+        private Feature(final Instance instance, final DistanceFunction distanceFunction) {
             this.instance = instance;
             this.distanceFunction = distanceFunction;
-            this.interval = interval;
         }
 
         private final Instance instance;
         private final DistanceFunction distanceFunction;
-        private final Interval interval;
 
         public Instance getInstance() {
             return instance;
@@ -83,21 +86,10 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
             return distanceFunction;
         }
 
-        public Interval getInterval() {
-            return interval;
+        public double distance(Instance b) {
+            return distanceFunction.distance(instance, b);
         }
 
-        public double distance(Instance b) {
-            Instance a = instance;
-            if(a == b) {
-                return 0;
-            }
-            if(interval != null) {
-                a = new IntervalInstance(a, interval);
-                b = new IntervalInstance(b, interval);
-            }
-            return distanceFunction.distance(a, b);
-        }
     }
 
     private List<ParamSpaceBuilder> paramSpaceBuilders = newArrayList(
@@ -159,12 +151,30 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
             final int paramSpaceIndex = random.nextInt(paramSpaces.size());
             final ParamSpace paramSpace = paramSpaces.get(paramSpaceIndex);
             final ParamSet paramSet = RandomSearchIterator.choice(random, paramSpace);
-            final DistanceFunction distanceFunction = (DistanceFunction) paramSet.getSingle(DISTANCE_MEASURE_FLAG);
-            distanceFunction.setInstances(trainData);
-            final int length = random.nextInt(seriesLength + 1 - minIntervalLength) + minIntervalLength;
-            final int start = random.nextInt(seriesLength - length + 1);
-            final Interval interval = new Interval(start, length);
-            final Feature feature = new Feature(instance, distanceFunction, interval);
+            DistanceFunction df = (DistanceFunction) paramSet.getSingle(DISTANCE_MEASURE_FLAG);
+            if(randomIntervals) {
+                final int length = random.nextInt(seriesLength + 1 - minIntervalLength) + minIntervalLength;
+                final int start = random.nextInt(seriesLength - length + 1);
+                final Interval interval = new Interval(start, length);
+                final TransformDistanceMeasure intervalTdf = new BaseTransformDistanceMeasure();
+                final IntervalTransform intervalTransform = new IntervalTransform(interval);
+                if(df instanceof TransformDistanceMeasure) {
+                    final TransformDistanceMeasure tdf = (TransformDistanceMeasure) df;
+                    Transformer transformer = TransformPipeline.append(tdf.getTransformer(), intervalTransform);
+                    intervalTdf.setTransformer(transformer);
+                    if(tdf.isAltTransformer()) {
+                        Transformer altTransformer = TransformPipeline.append(tdf.getAltTransformer(),
+                                intervalTransform);
+                        intervalTdf.setTransformer(altTransformer);
+                    }
+                } else {
+                    intervalTdf.setTransformer(intervalTransform);
+                    intervalTdf.setDistanceFunction(df);
+                }
+                df = intervalTdf;
+            }
+            df.setInstances(trainData);
+            final Feature feature = new Feature(instance, df);
             features.add(feature);
         }
     }
@@ -242,15 +252,15 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
 
     public static void main(String[] args) {
         final ExecutorService executorService =
-                Executors.newFixedThreadPool(1);//Runtime.getRuntime().availableProcessors());
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final String name = "eti";
         boolean randomIntervals = true;
-        try (Stream<String> lines = Files.lines(Paths.get("/bench/phd/datasets/lists/2015_pigless.txt"), Charset.defaultCharset())) {
+        try (Stream<String> lines = Files.lines(Paths.get("/bench/phd/datasets/lists/2015.txt"), Charset.defaultCharset())) {
             lines.forEachOrdered(datasetName -> {
-                List<Integer> sizes = newArrayList(10,20,50,100,200,500,1000);//,5000,10000);
+                List<Integer> sizes = newArrayList(10,20,50,100,200,500,1000,5000,10000);
                 for(int i = 0; i < 30; i++) {
                     final int finalI = i;
-//                    executorService.submit(() -> {
+                    executorService.submit(() -> {
                         try {
                             final Instances[] instances = DatasetLoading.sampleDataset(
                                     "/bench/phd/datasets/uni2018", datasetName,
@@ -279,7 +289,7 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
                             e.printStackTrace();
                             System.exit(1);
                         }
-//                    });
+                    });
                 }
             });
         } catch(IOException e) {
