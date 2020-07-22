@@ -355,6 +355,59 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
+        PF_R5_STUMP() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
+                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setNumTreeLimit(1000);
+                proximityForest.setWeightTreesByTrainEstimate(true);
+                proximityForest.setUseDistributionInVoting(false);
+                proximityForest.setRebuildConstituentAfterEvaluation(false);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_STUMP);
+                return proximityForest;
+            }
+        },
+        PF_R1_STUMP() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5_STUMP.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_STUMP);
+                return proximityForest;
+            }
+        },
+        PF_R10_STUMP() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5_STUMP.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_STUMP);
+                return proximityForest;
+            }
+        },
+        PF_R10_QUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_QUICK);
+                return proximityForest;
+            }
+        },
+        PF_R5_QUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_QUICK);
+                return proximityForest;
+            }
+        },
+        PF_R1_QUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_QUICK);
+                return proximityForest;
+            }
+        }
         ;
     }
 

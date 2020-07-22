@@ -97,6 +97,12 @@ public class ClassifierLists {
             "DD_DTW","DTD_C","CID_DTW","NN_CID",
         "PF_R1",
         "PF_R5",
+        "PF_R5_QUICK",
+        "PF_R1_QUICK",
+        "PF_R10_QUICK",
+        "PF_R5_STUMP",
+        "PF_R1_STUMP",
+        "PF_R10_STUMP",
         "PF_R5_CHI",
         "PF_R5_IE",
         "PF_R5_IG",
@@ -147,6 +153,24 @@ public class ClassifierLists {
                 break;
             case "PF_R5":
                 c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                break;
+            case "PF_R5_QUICK":
+                c = ProximityForest.Config.PF_R5_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_QUICK":
+                c = ProximityForest.Config.PF_R1_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_QUICK":
+                c = ProximityForest.Config.PF_R10_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_STUMP":
+                c = ProximityForest.Config.PF_R5_STUMP.configure(new ProximityForest());
+                break;
+            case "PF_R1_STUMP":
+                c = ProximityForest.Config.PF_R1_STUMP.configure(new ProximityForest());
+                break;
+            case "PF_R10_STUMP":
+                c = ProximityForest.Config.PF_R10_STUMP.configure(new ProximityForest());
                 break;
             case "PF_R5_GG":
                 c = ProximityForest.Config.PF_R5_GG.configure(new ProximityForest());

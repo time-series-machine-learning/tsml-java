@@ -73,6 +73,33 @@ public class ProximitySplit extends BaseClassifier {
                 return proximitySplit;
             }
         },
+        PS_R10_QUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
+                return proximitySplit;
+            }
+        },
+        PS_R5_QUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R5.configure(proximitySplit);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
+                return proximitySplit;
+            }
+        },
+        PS_R1_QUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
+                return proximitySplit;
+            }
+        },
         PS_RR5() {
             @Override
             public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {

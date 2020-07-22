@@ -83,6 +83,27 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R1_QUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R1.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R1_QUICK);
+                return classifier;
+            }
+        },
+        PT_R5_QUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R5_QUICK);
+                return classifier;
+            }
+        },
+        PT_R10_QUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R10.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R10_QUICK);
+                return classifier;
+            }
+        },
         PT_R5_CHI() {
             @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
                 classifier = PT_R5.configureFromEnum(classifier);
@@ -275,6 +296,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R5_STUMP() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R5.configureFromEnum(proximityTree);
+                proximityTree.setMaxHeight(1);
+                return proximityTree;
+            }
+        },
+        PT_R1_STUMP() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
+                proximityTree.setMaxHeight(1);
+                return proximityTree;
+            }
+        },
+        PT_R10_STUMP() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R10.configureFromEnum(proximityTree);
+                proximityTree.setMaxHeight(1);
+                return proximityTree;
+            }
+        }
         ;
     }
 
@@ -312,6 +357,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private Configurer<ProximitySplit> proximitySplitConfig;
     // checkpoint config
     private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
+    // max tree height
+    private int maxHeight = -1;
+
+    public boolean hasMaxHeight() {
+        return maxHeight > 0;
+    }
 
     public Checkpointer getCheckpointer() {
         return checkpointer;
@@ -485,6 +536,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 node = nodes.get(nodes.size() - i - 1);
             }
             // check the stopping condition hasn't been hit
+            // check the node's level in the tree is not beyond the max height
+            if(hasMaxHeight() && node.getLevel() > maxHeight) {
+                // if so then do not build the node
+                continue;
+            }
             // check the data at the node is not pure
             if(!Utilities.isHomogeneous(node.getElement().getTrainData())) {
                 // if not hit the stopping condition then add node to the build queue
@@ -577,4 +633,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.breadthFirst = breadthFirst;
     }
 
+    public int getMaxHeight() {
+        return maxHeight;
+    }
+
+    public void setMaxHeight(final int maxHeight) {
+        this.maxHeight = maxHeight;
+    }
 }
