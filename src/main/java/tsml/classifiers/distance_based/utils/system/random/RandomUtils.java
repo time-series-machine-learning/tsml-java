@@ -18,15 +18,15 @@ public class RandomUtils {
     public static List<Integer> choiceIndex(int size, Random random, int numChoices,
                                                               boolean withReplacement) {
         Assert.assertTrue(size > 0);
-        Assert.assertNotNull(random);
-        Assert.assertTrue(numChoices > 0);
         if(size == 1) {
             return new ArrayList<>(Collections.singletonList(0));
         }
+        Assert.assertNotNull(random);
+        Assert.assertTrue(numChoices > 0);
         final List<Integer> indices = CollectionUtils.sequence(size);
-        final RandomIterator<Integer> iterator = new RandomIterator<>(random, indices);
+        final RandomIterator<Integer> iterator = new RandomIterator<>(random, indices, withReplacement);
         final List<Integer> choices = new ArrayList<>();
-        for(int i = 0; i < size; i++) {
+        for(int i = 0; i < numChoices; i++) {
             Assert.assertTrue(iterator.hasNext());
             choices.add(iterator.next());
         }
