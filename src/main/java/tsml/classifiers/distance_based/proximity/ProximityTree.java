@@ -104,6 +104,48 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return classifier;
             }
         },
+        PT_R1_SQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R1.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R1_SQUICK);
+                return classifier;
+            }
+        },
+        PT_R5_SQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R5_SQUICK);
+                return classifier;
+            }
+        },
+        PT_R10_SQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R10.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R10_SQUICK);
+                return classifier;
+            }
+        },
+        PT_R1_MQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R1.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R1_MQUICK);
+                return classifier;
+            }
+        },
+        PT_R5_MQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R5.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R5_MQUICK);
+                return classifier;
+            }
+        },
+        PT_R10_MQUICK() {
+            @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
+                classifier = PT_R10.configureFromEnum(classifier);
+                classifier.setProximitySplitConfig(ProximitySplit.Config.PS_R10_MQUICK);
+                return classifier;
+            }
+        },
         PT_R5_CHI() {
             @Override public <B extends ProximityTree> B configureFromEnum(B  classifier) {
                 classifier = PT_R5.configureFromEnum(classifier);

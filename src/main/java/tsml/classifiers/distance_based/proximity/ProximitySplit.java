@@ -25,9 +25,7 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Purpose: perform a split using several exemplar instances to partition the data based upon proximity.
@@ -45,6 +43,7 @@ public class ProximitySplit extends BaseClassifier {
                 proximitySplit.setRandomTieBreakCandidates(false);
                 proximitySplit.setEarlyAbandonDistances(false);
                 proximitySplit.setPartitionScorer(new GiniEntropy());
+                proximitySplit.setReduceSplitTestSize(false);
                 proximitySplit.setScore(-1);
                 proximitySplit.setRandomR(false);
                 proximitySplit.setExemplarCheckOriginal(true);
@@ -54,6 +53,60 @@ public class ProximitySplit extends BaseClassifier {
                 proximitySplit.setIntervalTransform(null);
                 proximitySplit.setRandomIntervals(false);
                 proximitySplit.setMinIntervalSize(-1);
+                return proximitySplit;
+            }
+        },
+        PS_R5_SQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R5.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                return proximitySplit;
+            }
+        },
+        PS_R1_SQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                return proximitySplit;
+            }
+        },
+        PS_R10_SQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                return proximitySplit;
+            }
+        },
+        PS_R5_MQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R5.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
+                return proximitySplit;
+            }
+        },
+        PS_R1_MQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R1.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
+                return proximitySplit;
+            }
+        },
+        PS_R10_MQUICK() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
+                proximitySplit.setReduceSplitTestSize(true);
+                proximitySplit.setEarlyAbandonDistances(true);
+                proximitySplit.setExemplarCheckOriginal(false);
                 return proximitySplit;
             }
         },
@@ -214,6 +267,8 @@ public class ProximitySplit extends BaseClassifier {
     private IntervalTransform intervalTransform;
     // the intervaled train data
     private Instances modifiedTrainData;
+    // whether to reduce the number of instances used in testing split quality
+    private boolean reduceSplitTestSize;
 
     /**
      * build the split using the data provided
@@ -221,7 +276,7 @@ public class ProximitySplit extends BaseClassifier {
     public void buildClassifier() throws Exception {
         super.buildClassifier(trainData);
         // make a map to store the best X splits
-        final PrunedMultimap<Double, SplitCandididate> map = PrunedMultimap.desc();
+        final PrunedMultimap<Double, SplitCandidate> map = PrunedMultimap.desc();
         if(randomTieBreakCandidates) {
             // splits which score the same will be kept, then random choice between them
             map.setSoftLimit(1);
@@ -239,6 +294,28 @@ public class ProximitySplit extends BaseClassifier {
         // backup the train data as modifications may be made during splitting (e.g. if doing intervals)
         final Instances origTrainData = new Instances(trainData);
         modifiedTrainData = null;
+        // reduce the test set for split quality
+        Instances test = trainData;
+        Instances leftOverTest = null;
+        if(reduceSplitTestSize) {
+            test = new Instances(trainData, 0);
+            leftOverTest = new Instances(trainData, 0);
+            // change the view of the data into per class
+            final Map<Double, Instances> instancesByClass = Utilities.instancesByClass(this.trainData);
+            for(Map.Entry<Double, Instances> entry : instancesByClass.entrySet()) {
+                final Instances instances = entry.getValue();
+                final int size = Math.min(instances.size(), (int) Math.ceil(Math.sqrt(instances.size() * 10)));
+                final Set<Integer> indices = new HashSet<>(RandomUtils.choiceIndex(instances.size(), rand, size));
+                for(int i = 0; i < instances.size(); i++) {
+                    final Instance instance = instances.get(i);
+                    if(indices.contains(i)) {
+                        test.add(instance);
+                    } else {
+                        leftOverTest.add(instance);
+                    }
+                }
+            }
+        }
         // for every split attempt
         for(int i = 0; i < r; i++) {
             // pick the distance function
@@ -253,38 +330,58 @@ public class ProximitySplit extends BaseClassifier {
             distanceFunction.setInstances(this.trainData);
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
-            for(int j = 0; j < this.trainData.size(); j++) {
-                final Instance instance = this.trainData.get(j);
+            for(final Instance instance : test) {
                 final int index = getPartitionIndexFor(instance);
                 final Instances closestPartition = partitions.get(index);
                 closestPartition.add(instance);
             }
             // find the score of this split attempt, i.e. how good it is
-            double score = partitionScorer.findScore(this.trainData, partitions);
+            double score = partitionScorer.findScore(test, partitions);
             // chuck into a container to keep for later
-            SplitCandididate splitCandididate = new SplitCandididate(exemplarGroups, distanceFunction, partitions, score, intervalTransform);
+            SplitCandidate splitCandidate = new SplitCandidate(exemplarGroups, distanceFunction, partitions, score, intervalTransform);
             // add it to the map. The map will handle whether the split attempt was any good and should be kept
-            map.put(score, splitCandididate);
+            map.put(score, splitCandidate);
         }
         // choose the best of the R splits. The map handles the tie break if necessary
-        SplitCandididate choice = RandomUtils.choice(new ArrayList<>(map.values()), rand);
+        SplitCandidate choice = RandomUtils.choice(new ArrayList<>(map.values()), rand);
         // populate the fields of this split from the split attempt
-        setPartitions(choice.getPartitions());
         setDistanceFunction(choice.getDistanceFunction());
-        setExemplarGroups(choice.getExemplars());
-        setScore(choice.getScore());
         setIntervalTransform(choice.getIntervalTransform());
+        setExemplarGroups(choice.getExemplars());
+        setPartitions(choice.getPartitions());
+        setScore(choice.getScore());
+        // reduced the split size so need to test all train instances
+        if(reduceSplitTestSize) {
+            // go through every instance and find which partition it should go into. This should be the partition
+            // with the closest exemplar associate
+            for(final Instance instance : leftOverTest) {
+                final int index = getPartitionIndexFor(instance);
+                final Instances closestPartition = partitions.get(index);
+                closestPartition.add(instance);
+            }
+//            // find the score of this split attempt, i.e. how good it is
+//            double score = partitionScorer.findScore(this.trainData, partitions);
+//            setScore(score);
+        }
         // move any modified version of the train data elsewhere so the trainData is set back to the original
         modifiedTrainData = trainData;
         trainData = origTrainData;
         ResultUtils.setInfo(trainResults, this, trainData);
     }
 
+    public boolean isReduceSplitTestSize() {
+        return reduceSplitTestSize;
+    }
+
+    public void setReduceSplitTestSize(final boolean reduceSplitTestSize) {
+        this.reduceSplitTestSize = reduceSplitTestSize;
+    }
+
     // small helper class to contain a split. This is used to temporarily hold split results while
     // comparing R splits to pick the best
-    private static class SplitCandididate {
+    private static class SplitCandidate {
 
-        SplitCandididate(final List<List<Instance>> exemplars,
+        SplitCandidate(final List<List<Instance>> exemplars,
                          final DistanceFunction distanceFunction,
                          final List<Instances> partitions, final double score,
                          final IntervalTransform intervalTransform) {

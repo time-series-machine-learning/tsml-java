@@ -407,6 +407,54 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_QUICK);
                 return proximityForest;
             }
+        },
+        PF_R10_SQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_SQUICK);
+                return proximityForest;
+            }
+        },
+        PF_R5_SQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_SQUICK);
+                return proximityForest;
+            }
+        },
+        PF_R1_SQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_SQUICK);
+                return proximityForest;
+            }
+        },
+        PF_R10_MQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10_MQUICK);
+                return proximityForest;
+            }
+        },
+        PF_R5_MQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R5.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5_MQUICK);
+                return proximityForest;
+            }
+        },
+        PF_R1_MQUICK() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1_MQUICK);
+                return proximityForest;
+            }
         }
         ;
     }

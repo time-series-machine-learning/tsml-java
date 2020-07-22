@@ -37,7 +37,11 @@ import static utilities.Utilities.normalise;
 public class InstanceTools {
 
     public static double[] countClasses(Instances data) {
-        double[] distribution = new double[data.numClasses()];
+        return countClasses(data, data.numClasses());
+    }
+
+    public static double[] countClasses(List<? extends Instance> data, int numClasses) {
+        double[] distribution = new double[numClasses];
         for(Instance instance : data) {
             final int classValue = (int) instance.classValue();
             distribution[classValue] += instance.weight();
