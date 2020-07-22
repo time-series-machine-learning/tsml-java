@@ -8,7 +8,6 @@ import weka.core.Instances;
 import utilities.NumUtils;
 
 
-
 public class ConstantAttributeRemover implements TrainableTransformer {
 
     ArrayList<Integer> attsToRemove;

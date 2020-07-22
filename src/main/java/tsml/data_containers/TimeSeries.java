@@ -2,6 +2,7 @@ package tsml.data_containers;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 /**
@@ -27,6 +28,19 @@ public class TimeSeries {
     public void setIndices(double[] ind){
         indices=ind;
     }
+
+    public int getSeriesLength(){
+        return series.length;
+    }
+
+    public double get(int i){
+        return series[i];
+    }
+
+    public double[] getSlidingWindow(int start, int end){
+        return Arrays.copyOfRange(series, start, end);
+    }
+
     public void setSeriesAndIndex(double[] d,double[] ind){
         series=d;
         indices=ind;

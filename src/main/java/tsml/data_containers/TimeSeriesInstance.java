@@ -27,11 +27,23 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     /* End Meta Information */
 
+
+    /* Data */
+    List<TimeSeries> series_channels;
+    int classLabelIndex;
+
     // this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double label) {
         this(series);
 
-        classLabel = label.intValue();
+        classLabelIndex = label.intValue();
+    }
+
+    // this ctor can be made way more sophisticated.
+    public TimeSeriesInstance(List<List<Double>> series, int label) {
+        this(series);
+
+        classLabelIndex = label;
     }
 
     public TimeSeriesInstance(List<List<Double>> series) {
@@ -50,7 +62,22 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         calculateIfMissing();
     }
 
-    private void calculateLengthBounds() {
+    public TimeSeriesInstance(double[][] data, int labelIndex) {
+        series_channels = new ArrayList<TimeSeries>();
+
+        for(double[] in : data){
+            series_channels.add(new TimeSeries(in));
+        }
+
+        classLabelIndex = labelIndex;
+
+        isMultivariate = series_channels.size() > 1;
+
+        calculateLengthBounds();
+        calculateIfMissing();
+	}
+
+	private void calculateLengthBounds() {
         minLength = series_channels.stream().mapToInt(e -> e.getSeries().length).min().getAsInt();
         maxLength = series_channels.stream().mapToInt(e -> e.getSeries().length).max().getAsInt();
     }
@@ -60,20 +87,21 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         // true.
         hasMissing = series_channels.stream().map(e -> Arrays.stream(e.getSeries()).anyMatch(Double::isNaN))
                 .anyMatch(Boolean::booleanValue);
-    }
-
-    List<TimeSeries> series_channels;
-    Integer classLabel;
+    };
 
     public int getNumChannels() {
         return series_channels.size();
+    }
+
+    public int getLabelIndex(){
+        return classLabelIndex;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Num Channels: ").append(getNumChannels()).append(" Class Label: ").append(classLabel);
+        sb.append("Num Channels: ").append(getNumChannels()).append(" Class Label Index: ").append(classLabelIndex);
         for (TimeSeries channel : series_channels) {
             sb.append(System.lineSeparator());
             sb.append(channel.toString());
@@ -85,6 +113,16 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     @Override
     public Iterator<TimeSeries> iterator() {
         return series_channels.iterator();
+    }
+
+
+    public double[][] toValueArray(){
+        double[][] output = new double[this.series_channels.size()][];
+        for (int i=0; i<output.length; ++i){
+             //clone the data so the underlying representation can't be modified
+            output[i] = series_channels.get(i).getSeries().clone();
+        }
+        return output;
     }
 
 

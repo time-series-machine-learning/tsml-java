@@ -95,7 +95,8 @@ public interface Transformer extends CapabilitiesHandler{
      * @return Instances of transformed data
      */
     default TimeSeriesInstances transform(TimeSeriesInstances data){
-        TimeSeriesInstances output = new TimeSeriesInstances();
+        //when cloning skeleton of TSInstances, copy across classLabels.
+        TimeSeriesInstances output = new TimeSeriesInstances(data.getClassLabels());
         for(TimeSeriesInstance inst : data){
             output.add(transform(inst));
         }

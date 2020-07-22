@@ -51,6 +51,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         series_collection = new ArrayList<>();
     }
 
+    public TimeSeriesInstances(List<String> classLabels) {
+        this();
+        this.classLabels = classLabels;
+    }
+
     public TimeSeriesInstances(List<List<List<Double>>> raw_data, List<Double> label_indexes) {
         this();
 
@@ -86,6 +91,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         classLabels = labels;
     }
 
+    public List<String> getClassLabels(){
+        return classLabels;
+    }
+
     public void add(TimeSeriesInstance new_series) {
         series_collection.add(new_series);
 
@@ -117,5 +126,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     @Override
     public Iterator<TimeSeriesInstance> iterator() {
         return series_collection.iterator();
+    }
+
+    public double[][][] toValueArray(){
+        double[][][] output = new double[this.series_collection.size()][][];
+        for (int i=0; i<output.length; ++i){
+             //clone the data so the underlying representation can't be modified
+            output[i] = series_collection.get(i).toValueArray();
+        }
+        return output;
     }
 }

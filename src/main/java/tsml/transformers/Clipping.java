@@ -15,7 +15,11 @@
 package tsml.transformers;
 
 import java.io.FileReader;
+import java.util.Arrays;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.utilities.TimeSeriesStatsTools;
 import utilities.InstanceTools;
 import weka.core.*;
 
@@ -59,6 +63,19 @@ public class Clipping implements Transformer {
 		return result;
 	}
 
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		//could do this across all dimensions.
+		double[][] out = new double[inst.getNumChannels()][];
+		int i = 0;
+		for(TimeSeries ts : inst){
+			double mean = TimeSeriesStatsTools.mean(ts);
+			out[i++] = Arrays.stream(ts.getSeries()).map(e -> e < mean ? 0.0 : 1.0).toArray();
+		}
+		
+		//create a new output instance with the ACF data.
+		return new TimeSeriesInstance(out, inst.getLabelIndex());
+	}
 
 	@Override
 	public Instance transform(Instance inst) {
