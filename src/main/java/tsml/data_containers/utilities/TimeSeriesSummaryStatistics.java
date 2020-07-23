@@ -59,12 +59,28 @@ public class TimeSeriesSummaryStatistics {
         return sumSq;
     }
 
+    public static double sum(List<Double> data){
+        return sum(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static double sum(TimeSeries ts){
+        return sum(ts.getSeries());
+    }
+
     public static double sumSq(double[] inst) {
         double sumSq = 0;
         for (double x : inst) {
             sumSq += x * x;
         }
         return sumSq;
+    }
+
+    public static double sumSq(List<Double> data){
+        return sumSq(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static double sumSq(TimeSeries ts){
+        return sumSq(ts.getSeries());
     }
 
     public static int argmax(double[] inst) {
@@ -81,8 +97,24 @@ public class TimeSeriesSummaryStatistics {
         return arg;
     }
 
+    public static int argmax(List<Double> data){
+        return argmax(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static int argmax(TimeSeries ts){
+        return argmax(ts.getSeries());
+    }
+
     public static double max(double[] inst) {
         return inst[argmax(inst)];
+    }
+
+    public static double max(List<Double> data){
+        return max(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static double max(TimeSeries ts){
+        return max(ts.getSeries());
     }
 
     public static int argmin(double[] inst) {
@@ -99,8 +131,24 @@ public class TimeSeriesSummaryStatistics {
         return arg;
     }
 
+    public static int argmin(List<Double> data){
+        return argmin(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static int argmin(TimeSeries ts){
+        return argmin(ts.getSeries());
+    }
+
     public static double min(double[] inst) {
         return inst[argmin(inst)];
+    }
+
+    public static double min(List<Double> data){
+        return min(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static double min(TimeSeries ts){
+        return min(ts.getSeries());
     }
 
     public static double mean(double[] inst) {
@@ -110,11 +158,27 @@ public class TimeSeriesSummaryStatistics {
         return mean / (double) (inst.length);
     }
 
+    public static double mean(List<Double> data){
+        return min(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+    }
+
+    public static double mean(TimeSeries ts){
+        return min(ts.getSeries());
+    }
+
     public static double variance(double[] inst, double mean) {
         double var = 0;
         for (double x : inst)
             var += Math.pow(x - mean, 2);
         return var / (double) (inst.length);
+    }
+
+    public static double variance(List<Double> data, double mean){
+        return variance(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean);
+    }
+
+    public static double variance(TimeSeries ts, double mean){
+        return variance(ts.getSeries(), mean);
     }
 
     public static double kurtosis(double[] inst, double mean, double std) {
@@ -126,6 +190,14 @@ public class TimeSeriesSummaryStatistics {
         return kurt / (double) (inst.length);
     }
 
+    public static double kurtosis(List<Double> data, double mean, double std){
+        return kurtosis(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean, std);
+    }
+
+    public static double kurtosis(TimeSeries ts, double mean, double std){
+        return kurtosis(ts.getSeries(), mean, std);
+    }
+
     public static double skew(double[] inst, double mean, double std) {
         double skew = 0;
         for (double x : inst)
@@ -134,7 +206,15 @@ public class TimeSeriesSummaryStatistics {
         return skew / (double) (inst.length);
     }
 
-    public static double slope(double[] inst, double sum, double sumXX, double std) {
+    public static double skew(List<Double> data, double mean, double std){
+        return skew(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean, std);
+    }
+
+    public static double skew(TimeSeries ts, double mean, double std){
+        return skew(ts.getSeries(), mean, std);
+    }
+
+    public static double slope(double[] inst, double sum, double sumSq, double std) {
         double sumXY = 0;
         for (int j = 0; j < inst.length; j++) {
             sumXY += inst[j] * j;
@@ -144,13 +224,21 @@ public class TimeSeriesSummaryStatistics {
         double sqsum = sum * sum;
         // slope
         double slope = sumXY - sqsum / length;
-        double denom = sumXX - sqsum / length;
+        double denom = sumSq - sqsum / length;
         if (denom != 0)
             slope /= denom;
         else
             slope = 0;
 
         return std != 0 ? slope : 0;
+    }
+
+    public static double slope(List<Double> data, double sum, double sumSq, double std){
+        return slope(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), sum, sumSq, std);
+    }
+
+    public static double slope(TimeSeries ts, double sum, double sumSq, double std){
+        return slope(ts.getSeries(), sum, sumSq, std);
     }
 
     public double getMean() {

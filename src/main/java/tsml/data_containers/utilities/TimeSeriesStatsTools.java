@@ -1,15 +1,17 @@
 package tsml.data_containers.utilities;
 
-import java.util.OptionalDouble;
-
 import tsml.data_containers.TimeSeries;
 
 public class TimeSeriesStatsTools {
 
 
     public static double mean(TimeSeries ts){
-        OptionalDouble out = ts.stream().filter(Double::isFinite).average();
-        return out.isPresent() ? out.getAsDouble() : Double.NaN;
+        return TimeSeriesSummaryStatistics.mean(ts);
+    }
+
+    public static double std(TimeSeries ts){
+        double mean = TimeSeriesSummaryStatistics.mean(ts);
+        return Math.sqrt(TimeSeriesSummaryStatistics.variance(ts, mean));
     }
 
     public static TimeSeriesSummaryStatistics getTimeSeriesSummaryStats(TimeSeries ts){
