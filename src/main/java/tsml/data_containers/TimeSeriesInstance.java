@@ -32,12 +32,15 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     /* Data */
     List<TimeSeries> series_channels;
     int classLabelIndex;
+    double targetValue;
 
     // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, Double label) {
+    public TimeSeriesInstance(List<List<Double>> series, Double value) {
         this(series);
 
-        classLabelIndex = label.intValue();
+        //could be an index, or it could be regression target
+        classLabelIndex = value.intValue();
+        targetValue = value;
     }
 
     // this ctor can be made way more sophisticated.
@@ -46,6 +49,19 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
         classLabelIndex = label;
     }
+
+    // public TimeSeriesInstance(List<TimeSeries> series) {
+    //     series_channels = new ArrayList<TimeSeries>();
+
+    //     for (TimeSeries channel : series) {
+    //         series_channels.add(channel);
+    //     }
+
+    //     isMultivariate = series_channels.size() > 1;
+
+    //     calculateLengthBounds();
+    //     calculateIfMissing();
+    // }
 
     public TimeSeriesInstance(List<List<Double>> series) {
         // process the input list to produce TimeSeries Objects.
@@ -125,6 +141,8 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         }
         return output;
     }
+
+
 
 	public TimeSeries get(int i) {
         return this.series_channels.get(i);

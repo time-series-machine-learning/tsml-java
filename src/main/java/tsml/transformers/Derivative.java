@@ -16,11 +16,11 @@ package tsml.transformers;
 
 import java.io.Serializable;
 
-import tsml.transformers.Transformer;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 /**
  * Purpose: class to take the derivative of a time series.
@@ -92,7 +92,20 @@ public class Derivative implements Transformer, Serializable {
 
     @Override
     public Instance transform(Instance inst) {
-        return new DenseInstance(1, getDerivative(inst.toDoubleArray(), true));// class value has now been removed - be careful!
+        return new DenseInstance(1, getDerivative(inst.toDoubleArray(), true));// class value has now been removed - be
+                                                                               // careful!
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+
+        double[][] out = new double[inst.getNumChannels()][];
+        int i = 0;
+        for (TimeSeries ts : inst) {
+            out[i++] = getDerivative(ts.toArray(), false);
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 

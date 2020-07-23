@@ -1,18 +1,21 @@
 package tsml.transformers;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.InstanceTools;
+import utilities.NumUtils;
 import weka.core.Instance;
 import weka.core.Instances;
-import utilities.NumUtils;
 
 public class ConstantAttributeRemover implements TrainableTransformer {
 
-    ArrayList<Integer> attsToRemove;
+    ArrayList<Integer> indexesToRemove;
     boolean isFit;
 
     int minChecksToDiscard = 3;
@@ -78,22 +81,25 @@ public class ConstantAttributeRemover implements TrainableTransformer {
 
     @Override
     public void fit(final Instances data) {
-        attsToRemove = FindConstantAtts(data);
+        indexesToRemove = FindConstantAtts(data);
         isFit = true;
     }
 
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        inst.to
+        
+        List<List<Double>> out = new ArrayList<>();
+        for(TimeSeries ts : inst){
+            out.add(ts.toListWithoutIndexes(indexesToRemove));
+        }
 
-
-        return null;
+        return new TimeSeriesInstance(out);
     }
 
     @Override
     public void fit(TimeSeriesInstances data) {
-        attsToRemove = FindConstantAtts(data);
+        indexesToRemove = FindConstantAtts(data);
         isFit = true;
     }
 
@@ -105,7 +111,7 @@ public class ConstantAttributeRemover implements TrainableTransformer {
     @Override
     public Instances transform(final Instances data) {
         // could clone the instances.
-        for (final int att : attsToRemove)
+        for (final int att : indexesToRemove)
             data.deleteAttributeAt(att);
 
         return data;
@@ -114,7 +120,7 @@ public class ConstantAttributeRemover implements TrainableTransformer {
     @Override
     public Instance transform(final Instance inst) {
         // could clone the instances.
-        for (final int att : attsToRemove)
+        for (final int att : indexesToRemove)
             inst.deleteAttributeAt(att);
 
         return inst;
@@ -135,6 +141,15 @@ public class ConstantAttributeRemover implements TrainableTransformer {
         System.out.println(out_train);
         System.out.println(out_test);
 
+
+        IntStream.range(0, 10).boxed().collect(Collectors.toList());
+
+    }
+
+    @Override
+    public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 

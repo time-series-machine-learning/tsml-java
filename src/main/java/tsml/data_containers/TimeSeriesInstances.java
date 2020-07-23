@@ -49,6 +49,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     // this could be optional for example regression problems.
     String[] classLabels;
 
+    int[] classCounts;
+
     public TimeSeriesInstances() {
         series_collection = new ArrayList<>();
     }
@@ -69,13 +71,23 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public TimeSeriesInstances(final List<List<List<Double>>> raw_data, final List<Double> label_indexes) {
         this();
 
+        setClassLabels(classLabels);
+
         int index = 0;
         for (final List<List<Double>> series : raw_data) {
+            //using the add function means all stats should be correctly counted.
             series_collection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
         }
 
         calculateLengthBounds();
         calculateIfMissing();
+    }
+
+    private void calculateClassCounts() {
+        classCounts = new int[classLabels.length];
+        for(TimeSeriesInstance inst : series_collection){
+            classCounts[inst.classLabelIndex]++;
+        }
     }
 
     private void calculateLengthBounds() {
@@ -90,15 +102,26 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     public void setClassLabels(final String[] labels) {
+        classCounts = new int[classLabels.length];
         classLabels = labels;
+
+        calculateClassCounts();
     }
 
     public String[] getClassLabels() {
         return classLabels;
     }
 
+    public int[] getClassCounts(){
+        return classCounts;
+    }
+
     public void add(final TimeSeriesInstance new_series) {
         series_collection.add(new_series);
+
+        //guard for if we're going to force update classCounts after.
+        if(classCounts != null && new_series.classLabelIndex < classCounts.length)
+            classCounts[new_series.classLabelIndex]++;
 
         minLength = Math.min(new_series.minLength, minLength);
         maxLength = Math.min(new_series.maxLength, maxLength);
@@ -132,7 +155,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     public double[][][] toValueArray() {
-        final double[][][] output = new double[this.series_collection.size()][][];
+        final double[][][] output = new double[series_collection.size()][][];
         for (int i = 0; i < output.length; ++i) {
             // clone the data so the underlying representation can't be modified
             output[i] = series_collection.get(i).toValueArray();
@@ -141,6 +164,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     public TimeSeriesInstance get(final int i) {
-        return this.series_collection.get(i);
+        return series_collection.get(i);
+	}
+
+	public int numInstances() {
+		return series_collection.size();
 	}
 }

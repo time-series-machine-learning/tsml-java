@@ -93,8 +93,26 @@ public class TimeSeries{
         return sb.toString();
     }
 
+    //TODO: Should this filter out NaNs.
+    //TODO: Or Should we have a second toArray which is toArraySafe
 	public double[] toArray() {
 		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
+    //this is useful if you want to delete a column/truncate the array, but without modifying the original dataset.
+    public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
+        //if the current index isn't in the removal list, then copy across.
+        List<Double> out = new ArrayList<>(this.getSeriesLength() - indexesToRemove.size());
+        for(int i=0; i<this.getSeriesLength(); ++i){
+            if(!indexesToRemove.contains(i))
+                out.add(this.series.get(i));
+        }
+
+        return out;
+    }
+
+    public double[] toArrayWithoutIndexes(List<Integer> indexesToRemove){
+        return toListWithoutIndexes(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
     }
     
     public static void main(String[] args) {
