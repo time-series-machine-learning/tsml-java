@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based;
 import experiments.data.DatasetLoading;
 import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.multivariate.MultivariateAbstractClassifier;
 import tsml.transformers.DWT;
 import tsml.transformers.HOG1D;
 import tsml.transformers.Slope;
@@ -14,7 +15,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.multivariate.NN_DTW_D;
 
 /**
  * The ShapeDTW classifier works by initially extracting a set of subsequences
@@ -46,8 +46,8 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     private double weightingFactor = 1.0;
     // Transformer for extracting the neighbourhoods
     private Subsequences subsequenceTransformer;
-    // NN_DTW_D for performing classification on the training data
-    private NN_DTW_D nnDtwD;
+    // NN_DTW_Subsequences for performing classification on the training data
+    private NN_DTW_Subsequences nnDtwSubsequences;
     //The Dimension independent transformers
     private DimensionIndependentTransformer d1;
     private DimensionIndependentTransformer d2;
@@ -70,7 +70,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         this.subsequenceLength = 30;
         this.shapeDescriptor = null;
         this.subsequenceTransformer = new Subsequences(subsequenceLength);
-        this.nnDtwD = new NN_DTW_D();
+        this.nnDtwSubsequences = new NN_DTW_Subsequences();
     }
 
     public ShapeDTW_1NN(int subsequenceLength,Transformer shapeDescriptor,boolean useSecondShapeDescriptor,
@@ -79,7 +79,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         this.subsequenceLength = subsequenceLength;
         this.shapeDescriptor = shapeDescriptor;
         this.subsequenceTransformer = new Subsequences(subsequenceLength);
-        this.nnDtwD = new NN_DTW_D();
+        this.nnDtwSubsequences = new NN_DTW_Subsequences();
         this.secondShapeDescriptor = secondShapeDescriptor;
         this.useSecondShapeDescriptor = useSecondShapeDescriptor;
     }
@@ -302,7 +302,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         long buildTime = System.nanoTime();
         // Train the classifier
         Instances transformedData = this.preprocessData(trainInst);
-        this.nnDtwD.buildClassifier(transformedData);
+        this.nnDtwSubsequences.buildClassifier(transformedData);
         // Store the timing results.
         buildTime = System.nanoTime() - buildTime ;
         this.trainResults.setBuildTime(buildTime);
@@ -312,13 +312,13 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     @Override
     public double [] distributionForInstance(Instance testInst) throws Exception {
         Instance transformedData = this.preprocessData(testInst);
-        return this.nnDtwD.distributionForInstance(transformedData);
+        return this.nnDtwSubsequences.distributionForInstance(transformedData);
     }
 
     @Override
     public double classifyInstance(Instance testInst) throws Exception {
         Instance transformedData = this.preprocessData(testInst);
-        return this.nnDtwD.classifyInstance(transformedData);
+        return this.nnDtwSubsequences.classifyInstance(transformedData);
     }
 
     /**
@@ -368,7 +368,8 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        Instances trainData = createData();
+        Instances trainData = createTrainData();
+        Instances testData = createTestData();
 
         Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
         // test bad subsequence length
@@ -418,6 +419,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
             }
         }
         // test classification functionality
+        //Instances [] data = new Instances [] {trainData,testData};
         Transformer [] allTrans = new Transformer [] {null,new PAA(), new DWT(), new Derivative(), new Slope(),
                                                       new HOG1D()};
         for(Transformer t:allTrans) {
@@ -455,11 +457,11 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     }
 
     /**
-     * Function to create data for testing purposes.
+     * Function to create train data for testing purposes.
      *
      * @return
      */
-    private static Instances createData() {
+    private static Instances createTrainData() {
         //Create the attributes
         ArrayList<Attribute> atts = new ArrayList<>();
         for(int i=0;i<5;i++) {
@@ -488,6 +490,35 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
     }
 
     /**
+     * Function to create test data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createTestData() {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<5;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        //Create the class values
+        ArrayList<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("0");
+        atts.add(new Attribute("class",classes));
+        Instances newInsts = new Instances("Test_dataset",atts,5);
+        newInsts.setClassIndex(newInsts.numAttributes()-1);
+
+        //create the test data
+        double [] test = new double [] {2,4,6,8,10};
+        createInst(test,"1",newInsts);
+        test = new double [] {1,1,2,3,4};
+        createInst(test,"1",newInsts);
+        test = new double [] {0,1,1,1,2};
+        createInst(test,"1",newInsts);
+        return newInsts;
+    }
+
+    /**
      * private function for creating an instance from a double array. Used
      * for testing purposes.
      *
@@ -504,4 +535,36 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         dataset.add(inst);
     }
 
+    /**
+     * Inner class for calculating the DTW distance between subsequences used for the
+     * classification stage (no warping window for this implementation).
+     */
+    public class NN_DTW_Subsequences extends MultivariateAbstractClassifier {
+
+        private Instances train;
+
+        public NN_DTW_Subsequences() {};
+
+        @Override
+        public void buildClassifier(Instances data) throws Exception {
+
+        }
+
+        @Override
+        public double classifyInstance(Instance inst) {
+            return 1.0;
+        }
+
+        /**
+         * Private function for calculating the distance between two instances
+         * that are represented as a set of subsequences.
+         *
+         * @param inst1
+         * @param inst2
+         * @return
+         */
+        private double calculateDistance(Instance inst1, Instance inst2) {
+
+        }
+    }
 }

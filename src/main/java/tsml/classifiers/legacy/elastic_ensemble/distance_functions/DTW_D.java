@@ -15,9 +15,14 @@
 package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
+
+import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
+import weka.core.converters.ConverterUtils.DataSource;
+import java.util.ArrayList;
 
 
 /**
@@ -149,9 +154,19 @@ generalised for variable window size
     }
     
     
-    public static void main(String[] args)
-    {
+    public static void main(String[] args){
+        try{
+            DataSource source = new DataSource("C:\\Users\\Vince\\Documents\\Dissertation Repositories\\test.arff");
+            Instances data = source.getDataSet();
+            if (data.classIndex() == -1) {
+                data.setClassIndex(data.numAttributes() - 1);
+            }
+            DTW_D d = new DTW_D();
+            System.out.println(data.toString());
+            System.out.println(d.distance(data.get(0),data.get(1)));
+        } catch(Exception e) {
 
+        }
     }
 	
 }
