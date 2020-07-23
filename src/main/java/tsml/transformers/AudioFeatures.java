@@ -45,7 +45,7 @@ public class AudioFeatures implements Transformer {
         double[][] out = new double[inst.getNumChannels()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = audioTransform(ts.getSeries());
+            out[i++] = audioTransform(ts.toArray());
         }
 
         // create a new output instance with the ACF data.

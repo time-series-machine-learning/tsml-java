@@ -4,7 +4,6 @@ import tsml.data_containers.TimeSeries;
 
 public class TimeSeriesStatsTools {
 
-
     public static double mean(TimeSeries ts){
         return TimeSeriesSummaryStatistics.mean(ts);
     }
@@ -18,9 +17,6 @@ public class TimeSeriesStatsTools {
         TimeSeriesSummaryStatistics stats = ts.getSeries().stream().collect(new TimeSeriesCollector());
         return stats;
     }   
-
-
-
 
     public static void main(String[] args) {
         double [] arr = {1.0, 2.0, Double.NaN, 3.0};

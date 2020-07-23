@@ -63,6 +63,10 @@ public class TimeSeries{
         return series.subList(start, end);
     }
 
+    public double[] getSlidingWindowArray(int start, int end){
+        return series.subList(start, end).stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
     // public void setSeriesAndIndex(double[] d,double[] ind){
     //     series=d;
     //     indices=ind;
