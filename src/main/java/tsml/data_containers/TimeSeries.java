@@ -3,7 +3,11 @@ package tsml.data_containers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * Class to store a time series. The series can have different indices (time stamps) and store missing values (NaN).
@@ -12,41 +16,59 @@ import java.util.Date;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries {
+public class TimeSeries{
+
+    /*
     private double[] series;
     private double[] indices;
+    */
+
+    private List<Double> series;
+    private List<Double> indices;
     MetaData md;
 
 
     public TimeSeries(double[] d){
-        series = d;
+        series = new ArrayList<Double>();
+        for(double dd : d)
+            series.add(dd);
     }
     
-	public void setSeries(double[] d){
-        series=d;
-    }
     public void setIndices(double[] ind){
-        indices=ind;
+        indices = new ArrayList<Double>();
+        for(double i : ind)
+            indices.add(i);
     }
 
     public int getSeriesLength(){
-        return series.length;
+        return series.size();
+    }
+
+    public boolean hasValidValueAt(int i){
+        //test whether its out of range, or NaN
+        boolean output = series.size() > i ||
+                         Double.isNaN(series.get(i));
+        return !output;
     }
 
     public double get(int i){
-        return series[i];
+        return series.get(i);
     }
 
-    public double[] getSlidingWindow(int start, int end){
-        return Arrays.copyOfRange(series, start, end);
+    public DoubleStream stream(){
+        return series.stream().mapToDouble(Double::doubleValue);
     }
 
-    public void setSeriesAndIndex(double[] d,double[] ind){
-        series=d;
-        indices=ind;
+    public List<Double> getSlidingWindow(int start, int end){
+        return series.subList(start, end);
     }
-    public double[] getSeries(){ return series;}
-    public double[] getIndices(){ return indices;}
+
+    // public void setSeriesAndIndex(double[] d,double[] ind){
+    //     series=d;
+    //     indices=ind;
+    // }
+    public List<Double> getSeries(){ return series;}
+    public List<Double> getIndices(){ return indices;}
 
     private class MetaData{
         String name;
@@ -66,4 +88,14 @@ public class TimeSeries {
 
         return sb.toString();
     }
+
+	public double[] toArray() {
+		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
+    }
+    
+    public static void main(String[] args) {
+        TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
+    }
+
+
 }

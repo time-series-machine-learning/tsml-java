@@ -3,6 +3,8 @@ package tsml.data_containers;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
@@ -45,22 +47,30 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
-    List<String> classLabels;
+    String[] classLabels;
 
     public TimeSeriesInstances() {
         series_collection = new ArrayList<>();
     }
 
-    public TimeSeriesInstances(List<String> classLabels) {
+    public TimeSeriesInstances(final String[] classLabels) {
         this();
-        this.classLabels = classLabels;
+        setClassLabels(classLabels);
     }
 
-    public TimeSeriesInstances(List<List<List<Double>>> raw_data, List<Double> label_indexes) {
+    public TimeSeriesInstances(final List<List<List<Double>>> raw_data) {
+        this();
+
+        for (final List<List<Double>> series : raw_data) {
+            series_collection.add(new TimeSeriesInstance(series));
+        }
+    }
+
+    public TimeSeriesInstances(final List<List<List<Double>>> raw_data, final List<Double> label_indexes) {
         this();
 
         int index = 0;
-        for (List<List<Double>> series : raw_data) {
+        for (final List<List<Double>> series : raw_data) {
             series_collection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
         }
 
@@ -79,23 +89,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         hasMissing = series_collection.stream().map(e -> e.hasMissing).anyMatch(Boolean::booleanValue);
     }
 
-    public TimeSeriesInstances(List<List<List<Double>>> raw_data) {
-        this();
-
-        for (List<List<Double>> series : raw_data) {
-            series_collection.add(new TimeSeriesInstance(series));
-        }
-    }
-
-    public void setClassLabels(List<String> labels) {
+    public void setClassLabels(final String[] labels) {
         classLabels = labels;
     }
 
-    public List<String> getClassLabels(){
+    public String[] getClassLabels() {
         return classLabels;
     }
 
-    public void add(TimeSeriesInstance new_series) {
+    public void add(final TimeSeriesInstance new_series) {
         series_collection.add(new_series);
 
         minLength = Math.min(new_series.minLength, minLength);
@@ -106,16 +108,17 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
 
-        sb.append("Labels: [").append(classLabels.get(0));
-        for (int i = 1; i < classLabels.size(); i++) {
+
+        sb.append("Labels: [").append(classLabels[0]);
+        for (int i = 1; i < classLabels.length; i++) {
             sb.append(',');
-            sb.append(classLabels.get(i));
+            sb.append(classLabels[i]);
         }
         sb.append(']').append(System.lineSeparator());
 
-        for (TimeSeriesInstance series : series_collection) {
+        for (final TimeSeriesInstance series : series_collection) {
             sb.append(series.toString());
             sb.append(System.lineSeparator());
         }
@@ -128,12 +131,16 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return series_collection.iterator();
     }
 
-    public double[][][] toValueArray(){
-        double[][][] output = new double[this.series_collection.size()][][];
-        for (int i=0; i<output.length; ++i){
-             //clone the data so the underlying representation can't be modified
+    public double[][][] toValueArray() {
+        final double[][][] output = new double[this.series_collection.size()][][];
+        for (int i = 0; i < output.length; ++i) {
+            // clone the data so the underlying representation can't be modified
             output[i] = series_collection.get(i).toValueArray();
         }
         return output;
     }
+
+    public TimeSeriesInstance get(final int i) {
+        return this.series_collection.get(i);
+	}
 }

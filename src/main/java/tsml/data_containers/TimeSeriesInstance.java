@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -78,14 +79,14 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 	}
 
 	private void calculateLengthBounds() {
-        minLength = series_channels.stream().mapToInt(e -> e.getSeries().length).min().getAsInt();
-        maxLength = series_channels.stream().mapToInt(e -> e.getSeries().length).max().getAsInt();
+        minLength = series_channels.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
+        maxLength = series_channels.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
     }
 
     private void calculateIfMissing() {
         // if any of the series have a NaN value, across all dimensions then this is
         // true.
-        hasMissing = series_channels.stream().map(e -> Arrays.stream(e.getSeries()).anyMatch(Double::isNaN))
+        hasMissing = series_channels.stream().map(e -> e.stream().anyMatch(Double::isNaN))
                 .anyMatch(Boolean::booleanValue);
     };
 
@@ -120,10 +121,14 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] output = new double[this.series_channels.size()][];
         for (int i=0; i<output.length; ++i){
              //clone the data so the underlying representation can't be modified
-            output[i] = series_channels.get(i).getSeries().clone();
+            output[i] = series_channels.get(i).toArray();
         }
         return output;
     }
+
+	public TimeSeries get(int i) {
+        return this.series_channels.get(i);
+	}
 
 
 }

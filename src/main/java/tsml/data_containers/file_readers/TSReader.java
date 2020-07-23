@@ -74,7 +74,7 @@ public class TSReader {
 
         // create timeseries instances object.
         m_data = new TimeSeriesInstances(raw_data, raw_labels);
-        m_data.setClassLabels(classLabels);
+        m_data.setClassLabels(classLabels.toArray(new String[classLabels.size()]));
     }
 
     public TimeSeriesInstances GetInstances(){
