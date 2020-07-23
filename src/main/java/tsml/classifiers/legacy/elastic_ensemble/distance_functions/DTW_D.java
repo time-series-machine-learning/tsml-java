@@ -155,18 +155,7 @@ generalised for variable window size
     
     
     public static void main(String[] args){
-        try{
-            DataSource source = new DataSource("C:\\Users\\Vince\\Documents\\Dissertation Repositories\\test.arff");
-            Instances data = source.getDataSet();
-            if (data.classIndex() == -1) {
-                data.setClassIndex(data.numAttributes() - 1);
-            }
-            DTW_D d = new DTW_D();
-            System.out.println(data.toString());
-            System.out.println(d.distance(data.get(0),data.get(1)));
-        } catch(Exception e) {
 
-        }
     }
 	
 }
