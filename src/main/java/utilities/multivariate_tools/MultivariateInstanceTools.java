@@ -17,7 +17,7 @@ package utilities.multivariate_tools;
 import utilities.InstanceTools;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.*;
-import tsml.transformers.NormalizeCase;
+import tsml.transformers.Normalizer;
 
 import java.util.ArrayList;
 
@@ -541,7 +541,7 @@ public class MultivariateInstanceTools {
   public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
       
-      NormalizeCase norm = new NormalizeCase();
+      Normalizer norm = new Normalizer();
       for (Instances channel : channels) {
           channel = norm.transform(channel);
       }

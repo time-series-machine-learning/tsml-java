@@ -50,18 +50,21 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         classLabelIndex = label;
     }
 
-    // public TimeSeriesInstance(List<TimeSeries> series) {
-    //     series_channels = new ArrayList<TimeSeries>();
+    //do the ctor this way round to avoid erasure problems :(
+    public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
+        series_channels = new ArrayList<TimeSeries>();
 
-    //     for (TimeSeries channel : series) {
-    //         series_channels.add(channel);
-    //     }
+        for (TimeSeries channel : series) {
+            series_channels.add(channel);
+        }
 
-    //     isMultivariate = series_channels.size() > 1;
+        classLabelIndex = labelIndex; 
 
-    //     calculateLengthBounds();
-    //     calculateIfMissing();
-    // }
+        isMultivariate = series_channels.size() > 1;
+
+        calculateLengthBounds();
+        calculateIfMissing();
+    }
 
     public TimeSeriesInstance(List<List<Double>> series) {
         // process the input list to produce TimeSeries Objects.

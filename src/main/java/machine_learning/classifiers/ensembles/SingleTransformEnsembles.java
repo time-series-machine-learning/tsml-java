@@ -14,7 +14,7 @@
  */
 package machine_learning.classifiers.ensembles;
 
-import tsml.transformers.NormalizeCase;
+import tsml.transformers.Normalizer;
 import tsml.transformers.Transformer;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -37,7 +37,7 @@ public class SingleTransformEnsembles extends AbstractClassifier{
 //Transform            
         switch(t){
             case TIME:
-                transform=new NormalizeCase();
+                transform=new Normalizer();
                 break;
                 
 

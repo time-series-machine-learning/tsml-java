@@ -35,6 +35,8 @@ public class DataManipulationExample {
 		double[] mean = new double[data.getMaxLength()];
 		double[] stdev = new double[data.getMaxLength()];
 
+
+        //calculate summary stats for each vertical slice of the dataset
 		for (int j = 0; j < data.getMaxLength(); j++) {
 			double[] slice = data.getSingleSliceArray(j);
 
