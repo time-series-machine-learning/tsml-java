@@ -97,6 +97,7 @@ public class ClassifierLists {
             "DD_DTW","DTD_C","CID_DTW","NN_CID",
         "PF_R1",
         "PF_R5",
+        "PF_R20_I",
         "PF_R5_QUICK",
         "PF_R1_QUICK",
         "PF_R10_QUICK",
@@ -159,6 +160,9 @@ public class ClassifierLists {
                 break;
             case "PF_R5":
                 c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                break;
+            case "PF_R20_I":
+                c = ProximityForest.Config.PF_R20_I.configure(new ProximityForest());
                 break;
             case "PF_R5_QUICK":
                 c = ProximityForest.Config.PF_R5_QUICK.configure(new ProximityForest());

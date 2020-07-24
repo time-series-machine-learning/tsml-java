@@ -571,14 +571,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // add the constituent's train time onto ours
         if(constituent instanceof TrainTimeable) { // todo these can probs be a util method as similar elsewhere
             // (RLTune)
-            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            trainTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             trainTimer.add(constituentTrainTimer);
         }
         // add the constituent's train estimate time onto ours
         if(constituent instanceof TrainEstimateTimeable) {
             // the classifier tracked its time internally
-            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             // we already tracked this as part of the train time
         }

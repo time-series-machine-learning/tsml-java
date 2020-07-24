@@ -156,7 +156,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         return memoryReadingCount;
     }
 
-    @Override public long getTrainTimeNanos() {
+    @Override public long getTrainTime() {
         return getBuildTimeInNanos();
     }
 

@@ -196,6 +196,16 @@ public class ProximitySplit extends BaseClassifier {
                 return proximitySplit;
             }
         },
+        PS_R20_I() {
+            @Override
+            public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {
+                proximitySplit = PS_R10.configure(proximitySplit);
+                proximitySplit.setRandomIntervals(true);
+                proximitySplit.setMinIntervalSize(3);
+                proximitySplit.setR(20);
+                return proximitySplit;
+            }
+        },
         PS_RR5_I() {
             @Override
             public <B extends ProximitySplit> B configureFromEnum(B proximitySplit) {

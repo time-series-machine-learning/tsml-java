@@ -5,7 +5,7 @@ import tsml.classifiers.TrainTimeable;
 public interface TimedTrain extends TrainTimeable {
     StopWatch getTrainTimer();
 
-    default long getTrainTimeNanos() {
+    default long getTrainTime() {
         return getTrainTimer().getTime();
     }
 }

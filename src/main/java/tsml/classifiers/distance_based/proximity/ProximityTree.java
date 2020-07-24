@@ -63,9 +63,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         PT_R1() {
             @Override
             public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
-                proximityTree.setBreadthFirst(false);
-                proximityTree.setTrainTimeLimit(0);
-                proximityTree.setTestTimeLimit(0);
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
                         ParamSpaceBuilder.ED,
                         ParamSpaceBuilder.FULL_DTW,
@@ -298,6 +295,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R20_I() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R10.configureFromEnum(proximityTree);
+                proximityTree.setProximitySplitConfig(ProximitySplit.Config.PS_R20_I);
+                return proximityTree;
+            }
+        },
         PT_R1_I() {
             @Override
             public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
@@ -367,7 +372,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        Config.PT_R5.configureFromEnum(this);
+        setTrainTimeLimit(-1);
+        setTestTimeLimit(-1);
+        setBreadthFirst(false);
+        setMaxHeight(-1);
+        Config.PT_R1.configureFromEnum(this);
     }
 
     private static final long serialVersionUID = 1;
@@ -384,9 +393,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the tree of splits
     private Tree<ProximitySplit> tree;
     // the train time limit / contract
-    private transient long trainTimeLimitNanos;
+    private transient long trainTimeLimit;
     // the test time limit / contract
-    private transient long testTimeLimitNanos;
+    private transient long testTimeLimit;
     // the longest time taken to build a node / split
     private long maxTimePerInstanceForNodeBuilding;
     // the queue of nodes left to build
@@ -400,7 +409,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // checkpoint config
     private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
     // max tree height
-    private int maxHeight = -1;
+    private int maxHeight;
 
     public boolean hasMaxHeight() {
         return maxHeight > 0;
@@ -424,10 +433,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return distanceFunctionSpaceBuilders;
     }
 
-    public ProximityTree setDistanceFunctionSpaceBuilders(
-            final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
+    public void setDistanceFunctionSpaceBuilders(final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
-        return this;
     }
 
     @Override
@@ -447,51 +454,57 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     @Override
     public long getTestTimeLimit() {
-        return testTimeLimitNanos;
+        return testTimeLimit;
     }
 
     @Override
     public void setTestTimeLimit(final long nanos) {
-        testTimeLimitNanos = nanos;
+        testTimeLimit = nanos;
     }
 
     @Override
     public long getTrainTimeLimit() {
-        return trainTimeLimitNanos;
+        return trainTimeLimit;
     }
 
     @Override
     public void setTrainTimeLimit(final long nanos) {
-        trainTimeLimitNanos = nanos;
+        trainTimeLimit = nanos;
     }
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        final Logger logger = getLogger();
-        loadCheckpoint();
         // start monitoring resources
         memoryWatcher.start();
         trainTimer.start();
-        final boolean rebuild = isRebuild();
-        super.buildClassifier(trainData);
-        if(rebuild) {
-            // reset resources
-            memoryWatcher.resetAndStart();
-            trainTimer.resetAndStart();
-            tree = new BaseTree<>();
-            nodeBuildQueue = new LinkedList<>();
-            maxTimePerInstanceForNodeBuilding = 0;
-            // setup the root node
-            final TreeNode<ProximitySplit> root = setupNode(trainData, null);
-            // add the root node to the tree
-            tree.setRoot(root);
-            // add the root node to the build queue
-            nodeBuildQueue.add(root);
+        final Logger logger = getLogger();
+        // if checkpoint exists then skip initialisation
+        if(!loadCheckpoint()) {
+            // no checkpoint exists, check whether rebuilding is enabled
+            final boolean rebuild = isRebuild();
+            // build super
+            super.buildClassifier(trainData);
+            // if rebuilding (i.e. building from scratch) initialise the classifier
+            if(rebuild) {
+                // reset resources
+                memoryWatcher.resetAndStart();
+                trainTimer.resetAndStart();
+                tree = new BaseTree<>();
+                nodeBuildQueue = new LinkedList<>();
+                maxTimePerInstanceForNodeBuilding = 0;
+                // setup the root node
+                final TreeNode<ProximitySplit> root = setupNode(trainData, null);
+                // add the root node to the tree
+                tree.setRoot(root);
+                // add the root node to the build queue
+                nodeBuildQueue.add(root);
+            }
         }
-        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+        // update the timings
         trainTimer.lap();
+        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimit, logger, "train");
         while(
-            // there's remaining nodes to be built
+                // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
@@ -499,7 +512,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                                      maxTimePerInstanceForNodeBuilding *
                                      nodeBuildQueue.peekFirst().getElement().getTrainData().size())
         ) {
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
             // time how long it takes to build the node
             trainStageTimer.resetAndStart();
             // get the next node to be built
@@ -519,12 +531,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             checkpointIfIntervalExpired();
             // update the train timer
             trainTimer.lap();
+            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimit, logger, "train");
         }
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
-        // checkpoint if work has been done since loading the first checkpoint
+        // checkpoint if work has been done since (i.e. tree has been built further)
         checkpointIfWorkDone();
     }
 

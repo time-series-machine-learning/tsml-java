@@ -31,11 +31,11 @@ import weka.core.Instances;
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable, Loggable {
     // method of logging
     private transient Logger logger = LogUtils.buildLogger(getClass());
-    // whether we're initialising the classifier, e.g. setting seed
+    // whether the classifier is to be built from scratch or not. Set this to true to incrementally improve the model on every buildClassifier call
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
-    // whether to generate train estimate
+    // whether to (re)generate train estimate. Useful with rebuild to incrementally improve classifier.
     private boolean rebuildTrainEstimateResults = true;
 
     public BaseClassifier() {
@@ -97,9 +97,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             throw new IllegalStateException("estimator method NONE but estimate own performance enabled!");
         }
         if(rebuild) {
-            // reset rebuild
-            // default behaviour is to rebuild initially, then turn off the rebuild flag. Subsequent calls to buildClassifier will result in further building instead of building from scratch every time. If you need to build from scratch, just call setRebuild(true) before calling this method.
-            rebuild = false;
             Assert.assertNotNull(trainData);
             // reset train results
             trainResults = new ClassifierResults();

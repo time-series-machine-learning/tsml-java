@@ -541,7 +541,7 @@ public class KNNLOOCV
         checkpointIfIntervalExpired();
     }
 
-    public long getTrainTimeNanos() {
+    public long getTrainTime() {
         return trainEstimateTimer.getTime() + getTrainTimer().getTime();
     }
 

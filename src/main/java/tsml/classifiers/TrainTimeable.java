@@ -6,5 +6,5 @@ package tsml.classifiers;
  * Contributors: goastler
  */
 public interface TrainTimeable {
-    long getTrainTimeNanos();
+    long getTrainTime();
 }

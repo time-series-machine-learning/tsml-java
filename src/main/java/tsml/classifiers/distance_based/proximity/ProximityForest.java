@@ -167,6 +167,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
+        PF_R20_I() {
+            @Override
+            public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
+                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R20_I);
+                return proximityForest;
+            }
+        },
         PF_R10() {
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {

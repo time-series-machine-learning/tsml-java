@@ -489,7 +489,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
-                this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
@@ -498,7 +498,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we already tracked this as part of the train time
             }
@@ -588,7 +588,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
-                    trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                    trainTimer.add(((TrainTimeable) classifier).getTrainTime());
                 }
                 if(classifier instanceof TrainEstimateTimeable) {
                     trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
@@ -601,7 +601,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 classifier = null;
 //                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
                 ClassifierResults results = classifier.getTrainResults();
-                trainTimer.add(results.getTrainTimeNanos());
+                trainTimer.add(results.getTrainTime());
                 trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
                 memoryWatcher.add(results);
             }
