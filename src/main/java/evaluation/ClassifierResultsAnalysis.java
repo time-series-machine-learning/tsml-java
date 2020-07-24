@@ -287,7 +287,9 @@ public class ClassifierResultsAnalysis {
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
             matlab_buildCompResourcesDias(compMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
-            matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput());
+            for(String evalSet : new String[] {trainLabel, testLabel, trainTestDiffLabel}) {
+                matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput(), evalSet);
+            }
         }
     }
 
@@ -424,14 +426,14 @@ public class ClassifierResultsAnalysis {
         return new String[] { longSummaryStats.toString(), shortSummaryStats.toString(), cliques };
     }
 
-    protected static String fileNameBuild_cd(String filename, String statistic) {
-        return "cd_"+filename+"_"+statistic+"S";
+    protected static String fileNameBuild_cd(String filename, String statistic, String evalSet) {
+        return "cd_"+filename+"_"+statistic+"S" + "_" + evalSet;
     }
-    protected static String fileNameBuild_pws(String filename, String statistic) {
-        return "pws_"+filename+"_"+statistic+"S";
+    protected static String fileNameBuild_pws(String filename, String statistic, String evalSet) {
+        return "pws_"+filename+"_"+statistic+"S" + "_" + evalSet;
     }
-    protected static String fileNameBuild_pwsInd(String c1, String c2, String statistic) {
-        return "pws_"+c1+"VS"+c2+"_"+statistic+"S";
+    protected static String fileNameBuild_pwsInd(String c1, String c2, String statistic, String evalSet) {
+        return "pws_"+c1+"VS"+c2+"_"+statistic+"S" + "_" + evalSet;
     }
     protected static String fileNameBuild_avgsFile(String evalSet, PerformanceMetric metric) {
         return evalSet+metric+"_"+(metric.takeMean?"MEANS":"MEDIANS")+".csv";
@@ -477,37 +479,37 @@ public class ClassifierResultsAnalysis {
         dsetVals = util_order(dsetVals, ordering);
         stddevsFoldVals = util_order(stddevsFoldVals, ordering);
 
-        if (evalSet.equalsIgnoreCase("TEST") || allComputationalMetrics.contains(metric)) {
-            //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
-            String cdFolder = expRootDirectory + cdDiaFolderName;
-            (new File(cdFolder)).mkdirs();
-            OutFile out = new OutFile(cdFolder+"readme.txt");
-            out.writeLine("remember that nlls are auto-negated now for cd dia ordering\n");
-            out.writeLine("and that basic notepad wont show the line breaks properly, view (cliques especially) in notepad++");
-            out.closeFile();
-            for (String subFolder : new String[] { pairwiseCDDiaDirName, friedmanCDDiaDirName }) {
-                (new File(cdFolder+subFolder+"/")).mkdirs();
-                String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,metric.name)+".csv";
+        //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
+        String cdFolder = expRootDirectory + cdDiaFolderName;
+        (new File(cdFolder)).mkdirs();
+        OutFile out = new OutFile(cdFolder+"readme.txt");
+        out.writeLine("remember that nlls are auto-negated now for cd dia ordering\n");
+        out.writeLine("and that basic notepad wont show the line breaks properly, view (cliques especially) in notepad++");
+        out.closeFile();
 
-                //meta hack for qol, negate the nll (sigh...) for correct ordering on dia
-                //ALSO now negating the timings, smaller = better
-                if (!metric.maximise) {
-                    double[][] negatedDsetVals = new double[dsetVals.length][dsetVals[0].length];
-                    for (int i = 0; i < dsetVals.length; i++) {
-                        for (int j = 0; j < dsetVals[i].length; j++) {
-                            negatedDsetVals[i][j] = dsetVals[i][j] * -1;
-                        }
+        for (String subFolder : new String[] { pairwiseCDDiaDirName, friedmanCDDiaDirName }) {
+            (new File(cdFolder+subFolder+"/")).mkdirs();
+            String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,metric.name, evalSet)+".csv";
+
+            //meta hack for qol, negate the nll (sigh...) for correct ordering on dia
+            //ALSO now negating the timings, smaller = better
+            if (!metric.maximise) {
+                double[][] negatedDsetVals = new double[dsetVals.length][dsetVals[0].length];
+                for (int i = 0; i < dsetVals.length; i++) {
+                    for (int j = 0; j < dsetVals[i].length; j++) {
+                        negatedDsetVals[i][j] = dsetVals[i][j] * -1;
                     }
-                    writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
-                } else {
-                    writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
                 }
-            } //end cd dia qol
+                writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
+            } else {
+                writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
+            }
+            //end cd dia qol
 
             //qol for pairwisescatter dia creation, make a copy of the test stat files
             String pwsFolder = expRootDirectory + pairwiseScatterDiaPath;
             (new File(pwsFolder)).mkdirs();
-            String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name)+".csv";
+            String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name, evalSet)+".csv";
             writeRawTableFile_ClassifierDataset(pwsName, dsetVals, cnames);
             //end pairwisescatter qol
 
@@ -536,7 +538,7 @@ public class ClassifierResultsAnalysis {
         summaryStrings = eval_metricOnSplitStatsFile(outPath, evalSet, metric, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets);
 
         //write these even if not actually making the dias this execution, might manually make them later
-        writeCliqueHelperFiles(expRootDirectory + cdDiaFolderName + pairwiseCDDiaDirName, filename, metric, summaryStrings[2]);
+        writeCliqueHelperFiles(expRootDirectory + cdDiaFolderName + pairwiseCDDiaDirName, filename, metric, summaryStrings[2], evalSet);
 
         //this really needs cleaning up at some point... jsut make it a list and stop circlejerking to arrays
         String[] summaryStrings2 = new String[summaryStrings.length+groupingSummary.length];
@@ -934,11 +936,11 @@ public class ClassifierResultsAnalysis {
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
-    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques) {
+    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques, String evalSet) {
         (new File(cdCSVpath)).mkdirs();
 
         //temp workaround, just write the cliques and readin again from matlab for ease of checking/editing for pairwise edge cases
-        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, metric.name) + "_cliques.txt");
+        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, metric.name, evalSet) + "_cliques.txt");
         out.writeString(cliques);
         out.closeFile();
     }
@@ -951,7 +953,6 @@ public class ClassifierResultsAnalysis {
      */
     protected static void matlab_buildCDDias(String expname, String[] cliques) {
         MatlabController proxy = MatlabController.getInstance();
-        System.out.println("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+");");
         proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+friedmanCDDiaDirName+"', 0, "+FRIEDMANCDDIA_PVAL+");"); //friedman
         proxy.eval("clear");
         proxy.eval("buildDiasInDirectory('"+expRootDirectory+cdDiaFolderName+"/"+pairwiseCDDiaDirName+"', 1);");  //pairwise
@@ -1657,7 +1658,7 @@ public class ClassifierResultsAnalysis {
         return new Pair<>(cnames.toArray(new String[] { }), vals);
     }
 
-    public static void matlab_buildPairwiseScatterDiagrams(String outPath, String expName, List<PerformanceMetric> metrics, String[] dsets) {
+    public static void matlab_buildPairwiseScatterDiagrams(String outPath, String expName, List<PerformanceMetric> metrics, String[] dsets, String evalSet) {
         outPath += pairwiseScatterDiaPath;
 
         for (PerformanceMetric metric : metrics) {
@@ -1666,7 +1667,7 @@ public class ClassifierResultsAnalysis {
                 boolean originIsZero = !compStat; // if not a computational stat, probably in the range 0..1, keep that instead of min..max
                 boolean drawFitLine = compStat;
 
-                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
+                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name, evalSet) + ".csv", dsets.length);
                 String[] classifierNames = asd.var1;
                 double[][] allResults = asd.var2;
 
@@ -1711,8 +1712,8 @@ public class ClassifierResultsAnalysis {
                         concat.append("'");
                         proxy.eval("labels = {" + concat.toString() + "};");
 //
-                        proxy.eval("'" + fileNameBuild_pwsInd(c1name, c2name, metric.name) + "'"); //just print the filename in the matlab window, for log of progress. no longer printing fig details
-                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"',"+drawFitLine+","+originIsZero+");");
+                        proxy.eval("'" + fileNameBuild_pwsInd(c1name, c2name, metric.name, evalSet) + "'"); //just print the filename in the matlab window, for log of progress. no longer printing fig details
+                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name, evalSet).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"',"+drawFitLine+","+originIsZero+");");
                         proxy.eval("clear");
                     }
                 }

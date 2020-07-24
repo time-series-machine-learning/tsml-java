@@ -557,14 +557,14 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
     public static void main(String[] args) throws Exception {
         String root = "/bench/phd/experiments";
-//        String expName = "2020_07_06_pf_training_methods";
-        String expName = "2020_07_06_pf_correctness";
+        String expName = "pf_stump";
         String expDir = root + "/" + expName;
         String version = "v1";
-//        String version = "v10";
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", "analysis_" + version
-            ,  30);
-        mce.setDatasets("/bench/phd/datasets/lists/2015_pigless.txt");
+        String clsfDir = expDir + "/results_" + version + "/";
+        String analysisName = "analysis";
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", analysisName + "_" + version
+            ,  10);
+        mce.setDatasets("/bench/phd/datasets/lists/2015.txt");
 //        String[] classifierNames = new String[] {"PF_R5_OOB", "PF_R5_OOB_D","PF_R5_OOB_W", "PF_R5_OOB_WD", "PF_R5_OOB_R_D", "PF_R5_OOB_R_WD", "PF_R5_OOB_R_W", "PF_R5_OOB_R",  };
 //        String[] cleanedClassifierNames = Arrays.copyOf(classifierNames, classifierNames.length);
 //        for(int i = 0; i < cleanedClassifierNames.length; i++) {
@@ -572,13 +572,32 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //        }
 //        String classifierResultsPath = expDir + "/results_" + version + "/";
 //        mce.readInClassifiers(classifierNames, cleanedClassifierNames, classifierResultsPath);
-        mce.readInClassifiers(new String[] {"PF_R5", "ORIG_PF_A"}, expDir + "/results_" + version + "/");
+//        mce.readInClassifiers(new String[] {"PF_R5_T10", "PF_R5_T20", "PF_R5_T50", "PF_R5", "PF_R5_T200", "PF_R5_T500", "PF_R5_T1000"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_RR5", "PF_RR10"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_CHI", "PF_R5_GG", "PF_R5_IE", "PF_R5_IG"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_I", "PF_R1_I", "PF_R10_I"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R1_QUICK", "PF_R1_SQUICK", "PF_R1_MQUICK"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_QUICK", "PF_R5_SQUICK", "PF_R5_MQUICK"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R10_QUICK", "PF_R10_SQUICK", "PF_R10_MQUICK"}, clsfDir);
+        mce.readInClassifiers(new String[] {"PF_R1_STUMP", "PF_R5_STUMP", "PF_R10_STUMP"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_CV", "PF_R5_OOB", "PF_R5_OOB_R"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_CV", "PF_R5_OOB_CV_D", "PF_R5_OOB_CV_WD", "PF_R5_OOB_R_WD"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_OOB", "PF_R5_OOB_R", "PF_R5_OOB_W", "PF_R5_CV"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_OOB_R", "PF_R5_OOB_R_W", "PF_R5_OOB_R_D", "PF_R5_OOB_R_WD"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_OOB", "PF_R5_OOB_W", "PF_R5_OOB_D", "PF_R5_OOB_WD"}, clsfDir);
+        mce.readInClassifiers(new String[] {"PF_R1"}, root + "/pf_correctness/results_v1/");
+        mce.readInClassifiers(new String[] {"PF_R5"}, root + "/pf_correctness/results_v1/");
+        mce.readInClassifiers(new String[] {"PF_R10"}, root + "/pf_correctness/results_v1/");
+//        mce.readInClassifiers(new String[] {"PF_R1"}, root + "/pf_correctness/results_v1/");
+//        mce.readInClassifiers(new String[] {"ORIG_PF", "ORIG_PF_A"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_O", "PF_R5_U"}, clsfDir);
+//        mce.readInClassifiers(new String[] {"PF_R5_OU"}, clsfDir);
 //        mce.readInClassifiers(new String[] {"PF_R5_OOB", "PF_R5_OOB_R", "PF_R5_CV"}, "/home/goastler/bench/phd/experiments/2020_07_06_pf_training_methods/results_v9/");
 //        mce.readInClassifiers(new String[] {"PF_R5_T10", "PF_R5_T20", "PF_R5_T50", "PF_R5", "PF_R5_T200", "PF_R5_T500", "PF_R5_T1000"}, "/home/goastler/bench/phd/experiments/pf training methods/results_v9/");
 //        mce.readInClassifiers("ProximityForest", "/bench/phd/results/");
         mce.setTestResultsOnly(true);
         mce.setUseAllStatistics();
-        mce.setIgnoreMissingResults(false);
+        mce.setIgnoreMissingResults(true);
         mce.setBuildMatlabDiagrams(true, true);
         mce.runComparison();
     }
