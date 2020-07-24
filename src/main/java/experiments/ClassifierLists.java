@@ -100,6 +100,12 @@ public class ClassifierLists {
         "PF_R5_QUICK",
         "PF_R1_QUICK",
         "PF_R10_QUICK",
+            "PF_R5_SQUICK",
+            "PF_R1_SQUICK",
+            "PF_R10_SQUICK",
+            "PF_R5_MQUICK",
+            "PF_R1_MQUICK",
+            "PF_R10_MQUICK",
         "PF_R5_STUMP",
         "PF_R1_STUMP",
         "PF_R10_STUMP",
@@ -162,6 +168,24 @@ public class ClassifierLists {
                 break;
             case "PF_R10_QUICK":
                 c = ProximityForest.Config.PF_R10_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_SQUICK":
+                c = ProximityForest.Config.PF_R5_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_SQUICK":
+                c = ProximityForest.Config.PF_R1_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_SQUICK":
+                c = ProximityForest.Config.PF_R10_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_MQUICK":
+                c = ProximityForest.Config.PF_R5_MQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_MQUICK":
+                c = ProximityForest.Config.PF_R1_MQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_MQUICK":
+                c = ProximityForest.Config.PF_R10_MQUICK.configure(new ProximityForest());
                 break;
             case "PF_R5_STUMP":
                 c = ProximityForest.Config.PF_R5_STUMP.configure(new ProximityForest());
@@ -264,6 +288,9 @@ public class ClassifierLists {
                 break;
             case "PF_R5_CV_D":
                 c = ProximityForest.Config.PF_R5_CV_D.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV_W":
+                c = ProximityForest.Config.PF_R5_CV_W.configure(new ProximityForest());
                 break;
             case "PF_R5_CV_WD":
                 c = ProximityForest.Config.PF_R5_CV_WD.configure(new ProximityForest());

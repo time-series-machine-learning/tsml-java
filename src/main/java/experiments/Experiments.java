@@ -227,7 +227,10 @@ public class Experiments  {
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
-        LOGGER.info("Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
+        if(expSettings.generateErrorEstimateOnTrainSet) {
+            LOGGER.info(expSettings.toShortString() + ", Train acc:" + results[0].getAcc());
+        }
+        LOGGER.info(expSettings.toShortString() + ", Test acc:" + results[1].getAcc());
 
         return results;
     }
@@ -741,12 +744,18 @@ public class Experiments  {
 
         // else calc benchmark
 
-        int arrSize = 10000;
-        int repeats = 1000;
+        int arrSize = 100_000;
+        int repeats = 100;
         long[] times = new long[repeats];
         long total = 0L;
+        int[] arr = new int[arrSize];
+        final Random random = new Random(0);
+        for(int i = 0; i < arr.length; i++) {
+            arr[i] = random.nextInt();
+        }
+        atomicBenchmark(arr); // discard first for JVM warm up
         for (int i = 0; i < repeats; i++) {
-            times[i] = atomicBenchmark(arrSize);
+            times[i] = atomicBenchmark(arr);
             total+=times[i];
         }
 
@@ -778,16 +787,12 @@ public class Experiments  {
             LOGGER.log(Level.FINE, sb.toString());
         }
 
-        return total;
+        return total / repeats;
     }
 
-    private static long atomicBenchmark(int arrSize) {
+    private static long atomicBenchmark(int[] arr) {
+        arr = Arrays.copyOf(arr, arr.length);
         long startTime = System.nanoTime();
-        int[] arr = new int[arrSize];
-        Random rng = new Random(0);
-        for (int j = 0; j < arrSize; j++)
-            arr[j] = rng.nextInt();
-
         Arrays.sort(arr);
         return System.nanoTime() - startTime;
     }
