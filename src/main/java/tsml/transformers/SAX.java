@@ -258,7 +258,7 @@ public class SAX implements Transformer,TechnicalInformationHandler {
         
         Instances test = DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
         
-        test =  new Normalizer().transform(test);
+        test =  new RowNormalizer().transform(test);
         
         SAX sax = new SAX();
         

@@ -9,7 +9,7 @@ import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instances;
-import tsml.transformers.Normalizer;
+import tsml.transformers.RowNormalizer;
 
 /**
  *
@@ -70,7 +70,7 @@ public class SimulateMatrixProfileData {
                 knn.setKNN(1);
                 double acc=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
 
-                Normalizer nc=new Normalizer();
+                RowNormalizer nc=new RowNormalizer();
                 split[0]=nc.transform(split[0]);
                 split[1]=nc.transform(split[1]);
                 double acc2=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
@@ -113,7 +113,7 @@ public class SimulateMatrixProfileData {
         Model.setGlobalRandomSeed(0);
         int seriesLength=500;
         int[] casesPerClass=new int[]{100,100};        
-        Normalizer nc=new Normalizer();
+        RowNormalizer nc=new RowNormalizer();
         Instances d=generateMatrixProfileData(seriesLength,casesPerClass);
         Instances[] split=InstanceTools.resampleInstances(d, 0,0.1);
         OutFile of = new OutFile("C:\\Temp\\train.arff");

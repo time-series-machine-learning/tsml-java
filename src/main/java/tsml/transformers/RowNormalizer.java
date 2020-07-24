@@ -31,7 +31,7 @@ import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class Normalizer implements Transformer {
+public class RowNormalizer implements Transformer {
 	public enum NormType {
 		INTERVAL, STD, STD_NORMAL
 	};
@@ -40,11 +40,11 @@ public class Normalizer implements Transformer {
 
 	NormType norm = NormType.STD_NORMAL;
 
-	public Normalizer(){
+	public RowNormalizer(){
 		this(NormType.STD_NORMAL);
 	}
 
-	public Normalizer(NormType type){
+	public RowNormalizer(NormType type){
 		norm = type;
 	}
 
@@ -349,7 +349,7 @@ public class Normalizer implements Transformer {
         String dataset_name = "ChinaTown";
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
-        Normalizer hTransform= new Normalizer();
+        RowNormalizer hTransform= new RowNormalizer();
         Instances out_train = hTransform.transform(train);
         Instances out_test = hTransform.transform(test);
         System.out.println(out_train.toString());

@@ -5,7 +5,7 @@
 
 package statistics.simulators;
 import tsml.classifiers.distance_based.DTWCV;
-import tsml.transformers.Normalizer;
+import tsml.transformers.RowNormalizer;
 import tsml.transformers.FFT;
 import tsml.transformers.ARMA;
 import tsml.transformers.PACF;
@@ -185,7 +185,7 @@ public class SimulateSpectralData extends DataSimulator{
 
         ds.setLength(arLength);
         Instances data=ds.generateDataSet();
-        Normalizer nc= new Normalizer();
+        RowNormalizer nc= new RowNormalizer();
         data=nc.transform(data);
 
         ArrayList<Model> noise=new ArrayList<>();
@@ -462,7 +462,7 @@ public class SimulateSpectralData extends DataSimulator{
 
         if(normalize){
 
-            Normalizer norm=new Normalizer();
+            RowNormalizer norm=new RowNormalizer();
             d = norm.transform(d);
         }
 
@@ -482,7 +482,7 @@ public class SimulateSpectralData extends DataSimulator{
             paras[i]=generateStationaryParameters(minParas,maxParas);
         Instances d=generateARDataSet(paras,seriesLength,nosCases);
         if(normalize){
-            Normalizer norm=new Normalizer();
+            RowNormalizer norm=new RowNormalizer();
             d = norm.transform(d);
         }
         return d;
@@ -560,7 +560,7 @@ public class SimulateSpectralData extends DataSimulator{
         ds.setCasesPerClass(nosCases);
         Instances d=ds.generateDataSet();
         if(normalize){
-                Normalizer norm=new Normalizer();
+                RowNormalizer norm=new RowNormalizer();
                 d = norm.transform(d);
         }
         return d;
@@ -582,7 +582,7 @@ public class SimulateSpectralData extends DataSimulator{
         of.writeString(d.toString());
         of2.writeString(d2.toString());
 
-        Normalizer norm=new Normalizer();
+        RowNormalizer norm=new RowNormalizer();
         d = norm.transform(d);
         
     }

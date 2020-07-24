@@ -41,7 +41,7 @@ import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class NormalizeAttribute implements Transformer {
+public class ColumnNormalizer implements Transformer {
 	enum NormType {
 		INTERVAL, STD_NORMAL
 	};
@@ -54,10 +54,10 @@ public class NormalizeAttribute implements Transformer {
 	int classIndex;
 	NormType norm = NormType.INTERVAL;
 
-	public NormalizeAttribute() {
+	public ColumnNormalizer() {
 	}
 
-	public NormalizeAttribute(Instances data) {
+	public ColumnNormalizer(Instances data) {
 		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really

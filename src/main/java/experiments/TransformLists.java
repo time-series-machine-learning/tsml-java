@@ -92,7 +92,7 @@ public class TransformLists {
                transformer = new MFCC();
                break;
             case "NormalizeCase":
-                transformer = new Normalizer();
+                transformer = new RowNormalizer();
                 break;
             case "PAA":
                transformer = new PAA();

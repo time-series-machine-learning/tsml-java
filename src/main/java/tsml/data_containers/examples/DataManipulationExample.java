@@ -45,8 +45,6 @@ public class DataManipulationExample {
 			mean[j] = TimeSeriesSummaryStatistics.mean(slice);
 			stdev[j] = Math.sqrt(TimeSeriesSummaryStatistics.variance(slice, mean[j]));
 		}
-
-
     }
 
     //Example showing simple vertical slicing.
@@ -87,9 +85,47 @@ public class DataManipulationExample {
 
     }
 
+    //truncation example.
+    public static void example3(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+                //time-series one.
+                {0.0,1.0,2.0,4.0}
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0, 7.0, 8.0},
+                //time-series one.
+                {4.0,3.0}
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+
+
+        //this should produce a size 3 interval slice across all dimensions that include atts: 0,1,2
+        double[][][] truncated = data.getSliceArray(IntStream.range(0, data.getMinLength()).toArray());
+        //equiv: double[][][] interval = data.getSliceArray(new int{0,1,2});
+
+
+        TimeSeriesInstances truncated_data = new TimeSeriesInstances(truncated, data.getClassIndexes());
+        truncated_data.setClassLabels(data.getClassLabels());
+
+        System.out.println("Original");
+        System.out.println(data);
+        System.out.println("Should be 2 value");
+        System.out.println(truncated_data);
+    }
+
     public static void main(String[] args) {
         example1();
         example2();
+        example3();
     }
     
 }

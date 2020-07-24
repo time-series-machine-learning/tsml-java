@@ -22,7 +22,7 @@ import weka.core.EuclideanDistance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
-import tsml.transformers.Normalizer;
+import tsml.transformers.RowNormalizer;
 import utilities.StatisticalUtilities;
 
 /**

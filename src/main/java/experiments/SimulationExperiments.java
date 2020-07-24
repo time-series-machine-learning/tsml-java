@@ -61,7 +61,7 @@ import weka.core.Instances;
 import utilities.ClassifierTools;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
-import tsml.transformers.Normalizer;
+import tsml.transformers.RowNormalizer;
 
 import javax.management.Notification;
 
@@ -368,7 +368,7 @@ public class SimulationExperiments {
 
             else if (normalize) {
 
-                Normalizer nc = new Normalizer();
+                RowNormalizer nc = new RowNormalizer();
                 split[0] = nc.transform(split[0]);
                 split[1] = nc.transform(split[1]);
             }
