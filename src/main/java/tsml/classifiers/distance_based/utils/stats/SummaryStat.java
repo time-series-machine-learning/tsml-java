@@ -52,6 +52,20 @@ public class SummaryStat {
             BigDecimal.ROUND_HALF_UP).doubleValue();
     }
 
+    public double getSampleStandardDeviation() {
+        if(count <= 0) {
+            return 0;
+        }
+        return Math.sqrt(getSampleVariance());
+    }
+
+    public double getPopulationStandardDeviation() {
+        if(count <= 0) {
+            return 0;
+        }
+        return Math.sqrt(getPopulationVariance());
+    }
+
     public long getCount() {
         return count;
     }
