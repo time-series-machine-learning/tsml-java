@@ -35,6 +35,9 @@ package tsml.transformers;
 
 import org.apache.commons.lang3.NotImplementedException;
 
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -97,6 +100,22 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
+	protected void findStats(TimeSeriesInstances r) {
+		max = new double[r.getMaxLength()];
+		min = new double[r.getMaxLength()];
+		mean = new double[r.getMaxLength()];
+		stdev = new double[r.getMaxLength()];
+
+		for (int j = 0; j < r.getMaxLength(); j++) {
+			double[] slice = r.getSingleSliceArray(j);
+
+			max[j] = TimeSeriesSummaryStatistics.max(slice);
+			min[j] = TimeSeriesSummaryStatistics.min(slice);
+			mean[j] = TimeSeriesSummaryStatistics.mean(slice);
+			stdev[j] = Math.sqrt(TimeSeriesSummaryStatistics.variance(slice, mean[j]));
+		}
+	}
+
 	public double[] getRanges() {
 		double[] r = new double[max.length];
 		for (int i = 0; i < r.length; i++)
@@ -104,12 +123,11 @@ public class NormalizeAttribute implements Transformer {
 		return r;
 	}
 
-	
 	@Override
 	public Instance transform(Instance inst) {
 		throw new NotImplementedException("Column wise normalisation doesn't make sense for single instances");
 	}
-	
+
 	// This should probably be connected to trainData?
 	public Instances determineOutputFormat(Instances inputFormat) {
 		return new Instances(inputFormat, 0);
@@ -124,6 +142,17 @@ public class NormalizeAttribute implements Transformer {
 
 	public void setNormMethod(NormType n) {
 		norm = n;
+	}
+
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public TimeSeriesInstances transform(TimeSeriesInstances inst) {
+		
 	}
 
 	public Instances transform(Instances inst) {
@@ -152,13 +181,11 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
-	public void intervalNorm(Instance r){
+	public void intervalNorm(Instance r) {
 		for (int j = 0; j < r.numAttributes(); j++) {
 			if (j != classIndex) {
 				double x = r.value(j);
 				r.setValue(j, (x - min[j]) / (max[j] - min[j]));
-				// System.out.println("instance ="+i+" Attribute ="+j+" Value = "+x+" Min
-				// ="+min[j]+" max = "+max[j]);
 			}
 		}
 	}
@@ -174,44 +201,5 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
-	public String globalInfo() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	public String getRevision() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	/*
-	 * Test Harness.
-	 * 
-	 * public static void main(String[] args){ Instances
-	 * test=weka.classifiers.evaluation.ClassifierTools.loadData(
-	 * "C:\\Research\\Data\\WekaTest\\NormalizeTest"); Instances
-	 * train=weka.classifiers.evaluation.ClassifierTools.loadData(
-	 * "C:\\Research\\Data\\WekaTest\\NormalizeTrain");
-	 * test.setClassIndex(test.numAttributes()-1);
-	 * train.setClassIndex(test.numAttributes()-1);
-	 * 
-	 * NormalizeAttribute na=new NormalizeAttribute(test); try{
-	 * 
-	 * na.setNormMethod(NormalizeAttribute.NormType.INTERVAL); //Defaults to
-	 * interval anyway Instances newTrain=na.process(train); Instances
-	 * newTest=na.process(test);
-	 * System.out.println(" Fixed interval train ="+newTrain);
-	 * System.out.println(" Fixed interval test ="+newTest);
-	 * na.setNormMethod(NormalizeAttribute.NormType.STD_NORMAL); //Defaults to
-	 * interval anyway na.setTrainData(train); newTrain=na.process(train);
-	 * newTest=na.process(test); System.out.println(" Std Normal train ="+newTrain);
-	 * System.out.println(" Std Normal test ="+newTest);
-	 * 
-	 * }catch(Exception e){
-	 * System.out.println(" Exception thrown somewhere, caught main ="+e); }
-	 * 
-	 * 
-	 * }
-	 */
-
-	
 }

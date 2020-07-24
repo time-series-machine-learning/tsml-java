@@ -1,6 +1,7 @@
 package tsml.data_containers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -68,10 +69,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         }
     }
 
+    
     public TimeSeriesInstances(final List<List<List<Double>>> raw_data, final List<Double> label_indexes) {
         this();
-
-        setClassLabels(classLabels);
 
         int index = 0;
         for (final List<List<Double>> series : raw_data) {
@@ -82,6 +82,34 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         calculateLengthBounds();
         calculateIfMissing();
     }
+
+    public TimeSeriesInstances(final double[][][] raw_data) {
+        this();
+
+        for (final double[][] series : raw_data) {
+            //using the add function means all stats should be correctly counted.
+            series_collection.add(new TimeSeriesInstance(series));
+        }
+
+        calculateLengthBounds();
+        calculateIfMissing();
+    }
+
+    public TimeSeriesInstances(final double[][][] raw_data, int[] label_indexes) {
+        this();
+
+        int index = 0;
+        for (double[][] series : raw_data) {
+            //using the add function means all stats should be correctly counted.
+            series_collection.add(new TimeSeriesInstance(series, label_indexes[index++]));
+        }
+
+        calculateLengthBounds();
+        calculateIfMissing();
+
+
+    }
+
 
     private void calculateClassCounts() {
         classCounts = new int[classLabels.length];
@@ -101,8 +129,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         hasMissing = series_collection.stream().map(e -> e.hasMissing).anyMatch(Boolean::booleanValue);
     }
 
-    public void setClassLabels(final String[] labels) {
-        classCounts = new int[classLabels.length];
+    public void setClassLabels(String[] labels) {
         classLabels = labels;
 
         calculateClassCounts();
@@ -163,11 +190,61 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return output;
     }
 
+    public int[] getClassIndexes(){
+        int[] out = new int[numInstances()];
+        int index=0;
+        for(TimeSeriesInstance inst : series_collection){
+            out[index++] = inst.classLabelIndex;
+        }
+        return out;
+    }
+
+    //assumes equal numbers of channels
+    public double[] getSingleSliceArray(int index){
+        double[] out = new double[numInstances() * series_collection.get(0).getNumChannels()];
+        int i=0;
+        for(TimeSeriesInstance inst : series_collection){
+            for(TimeSeries ts : inst)
+                // if the index isn't always valid, populate with NaN values.
+                out[i++] = ts.hasValidValueAt(index) ? ts.get(index) : Double.NaN;
+        }
+
+        return out;
+    }
+
+    public List<List<List<Double>>> getSliceList(int[] indexesToKeep){
+        return getSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public List<List<List<Double>>> getSliceList(List<Integer> indexesToKeep){
+        List<List<List<Double>>> out = new ArrayList<>(numInstances());
+        for(TimeSeriesInstance inst : series_collection){
+            out.add(inst.getSliceList(indexesToKeep));
+        }
+
+        return out;
+    }
+
+    public double[][][] getSliceArray(int[] indexesToKeep){
+        return getSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public double[][][] getSliceArray(List<Integer> indexesToKeep){
+        double[][][] out = new double[numInstances()][][];
+        int i=0;
+        for(TimeSeriesInstance inst : series_collection){
+            out[i++] = inst.getSliceArray(indexesToKeep);
+        }
+
+        return out;
+    }
+
     public TimeSeriesInstance get(final int i) {
         return series_collection.get(i);
 	}
 
 	public int numInstances() {
 		return series_collection.size();
-	}
+    }
+    
 }

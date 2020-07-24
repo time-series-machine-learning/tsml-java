@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
@@ -46,9 +47,9 @@ public class TimeSeries{
 
     public boolean hasValidValueAt(int i){
         //test whether its out of range, or NaN
-        boolean output = series.size() > i ||
-                         Double.isNaN(series.get(i));
-        return !output;
+        boolean output = i < series.size() &&
+                         Double.isFinite(series.get(i));
+        return output;
     }
 
     public double get(int i){
@@ -81,7 +82,6 @@ public class TimeSeries{
 
     }
 
-
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
@@ -111,10 +111,34 @@ public class TimeSeries{
         return out;
     }
 
+    public double[] toListWithoutIndexes(int[] indexesToKeep){
+        return toArrayWithoutIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
     public double[] toArrayWithoutIndexes(List<Integer> indexesToRemove){
         return toListWithoutIndexes(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
     }
     
+    //this is useful if you want to slice a column/truncate the array, but without modifying the original dataset.
+    public List<Double> toListWithIndexes(List<Integer> indexesToKeep){
+        //if the current index isn't in the removal list, then copy across.
+        List<Double> out = new ArrayList<>(indexesToKeep.size());
+        for(int i=0; i<this.getSeriesLength(); ++i){
+            if(indexesToKeep.contains(i))
+                out.add(this.series.get(i));
+        }
+
+        return out;
+    }
+
+    public double[] toArrayWithIndexes(int[] indexesToKeep){
+        return toArrayWithIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public double[] toArrayWithIndexes(List<Integer> indexesToKeep){
+        return toListWithIndexes(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
     public static void main(String[] args) {
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }

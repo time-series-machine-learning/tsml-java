@@ -79,6 +79,19 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         calculateIfMissing();
     }
 
+    public TimeSeriesInstance(double[][] data) {
+        series_channels = new ArrayList<TimeSeries>();
+
+        for(double[] in : data){
+            series_channels.add(new TimeSeries(in));
+        }
+
+        isMultivariate = series_channels.size() > 1;
+
+        calculateLengthBounds();
+        calculateIfMissing();
+	}
+
     public TimeSeriesInstance(double[][] data, int labelIndex) {
         series_channels = new ArrayList<TimeSeries>();
 
@@ -114,6 +127,53 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return classLabelIndex;
     }
 
+    public List<Double> getSingleSliceList(int index){
+        List<Double> out = new ArrayList<>(getNumChannels());
+        for(TimeSeries ts : series_channels){
+            out.add(ts.get(index));
+        }
+
+        return out;
+    }
+
+    public double[] getSingleSliceArray(int index){
+        double[] out = new double[getNumChannels()];
+        int i=0;
+        for(TimeSeries ts : series_channels){
+            out[i++] = ts.get(index);
+        }
+
+        return out;
+    }
+
+    public List<List<Double>> getSliceList(int[] indexesToKeep){
+        return getSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public List<List<Double>> getSliceList(List<Integer> indexesToKeep){
+        List<List<Double>> out = new ArrayList<>(getNumChannels());
+        for(TimeSeries ts : series_channels){
+            out.add(ts.toListWithIndexes(indexesToKeep));
+        }
+
+        return out;
+    }
+
+ 
+    public double[][] getSliceArray(int[] indexesToKeep){
+        return getSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public double[][] getSliceArray(List<Integer> indexesToKeep){
+        double[][] out = new double[getNumChannels()][];
+        int i=0;
+        for(TimeSeries ts : series_channels){
+            out[i++] = ts.toArrayWithIndexes(indexesToKeep);
+        }
+
+        return out;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -131,7 +191,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public Iterator<TimeSeries> iterator() {
         return series_channels.iterator();
     }
-
 
     public double[][] toValueArray(){
         double[][] output = new double[this.series_channels.size()][];
