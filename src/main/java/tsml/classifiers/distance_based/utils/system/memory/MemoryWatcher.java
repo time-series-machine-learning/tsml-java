@@ -42,6 +42,10 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
     private double mean = 0;
     private long garbageCollectionTimeInNanos = 0;
     private transient boolean setup = false;
+    private boolean trackMean = false;
+    private boolean trackMax = true;
+    private boolean trackCount = false;
+    private boolean trackVariance = false;
 
     public MemoryWatcher() {
         setupEmitters();
@@ -83,6 +87,38 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             }
             setup = true;
         }
+    }
+
+    public boolean isTrackMean() {
+        return trackMean;
+    }
+
+    public void setTrackMean(final boolean trackMean) {
+        this.trackMean = trackMean;
+    }
+
+    public boolean isTrackMax() {
+        return trackMax;
+    }
+
+    public void setTrackMax(final boolean trackMax) {
+        this.trackMax = trackMax;
+    }
+
+    public boolean isTrackCount() {
+        return trackCount;
+    }
+
+    public void setTrackCount(final boolean trackCount) {
+        this.trackCount = trackCount;
+    }
+
+    public boolean isTrackVariance() {
+        return trackVariance;
+    }
+
+    public void setTrackVariance(final boolean trackVariance) {
+        this.trackVariance = trackVariance;
     }
 
     private interface SerNotificationListener extends NotificationListener, Serializable {}
@@ -159,19 +195,27 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
      * @param usage
      */
     private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
-        maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
-        // Welford's online algo for mean and variance
-        count++;
-        if(count == 1) {
-            mean = usage;
-        } else {
-            double deltaBefore = usage - mean;
-            mean += deltaBefore / count;
-            double deltaAfter = usage - mean; // note the mean has changed so this isn't the same as deltaBefore
-            BigDecimal bigDeltaBefore = BigDecimal.valueOf(deltaBefore);
-            BigDecimal bigDeltaAfter = BigDecimal.valueOf(deltaAfter);
-            BigDecimal sqDiff = bigDeltaBefore.multiply(bigDeltaAfter); // square diff from the mean
-            sqDiffFromMean = sqDiffFromMean.add(sqDiff);
+        if(trackMax) {
+            maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
+        }
+        if(trackCount || trackMean || trackVariance) {
+            count++;
+        }
+        if(trackMean || trackVariance) {
+            // Welford's online algo for mean and variance
+            if(count == 1) {
+                mean = usage;
+            } else {
+                double deltaBefore = usage - mean;
+                mean += deltaBefore / count;
+                if(trackVariance) {
+                    double deltaAfter = usage - mean; // note the mean has changed so this isn't the same as deltaBefore
+                    BigDecimal bigDeltaBefore = BigDecimal.valueOf(deltaBefore);
+                    BigDecimal bigDeltaAfter = BigDecimal.valueOf(deltaAfter);
+                    BigDecimal sqDiff = bigDeltaBefore.multiply(bigDeltaAfter); // square diff from the mean
+                    sqDiffFromMean = sqDiffFromMean.add(sqDiff);
+                }
+            }
         }
     }
 

@@ -34,13 +34,11 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
     }
 
     public static final String TRANSFORMER_FLAG = "t";
-    public static final String ALT_TRANSFORMER_FLAG = "a";
     private DistanceFunction distanceFunction;
     private Transformer transformer;
-    private Transformer altTransformer;
 
     @Override public boolean isSymmetric() {
-        return (distanceFunction instanceof DistanceMeasure && ((DistanceMeasure) distanceFunction).isSymmetric()) && isSingleTransformer();
+        return (distanceFunction instanceof DistanceMeasure && ((DistanceMeasure) distanceFunction).isSymmetric());
     }
 
     private static Instance transform(Transformer transformer, Instance instance) {
@@ -51,24 +49,12 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         }
     }
 
-    /**
-     * gets the altTransformer, falling back to transformer if altTransformer is not in use / not set
-     * @return
-     */
-    public Transformer getAltTransformerFallback() {
-        if(isSingleTransformer()) {
-            return transformer;
-        } else {
-            return altTransformer;
-        }
-    }
-
     @Override
     public double findDistance(final Instance a, final Instance b, final double limit) {
         try {
             final Instance at = transform(transformer, a);
             // need to take the interval here, before the transform
-            final Instance bt = transform(getAltTransformerFallback(), b);
+            final Instance bt = transform(transformer, b);
             return distanceFunction.distance(at, bt, limit);
         } catch(Exception e) {
             throw new IllegalStateException(e);
@@ -80,16 +66,9 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         super.setInstances(data);
         distanceFunction.setInstances(data);
         if(transformer != null) {
-            fitTransformer(transformer, data);
-            if(!isSingleTransformer()) {
-                fitTransformer(altTransformer, data);
+            if(transformer instanceof TrainableTransformer) {
+                ((TrainableTransformer) transformer).fit(data);
             }
-        }
-    }
-
-    private static void fitTransformer(Transformer transformer, Instances data) {
-        if(transformer instanceof TrainableTransformer) {
-            ((TrainableTransformer) transformer).fit(data);
         }
     }
 
@@ -105,21 +84,13 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
     @Override public ParamSet getParams() {
         final ParamSet paramSet = super.getParams();
         paramSet.add(TRANSFORMER_FLAG, transformer);
-        if(isAltTransformer()) {
-            paramSet.add(ALT_TRANSFORMER_FLAG, altTransformer);
-        }
         paramSet.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
         return paramSet;
-    }
-
-    public Transformer getAltTransformer() {
-        return altTransformer;
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
         ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
-        ParamHandlerUtils.setParam(param, ALT_TRANSFORMER_FLAG, this::setAltTransformer, Transformer.class);
         ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
         super.setParams(param);
     }
@@ -132,11 +103,4 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         transformer = a;
     }
 
-    public void setAltTransformer(Transformer b) {
-        altTransformer = b;
-        // if the transformers are not different then only use one
-        if(!isSingleTransformer() && altTransformer.equals(transformer)) {
-            altTransformer = null;
-        }
-    }
 }

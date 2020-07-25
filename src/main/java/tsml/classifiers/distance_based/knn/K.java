@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.knn;
 
-import tsml.classifiers.distance_based.proximity.ProximitySplit;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
@@ -8,7 +7,6 @@ import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpoin
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.collections.tree.Tree;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
@@ -19,7 +17,6 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 
 import java.io.Serializable;
-import java.util.Comparator;
 import java.util.Random;
 import java.util.logging.Logger;
 

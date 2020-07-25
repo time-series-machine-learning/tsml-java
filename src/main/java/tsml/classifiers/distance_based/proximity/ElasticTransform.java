@@ -162,11 +162,6 @@ public class ElasticTransform extends BaseTrainableTransformer implements Random
                     final TransformDistanceMeasure tdf = (TransformDistanceMeasure) df;
                     Transformer transformer = TransformPipeline.append(tdf.getTransformer(), intervalTransform);
                     intervalTdf.setTransformer(transformer);
-                    if(tdf.isAltTransformer()) {
-                        Transformer altTransformer = TransformPipeline.append(tdf.getAltTransformer(),
-                                intervalTransform);
-                        intervalTdf.setTransformer(altTransformer);
-                    }
                 } else {
                     intervalTdf.setTransformer(intervalTransform);
                     intervalTdf.setDistanceFunction(df);

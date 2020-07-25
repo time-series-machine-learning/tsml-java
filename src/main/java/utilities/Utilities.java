@@ -285,10 +285,16 @@ public class Utilities {
         return Math.log(value) / Math.log(base);
     }
 
-    public static Map<Double, Instances> instancesByClass(Instances instances) {
-        Map<Double, Instances> map = new LinkedHashMap<>(instances.size(), 1);
-        for(Instance instance : instances) {
-            map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
+    /**
+     * get the instances by class. This returns a map of class value to indices of instances in that class.
+     * @param instances
+     * @return
+     */
+    public static Map<Double, List<Integer>> instancesByClass(Instances instances) {
+        Map<Double, List<Integer>> map = new LinkedHashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            final Instance instance = instances.get(i);
+            map.computeIfAbsent(instance.classValue(), k -> new ArrayList<>()).add(i);
         }
         return map;
     }
@@ -379,7 +385,7 @@ public class Utilities {
         return isUnique(iterable.iterator(), func);
     }
 
-    public static boolean isHomogeneous(Instances data) {
+    public static boolean isHomogeneous(List<Instance> data) {
         return isUnique(data, Instance::classValue);
     }
 

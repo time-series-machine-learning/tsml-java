@@ -14,14 +14,6 @@ import weka.core.DistanceFunction;
 public interface TransformDistanceMeasure extends DistanceMeasure {
     DistanceFunction getDistanceFunction();
     Transformer getTransformer();
-    Transformer getAltTransformer();
     void setDistanceFunction(DistanceFunction distanceFunction);
     void setTransformer(Transformer transformer);
-    void setAltTransformer(Transformer transformer);
-    default boolean isSingleTransformer() {
-        return getAltTransformer() == null;
-    }
-    default boolean isAltTransformer() {
-        return !isSingleTransformer();
-    }
 }

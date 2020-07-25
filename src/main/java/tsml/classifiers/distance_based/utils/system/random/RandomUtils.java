@@ -25,7 +25,7 @@ public class RandomUtils {
         Assert.assertTrue(numChoices > 0);
         final List<Integer> indices = CollectionUtils.sequence(size);
         final RandomIterator<Integer> iterator = new RandomIterator<>(random, indices, withReplacement);
-        final List<Integer> choices = new ArrayList<>();
+        final List<Integer> choices = new ArrayList<>(numChoices);
         for(int i = 0; i < numChoices; i++) {
             Assert.assertTrue(iterator.hasNext());
             choices.add(iterator.next());
@@ -43,7 +43,7 @@ public class RandomUtils {
 
     public static <A> List<A> choice(Collection<A> collection, Random random, int numChoices, boolean withReplacement) {
         final List<Integer> indices = choiceIndex(collection.size(), random, numChoices, withReplacement);
-        final List<A> chosen = new ArrayList<>();
+        final List<A> chosen = new ArrayList<>(numChoices);
         for(Integer index : indices) {
             A element = null;
             if(collection instanceof List) {
