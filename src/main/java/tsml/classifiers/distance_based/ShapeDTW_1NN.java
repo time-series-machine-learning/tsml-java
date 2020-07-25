@@ -1,10 +1,8 @@
 package tsml.classifiers.distance_based;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import experiments.data.DatasetLoading;
 import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW_D;
 import tsml.classifiers.multivariate.MultivariateAbstractClassifier;
 import tsml.transformers.DWT;
 import tsml.transformers.HOG1D;
@@ -13,12 +11,9 @@ import tsml.transformers.Subsequences;
 import tsml.transformers.*;
 import utilities.GenericTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.classifiers.AbstractClassifier;
+import weka.core.*;
 import weka.core.converters.ConverterUtils;
-
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
@@ -379,10 +374,26 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         Instances trainData = createTrainData();
         Instances testData = createTestData();
 
-        Instances [] data = DatasetLoading.sampleItalyPowerDemand(0);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        String datasetName = "UMD";
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        ConverterUtils.DataSource source = new ConverterUtils.DataSource("C:\\Users\\Vince\\Documents\\Dissertation Repositories\\datasets\\Univariate2018_arff\\" + datasetName + "\\" + datasetName + "_TRAIN.arff");
+        Instances train = source.getDataSet();
+        if (train.classIndex() == -1) {
+            train.setClassIndex(train.numAttributes() - 1);
+        }
+        source = new ConverterUtils.DataSource("C:\\Users\\Vince\\Documents\\Dissertation Repositories\\datasets\\Univariate2018_arff\\" + datasetName + "\\" + datasetName + "_TEST.arff");
+        Instances test = source.getDataSet();
+        if (test.classIndex() == -1) {
+            test.setClassIndex(test.numAttributes() - 1);
+        }
+        Instances [] data = new Instances[] {train,test};
+
         // test bad subsequence length
         // this has to be greater than 0.
-        int [] badSubsequences = new int [] {0,-1,-999999999};
+        /*int [] badSubsequences = new int [] {0,-1,-999999999};
         for(int i=0;i<badSubsequences.length;i++) {
             try{
                 ShapeDTW_1NN s = new ShapeDTW_1NN(badSubsequences[i],null,false,null);
@@ -434,9 +445,12 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
             ShapeDTW_1NN s = new ShapeDTW_1NN(30,t,false,null);
             System.out.println(calculateAccuracy(s,data));
             System.out.println("Test passed.");
-        }
+        }*/
         // Test compound shape descriptor functionality.
-        ShapeDTW_1NN s = new ShapeDTW_1NN(30,null,true,new Slope());
+        //ShapeDTW_1NN s = new ShapeDTW_1NN(1,null,false,new Slope());
+        //System.out.println(calculateAccuracy(s,data));
+
+        ShapeDTW_1NN s = new ShapeDTW_1NN(30,null,false,new Slope());
         System.out.println(calculateAccuracy(s,data));
         System.out.println("Test passed.");
     }
@@ -449,7 +463,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
      * @return
      * @throws Exception
      */
-    private static double calculateAccuracy(ShapeDTW_1NN s, Instances [] data) throws Exception {
+    private static double calculateAccuracy(AbstractClassifier s, Instances [] data) throws Exception {
         Instances train = data[0];
         Instances test = data[1];
 
@@ -593,6 +607,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
             }
             //return the instance with the lowest distance
             Double lowestDist = treeMap.firstKey();
+            System.out.println(lowestDist);
             ArrayList<Instance> clostestInsts = treeMap.get(lowestDist);
             //If only one, return it.
             if(clostestInsts.size() == 1) {
@@ -613,58 +628,60 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
          * @return
          */
         private double calculateDistance(Instance inst1, Instance inst2) {
-            int numSubsequences = inst1.relationalValue(0).numInstances();
-            //Convert the subsequences into an array of doubles.
+            /*
+             * This code has been adopted from the Slow_DTW_1NN class except for a few differences.
+             */
             Instance [] inst1Arr = MultivariateInstanceTools.splitMultivariateInstance(inst1);
             Instance [] inst2Arr = MultivariateInstanceTools.splitMultivariateInstance(inst2);
-            double [] [] subsequences1 = MultivariateInstanceTools.convertMultiInstanceToArrays(inst1Arr);
-            double [] [] subsequences2 = MultivariateInstanceTools.convertMultiInstanceToArrays(inst2Arr);
-            // Perform DTW on the subsequences
-            int currentI = numSubsequences-1;
-            int currentJ = numSubsequences-1;
-            double currentDistance = 0.0;
-            while(currentI != 0 || currentJ != 0) {
-                // add the existing distance
-                currentDistance += calculateEuclideanDistance(subsequences1[currentI],subsequences2[currentJ]);
-                double [] candidateDists = new double [3];
-                // try (i-1,j-1)
-                if (currentI == 0 || currentJ == 0) {
-                    candidateDists[0] = Double.MAX_VALUE;
-                } else {
-                    candidateDists[0] = calculateEuclideanDistance(subsequences1[currentI-1],subsequences2[currentJ-1]);
-                }
-                // try (i,j-1)
-                if (currentJ == 0) {
-                    candidateDists[1] = Double.MAX_VALUE;
-                } else {
-                    candidateDists[1] = calculateEuclideanDistance(subsequences1[currentI],subsequences2[currentJ-1]);
-                }
-                // try (i-1,j)
-                if (currentI == 0) {
-                    candidateDists[2] = Double.MAX_VALUE;
-                } else {
-                    candidateDists[2] = calculateEuclideanDistance(subsequences1[currentI-1],subsequences2[currentJ]);
-                }
-                //Find the minimum of the three
-                int minIndex = (int) GenericTools.indexOfMin(candidateDists);
-                if(minIndex == 0) {
-                    // if 0, decrease currentI and currentJ by 1
-                    currentI--;
-                    currentJ--;
-                } else if(minIndex == 1) {
-                    // if 1, decrease currentJ by 1
-                    currentJ--;
-                } else {
-                    // if 2, decrease currentI by 1
-                    currentI--;
+            double [] [] a = MultivariateInstanceTools.convertMultiInstanceToArrays(inst1Arr);
+            double [] [] b = MultivariateInstanceTools.convertMultiInstanceToArrays(inst2Arr);
+
+            double minDist;
+            int n=a.length;
+            int m=b.length;
+            double [] [] matrixD = new double[n][n];
+            double windowSize = n;
+            /*
+            //Set all to max. This is necessary for the window but I dont need to do
+            it all
+            */
+            for(int i=0;i<n;i++)
+                for(int j=0;j<m;j++)
+                    matrixD[i][j]=Double.MAX_VALUE;
+
+            // Original DTW was a[0]-b[0]^2 (difference between points),
+            // now its the euclidean distance between subsequences.
+            matrixD[0][0]=calculateEuclideanDistance(a[0],b[0]);
+
+            //Base cases for warping 0 to all with max interval	r
+            //Warp a[0] onto all b[1]...b[r+1]
+            for(int j=1;j<windowSize && j<n;j++)
+                                              //also the case here
+                matrixD[0][j]=matrixD[0][j-1]+calculateEuclideanDistance(a[0],b[j]);
+
+            //	Warp b[0] onto all a[1]...a[r+1]
+            for(int i=1;i<windowSize && i<n;i++)
+                matrixD[i][0]=matrixD[i-1][0]+calculateEuclideanDistance(a[i],b[0]);
+            //Warp the rest,
+            for (int i=1;i<n;i++){
+                for (int j = 1;j<m;j++){
+                    //Find the min of matrixD[i][j-1],matrixD[i-1][j] and matrixD[i-1][j-1]
+                    if (i < j + windowSize && j < i + windowSize) {
+                        minDist=matrixD[i][j-1];
+                        if(matrixD[i-1][j]<minDist)
+                            minDist=matrixD[i-1][j];
+                        if(matrixD[i-1][j-1]<minDist)
+                            minDist=matrixD[i-1][j-1];
+                        matrixD[i][j]=minDist+calculateEuclideanDistance(a[i],b[j]);
+                    }
                 }
             }
-            currentDistance += calculateEuclideanDistance(subsequences1[currentI],subsequences2[currentJ]);
-            return currentDistance;
+            //Find the minimum distance at the end points, within the warping window.
+            return matrixD[n-1][m-1];
         }
 
         /**
-         * Private function for calculating the (squared) euclidean distance between two subsequences.
+         * Private function for calculating the euclidean distance between two subsequences.
          *
          * @param subsequence1
          * @param subsequence2
