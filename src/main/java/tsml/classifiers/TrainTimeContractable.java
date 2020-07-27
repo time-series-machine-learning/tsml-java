@@ -67,7 +67,4 @@ public interface TrainTimeContractable {
         setTrainTimeLimit(time, amount);
     }
     
-    default long getTrainContractTimeNanos() {
-        throw new UnsupportedOperationException();
-    }
 }
