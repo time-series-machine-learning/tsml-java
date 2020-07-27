@@ -65,7 +65,7 @@ public class SysUtils {
         WINDOWS, LINUX, MAC, SOLARIS
     }
 
-    private static OS os = getOS();
+    private static OS os;
 
     public static OS getOS() {
         if (os == null) {

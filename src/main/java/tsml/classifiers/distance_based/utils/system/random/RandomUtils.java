@@ -5,6 +5,8 @@ import java.util.*;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
+import utilities.ArrayUtilities;
+import utilities.Utilities;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -23,7 +25,7 @@ public class RandomUtils {
         }
         Assert.assertNotNull(random);
         Assert.assertTrue(numChoices > 0);
-        final List<Integer> indices = CollectionUtils.sequence(size);
+        final List<Integer> indices = ArrayUtilities.sequence(size);
         final RandomIterator<Integer> iterator = new RandomIterator<>(random, indices, withReplacement);
         final List<Integer> choices = new ArrayList<>(numChoices);
         for(int i = 0; i < numChoices; i++) {

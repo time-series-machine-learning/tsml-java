@@ -6,7 +6,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: print off every single random call.
  * <p>
  * Contributors: goastler
  */

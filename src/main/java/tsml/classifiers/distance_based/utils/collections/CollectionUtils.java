@@ -97,16 +97,4 @@ public class CollectionUtils {
         }
     }
 
-    /**
-     * produce a list of ints from 0 to limit - 1 (inclusively)
-     * @param limit
-     * @return
-     */
-    public static List<Integer> sequence(int limit) {
-        List<Integer> list = new ArrayList<>();
-        for(int i = 0; i < limit; i++) {
-            list.add(i);
-        }
-        return list;
-    }
 }

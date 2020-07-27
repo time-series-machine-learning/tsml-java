@@ -276,6 +276,11 @@ public class ArrayUtilities {
         return toPermutation(maxValues, binSizes) + 1;
     }
 
+    /**
+     * produce a list of ints from 0 to limit - 1 (inclusively)
+     * @param j the limit
+     * @return
+     */
     public static <A extends List<Integer>> A sequence(int j, A list) {
         for(int i = 0; i < j; i++) {
             list.add(i);
@@ -284,7 +289,7 @@ public class ArrayUtilities {
     }
 
     public static List<Integer> sequence(int j) {
-        return sequence(j, new ArrayList<>());
+        return sequence(j, new ArrayList<>(j));
     }
 
     public static Integer[] box(int[] array) {

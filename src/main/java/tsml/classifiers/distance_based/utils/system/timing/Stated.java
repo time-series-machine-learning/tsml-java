@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.system.timing;
 import java.io.Serializable;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: template for managing simple boolean start / stopped state.
  * <p>
  * Contributors: goastler
  */

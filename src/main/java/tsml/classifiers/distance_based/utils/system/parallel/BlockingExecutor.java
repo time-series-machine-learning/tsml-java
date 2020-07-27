@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: run several tasks concurrently with no queuing / queue overflow
  * <p>
  * Contributors: goastler
  */
