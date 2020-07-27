@@ -458,11 +458,13 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
     }
 
     private boolean hasNextExploreTime() {
-        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+//        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploreTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+        return true;
     }
 
     private boolean hasNextExploitTime() {
-        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+//        return !rlTunedClassifier.hasTrainTimeLimit() || longestExploitTimeNanos < rlTunedClassifier.getRemainingTrainTimeNanos();
+        return true;
     }
 
     private boolean hasNextExploreTick() {
