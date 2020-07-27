@@ -2,10 +2,13 @@ package tsml.transformers;
 
 import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.stream.IntStream;
 
 /**
  * Class to truncate series to make them all equal length. In Weka unequal length series are padded with missing values
@@ -267,5 +270,21 @@ public class Truncator implements TrainableTransformer{
     public boolean isFit() {
         return isFit;
     }
+
+
+    
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		return new TimeSeriesInstance(
+                inst.getSliceList(IntStream.range(0, shortestSeriesLength).toArray()),
+                inst.getLabelIndex()
+            );
+    }
+    
+	@Override
+	public void fit(TimeSeriesInstances data) {
+		shortestSeriesLength = data.getMinLength();
+        isFit = true;
+	}
 
 }

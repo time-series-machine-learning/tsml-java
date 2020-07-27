@@ -42,6 +42,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return maxLength;
     }
 
+    public int numClasses(){
+        return classLabels.length;
+    }
+
     /* End Meta Information */
 
     List<TimeSeriesInstance> series_collection;

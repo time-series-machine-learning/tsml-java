@@ -16,6 +16,7 @@ package tsml.transformers.shapelet_tools.distance_functions;
 
 import java.io.Serializable;
 
+import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.shapelet_tools.Shapelet;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToArrays;
@@ -33,7 +34,11 @@ public class MultivariateDependentDistance extends MultivariateDistance implemen
         return calculate(convertMultiInstanceToArrays(splitMultivariateInstance(inst)), timeSeriesId);
     }
     
-    
+    @Override
+    public double calculate(TimeSeriesInstance timeSeries, int timeSeriesId){
+        return calculate(timeSeries.toValueArray(), timeSeriesId);
+    }
+
     @Override
     public double distanceToShapelet(Shapelet otherShapelet){
         double sum = 0;

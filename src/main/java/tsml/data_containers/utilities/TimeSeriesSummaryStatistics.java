@@ -30,8 +30,7 @@ public class TimeSeriesSummaryStatistics {
     public TimeSeriesSummaryStatistics(List<Double> data) {
         // calculate stats
         // strip out the NaNs, convert to an array of doubles.
-        double[] d = data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray();
-        calculateStats(d);
+        this(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
     }
 
     public void calculateStats(double[] inst) {

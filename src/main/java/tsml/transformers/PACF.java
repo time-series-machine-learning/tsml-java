@@ -16,6 +16,8 @@ package tsml.transformers;
 
 import java.util.ArrayList;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 import weka.filters.*;
 
@@ -137,22 +139,21 @@ public class PACF implements Transformer {
     }
 
     @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumChannels()][];
+        int i =0;
+        for(TimeSeries ts : inst){
+            out[i++] = convertInstance(ts.toArray());
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
+    }
+
+    @Override
     public Instance transform(Instance inst) {
         double[] d = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
 
-        // 2. Fit Autocorrelations, if not already set externally
-        autos = ACF.fitAutoCorrelations(d, maxLag);
-        // 3. Form Partials
-        partials = formPartials(autos);
-
-        // 5. Find parameters
-        double[] pi = new double[maxLag];
-        for (int k = 0; k < maxLag; k++) { // Set NANs to zero
-            if (Double.isNaN(partials[k][k]) || Double.isInfinite(partials[k][k])) {
-                pi[k] = 0;
-            } else
-                pi[k] = partials[k][k];
-        }
+        double[] pi = convertInstance(d);
 
         int length = pi.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional classvalue.
 
@@ -168,6 +169,23 @@ public class PACF implements Transformer {
         }
 
         return out;
+    }
+
+    private double[] convertInstance(double[] d) {
+        // 2. Fit Autocorrelations, if not already set externally
+        autos = ACF.fitAutoCorrelations(d, maxLag);
+        // 3. Form Partials
+        partials = formPartials(autos);
+
+        // 5. Find parameters
+        double[] pi = new double[maxLag];
+        for (int k = 0; k < maxLag; k++) { // Set NANs to zero
+            if (Double.isNaN(partials[k][k]) || Double.isInfinite(partials[k][k])) {
+                pi[k] = 0;
+            } else
+                pi[k] = partials[k][k];
+        }
+        return pi;
     }
 
     /**
@@ -220,5 +238,6 @@ public class PACF implements Transformer {
     public static void main(String[] args) {
 
     }
+
 
 }
