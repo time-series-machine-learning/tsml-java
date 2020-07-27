@@ -10,10 +10,10 @@ package tsml.classifiers.distance_based.utils.system.memory;
  */
 public interface WatchedMemory extends MemoryWatchable {
     MemoryWatcher getMemoryWatcher();
-    default long getMaxMemoryUsageInBytes() { return getMemoryWatcher().getMaxMemoryUsageInBytes(); };
-    default double getMeanMemoryUsageInBytes() { return getMemoryWatcher().getMeanMemoryUsageInBytes(); };
-    default double getVarianceMemoryUsageInBytes() { return getMemoryWatcher().getVarianceMemoryUsageInBytes(); };
-    default double getStdDevMemoryUsageInBytes() { return getMemoryWatcher().getStdDevMemoryUsageInBytes(); }
-    default long getGarbageCollectionTimeInNanos() { return getMemoryWatcher().getGarbageCollectionTimeInNanos(); };
+    default long getMaxMemoryUsage() { return getMemoryWatcher().getMaxMemoryUsage(); };
+    default double getMeanMemoryUsage() { return getMemoryWatcher().getMeanMemoryUsage(); };
+    default double getVarianceMemoryUsage() { return getMemoryWatcher().getVarianceMemoryUsage(); };
+    default double getStdDevMemoryUsage() { return getMemoryWatcher().getStdDevMemoryUsage(); }
+    default long getGarbageCollectionTime() { return getMemoryWatcher().getGarbageCollectionTime(); };
     default long getMemoryReadingCount() { return getMemoryWatcher().getMemoryReadingCount(); }
 }

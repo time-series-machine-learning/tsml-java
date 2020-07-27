@@ -6,8 +6,6 @@ import com.sun.management.GarbageCollectionNotificationInfo;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
@@ -15,8 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
-import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
 
 /**
@@ -29,23 +26,24 @@ import tsml.classifiers.distance_based.utils.system.timing.Stated;
  */
 public class MemoryWatcher extends Stated implements MemoryWatchable {
 
-    public synchronized long getMaxMemoryUsageInBytes() {
-        return maxMemoryUsageBytes;
+    public synchronized long getMaxMemoryUsage() {
+        return maxMemoryUsage;
     }
 
-    private long maxMemoryUsageBytes = -1;
+    private long maxMemoryUsage = -1;
     private long count = 0;
     // must store the squared diff from the mean as big decimal as this number gets reallyyyyyyy big over time.
     // Downside is of course computation time, but given the updates are done on another thread this shouldn't impact
     // the main thread performance.
     private BigDecimal sqDiffFromMean = BigDecimal.ZERO;
     private double mean = 0;
-    private long garbageCollectionTimeInNanos = 0;
+    private long garbageCollectionTime = 0;
     private transient boolean setup = false;
     private boolean trackMean = false;
     private boolean trackMax = true;
     private boolean trackCount = false;
     private boolean trackVariance = false;
+    private boolean trackGarbageCollectionTime = false;
 
     public MemoryWatcher() {
         setupEmitters();
@@ -131,13 +129,15 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             if(isStarted()) {
                 if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
                     GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
-                    long duration = TimeUnit.NANOSECONDS.convert(info.getGcInfo().getDuration(), TimeUnit.MILLISECONDS);
-                    garbageCollectionTimeInNanos += duration;
+                    if(trackGarbageCollectionTime) {
+                        long duration = TimeUnit.NANOSECONDS.convert(info.getGcInfo().getDuration(), TimeUnit.MILLISECONDS);
+                        garbageCollectionTime += duration;
+                    }
                     Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
                     for (Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
                         MemoryUsage memoryUsageSnapshot = entry.getValue();
                         long memoryUsage = memoryUsageSnapshot.getUsed();
-                        addMemoryUsageReadingInBytes(memoryUsage);
+                        addMemoryUsageReading(memoryUsage);
                     }
                 }
             }
@@ -153,20 +153,20 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
      * @param other
      */
     public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
-        maxMemoryUsageBytes = other.getMaxMemoryUsageInBytes();
-        garbageCollectionTimeInNanos += other.getGarbageCollectionTimeInNanos();
+        maxMemoryUsage = other.getMaxMemoryUsage();
+        garbageCollectionTime += other.getGarbageCollectionTime();
         if(hasReadings() && other.hasMemoryReadings()) {
             BigDecimal thisMean = BigDecimal.valueOf(this.mean);
             BigDecimal thisCount = BigDecimal.valueOf(this.count);
-            BigDecimal otherMean = BigDecimal.valueOf(other.getMeanMemoryUsageInBytes());
+            BigDecimal otherMean = BigDecimal.valueOf(other.getMeanMemoryUsage());
             BigDecimal otherCount = BigDecimal.valueOf(other.getMemoryReadingCount());
             BigDecimal overallCount = thisCount.add(otherCount);
             BigDecimal thisTotal = thisMean.multiply(thisCount);
             BigDecimal otherTotal = otherMean.multiply(otherCount);
             BigDecimal overallMean = thisTotal.add(otherTotal).divide(overallCount, RoundingMode.HALF_UP);
             // error sum of squares
-            BigDecimal thisEss = BigDecimal.valueOf(getStdDevMemoryUsageInBytes()).pow(2).multiply(thisCount);
-            BigDecimal otherEss = BigDecimal.valueOf(other.getStdDevMemoryUsageInBytes()).pow(2).multiply(otherCount);
+            BigDecimal thisEss = BigDecimal.valueOf(getStdDevMemoryUsage()).pow(2).multiply(thisCount);
+            BigDecimal otherEss = BigDecimal.valueOf(other.getStdDevMemoryUsage()).pow(2).multiply(otherCount);
             BigDecimal totalEss = thisEss.add(otherEss);
             // total group sum of squares
             BigDecimal thisTgss = thisMean.subtract(overallMean).pow(2).multiply(thisCount);
@@ -174,15 +174,15 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             BigDecimal totalTgss = thisTgss.add(otherTgss);
             // std as root of overall variance
             BigDecimal totalSqDiffFromMean = totalTgss.add(totalEss);
-            mean = overallMean.doubleValue();
-            count = overallCount.intValue();
-            sqDiffFromMean = totalSqDiffFromMean;
+            if(trackMean) mean = overallMean.doubleValue();
+            if(trackMean || trackCount) count = overallCount.intValue();
+            if(trackVariance) sqDiffFromMean = totalSqDiffFromMean;
         } else if(!hasReadings() && other.hasMemoryReadings()) {
-            mean = other.getMeanMemoryUsageInBytes();
-            count = other.getMemoryReadingCount();
+            if(trackMean) mean = other.getMeanMemoryUsage();
+            if(trackMean || trackCount) count = other.getMemoryReadingCount();
             BigDecimal ess =
-                BigDecimal.valueOf(other.getStdDevMemoryUsageInBytes()).pow(2).multiply(BigDecimal.valueOf(count));
-            sqDiffFromMean = ess;
+                BigDecimal.valueOf(other.getStdDevMemoryUsage()).pow(2).multiply(BigDecimal.valueOf(count));
+            if(trackVariance) sqDiffFromMean = ess;
         } else if(hasReadings() && !other.hasMemoryReadings()) {
             // don't do anything, all our readings are already in here
         } else {
@@ -194,9 +194,9 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
      * update stats from a usage reading. Beware, this is unchecked so will ignore state requirements
      * @param usage
      */
-    private synchronized void addMemoryUsageReadingInBytesUnchecked(double usage) {
+    private synchronized void addMemoryUsageReadingUnchecked(double usage) {
         if(trackMax) {
-            maxMemoryUsageBytes = (long) Math.ceil(Math.max(maxMemoryUsageBytes, usage));
+            maxMemoryUsage = (long) Math.ceil(Math.max(maxMemoryUsage, usage));
         }
         if(trackCount || trackMean || trackVariance) {
             count++;
@@ -223,20 +223,20 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
      * checked reading
      * @param usage
      */
-    private synchronized void addMemoryUsageReadingInBytes(double usage) {
+    private synchronized void addMemoryUsageReading(double usage) {
         if(isStarted()) {
-            addMemoryUsageReadingInBytesUnchecked(usage);
+            addMemoryUsageReadingUnchecked(usage);
         }
     }
 
-    public synchronized double getMeanMemoryUsageInBytes() {
+    public synchronized double getMeanMemoryUsage() {
         if(count == 0) {
             return -1;
         }
         return mean;
     }
 
-    public synchronized double getVarianceMemoryUsageInBytes() {
+    public synchronized double getVarianceMemoryUsage() {
         if(count == 0) {
             return -1;
         }  else {
@@ -248,8 +248,8 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         return count;
     }
 
-    public double getStdDevMemoryUsageInBytes() {
-        double varianceMemoryUsageInBytes = getVarianceMemoryUsageInBytes();
+    public double getStdDevMemoryUsage() {
+        double varianceMemoryUsageInBytes = getVarianceMemoryUsage();
         if(varianceMemoryUsageInBytes < 0) {
             return varianceMemoryUsageInBytes;
         } else {
@@ -257,18 +257,20 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         }
     }
 
-    public synchronized long getGarbageCollectionTimeInNanos() {
-        return garbageCollectionTimeInNanos;
+    public synchronized long getGarbageCollectionTime() {
+        return garbageCollectionTime;
     }
 
     @Override
     public String toString() {
-        return "MemoryWatcher{" +
-            "maxMemoryUsageBytes=" + maxMemoryUsageBytes +
-            ", count=" + count +
-            ", mean=" + mean +
-            ", garbageCollectionTimeInNanos=" + garbageCollectionTimeInNanos +
-            '}';
+        StringBuilder sb = new StringBuilder().append("MemoryWatcher{");
+        if(trackMax) sb.append("maxMemoryUsageBytes=").append(maxMemoryUsage).append(",");
+        if(trackCount) sb.append("count=").append(count).append(",");
+        if(trackMean) sb.append("mean=").append(mean).append(",");
+        if(trackVariance) sb.append("variance=").append(getVarianceMemoryUsage()).append(",");
+        if(trackGarbageCollectionTime) sb.append(", garbageCollectionTime=").append(garbageCollectionTime);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
@@ -279,8 +281,8 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
     public synchronized void onReset() {
         count = 0;
         mean = 0;
-        garbageCollectionTimeInNanos = 0;
-        maxMemoryUsageBytes = 0;
+        garbageCollectionTime = 0;
+        maxMemoryUsage = 0;
         sqDiffFromMean = BigDecimal.ZERO;
     }
 
@@ -292,5 +294,13 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
      */
     public void cleanup() {
         GcFinalization.awaitFullGc();
+    }
+
+    public boolean isTrackGarbageCollectionTime() {
+        return trackGarbageCollectionTime;
+    }
+
+    public void setTrackGarbageCollectionTime(final boolean trackGarbageCollectionTime) {
+        this.trackGarbageCollectionTime = trackGarbageCollectionTime;
     }
 }
