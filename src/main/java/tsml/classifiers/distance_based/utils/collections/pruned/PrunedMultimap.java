@@ -5,6 +5,7 @@ import com.google.common.collect.*;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import utilities.Utilities;
 
 import java.io.*;
@@ -125,7 +126,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
                 case RANDOM:
                     // need random to be set in order to random pick
                     Assert.assertNotNull(random);
-                    List<V> toRemove = Utilities.randPickN(values, diff, getRandom());
+                    List<V> toRemove = RandomUtils.choice(values, getRandom(), diff);
                     for(V v : toRemove) {
                         remove(lastKey, v);
                     }

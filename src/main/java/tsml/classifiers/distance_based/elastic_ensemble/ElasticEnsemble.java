@@ -39,21 +39,6 @@ import java.util.logging.Logger;
 public class ElasticEnsemble extends BaseClassifier implements TrainTimeContractable, Checkpointable,
     WatchedMemory, TimedTrain, TimedTrainEstimate {
 
-    public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        ElasticEnsemble classifier = FACTORY.EE_V2.build();
-        classifier.setEstimateOwnPerformance(true);
-        classifier.setSeed(0);
-        classifier.getLogger().setLevel(Level.ALL);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//        results.setDetails(classifier, data[1]);
-        ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-//        trainResults.setDetails(classifier, data[0]);
-        System.out.println(trainResults.writeSummaryResultsToString());
-        System.out.println(results.writeSummaryResultsToString());
-    }
-
     public static final Factory FACTORY = new Factory();
 
     /**
@@ -478,7 +463,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 StopWatch predictionTimer = new StopWatch();
                 predictionTimer.start();
                 double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
-                int prediction = ArrayUtilities.argMax(distribution);
+                int prediction = Utilities.argMax(distribution, rand);
                 predictionTimer.stop();
                 double trueClassValue = trainData.get(i).classValue();
                 trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTime(), null);

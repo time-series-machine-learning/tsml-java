@@ -33,6 +33,7 @@ import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
 import utilities.ArrayUtilities;
+import utilities.ClassifierTools;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
@@ -60,7 +61,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            Utils.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed));
+            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed), seed);
         }
     }
 
@@ -1035,7 +1036,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 Assert.assertEquals(partitionIndices.size(), 1);
             }
             // random pick the best partition for the instance
-            return Utilities.randPickOne(partitionIndices, rand);
+            return RandomUtils.choice(partitionIndices, rand);
         }
 
         public Partition findPartitionFor(Instance instance) {

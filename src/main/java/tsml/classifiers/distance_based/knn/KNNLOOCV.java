@@ -246,21 +246,6 @@ public class KNNLOOCV
             return knn;
         }
 
-        public static void main(String[] args) throws Exception {
-            int seed = 0;
-            Instances[] data = DatasetLoading.sampleGunPoint(seed);
-            RLTunedClassifier classifier = TunedFactory.buildTunedWdtw1nnV2();
-            classifier.setSeed(seed); // set seed
-            classifier.getLogger().setLevel(Level.ALL);
-            classifier.setEstimateOwnPerformance(true);
-            ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//            results.setDetails(classifier, data[1]);
-            ClassifierResults trainResults = classifier.getTrainResults();
-//            trainResults.setDetails(classifier, data[0]);
-            System.out.println(trainResults.writeSummaryResultsToString());
-            System.out.println(results.writeSummaryResultsToString());
-        }
-
     }
 
     private static final long serialVersionUID = 0;
@@ -576,18 +561,5 @@ public class KNNLOOCV
         this.cvSearcherIteratorBuilder = cvSearcherIteratorBuilder;
     }
 
-    public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        KNNLOOCV classifier = new KNNLOOCV();
-        classifier.setSeed(seed); // set seed
-        classifier.setEstimateOwnPerformance(true);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-//        results.setDetails(classifier, data[1]);
-        ClassifierResults trainResults = classifier.getTrainResults();
-//        trainResults.setDetails(classifier, data[0]);
-        System.out.println(trainResults.writeSummaryResultsToString());
-        System.out.println(results.writeSummaryResultsToString());
-    }
 }
 

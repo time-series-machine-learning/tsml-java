@@ -345,9 +345,5 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         this.distanceFunction = distanceFunction;
     }
 
-    public static void main(String[] args) throws Exception {
-        ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets/", "GunPoint", new KNN(), 0);
-        System.out.println(results.writeSummaryResultsToString());
-    }
 }
 

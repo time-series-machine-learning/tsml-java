@@ -132,21 +132,6 @@ public class ArrayUtilities {
         }
     }
 
-    public static int argMax(double[] array) {
-        int index = 0;
-        double max = array[index];
-        for(int i = 1; i < array.length; i++) {
-            double value = array[i];
-            if(value >= max) {
-                if(value > max) {
-                    max = value;
-                    index = i;
-                }
-            }
-        }
-        return index;
-    }
-
     public static double mean(double[] array) {
         return sum(array) / array.length;
     }

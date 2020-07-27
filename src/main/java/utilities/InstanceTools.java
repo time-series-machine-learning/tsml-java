@@ -28,8 +28,6 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import static utilities.Utilities.normalise;
-
 /**
  *
  * @author Aaron
@@ -783,7 +781,7 @@ public class InstanceTools {
         for(Instance instance : instances) {
             distribution[(int) instance.classValue()]++;
         }
-        normalise(distribution);
+        ArrayUtilities.normalise(distribution);
         return distribution;
     }
     /**

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -80,7 +81,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
             List<?> valuesList = (List<?>) values;
             Object value = valuesList.get(valueIndex);
             try {
-                value = Utilities.deepCopy(value); // must copy objects otherwise every paramset
+                value = CopierUtils.deepCopy(value); // must copy objects otherwise every paramset
                 // uses the same object reference!
             } catch(Exception e) {
                 throw new IllegalStateException("cannot copy value");

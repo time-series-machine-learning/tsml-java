@@ -6,7 +6,6 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.TrainTimeable;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import tsml.classifiers.distance_based.utils.system.SysUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -70,7 +69,7 @@ public class ResultUtils {
     }
 
     public static void setMemoryInfo(ClassifierResults results, final MemoryWatchable memoryWatchable) {
-        results.setMemory(memoryWatchable.getMaxMemoryUsageInBytes());
+        results.setMemory(memoryWatchable.getMaxMemoryUsage());
     }
 
 }

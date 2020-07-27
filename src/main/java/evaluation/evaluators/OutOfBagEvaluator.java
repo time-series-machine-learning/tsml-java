@@ -3,10 +3,10 @@ package evaluation.evaluators;
 import evaluation.storage.ClassifierResults;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
-import tsml.classifiers.distance_based.utils.classifiers.Utils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import utilities.ArrayUtilities;
+import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -74,7 +74,7 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
         // test tree on the oob test
         ClassifierResults results = new ClassifierResults();
         getLogger().info("testing on out-of-bag test data");
-        Utils.addPredictions(classifier, outOfBagTestData, results);
+        ClassifierTools.addPredictions(classifier, outOfBagTestData, results, random);
         return results;
     }
 

@@ -8,7 +8,6 @@ import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.EnumBasedConfigurer;
-import tsml.classifiers.distance_based.utils.classifiers.Utils;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
@@ -23,6 +22,7 @@ import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import utilities.ArrayUtilities;
+import utilities.ClassifierTools;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -49,7 +49,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setNumTreeLimit(2);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            Utils.trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/uni2018/", "GunPoint", seed));
+            ClassifierTools
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/uni2018/", "GunPoint", seed), seed);
         }
         //        Thread.sleep(10000);
     }
