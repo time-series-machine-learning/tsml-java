@@ -1,3 +1,4 @@
+
 package tsml.transformers;
 
 import weka.core.*;
@@ -76,4 +77,3 @@ public class DimensionIndependentTransformer implements Transformer {
         return c;
     }
 }
-

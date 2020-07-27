@@ -15,7 +15,7 @@ public interface StopWatchTrainTimeable extends TrainTimeable {
         return new StopWatch();
     }
 
-    default long getTrainTimeNanos() {
+    default long getTrainTime() {
         return getTrainTimer().getTimeNanos();
     }
 
