@@ -9,12 +9,41 @@ import java.util.stream.Collectors;
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
-    public static void addInPlace(double[] a, double[] b) {
-        if(a.length < b.length) {
+    public static double[] intToDouble(int[] input) {
+        double[] output = new double[input.length];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    public static double[][] intToDouble(int[][] input) {
+        double[][] output = new double[input.length][];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = intToDouble(input[i]);
+        }
+        return output;
+    }
+
+    public static double[] oneHot(int length, int index) {
+        final double[] array = new double[length];
+        array[index] = 1;
+        return array;
+    }
+
+    public static <A> A extractSingleValueList(List<A> list) {
+        if(list.size() != 1) {
+            throw new IllegalArgumentException("expected a list with only 1 element");
+        }
+        return list.get(0);
+    }
+
+    public static void addInPlace(double[] src, double[] addend) {
+        if(src.length < addend.length) {
             throw new IllegalArgumentException();
         }
-        for(int i = 0; i < b.length; i++) {
-            a[i] += b[i];
+        for(int i = 0; i < addend.length; i++) {
+            src[i] += addend[i];
         }
     }
 
@@ -33,9 +62,12 @@ public class ArrayUtilities {
         return sum;
     }
 
-    public static double[] normaliseInPlace(double[] array) {
+    public static double[] normaliseInPlace(double[] array, boolean ignoreZeroSum) {
         double sum = sum(array);
         if(sum == 0) {
+            if(ignoreZeroSum) {
+                return uniformDistribution(array.length);
+            }
             throw new IllegalArgumentException("sum of zero");
         }
         for(int i = 0; i < array.length; i++) {
@@ -44,10 +76,32 @@ public class ArrayUtilities {
         return array;
     }
 
+    public static double[] normaliseInPlace(double[] array) {
+        return normaliseInPlace(array, false);
+    }
+
+    public static double[] copy(double[] input) {
+        double[] output = new double[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
     public static double[] normalise(double[] array) {
         double[] copy = new double[array.length];
         System.arraycopy(array, 0, copy, 0, array.length);
         return normaliseInPlace(copy);
+    }
+
+    public static double[] normalise(int[] array) {
+        double sum = sum(array);
+        double[] result = new double[array.length];
+        if(sum == 0) {
+            throw new IllegalArgumentException("sum of zero");
+        }
+        for(int i = 0; i < array.length; i++) {
+            result[i] = (double) array[i] / sum;
+        }
+        return result;
     }
 
     public static <A> List<A> drain(Iterable<A> iterable) {
@@ -85,10 +139,6 @@ public class ArrayUtilities {
             doubles[i] = array[i];
         }
         return doubles;
-    }
-
-    public static double[] normaliseInPlace(int[] array) {
-        return normaliseInPlace(primitiveIntToDouble(array));
     }
 
     public static void multiplyInPlace(double[] array, double multiplier) {
@@ -197,15 +247,6 @@ public class ArrayUtilities {
         }
     }
 
-    public static void main(String[] args) {
-        int[] abc = new int[] {120,268,782};
-        divideGcd(abc);
-        for(int i : abc) {
-            System.out.print(i);
-            System.out.print(", ");
-        }
-    }
-
     public static List<Object> asList(Object[] array) {
         return Arrays.asList(array);
     }
@@ -236,42 +277,36 @@ public class ArrayUtilities {
         return Arrays.asList(box(array));
     }
 
-    // don't use unless you want imprecision due to incrementation
-    public static int[] incrementalRange(int min, int max, int size){
-        int[] output = new int[size];
-
-        double diff = (double)(max-min)/(size - 1);
-        double[] doubleOut = new double[size];
-        doubleOut[0] = min;
-        output[0] = min;
-        for(int i = 1; i < size - 1; i++){
-            doubleOut[i] = doubleOut[i-1]+diff;
-            output[i] = (int)Math.round(doubleOut[i]);
+    public static double[] unbox(List<Double> list) {
+        double[] array = new double[list.size()];
+        for(int i = 0; i < array.length; i++) {
+            array[i] = list.get(i);
         }
-        output[size - 1] = max;
-        return output;
+        return array;
     }
 
-    // don't use unless you want imprecision due to incrementation
-    public static double[] incrementalRange(double min, double max, int size){
-        double[] output = new double[size];
-        double diff = (max-min)/(size - 1);
-        output[0] = min;
-        for(int i = 1; i < size - 1; i++){
-            output[i] = output[i-1]+diff;
-        }
-        output[size - 1] = max; // to make sure max isn't omitted due to double imprecision
-        return output;
-    }
-
-    public static int[] range(int min, int max, int size) { // todo test this
+    public static int[] range(int min, int max, int size) {
         int[] output = new int[size];
         output[0] = min;
         output[size - 1] = max;
         for(int i = 1; i < size - 1; i++) {
-            output[i] = (int) Math.round(((double) (max - min)) / size * i);
+            output[i] = (int) Math.round(((double) (max - min)) / (size - 1) * i);
         }
         return output;
+    }
+
+    public static double[] range(double min, double max, int size) {
+        double[] output = new double[size];
+        output[0] = min;
+        output[size - 1] = max;
+        for(int i = 1; i < size - 1; i++) {
+            output[i] = (max - min) / (size - 1) * i + min;
+        }
+        return output;
+    }
+
+    public static <A extends Comparable<A>> List<A> unique(Collection<A> values) {
+        return unique(new ArrayList<>(values), Comparator.naturalOrder());
     }
 
     public static <A extends Comparable<A>> List<A> unique(List<A> values) {
@@ -618,5 +653,24 @@ public class ArrayUtilities {
 
     public static int sum(Iterable<Integer> iterable) {
         return sum(iterable.iterator());
+    }
+
+    public static double[] uniformDistribution(final int limit) {
+        double[] result = new double[limit];
+        double amount = 1d / limit;
+        double sum = 0;
+        for(int i = 0; i < limit; i++) {
+            result[i] = amount;
+            sum += amount;
+        }
+        return result;
+    }
+
+    public static double[][] normaliseRows(final int[][] input) {
+        double[][] output = new double[input.length][];
+        for(int i = 0; i < output.length; i++) {
+            output[i] = ArrayUtilities.normalise(input[i]);
+        }
+        return output;
     }
 }

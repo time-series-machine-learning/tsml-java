@@ -14,12 +14,12 @@
  */
 package utilities;
 
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.collections.IntListView;
+import com.beust.jcommander.internal.Lists;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.collections.views.IntListView;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializedObject;
@@ -51,10 +51,6 @@ public class Utilities {
         return sum;
     }
 
-    public static <A> int sum(Iterable<A> iterable, Function<A, Integer> func) {
-        return sum(iterable.iterator(), func);
-    }
-
     public static <A, B> List<B> convert(Iterable<A> source, Function<A, B> converter) { // todo stream version
         return convert(source.iterator(), converter);
     }
@@ -76,60 +72,60 @@ public class Utilities {
     public static <A, B, C extends Collection<B>> C convert(Iterable<A> source, Function<A, B> converter, Supplier<C> supplier) {
         return convert(source.iterator(), converter, supplier);
     }
-
-    public static void listenToTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
-                trainTimer.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
-                trainTimer.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof GcMemoryWatchable) {
-            try {
-                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
-                memoryWatcher.addListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainTimer();
-                trainTimer.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
-        if(obj instanceof StopWatchTrainTimeable) {
-            try {
-                StopWatch trainTimer = ((StopWatchTrainTimeable) obj).getTrainEstimateTimer();
-                trainTimer.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
-
-    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
-        if(obj instanceof GcMemoryWatchable) {
-            try {
-                MemoryWatcher memoryWatcher = ((GcMemoryWatchable) obj).getMemoryWatcher();
-                memoryWatcher.removeListener(stated);
-            } catch (UnsupportedOperationException ignored) {}
-        }
-    }
+//
+//    public static void listenToTrainTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainTimer();
+//                trainTimer.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void listenToTrainEstimateTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainEstimateTimer();
+//                trainTimer.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void listenToMemoryWatcher(Object obj, MemoryWatcher stated) {
+//        if(obj instanceof WatchedMemory) {
+//            try {
+//                MemoryWatcher memoryWatcher = ((WatchedMemory) obj).getMemoryWatcher();
+//                memoryWatcher.addListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromTrainTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainTimer();
+//                trainTimer.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromTrainEstimateTimer(Object obj, StopWatch stated) {
+//        if(obj instanceof TimedTrainAndTrainEstimate) {
+//            try {
+//                StopWatch trainTimer = ((TimedTrainAndTrainEstimate) obj).getTrainEstimateTimer();
+//                trainTimer.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
+//
+//    public static void unListenFromMemoryWatcher(Object obj, MemoryWatcher stated) {
+//        if(obj instanceof WatchedMemory) {
+//            try {
+//                MemoryWatcher memoryWatcher = ((WatchedMemory) obj).getMemoryWatcher();
+//                memoryWatcher.removeListener(stated);
+//            } catch (UnsupportedOperationException ignored) {}
+//        }
+//    }
 
     public static long toNanos(String amountStr, String unitStr) {
         long amount = Long.parseLong(amountStr);
@@ -168,13 +164,29 @@ public class Utilities {
         }
     }
 
-    public static final double min(double... values) {
-        double min = values[0];
-        for(int i = 1; i < values.length; i++) {
-            min = Math.min(min, values[i]);
-        }
-        return min;
-    }
+//    public static int max(int a, int b, int c) {
+//        return Math.max(a, Math.max(b, c));
+//    }
+//
+//    public static int min(int a, int b, int c) {
+//        return Math.min(a, Math.min(b, c));
+//    }
+//
+//    public static double min(double a, double b, double c) {
+//        return Math.min(a, Math.min(b, c));
+//    }
+//
+//    public static double max(double a, double b, double c) {
+//        return Math.max(a, Math.max(b, c));
+//    }
+
+//    public static final double min(double... values) {
+//        double min = values[0];
+//        for(int i = 1; i < values.length; i++) {
+//            min = Math.min(min, values[i]);
+//        }
+//        return min;
+//    }
 
     public static final double sum(double[] array, int start, int end) {
         double sum = 0;
@@ -266,50 +278,125 @@ public class Utilities {
         }
     }
 
-    public static final double log(double value, double base) { // beware, this is inaccurate due to floating point error!
+    public static double log(double value, double base) { // beware, this is inaccurate due to floating point error!
+        if(value == 0) {
+            return 0;
+        }
         return Math.log(value) / Math.log(base);
     }
 
-    public static double giniScore(int parent, Iterable<Integer> children) {
-        if(parent <= 0) {
-            throw new IllegalArgumentException("parent leq 0");
-        }
-        int sum = ArrayUtilities.sum(children);
-        if(sum > parent) {
-            throw new IllegalArgumentException("children sum greater than parent");
-        }
-        double scoreSum = 0;
-        for(int child : children) {
-            double proportion = (double) child / parent;
-            double score = Math.pow(child, 2);
-            score *= proportion;
-            scoreSum += score;
-        }
-        return 1 - scoreSum;
-    }
-
-    public static Map<Double, Instances> instancesByClass(Instances instances) {
-        Map<Double, Instances> map = new HashMap<>();
-        for(Instance instance : instances) {
-            map.computeIfAbsent(instance.classValue(),  k -> new Instances(instances, 0)).add(instance);
+    /**
+     * get the instances by class. This returns a map of class value to indices of instances in that class.
+     * @param instances
+     * @return
+     */
+    public static Map<Double, List<Integer>> instancesByClass(Instances instances) {
+        Map<Double, List<Integer>> map = new LinkedHashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            final Instance instance = instances.get(i);
+            map.computeIfAbsent(instance.classValue(), k -> new ArrayList<>()).add(i);
         }
         return map;
     }
 
-    public static double infoGain(int parent, Iterable<Integer> children) {
-        if(parent <= 0) {
-            throw new IllegalArgumentException("parent leq 0");
+//    public static int max(int... values) {
+//        int max = values[0];
+//        for(int i = 0; i < values.length; i++) {
+//            final int value = values[i];
+//            if(value > max) {
+//                max = value;
+//            }
+//        }
+//        return max;
+//    }
+
+//    public static int min(int... values) {
+//        int min = values[0];
+//        for(int i = 0; i < values.length; i++) {
+//            final int value = values[i];
+//            if(value < min) {
+//                min = value;
+//            }
+//        }
+//        return min;
+//    }
+
+    public static double roundExact(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
+    public static double sum(Iterable<Double> iterable) {
+        return sum(iterable, (Function<Double, Double>) aDouble -> aDouble);
+    }
+
+    public static <A> double sum(Iterable<A> iterable, Function<A, Double> func) {
+        double sum = 0;
+        for(A item : iterable) {
+            sum += func.apply(item);
         }
-        int sum = ArrayUtilities.sum(children);
-        if(sum > parent) {
-            throw new IllegalArgumentException("children sum greater than parent");
+        return sum;
+    }
+
+    public static List<Double> divide(Iterable<Integer> iterable, int quotient) {
+        List<Double> result = Lists.newArrayList();
+        for(Integer integer : iterable) {
+            double v = (double) integer / quotient;
+            result.add(v);
         }
-        double scoreSum = 0;
-        for(int child : children) {
-            double score = child * Utilities.log(child, 2);
-            scoreSum += score;
+        return result;
+    }
+
+    public static List<Double> normalise(Iterable<Integer> iterable) {
+        List<Integer> list = ArrayUtilities.drain(iterable);
+        return divide(list, ArrayUtilities.sum(list));
+    }
+
+    public static <A, B> boolean isUnique(final Iterator<A> iterator, Function<A, B> func) {
+        if(!iterator.hasNext()) {
+            return true;
         }
-        return 0 - scoreSum;
+        B value = func.apply(iterator.next());
+        while(iterator.hasNext()) {
+            B nextValue = func.apply(iterator.next());
+            if(value == null) {
+                if(nextValue != null) {
+                    return false;
+                }
+            } else if(!value.equals(nextValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static <A> boolean isUnique(final Iterator<A> iterator) {
+        return isUnique(iterator, i -> i);
+    }
+
+    public static <A> boolean isUnique(Iterable<A> iterable) {
+        return isUnique(iterable.iterator());
+    }
+
+    public static <A, B> boolean isUnique(Iterable<A> iterable, Function<A, B> func) {
+        return isUnique(iterable.iterator(), func);
+    }
+
+    public static boolean isHomogeneous(List<Instance> data) {
+        return isUnique(data, Instance::classValue);
+    }
+
+    public static int sum(List<List<Integer>> lists) {
+        int sum = 0;
+        for(List<Integer> list : lists) {
+            for(Integer i : list) {
+                sum += i;
+            }
+        }
+        return sum;
     }
 
     public static final double[] interpolate(double min, double max, int num) {
@@ -380,11 +467,11 @@ public class Utilities {
             if(binSize > 1) {
                 result.add(permutation % binSize);
                 permutation /= binSize;
+            } else if(binSize == 1) {
+                result.add(0);
             } else {
-                if(binSize < 0) {
-                    throw new IllegalArgumentException();
-                }
-                result.add(binSize - 1);
+                // binSize is 0 or less (i.e. no index as that bin cannot be indexed as size <=0)
+                result.add(-1);
             }
         }
         return result;
@@ -570,7 +657,9 @@ public class Utilities {
         return list.get(0);
     }
 
-    public static <A> List<A> randPickN(Collection<A> collection, int num, Random rand) {
+    public static <A> List<A> randPickN(Collection<A> collection, int num, Random random) {
+        Assert.assertNotNull(collection);
+        Assert.assertNotNull(random);
         if(num > collection.size()) {
             throw new IllegalArgumentException("too many");
         }
@@ -583,7 +672,7 @@ public class Utilities {
         }
         List<A> removed = new ArrayList<>();
         for(int i = 0; i < num; i++) {
-            int index = rand.nextInt(list.size());
+            int index = random.nextInt(list.size());
             A removedItem = list.remove(index);
             removed.add(removedItem);
         }
@@ -635,4 +724,20 @@ public class Utilities {
     }
 
 
+    public static double[] normalise(final int[] array) {
+        int sum = sum(array);
+        double[] result = new double[array.length];
+        for(int i = 0; i < array.length; i++) {
+            result[i] = (double) array[i] / sum;
+        }
+        return result;
+    }
+
+    private static int sum(final int[] array) {
+        int sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += array[i];
+        }
+        return sum;
+    }
 }

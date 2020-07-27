@@ -5,20 +5,21 @@ import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
-import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.logging.Loggable;
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Parallelisable;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
+import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.classifiers.Parallelisable;
+import tsml.classifiers.distance_based.utils.classifiers.Rebuildable;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import utilities.*;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -27,10 +28,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 
-import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
-public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable, GcMemoryWatchable,
-    StopWatchTrainTimeable,
+public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable,
+    WatchedMemory,
+    TimedTrain, TimedTrainEstimate,
                                                                     Checkpointable, Parallelisable {
 
     /*
@@ -199,11 +201,11 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
+    public boolean checkpointIfIntervalExpired() throws Exception {
         return false;
     }
 
-    public boolean loadFromCheckpoint() {
+    public boolean loadCheckpoint() {
         return false;
     }
 
@@ -251,7 +253,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return agent.predictNextTimeNanos();
     }
 
-    @Override public boolean isBuilt() {
+    public boolean isBuilt() {
         return !agent.hasNext();
     }
 
@@ -263,17 +265,17 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // enable resource monitors
-        memoryWatcher.enable();
-        trainEstimateTimer.checkDisabled();
-        trainTimer.enable();
+        memoryWatcher.start();
+        trainEstimateTimer.checkStopped();
+        trainTimer.start();
         final boolean rebuild = isRebuild();
         lastCheckpointTimeStamp = System.nanoTime();
         // if we're rebuilding
         if(rebuild) {
             // reset resource monitors
-            trainTimer.resetAndEnable();
-            memoryWatcher.resetAndEnable();
-            trainEstimateTimer.resetAndDisable();
+            trainTimer.resetAndStart();
+            memoryWatcher.resetAndStart();
+            trainEstimateTimer.resetAndStop();
             // setup agent, etc, based on train data
             trainSetupFunction.accept(trainData);
             // reset switches
@@ -291,9 +293,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             nextBuildTick();
         }
         // sanity check resource monitors (as the benchmark iterator *should* have been using them)
-        trainEstimateTimer.checkDisabled();
-        trainTimer.checkEnabled();
-        memoryWatcher.checkEnabled();
+        trainEstimateTimer.checkStopped();
+        trainTimer.checkStarted();
+        memoryWatcher.checkStarted();
         // check whether we've skipped any work due to parallelisation / locking
         if(hasSkippedEvaluation) {
             // checkpointing should be enabled if we've skipped
@@ -359,7 +361,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                         throw new IllegalStateException("could not create overall done file");
                     }
                     // we're done
-                    setBuilt(true);
+//                    setBuilt(true);
                 } catch (FileUtils.FileLock.LockException e) {
                     getLogger().info(() -> "cannot lock overall done file");
                     yielded = true;
@@ -371,9 +373,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         // clear train data
         this.trainData = null;
         // disable resource monitors for sanity
-        memoryWatcher.disableAnyway();
-        trainEstimateTimer.disableAnyway();
-        trainTimer.disableAnyway();
+        memoryWatcher.stop(false);
+        trainEstimateTimer.stop(false);
+        trainTimer.stop(false);
     }
     
     @Override
@@ -386,15 +388,17 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     protected void suspendResourceMonitors() {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
+        // todo fix
+//        trainTimer.suspend();
+//        trainEstimateTimer.suspend();
+//        memoryWatcher.suspend();
     }
 
     protected void unsuspendResourceMonitors() {
-        trainTimer.unsuspend();
-        trainEstimateTimer.unsuspend();
-        memoryWatcher.unsuspend();
+        // todo fix
+//        trainTimer.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        memoryWatcher.unsuspend();
     }
 
     protected void nextBuildTick() throws Exception {
@@ -463,22 +467,22 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // then we don't need to record train time as classifier does so internally
             } else {
                 // otherwise we'll enable our train timer to record timings
-                classifierTrainTimer.enable();
+                classifierTrainTimer.start();
             }
             if(classifier instanceof MemoryWatchable) {
                 // then we don't need to record memory usage as classifier does so internally
             } else {
                 // otherwise we'll enable our memory watcher to record memory usage
-                classifierMemoryWatcher.enable();
+                classifierMemoryWatcher.start();
             }
             // build the classifier
             classifier.buildClassifier(trainData);
             // enable tracking of resources for tuning process
-            classifierTrainTimer.disableAnyway();
-            classifierMemoryWatcher.disableAnyway();
-            this.trainEstimateTimer.checkDisabled();
-            this.memoryWatcher.enableAnyway();
-            this.trainTimer.enableAnyway();
+            classifierTrainTimer.stop(false);
+            classifierMemoryWatcher.stop(false);
+            this.trainEstimateTimer.checkStopped();
+            this.memoryWatcher.start(false);;
+            this.trainTimer.start(false);;
             // set train info
 //            classifier.getTrainResults().setDetails(classifier, trainData);
             // add the resource usage onto our monitors
@@ -489,7 +493,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
                 // set train results info
-                classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTimeNanos());
+                classifier.getTrainResults().setBuildTime(classifierTrainTimer.getTime());
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
@@ -594,8 +598,8 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 }
             } else {
                 // load classifier manually
-                classifier =
-                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
+                classifier = null;
+//                        (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
                 ClassifierResults results = classifier.getTrainResults();
 //                trainTimer.add(results.getTrainTimeNanos());
 //                trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
@@ -625,7 +629,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 //                ((Checkpointable) classifier).saveToCheckpoint();
             } else {
                 // save classifier manually
-                CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
+//                CheckpointUtils.serialise(classifier, classifierSavePath + CheckpointUtils.checkpointFileName);
             }
 //        }
     }

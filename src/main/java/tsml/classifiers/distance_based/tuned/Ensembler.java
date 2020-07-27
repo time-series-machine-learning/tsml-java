@@ -2,11 +2,10 @@ package tsml.classifiers.distance_based.tuned;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.ArrayUtilities;
-import tsml.classifiers.distance_based.utils.collections.Utils;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -30,10 +29,10 @@ public interface Ensembler extends Serializable {
 
     static Ensembler single() {
         return (benchmarks) -> {
-            if(Utils.size(benchmarks) != 1) {
+            if(CollectionUtils.size(benchmarks) != 1) {
                 throw new IllegalArgumentException("was only expecting 1 benchmark");
             }
-            return new ArrayList<>(Collections.singletonList(1.0));
+            return new ArrayList<>(java.util.Collections.singletonList(1.0));
         };
     }
 }

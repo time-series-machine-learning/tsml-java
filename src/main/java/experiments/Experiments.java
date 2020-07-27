@@ -17,7 +17,6 @@ package experiments;
 import com.google.common.testing.GcFinalization;
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
-import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -36,7 +35,10 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import utilities.FileUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -91,7 +93,7 @@ import weka.core.Instances;
  */
 public class Experiments  {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = LogUtils.buildLogger(Experiments.class);
 
     public static boolean debug = false;
 
@@ -210,6 +212,13 @@ public class Experiments  {
         // The set classifier call is therefore made before defining paths that are dependent on the classifier name
         Classifier classifier = ClassifierLists.setClassifier(expSettings);
 
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            ((EnhancedAbstractClassifier) classifier).setDebug(debug);
+        }
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(expSettings.logLevel);
+        }
+
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
         //Check whether results already exists, if so and force evaluation is false: just quit
         if (quitEarlyDueToResultsExistence(expSettings))
@@ -218,7 +227,10 @@ public class Experiments  {
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
-        LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
+        if(expSettings.generateErrorEstimateOnTrainSet) {
+            LOGGER.info(expSettings.toShortString() + ", Train acc:" + results[0].getAcc());
+        }
+        LOGGER.info(expSettings.toShortString() + ", Test acc:" + results[1].getAcc());
 
         return results;
     }
@@ -249,11 +261,23 @@ public class Experiments  {
 
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
+        FileUtils.FileLock testLock = null;
+        FileUtils.FileLock trainLock = null;
         try {
-            ClassifierResults trainResults = training(expSettings, classifier, trainSet);
-            postTrainingOperations(expSettings, classifier);
-            ClassifierResults testResults = testing(expSettings, classifier, testSet, trainResults);
+            testLock = new FileUtils.FileLock(expSettings.testFoldFileName);
+        } catch(Exception e) {
+            LOGGER.info("test / train file locked");
+            return null;
+        }
 
+        try {
+            LOGGER.info("training...");
+            ClassifierResults trainResults = training(expSettings, classifier, trainSet);
+            LOGGER.info("training done");
+            postTrainingOperations(expSettings, classifier);
+            LOGGER.info("testing...");
+            ClassifierResults testResults = testing(expSettings, classifier, testSet, trainResults);
+            LOGGER.info("testing done");
             experimentResults = new ClassifierResults[] {trainResults, testResults};
         }
         catch (Exception e) {
@@ -262,6 +286,7 @@ public class Experiments  {
             e.printStackTrace();
             return null; //error state
         }
+        testLock.unlock();
 
         return experimentResults;
     }
@@ -432,7 +457,7 @@ public class Experiments  {
         // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
         // going to be the case; supply a path and everything will be written there
         if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
+            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/fold" + expSettings.foldId;
 
         f = new File(expSettings.supportingFilePath);
         if (!f.exists())
@@ -719,12 +744,18 @@ public class Experiments  {
 
         // else calc benchmark
 
-        int arrSize = 10000;
-        int repeats = 1000;
+        int arrSize = 100_000;
+        int repeats = 100;
         long[] times = new long[repeats];
         long total = 0L;
+        int[] arr = new int[arrSize];
+        final Random random = new Random(0);
+        for(int i = 0; i < arr.length; i++) {
+            arr[i] = random.nextInt();
+        }
+        atomicBenchmark(arr); // discard first for JVM warm up
         for (int i = 0; i < repeats; i++) {
-            times[i] = atomicBenchmark(arrSize);
+            times[i] = atomicBenchmark(arr);
             total+=times[i];
         }
 
@@ -756,16 +787,12 @@ public class Experiments  {
             LOGGER.log(Level.FINE, sb.toString());
         }
 
-        return total;
+        return total / repeats;
     }
 
-    private static long atomicBenchmark(int arrSize) {
+    private static long atomicBenchmark(int[] arr) {
+        arr = Arrays.copyOf(arr, arr.length);
         long startTime = System.nanoTime();
-        int[] arr = new int[arrSize];
-        Random rng = new Random(0);
-        for (int j = 0; j < arrSize; j++)
-            arr[j] = rng.nextInt();
-
         Arrays.sort(arr);
         return System.nanoTime() - startTime;
     }
@@ -955,7 +982,13 @@ public class Experiments  {
         @Parameter(names={"-l", "--logLevel"}, description = "log level")
         private String logLevelStr = null;
 
-        private Level logLevel = null;
+        @Parameter(names={"-mem"}, description = "mem")
+        private int mem = -1;
+
+        @Parameter(names={"-threads"}, description = "threads")
+        private int threads = 1;
+
+        private Level logLevel = Level.OFF;
 
         public boolean hasTrainContracts() {
             return trainContracts.size() > 0;
@@ -1074,7 +1107,7 @@ public class Experiments  {
                 if(!checkpointing){
                     //it's not. must be a timing string
                     checkpointing = true;
-                    checkpointInterval = parseTiming(checkpointingStr);
+//                    checkpointInterval = parseTiming(checkpointingStr);
 
                 }
           }

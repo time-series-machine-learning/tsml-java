@@ -25,6 +25,8 @@ import experiments.data.DatasetLoading;
 import java.util.ArrayList;
 import java.util.Random;
 
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -44,9 +46,6 @@ import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 import fileIO.OutFile;
 import statistics.distributions.NormalDistribution;
 import machine_learning.classifiers.kNN;
-
-import javax.xml.namespace.QName;
-import javax.xml.xpath.XPath;
 
 /**
  * @author ajb
@@ -730,7 +729,11 @@ public class ClassifierTools {
 
     public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
         throws Exception {
+        dataPath = StrUtils.asDirPath(dataPath);
         Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
         return trainAndTest(data[0], data[1], classifier);
     }
 
@@ -759,4 +762,5 @@ public class ClassifierTools {
         Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
         return trainAndTest(data, classifier);
     }
+
 }

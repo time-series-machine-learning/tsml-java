@@ -43,18 +43,15 @@ defaultShapeletOutput.txt
 # testing and local results files
 Results/
 Analysis/
+results/
 
 # Personal working environments.
 src/main/java/Michael/*
 out/production/classes/META-INF/tsml.main.kotlin_module
-
 src/main/java/go/
 build.gradle.kts
 out/production/classes/META-INF/uea-tsc.main.kotlin_module
 settings.gradle.kts
-distribution/tsml.jar
-distribution/tsml.jar
-distribution/tsml.jar
 distribution/tsml.jar
 src/main/java/tsml/classifiers/frequency_based/RISE.java
 

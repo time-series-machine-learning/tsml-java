@@ -19,10 +19,11 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.proximity.ElasticTransformClassifier;
+import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -94,6 +95,59 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID",
+        "PF_R1",
+        "PF_R5",
+        "PF_R20_I",
+        "PF_R5_QUICK",
+        "PF_R1_QUICK",
+        "PF_R10_QUICK",
+            "PF_R5_SQUICK",
+            "PF_R1_SQUICK",
+            "PF_R10_SQUICK",
+            "PF_R5_MQUICK",
+            "PF_R1_MQUICK",
+            "PF_R10_MQUICK",
+        "PF_R5_STUMP",
+        "PF_R1_STUMP",
+        "PF_R10_STUMP",
+        "PF_R5_CHI",
+        "PF_R5_IE",
+        "PF_R5_IG",
+        "PF_R5_GG",
+        "PF_R5_U",
+        "PF_R5_O",
+        "PF_R5_OU",
+        "PF_R10",
+        "ORIG_PF",
+        "PF_RR5",
+        "PF_RR10",
+        "PF_R1_I",
+        "PF_R5_I",
+        "PF_R10_I",
+        "PF_RR5_I",
+        "PF_RR10_I",
+        "PF_R5_T10",
+        "PF_R5_T20",
+        "PF_R5_T50",
+        "PF_R5_T200",
+        "PF_R5_T500",
+        "PF_R5_T1000",
+        "PF_R5_OOB",
+        "PF_R5_OOB_R",
+        "PF_R5_OOB_D",
+        "PF_R5_OOB_R_D",
+        "PF_R5_OOB_W",
+        "PF_R5_OOB_R_W",
+        "PF_R5_OOB_WD",
+        "PF_R5_OOB_R_WD",
+        "PF_R5_CV",
+        "PF_R5_CV_D",
+        "PF_R5_CV_WD",
+        "PF_R5_CV_W",
+        "PF_R5_P",
+        "PF_R10_P",
+        "ET2",
             "DD_DTW","DTD_C","CID_DTW","NN_CID","NN_ShapeDTW_Raw","NN_ShapeDTW_PAA","NN_ShapeDTW_DWT",
             "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp"
     };
@@ -103,6 +157,162 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "ET2":
+                c = new ElasticTransformClassifier();
+                break;
+            case "PF_R1":
+                c = ProximityForest.Config.PF_R1.configure(new ProximityForest());
+                break;
+            case "PF_R5":
+                c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                break;
+            case "PF_R10_P":
+                c = ProximityForest.Config.PF_R10_P.configure(new ProximityForest());
+                break;
+            case "PF_R5_P":
+                c = ProximityForest.Config.PF_R5_P.configure(new ProximityForest());
+                break;
+            case "PF_R20_I":
+                c = ProximityForest.Config.PF_R20_I.configure(new ProximityForest());
+                break;
+            case "PF_R5_QUICK":
+                c = ProximityForest.Config.PF_R5_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_QUICK":
+                c = ProximityForest.Config.PF_R1_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_QUICK":
+                c = ProximityForest.Config.PF_R10_QUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_SQUICK":
+                c = ProximityForest.Config.PF_R5_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_SQUICK":
+                c = ProximityForest.Config.PF_R1_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_SQUICK":
+                c = ProximityForest.Config.PF_R10_SQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_MQUICK":
+                c = ProximityForest.Config.PF_R5_MQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R1_MQUICK":
+                c = ProximityForest.Config.PF_R1_MQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R10_MQUICK":
+                c = ProximityForest.Config.PF_R10_MQUICK.configure(new ProximityForest());
+                break;
+            case "PF_R5_STUMP":
+                c = ProximityForest.Config.PF_R5_STUMP.configure(new ProximityForest());
+                break;
+            case "PF_R1_STUMP":
+                c = ProximityForest.Config.PF_R1_STUMP.configure(new ProximityForest());
+                break;
+            case "PF_R10_STUMP":
+                c = ProximityForest.Config.PF_R10_STUMP.configure(new ProximityForest());
+                break;
+            case "PF_R5_GG":
+                c = ProximityForest.Config.PF_R5_GG.configure(new ProximityForest());
+                break;
+            case "PF_R5_IE":
+                c = ProximityForest.Config.PF_R5_IE.configure(new ProximityForest());
+                break;
+            case "PF_R5_IG":
+                c = ProximityForest.Config.PF_R5_IG.configure(new ProximityForest());
+                break;
+            case "PF_R5_CHI":
+                c = ProximityForest.Config.PF_R5_CHI.configure(new ProximityForest());
+                break;
+            case "PF_R5_U":
+                c = ProximityForest.Config.PF_R5_U.configure(new ProximityForest());
+                break;
+            case "PF_R5_OU":
+                c = ProximityForest.Config.PF_R5_OU.configure(new ProximityForest());
+                break;
+            case "PF_R5_O":
+                c = ProximityForest.Config.PF_R5_O.configure(new ProximityForest());
+                break;
+            case "PF_R10":
+                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
+                break;
+            case "PF_R1_I":
+                c = ProximityForest.Config.PF_R1_I.configure(new ProximityForest());
+                break;
+            case "PF_R5_I":
+                c = ProximityForest.Config.PF_R5_I.configure(new ProximityForest());
+                break;
+            case "PF_R10_I":
+                c = ProximityForest.Config.PF_R10_I.configure(new ProximityForest());
+                break;
+            case "PF_RR5_I":
+                c = ProximityForest.Config.PF_RR5_I.configure(new ProximityForest());
+                break;
+            case "PF_RR10_I":
+                c = ProximityForest.Config.PF_RR10_I.configure(new ProximityForest());
+                break;
+            case "PF_RR5":
+                c = ProximityForest.Config.PF_RR5.configure(new ProximityForest());
+                break;
+            case "PF_RR10":
+                c = ProximityForest.Config.PF_RR10.configure(new ProximityForest());
+                break;
+            case "PF_R5_T10":
+                c = ProximityForest.Config.PF_R5_T10.configure(new ProximityForest());
+                break;
+            case "PF_R5_T20":
+                c = ProximityForest.Config.PF_R5_T20.configure(new ProximityForest());
+                break;
+            case "PF_R5_T50":
+                c = ProximityForest.Config.PF_R5_T50.configure(new ProximityForest());
+                break;
+            case "PF_R5_T200":
+                c = ProximityForest.Config.PF_R5_T200.configure(new ProximityForest());
+                break;
+            case "PF_R5_T500":
+                c = ProximityForest.Config.PF_R5_T500.configure(new ProximityForest());
+                break;
+            case "PF_R5_T1000":
+                c = ProximityForest.Config.PF_R5_T1000.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB":
+                c = ProximityForest.Config.PF_R5_OOB.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R":
+                c = ProximityForest.Config.PF_R5_OOB_R.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_D":
+                c = ProximityForest.Config.PF_R5_OOB_D.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R_D":
+                c = ProximityForest.Config.PF_R5_OOB_R_D.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_W":
+                c = ProximityForest.Config.PF_R5_OOB_W.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R_W":
+                c = ProximityForest.Config.PF_R5_OOB_R_W.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_WD":
+                c = ProximityForest.Config.PF_R5_OOB_WD.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R_WD":
+                c = ProximityForest.Config.PF_R5_OOB_R_WD.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV":
+                c = ProximityForest.Config.PF_R5_CV.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV_D":
+                c = ProximityForest.Config.PF_R5_CV_D.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV_W":
+                c = ProximityForest.Config.PF_R5_CV_W.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV_WD":
+                c = ProximityForest.Config.PF_R5_CV_WD.configure(new ProximityForest());
+                break;
+            case "ORIG_PF":
+                c = new ProximityForestWrapper();
+                break;
             case "ED":
                 c = new KNN();
                 break;

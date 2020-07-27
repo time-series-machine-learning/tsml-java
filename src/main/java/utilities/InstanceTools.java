@@ -36,6 +36,33 @@ import static utilities.Utilities.normalise;
  */
 public class InstanceTools {
 
+    public static double[] countClasses(Instances data) {
+        return countClasses(data, data.numClasses());
+    }
+
+    public static double[] countClasses(List<? extends Instance> data, int numClasses) {
+        double[] distribution = new double[numClasses];
+        for(Instance instance : data) {
+            final int classValue = (int) instance.classValue();
+            distribution[classValue] += instance.weight();
+        }
+        return distribution;
+    }
+
+    public static Map<Instance, Integer> indexInstances(Instances instances) {
+        Map<Instance, Integer> instanceIntegerMap = new HashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            instanceIntegerMap.put(instances.get(i), i);
+        }
+        return instanceIntegerMap;
+    }
+
+    public static void setClassMissing(Instances data) {
+        for(Instance instance : data) {
+            instance.setClassMissing();
+        }
+    }
+
     public static Pair<Instance, Double> findMinDistance(Instances data, Instance inst, DistanceFunction dist){
         double min = dist.distance(data.get(0), inst);
         Instance minI = data.get(0);

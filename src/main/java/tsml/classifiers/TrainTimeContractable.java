@@ -14,9 +14,6 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,6 +34,10 @@ public interface TrainTimeContractable {
       * @param time in nano seconds
      */
     void setTrainTimeLimit(long time);
+
+    default long getTrainContractTimeNanos() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Are we still within contract? Remove default when fully implemented
