@@ -47,9 +47,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         classifier.setSeed(0);
         classifier.getLogger().setLevel(Level.ALL);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+//        results.setDetails(classifier, data[1]);
         ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+//        trainResults.setDetails(classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
@@ -486,7 +486,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
         // set train results details
-        trainResults.setDetails(this, trainData);
+//        trainResults.setDetails(this, trainData);
         // free up train data
         this.trainData = null;
         // we're built by here

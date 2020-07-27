@@ -349,7 +349,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                     trainTimer.disable();
                     trainEstimateTimer.checkDisabled();
                     memoryWatcher.disable();
-                    trainResults.setDetails(this, trainData);
+//                    trainResults.setDetails(this, trainData);
                     // try to create the overall done file
                     boolean created = createDoneFile("overall");
                     if(!created) {
@@ -478,7 +478,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             this.memoryWatcher.enableAnyway();
             this.trainTimer.enableAnyway();
             // set train info
-            classifier.getTrainResults().setDetails(classifier, trainData);
+//            classifier.getTrainResults().setDetails(classifier, trainData);
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
@@ -502,7 +502,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // we tracked the memory usage of the classifier
                 memoryWatcher.add(classifierMemoryWatcher);
                 // set train results info
-                classifier.getTrainResults().setMemoryDetails(classifierMemoryWatcher);
+//                classifier.getTrainResults().setMemoryDetails(classifierMemoryWatcher);
             }
             // feed the built classifier back to the agent (which will decide what to do with it)
             boolean classifierFullyBuilt = !agent.feedback(classifier);
@@ -594,9 +594,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 classifier =
                         (EnhancedAbstractClassifier) CheckpointUtils.deserialise(classifierLoadPath + CheckpointUtils.checkpointFileName);
                 ClassifierResults results = classifier.getTrainResults();
-                trainTimer.add(results.getTrainTimeNanos());
-                trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
-                memoryWatcher.add(results);
+//                trainTimer.add(results.getTrainTimeNanos());
+//                trainEstimateTimer.add(results.getTrainEstimateTimeNanos());
+//                memoryWatcher.add(results);
             }
         }
         memoryWatcher.unsuspend();

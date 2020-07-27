@@ -251,9 +251,9 @@ public class KNNLOOCV
             classifier.getLogger().setLevel(Level.ALL);
             classifier.setEstimateOwnPerformance(true);
             ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-            results.setDetails(classifier, data[1]);
+//            results.setDetails(classifier, data[1]);
             ClassifierResults trainResults = classifier.getTrainResults();
-            trainResults.setDetails(classifier, data[0]);
+//            trainResults.setDetails(classifier, data[0]);
             System.out.println(trainResults.writeSummaryResultsToString());
             System.out.println(results.writeSummaryResultsToString());
         }
@@ -522,7 +522,7 @@ public class KNNLOOCV
         trainEstimateTimer.disable();
         memoryWatcher.disable();
         if(regenerateTrainEstimate) {
-            trainResults.setDetails(this, trainData);
+//            trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
@@ -581,9 +581,9 @@ public class KNNLOOCV
         classifier.setSeed(seed); // set seed
         classifier.setEstimateOwnPerformance(true);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+//        results.setDetails(classifier, data[1]);
         ClassifierResults trainResults = classifier.getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+//        trainResults.setDetails(classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
