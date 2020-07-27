@@ -140,7 +140,7 @@ public class K  extends BaseClassifier
                         distribution[(int) nearestNeighbour.classValue()]++;
                     }
                 }
-                ArrayUtilities.normaliseInPlace(distribution);
+                ArrayUtilities.normalise(distribution);
             }
             predictTimer.stop();
             return distribution;

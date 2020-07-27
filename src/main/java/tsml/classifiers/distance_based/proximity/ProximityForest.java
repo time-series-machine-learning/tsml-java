@@ -672,7 +672,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     double[] distribution = constituentTrainResults.getProbabilityDistribution(i);
                     // weight the vote of this constituent
                     distribution = vote(constituent, instance);
-                    ArrayUtilities.addInPlace(finalDistributions[instanceIndexInTrainData], distribution);
+                    ArrayUtilities.add(finalDistributions[instanceIndexInTrainData], distribution);
                     // add onto the prediction time for this instance
                     time = System.nanoTime() - time;
                     time += constituentTrainResults.getPredictionTime(i);
@@ -684,7 +684,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 long time = System.nanoTime();
                 double[] distribution = finalDistributions[i];
                 // normalise the distribution as sum of votes has likely pushed sum of distribution >1
-                ArrayUtilities.normaliseInPlace(distribution, true);
+                ArrayUtilities.normalise(distribution, true);
                 double prediction = Utilities.argMax(distribution, rand);
                 double classValue = trainData.get(i).classValue();
                 time = System.nanoTime() - time;
@@ -711,11 +711,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 ; i++) {
             testStageTimer.resetAndStart();
             final double[] distribution = vote(constituents.get(i), instance);
-            ArrayUtilities.addInPlace(finalDistribution, distribution);
+            ArrayUtilities.add(finalDistribution, distribution);
             testStageTimer.stop();
             longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getTime());
         }
-        ArrayUtilities.normaliseInPlace(finalDistribution);
+        ArrayUtilities.normalise(finalDistribution);
         testTimer.stop();
         return finalDistribution;
     }
@@ -736,7 +736,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             ClassifierResults treeTrainResult = constituent.getEvaluationResults();
             if(treeTrainResult != null) {
                 double weight = treeTrainResult.getAcc();
-                ArrayUtilities.multiplyInPlace(distribution, weight);
+                ArrayUtilities.multiply(distribution, weight);
             }
         }
         return distribution;

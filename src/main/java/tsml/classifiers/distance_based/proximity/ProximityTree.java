@@ -826,7 +826,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 double classValue = exemplar.classValue();
                 distribution[(int) classValue]++;
             }
-            ArrayUtilities.normaliseInPlace(distribution);
+            ArrayUtilities.normalise(distribution);
             return distribution;
         }
 

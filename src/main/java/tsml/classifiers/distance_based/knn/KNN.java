@@ -303,7 +303,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                         distribution[(int) nearestNeighbour.classValue()]++;
                     }
                 }
-                ArrayUtilities.normaliseInPlace(distribution);
+                ArrayUtilities.normalise(distribution);
             }
             predictTimer.stop();
             return distribution;

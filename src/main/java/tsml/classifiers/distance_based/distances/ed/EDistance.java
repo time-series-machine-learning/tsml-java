@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.distances.ed;
 
-import distance.elastic.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import weka.core.Instance;
 

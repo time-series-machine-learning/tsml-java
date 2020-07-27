@@ -22,7 +22,7 @@ public interface Ensembler extends Serializable {
             for(EnhancedAbstractClassifier benchmark : benchmarks) {
                 weights.add(scorer.apply(benchmark));
             }
-            ArrayUtilities.normaliseInPlace(weights);
+            ArrayUtilities.normalise(weights);
             return weights;
         };
     }

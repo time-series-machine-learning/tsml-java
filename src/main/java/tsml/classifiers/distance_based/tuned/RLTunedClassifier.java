@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
@@ -667,16 +666,17 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             }
             EnhancedAbstractClassifier benchmark = benchmarkIterator.next();
             double[] constituentDistribution = benchmark.distributionForInstance(testCase);
-            ArrayUtilities.multiplyInPlace(constituentDistribution, ensembleWeights.get(i));
-            ArrayUtilities.addInPlace(distribution, constituentDistribution);
+            ArrayUtilities.multiply(constituentDistribution, ensembleWeights.get(i));
+            ArrayUtilities.add(distribution, constituentDistribution);
         }
-        ArrayUtilities.normaliseInPlace(distribution);
+        ArrayUtilities.normalise(distribution);
         return distribution;
     }
 
     @Override
     public double classifyInstance(Instance testCase) throws Exception {
-        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
+//        return ArrayUtilities.bestIndex(Doubles.asList(distributionForInstance(testCase)), rand);
+        throw new UnsupportedOperationException();
     }
 
     public TrainSetupFunction getTrainSetupFunction() {
