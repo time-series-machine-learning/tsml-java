@@ -91,6 +91,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 proximityTree.setRandomIntervals(false);
                 proximityTree.setMinIntervalSize(-1);
                 proximityTree.setRandomR(false);
+                proximityTree.setRPatience(false);
                 return proximityTree;
             }
         },
@@ -260,6 +261,24 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 return proximityTree;
             }
         },
+        PT_R10_P() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
+                proximityTree.setR(10);
+                proximityTree.setRPatience(true);
+                return proximityTree;
+            }
+        },
+        PT_R5_P() {
+            @Override
+            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+                proximityTree = PT_R1.configureFromEnum(proximityTree);
+                proximityTree.setR(10);
+                proximityTree.setRPatience(true);
+                return proximityTree;
+            }
+        },
         PT_R5_I() {
             @Override
             public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
@@ -417,6 +436,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private int numExemplarsPerClass = 1;
     // whether to randomise the R parameter
     private boolean randomR;
+    // whether to use patience in the R parameter
+    private boolean rPatience;
 
     public boolean hasMaxHeight() {
         return maxHeight > 0;
@@ -746,8 +767,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private Split buildSplit(Split unbuiltSplit) {
         final Instances data = unbuiltSplit.getData();
-        double bestSplitScore = -1;
+        double bestSplitScore = Double.NEGATIVE_INFINITY;
         Split bestSplit = null;
+        int r = this.r;
+        if(randomR) {
+            r = rand.nextInt(r) + 1;
+        }
         // need to find the best of R splits
         for(int i = 0; i < r; i++) {
             // construct a new split
@@ -757,12 +782,23 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             if(score > bestSplitScore) {
                 bestSplit = split;
                 bestSplitScore = score;
+                if(rPatience) {
+                    i = 0;
+                }
             }
         }
         return bestSplit;
     }
 
-    private class Partition {
+    public boolean isRPatience() {
+        return rPatience;
+    }
+
+    public void setRPatience(final boolean rPatience) {
+        this.rPatience = rPatience;
+    }
+
+    private static class Partition {
 
         private Partition(final Instances data, final List<Instance> exemplars) {
             this.data = data;

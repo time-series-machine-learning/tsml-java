@@ -144,6 +144,8 @@ public class ClassifierLists {
         "PF_R5_CV_D",
         "PF_R5_CV_WD",
         "PF_R5_CV_W",
+        "PF_R5_P",
+        "PF_R10_P",
         "ET2",
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
@@ -160,6 +162,12 @@ public class ClassifierLists {
                 break;
             case "PF_R5":
                 c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                break;
+            case "PF_R10_P":
+                c = ProximityForest.Config.PF_R10_P.configure(new ProximityForest());
+                break;
+            case "PF_R5_P":
+                c = ProximityForest.Config.PF_R5_P.configure(new ProximityForest());
                 break;
             case "PF_R20_I":
                 c = ProximityForest.Config.PF_R20_I.configure(new ProximityForest());
