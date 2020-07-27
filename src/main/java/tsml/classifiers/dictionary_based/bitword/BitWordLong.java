@@ -102,6 +102,8 @@ public class BitWordLong implements BitWord {
     public Number getWord() { return word; }
     public byte getLength() { return length; }
 
+    public void setWord(Number word) { this.word = word.longValue(); }
+
     public void setWord(int [] letters) throws Exception {
          if (letters.length > MAX_LENGTH)
             throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
@@ -197,12 +199,12 @@ public class BitWordLong implements BitWord {
         }
     }
 
-    public String toStringUnigram(int length) {
+    public String toStringUnigram() {
         long[] letters = new long[length];
-        int shift = 64-(length*2);
+        int shift = WORD_SPACE-(length*BITS_PER_LETTER);
         for (int i = length-1; i > -1; --i) {
-            letters[length-1-i] = (word << shift) >>> 62;
-            shift += 2;
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift += BITS_PER_LETTER;
         }
 
         StringBuilder str = new StringBuilder();
@@ -213,19 +215,19 @@ public class BitWordLong implements BitWord {
         return str.toString();
     }
 
-    public String toStringBigram(int length) {
+    public String toStringBigram() {
         long[] letters = new long[length];
-        int shift = 64-(length*2);
+        int shift = WORD_SPACE-(length*BITS_PER_LETTER);
         for (int i = length-1; i > -1; --i) {
-            letters[length-1-i] = (word << shift) >>> 62;
-            shift += 2;
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift += BITS_PER_LETTER;
         }
 
         long[] letters2 = new long[length];
-        int shift2 = 32-(length*2);
+        int shift2 = WORD_SPACE/2-(length*2);
         for (int i = length-1; i > -1; --i) {
-            letters2[length-1-i] = (word << shift2) >>> 62;
-            shift2 += 2;
+            letters2[length-1-i] = (word << shift2) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift2 += BITS_PER_LETTER;
         }
 
         StringBuilder str = new StringBuilder();

@@ -922,7 +922,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
         }
 
-        OutFile of = new OutFile(visSavePath + "/temporalImportanceCurves" + seed + ".txt");
+        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
         String[] atts = new String[]{"mean","stdev","slope"};
         for (int i = 0 ; i < 3; i++){
             of.writeLine(atts[i]);
@@ -931,7 +931,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         of.closeFile();
 
         Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
+                visSavePath.replace("\\", "/")+ "\" " + seed + " 3 3");
 
         return true;
     }
@@ -982,8 +982,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         System.out.println(tsf.trainResults.getBuildTime());
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
-         
-         
     }
 }
   

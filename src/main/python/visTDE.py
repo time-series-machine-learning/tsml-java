@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 plt.rcParams["font.family"] = "Calibri"
 
-f = open(sys.argv[1] + 'visTDE' + sys.argv[2] + '.txt', 'r')
+f = open(sys.argv[1] + 'vis' + sys.argv[2] + '.txt', 'r')
 
 weight = float(f.readline())
 l = f.readline().split()
@@ -204,7 +204,7 @@ if (len(counts_bi_sum) > 0):
 
 f.close()
 
-plt.savefig(sys.argv[1] + 'visTDE' + sys.argv[2])
+plt.savefig(sys.argv[1] + 'vis' + sys.argv[2])
 plt.clf()
 
 ## fig 2
@@ -278,4 +278,4 @@ for i in range(1,word_length+1):
 			
 ax4.plot(range(1,len(dft)+1), dft)
 
-plt.savefig(sys.argv[1] + 'visTDE' + sys.argv[2] + '_2')
+plt.savefig(sys.argv[1] + 'vis' + sys.argv[2] + '_2')

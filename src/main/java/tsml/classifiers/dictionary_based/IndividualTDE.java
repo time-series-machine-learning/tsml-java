@@ -975,7 +975,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return bags.get(nn).getClassVal();
     }
 
-    public double[] firstWordVis(Instance inst, BitWordLong word) {
+    public double[] firstWordVis(Instance inst, BitWord word) {
         double[] dft = performMFT(toArrayNoClass(inst))[0];
         word.setWord(createWord(dft).getWord());
         return dft;

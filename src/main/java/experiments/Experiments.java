@@ -347,7 +347,6 @@ public class Experiments  {
                 LOGGER.log(Level.WARNING, "Serialisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Serializable.");
         }
 
-
         if (expSettings.visualise) {
             if (classifier instanceof Visualisable) {
                 ((Visualisable) classifier).setVisualisationSavePath(expSettings.supportingFilePath);
@@ -358,13 +357,12 @@ public class Experiments  {
                     LOGGER.log(Level.SEVERE, "Visualisation attempted but failed for classifier ("+classifier.getClass().getName()+")", ex);
                 }
             }
-            else
-                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Visualisable.");
+            else {
+                expSettings.visualise = false;
+                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier (" + classifier.getClass().getName() + ") does not extend Visualisable.");
+            }
         }
 
-        //actual output of files for this is done in the classifier distForInstance currently.
-        //probably better suited to evaluator stuff, for proper prediction timings if anything but waiting to consult
-        //first.
         if (expSettings.interpret) {
             if (classifier instanceof Interpretable) {
                 ((Interpretable) classifier).setInterpretabilitySavePath(expSettings.supportingFilePath);
@@ -713,7 +711,7 @@ public class Experiments  {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true, exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         return eval.evaluate(classifier, testSet);
     }

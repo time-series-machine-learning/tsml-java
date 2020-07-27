@@ -35,7 +35,7 @@ while line != '':
 	
 class_set = list(set(classes))
 x = range(num_atts-1)
-for i in [0,2,1]: #range(len(class_set)):
+for i in range(len(class_set)):
 	l = [instances[n] for n in range(0, len(instances)) if classes[n] == class_set[i]]
 	for n in range(len(l)):
 		if n == 0:

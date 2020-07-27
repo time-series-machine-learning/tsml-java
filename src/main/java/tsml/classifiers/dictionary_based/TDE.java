@@ -16,8 +16,13 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import tsml.classifiers.*;
+import tsml.classifiers.dictionary_based.bitword.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
+import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import utilities.ClassifierTools;
+import utilities.generic_storage.SerialisableComparablePair;
 import utilities.samplers.RandomIndexSampler;
 import utilities.samplers.Sampler;
 import weka.classifiers.functions.GaussianProcesses;
@@ -214,11 +219,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             checkpoint = true;
         }
         return validPath;
-    }
-
-    @Override //Checkpointable
-    public void saveToFile(String filename) throws Exception{
-        checkpoint(-1, -1, false);
     }
 
     //Define how to copy from a loaded object to this object
@@ -1075,10 +1075,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 distributions[i] += 1 / numClasses;
         }
 
-        if (interpSavePath != null && interpCount < 5) {
+        if (interpSavePath != null) {
             interpSeries = extractTimeSeries(series[0]);
             interpPred = argMax(distributions,rand);
-            lastClassifiedInterpretability();
         }
 
         return distributions;
@@ -1086,8 +1085,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override
     public boolean setInterpretabilitySavePath(String path) {
-        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path +
-                "/InterpretabilityTDE" + seed + "/");
+        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
         if(validPath){
             interpSavePath = path;
         }
@@ -1156,18 +1154,18 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         });
 
         HashMap<SerialisableComparablePair<Byte, String>, Integer> histWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> entry: histogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? entry.getKey().var1.toStringBigram(tde.getWordLength())
-                    : entry.getKey().var1.toStringUnigram(tde.getWordLength());
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: histogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
 
             keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
             histWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
         }
 
         HashMap<SerialisableComparablePair<Byte, String>, Integer> nearestWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> entry: nearestHistogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? entry.getKey().var1.toStringBigram(tde.getWordLength())
-                    : entry.getKey().var1.toStringUnigram(tde.getWordLength());
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: nearestHistogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
             keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
             nearestWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
         }
@@ -1200,7 +1198,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             counts[idx][1].add(val2);
         }
 
-        OutFile of = new OutFile(interpSavePath + "/InterpretabilityTDE" + seed + "/pred" + interpCount
+        OutFile of = new OutFile(interpSavePath + "/pred" + seed + "-" + interpCount
                 + ".txt");
         of.writeLine(Arrays.toString(interpSeries));
         for (int i = 0; i < numLevels; i++) {
@@ -1219,24 +1217,30 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         interpCount++;
 
-        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-        System.out.println("output : ");
-        String outLine = out.readLine();
-        while (outLine != null){
-            System.out.println(outLine);
-            outLine = out.readLine();
-        }
-
-        System.out.println("error : ");
-        String errLine = err.readLine();
-        while (errLine != null){
-            System.out.println(errLine);
-            errLine = err.readLine();
+        if (debug) {
+            System.out.println("TDE interp python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
         }
 
         return true;
+    }
+
+    @Override
+    public int getPredID(){
+        return interpCount;
     }
 
     @Override
@@ -1348,11 +1352,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             if (classCount[cls] >= 1) continue;
             classCount[cls]++;
 
-            for (Map.Entry<SerialisableComparablePair<BitWordLong, Byte>, Integer> entry : bag.entrySet()) {
-                SerialisableComparablePair<BitWordLong, Byte> key = entry.getKey();
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : bag.entrySet()) {
+                SerialisableComparablePair<BitWord, Byte> key = entry.getKey();
 
-                String word = key.var2 == -1 ? key.var1.toStringBigram(tde.getWordLength())
-                        : key.var1.toStringUnigram(tde.getWordLength()) ;
+                String word = key.var2 == -1 ? ((BitWordLong)key.var1).toStringBigram()
+                        : ((BitWordInt)key.var1).toStringUnigram();
 
                 SerialisableComparablePair<Byte, String> newKey = new SerialisableComparablePair<>(key.var2, word);
                 Integer val = classCounts[cls].get(newKey);
@@ -1406,10 +1410,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         Instance example = train.get(tde.getSubsampleIndices().get(0));
-        BitWordLong word = new BitWordLong();
+        BitWordInt word = new BitWordInt();
         double[] dft = tde.firstWordVis(example, word);
 
-        OutFile of = new OutFile(visSavePath + "/visTDE" + seed + ".txt");
+        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
         of.writeLine(Double.toString(tde.getWeight()));
         of.writeLine(rank + " " + classifiers[0].size());
         of.writeLine(tde.getWordLength() + " " + wordLengthCounts.get(tde.getWordLength()));
@@ -1421,7 +1425,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         of.writeLine(Arrays.toString(classCount));
         of.writeLine(Arrays.toString(example.toDoubleArray()));
         of.writeLine(Arrays.toString(dft));
-        of.writeLine(word.toStringUnigram(tde.getWordLength()));
+        of.writeLine(word.toStringUnigram());
         double[][] breakpoints = tde.getBreakpoints();
         of.writeString(Arrays.toString(breakpoints[0]));
         for (int i = 1; i < breakpoints.length; i++) {
@@ -1439,21 +1443,22 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         Process p = Runtime.getRuntime().exec("py src/main/python/visTDE.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + getNumClasses());
 
-        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-        System.out.println("output : ");
-        String outLine = out.readLine();
-            while (outLine != null){
-            System.out.println(outLine);
-            outLine = out.readLine();
-        }
-
-        System.out.println("error : ");
-        String errLine = err.readLine();
-            while (errLine != null){
-            System.out.println(errLine);
-            errLine = err.readLine();
+        if (debug) {
+            System.out.println("TDE vis python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
         }
 
         return true;

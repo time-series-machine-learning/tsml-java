@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 plt.rcParams["font.family"] = "Calibri"
 
-f = open(sys.argv[1] + 'InterpretabilityTDE' + sys.argv[2] + '/pred' + sys.argv[3] + '.txt', 'r')
+f = open(sys.argv[1] + 'pred' + sys.argv[2] + '-' + sys.argv[3] + '.txt', 'r')
 
 levels = int(sys.argv[4])
 cls1 = str(sys.argv[5])
@@ -128,4 +128,4 @@ ax2.set_ylim(0, y_max)
 ax2.set_yticks([])
 ax2.set_xticks([])
 
-plt.savefig(sys.argv[1] + 'InterpretabilityTDE' + sys.argv[2] + '/pred' + sys.argv[3], bbox_inches='tight')
+plt.savefig(sys.argv[1] + 'pred' + sys.argv[2] + '-' + sys.argv[3], bbox_inches='tight')

@@ -18,4 +18,6 @@ public interface Interpretable {
             success=f.mkdirs();
         return success;
     }
+
+    int getPredID();
 }
