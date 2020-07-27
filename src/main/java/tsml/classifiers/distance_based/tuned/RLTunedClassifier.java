@@ -228,13 +228,13 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     @Override public ParamSet getParams() {
-        return TrainTimeContractable.super.getParams()
+        return super.getParams()
                                     .add(BENCHMARK_ITERATOR_FLAG, agent)
                                     .add(TRAIN_SETUP_FUNCTION_FLAG, trainSetupFunction);
     }
 
     @Override public void setParams(final ParamSet params) {
-        TrainTimeContractable.super.setParams(params);
+//        TrainTimeContractable.super.setParams(params);
         ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
         ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
                               TrainSetupFunction.class); //
@@ -247,7 +247,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         trainTimeContract=true;
     }
 
-    @Override public long predictNextTrainTimeNanos() {
+    public long predictNextTrainTimeNanos() {
         return agent.predictNextTimeNanos();
     }
 
@@ -255,7 +255,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         return !agent.hasNext();
     }
 
-    @Override public long getTrainContractTimeNanos() {
+     public long getTrainContractTimeNanos() {
         return trainContractTimeNanos;
     }
 
@@ -382,7 +382,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
     
     protected boolean hasNextBuildTick() {
-        return agent.hasNext() && hasRemainingTraining();
+        return agent.hasNext();// && hasRemainingTraining();
     }
 
     protected void suspendResourceMonitors() {
@@ -484,7 +484,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             // add the resource usage onto our monitors
             if(classifier instanceof TrainTimeable) {
                 // the classifier tracked its time internally
-                this.trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we tracked the classifier's time
                 trainTimer.add(classifierTrainTimer);
@@ -493,7 +493,7 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
             }
             if(classifier instanceof TrainEstimateTimeable) {
                 // the classifier tracked its time internally
-                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                this.trainEstimateTimer.add(((TrainTimeable) classifier).getTrainTime());
             } else {
                 // we already tracked this as part of the train time
             }
@@ -584,10 +584,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                 // add the resource stats from the classifier (as we may have loaded from checkpoint, therefore need
                 // to catch up)
                 if(classifier instanceof TrainTimeable) {
-                    trainTimer.add(((TrainTimeable) classifier).getTrainTimeNanos());
+                    trainTimer.add(((TrainTimeable) classifier).getTrainTime());
                 }
                 if(classifier instanceof TrainEstimateTimeable) {
-                    trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTimeNanos());
+                    trainEstimateTimer.add(((TrainEstimateTimeable) classifier).getTrainEstimateTime());
                 }
                 if(classifier instanceof MemoryWatchable) {
                     memoryWatcher.add(((MemoryWatchable) classifier));

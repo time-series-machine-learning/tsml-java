@@ -322,7 +322,7 @@ public class KNNLOOCV
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        return estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
+        return estimateOwnPerformance && hasNextNeighbour() ;//&& hasRemainingTrainTime();
     }
 
     public long predictNextTrainTimeNanos() {
@@ -409,8 +409,8 @@ public class KNNLOOCV
     @Override public ParamSet getParams() {
         return super.getParams()
                     .add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder)
-                    .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit)
-                    .addAll(TrainTimeContractable.super.getParams());
+                    .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit);
+//                    .addAll(TrainTimeContractable.super.getParams());
     }
 
     @Override public void setParams(final ParamSet params) {
@@ -418,7 +418,7 @@ public class KNNLOOCV
         ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
         ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
                               NeighbourIteratorBuilder.class);
-        TrainTimeContractable.super.setParams(params);
+//        TrainTimeContractable.super.setParams(params);
     }
 
     public boolean loadFromCheckpoint() {
@@ -504,7 +504,7 @@ public class KNNLOOCV
         trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
             if(logger.isLoggable(Level.WARNING)
-                && !hasTrainTimeLimit()
+//                && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
                         (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
                 throw new IllegalStateException("not fully built");
@@ -532,7 +532,7 @@ public class KNNLOOCV
         saveToCheckpoint();
     }
 
-    public long getTrainTimeNanos() {
+    public long getTrainTime() {
         return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
     }
 
@@ -540,7 +540,6 @@ public class KNNLOOCV
         return trainTimeLimitNanos;
     }
 
-    @Override
     public void setTrainTimeLimitNanos(final long trainTimeLimit) {
         this.trainTimeLimitNanos = trainTimeLimit;
     }
