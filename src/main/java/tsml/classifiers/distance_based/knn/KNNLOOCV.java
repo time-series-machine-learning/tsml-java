@@ -460,9 +460,9 @@ public class KNNLOOCV
             memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
             if(getEstimateOwnPerformance()) {
-                if(isCheckpointSavingEnabled()) { // was needed for caching
+//                if(isCheckpointSavingEnabled()) { // was needed for caching
                     HashTransformer.hashInstances(trainData);
-                }
+//                }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance

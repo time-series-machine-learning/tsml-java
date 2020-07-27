@@ -245,7 +245,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     private static final long serialVersionUID = 0;
     // minimum checkpoint interval
-    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    private transient long minCheckpointIntervalNanos = 0;//Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     // timestamp of last checkpoint
     private transient long lastCheckpointTimeStamp = 0;
     // save path for checkpoints
@@ -255,17 +255,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     // whether to skip the final checkpoint
     private transient boolean skipFinalCheckpoint = false;
 
-    @Override
     public boolean isSkipFinalCheckpoint() {
         return skipFinalCheckpoint;
     }
 
-    @Override
     public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
         this.skipFinalCheckpoint = skipFinalCheckpoint;
     }
 
-    @Override
     public String getSavePath() {
         return savePath;
     }
@@ -281,18 +278,23 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public String getLoadPath() {
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+
+    }
+
+    public String getLoadPath() {
         return loadPath;
     }
 
-    @Override public boolean setLoadPath(final String path) {
-        boolean result = Checkpointable.super.setLoadPath(path);
-        if(result) {
-            loadPath = StrUtils.asDirPath(path);
-        } else {
-            loadPath = null;
-        }
-        return result;
+    public boolean setLoadPath(final String path) {
+//        boolean result = Checkpointable.super.setLoadPath(path);
+//        if(result) {
+//            loadPath = StrUtils.asDirPath(path);
+//        } else {
+//            loadPath = null;
+//        }
+//        return result;
+        return true;
     }
 
     public StopWatch getTrainTimer() {
@@ -345,7 +347,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return memoryWatcher;
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
@@ -426,14 +428,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 // if the constituent can do checkpointing
                 if(constituent instanceof Checkpointable) {
                     // setup all the checkpointing details
-                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
-                        ((Checkpointable) constituent).setLoadPath(loadPath);
-                    }
-                    if(isCheckpointSavingEnabled()) {
-                        ((Checkpointable) constituent).setCheckpointPath(savePath);
-                    }
-                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
-                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
+//                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
+//                        ((Checkpointable) constituent).setLoadPath(loadPath);
+//                    }
+//                    if(isCheckpointSavingEnabled()) {
+//                        ((Checkpointable) constituent).setCheckpointPath(savePath);
+//                    }
+//                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+//                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
                 }
             }
             nextConstituentsBatch = new ArrayList<>();
