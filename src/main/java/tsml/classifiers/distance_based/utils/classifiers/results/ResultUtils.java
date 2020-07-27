@@ -31,8 +31,6 @@ public class ResultUtils {
         if(classifier instanceof Randomizable) {
             results.setFoldID(((Randomizable) classifier).getSeed());
         }
-        results.setOs(SysUtils.getOsName());
-        results.setCpuInfo(SysUtils.findCpuInfo());
     }
 
     public static void setInfo(ClassifierResults results, final Classifier classifier, final Instances data) {
@@ -60,7 +58,7 @@ public class ResultUtils {
     }
 
     public static void setTimeInfo(ClassifierResults results, TrainEstimateTimeable obj) {
-        results.setErrorEstimateTime(obj.getTrainEstimateTimeNanos());
+        results.setErrorEstimateTime(obj.getTrainEstimateTime());
         results.setBuildPlusEstimateTime(obj.getTrainTime());
         results.setTimeUnit(TimeUnit.NANOSECONDS);
     }
@@ -73,10 +71,6 @@ public class ResultUtils {
 
     public static void setMemoryInfo(ClassifierResults results, final MemoryWatchable memoryWatchable) {
         results.setMemory(memoryWatchable.getMaxMemoryUsageInBytes());
-        results.setMeanMemoryUsageInBytes(memoryWatchable.getMeanMemoryUsageInBytes());
-        results.setGarbageCollectionTimeInMillis(memoryWatchable.getGarbageCollectionTimeInNanos());
-        results.setStdDevMemoryUsageInBytes(memoryWatchable.getStdDevMemoryUsageInBytes());
-        results.setMemoryReadingCount(memoryWatchable.getMemoryReadingCount());
     }
 
 }

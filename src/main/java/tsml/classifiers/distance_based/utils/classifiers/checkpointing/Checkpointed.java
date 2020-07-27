@@ -77,4 +77,7 @@ public interface Checkpointed extends Checkpointer {
         return getCheckpointer().getLastCheckpointTimeStamp();
     }
 
+    @Override default void copyFromSerObject(Object obj) throws Exception {
+        getCheckpointer().copyFromSerObject(obj);
+    }
 }

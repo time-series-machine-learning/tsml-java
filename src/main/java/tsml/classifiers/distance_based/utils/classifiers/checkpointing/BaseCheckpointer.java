@@ -165,7 +165,7 @@ public class BaseCheckpointer implements Checkpointer {
         return lastCheckpointTimeStamp;
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 

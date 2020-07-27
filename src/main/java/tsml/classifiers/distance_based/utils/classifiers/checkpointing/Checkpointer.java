@@ -51,6 +51,6 @@ public interface Checkpointer extends Checkpointable, Loggable {
 
     @Override boolean setCheckpointTimeHours(int t);
 
-    @Override long getLastCheckpointTimeStamp();
+    long getLastCheckpointTimeStamp();
 
 }

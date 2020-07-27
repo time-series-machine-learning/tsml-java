@@ -16,17 +16,15 @@ import tsml.classifiers.distance_based.knn.neighbour_iteration.RandomNeighbourIt
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.*;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.classifiers.CompileTimeClassifierBuilderFactory;
 import tsml.classifiers.distance_based.utils.collections.iteration.LinearListIterator;
 import utilities.*;
 import tsml.classifiers.distance_based.utils.collections.cache.BiCache;
 import tsml.classifiers.distance_based.utils.collections.cache.SymmetricBiCache;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -420,8 +418,8 @@ public class KNNLOOCV
 
     @Override public void setParams(final ParamSet params) throws Exception {
         super.setParams(params);
-        ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
-        ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
+        ParamHandlerUtils.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
+        ParamHandlerUtils.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
                               NeighbourIteratorBuilder.class);
 //        TrainTimeContractable.super.setParams(params);
     }
@@ -466,7 +464,7 @@ public class KNNLOOCV
             trainEstimateTimer.resetAndStart();
             if(getEstimateOwnPerformance()) {
 //                if(isCheckpointSavingEnabled()) { // was needed for caching
-                    HashTransformer.hashInstances(trainData);
+//                    HashTransformer.hashInstances(trainData);
 //                }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());
@@ -506,7 +504,7 @@ public class KNNLOOCV
             nextBuildTick();
             checkpointIfIntervalExpired();
         }
-        trainTimer.checkDisabled();
+        trainTimer.checkStopped();
         if(regenerateTrainEstimate) {
             if(logger.isLoggable(Level.WARNING)
 //                && !hasTrainTimeLimit()
@@ -538,7 +536,7 @@ public class KNNLOOCV
     }
 
     public long getTrainTime() {
-        return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
+        return trainEstimateTimer.getTime() + getTrainTimer().getTime();
     }
 
     public long getTrainTimeLimit() {

@@ -235,10 +235,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                                     .add(TRAIN_SETUP_FUNCTION_FLAG, trainSetupFunction);
     }
 
-    @Override public void setParams(final ParamSet params) {
+    @Override public void setParams(final ParamSet params) throws Exception {
 //        TrainTimeContractable.super.setParams(params);
-        ParamHandler.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
-        ParamHandler.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
+        ParamHandlerUtils.setParam(params, BENCHMARK_ITERATOR_FLAG, this::setAgent, Agent.class);
+        ParamHandlerUtils.setParam(params, TRAIN_SETUP_FUNCTION_FLAG, this::setTrainSetupFunction,
                               TrainSetupFunction.class); //
         // todo
         // finish params
@@ -349,10 +349,10 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
                         throw new UnsupportedOperationException("todo apply ensemble weights to train results"); // todo
                     }
                     // cleanup
-                    trainEstimateTimer.checkDisabled();
-                    trainTimer.disable();
-                    trainEstimateTimer.checkDisabled();
-                    memoryWatcher.disable();
+                    trainEstimateTimer.checkStopped();
+                    trainTimer.stop();
+                    trainEstimateTimer.checkStopped();
+                    memoryWatcher.stop();
 //                    trainResults.setDetails(this, trainData);
                     // try to create the overall done file
                     boolean created = createDoneFile("overall");
@@ -577,9 +577,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
     }
 
     protected EnhancedAbstractClassifier loadClassifier(EnhancedAbstractClassifier classifier) throws Exception {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
+//        trainTimer.suspend();
+//        trainEstimateTimer.suspend();
+//        memoryWatcher.suspend();
 //        if(isCheckpointLoadingEnabled()) {
             final String classifierLoadPath = buildClassifierLoadPath(classifier);
             if(classifier instanceof Checkpointable) {
@@ -606,9 +606,9 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
 //                memoryWatcher.add(results);
             }
 //        }
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
+//        memoryWatcher.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        trainTimer.unsuspend();
         return classifier;
     }
 
