@@ -47,9 +47,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         classifier.setSeed(0);
         classifier.getLogger().setLevel(Level.ALL);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+//        results.setDetails(classifier, data[1]);
         ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+//        trainResults.setDetails(classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
@@ -245,7 +245,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     private static final long serialVersionUID = 0;
     // minimum checkpoint interval
-    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    private transient long minCheckpointIntervalNanos = 0;//Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     // timestamp of last checkpoint
     private transient long lastCheckpointTimeStamp = 0;
     // save path for checkpoints
@@ -255,17 +255,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     // whether to skip the final checkpoint
     private transient boolean skipFinalCheckpoint = false;
 
-    @Override
     public boolean isSkipFinalCheckpoint() {
         return skipFinalCheckpoint;
     }
 
-    @Override
     public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
         this.skipFinalCheckpoint = skipFinalCheckpoint;
     }
 
-    @Override
     public String getSavePath() {
         return savePath;
     }
@@ -281,18 +278,23 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public String getLoadPath() {
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+
+    }
+
+    public String getLoadPath() {
         return loadPath;
     }
 
-    @Override public boolean setLoadPath(final String path) {
-        boolean result = Checkpointable.super.setLoadPath(path);
-        if(result) {
-            loadPath = StrUtils.asDirPath(path);
-        } else {
-            loadPath = null;
-        }
-        return result;
+    public boolean setLoadPath(final String path) {
+//        boolean result = Checkpointable.super.setLoadPath(path);
+//        if(result) {
+//            loadPath = StrUtils.asDirPath(path);
+//        } else {
+//            loadPath = null;
+//        }
+//        return result;
+        return true;
     }
 
     public StopWatch getTrainTimer() {
@@ -345,7 +347,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return memoryWatcher;
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
@@ -358,7 +360,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainTimeLimitNanos = nanos;
     }
 
-    @Override public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
+    public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
         long result = 0;
         // if we've got no more constituents to look at then we're done
         if(!nextConstituentsBatch.isEmpty()) {
@@ -366,24 +368,24 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             EnhancedAbstractClassifier classifier = nextConstituentsBatch.get(0);
             // if it's able to predict its next amount of time then use that
             if(classifier instanceof TrainTimeContractable) {
-                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
+//                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
             }
         }
         return result;
     }
 
-    @Override public long getTrainContractTimeNanos() {
+    public long getTrainContractTimeNanos() {
         return trainContractTimeNanos;
     }
 
     private void setRemainingTrainTimeNanosPerConstituent() {
         // if we've got no train time limit then the constituents can take as long as they like
         // if we've got no constituents in the batch then there's no remaining time
-        if(!hasTrainTimeLimit() || constituentsBatch.isEmpty()) {
-            remainingTrainTimeNanosPerConstituent = -1;
-        } else {
-            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / constituentsBatch.size();
-        }
+//        if(!hasTrainTimeLimit() || constituentsBatch.isEmpty()) {
+//            remainingTrainTimeNanosPerConstituent = -1;
+//        } else {
+//            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / constituentsBatch.size();
+//        }
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
@@ -426,14 +428,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 // if the constituent can do checkpointing
                 if(constituent instanceof Checkpointable) {
                     // setup all the checkpointing details
-                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
-                        ((Checkpointable) constituent).setLoadPath(loadPath);
-                    }
-                    if(isCheckpointSavingEnabled()) {
-                        ((Checkpointable) constituent).setCheckpointPath(savePath);
-                    }
-                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
-                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
+//                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
+//                        ((Checkpointable) constituent).setLoadPath(loadPath);
+//                    }
+//                    if(isCheckpointSavingEnabled()) {
+//                        ((Checkpointable) constituent).setCheckpointPath(savePath);
+//                    }
+//                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+//                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
                 }
             }
             nextConstituentsBatch = new ArrayList<>();
@@ -486,7 +488,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainEstimateTimer.disableAnyway();
         trainTimer.disableAnyway();
         // set train results details
-        trainResults.setDetails(this, trainData);
+//        trainResults.setDetails(this, trainData);
         // free up train data
         this.trainData = null;
         // we're built by here
@@ -520,7 +522,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // set the train time limit if possible
         if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()) {
-            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
+//            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
         // track the train time of the constituent
         StopWatch constituentTrainTimer = new StopWatch();
@@ -563,14 +565,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // add the constituent's train time onto ours
         if(constituent instanceof TrainTimeable) { // todo these can probs be a util method as similar elsewhere
             // (RLTune)
-            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            trainTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             trainTimer.add(constituentTrainTimer);
         }
         // add the constituent's train estimate time onto ours
         if(constituent instanceof TrainEstimateTimeable) {
             // the classifier tracked its time internally
-            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             // we already tracked this as part of the train time
         }
@@ -582,8 +584,10 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // if the constituent is contracting train time AND there's time remaining for each constituent AND the
         // constituent has remaining work to do
-        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent() &&
-                ((TrainTimeContractable) constituent).hasRemainingTraining()) {
+        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()
+//                   &&
+//                ((TrainTimeContractable) constituent).hasRemainingTraining()
+        ) {
             // add it to the next batch of constituents
             nextConstituentsBatch.add(constituent);
         }
@@ -611,7 +615,9 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // must do a first pass of all constituents, therefore if the first batch hasn't been completed this should
         // always return true
         // otherwise, it's dependent on whether there's further training remaining
-        return !firstBatchDone || (hasRemainingTrainTime() && !constituentsBatch.isEmpty());
+        return !firstBatchDone || (
+//                hasRemainingTrainTime() &&
+                        !constituentsBatch.isEmpty());
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {

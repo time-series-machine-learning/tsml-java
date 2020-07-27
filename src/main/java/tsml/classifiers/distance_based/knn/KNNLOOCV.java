@@ -251,9 +251,9 @@ public class KNNLOOCV
             classifier.getLogger().setLevel(Level.ALL);
             classifier.setEstimateOwnPerformance(true);
             ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-            results.setDetails(classifier, data[1]);
+//            results.setDetails(classifier, data[1]);
             ClassifierResults trainResults = classifier.getTrainResults();
-            trainResults.setDetails(classifier, data[0]);
+//            trainResults.setDetails(classifier, data[0]);
             System.out.println(trainResults.writeSummaryResultsToString());
             System.out.println(results.writeSummaryResultsToString());
         }
@@ -322,7 +322,7 @@ public class KNNLOOCV
     }
 
     public boolean hasNextBuildTick() throws Exception {
-        return estimateOwnPerformance && hasNextNeighbour() && hasRemainingTrainTime();
+        return estimateOwnPerformance && hasNextNeighbour() ;//&& hasRemainingTrainTime();
     }
 
     public long predictNextTrainTimeNanos() {
@@ -409,8 +409,8 @@ public class KNNLOOCV
     @Override public ParamSet getParams() {
         return super.getParams()
                     .add(NEIGHBOUR_ITERATION_STRATEGY_FLAG, neighbourIteratorBuilder)
-                    .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit)
-                    .addAll(TrainTimeContractable.super.getParams());
+                    .add(NEIGHBOUR_LIMIT_FLAG, neighbourLimit);
+//                    .addAll(TrainTimeContractable.super.getParams());
     }
 
     @Override public void setParams(final ParamSet params) {
@@ -418,7 +418,7 @@ public class KNNLOOCV
         ParamHandler.setParam(params, NEIGHBOUR_LIMIT_FLAG, this::setNeighbourLimit, Integer.class);
         ParamHandler.setParam(params, NEIGHBOUR_ITERATION_STRATEGY_FLAG, this::setNeighbourIteratorBuilder,
                               NeighbourIteratorBuilder.class);
-        TrainTimeContractable.super.setParams(params);
+//        TrainTimeContractable.super.setParams(params);
     }
 
     public boolean loadFromCheckpoint() {
@@ -460,9 +460,9 @@ public class KNNLOOCV
             memoryWatcher.enableAnyway();
             trainEstimateTimer.resetAndEnable();
             if(getEstimateOwnPerformance()) {
-                if(isCheckpointSavingEnabled()) { // was needed for caching
+//                if(isCheckpointSavingEnabled()) { // was needed for caching
                     HashTransformer.hashInstances(trainData);
-                }
+//                }
                 // build a progressive leave-one-out-cross-validation
                 searchers = new ArrayList<>(trainData.size());
                 // build a neighbour searcher for every train instance
@@ -504,7 +504,7 @@ public class KNNLOOCV
         trainTimer.checkDisabled();
         if(regenerateTrainEstimate) {
             if(logger.isLoggable(Level.WARNING)
-                && !hasTrainTimeLimit()
+//                && !hasTrainTimeLimit()
                 && ((hasNeighbourLimit() && neighbourCount < neighbourLimit) ||
                         (!hasNeighbourLimit() && neighbourCount < trainData.size()))) {
                 throw new IllegalStateException("not fully built");
@@ -522,7 +522,7 @@ public class KNNLOOCV
         trainEstimateTimer.disable();
         memoryWatcher.disable();
         if(regenerateTrainEstimate) {
-            trainResults.setDetails(this, trainData);
+//            trainResults.setDetails(this, trainData);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setBuildTime(trainEstimateTimer.getTimeNanos());
             trainResults.setBuildPlusEstimateTime(trainEstimateTimer.getTimeNanos() + trainTimer.getTimeNanos());
@@ -532,7 +532,7 @@ public class KNNLOOCV
         saveToCheckpoint();
     }
 
-    public long getTrainTimeNanos() {
+    public long getTrainTime() {
         return trainEstimateTimer.getTimeNanos() + getTrainTimer().getTimeNanos();
     }
 
@@ -540,7 +540,6 @@ public class KNNLOOCV
         return trainTimeLimitNanos;
     }
 
-    @Override
     public void setTrainTimeLimitNanos(final long trainTimeLimit) {
         this.trainTimeLimitNanos = trainTimeLimit;
     }
@@ -581,9 +580,9 @@ public class KNNLOOCV
         classifier.setSeed(seed); // set seed
         classifier.setEstimateOwnPerformance(true);
         ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
+//        results.setDetails(classifier, data[1]);
         ClassifierResults trainResults = classifier.getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
+//        trainResults.setDetails(classifier, data[0]);
         System.out.println(trainResults.writeSummaryResultsToString());
         System.out.println(results.writeSummaryResultsToString());
     }
