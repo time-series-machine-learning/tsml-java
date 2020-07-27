@@ -27,17 +27,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
-import tsml.classifiers.TrainEstimateTimeable;
-import tsml.classifiers.TrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.SysUtils;
 import utilities.*;
-import weka.classifiers.Classifier;
-import weka.core.Instances;
-import weka.core.OptionHandler;
-import weka.core.Randomizable;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
