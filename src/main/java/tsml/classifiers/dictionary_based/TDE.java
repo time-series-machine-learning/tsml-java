@@ -908,8 +908,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainResults.finaliseResults();
     }
 
-    //potentially scuffed when train set is subsampled, will have to revisit and discuss if this is a viable option
-    //for estimation anyway.
     private double[] distributionForInstance(int test) throws Exception {
         int numClasses = train.numClasses();
         double[] classHist = new double[numClasses];
