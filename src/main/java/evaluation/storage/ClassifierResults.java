@@ -1646,15 +1646,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             + "," + numClasses()
             + "," + errorEstimateMethod
             + "," + errorEstimateTime
-            + "," + buildPlusEstimateTime
-/*   The below was added by @goastler, but is not used by anyone else
-            + "," + os
-            + "," + cpuInfo
-            + "," + meanMemoryUsageInBytes
-            + "," + stdDevMemoryUsageInBytes
-            + "," + garbageCollectionTimeInMillis
-            + "," + memoryReadingCount
-*/            ;
+            + "," + buildPlusEstimateTime;
 
         return res;
     }
