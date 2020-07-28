@@ -84,7 +84,7 @@ public class IndexedParameterSpace implements IndexedCollection<ParamSet> {
                 value = CopierUtils.deepCopy(value); // must copy objects otherwise every paramset
                 // uses the same object reference!
             } catch(Exception e) {
-                throw new IllegalStateException("cannot copy value");
+                throw new IllegalArgumentException(e);
             }
             List<ParamSpace> subSpaces = dimension.getSubSpaces();
             if(!subSpaces.isEmpty()) {

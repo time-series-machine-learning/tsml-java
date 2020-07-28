@@ -1,7 +1,9 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
+import utilities.FileUtils;
 import weka.core.SerializedObject;
 
+import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -11,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.zip.GZIPInputStream;
 
 public class CopierUtils {
 
@@ -63,9 +66,15 @@ public class CopierUtils {
     }
 
     public static Object deepCopy(Object src, Collection<Field> fields) throws Exception {
-        Object dest = src.getClass().newInstance();
-        deepCopyFrom(src, dest, fields);
-        return dest;
+        try {
+            // newInstance() may not work if there's no default constructor / constructor throws an exception
+            Object dest = src.getClass().newInstance();
+            deepCopyFrom(src, dest, fields);
+            return dest;
+        } catch(Exception e) {
+            // so try deep copying using serialisation instead. This ignores the list of fields to copy and will copy all fields instead!
+            return serialisedDeepCopy(src);
+        }
     }
 
     public static void deepCopyFrom(Object src, Object dest) throws
@@ -78,7 +87,24 @@ public class CopierUtils {
         copyFields(src, dest, true, fields);
     }
 
+    public static Object serialisedDeepCopy(Object src) throws IOException, ClassNotFoundException {
+        return deserialise(serialise(src));
+    }
+
     // copy functions for copying values
+
+    public static byte[] serialise(Object obj) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(obj);
+        return baos.toByteArray();
+    }
+
+    public static Object deserialise(byte[] bytes) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        return ois.readObject();
+    }
 
     public static <A> A copy(A object, boolean deep) throws
             Exception {
