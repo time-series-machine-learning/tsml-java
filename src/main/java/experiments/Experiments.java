@@ -142,10 +142,10 @@ public class Experiments  {
             int folds=1;
             String[] settings=new String[9];
             String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
-            //           String classifier=classifiers[2];
+ //           String classifier=classifiers[2];
             String classifier="STC";
 
-            //
+//
             settings[0]="-dp=E:\\Data Working Area\\DomenicHeartbeat";//Where to get data
             settings[1]="-rp=E:\\Temp\\";//Where to write results
             settings[2]="-gtf=false"; //Whether to generate train files or not
@@ -157,7 +157,7 @@ public class Experiments  {
             settings[8]="--force=true";
 
             String[] probFiles= {"HB"};
-            //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
@@ -166,7 +166,7 @@ public class Experiments  {
             if(threaded){
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
-                //                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
+//                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
             }else{//Local run without args, mainly for debugging
                 for(String prob:probFiles){
@@ -174,7 +174,7 @@ public class Experiments  {
                     for(int i=1;i<=folds;i++){
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                        //                        System.out.println("Sequential experiment with "+expSettings);
+//                        System.out.println("Sequential experiment with "+expSettings);
                         setupAndRunExperiment(expSettings);
                     }
                 }
@@ -448,8 +448,8 @@ public class Experiments  {
         boolean quit = false;
 
         if (!expSettings.forceEvaluation &&
-                    ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
-                             (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
+                ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
+                        (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + expSettings.testFoldFileName + ", exiting.");
             quit = true;
         }
@@ -595,7 +595,7 @@ public class Experiments  {
                     ((Checkpointable) classifier).setCheckpointTimeHours((int) TimeUnit.HOURS.convert(expSettings.checkpointInterval, TimeUnit.NANOSECONDS));
                 }
                 //else, as default
-                // want to checkpoint at classifier's discretion
+                    // want to checkpoint at classifier's discretion
             }
         }
 
@@ -741,12 +741,12 @@ public class Experiments  {
 
             int halfR = repeats/2;
             long median = repeats % 2 == 0 ?
-                                  (times[halfR] + times[halfR+1]) / 2 :
-                                  times[halfR];
+                    (times[halfR] + times[halfR+1]) / 2 :
+                    times[halfR];
 
             double d = 1000000000;
             StringBuilder sb = new StringBuilder("BENCHMARK TIMINGS, summary of times to "
-                                                         + "sort "+repeats+" random int arrays of size "+arrSize+" - in seconds\n");
+                    + "sort "+repeats+" random int arrays of size "+arrSize+" - in seconds\n");
             sb.append("total = ").append(total/d).append("\n");
             sb.append("min = ").append(min/d).append("\n");
             sb.append("max = ").append(max/d).append("\n");
@@ -857,22 +857,22 @@ public class Experiments  {
 
         //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
-                                                                                             + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
+                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
         public String dataReadLocation = null;
 
         @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
-                                                                                                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
+                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
         public String resultsWriteLocation = null;
 
         @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
         public String classifierName = null;
 
         @Parameter(names={"-dn","--datasetName"}, required=true, order=3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
-                                                                                                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
+                + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
         public String datasetName = null;
 
         @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
-                                                                                        + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
+                + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
         public int foldId = 0;
 
         //OPTIONAL PARAMETERS
@@ -884,55 +884,55 @@ public class Experiments  {
         public boolean debug = false;
 
         @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
-                                                                                    + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
+                + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
 
         @Parameter(names={"-cp","--checkpointing"}, arity=1, description = "(boolean or String) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. "
-                                                                                   + "Default is false/0, for no checkpointing. if -cp = true, checkpointing is turned on and checkpointing frequency is determined by the classifier. if -cp is a timing of the form [int][char], e.g. 1h, "
-                                                                                   + "checkpoints shall be made at that frequency (as close as possible according to the atomic unit of learning for the classifier). Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days)."
-                                                                                   + "Lastly, if -cp is of the the [int] only, it is assumed to be a timing in hours."
-                                                                                   + "The classifier by default will write its checkpointing files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+                + "Default is false/0, for no checkpointing. if -cp = true, checkpointing is turned on and checkpointing frequency is determined by the classifier. if -cp is a timing of the form [int][char], e.g. 1h, "
+                + "checkpoints shall be made at that frequency (as close as possible according to the atomic unit of learning for the classifier). Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days)."
+                + "Lastly, if -cp is of the the [int] only, it is assumed to be a timing in hours."
+                + "The classifier by default will write its checkpointing files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         private String checkpointingStr = null;
         public boolean checkpointing = false;
         public long checkpointInterval = 0;
 
         @Parameter(names={"-vis","--visualisation"}, description = "(boolean) Turns on the production of visualisation files, if the classifier implements the Visualisable interface. "
-                                                                           + "Figures are created using Python. Exact requirements are to be determined, but a a Python 3.7 installation is the current recommendation with the numpy and matplotlib packages installed on the global environment. "
-                                                                           + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+                + "Figures are created using Python. Exact requirements are to be determined, but a a Python 3.7 installation is the current recommendation with the numpy and matplotlib packages installed on the global environment. "
+                + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         public boolean visualise = false;
 
         @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
-                                                                               + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
-                                                                               + "the --resultsPath. If a path is supplied via this parameter however, the files shall be written to that precisely that directory, as opposed to e.g. [-sp]/[--classifierName]/Predictions... "
-                                                                               + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
+                + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
+                + "the --resultsPath. If a path is supplied via this parameter however, the files shall be written to that precisely that directory, as opposed to e.g. [-sp]/[--classifierName]/Predictions... "
+                + "THIS IS A PLACEHOLDER PARAMETER. TO BE FULLY IMPLEMENTED WHEN INTERFACES AND SETCLASSIFIER ARE UPDATED.")
         public String supportingFilePath = null;
 
         @Parameter(names={"-pid","--parameterSplitIndex"}, description = "(Integer) If supplied and the classifier implements the ParameterSplittable interface, this execution of experiments will be set up to evaluate "
-                                                                                 + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
+                + "the parameter set -pid within the parameter space used by the classifier (whether that be a supplied space or default). How the integer -pid maps onto the parameter space is up to the classifier.")
         public Integer singleParameterID = null;
 
         @Parameter(names={"-tb","--timingBenchmark"}, arity=1, description = "(boolean) Turns on the computation of a standard operation to act as a simple benchmark for the speed of computation on this hardware, which may "
-                                                                                     + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
-                                                                                     + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
-                                                                                     + "any processing noise may make any benchmark normalisation process unreliable anyway.")
+                + "optionally be used to normalise build/test/predictions times across hardware in later analysis. Expected time on Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz is ~0.8 seconds. For experiments that are likely to be very "
+                + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
+                + "any processing noise may make any benchmark normalisation process unreliable anyway.")
         public boolean performTimingBenchmark = false;
 
         //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge
         //of here, the ifs will call the wrong things. decide on the design of this
         @Parameter(names={"-ff","--fileFormat"}, description = "(int) Specifies the format for the classifier results file to be written in, accepted values = { 0, 1, 2 }, default = 0. 0 writes the first 3 lines of meta information "
-                                                                       + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
-                                                                       + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
+                + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
+                + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
         public int classifierResultsFileFormat = 0;
 
         @Parameter(names={"-ctr","--contractTrain"}, description = "(String) Defines a time limit for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to "
-                                                                           + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
-                                                                           + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
+                + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
+                + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
         private String contractTrainTimeString = null;
         public long contractTrainTimeNanos = 0;
 
         @Parameter(names={"-cte","--contractTest"}, description = "(String) Defines a time limit for the testing of the classifier if it implements the TestTimeContractable interface. Defaults to "
-                                                                          + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
-                                                                          + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
+                + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
+                + "e.g.1 10s = 10 seconds,   e.g.2 1h = 60M = 3600s. Possible units, in order: n (nanoseconds), u, m, s, M, h, d (days).")
         private String contractTestTimeString = null;
         public long contractTestTimeNanos = 0;
 
@@ -943,7 +943,7 @@ public class Experiments  {
         public boolean forceEvaluation = false;
 
         @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
-                                                                                        + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
+                + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
         public String trainEstimateMethod = "cv_10";
 
         @Parameter(names={"--conTrain"}, arity = 2, description = "todo")
@@ -1018,8 +1018,8 @@ public class Experiments  {
 
                             // these are the ones being set individually per exp, skip the copying over
                             if (field.getName().equals("classifierName") ||
-                                        field.getName().equals("datasetName") ||
-                                        field.getName().equals("foldId"))
+                                    field.getName().equals("datasetName") ||
+                                    field.getName().equals("foldId"))
                                 continue;
 
                             try {
@@ -1056,8 +1056,8 @@ public class Experiments  {
                     System.err.println("Error: \n\t"+e+"\n\n");
                 }
                 jc.usage();
-                //                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
-                //                System.exit(1);
+//                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
+//                System.exit(1);
             }
 
             foldId -= 1; //go from one-indexed to zero-indexed
@@ -1077,7 +1077,7 @@ public class Experiments  {
                     checkpointInterval = parseTiming(checkpointingStr);
 
                 }
-            }
+          }
 
             //populating the contract times if present
             if (contractTrainTimeString != null)

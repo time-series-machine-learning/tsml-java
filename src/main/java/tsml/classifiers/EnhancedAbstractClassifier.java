@@ -88,6 +88,22 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected transient boolean debug=false;
 
     /**
+     * get the classifier RNG	
+     * @return Random
+     */
+    public Random getRandom() {
+        return rand;
+    }
+
+    /**
+     * Set the classifier RNG	
+     * @param rand
+     */
+    public void setRandom(Random rand) {
+        this.rand = rand;
+    }
+    
+    /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
      * be used to describe this classifier. By default, this will simply be the
      * simple-class-name of the classifier
@@ -167,9 +183,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
         trainResults = new ClassifierResults();
-        if(seedClassifier) {
-            rand.setSeed(seed);
-        }
+        rand.setSeed(seed);
         numClasses = trainData.numClasses();
         trainResults.setClassifierName(getClassifierName());
         trainResults.setParas(getParameters());
@@ -417,9 +431,5 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public void printLineDebug(String s){
         if(debug)
             System.out.println(s);
-    }
-
-    public Random getRandom() {
-        return rand;
     }
 }
