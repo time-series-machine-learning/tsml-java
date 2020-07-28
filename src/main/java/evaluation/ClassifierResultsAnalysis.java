@@ -75,8 +75,8 @@ public class ClassifierResultsAnalysis {
     public static PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
     public static PerformanceMetric benchmarkedTrainTimeMetric = PerformanceMetric.buildTimeBenchmarked;
 
-//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
-//        PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
+    //        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+    //        PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
     public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
     public static PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.avgTestPredTimeBenchmarked;
 
@@ -172,8 +172,8 @@ public class ClassifierResultsAnalysis {
                 summary = eval_metric(outPath, expname, results, metric, dsetGroupings);
             } catch (Exception fnf) {
                 System.out.println("Something went wrong while writing " + metric + "files, likely later stages of analysis could "
-                        + "not find files that should have been made "
-                        + "internally in earlier stages of the pipeline, FATAL");
+                                           + "not find files that should have been made "
+                                           + "internally in earlier stages of the pipeline, FATAL");
                 fnf.printStackTrace();
                 System.exit(0);
             }
@@ -204,16 +204,16 @@ public class ClassifierResultsAnalysis {
 
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing RAW timing files, likely "
-                    + "later stages of analysis could not find files that should have been made"
-                    + "internally in earlier stages of the pipeline, FATAL");
+                                       + "later stages of analysis could not find files that should have been made"
+                                       + "internally in earlier stages of the pipeline, FATAL");
             fnf.printStackTrace();
             System.exit(0);
         } catch (Exception ex) {
             ex.printStackTrace();
             System.out.println("Something went wrong while writing RAW timing files. But NOT "
-                    + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
-                    + " etc. Todo look into cases of this as they crop up.\n"
-                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the RAW timings");
+                                       + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
+                                       + " etc. Todo look into cases of this as they crop up.\n"
+                                       + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the RAW timings");
         }
 
         // TODO proper support for benchmarked timings, link up to the diagram creation code, global summary files, etc
@@ -223,16 +223,16 @@ public class ClassifierResultsAnalysis {
             compResourceSummaries.addAll(Arrays.asList(compResourcesSummaryBenchmarked));
         } catch (FileNotFoundException fnf) {
             System.out.println("Something went wrong while writing BENCHMARKED timing files, likely "
-                    + "later stages of analysis could not find files that should have been made"
-                    + "internally in earlier stages of the pipeline, FATAL");
+                                       + "later stages of analysis could not find files that should have been made"
+                                       + "internally in earlier stages of the pipeline, FATAL");
             fnf.printStackTrace();
             System.exit(0);
         } catch (Exception ex) {
             ex.printStackTrace();
             System.out.println("Something went wrong while writing BENCHMARKED timing files. But NOT "
-                    + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
-                    + " etc. Todo look into cases of this as they crop up.\n"
-                    + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the BENCHMARKED timings");
+                                       + "a filenotfound error. Either timings werent found, some NaN errors occurred,"
+                                       + " etc. Todo look into cases of this as they crop up.\n"
+                                       + "CONTINUING THE ANALYSIS FOR NOW, but ignoring the BENCHMARKED timings");
         }
         //end benchmarked
 
@@ -243,37 +243,37 @@ public class ClassifierResultsAnalysis {
         //using the presence of summaries for train and test timings as an indicator that they are present
         List<PerformanceMetric> compMetrics = new ArrayList<>();
 
-//        if (compResourceSummaries != null) {
-//            compMetrics.add(PerformanceMetric.buildTime);
-//            compMetrics.add(testTimeMetric);
-//            compMetrics.add(memoryMaxMetric);
-//            compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
-//            compMetrics.add(benchmarkedTestTimeMetric);
-////            compMetrics.add(estimateTimeMetric);
-//            for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
-//                String label = compMetrics.get(j).name;
-//                if (compResourceSummaries.get(j) != null) {
-//                    //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
-//                    metrics.add(compMetrics.get(j));
-//
-//                    bigSummary.writeString(label + ":");
-//                    bigSummary.writeLine(compResourceSummaries.get(j)[0]);
-//
-//                    smallSummary.writeString(label + ":");
-//                    smallSummary.writeLine(compResourceSummaries.get(j)[1]);
-//
-//                    statCliquesForCDDias.add(compResourceSummaries.get(j)[2]);
-//                }
-//                else {
-//                    //not present, ignore, and remove from list of time-specific metrics
-//                    //to be passed to the timing dia creator
-//                    compMetrics.remove(j);
-//
-//                    bigSummary.writeString(label + ":  MISSING\n\n");
-//                    smallSummary.writeString(label + ": MISSING\n\n");
-//                }
-//            }
-//        }
+        if (compResourceSummaries != null) {
+            compMetrics.add(PerformanceMetric.buildTime);
+            compMetrics.add(testTimeMetric);
+            compMetrics.add(memoryMaxMetric);
+            compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
+            compMetrics.add(benchmarkedTestTimeMetric);
+            //            compMetrics.add(estimateTimeMetric);
+            for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
+                String label = compMetrics.get(j).name;
+                if (compResourceSummaries.get(j) != null) {
+                    //present, so add on automatically to the list of metrics for passing around to spreadsheet/image makers etc
+                    metrics.add(compMetrics.get(j));
+
+                    bigSummary.writeString(label + ":");
+                    bigSummary.writeLine(compResourceSummaries.get(j)[0]);
+
+                    smallSummary.writeString(label + ":");
+                    smallSummary.writeLine(compResourceSummaries.get(j)[1]);
+
+                    statCliquesForCDDias.add(compResourceSummaries.get(j)[2]);
+                }
+                else {
+                    //not present, ignore, and remove from list of time-specific metrics
+                    //to be passed to the timing dia creator
+                    compMetrics.remove(j);
+
+                    bigSummary.writeString(label + ":  MISSING\n\n");
+                    smallSummary.writeString(label + ": MISSING\n\n");
+                }
+            }
+        }
         //END TIMINGS
 
         bigSummary.closeFile();
@@ -287,9 +287,7 @@ public class ClassifierResultsAnalysis {
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
             matlab_buildCompResourcesDias(compMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
-            for(String evalSet : new String[] {trainLabel, testLabel, trainTestDiffLabel}) {
-                matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput(), evalSet);
-            }
+            matlab_buildPairwiseScatterDiagrams(outPath, expname, metrics, results.getDatasetNamesInOutput());
         }
     }
 
@@ -403,7 +401,7 @@ public class ClassifierResultsAnalysis {
         String avgsFile = outPath + fileNameBuild_avgsFile(evalSet, metric);
         try {
             out.writeLine(MultipleClassifiersPairwiseTest.runTests(avgsFile).toString());
-//            out.writeLine(MultipleClassifiersPairwiseTest.runTests(outPath+filename+"_"+splitMetricLabal+".csv").toString());
+            //            out.writeLine(MultipleClassifiersPairwiseTest.runTests(outPath+filename+"_"+splitMetricLabal+".csv").toString());
             cliques = MultipleClassifiersPairwiseTest.printCliques();
             out.writeLine("\n\n" + cliques);
         } catch (Exception e) {
@@ -411,9 +409,9 @@ public class ClassifierResultsAnalysis {
             System.err.println("*****".replace("*", "*****"));
 
             System.err.println("MultipleClassifiersPairwiseTest.runTests() failed. Almost certainly this is because there were"
-                    + "too many ties/duplicates within one of the pairwise tests and then an index out of bounds error was thrown. "
-                    + "This will be fixed at some point. The analysis will CARRY ON, and everything that is successfully printed out "
-                    + "IS CORRECT, however whatever particular table that test would have been summarised as is missing from your files.");
+                                       + "too many ties/duplicates within one of the pairwise tests and then an index out of bounds error was thrown. "
+                                       + "This will be fixed at some point. The analysis will CARRY ON, and everything that is successfully printed out "
+                                       + "IS CORRECT, however whatever particular table that test would have been summarised as is missing from your files.");
             System.err.println("avgs filename = "+avgsFile);
             e.printStackTrace();
 
@@ -426,14 +424,14 @@ public class ClassifierResultsAnalysis {
         return new String[] { longSummaryStats.toString(), shortSummaryStats.toString(), cliques };
     }
 
-    protected static String fileNameBuild_cd(String filename, String statistic, String evalSet) {
-        return "cd_"+filename+"_"+statistic+"S" + "_" + evalSet;
+    protected static String fileNameBuild_cd(String filename, String statistic) {
+        return "cd_"+filename+"_"+statistic+"S";
     }
-    protected static String fileNameBuild_pws(String filename, String statistic, String evalSet) {
-        return "pws_"+filename+"_"+statistic+"S" + "_" + evalSet;
+    protected static String fileNameBuild_pws(String filename, String statistic) {
+        return "pws_"+filename+"_"+statistic+"S";
     }
-    protected static String fileNameBuild_pwsInd(String c1, String c2, String statistic, String evalSet) {
-        return "pws_"+c1+"VS"+c2+"_"+statistic+"S" + "_" + evalSet;
+    protected static String fileNameBuild_pwsInd(String c1, String c2, String statistic) {
+        return "pws_"+c1+"VS"+c2+"_"+statistic+"S";
     }
     protected static String fileNameBuild_avgsFile(String evalSet, PerformanceMetric metric) {
         return evalSet+metric+"_"+(metric.takeMean?"MEANS":"MEDIANS")+".csv";
@@ -479,37 +477,37 @@ public class ClassifierResultsAnalysis {
         dsetVals = util_order(dsetVals, ordering);
         stddevsFoldVals = util_order(stddevsFoldVals, ordering);
 
-        //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
-        String cdFolder = expRootDirectory + cdDiaFolderName;
-        (new File(cdFolder)).mkdirs();
-        OutFile out = new OutFile(cdFolder+"readme.txt");
-        out.writeLine("remember that nlls are auto-negated now for cd dia ordering\n");
-        out.writeLine("and that basic notepad wont show the line breaks properly, view (cliques especially) in notepad++");
-        out.closeFile();
+        if (evalSet.equalsIgnoreCase("TEST") || allComputationalMetrics.contains(metric)) {
+            //qol for cd dia creation, make a copy of all the raw test stat files in a common folder, one for pairwise, one for freidman
+            String cdFolder = expRootDirectory + cdDiaFolderName;
+            (new File(cdFolder)).mkdirs();
+            OutFile out = new OutFile(cdFolder+"readme.txt");
+            out.writeLine("remember that nlls are auto-negated now for cd dia ordering\n");
+            out.writeLine("and that basic notepad wont show the line breaks properly, view (cliques especially) in notepad++");
+            out.closeFile();
+            for (String subFolder : new String[] { pairwiseCDDiaDirName, friedmanCDDiaDirName }) {
+                (new File(cdFolder+subFolder+"/")).mkdirs();
+                String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,metric.name)+".csv";
 
-        for (String subFolder : new String[] { pairwiseCDDiaDirName, friedmanCDDiaDirName }) {
-            (new File(cdFolder+subFolder+"/")).mkdirs();
-            String cdName = cdFolder+subFolder+"/"+fileNameBuild_cd(filename,metric.name, evalSet)+".csv";
-
-            //meta hack for qol, negate the nll (sigh...) for correct ordering on dia
-            //ALSO now negating the timings, smaller = better
-            if (!metric.maximise) {
-                double[][] negatedDsetVals = new double[dsetVals.length][dsetVals[0].length];
-                for (int i = 0; i < dsetVals.length; i++) {
-                    for (int j = 0; j < dsetVals[i].length; j++) {
-                        negatedDsetVals[i][j] = dsetVals[i][j] * -1;
+                //meta hack for qol, negate the nll (sigh...) for correct ordering on dia
+                //ALSO now negating the timings, smaller = better
+                if (!metric.maximise) {
+                    double[][] negatedDsetVals = new double[dsetVals.length][dsetVals[0].length];
+                    for (int i = 0; i < dsetVals.length; i++) {
+                        for (int j = 0; j < dsetVals[i].length; j++) {
+                            negatedDsetVals[i][j] = dsetVals[i][j] * -1;
+                        }
                     }
+                    writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
+                } else {
+                    writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
                 }
-                writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
-            } else {
-                writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
-            }
-            //end cd dia qol
+            } //end cd dia qol
 
             //qol for pairwisescatter dia creation, make a copy of the test stat files
             String pwsFolder = expRootDirectory + pairwiseScatterDiaPath;
             (new File(pwsFolder)).mkdirs();
-            String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name, evalSet)+".csv";
+            String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name)+".csv";
             writeRawTableFile_ClassifierDataset(pwsName, dsetVals, cnames);
             //end pairwisescatter qol
 
@@ -538,7 +536,7 @@ public class ClassifierResultsAnalysis {
         summaryStrings = eval_metricOnSplitStatsFile(outPath, evalSet, metric, foldVals, dsetVals, ranks, stddevsFoldVals, cnames, dsets);
 
         //write these even if not actually making the dias this execution, might manually make them later
-        writeCliqueHelperFiles(expRootDirectory + cdDiaFolderName + pairwiseCDDiaDirName, filename, metric, summaryStrings[2], evalSet);
+        writeCliqueHelperFiles(expRootDirectory + cdDiaFolderName + pairwiseCDDiaDirName, filename, metric, summaryStrings[2]);
 
         //this really needs cleaning up at some point... jsut make it a list and stop circlejerking to arrays
         String[] summaryStrings2 = new String[summaryStrings.length+groupingSummary.length];
@@ -553,7 +551,7 @@ public class ClassifierResultsAnalysis {
 
     public static String[] eval_metricDsetGroups(String outPathBase, String filename, String evalSet, PerformanceMetric metric, double[][][] foldVals, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         String outPath = expRootDirectory + "DatasetGroupings/";
-//        String outPath = outPathBase + "DatasetGroupings/";
+        //        String outPath = outPathBase + "DatasetGroupings/";
         (new File(outPath)).mkdir();
 
         //for each grouping method
@@ -653,14 +651,14 @@ public class ClassifierResultsAnalysis {
             for (Map.Entry<String, String[]> dsetGroup : dsetGroupingMethod.entrySet()) {
                 String groupName = dsetGroup.getKey();
                 groupNames[groupIndex] = groupName;
-//                String groupPath = groupingMethodPath + groupName + "/";
-//                (new File(groupPath)).mkdir();
+                //                String groupPath = groupingMethodPath + groupName + "/";
+                //                (new File(groupPath)).mkdir();
 
                 //perform group analysis
                 String[] groupDsets = dsetGroup.getValue();
                 double[][][] groupFoldVals = dsetGroups_collectDsetVals(foldVals, dsets, groupDsets);
                 String groupFileName = filename + "-" + groupName + "-";
-//                String[] groupSummaryFileStrings = eval_metricOnSplit(groupPath+statName+"/", groupFileName, groupName, evalSet, statName, groupFoldVals, cnames, groupDsets, null);
+                //                String[] groupSummaryFileStrings = eval_metricOnSplit(groupPath+statName+"/", groupFileName, groupName, evalSet, statName, groupFoldVals, cnames, groupDsets, null);
                 String[] groupSummaryFileStrings = eval_metricOnSplit(groupingMethodPath+metric+"/", groupFileName, groupName, evalSet, metric, groupFoldVals, cnames, groupDsets, null);
 
                 //collect the accuracies for the dataset group
@@ -720,7 +718,7 @@ public class ClassifierResultsAnalysis {
     }
 
     public static void dsetGroups_writeGroupingMethodSummaryFile(String filename, StringBuilder [] groupSummaryStringBuilders, String[] cnames, String[] groupNames,
-                                                                 Map<String, double[]> groupWins, Map<String, double[]> groupAccs) {
+            Map<String, double[]> groupWins, Map<String, double[]> groupAccs) {
 
         OutFile groupingMethodSummaryFile = new OutFile(filename);
         for (StringBuilder groupSummary : groupSummaryStringBuilders) {
@@ -740,7 +738,7 @@ public class ClassifierResultsAnalysis {
         StringBuilder sb = new StringBuilder();
 
         sb.append("This table accounts for ties on a dset e.g if 2 classifiers share best accuracy "
-                + "that will count as half a win for each").append("\n");
+                          + "that will count as half a win for each").append("\n");
 
         //header row
         sb.append("NumWinsInGroups:");
@@ -875,10 +873,10 @@ public class ClassifierResultsAnalysis {
         if (testTimes != null)
             testResStr = eval_metricOnSplit(timingsOutPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
 
-//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
-//        String[] estimateResStr = null;
-//        if (estimateTimes != null)
-//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
+        //        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
+        //        String[] estimateResStr = null;
+        //        if (estimateTimes != null)
+        //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
 
         String memoryOutPath = outPath + "MaxMemory/"; //special case for timings
@@ -894,7 +892,7 @@ public class ClassifierResultsAnalysis {
 
 
         return new String[][] { trainResStr, testResStr, memoryResStr };
-//        return new String[][] { trainResStr, testResStr, estimateResStr };
+        //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
     protected static String[/*{train,test}*/][] eval_CompResourcesBENCHMARKED(String outPath, String filename, ClassifierResultsCollection results, Map<String, Map<String, String[]>> dsetGroupings) throws Exception {
@@ -927,20 +925,20 @@ public class ClassifierResultsAnalysis {
             writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
         }
 
-//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
-//        String[] estimateResStr = null;
-//        if (estimateTimes != null)
-//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
+        //        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
+        //        String[] estimateResStr = null;
+        //        if (estimateTimes != null)
+        //            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
         return new String[][] { trainResStr, testResStr };
-//        return new String[][] { trainResStr, testResStr, estimateResStr };
+        //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
-    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques, String evalSet) {
+    protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques) {
         (new File(cdCSVpath)).mkdirs();
 
         //temp workaround, just write the cliques and readin again from matlab for ease of checking/editing for pairwise edge cases
-        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, metric.name, evalSet) + "_cliques.txt");
+        OutFile out = new OutFile (cdCSVpath + fileNameBuild_cd(expname, metric.name) + "_cliques.txt");
         out.writeString(cliques);
         out.closeFile();
     }
@@ -948,7 +946,7 @@ public class ClassifierResultsAnalysis {
     /**
      * this will build all the diagrams it can from the average results files that
      * exist in the cddia directory, instead of being given a list of stats that it should expect
-     * to find there, carry over from when I made the diagrams manually. todo maybe now force it to take 
+     * to find there, carry over from when I made the diagrams manually. todo maybe now force it to take
      * a list of stats to expect as a form of error checking
      */
     protected static void matlab_buildCDDias(String expname, String[] cliques) {
@@ -968,16 +966,16 @@ public class ClassifierResultsAnalysis {
             String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? computationalDiaFolderName_benchmark : computationalDiaFolderName_raw) + "/";
 
             String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ||
-                            metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(benchmarkedTestTimeMetric)
-                            || metric.equals(memoryMaxMetric)
-                    ? testLabel
-                    : trainLabel;
+                                     metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(benchmarkedTestTimeMetric)
+                                     || metric.equals(memoryMaxMetric)
+                                     ? testLabel
+                                     : trainLabel;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
 
             String ylabel = metric.equals(memoryMaxMetric) ?
-                    "Max Memory (MB)" :
-                    "Time, " + evalSet.toLowerCase() + " (ms)";
-            System.out.println("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
+                                    "Max Memory (MB)" :
+                                    "Time, " + evalSet.toLowerCase() + " (ms)";
+
             proxy.eval("compResourcesLinePlot('" + diaFolder + filenameNoExtension + "', '" + evalSet.toLowerCase() + "','" + ylabel + "');");
         }
     }
@@ -1084,14 +1082,14 @@ public class ClassifierResultsAnalysis {
         return sb.toString();
     }
 
-//    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
-//        for (int classifier = 0; classifier < timings.length; classifier++)
-//            for (int dset = 0; dset < timings[0].length; dset++)
-//                for (int fold = 0; fold < timings[0][0].length; fold++)
-//                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
-//
-//        return timings;
-//    }
+    //    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
+    //        for (int classifier = 0; classifier < timings.length; classifier++)
+    //            for (int dset = 0; dset < timings[0].length; dset++)
+    //                for (int fold = 0; fold < timings[0][0].length; fold++)
+    //                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
+    //
+    //        return timings;
+    //    }
 
     protected static double[][][] findTrainTestDiffs(double[][][] trainFoldAccs, double[][][] testFoldAccs) {
         double[][][] diffs = new double[trainFoldAccs.length][trainFoldAccs[0].length][trainFoldAccs[0][0].length];
@@ -1249,29 +1247,29 @@ public class ClassifierResultsAnalysis {
             else
                 Arrays.sort(orderedAccs);
 
-//            //README - REDACTED, this problem is currently just being ignored, since it makes so many headaches and is so insignificant anyway
-//            //to create parity between this and the matlab critical difference diagram code,
-//            //rounding the *accuracies used to calculate ranks* to 15 digits (after the decimal) 
-//            //this affects the average rank summary statistic, but not e.g the average accuracy statistic
-//            //matlab has a max default precision of 16. in a tiny number of cases, there are differences 
-//            //in accuracy that are smaller than this maximum precision, which were being taken into
-//            //acount here (by declaring one as havign a higher rank than the other), but not being 
-//            //taken into account in matlab (which considered them a tie). 
-//            //one could argue the importance of a difference less than 1x10^-15 when comparing classifiers,
-//            //so for ranks only, will round to matlab's precision. rounding the accuracies everywhere
-//            //creates a number of headaches, therefore the tiny inconsistency as a result of this
-//            //will jsut have to be lived with
-//            final int DEFAULT_MATLAB_PRECISION = 15;
-//            for (int c = 0; c < accs.length; c++) {
-//                MathContext mc = new MathContext(DEFAULT_MATLAB_PRECISION, RoundingMode.DOWN);
-//                BigDecimal bd = new BigDecimal(orderedAccs[c],mc);
-//                orderedAccs[c] = bd.doubleValue();
-//            }
+            //            //README - REDACTED, this problem is currently just being ignored, since it makes so many headaches and is so insignificant anyway
+            //            //to create parity between this and the matlab critical difference diagram code,
+            //            //rounding the *accuracies used to calculate ranks* to 15 digits (after the decimal)
+            //            //this affects the average rank summary statistic, but not e.g the average accuracy statistic
+            //            //matlab has a max default precision of 16. in a tiny number of cases, there are differences
+            //            //in accuracy that are smaller than this maximum precision, which were being taken into
+            //            //acount here (by declaring one as havign a higher rank than the other), but not being
+            //            //taken into account in matlab (which considered them a tie).
+            //            //one could argue the importance of a difference less than 1x10^-15 when comparing classifiers,
+            //            //so for ranks only, will round to matlab's precision. rounding the accuracies everywhere
+            //            //creates a number of headaches, therefore the tiny inconsistency as a result of this
+            //            //will jsut have to be lived with
+            //            final int DEFAULT_MATLAB_PRECISION = 15;
+            //            for (int c = 0; c < accs.length; c++) {
+            //                MathContext mc = new MathContext(DEFAULT_MATLAB_PRECISION, RoundingMode.DOWN);
+            //                BigDecimal bd = new BigDecimal(orderedAccs[c],mc);
+            //                orderedAccs[c] = bd.doubleValue();
+            //            }
 
 
             for (int rank = 0; rank < accs.length; rank++) {
                 for (int c = 0; c < accs.length; c++) {
-//                    if (orderedAccs[rank] == new BigDecimal(accs[c][d], new MathContext(DEFAULT_MATLAB_PRECISION, RoundingMode.DOWN)).doubleValue()) {
+                    //                    if (orderedAccs[rank] == new BigDecimal(accs[c][d], new MathContext(DEFAULT_MATLAB_PRECISION, RoundingMode.DOWN)).doubleValue()) {
                     if (orderedAccs[rank] == accs[c][d]) {
                         ranks[c][d] = rank; //count from one
                     }
@@ -1399,9 +1397,9 @@ public class ClassifierResultsAnalysis {
                 int wins=0, draws=0, losses=0;
                 for (int d = 0; d < dsets.length; d++) {
                     if (accs[c1][d] == accs[c2][d]) {
-                        //when the accuracies are identical, p == NaN. 
+                        //when the accuracies are identical, p == NaN.
                         //because NaN < 0.05 apparently it wont be counted as a draw, but a loss
-                        //so handle it here                        
+                        //so handle it here
                         draws++;
                         wdlList.get(count).get(1).add(dsets[d]);
                         wdlPlusMinus[count][d] = "0";
@@ -1468,16 +1466,16 @@ public class ClassifierResultsAnalysis {
 
     /**
      * Intended for potentially new stats that are introduced over time (at time of writing this function,
-     * build and especially test times), where maybe some older files in the intended analysis 
-     * dont have the stat but newer ones do, or some classifiers that write their own files 
+     * build and especially test times), where maybe some older files in the intended analysis
+     * dont have the stat but newer ones do, or some classifiers that write their own files
      * (via e.g TrainAccuracyEstimate) aren't properly writing them.
      *
      * Missing for timings is defined as -1. why cant i hold all this spaghetti?
      *
-     * Looking ONLY at the test files, a) because they should all be here anyway else 
-     * wouldnt have got as far as needing to call this, b) because the 'testtime' stored 
+     * Looking ONLY at the test files, a) because they should all be here anyway else
+     * wouldnt have got as far as needing to call this, b) because the 'testtime' stored
      * in the testfold files are the test timing we're generally actually interested in,
-     * i.e. the total prediction time of the fully trained classifier on the test set, 
+     * i.e. the total prediction time of the fully trained classifier on the test set,
      * as opposed to the test time of the classifier on (e.g) corssvalidation folds in training
      * that is stored in the train file
      *
@@ -1581,8 +1579,8 @@ public class ClassifierResultsAnalysis {
 
     protected static void jxl_buildStatSheets_timings(WritableWorkbook wb, String basePath, PerformanceMetric metric, int statIndex, String evalSet, String timingType) {
         // ************* the difference: timings folder assumed instead of going by the specific metric name
-        //i.e Timings/TRAIN/TrainTimings and Timings/TEST/TestTimings    
-        //instead of TrainTimings/TRAIN/TrainTimings ... 
+        //i.e Timings/TRAIN/TrainTimings and Timings/TEST/TestTimings
+        //instead of TrainTimings/TRAIN/TrainTimings ...
         String metricPath = basePath + "Timings"+timingType+"/" + evalSet + "/";
 
         WritableSheet avgsSheet = wb.createSheet(metric.name, wb.getNumberOfSheets());
@@ -1658,7 +1656,7 @@ public class ClassifierResultsAnalysis {
         return new Pair<>(cnames.toArray(new String[] { }), vals);
     }
 
-    public static void matlab_buildPairwiseScatterDiagrams(String outPath, String expName, List<PerformanceMetric> metrics, String[] dsets, String evalSet) {
+    public static void matlab_buildPairwiseScatterDiagrams(String outPath, String expName, List<PerformanceMetric> metrics, String[] dsets) {
         outPath += pairwiseScatterDiaPath;
 
         for (PerformanceMetric metric : metrics) {
@@ -1667,7 +1665,7 @@ public class ClassifierResultsAnalysis {
                 boolean originIsZero = !compStat; // if not a computational stat, probably in the range 0..1, keep that instead of min..max
                 boolean drawFitLine = compStat;
 
-                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name, evalSet) + ".csv", dsets.length);
+                Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
                 String[] classifierNames = asd.var1;
                 double[][] allResults = asd.var2;
 
@@ -1711,9 +1709,9 @@ public class ClassifierResultsAnalysis {
                         concat.append(c2name.replaceAll("_", "\\\\_"));
                         concat.append("'");
                         proxy.eval("labels = {" + concat.toString() + "};");
-//
-                        proxy.eval("'" + fileNameBuild_pwsInd(c1name, c2name, metric.name, evalSet) + "'"); //just print the filename in the matlab window, for log of progress. no longer printing fig details
-                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name, evalSet).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"',"+drawFitLine+","+originIsZero+");");
+                        //
+                        proxy.eval("'" + fileNameBuild_pwsInd(c1name, c2name, metric.name) + "'"); //just print the filename in the matlab window, for log of progress. no longer printing fig details
+                        proxy.eval("pairedscatter('" + pwFolderName + fileNameBuild_pwsInd(c1name, c2name, metric.name).replaceAll("\\.", "") + "',array(:,1),array(:,2),labels,'"+metric.name+"','"+metric.comparisonDescriptor+"',"+drawFitLine+","+originIsZero+");");
                         proxy.eval("clear");
                     }
                 }
@@ -1742,7 +1740,7 @@ public class ClassifierResultsAnalysis {
 
         try {
             xmeans.buildClusterer(new Instances(clusterData));
-            //pass copy, just in case xmeans does any kind of reordering of 
+            //pass copy, just in case xmeans does any kind of reordering of
             //instances. we want to maintain order of dsets/instances for indexing purposes
         } catch (Exception e) {
             System.out.println("Problem building clusterer for post hoc dataset groupings\n" + e);
@@ -1783,18 +1781,18 @@ public class ClassifierResultsAnalysis {
 
         String[] classifiers = new String[]{ "NN", "C45",  "Logistic", "SVML" };
 
-//        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
-//        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
-//        
+        //        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+        //        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
+        //
 
         new MultipleClassifierEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Analysis", "timingsDiaTest", 3).
-                setTestResultsOnly(true).
-//            setTestResultsOnly(false).
-        setBuildMatlabDiagrams(true).
-//            setBuildMatlabDiagrams(false).
-        setUseAccuracyOnly().
-                setDatasets(datasets).
-                readInClassifiers(classifiers, classifiers, "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Results/").
-                runComparison();
+                                                                                                                                                      setTestResultsOnly(true).
+                //            setTestResultsOnly(false).
+                        setBuildMatlabDiagrams(true).
+                //            setBuildMatlabDiagrams(false).
+                        setUseAccuracyOnly().
+                                                    setDatasets(datasets).
+                                                                                 readInClassifiers(classifiers, classifiers, "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Results/").
+                                                                                                                                                                                                                     runComparison();
     }
 }
