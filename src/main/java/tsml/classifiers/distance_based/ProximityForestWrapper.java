@@ -161,7 +161,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         numClasses = data.numClasses();
         header = new Instances(data,0);
 
-        if (AppContext.rand == null) AppContext.rand = new Random();
+        if (AppContext.rand == null) AppContext.rand = new Random(AppContext.rand_seed);
                 
         AppContext.num_trees = num_trees;
         AppContext.num_candidates_per_split = num_candidates_per_split;
