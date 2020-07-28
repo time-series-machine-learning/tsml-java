@@ -132,6 +132,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@uea.ac.uk), 
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
+* Alejandro Pasos Ruiz (a.pasos-ruiz@uea.ac.uk)
 
 We welcome anyone who would like to contribute their algorithms! 
 
