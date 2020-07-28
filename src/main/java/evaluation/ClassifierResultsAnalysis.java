@@ -126,17 +126,17 @@ public class ClassifierResultsAnalysis {
 
 
     /**
-     * THIS IS THE METHOD YOU'D ACTUALLY USE, the public 'actually do stuff' method
+     * THIS IS THE METHOD YOU'D ACTUALLY USE, the public 'actually do stuff' method   
      *
      * @param outPath a single directory, called expName, will be made in this location, containing the analysis
      * @param expname this will be the name of the parent folder that is made and will appear on a number of files
-     * @param metrics a list of PerformanceMetrics that effectively are able to summarise a ClassifierResults
+     * @param metrics a list of PerformanceMetrics that effectively are able to summarise a ClassifierResults 
      *          object into a single double, the prediction set's score. e.g. accuracy for these predictions
      *          These metrics will also have indications of how comparisons of this metric should be calculated and represented
      * @param results a ClassifierResultsCollection containing test (and optionally train) results of 1/more classifiers on 1/more datasets over 1/more resamples.
      *          Classifier and dataset names are retrieved from this object
-     * @param dsetGroupings Optional, a map { grouping name, groupings } of maps { group name, datasets in groups } that describe different subsets of
-     *          the data within which to repeat the analysis, e.g one group might be 2class datasets vs multiclass datasets. The analysis would
+     * @param dsetGroupings Optional, a map { grouping name, groupings } of maps { group name, datasets in groups } that describe different subsets of 
+     *          the data within which to repeat the analysis, e.g one group might be 2class datasets vs multiclass datasets. The analysis would 
      *          aid in seeing if one classifier has a competitive advantage over the others within different data characteristics/groupings
      */
     public static void performFullEvaluation(
@@ -162,7 +162,7 @@ public class ClassifierResultsAnalysis {
         OutFile smallSummary = new OutFile(outPath + expname + "_SMALLglobalSummary.csv");
 
         //this will collect the clique arrays for each metric as found by pairwise stats,
-        //so that they can later be passed to the cd dia maker
+        //so that they can later be passed to the cd dia maker 
         ArrayList<String> statCliquesForCDDias = new ArrayList<>();
 
         // START USER DEFINED STATS
@@ -194,7 +194,7 @@ public class ClassifierResultsAnalysis {
 
 
 
-        // START TIMINGS
+        // START TIMINGS 
         //timings will attempt to always be summarised if they are present, so handle them here as a special case
         //and add them onto the list of metrics
         ArrayList<String[]> compResourceSummaries = new ArrayList<>();
@@ -946,7 +946,7 @@ public class ClassifierResultsAnalysis {
     /**
      * this will build all the diagrams it can from the average results files that
      * exist in the cddia directory, instead of being given a list of stats that it should expect
-     * to find there, carry over from when I made the diagrams manually. todo maybe now force it to take
+     * to find there, carry over from when I made the diagrams manually. todo maybe now force it to take 
      * a list of stats to expect as a form of error checking
      */
     protected static void matlab_buildCDDias(String expname, String[] cliques) {
@@ -1249,12 +1249,12 @@ public class ClassifierResultsAnalysis {
 
 //            //README - REDACTED, this problem is currently just being ignored, since it makes so many headaches and is so insignificant anyway
 //            //to create parity between this and the matlab critical difference diagram code,
-//            //rounding the *accuracies used to calculate ranks* to 15 digits (after the decimal)
+//            //rounding the *accuracies used to calculate ranks* to 15 digits (after the decimal) 
 //            //this affects the average rank summary statistic, but not e.g the average accuracy statistic
-//            //matlab has a max default precision of 16. in a tiny number of cases, there are differences
+//            //matlab has a max default precision of 16. in a tiny number of cases, there are differences 
 //            //in accuracy that are smaller than this maximum precision, which were being taken into
-//            //acount here (by declaring one as havign a higher rank than the other), but not being
-//            //taken into account in matlab (which considered them a tie).
+//            //acount here (by declaring one as havign a higher rank than the other), but not being 
+//            //taken into account in matlab (which considered them a tie). 
 //            //one could argue the importance of a difference less than 1x10^-15 when comparing classifiers,
 //            //so for ranks only, will round to matlab's precision. rounding the accuracies everywhere
 //            //creates a number of headaches, therefore the tiny inconsistency as a result of this
@@ -1397,9 +1397,9 @@ public class ClassifierResultsAnalysis {
                 int wins=0, draws=0, losses=0;
                 for (int d = 0; d < dsets.length; d++) {
                     if (accs[c1][d] == accs[c2][d]) {
-                        //when the accuracies are identical, p == NaN.
+                        //when the accuracies are identical, p == NaN. 
                         //because NaN < 0.05 apparently it wont be counted as a draw, but a loss
-                        //so handle it here
+                        //so handle it here                        
                         draws++;
                         wdlList.get(count).get(1).add(dsets[d]);
                         wdlPlusMinus[count][d] = "0";
@@ -1466,16 +1466,16 @@ public class ClassifierResultsAnalysis {
 
     /**
      * Intended for potentially new stats that are introduced over time (at time of writing this function,
-     * build and especially test times), where maybe some older files in the intended analysis
-     * dont have the stat but newer ones do, or some classifiers that write their own files
+     * build and especially test times), where maybe some older files in the intended analysis 
+     * dont have the stat but newer ones do, or some classifiers that write their own files 
      * (via e.g TrainAccuracyEstimate) aren't properly writing them.
      *
      * Missing for timings is defined as -1. why cant i hold all this spaghetti?
      *
-     * Looking ONLY at the test files, a) because they should all be here anyway else
-     * wouldnt have got as far as needing to call this, b) because the 'testtime' stored
+     * Looking ONLY at the test files, a) because they should all be here anyway else 
+     * wouldnt have got as far as needing to call this, b) because the 'testtime' stored 
      * in the testfold files are the test timing we're generally actually interested in,
-     * i.e. the total prediction time of the fully trained classifier on the test set,
+     * i.e. the total prediction time of the fully trained classifier on the test set, 
      * as opposed to the test time of the classifier on (e.g) corssvalidation folds in training
      * that is stored in the train file
      *
@@ -1579,8 +1579,8 @@ public class ClassifierResultsAnalysis {
 
     protected static void jxl_buildStatSheets_timings(WritableWorkbook wb, String basePath, PerformanceMetric metric, int statIndex, String evalSet, String timingType) {
         // ************* the difference: timings folder assumed instead of going by the specific metric name
-        //i.e Timings/TRAIN/TrainTimings and Timings/TEST/TestTimings
-        //instead of TrainTimings/TRAIN/TrainTimings ...
+        //i.e Timings/TRAIN/TrainTimings and Timings/TEST/TestTimings    
+        //instead of TrainTimings/TRAIN/TrainTimings ... 
         String metricPath = basePath + "Timings"+timingType+"/" + evalSet + "/";
 
         WritableSheet avgsSheet = wb.createSheet(metric.name, wb.getNumberOfSheets());
@@ -1740,7 +1740,7 @@ public class ClassifierResultsAnalysis {
 
         try {
             xmeans.buildClusterer(new Instances(clusterData));
-            //pass copy, just in case xmeans does any kind of reordering of
+            //pass copy, just in case xmeans does any kind of reordering of 
             //instances. we want to maintain order of dsets/instances for indexing purposes
         } catch (Exception e) {
             System.out.println("Problem building clusterer for post hoc dataset groupings\n" + e);
@@ -1783,7 +1783,7 @@ public class ClassifierResultsAnalysis {
 
 //        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
 //        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
-//
+//        
 
         new MultipleClassifierEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Analysis", "timingsDiaTest", 3).
                 setTestResultsOnly(true).
