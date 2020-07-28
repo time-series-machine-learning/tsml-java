@@ -76,9 +76,7 @@ public class ArrayUtilities {
     }
 
     public static double[] normalise(double[] array) {
-        double[] copy = new double[array.length];
-        System.arraycopy(array, 0, copy, 0, array.length);
-        return normalise(copy, true);
+        return normalise(array, true);
     }
 
     public static double[] normalise(int[] array) {
