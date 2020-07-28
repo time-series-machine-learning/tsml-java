@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.proximity;
 
+import evaluation.MultipleClassifierEvaluation;
 import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
@@ -39,20 +40,36 @@ import java.util.logging.Logger;
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory, Checkpointed {
 
     public static void main(String[] args) throws Exception {
-        for(int i = 0; i < 1; i++) {
+        for(int i = 1; i < 2; i++) {
             int seed = i;
             ProximityForest classifier = new ProximityForest();
-            Config.PF_R5_CV.configure(classifier);
-            classifier.setEstimateOwnPerformance(true);
+            Config.PF_R5.configure(classifier);
+//            classifier.setEstimateOwnPerformance(true);
             classifier.setSeed(seed);
             classifier.setRebuildConstituentAfterEvaluation(true);
 //            classifier.setNumTreeLimit(2);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/uni2018/", "GunPoint", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/all/", "MiddlePhalanxOutlineCorrect", seed), seed);
         }
         //        Thread.sleep(10000);
+
+//        String root = "/bench/phd/experiments";
+//        String expName = "pf_correctness";
+//        String expDir = root + "/" + expName;
+//        String analysisName = "analysis_v3";
+//        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", analysisName, 10);
+//        mce.setDatasets("/bench/phd/datasets/lists/2015.txt");
+//        mce.readInClassifier("ORIG_PF", "orig", expDir + "/v1/results/");
+//        mce.readInClassifier("PF_R5", "v3", expDir + "/v3/results/");
+//        mce.readInClassifier("PF_WRAPPED", "wrap", expDir + "/v3/results/");
+//        mce.readInClassifier("PF_R5", "v2", expDir + "/v2/results/");
+//        mce.setTestResultsOnly(true);
+//        mce.setUseAllStatistics();
+//        mce.setIgnoreMissingResults(true);
+//        mce.setBuildMatlabDiagrams(true, true);
+//        mce.runComparison();
     }
 
     public enum Config implements EnumBasedConfigurer<ProximityForest> {
@@ -227,10 +244,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
-        final boolean rebuild = isRebuild();
         super.buildClassifier(trainData);
         // rebuild if set
-        if(rebuild) {
+        if(isRebuild()) {
             // reset resouce monitors
             memoryWatcher.resetAndStart();
             trainEstimateTimer.resetAndStop();

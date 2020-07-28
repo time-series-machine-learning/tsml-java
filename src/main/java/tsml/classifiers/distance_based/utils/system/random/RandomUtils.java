@@ -14,13 +14,23 @@ import utilities.Utilities;
  * Contributors: goastler
  */
 public class RandomUtils {
+    
+    private static boolean skipSingleElementPick = false;
 
     private RandomUtils() {}
+
+    public static void setSkipSingleElementPick(final boolean skipSingleElementPick) {
+        RandomUtils.skipSingleElementPick = skipSingleElementPick;
+    }
+
+    public static boolean isSkipSingleElementPick() {
+        return skipSingleElementPick;
+    }
 
     public static List<Integer> choiceIndex(int size, Random random, int numChoices,
                                                               boolean withReplacement) {
         Assert.assertTrue(size > 0);
-        if(size == 1) {
+        if(skipSingleElementPick && size == 1) {
             return new ArrayList<>(Collections.singletonList(0));
         }
         Assert.assertNotNull(random);
