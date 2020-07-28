@@ -2,23 +2,36 @@ package tsml.classifiers.distance_based.distances.msm;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.MultipleDoubleDistribution;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
+import weka.core.Instances;
 
 import java.util.List;
-import java.util.Random;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.unique;
 
 public class MSMDistanceConfigs {
-    public static ParamSpace buildMsmSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
-                buildMsmParams());
+    public static class MSMSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildMSMSpace();
+        }
     }
 
-    public static ParamSpace buildMsmParams() {
+    public static class ContinuousMSMSpaceBuilder implements ParamSpaceBuilder {
+        @Override public ParamSpace build(final Instances data) {
+            return buildContinuousMSMSpace();
+        }
+    }
+
+    public static ParamSpace buildMSMSpace() {
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
+                buildMSMParams());
+    }
+
+    public static ParamSpace buildMSMParams() {
         double[] costValues = {
                 // <editor-fold defaultstate="collapsed" desc="hidden for space">
                 0.01,
@@ -128,16 +141,16 @@ public class MSMDistanceConfigs {
         return params;
     }
 
-    public static ParamSpace buildMsmParamsContinuous() {
+    public static ParamSpace buildContinuousMSMParams() {
         DoubleDistribution costParams = new MultipleDoubleDistribution(newArrayList(0.01, 0.1, 1d, 10d, 100d));
         ParamSpace params = new ParamSpace();
         params.add(MSMDistance.C_FLAG, costParams);
         return params;
     }
 
-    public static ParamSpace buildMsmSpaceContinuous() {
+    public static ParamSpace buildContinuousMSMSpace() {
         return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
-                buildMsmParamsContinuous());
+                buildContinuousMSMParams());
     }
 
 }

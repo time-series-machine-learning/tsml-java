@@ -24,7 +24,7 @@ public class TWEDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = TWEDistanceConfigs.buildTwedParams();
+                    space = TWEDistanceConfigs.buildTWEDParams();
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                                                int i = 0;

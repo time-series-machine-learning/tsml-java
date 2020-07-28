@@ -1,8 +1,8 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
-import com.beust.jcommander.internal.Lists;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.int_based.UniformIntDistribution;
 import utilities.StatisticalUtilities;
@@ -15,11 +15,33 @@ import static utilities.ArrayUtilities.range;
 import static utilities.ArrayUtilities.unique;
 
 public class LCSSDistanceConfigs {
-    public static ParamSpace buildLcssSpace(Instances instances) {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildLcssParams(instances));
+
+    public static class LCSSSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildLCSSSpace(data);
+        }
     }
 
-    public static ParamSpace buildLcssParams(Instances instances) {
+    public static class ContinuousLCSSSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildContinuousLCSSSpace(data);
+        }
+    }
+
+    public static class RestrictedContinuousLCSSSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildRestrictedContinuousLCSSSpace(data);
+        }
+    }
+
+    public static ParamSpace buildLCSSSpace(Instances instances) {
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildLCSSParams(instances));
+    }
+
+    public static ParamSpace buildLCSSParams(Instances instances) {
         double std = StatisticalUtilities.pStdDev(instances);
         double stdFloor = std * 0.2;
         double[] epsilonValues = range(stdFloor, std, 10);
@@ -32,7 +54,7 @@ public class LCSSDistanceConfigs {
         return params;
     }
 
-    public static ParamSpace buildLcssParamsContinuous(Instances data) {
+    public static ParamSpace buildRestrictedContinuousLCSSParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.2 * std, std));
@@ -43,24 +65,24 @@ public class LCSSDistanceConfigs {
         return subSpace;
     }
 
-    public static ParamSpace buildLcssSpaceContinuous(Instances data) {
+    public static ParamSpace buildRestrictedContinuousLCSSSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
         space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()),
-                  buildLcssParamsContinuous(data));
+                  buildRestrictedContinuousLCSSParams(data));
         return space;
     }
 
-    public static ParamSpace buildLcssParamsContinuousUnrestricted(Instances data) {
+    public static ParamSpace buildContinuousLCSSParams(Instances data) {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.02 * std, std));
-        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1)); // todo adjust this to use length instead of max index
+        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
         return subSpace;
     }
 
-    public static ParamSpace buildLcssSpaceContinuousUnrestricted(Instances data) {
+    public static ParamSpace buildContinuousLCSSSpace(Instances data) {
         final ParamSpace space = new ParamSpace();
-        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildLcssParamsContinuousUnrestricted(data));
+        space.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new LCSSDistance()), buildContinuousLCSSParams(data));
         return space;
     }
 }

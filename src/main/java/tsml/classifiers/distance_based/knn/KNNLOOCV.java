@@ -1,7 +1,6 @@
 package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
-import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
@@ -17,7 +16,6 @@ import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.collections.params.*;
-import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.classifiers.distance_based.utils.classifiers.CompileTimeClassifierBuilderFactory;
@@ -77,67 +75,67 @@ public class KNNLOOCV
 
 
         public static RLTunedClassifier buildTunedDtw1nnV1() {
-            return buildTuned1nnV1(DTWDistanceConfigs::buildDtwSpace);
+            return buildTuned1nnV1(DTWDistanceConfigs::buildDTWSpace);
         }
 
         public static RLTunedClassifier buildTunedDdtw1nnV1() {
-            return buildTuned1nnV1(DTWDistanceConfigs::buildDdtwSpace);
+            return buildTuned1nnV1(DTWDistanceConfigs::buildDDTWSpace);
         }
 
         public static RLTunedClassifier buildTunedWdtw1nnV1() {
-            return buildTuned1nnV1(i -> WDTWDistanceConfigs.buildWdtwSpace());
+            return buildTuned1nnV1(i -> WDTWDistanceConfigs.buildWDTWSpace());
         }
 
         public static RLTunedClassifier buildTunedWddtw1nnV1() {
-            return buildTuned1nnV1(i -> WDTWDistanceConfigs.buildWddtwSpace());
+            return buildTuned1nnV1(i -> WDTWDistanceConfigs.buildWDDTWSpace());
         }
 
         public static RLTunedClassifier buildTunedDtw1nnV2() {
-            return buildTuned1nnV2(DTWDistanceConfigs::buildDtwSpace);
+            return buildTuned1nnV2(DTWDistanceConfigs::buildDTWSpace);
         }
 
         public static RLTunedClassifier buildTunedDdtw1nnV2() {
-            return buildTuned1nnV2(DTWDistanceConfigs::buildDdtwSpace);
+            return buildTuned1nnV2(DTWDistanceConfigs::buildDDTWSpace);
         }
 
         public static RLTunedClassifier buildTunedWdtw1nnV2() {
-            return buildTuned1nnV2(i -> WDTWDistanceConfigs.buildWdtwSpace());
+            return buildTuned1nnV2(i -> WDTWDistanceConfigs.buildWDTWSpace());
         }
 
         public static RLTunedClassifier buildTunedWddtw1nnV2() {
-            return buildTuned1nnV2(i -> WDTWDistanceConfigs.buildWddtwSpace());
+            return buildTuned1nnV2(i -> WDTWDistanceConfigs.buildWDDTWSpace());
         }
 
         public static RLTunedClassifier buildTunedMsm1nnV1() {
-            return buildTuned1nnV1(i -> MSMDistanceConfigs.buildMsmSpace());
+            return buildTuned1nnV1(i -> MSMDistanceConfigs.buildMSMSpace());
         }
 
         public static RLTunedClassifier buildTunedTwed1nnV1() {
-            return buildTuned1nnV1(i -> TWEDistanceConfigs.buildTwedSpace());
+            return buildTuned1nnV1(i -> TWEDistanceConfigs.buildTWEDSpace());
         }
 
         public static RLTunedClassifier buildTunedErp1nnV1() {
-            return buildTuned1nnV1(ERPDistanceConfigs::buildErpSpace);
+            return buildTuned1nnV1(ERPDistanceConfigs::buildERPSpace);
         }
 
         public static RLTunedClassifier buildTunedLcss1nnV1() {
-            return buildTuned1nnV1(LCSSDistanceConfigs::buildLcssSpace);
+            return buildTuned1nnV1(LCSSDistanceConfigs::buildLCSSSpace);
         }
 
         public static RLTunedClassifier buildTunedMsm1nnV2() {
-            return buildTuned1nnV2(i -> MSMDistanceConfigs.buildMsmSpace());
+            return buildTuned1nnV2(i -> MSMDistanceConfigs.buildMSMSpace());
         }
 
         public static RLTunedClassifier buildTunedTwed1nnV2() {
-            return buildTuned1nnV2(i -> TWEDistanceConfigs.buildTwedSpace());
+            return buildTuned1nnV2(i -> TWEDistanceConfigs.buildTWEDSpace());
         }
 
         public static RLTunedClassifier buildTunedErp1nnV2() {
-            return buildTuned1nnV2(ERPDistanceConfigs::buildErpSpace);
+            return buildTuned1nnV2(ERPDistanceConfigs::buildERPSpace);
         }
 
         public static RLTunedClassifier buildTunedLcss1nnV2() {
-            return buildTuned1nnV2(LCSSDistanceConfigs::buildLcssSpace);
+            return buildTuned1nnV2(LCSSDistanceConfigs::buildLCSSSpace);
         }
 
 

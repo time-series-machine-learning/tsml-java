@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.knn;
 import evaluation.storage.ClassifierResults;
 import org.junit.Assert;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.proximity.ParamSpaceBuilder;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;

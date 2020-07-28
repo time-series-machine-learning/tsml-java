@@ -23,7 +23,7 @@ public class LCSSDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = LCSSDistanceConfigs.buildLcssParams(data);
+                    space = LCSSDistanceConfigs.buildLCSSParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                int i = 0;

@@ -4,8 +4,15 @@ import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
+import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
+import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
+import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
+import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
@@ -13,6 +20,7 @@ import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpoin
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
@@ -71,17 +79,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             @Override
             public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
-                        ParamSpaceBuilder.ED,
-                        ParamSpaceBuilder.FULL_DTW,
-                        ParamSpaceBuilder.DTW,
-                        ParamSpaceBuilder.FULL_DDTW,
-                        ParamSpaceBuilder.DDTW,
-                        ParamSpaceBuilder.WDTW,
-                        ParamSpaceBuilder.WDDTW,
-                        ParamSpaceBuilder.LCSS,
-                        ParamSpaceBuilder.ERP,
-                        ParamSpaceBuilder.TWED,
-                        ParamSpaceBuilder.MSM
+                        new EDistanceConfigs.EDSpaceBuilder(),
+                        new DTWDistanceConfigs.FullWindowDTWSpaceBuilder(),
+                        new DTWDistanceConfigs.RestrictedContinuousDTWSpaceBuilder(),
+                        new DTWDistanceConfigs.FullWindowDDTWSpaceBuilder(),
+                        new DTWDistanceConfigs.RestrictedContinuousDDTWSpaceBuilder(),
+                        new WDTWDistanceConfigs.ContinuousWDTWSpaceBuilder(),
+                        new WDTWDistanceConfigs.ContinuousWDDTWSpaceBuilder(),
+                        new LCSSDistanceConfigs.RestrictedContinuousLCSSSpaceBuilder(),
+                        new ERPDistanceConfigs.RestrictedContinuousERPSpaceBuilder(),
+                        new TWEDistanceConfigs.TWEDSpaceBuilder(),
+                        new MSMDistanceConfigs.MSMSpaceBuilder()
                 ));
                 proximityTree.setRandomTieBreakDistances(true);
                 proximityTree.setEarlyAbandonDistances(false);

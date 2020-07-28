@@ -24,7 +24,7 @@ public class WDTWDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = WDTWDistanceConfigs.buildWdtwParams();
+                    space = WDTWDistanceConfigs.buildWDTWParams();
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                                                int i = 0;

@@ -2,9 +2,11 @@ package tsml.classifiers.distance_based.distances.twed;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.MultipleDoubleDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
+import weka.core.Instances;
 
 import java.util.List;
 
@@ -12,12 +14,27 @@ import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.
 import static utilities.ArrayUtilities.unique;
 
 public class TWEDistanceConfigs {
-    public static ParamSpace buildTwedSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new TWEDistance()),
-                buildTwedParams());
+
+    public static class TWEDSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildTWEDSpace();
+        }
     }
 
-    public static ParamSpace buildTwedParams() {
+    public static class ContinuousTWEDSpaceBuilder implements ParamSpaceBuilder {
+
+        @Override public ParamSpace build(final Instances data) {
+            return buildContinuousTWEDSpace();
+        }
+    }
+
+    public static ParamSpace buildTWEDSpace() {
+        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new TWEDistance()),
+                buildTWEDParams());
+    }
+
+    public static ParamSpace buildTWEDParams() {
         double[] nuValues = {
                 // <editor-fold defaultstate="collapsed" desc="hidden for space">
                 0.00001,
@@ -52,7 +69,7 @@ public class TWEDistanceConfigs {
         return params;
     }
 
-    public static ParamSpace buildTwedParamsContinuous() {
+    public static ParamSpace buildContinuousTWEDParams() { // todo make these params continuous
         DoubleDistribution nuDistribution = new MultipleDoubleDistribution(newArrayList(0.00001,
                 0.0001,
                 0.0005,
@@ -70,8 +87,8 @@ public class TWEDistanceConfigs {
         return params;
     }
 
-    public static ParamSpace buildTwedSpaceContinuous() {
+    public static ParamSpace buildContinuousTWEDSpace() {
         return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new TWEDistance()),
-                buildTwedParamsContinuous());
+                buildContinuousTWEDParams());
     }
 }

@@ -81,7 +81,7 @@ public class DTWDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = ERPDistanceConfigs.buildErpParams(data);
+                    space = ERPDistanceConfigs.buildERPParams(data);
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
                 while(iterator.hasNext()) {

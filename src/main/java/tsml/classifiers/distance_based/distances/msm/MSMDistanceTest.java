@@ -24,7 +24,7 @@ public class MSMDistanceTest {
                 final Instance bi, final double limit) {
                 if(data != this.data) {
                     this.data = data;
-                    space = MSMDistanceConfigs.buildMsmParams();
+                    space = MSMDistanceConfigs.buildMSMParams();
                 }
                 final GridSearchIterator iterator = new GridSearchIterator(space);
 //                                int i = 0;
