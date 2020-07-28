@@ -161,9 +161,9 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * e.g. different preprocessing techniques which are saved as arffs and then a collection of classifiers
      * are evaluated on each.
      */
-    //    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
-    //        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
-    //    }
+//    public void setEvaluateDatasetsOverClassifiers(boolean evaluateDatasetsOverClassifiers) {
+//        this.evaluateDatasetsOverClassifiers = evaluateDatasetsOverClassifiers;
+//    }
 
     /**
      * if true, will not attempt to load trainFold results, and will not produce stats for train or traintestdiffs results
@@ -209,13 +209,13 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
      * as any extra dataset groupings you've defined.
      *
      * 1) for each dataset, each classifier's [stat] is replaced by its difference to the util_mean for that dataset
-     e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 }
+      e.g if scores of 3 classifiers on a dataset are { 0.8, 0.7, 0.6 }, the new vals will be { 0.1, 0, -0.1 }
 
-     2) weka instances are formed from this data, with classifiers as atts, datasets as insts
+ 2) weka instances are formed from this data, with classifiers as atts, datasets as insts
 
-     3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
+ 3) xmeans clustering performed, as a (from a human input pov) quick way of determining number of clusters + those clusters
 
-     4) perform the normal grouping analysis based on those clusters
+ 4) perform the normal grouping analysis based on those clusters
      */
     public MultipleClassifierEvaluation setPerformPostHocDsetResultsClustering(boolean b) {
         performPostHocDsetResultsClustering = b;
@@ -431,7 +431,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     public MultipleClassifierEvaluation readInClassifiers(String[] classifierNamesInStorage, String[] classifierNamesInOutput, String baseReadPath) throws Exception {
         if (classifierNamesInOutput.length != classifierNamesInStorage.length)
             throw new Exception("Sizes of the classifier names to read in and use in output differ: classifierNamesInStorage.length="
-                                        + classifierNamesInStorage.length + ", classifierNamesInOutput.length="+classifierNamesInOutput.length);
+                    + classifierNamesInStorage.length + ", classifierNamesInOutput.length="+classifierNamesInOutput.length);
 
         for (int i = 0; i < classifierNamesInStorage.length; i++)
             readInClassifier(classifierNamesInStorage[i], classifierNamesInOutput[i], baseReadPath);
@@ -457,65 +457,65 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     private void transposeEverything() {
-        //        //need to put the classifier names into the datasets list
-        //        //repalce the entries of the classifier results map with entries for each dataset
-        //        //to go from this:    Map<String/*classifierNames*/, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults;
-        //        //           and a list of datasetnames
-        //        //to this:            Map<String/*datasetNames*/, ClassifierResults[/* train/test */][/* classifier */][/* fold */]> classifiersResults;
-        //        //           and a list of classifiernames
-        //
-        //        int numClassifiers = classifiersResults.size();
-        //        int numDatasets = datasets.size();
-        //
-        //        //going to pull everything out into parallel arrays and work that way...
-        //        //innefficient, but far more likely to actually work
-        //        String[] origClassifierNames = new String[numClassifiers];
-        //        ClassifierResults[][][][] origClassifierResults = new ClassifierResults[numClassifiers][][][];
-        //
-        //        int i = 0;
-        //        for (Map.Entry<String, ClassifierResults[][][]> origClassiiferResultsEntry : classifiersResults.entrySet()) {
-        //            origClassifierNames[i] = origClassiiferResultsEntry.getKey();
-        //            origClassifierResults[i] = origClassiiferResultsEntry.getValue();
-        //            i++;
-        //        }
-        //
-        //        ClassifierResults[][][][] newDataseResultsArr = new ClassifierResults[numDatasets][2][numClassifiers][numFolds];
-        //
-        //
-        //        //do the transpose
-        //        for (int dset = 0; dset < numDatasets; dset++) {
-        //
-        //            int splitStart = 0;
-        //            if (testResultsOnly) {
-        //                newDataseResultsArr[dset][0] = null; //no train results
-        //                splitStart = 1; //dont try and copythem over
-        //            }
-        //
-        //            for (int split = splitStart; split < 2; split++) {
-        //                for (int classifier = 0; classifier < numClassifiers; classifier++) {
-        //                    //leaving commented for reference, but can skip this loop, and copy across fold array refs instead of individual fold refs
-        //                    //for (int fold = 0; fold < numFolds; fold++)
-        //                    //    newDataseResultsArr[dset][split][classifier][fold] = origClassifierResults[classifier][split][dset][fold];
-        //
-        ////                    System.out.println("newDataseResultsArr[dset]" + newDataseResultsArr[dset].toString().substring(0, 30));
-        ////                    System.out.println("newDataseResultsArr[dset][split]" + newDataseResultsArr[dset][split].toString().substring(0, 30));
-        ////                    System.out.println("newDataseResultsArr[dset][split][classifier]" + newDataseResultsArr[dset][split][classifier].toString().substring(0, 30));
-        ////                    System.out.println("origClassifierResults[classifier]" + origClassifierResults[classifier].toString().substring(0, 30));
-        ////                    System.out.println("origClassifierResults[classifier][split]" + origClassifierResults[classifier][split].toString().substring(0, 30));
-        ////                    System.out.println("origClassifierResults[classifier][split][dset]" + origClassifierResults[classifier][split][dset].toString().substring(0, 30));
-        //
-        //                    newDataseResultsArr[dset][split][classifier] = origClassifierResults[classifier][split][dset];
-        //                }
-        //            }
-        //        }
-        //
-        //        //and put back into a map
-        //        Map<String, ClassifierResults[][][]> newDsetResultsMap = new HashMap<>();
-        //        for (int dset = 0; dset < numDatasets; dset++)
-        //            newDsetResultsMap.put(datasets.get(dset), newDataseResultsArr[dset]);
-        //
-        //        this.classifiersResults = newDsetResultsMap;
-        //        this.datasets = Arrays.asList(origClassifierNames);
+//        //need to put the classifier names into the datasets list
+//        //repalce the entries of the classifier results map with entries for each dataset
+//        //to go from this:    Map<String/*classifierNames*/, ClassifierResults[/* train/test */][/* dataset */][/* fold */]> classifiersResults;
+//        //           and a list of datasetnames
+//        //to this:            Map<String/*datasetNames*/, ClassifierResults[/* train/test */][/* classifier */][/* fold */]> classifiersResults;
+//        //           and a list of classifiernames
+//
+//        int numClassifiers = classifiersResults.size();
+//        int numDatasets = datasets.size();
+//
+//        //going to pull everything out into parallel arrays and work that way...
+//        //innefficient, but far more likely to actually work
+//        String[] origClassifierNames = new String[numClassifiers];
+//        ClassifierResults[][][][] origClassifierResults = new ClassifierResults[numClassifiers][][][];
+//
+//        int i = 0;
+//        for (Map.Entry<String, ClassifierResults[][][]> origClassiiferResultsEntry : classifiersResults.entrySet()) {
+//            origClassifierNames[i] = origClassiiferResultsEntry.getKey();
+//            origClassifierResults[i] = origClassiiferResultsEntry.getValue();
+//            i++;
+//        }
+//
+//        ClassifierResults[][][][] newDataseResultsArr = new ClassifierResults[numDatasets][2][numClassifiers][numFolds];
+//
+//
+//        //do the transpose
+//        for (int dset = 0; dset < numDatasets; dset++) {
+//
+//            int splitStart = 0;
+//            if (testResultsOnly) {
+//                newDataseResultsArr[dset][0] = null; //no train results
+//                splitStart = 1; //dont try and copythem over
+//            }
+//
+//            for (int split = splitStart; split < 2; split++) {
+//                for (int classifier = 0; classifier < numClassifiers; classifier++) {
+//                    //leaving commented for reference, but can skip this loop, and copy across fold array refs instead of individual fold refs
+//                    //for (int fold = 0; fold < numFolds; fold++)
+//                    //    newDataseResultsArr[dset][split][classifier][fold] = origClassifierResults[classifier][split][dset][fold];
+//
+////                    System.out.println("newDataseResultsArr[dset]" + newDataseResultsArr[dset].toString().substring(0, 30));
+////                    System.out.println("newDataseResultsArr[dset][split]" + newDataseResultsArr[dset][split].toString().substring(0, 30));
+////                    System.out.println("newDataseResultsArr[dset][split][classifier]" + newDataseResultsArr[dset][split][classifier].toString().substring(0, 30));
+////                    System.out.println("origClassifierResults[classifier]" + origClassifierResults[classifier].toString().substring(0, 30));
+////                    System.out.println("origClassifierResults[classifier][split]" + origClassifierResults[classifier][split].toString().substring(0, 30));
+////                    System.out.println("origClassifierResults[classifier][split][dset]" + origClassifierResults[classifier][split][dset].toString().substring(0, 30));
+//
+//                    newDataseResultsArr[dset][split][classifier] = origClassifierResults[classifier][split][dset];
+//                }
+//            }
+//        }
+//
+//        //and put back into a map
+//        Map<String, ClassifierResults[][][]> newDsetResultsMap = new HashMap<>();
+//        for (int dset = 0; dset < numDatasets; dset++)
+//            newDsetResultsMap.put(datasets.get(dset), newDataseResultsArr[dset]);
+//
+//        this.classifiersResults = newDsetResultsMap;
+//        this.datasets = Arrays.asList(origClassifierNames);
     }
 
     public void runComparison() throws Exception {
@@ -554,46 +554,46 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     public static void main(String[] args) throws Exception {
-        //        String basePath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
-        ////            String basePath = "Z:/Results/FinalisedUCIContinuous/";
-        //
-        //        MultipleClassifierEvaluation mcc =
-        //            new MultipleClassifierEvaluation("C:/JamesLPHD/analysisTest/", "testrunPWS10", 30);
-        //
-        //        mcc.setTestResultsOnly(true); //as is default
-        //        mcc.setBuildMatlabDiagrams(true); //as is default
-        //        mcc.setCleanResults(true); //as is default
-        //        mcc.setDebugPrinting(true);
-        //
-        //        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        ////        mcc.setUseAccuracyOnly();
-        ////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
-        ////        mcc.setUseAllStatistics();
-        //
-        //        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
-        //
-        //        //general rule of thumb: set/add/read the classifiers as the last thing before running
-        //        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath);
-        ////        mcc.readInClassifier("RandF", basePath); //
-        //
-        //        mcc.runComparison();
+//        String basePath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
+////            String basePath = "Z:/Results/FinalisedUCIContinuous/";
+//
+//        MultipleClassifierEvaluation mcc =
+//            new MultipleClassifierEvaluation("C:/JamesLPHD/analysisTest/", "testrunPWS10", 30);
+//
+//        mcc.setTestResultsOnly(true); //as is default
+//        mcc.setBuildMatlabDiagrams(true); //as is default
+//        mcc.setCleanResults(true); //as is default
+//        mcc.setDebugPrinting(true);
+//
+//        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
+////        mcc.setUseAccuracyOnly();
+////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
+////        mcc.setUseAllStatistics();
+//
+//        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
+//
+//        //general rule of thumb: set/add/read the classifiers as the last thing before running
+//        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath);
+////        mcc.readInClassifier("RandF", basePath); //
+//
+//        mcc.runComparison();
 
 
-        //        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
-        //            setTestResultsOnly(false).
-        //            setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
-        //            readInClassifiers(new String[] {"1NN", "C4.5"}, "Z:/Results/FinalisedUCIContinuous/").
-        //            runComparison();
-        //        new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
-        ////            setBuildMatlabDiagrams(true).
-        ////            setUseAllStatistics().
-        ////            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
-        ////            setDatasets("C:/Temp/dsets.txt").
-        //            setDatasets("C:/Temp/dsets.txt").
-        //            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups").
-        //            setPerformPostHocDsetResultsClustering(true).
-        //            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
-        //            runComparison();
+//        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
+//            setTestResultsOnly(false).
+//            setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
+//            readInClassifiers(new String[] {"1NN", "C4.5"}, "Z:/Results/FinalisedUCIContinuous/").
+//            runComparison();
+//        new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
+////            setBuildMatlabDiagrams(true).
+////            setUseAllStatistics().
+////            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
+////            setDatasets("C:/Temp/dsets.txt").
+//            setDatasets("C:/Temp/dsets.txt").
+//            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups").
+//            setPerformPostHocDsetResultsClustering(true).
+//            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
+//            runComparison();
 
         workingExampleCodeRunnableOnTSCServerMachine();
     }
@@ -622,17 +622,17 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String directoryWithResultsClassifierByClassifier =  "Z:/Backups/Results_7_2_19/FinalisedUCIContinuous/";
         mce.readInClassifiers(classifiers, directoryWithResultsClassifierByClassifier);
 
-        //        mce.setEvaluateDatasetsOverClassifiers(true); //cannot use with the dataset groupings, in this example. could define classifier groupings though !
+//        mce.setEvaluateDatasetsOverClassifiers(true); //cannot use with the dataset groupings, in this example. could define classifier groupings though !
 
         mce.runComparison();
 
         //minimal version of above:
-        //        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/", "Example1", 10); //10 folds only to make faster...
-        //        mce.setDatasets("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt");
-        //        mce.addDatasetGroupingFromDirectory("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroups/randomGrouping1/");
-        //        mce.addDatasetGroupingFromDirectory("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroups/randomGrouping2/");
-        //        mce.setPerformPostHocDsetResultsClustering(true); //will create 3rd data-driven grouping automatically
-        //        mce.readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "Z:/Results/FinalisedUCIContinuous/");
-        //        mce.runComparison();
+//        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/", "Example1", 10); //10 folds only to make faster...
+//        mce.setDatasets("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsets.txt");
+//        mce.addDatasetGroupingFromDirectory("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroups/randomGrouping1/");
+//        mce.addDatasetGroupingFromDirectory("Z:/Results/FinalisedUCIContinuousAnalysis/WORKINGEXAMPLE/dsetGroups/randomGrouping2/");
+//        mce.setPerformPostHocDsetResultsClustering(true); //will create 3rd data-driven grouping automatically
+//        mce.readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "Z:/Results/FinalisedUCIContinuous/");
+//        mce.runComparison();
     }
 }
