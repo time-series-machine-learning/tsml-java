@@ -3,8 +3,8 @@ jdk:
   - openjdk8
 branches:
   only:
-    - gh-pages
-    - /.*/
+  - gh-pages
+  - /.*/
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

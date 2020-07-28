@@ -60,8 +60,8 @@ application {
 jar {
     manifest {
         attributes 'Main-Class': application.mainClassName,
-                'Implementation-Title': project.name,
-                'Implementation-Version': version
+            'Implementation-Title': project.name,
+            'Implementation-Version': version
     }
 }
 
