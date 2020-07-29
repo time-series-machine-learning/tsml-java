@@ -1516,7 +1516,7 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
       this.startOffset = normMean ? 2 : 0;
     }
 
-    protected double[] transform(double[] series, int wordLength/*, boolean normalize*/) {
+    public double[] transform(double[] series, int wordLength/*, boolean normalize*/) {
       //taken from FFT.java but
       //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
       //instead of Complex[] size n/2

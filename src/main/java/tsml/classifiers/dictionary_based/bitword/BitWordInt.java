@@ -93,6 +93,8 @@ public class BitWordInt implements BitWord {
     public Number getWord() { return word; }
     public byte getLength() { return length; }
 
+    public void setWord(Number word) { this.word = word.intValue(); }
+
     public void setWord(int [] letters) throws Exception {
         if (letters.length > MAX_LENGTH)
             throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
@@ -184,6 +186,22 @@ public class BitWordInt implements BitWord {
             default:
                 return "err"; //impossible with enum, but must have return
         }
+    }
+
+    public String toStringUnigram() {
+        long[] letters = new long[length];
+        int shift = WORD_SPACE-(length*BITS_PER_LETTER);
+        for (int i = length-1; i > -1; --i) {
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift += BITS_PER_LETTER;
+        }
+
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters[i]));
+        }
+
+        return str.toString();
     }
 
     public static void main(String [] args) throws Exception {

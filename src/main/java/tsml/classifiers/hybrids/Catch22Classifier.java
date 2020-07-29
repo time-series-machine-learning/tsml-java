@@ -38,7 +38,6 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
  * https://github.com/chlubba/catch22
  *
  * @author Matthew Middlehurst
- *
  */
 public class Catch22Classifier extends EnhancedAbstractClassifier {
 
