@@ -128,10 +128,11 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * Jason Lines (@jasonlines), 
 * George Oastler (@goastler), 
 * Matthew Middlehurst (@MatthewMiddlehurst, `@M_Middlehurst <https://twitter.com/M_Middlehurst>`__, m.middlehurst@uea.ac.uk), 
-* Michael Flynn: `@M_J_Flynn <https://twitter.com/M_J_Flynn>`__, Michael.Flynn@uea.ac.uk
+* Michael Flynn (GitHub - `@MJFlynn <https://github.com/MJFlynn>`__, Twitter - `@M_J_Flynn <https://twitter.com/M_J_Flynn>`__, Email - Michael.Flynn@uea.ac.uk)
 * Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@uea.ac.uk), 
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
+* Alejandro Pasos Ruiz (a.pasos-ruiz@uea.ac.uk)
 
 We welcome anyone who would like to contribute their algorithms! 
 
