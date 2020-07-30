@@ -46,6 +46,7 @@ public class RandomStratifiedSampler implements Sampler{
         Instance sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.numInstances()));
         classSamplingProbabilities[sampleClass]--;
         ArrayUtilities.addInPlace(classSamplingProbabilities, classDistribution);
+        count++;
         return sampledInstance;
     }
 }
