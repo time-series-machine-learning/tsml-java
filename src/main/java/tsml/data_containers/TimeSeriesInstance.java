@@ -59,11 +59,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         }
 
         classLabelIndex = labelIndex; 
-
-        isMultivariate = series_channels.size() > 1;
-
-        calculateLengthBounds();
-        calculateIfMissing();
+        dataChecks();
     }
 
     public TimeSeriesInstance(List<List<Double>> series) {
@@ -76,10 +72,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
             series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
         }
 
-        isMultivariate = series_channels.size() > 1;
-
-        calculateLengthBounds();
-        calculateIfMissing();
+        dataChecks();
     }
 
     public TimeSeriesInstance(double[][] data) {
@@ -89,10 +82,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
             series_channels.add(new TimeSeries(in));
         }
 
-        isMultivariate = series_channels.size() > 1;
-
-        calculateLengthBounds();
-        calculateIfMissing();
+        dataChecks();
 	}
 
     public TimeSeriesInstance(double[][] data, int labelIndex) {
@@ -103,12 +93,19 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         }
 
         classLabelIndex = labelIndex;
+ 
+        dataChecks();
+    }
 
-        isMultivariate = series_channels.size() > 1;
-
+    private void dataChecks(){
+        calculateIfMultivariate();
         calculateLengthBounds();
         calculateIfMissing();
-	}
+    }
+    
+    private void calculateIfMultivariate(){
+        isMultivariate = series_channels.size() > 1;
+    }
 
 	private void calculateLengthBounds() {
         minLength = series_channels.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();

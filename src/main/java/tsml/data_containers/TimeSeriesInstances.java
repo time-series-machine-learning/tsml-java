@@ -18,16 +18,23 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     boolean hasMissing;
     boolean isEqualLength;
 
+    boolean isMultivariate;
+
     // this could be by dimension, so could be a list.
     int minLength;
     int maxLength;
+    int maxNumChannels;
 
     public boolean hasMissing() {
         return hasMissing;
     }
 
-    public boolean isEuqallySpaced() {
+    public boolean isEquallySpaced() {
         return isEquallySpaced;
+    }
+
+    public boolean isMultivariate(){
+        return isMultivariate;
     }
 
     public boolean isEqualLength() {
@@ -45,6 +52,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public int numClasses(){
         return classLabels.length;
     }
+
+    
+	public int getMaxNumChannels() {
+		return maxNumChannels;
+	}
 
     /* End Meta Information */
 
@@ -83,8 +95,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             series_collection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
         }
 
-        calculateLengthBounds();
-        calculateIfMissing();
+        dataChecks();
     }
 
     public TimeSeriesInstances(final double[][][] raw_data) {
@@ -95,8 +106,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             series_collection.add(new TimeSeriesInstance(series));
         }
 
-        calculateLengthBounds();
-        calculateIfMissing();
+        dataChecks();
     }
 
     public TimeSeriesInstances(final double[][][] raw_data, int[] label_indexes) {
@@ -108,10 +118,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             series_collection.add(new TimeSeriesInstance(series, label_indexes[index++]));
         }
 
+        dataChecks();
+    }
+
+    private void dataChecks(){
         calculateLengthBounds();
         calculateIfMissing();
-
-
+        calculateIfMultivariate();
+        calculateNumChannels();
     }
 
 
@@ -126,6 +140,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         minLength = series_collection.stream().mapToInt(e -> e.minLength).min().getAsInt();
         maxLength = series_collection.stream().mapToInt(e -> e.maxLength).max().getAsInt();
         isEqualLength = minLength == maxLength;
+    }
+
+    private void calculateNumChannels(){
+        maxNumChannels = series_collection.stream().mapToInt(e -> e.getNumChannels()).max().getAsInt();
+    }
+    
+    private void calculateIfMultivariate(){
+        isMultivariate = series_collection.stream().map(e -> e.isMultivariate).anyMatch(Boolean::booleanValue);
     }
 
     private void calculateIfMissing() {
@@ -250,5 +272,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 	public int numInstances() {
 		return series_collection.size();
     }
+
     
 }

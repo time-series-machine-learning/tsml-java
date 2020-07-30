@@ -6,6 +6,8 @@ import java.util.stream.IntStream;
 
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
+import tsml.transformers.Converter;
+import weka.core.Instances;
 
 public class DataManipulationExample {
 
@@ -122,10 +124,62 @@ public class DataManipulationExample {
         System.out.println(truncated_data);
     }
 
+
+    //multivariate unequal example.
+    public static void example4(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+                //time-series one.
+                {0.0,1.0,2.0,4.0}
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0, 7.0, 8.0},
+                //time-series one.
+                {4.0,3.0}
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+
+        Instances converted = Converter.toArff(data);
+        System.out.println(converted.toString());
+    }
+
+
+    //univariate example.
+    public static void example5(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0},
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+
+        Instances converted = Converter.toArff(data);
+        System.out.println(converted.toString());
+    }
+
     public static void main(String[] args) {
-        example1();
-        example2();
-        example3();
+        //example1();
+        //example2();
+        //example3();
+        example4();
+        example5();
     }
     
 }
