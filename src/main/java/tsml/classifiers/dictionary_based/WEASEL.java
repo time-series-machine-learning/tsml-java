@@ -194,7 +194,7 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
         }
       }
       FeatureNode[] featuresArray = features.toArray(new FeatureNode[]{});
-      Arrays.parallelSort(featuresArray, new Comparator<FeatureNode>() {
+      Arrays.sort(featuresArray, new Comparator<FeatureNode>() {
         public int compare(FeatureNode o1, FeatureNode o2) {
           return Integer.compare(o1.index, o2.index);
         }

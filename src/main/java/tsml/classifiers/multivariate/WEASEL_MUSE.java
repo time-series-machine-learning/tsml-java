@@ -284,7 +284,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
             }
 
             FeatureNode[] featuresArray = features.toArray(new FeatureNode[]{});
-            Arrays.parallelSort(featuresArray, new Comparator<FeatureNode>() {
+            Arrays.sort(featuresArray, new Comparator<FeatureNode>() {
                 public int compare(FeatureNode o1, FeatureNode o2) {
                     return Integer.compare(o1.index, o2.index);
                 }
@@ -556,6 +556,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
                 } else {
                     int newWord = this.dictChi.size() + 1;
                     this.dictChi.put(word, newWord);
+                    inverseDict.add(/*newWord,*/ word);
                     return newWord;
                 }
             }
@@ -649,7 +650,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
             Instance[] split = splitMultivariateInstance(sample);
             final int[][] words = new int[split.length][];
             for (int n = 0; n < split.length; n++) {
-                if (instanceLength(split[n]) >= this.windowLengths[index]) {
+                if (channelLength(sample) >= this.windowLengths[index]) {
                     words[n] = this.signature[index][n].transformWindowingInt(split[n], this.maxF);
                 } else {
                     words[n] = new int[]{};
@@ -726,7 +727,6 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
                 final int w,    // index of used windowSize
                 final int dimensionality,
                 final int wordLength) {
-
             final byte usedBits = (byte) binlog(this.alphabetSize);
             final int mask = (1 << (usedBits * wordLength)) - 1;
 
