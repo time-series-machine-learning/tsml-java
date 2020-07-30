@@ -40,7 +40,7 @@ public class DataManipulationExample {
 
         //calculate summary stats for each vertical slice of the dataset
 		for (int j = 0; j < data.getMaxLength(); j++) {
-			double[] slice = data.getSingleSliceArray(j);
+			double[] slice = data.getVSliceArray(j);
 
 			max[j] = TimeSeriesSummaryStatistics.max(slice);
 			min[j] = TimeSeriesSummaryStatistics.min(slice);
@@ -73,7 +73,7 @@ public class DataManipulationExample {
 
 
         //this should produce a size 3 interval slice across all dimensions that include atts: 0,1,2
-        double[][][] interval = data.getSliceArray(IntStream.range(0, 3).toArray());
+        double[][][] interval = data.getVSliceArray(IntStream.range(0, 3).toArray());
         //equiv: double[][][] interval = data.getSliceArray(new int{0,1,2});
 
 
@@ -111,7 +111,7 @@ public class DataManipulationExample {
 
 
         //this should produce a size 3 interval slice across all dimensions that include atts: 0,1,2
-        double[][][] truncated = data.getSliceArray(IntStream.range(0, data.getMinLength()).toArray());
+        double[][][] truncated = data.getVSliceArray(IntStream.range(0, data.getMinLength()).toArray());
         //equiv: double[][][] interval = data.getSliceArray(new int{0,1,2});
 
 
@@ -174,12 +174,110 @@ public class DataManipulationExample {
         System.out.println(converted.toString());
     }
 
+    //conversion from and backagain. An Weka Instances journey.
+    public static void example6(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0},
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+        System.out.println(data);
+
+        Instances converted = Converter.toArff(data);
+        System.out.println(converted.toString());
+
+        TimeSeriesInstances converted_again = Converter.fromArff(converted);
+        System.out.println(converted_again);
+    }
+
+    //multivariate unequal example.
+    public static void example7(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+                //time-series one.
+                {0.0,1.0,2.0,4.0}
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0, 7.0, 8.0},
+                //time-series one.
+                {4.0,3.0}
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+        System.out.println(data);
+
+        Instances converted = Converter.toArff(data);
+        System.out.println(converted.toString());
+
+        TimeSeriesInstances converted_again = Converter.fromArff(converted);
+        System.out.println(converted_again);
+    }
+
+    //HSlicing example.
+    public static void example8(){
+        double[][][] in = {
+            //instance zero.
+            {
+                //time-series zero.
+                {0.0,1.0,2.0,4.0,5.0},
+                //time-series one.
+                {0.0,1.0,2.0,4.0}
+            },
+            //instance one
+            {
+                //time-series zero.
+                {4.0,3.0,2.0,1.0, 7.0, 8.0},
+                //time-series one.
+                {4.0,3.0}
+            }
+        };
+
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[]{0, 1});
+        data.setClassLabels(new String[]{"A", "B"});
+
+
+        //this should produce only dimension 
+        double[][][] single_dimension = data.getHSliceArray(IntStream.range(0, 1).toArray());
+        //equiv: double[][][] single_dimension = data.getHSliceArray(new int{0});
+
+        System.out.println(Arrays.deepToString(single_dimension));
+
+
+        TimeSeriesInstances truncated_data = new TimeSeriesInstances(single_dimension, data.getClassIndexes());
+        truncated_data.setClassLabels(data.getClassLabels());
+
+        System.out.println("Original");
+        System.out.println(data);
+        System.out.println("Should be 2 value");
+        System.out.println(truncated_data);
+    }
+
     public static void main(String[] args) {
         //example1();
         //example2();
         //example3();
-        example4();
-        example5();
+        //example4();
+        // example5();
+        // example6();
+        //example7();
+        example8();
     }
     
 }

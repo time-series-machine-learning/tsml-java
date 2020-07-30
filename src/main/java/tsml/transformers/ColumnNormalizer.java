@@ -107,7 +107,7 @@ public class ColumnNormalizer implements Transformer {
 		stdev = new double[r.getMaxLength()];
 
 		for (int j = 0; j < r.getMaxLength(); j++) {
-			double[] slice = r.getSingleSliceArray(j);
+			double[] slice = r.getVSliceArray(j);
 
 			max[j] = TimeSeriesSummaryStatistics.max(slice);
 			min[j] = TimeSeriesSummaryStatistics.min(slice);
@@ -152,7 +152,7 @@ public class ColumnNormalizer implements Transformer {
 	
 	@Override
 	public TimeSeriesInstances transform(TimeSeriesInstances inst) {
-		
+		return null;
 	}
 
 	public Instances transform(Instances inst) {

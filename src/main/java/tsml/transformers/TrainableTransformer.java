@@ -1,5 +1,6 @@
 package tsml.transformers;
 
+import tschief.datasets.TimeSeries;
 import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instances;
 /**
@@ -34,6 +35,9 @@ public interface TrainableTransformer extends Transformer {
         return transform(data);
     }
 
+    default TimeSeriesInstances fitTransformConverter(Instances data){
+        return Converter.fromArff(fitTransform(data));
+    }
 
     /**
      * main transform method. This automatically fits the model if it has not already been fit
@@ -71,6 +75,11 @@ public interface TrainableTransformer extends Transformer {
         fit(data);
         return transform(data);
     }
+
+    default Instances fitTransformConverter(TimeSeriesInstances data){
+        return fitTransform(Converter.toArff(data));
+    }
+
 
             /**
      * main transform method. This automatically fits the model if it has not already been fit

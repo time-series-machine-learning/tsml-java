@@ -140,10 +140,6 @@ public class ConstantAttributeRemover implements TrainableTransformer {
 
         System.out.println(out_train);
         System.out.println(out_test);
-
-
-        IntStream.range(0, 10).boxed().collect(Collectors.toList());
-
     }
 
     @Override

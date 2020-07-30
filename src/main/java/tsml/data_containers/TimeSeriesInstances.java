@@ -226,7 +226,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     //assumes equal numbers of channels
-    public double[] getSingleSliceArray(int index){
+    public double[] getVSliceArray(int index){
         double[] out = new double[numInstances() * series_collection.get(0).getNumChannels()];
         int i=0;
         for(TimeSeriesInstance inst : series_collection){
@@ -238,28 +238,66 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-    public List<List<List<Double>>> getSliceList(int[] indexesToKeep){
-        return getSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public List<List<List<Double>>> getVSliceList(int[] indexesToKeep){
+        return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-    public List<List<List<Double>>> getSliceList(List<Integer> indexesToKeep){
+    public List<List<List<Double>>> getVSliceList(List<Integer> indexesToKeep){
         List<List<List<Double>>> out = new ArrayList<>(numInstances());
         for(TimeSeriesInstance inst : series_collection){
-            out.add(inst.getSliceList(indexesToKeep));
+            out.add(inst.getVSliceList(indexesToKeep));
         }
 
         return out;
     }
 
-    public double[][][] getSliceArray(int[] indexesToKeep){
-        return getSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public double[][][] getVSliceArray(int[] indexesToKeep){
+        return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-    public double[][][] getSliceArray(List<Integer> indexesToKeep){
+    public double[][][] getVSliceArray(List<Integer> indexesToKeep){
         double[][][] out = new double[numInstances()][][];
         int i=0;
         for(TimeSeriesInstance inst : series_collection){
-            out[i++] = inst.getSliceArray(indexesToKeep);
+            out[i++] = inst.getVSliceArray(indexesToKeep);
+        }
+
+        return out;
+    }
+
+    //assumes equal numbers of channels
+    public double[][] getHSliceArray(int dim){
+        double[][] out = new double[numInstances()][];
+        int i=0;
+        for(TimeSeriesInstance inst : series_collection){
+            // if the index isn't always valid, populate with NaN values.
+            out[i++] = inst.getSingleHSliceArray(dim);
+        }
+        return out;
+    }
+    
+    public List<List<List<Double>>> getHSliceList(int[] indexesToKeep){
+        return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public List<List<List<Double>>> getHSliceList(List<Integer> indexesToKeep){
+        List<List<List<Double>>> out = new ArrayList<>(numInstances());
+        for(TimeSeriesInstance inst : series_collection){
+            out.add(inst.getHSliceList(indexesToKeep));
+        }
+
+        return out;
+    }
+    
+    public double[][][] getHSliceArray(int[] indexesToKeep){
+        return getHSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    public double[][][] getHSliceArray(List<Integer> indexesToKeep){
+        double[][][] out = new double[numInstances()][][];
+        int i=0;
+        for(TimeSeriesInstance inst : series_collection){
+            out[i++] = inst.getHSliceArray(indexesToKeep);
         }
 
         return out;

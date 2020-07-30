@@ -41,6 +41,10 @@ public interface Transformer extends CapabilitiesHandler{
         return output;
     }
 
+    default TimeSeriesInstances transformConverter(Instances data){
+        return transform(Converter.fromArff(data));
+    }
+
     /**
      * Transform a new instance into the format described in determineOutputFormat
      * @param Instance inst
@@ -101,6 +105,11 @@ public interface Transformer extends CapabilitiesHandler{
             output.add(transform(inst));
         }
         return output;
+    }
+
+
+    default Instances transformConverter(TimeSeriesInstances data){
+        return Converter.toArff(transform(data));
     }
 
     /**

@@ -9,24 +9,17 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class Converter implements TrainableTransformer {
-
-    boolean isFit = false;
-
-
-    Instances input = null;
-    TimeSeriesInstances inputTS = null;
-
+public class Converter implements Transformer {
 
     @Override
     public Instance transform(Instance inst) {
-        // TODO Auto-generated method stub
-        return null;
+        return inst;
     }
 
     @Override
@@ -37,30 +30,52 @@ public class Converter implements TrainableTransformer {
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
+        return inst;
     }
-
-    @Override
-    public boolean isFit() {
-        return isFit;
-    }
-
-    @Override
-    public void fit(Instances data) {
-        input = data;
-        isFit = true;
-    }
-
-    @Override
-    public void fit(TimeSeriesInstances data) {
-        inputTY = data;
-        isFit = true;
-    }
-
 
     public static TimeSeriesInstances fromArff(Instances data){
+        List<List<List<Double>>> raw_data = new ArrayList<>(data.numInstances());
+        List<Double> label_indexes =  new ArrayList<>(data.numInstances());
 
+        //we multivariate
+        if(data.get(0).attribute(0).isRelationValued()){
+            for(int i=0; i<data.numInstances(); i++){            
+                Instances timeseries = data.get(i).relationalValue(data.get(i).attribute(0));
+                //number of channels is numInstances
+                raw_data.add(new ArrayList<>(timeseries.numInstances()));
+                for(int j=0; j<timeseries.numInstances(); j++){
+                    raw_data.get(i).add(new ArrayList<>(timeseries.numAttributes()));
+                    for(int k=0; k< timeseries.get(j).numAttributes(); k++){
+                        raw_data.get(i).get(j).add(timeseries.get(j).value(k));
+                    }
+                }
+
+                label_indexes.add(data.get(i).value(1));
+            }
+        }
+        else{
+            for(int i=0; i<data.numInstances(); i++){
+                //add dimension 0
+                raw_data.add(new ArrayList<>(1));
+                raw_data.get(i).add(new ArrayList<>(data.get(i).numAttributes()-1)); //remove class attribute.
+                for(int j=0; j< data.get(i).numAttributes(); j++){
+                    //skip class index.
+                    if(data.classIndex() == j)
+                        label_indexes.add(data.get(i).value(j));
+                    else
+                        raw_data.get(i).get(0).add(data.get(i).value(j));
+                }
+            }
+        }
+
+        String[] labels = new String[data.classAttribute().numValues()];
+        for(int i=0; i< labels.length; i++)
+            labels[i] = data.classAttribute().value(i);
+
+        TimeSeriesInstances output = new TimeSeriesInstances(raw_data, label_indexes);
+        output.setClassLabels(labels);
+
+        return output;
     }
 
     public static Instances toArff(TimeSeriesInstances  data){
@@ -85,7 +100,7 @@ public class Converter implements TrainableTransformer {
             
             //create output data set.
             Instances output = new Instances("Converted", attributes, data.numInstances());
-                        
+
             for(int i=0; i < data.numInstances(); i++){
                 //create each row.
                 //only two attribtues, relational and class.
@@ -155,12 +170,10 @@ public class Converter implements TrainableTransformer {
         TimeSeriesInstances insts_ts = null;
         Instances insts_arff = null;
 
-        TrainableTransformer conv = new Converter();
+        Transformer conv = new Converter();
 
-        conv.fit(insts_arff);
         insts_ts = conv.transform(insts_ts);
-        
-        conv.fit(insts_ts);
+
         insts_arff = conv.transform(insts_arff);
     }
     
