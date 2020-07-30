@@ -87,6 +87,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
             throw new Exception("WEASEL_MUSE_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         Instances newSamples;
+        //get derivatives for the instances if enabled
         if (derivatives){
             int dimensionality = numDimensions(samples);
             Instances[] split = splitMultivariateInstances(samples);
@@ -228,6 +229,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
 
     private FeatureNode[] predictionTransform(Instance instance){
         Instance newInstance;
+        //get derivatives for the instance if enabled
         if (derivatives){
             int dimensionality = numDimensions(instance);
             Instance[] split = splitMultivariateInstance(instance);

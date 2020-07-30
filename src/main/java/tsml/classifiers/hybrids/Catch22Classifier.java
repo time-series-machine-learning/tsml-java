@@ -111,6 +111,7 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
         transformedData.setClassIndex(transformedData.numAttributes()-1);
         header = new Instances(transformedData,0);
 
+        //transform each dimension using the catch22 transformer into a sincle vector
         for (int i = 0 ; i < data.numInstances(); i++){
             double[] d = new double[transformedData.numAttributes()];
             for (int n = 0 ; n < numColumns; n++){
@@ -151,6 +152,7 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
             columns = new Instance[]{instance};
         }
 
+        //transform each dimension using the catch22 transformer into a sincle vector
         double[] d = new double[header.numAttributes()];
         for (int n = 0 ; n < numColumns; n++){
             Instance inst = (c22.transform(columns[n]));

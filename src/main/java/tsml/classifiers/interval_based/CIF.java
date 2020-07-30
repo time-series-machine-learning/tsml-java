@@ -24,7 +24,6 @@ import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.*;
 
 import java.io.BufferedReader;
@@ -372,10 +371,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         testHolder = new Instances(result,0);
         DenseInstance in=new DenseInstance(result.numAttributes());
         testHolder.add(in);
-
-        if(base instanceof RandomTree){
-            ((RandomTree)base).setKValue(result.numAttributes() - 1);
-        }
 
         /** For each base classifier
          *      generate random intervals
