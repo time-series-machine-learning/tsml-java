@@ -668,7 +668,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             if(trainTimeContract)
                 this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
-
+        //Reseed to make final build deterministic independent of estimating own performance
+        rand.setSeed(seed*3);
         for (; classifiersBuilt < numClassifiers && ((classifiersBuilt==0)||(System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime())); classifiersBuilt++) {
             if(debug && classifiersBuilt%100==0)
                 printLineDebug("Building RISE tree "+classifiersBuilt+" time taken = "+(System.nanoTime()-startTime)+" contract ="+trainContractTimeNanos+" nanos");
@@ -974,10 +975,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             startEndPoints.add(new int[2]);
             if (rand.nextBoolean()) {
                 startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
-                printLineDebug(" start end points ="+startEndPoints.get(startEndPoints.size() - 1)[0]);
                 int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
                         ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
-                printLineDebug("TRUE range = "+range+" min = "+minIntervalLength+" "+" max = "+maxIntervalLength);
                 int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
 
@@ -986,7 +985,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
                         ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
                 int length;
-                printLineDebug("FALSE range = "+range+" min = "+minIntervalLength+" ");
                 if (range - minIntervalLength == 0)
                     length = 3;
                 else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;

@@ -151,6 +151,9 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public enum EstimatorMethod{CV,OOB,NONE}
     protected EstimatorMethod estimator=EstimatorMethod.NONE;
+    public void setEstimatorMethod(EstimatorMethod e){
+        estimator=e;
+    }
     public void setEstimatorMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))
