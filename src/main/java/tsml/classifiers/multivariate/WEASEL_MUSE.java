@@ -21,6 +21,7 @@ import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.ClassifierTools;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -32,7 +33,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
  * The WEASEL+MUSE classifier as published in
- * <p>
+ *
  * Schäfer, P., Leser, U.: Multivariate Time Series Classification
  * with WEASEL+MUSE. arXiv 2017
  * http://arxiv.org/abs/1711.11343
@@ -45,31 +46,34 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  */
 public class WEASEL_MUSE extends EnhancedAbstractClassifier {
 
-    public static int maxF = 6;
-    public static int minF = 2;
-    public static int maxS = 4;
-    protected static boolean[] NORMALIZATION = new boolean[]{true, false};
+    private static int maxF = 6;
+    private static int minF = 2;
+    private static int maxS = 4;
+    private static boolean[] NORMALIZATION = new boolean[]{true, false};
 
-    public enum HistogramType {
+    private enum HistogramType {
         EQUI_FREQUENCY, EQUI_DEPTH
     }
-    public static HistogramType[] histTypes
+    private static HistogramType[] histTypes
             = new HistogramType[]{HistogramType.EQUI_DEPTH, HistogramType.EQUI_FREQUENCY};
 
-    public static double chi = 2;
-    public static double bias = 1;
-    public static SolverType solverType = SolverType.L2R_LR;
-    public static int iterations = 5000;
-    public static double p = 0.1;
-    public static double c = 1;
+    private static double chi = 2;
+    private static double bias = 1;
+    private static SolverType solverType = SolverType.L2R_LR;
+    private static int iterations = 5000;
+    private static double p = 0.1;
+    private static double c = 1;
+
+    private Instances header;
+    private boolean derivatives = true;
 
     // ten-fold cross validation
     private int folds = 10;
 
-    public static int MIN_WINDOW_LENGTH = 2;
-    public static int MAX_WINDOW_LENGTH = 450;
+    private static int MIN_WINDOW_LENGTH = 2;
+    private static int MAX_WINDOW_LENGTH = 450;
 
-    public MUSEModel classifier;
+    private MUSEModel classifier;
 
     public WEASEL_MUSE() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
@@ -82,7 +86,36 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
         if (samples.classIndex() != samples.numAttributes()-1)
             throw new Exception("WEASEL_MUSE_BuildClassifier: Class attribute not set as last attribute in dataset");
 
-        int dimensionality = numDimensions(samples);
+        Instances newSamples;
+        if (derivatives){
+            int dimensionality = numDimensions(samples);
+            Instances[] split = splitMultivariateInstances(samples);
+            Instances[] channels = new Instances[dimensionality * 2];
+
+            for (int i = 0; i < dimensionality; i++) {
+                Instances derivative = new Instances(split[i], 0);
+                for (int n = 0; n < samples.numInstances(); n++) {
+                    Instance inst = split[i].get(n);
+                    double[] d = new double[inst.numAttributes()];
+                    for (int a = 1; a < inst.numAttributes()-1; a++) {
+                        d[a - 1] = Math.abs(inst.value(a) - inst.value(a - 1));
+                    }
+                    d[inst.numAttributes()-1] = inst.classValue();
+                    derivative.add(new DenseInstance(1, d));
+                }
+                channels[i] = split[i];
+                channels[dimensionality + i] = derivative;
+            }
+
+            newSamples = mergeToMultivariateInstances(channels);
+            header = new Instances(newSamples, 0);
+        }
+        else{
+            newSamples = samples;
+        }
+
+        int dimensionality = numDimensions(newSamples);
+
         try {
             int maxCorrect = -1;
             int bestF = -1;
@@ -92,16 +125,16 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
             optimize:
             for (final HistogramType histType : histTypes) {
                 for (final boolean mean : NORMALIZATION) {
-                    int[] windowLengths = getWindowLengths(samples, mean);
+                    int[] windowLengths = getWindowLengths(newSamples, mean);
 
                     for (int f = minF; f <= maxF; f += 2) {
                         final MUSE model = new MUSE(f, maxS, histType, windowLengths, mean);
                         MUSE.BagOfBigrams[] bag = null;
 
                         for (int w = 0; w < model.windowLengths.length; w++) {
-                            int[][] words = model.createWords(samples, w);
+                            int[][] words = model.createWords(newSamples, w);
                             MUSE.BagOfBigrams[] bobForOneWindow = fitOneWindow(
-                                    samples,
+                                    newSamples,
                                     windowLengths, mean, histType,
                                     model,
                                     words, f, dimensionality, w);
@@ -119,10 +152,11 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
                             bestHistType = histType;
 
                             if (debug) {
-                                System.out.println("New best model" + maxCorrect + " " + bestF + " " + bestNorm + " " + bestHistType);
+                                System.out.println("New best model" + maxCorrect + " " + bestF + " " + bestNorm + " "
+                                        + bestHistType);
                             }
                         }
-                        if (correct == samples.numInstances()) {
+                        if (correct == newSamples.numInstances()) {
                             break optimize;
                         }
                     }
@@ -130,17 +164,17 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
             }
 
             // obtain the final matrix
-            int[] windowLengths = getWindowLengths(samples, bestNorm);
+            int[] windowLengths = getWindowLengths(newSamples, bestNorm);
 
             // obtain the final matrix
             MUSE model = new MUSE(bestF, maxS, bestHistType, windowLengths, bestNorm);
             MUSE.BagOfBigrams[] bob = null;
 
             for (int w = 0; w < model.windowLengths.length; w++) {
-                int[][] words = model.createWords(samples, w);
+                int[][] words = model.createWords(newSamples, w);
 
                 MUSE.BagOfBigrams[] bobForOneWindow = fitOneWindow(
-                        samples,
+                        newSamples,
                         windowLengths, bestNorm, bestHistType,
                         model,
                         words,
@@ -174,46 +208,62 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        // iterate each sample to classify
-        int dimensionality = numDimensions(instance);
-
-        MUSE.BagOfBigrams[] bagTest = null;
-        for (int w = 0; w < classifier.muse.windowLengths.length; w++) {
-            int[][] wordsTest = classifier.muse.createWords(instance, w);
-            MUSE.BagOfBigrams[] bopForWindow = new MUSE.BagOfBigrams[]{classifier.muse.createBagOfPatterns(wordsTest,
-                    instance, w, dimensionality, classifier.features)};
-            classifier.muse.dict.filterChiSquared(bopForWindow);
-            bagTest = mergeBobs(bagTest, bopForWindow);
-        }
-
-        FeatureNode[][] features = initLibLinear(bagTest, classifier.muse.dict);
-        return Linear.predict(classifier.linearModel, features[0]);
+        FeatureNode[] features = predictionTransform(instance);
+        return Linear.predict(classifier.linearModel, features);
     }
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        // iterate each sample to classify
-        int dimensionality = numDimensions(instance);
-
-        MUSE.BagOfBigrams[] bagTest = null;
-        for (int w = 0; w < classifier.muse.windowLengths.length; w++) {
-            int[][] wordsTest = classifier.muse.createWords(instance, w);
-            MUSE.BagOfBigrams[] bopForWindow = new MUSE.BagOfBigrams[]{classifier.muse.createBagOfPatterns(wordsTest,
-                    instance, w, dimensionality, classifier.features)};
-            classifier.muse.dict.filterChiSquared(bopForWindow);
-            bagTest = mergeBobs(bagTest, bopForWindow);
-        }
-
-        FeatureNode[][] features = initLibLinear(bagTest, classifier.muse.dict);
+        FeatureNode[] features = predictionTransform(instance);
 
         double[] probabilities = new double[classifier.linearModel.getNrClass()];
-        Linear.predictProbability(classifier.linearModel, features[0], probabilities);
+        Linear.predictProbability(classifier.linearModel, features, probabilities);
 
         double[] classHist = new double[instance.numClasses()];
         for (int i = 0; i < classifier.linearModel.getLabels().length; i++) {
             classHist[classifier.linearModel.getLabels()[i]] = probabilities[i];
         }
         return classHist;
+    }
+
+    private FeatureNode[] predictionTransform(Instance instance){
+        Instance newInstance;
+        if (derivatives){
+            int dimensionality = numDimensions(instance);
+            Instance[] split = splitMultivariateInstance(instance);
+            double[][] channels = new double[dimensionality * 2][split[0].numAttributes()];
+
+            for (int i = 0; i < dimensionality; i++) {
+                for (int a = 1; a < split[i].numAttributes(); a++) {
+                    channels[dimensionality + i][a - 1] = Math.abs(split[i].value(a) - split[i].value(a - 1));
+                }
+                channels[i] = split[i].toDoubleArray();
+            }
+
+            newInstance = new DenseInstance(2);
+            Instances relational = createRelationFrom(header.attribute(0).relation(), channels);
+
+            newInstance.setDataset(header);
+            int index = newInstance.attribute(0).addRelation(relational);
+            newInstance.setValue(0, index);
+            newInstance.setValue(1, instance.classValue());;
+        }
+        else{
+            newInstance = instance;
+        }
+
+        int dimensionality = numDimensions(newInstance);
+
+        MUSE.BagOfBigrams[] bagTest = null;
+        for (int w = 0; w < classifier.muse.windowLengths.length; w++) {
+            int[][] wordsTest = classifier.muse.createWords(newInstance, w);
+            MUSE.BagOfBigrams[] bopForWindow = new MUSE.BagOfBigrams[]{classifier.muse.createBagOfPatterns(wordsTest,
+                    newInstance, w, dimensionality, classifier.features)};
+            classifier.muse.dict.filterChiSquared(bopForWindow);
+            bagTest = mergeBobs(bagTest, bopForWindow);
+        }
+
+        return initLibLinear(bagTest, classifier.muse.dict)[0];
     }
 
     private MUSE.BagOfBigrams[] fitOneWindow(
@@ -1341,8 +1391,8 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
 
         //Minimum working example
         String dataset = "RacketSports";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("E:\\Datasets\\Multivariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("E:\\Datasets\\Multivariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
         Instances[] data = resampleMultivariateTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
