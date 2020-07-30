@@ -1,6 +1,7 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.util.List;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -159,27 +160,19 @@ public class PCA implements TrainableTransformer {
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         
         List<TimeSeriesInstance> split_inst = Splitter.SplitTimeSeriesInstance(inst);
-        for(int i=0; i<)
-        for(TimeSeriesInstance in : split_inst){
-            transform(Converter.toArff(in));
+        for(int i=0; i<pca_transforms.length; i++)
+            transform(Converter.toArff(split_inst.get(i)));
         }
     }
 
     @Override
     public void fit(TimeSeriesInstances data) {
-
-        
-
+        List<TimeSeriesInstances> split = Splitter.SplitTimeSeriesInstances(data);
         for(int i=0; i<data.getMaxNumChannels(); i++){
             pca_transforms[i] = new PrincipalComponents();
             pca = pca_transforms[i]; //set the ref.
-
-
-            fit(Converter.toArff(in))
+            fit(Converter.toArff(split.get(i)));
         }
-
-
-
 
         isFit=true;
     }

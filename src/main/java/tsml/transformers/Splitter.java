@@ -5,6 +5,7 @@ import java.util.List;
 
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 
 
 //This class if for weird hacky dimension wise operations we need to do when interfacing with Weka classifiers
@@ -25,8 +26,17 @@ public class Splitter{
         return output;
     }
 
+    //horizontally slice into univariate TimeSeriesInstances.
     public static List<TimeSeriesInstances> SplitTimeSeriesInstances(TimeSeriesInstances inst){
-        
+        List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumChannels());
+
+        for(int i=0; i< inst.getMaxNumChannels(); i++){
+            TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(new int[]{i}), inst.getClassIndexes());
+            temp.setClassLabels(inst.getClassLabels());
+            output.add(temp);
+        }
+
+        return output;
     }
 
     //mergey mergey

@@ -78,6 +78,10 @@ public class Converter implements Transformer {
         return output;
     }
 
+    public static TimeSeriesInstance fromArff(Instance data){
+        return null;
+    }
+
     public static Instances toArff(TimeSeriesInstances  data){
         double[][][] values = data.toValueArray();
         int[] classIndexes = data.getClassIndexes();
@@ -155,6 +159,10 @@ public class Converter implements Transformer {
         return output;
             
 
+    }
+
+    public static Instance toArff(TimeSeriesInstance  data){
+        return null;
     }
 
     private static ArrayList<Attribute> createAttributes(int numAttributes) {
