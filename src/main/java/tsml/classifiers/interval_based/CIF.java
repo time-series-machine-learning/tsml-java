@@ -252,8 +252,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         //Univariate
         else{
-            columns = new Instances[1];
-            columns[0] = data;
+            columns = new Instances[]{data};
             numColumns = 1;
         }
 
