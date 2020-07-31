@@ -1,7 +1,5 @@
 package tsml.classifiers.distance_based;
 
-import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.tuning.searchers.GridSearcher;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.transformers.ShapeDTWFeatures;
@@ -9,13 +7,13 @@ import tsml.transformers.Subsequences;
 import utilities.generic_storage.Pair;
 import utilities.samplers.RandomStratifiedSampler;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.functions.LibSVM;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.gui.beans.CrossValidationFoldMaker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +35,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
     // Defines the split from training to reference, 0.5 indicates
     // 0.5 train, 0.5 reference. 0.4 indicates 0.4 train, 0.6 reference
     // and so on.
-    private double trainRefSplit = 0.5;
+    private double trainRefSplit = 1.0;
     private Subsequences subsequenceTransformer;
     //The transformer used to produce the shape dtw features.
     private ShapeDTWFeatures sdtwFeats;
@@ -56,11 +54,12 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         this.sampler = new RandomStratifiedSampler();
     }
 
-    public ShapeDTW_SVM(int subsequenceLength) {
+    public ShapeDTW_SVM(int subsequenceLength,KernelType k) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceTransformer = new Subsequences(subsequenceLength);
         this.svmClassifier = new SMO();
         this.sampler = new RandomStratifiedSampler();
+        this.kernelType = k;
     }
     /* Getters and Setters */
     public double getTrainRefSplit() { return trainRefSplit; }
@@ -76,8 +75,8 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         long buildTime = System.nanoTime();
         // Convert the data into an appropriate form (ShapeDTW features)
         Instances trainingData = preprocessData(trainInsts);
-        // Tune the exponent (just values 1,2 and 3 and C values 10^-5 to 10^5).
-        int numFolds = trainingData.numInstances();
+        // Tune the SVM
+        int numFolds = 10;
         tuneSVMClassifier(trainingData,numFolds);
         // Store the timing results.
         buildTime = System.nanoTime() - buildTime ;
@@ -146,7 +145,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
             System.out.println("Chosen Gamma Value - " + chosenParamValue.var1);
             System.out.println("Chosen C Value - " + chosenParamValue.var2);
         }
-
+        this.svmClassifier.buildClassifier(trainData);
     }
 
     /**
@@ -269,45 +268,14 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
      * performing a stratfied sample and creating the ShapeDTW features.
      *
      * @param trainInsts
-     * @return just the training set (the reference set is stored in ShapeDtwFeatures).
+     * @return just the training set.
      */
     private Instances preprocessData(Instances trainInsts) {
         // Transform the trainInsts into subsequences
         Instances transformedInsts = this.subsequenceTransformer.transform(trainInsts);
-        // Do a stratified sample to produce a training and reference set.
-        Instances [] trainRefSplit = createTrainAndRefSplit(transformedInsts);
         // Create the shapeDTW features on the training set
-        this.sdtwFeats = new ShapeDTWFeatures(trainRefSplit[1]);
-        return this.sdtwFeats.transform(trainRefSplit[0]);
-    }
-
-    /**
-     * Private function for splitting an Instances object into
-     * a train and a reference set.
-     *
-     * @param data
-     * @return
-     */
-    private Instances [] createTrainAndRefSplit(Instances data) {
-        int trainSize = (int) Math.floor(this.trainRefSplit * (double) data.numInstances());
-        int refSize = data.numInstances() - trainSize;
-        //Use the sampler to produce the sampled set.
-        Instances sampledSet = new Instances(data,data.numInstances());
-        this.sampler.setInstances(data);
-        while(this.sampler.hasNext()) {
-            sampledSet.add(this.sampler.next());
-        }
-        //Split the sampled set into a train/ref split.
-        Instances trainSet = new Instances(data,trainSize);
-        Instances refSet = new Instances(data,refSize);
-        for(int i=0;i<sampledSet.numInstances();i++) {
-            if(i<trainSize) {
-                trainSet.add(sampledSet.get(i));
-            } else {
-                refSet.add(sampledSet.get(i));
-            }
-        }
-        return new Instances [] {trainSet,refSet};
+        this.sdtwFeats = new ShapeDTWFeatures(transformedInsts);
+        return this.sdtwFeats.transform(transformedInsts);
     }
 
     @Override
@@ -330,12 +298,91 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
      * @param args - the command line arguments.
      */
     public static void main(String[] args) throws Exception {
-        Instances [] data = DatasetLoading.sampleBeef(0);
+        Instances [] data = DatasetLoading.sampleBeef(0);//new Instances [] {createTrainData(),createTestData()};
         ShapeDTW_SVM s = new ShapeDTW_SVM();
-        s.setKernelType(KernelType.RBF);
+        s.setKernelType(KernelType.PolyNomial);
         System.out.println(calculateAccuracy(s,data));
         ShapeDTW_1NN s2 = new ShapeDTW_1NN();
         System.out.println(calculateAccuracy(s2,data));
+    }
+
+    /**
+     * Function to create train data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createTrainData() {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<5;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        //Create the class values
+        ArrayList<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("0");
+        atts.add(new Attribute("class",classes));
+        Instances newInsts = new Instances("Test_dataset",atts,5);
+        newInsts.setClassIndex(newInsts.numAttributes()-1);
+
+        //create the test data
+        double [] test = new double [] {1,2,3,4,5};
+        createInst(test,"1",newInsts);
+        test = new double [] {1,1,2,3,4};
+        createInst(test,"1",newInsts);
+        test = new double [] {2,2,2,3,4};
+        createInst(test,"0",newInsts);
+        test = new double [] {2,3,4,5,6};
+        createInst(test,"0",newInsts);
+        test = new double [] {0,1,1,1,2};
+        createInst(test,"1",newInsts);
+        return newInsts;
+    }
+
+    /**
+     * Function to create test data for testing purposes.
+     *
+     * @return
+     */
+    private static Instances createTestData() {
+        //Create the attributes
+        ArrayList<Attribute> atts = new ArrayList<>();
+        for(int i=0;i<5;i++) {
+            atts.add(new Attribute("test_" + i));
+        }
+        //Create the class values
+        ArrayList<String> classes = new ArrayList<>();
+        classes.add("1");
+        classes.add("0");
+        atts.add(new Attribute("class",classes));
+        Instances newInsts = new Instances("Test_dataset",atts,5);
+        newInsts.setClassIndex(newInsts.numAttributes()-1);
+
+        //create the test data
+        double [] test = new double [] {2,4,6,8,10};
+        createInst(test,"1",newInsts);
+        test = new double [] {1,1,2,3,4};
+        createInst(test,"1",newInsts);
+        test = new double [] {0,1,1,1,2};
+        createInst(test,"1",newInsts);
+        return newInsts;
+    }
+
+    /**
+     * private function for creating an instance from a double array. Used
+     * for testing purposes.
+     *
+     * @param arr
+     * @return
+     */
+    private static void createInst(double [] arr,String classValue, Instances dataset) {
+        Instance inst = new DenseInstance(arr.length+1);
+        for(int i=0;i<arr.length;i++) {
+            inst.setValue(i,arr[i]);
+        }
+        inst.setDataset(dataset);
+        inst.setClassValue(classValue);
+        dataset.add(inst);
     }
 
     /**

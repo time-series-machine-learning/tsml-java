@@ -387,7 +387,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
         if (test.classIndex() == -1) {
             test.setClassIndex(test.numAttributes() - 1);
         }
-        Instances [] data = new Instances[] {train,test};
+        Instances [] data = new Instances[] {trainData,testData};
 
         // test bad subsequence length
         // this has to be greater than 0.
