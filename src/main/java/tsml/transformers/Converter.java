@@ -78,7 +78,16 @@ public class Converter implements Transformer {
         return output;
     }
 
+
+    //TODO: implement singular conversion
     public static TimeSeriesInstance fromArff(Instance data){
+
+        //check if the first attribute is relational.
+
+        //if its multivariate, get class index / value from index 1,
+        //loop through all the series in the Instances of the relational attribute.
+
+        //if it its not then convert it to double array, strip out class index and good to go.
         return null;
     }
 
@@ -161,8 +170,43 @@ public class Converter implements Transformer {
 
     }
 
-    public static Instance toArff(TimeSeriesInstance  data){
-        return null;
+    public static Instance toArff(TimeSeriesInstance data){
+        int numChannels = data.getNumChannels();
+        if(numChannels == 1)
+            return new DenseInstance(1.0, ArrayUtils.add(data.toValueArray()[0], data.getLabelIndex()));
+
+
+        int numAttributes = data.getMaxLength();
+        ArrayList<Attribute> relational_atts = createAttributes(numAttributes);
+        Instances relationalHeader =  new Instances("", relational_atts, numChannels);
+        relationalHeader.setRelationName("relationalAtt");
+
+        Instance output = new DenseInstance(2);
+                                
+        //set relation for the dataset/
+        Instances relational = new Instances(relationalHeader, numChannels);
+
+        double[][] values = data.toValueArray();
+        int classIndex = data.getLabelIndex();
+
+        //each dense instance is row/ which is actually a channel.
+        for(int j=0; j< numChannels; j++){
+            double[] vals = new double[numAttributes];
+            System.arraycopy(values[j], 0, vals, 0, values[j].length);
+            for(int k=values[j].length; k<numAttributes; k++)
+                vals[k] =  Double.NaN; //all missing values are NaN.
+            relational.add(new DenseInstance(1.0, vals));
+        }       
+                        
+        int index = output.attribute(0).addRelation(relational);
+        
+        //set the relational attribute.
+        output.setValue(0, index);           
+        
+        //set class value.
+        output.setValue(1, (double)classIndex);
+
+        return output;
     }
 
     private static ArrayList<Attribute> createAttributes(int numAttributes) {

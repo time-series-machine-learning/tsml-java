@@ -14,15 +14,12 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
-import weka.classifiers.AbstractClassifier;
-import evaluation.storage.ClassifierResults;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.logging.Logger;
 
+import evaluation.storage.ClassifierResults;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
 import weka.core.Instances;
@@ -79,7 +76,8 @@ ClassifierResults trainResults can also store other information about the traini
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,
-                                                                                       Randomizable {
+                                                                                       Randomizable,
+                                                                                       TSClassifier {
 
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -95,6 +93,10 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public Random getRandom() {
         return rand;
+    }
+
+    public AbstractClassifier getClassifier(){
+        return this;
     }
 
     /**

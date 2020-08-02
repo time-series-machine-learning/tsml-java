@@ -2,12 +2,12 @@ package tsml.classifiers;
 
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import tsml.transformers.Converter;
 public interface TSClassifier{
     
 
-    public AbstractClassifier getClassifier();
+    public Classifier getClassifier();
 
     public default void fit(TimeSeriesInstances data) throws Exception{
         getClassifier().buildClassifier(Converter.toArff(data));

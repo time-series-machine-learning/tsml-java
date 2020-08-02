@@ -1,4 +1,7 @@
 package tsml.transformers;
+
+import static experiments.data.DatasetLoading.loadDataNullable;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.transform.DctNormalization;
 import org.apache.commons.math3.transform.FastCosineTransformer;
@@ -6,10 +9,11 @@ import org.apache.commons.math3.transform.TransformType;
 
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.multivariate_tools.MultivariateInstanceTools;
-import weka.core.*;
-import weka.filters.SimpleBatchFilter;
-
-import static experiments.data.DatasetLoading.loadDataNullable;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
 
 public class MFCC implements Transformer {
 
