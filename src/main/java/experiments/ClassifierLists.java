@@ -41,6 +41,7 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.shapelet_based.ShapeletTree;
+import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -93,7 +94,8 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID"
+            "DD_DTW","DTD_C","CID_DTW","NN_CID","NN_ShapeDTW_Raw","NN_ShapeDTW_PAA","NN_ShapeDTW_DWT",
+            "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -139,6 +141,35 @@ public class ClassifierLists {
                 break;
             case "NN_CID":
                 c = new NN_CID();
+                break;
+            case "NN_ShapeDTW_Raw":
+                c=new ShapeDTW_1NN(30,null,false,null);
+                break;
+            case "NN_ShapeDTW_PAA":
+                PAA p = new PAA();
+                p.setNumIntervals(5);
+                c=new ShapeDTW_1NN(30,p,false,null);
+                break;
+            case "NN_ShapeDTW_DWT":
+                DWT dwt = new DWT();
+                c=new ShapeDTW_1NN(30,dwt,false,null);
+                break;
+            case "NN_ShapeDTW_Der":
+                Derivative der = new Derivative();
+                c=new ShapeDTW_1NN(30,der,false,null);
+                break;
+            case "NN_ShapeDTW_Slope":
+                Slope s = new Slope(5);
+                c=new ShapeDTW_1NN(30,s,false,null);
+                break;
+            case "NN_ShapeDTW_Hog":
+                HOG1D h = new HOG1D();
+                c=new ShapeDTW_1NN(30,h,false,null);
+                break;
+            case "NN_ShapeDTW_Comp":
+                DWT dwt2 = new DWT();
+                HOG1D h2 = new HOG1D();
+                c=new ShapeDTW_1NN(30,dwt2,true,h2);
                 break;
             default:
                 System.out.println("Unknown distance based classifier "+classifier+" should not be able to get here ");

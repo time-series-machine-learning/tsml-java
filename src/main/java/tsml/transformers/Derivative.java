@@ -77,8 +77,11 @@ public class Derivative implements Transformer, Serializable {
 
     @Override
     public Instances determineOutputFormat(Instances inputFormat) {
-        if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
-            throw new IllegalArgumentException("cannot handle class values not at end");
+        //If the class index exists.
+        if(inputFormat.classIndex() >= 0) {
+            if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
+                throw new IllegalArgumentException("cannot handle class values not at end");
+            }
         }
         inputFormat = new Instances(inputFormat, 0);
         for (int i = 0; i < inputFormat.numAttributes(); i++) {

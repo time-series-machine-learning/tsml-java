@@ -73,7 +73,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     // track the memory
     private MemoryWatcher memoryWatcher = new MemoryWatcher();
     // min time between checkpointing
-    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    private transient long minCheckpointIntervalNanos = 0;//Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     // last timestamp of checkpoint
     private transient long lastCheckpointTimeStamp = 0;
     // path to save checkpoints to
@@ -85,17 +85,14 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     // whether to random tie break (defaults to true / yes and drawing neighbours are put into a majority vote)
     private boolean randomTieBreak = true;
 
-    @Override
     public boolean isSkipFinalCheckpoint() {
         return skipFinalCheckpoint;
     }
 
-    @Override
     public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
         this.skipFinalCheckpoint = skipFinalCheckpoint;
     }
 
-    @Override
     public String getSavePath() {
         return savePath;
     }
@@ -111,18 +108,12 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return result;
     }
 
-    @Override public String getLoadPath() {
-        return loadPath;
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+
     }
 
-    @Override public boolean setLoadPath(final String path) {
-        boolean result = Checkpointable.super.setLoadPath(path);
-        if(result) {
-            loadPath = StrUtils.asDirPath(path);
-        } else {
-            loadPath = null;
-        }
-        return result;
+    public String getLoadPath() {
+        return loadPath;
     }
 
     public StopWatch getTrainTimer() {
@@ -182,7 +173,7 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 

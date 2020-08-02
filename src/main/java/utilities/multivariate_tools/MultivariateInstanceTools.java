@@ -474,8 +474,8 @@ public class MultivariateInstanceTools {
             
             double[][] data = new double[d][length];
             for(int j=0; j<d; j++){
-                for(int k=0; k<length; k++){                    
-                    data[j][k] = flat.get(i).value(j*d+k);
+                for(int k=0; k<length; k++){
+                    data[j][k] = flat.get(i).value(j*length+k);
                 }
             }            
             //set relation for the dataset/
