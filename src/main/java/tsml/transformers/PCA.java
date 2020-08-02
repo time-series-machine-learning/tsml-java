@@ -1,6 +1,7 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import experiments.data.DatasetLoading;
@@ -155,23 +156,36 @@ public class PCA implements TrainableTransformer {
 
 
     private PrincipalComponents[] pca_transforms;
+    private int[] attributesToKeep_dims;
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         
         List<TimeSeriesInstance> split_inst = Splitter.SplitTimeSeriesInstance(inst);
-        for(int i=0; i<pca_transforms.length; i++)
-            transform(Converter.toArff(split_inst.get(i)));
+        List<TimeSeriesInstance> out = new ArrayList<>(split_inst.size());
+        for(int i=0; i<pca_transforms.length; i++){
+            pca = pca_transforms[i];
+            numAttributesToKeep = attributesToKeep_dims[i];
+            out.add(Converter.fromArff(transform(Converter.toArff(split_inst.get(i)))));
         }
+
+        return Splitter.MergeTimeSeriesInstance(out);
     }
 
     @Override
     public void fit(TimeSeriesInstances data) {
         List<TimeSeriesInstances> split = Splitter.SplitTimeSeriesInstances(data);
+        
+        pca_transforms = new PrincipalComponents[split.size()];
+        attributesToKeep_dims = new int[split.size()];
+
         for(int i=0; i<data.getMaxNumChannels(); i++){
             pca_transforms[i] = new PrincipalComponents();
             pca = pca_transforms[i]; //set the ref.
+
             fit(Converter.toArff(split.get(i)));
+
+            attributesToKeep_dims[i] = numAttributesToKeep;
         }
 
         isFit=true;
