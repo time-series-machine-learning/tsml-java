@@ -126,13 +126,23 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         classLabels = labels;
     }
 
-    private void dataChecks(){
+    public TimeSeriesInstances(List<TimeSeriesInstance> data, String[] labels) {
+        this();
+        
+        for(TimeSeriesInstance d : data)
+            series_collection.add(d);
+
+        classLabels = labels;
+
+        dataChecks();
+	}
+
+	private void dataChecks(){
         calculateLengthBounds();
         calculateIfMissing();
         calculateIfMultivariate();
         calculateNumChannels();
     }
-
 
     private void calculateClassCounts() {
         classCounts = new int[classLabels.length];
@@ -310,7 +320,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     public TimeSeriesInstance get(final int i) {
         return series_collection.get(i);
-	}
+    }
+    
+    public List<TimeSeriesInstance> getAll(){
+        return series_collection;
+    }
 
 	public int numInstances() {
 		return series_collection.size();

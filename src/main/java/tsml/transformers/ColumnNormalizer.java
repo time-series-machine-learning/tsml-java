@@ -195,7 +195,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 		for(int i=0; i<r.numInstances(); i++){
 			out[index] =  new double[r.getMaxLength()][];
 			for (int j = 0; j < r.getMaxLength(); j++) {
-				out[index][j] = TimeSeriesSummaryStatistics.standardNorm(r.get(i).getSingleVSliceArray(j), mean[j], stdev[j])
+				out[index][j] = TimeSeriesSummaryStatistics.standardNorm(r.get(i).getSingleVSliceArray(j), mean[j], stdev[j]);
 			}
 			out[index++] = ArrayUtilities.transposeMatrix(out[index]);
 		}
