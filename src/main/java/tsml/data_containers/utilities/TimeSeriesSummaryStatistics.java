@@ -1,6 +1,10 @@
 package tsml.data_containers.utilities;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import tsml.data_containers.TimeSeries;
 
@@ -30,7 +34,7 @@ public class TimeSeriesSummaryStatistics {
     public TimeSeriesSummaryStatistics(List<Double> data) {
         // calculate stats
         // strip out the NaNs, convert to an array of doubles.
-        this(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        this(convert(data));
     }
 
     public void calculateStats(double[] inst) {
@@ -59,7 +63,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double sum(List<Double> data){
-        return sum(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return sum(convert(data));
     }
 
     public static double sum(TimeSeries ts){
@@ -75,7 +79,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double sumSq(List<Double> data){
-        return sumSq(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return sumSq(convert(data));
     }
 
     public static double sumSq(TimeSeries ts){
@@ -97,7 +101,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static int argmax(List<Double> data){
-        return argmax(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return argmax(convert(data));
     }
 
     public static int argmax(TimeSeries ts){
@@ -109,7 +113,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double max(List<Double> data){
-        return max(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return max(convert(data));
     }
 
     public static double max(TimeSeries ts){
@@ -131,7 +135,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static int argmin(List<Double> data){
-        return argmin(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return argmin(convert(data));
     }
 
     public static int argmin(TimeSeries ts){
@@ -143,7 +147,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double min(List<Double> data){
-        return min(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return min(convert(data));
     }
 
     public static double min(TimeSeries ts){
@@ -158,7 +162,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double mean(List<Double> data){
-        return min(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray());
+        return min(convert(data));
     }
 
     public static double mean(TimeSeries ts){
@@ -173,7 +177,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double variance(List<Double> data, double mean){
-        return variance(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean);
+        return variance(convert(data), mean);
     }
 
     public static double variance(TimeSeries ts, double mean){
@@ -190,7 +194,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double kurtosis(List<Double> data, double mean, double std){
-        return kurtosis(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean, std);
+        return kurtosis(convert(data), mean, std);
     }
 
     public static double kurtosis(TimeSeries ts, double mean, double std){
@@ -206,7 +210,7 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double skew(List<Double> data, double mean, double std){
-        return skew(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), mean, std);
+        return skew(convert(data), mean, std);
     }
 
     public static double skew(TimeSeries ts, double mean, double std){
@@ -233,11 +237,44 @@ public class TimeSeriesSummaryStatistics {
     }
 
     public static double slope(List<Double> data, double sum, double sumSq, double std){
-        return slope(data.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray(), sum, sumSq, std);
+        return slope(convert(data), sum, sumSq, std);
     }
 
     public static double slope(TimeSeries ts, double sum, double sumSq, double std){
         return slope(ts.getSeries(), sum, sumSq, std);
+    }
+
+
+    public static List<Double> intervalNorm(List<Double> data, double min, double max){
+        return convert(intervalNorm(convert(data), min, max));
+    }
+
+    public static TimeSeries intervalNorm(TimeSeries ts, double min, double max){
+        return new TimeSeries(intervalNorm(ts.toArray(), min, max));
+    }
+
+    public static double[] intervalNorm(double[] data, double min, double max){
+        double[] out = new double[data.length];
+        for(int i=0; i<out.length; i++)
+            out[i] = (data[i] - min) / (max - min);
+            
+        return out;
+    }
+    
+    public static List<Double> standardNorm(List<Double> data, double mean, double std){
+        return convert(standardNorm(convert(data), mean, std));
+    }
+
+    public static TimeSeries standardNorm(TimeSeries ts, double mean, double std){
+        return new TimeSeries(standardNorm(ts.toArray(), mean, std));
+    }
+
+    public static double[] standardNorm(double[] data, double mean, double std){
+        double[] out = new double[data.length];
+        for(int i=0; i<out.length; i++)
+            out[i] =  (data[i] - mean) / (std);
+            
+        return out;
     }
 
     public double getMean() {
@@ -274,6 +311,15 @@ public class TimeSeriesSummaryStatistics {
 
     public double getSkew() {
         return skew;
+    }
+
+
+    private static double[] convert(List<Double> in){
+        return in.stream().filter(Double::isFinite).mapToDouble(Double::doubleValue).toArray();
+    }
+
+    private static List<Double> convert(double[] in){
+        return DoubleStream.of(in).boxed().collect(Collectors.toList());
     }
 
 }

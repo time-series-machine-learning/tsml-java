@@ -245,6 +245,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return output;
     }
 
+    public double[][] toTransposedArray(){
+        return this.getVSliceArray(IntStream.range(0, maxLength).toArray());
+    }
+
 
 
 	public TimeSeries get(int i) {

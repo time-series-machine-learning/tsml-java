@@ -38,10 +38,11 @@ import org.apache.commons.lang3.NotImplementedException;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class ColumnNormalizer implements Transformer {
+public class ColumnNormalizer implements TrainableTransformer {
 	enum NormType {
 		INTERVAL, STD_NORMAL
 	};
@@ -53,6 +54,7 @@ public class ColumnNormalizer implements Transformer {
 	double[] stdev;
 	int classIndex;
 	NormType norm = NormType.INTERVAL;
+	boolean isFit;
 
 	public ColumnNormalizer() {
 	}
@@ -128,6 +130,11 @@ public class ColumnNormalizer implements Transformer {
 		throw new NotImplementedException("Column wise normalisation doesn't make sense for single instances");
 	}
 
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		throw new NotImplementedException("Column wise normalisation doesn't make sense for single instances");
+	}
+
 	// This should probably be connected to trainData?
 	public Instances determineOutputFormat(Instances inputFormat) {
 		return new Instances(inputFormat, 0);
@@ -144,24 +151,58 @@ public class ColumnNormalizer implements Transformer {
 		norm = n;
 	}
 
-	@Override
-	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 	@Override
 	public TimeSeriesInstances transform(TimeSeriesInstances inst) {
-		return null;
+		
+		double[][][] out = null;
+		switch (norm) {
+			case INTERVAL:
+				out = intervalNorm(inst);
+				break;
+			case STD_NORMAL:
+				out = standardNorm(inst);
+				break;
+		}
+
+		return new TimeSeriesInstances(out, inst.getClassIndexes(), inst.getClassLabels());
+	}
+
+	/* Wont normalise the class value */
+	public double[][][] intervalNorm(TimeSeriesInstances r) {
+		double[][][] out = new double[r.numInstances()][][];
+		int i =0;
+		for (TimeSeriesInstance inst : r) {			
+			out[i++] = ArrayUtilities.transposeMatrix(intervalNorm(inst));
+		}
+
+		return out;
+	}
+
+	public double[][] intervalNorm(TimeSeriesInstance r) {
+		double[][] out = new double[r.getMaxLength()][];
+		for (int j = 0; j < r.getMaxLength(); j++) {
+			out[j] = TimeSeriesSummaryStatistics.intervalNorm(r.getSingleVSliceArray(j), min[j], max[j]);
+		}
+
+		return out;
+	}
+
+	public double[][][] standardNorm(TimeSeriesInstances r) {
+		double[][][] out = new double[r.numInstances()][][];
+
+		int index=0;
+		for(int i=0; i<r.numInstances(); i++){
+			out[index] =  new double[r.getMaxLength()][];
+			for (int j = 0; j < r.getMaxLength(); j++) {
+				out[index][j] = TimeSeriesSummaryStatistics.standardNorm(r.get(i).getSingleVSliceArray(j), mean[j], stdev[j])
+			}
+			out[index++] = ArrayUtilities.transposeMatrix(out[index]);
+		}
+		return out;
 	}
 
 	public Instances transform(Instances inst) {
-		if (trainData == null) {
-			trainData = inst;
-			classIndex = inst.classIndex();
-			// Finds all the stats, doesnt cost much more really
-			findStats(inst);
-		}
 		Instances result = new Instances(inst);
 		switch (norm) {
 			case INTERVAL:
@@ -199,6 +240,26 @@ public class ColumnNormalizer implements Transformer {
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean isFit() {
+		return isFit;
+	}
+
+	@Override
+	public void fit(Instances data) {
+		trainData = data;
+		classIndex = data.classIndex();
+		// Finds all the stats, doesnt cost much more really
+		findStats(data);
+		isFit = true;
+	}
+
+	@Override
+	public void fit(TimeSeriesInstances data) {
+		findStats(data);
+		isFit = true;
 	}
 
 

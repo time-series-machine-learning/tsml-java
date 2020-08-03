@@ -19,6 +19,8 @@ import java.util.stream.Stream;
  * */
 public class TimeSeries{
 
+    public static double defaultValue = Double.NaN;
+
     /*
     private double[] series;
     private double[] indices;
@@ -54,6 +56,10 @@ public class TimeSeries{
 
     public double get(int i){
         return series.get(i);
+    }
+
+    public double getOrDefault(int i){
+        return hasValidValueAt(i) ? get(i) : defaultValue;
     }
 
     public DoubleStream stream(){
@@ -105,7 +111,7 @@ public class TimeSeries{
         List<Double> out = new ArrayList<>(this.getSeriesLength() - indexesToRemove.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
             if(!indexesToRemove.contains(i))
-                out.add(this.series.get(i));
+                out.add(getOrDefault(i));
         }
 
         return out;
@@ -125,7 +131,7 @@ public class TimeSeries{
         List<Double> out = new ArrayList<>(indexesToKeep.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
             if(indexesToKeep.contains(i))
-                out.add(this.series.get(i));
+                out.add(getOrDefault(i));
         }
 
         return out;

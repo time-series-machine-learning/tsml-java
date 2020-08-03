@@ -9,7 +9,7 @@ import tsml.data_containers.TimeSeriesInstances;
 
 
 //This class if for weird hacky dimension wise operations we need to do when interfacing with Weka classifiers
-//that can only take univeraite data.
+//that can only take univariate data.
 public class Splitter{
 
     //splitty splitty.

@@ -121,6 +121,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         dataChecks();
     }
 
+    public TimeSeriesInstances(final double[][][] raw_data, int[] label_indexes, String[] labels) {
+        this(raw_data, label_indexes);
+        classLabels = labels;
+    }
+
     private void dataChecks(){
         calculateLengthBounds();
         calculateIfMissing();
