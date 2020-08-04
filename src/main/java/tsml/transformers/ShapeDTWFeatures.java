@@ -40,9 +40,8 @@ public class ShapeDTWFeatures implements Transformer {
         else
             newInstance = new DenseInstance(numAtts);
         // Copy over the values into the Instance
-        for (int j = 0; j < numAtts; j++) {
+        for (int j = 0; j < numAtts; j++)
             newInstance.setValue(j, distances[j]);
-        }
         // Set the class value
         if (inst.classIndex() >= 0)
             newInstance.setValue(newInstance.numAttributes()-1, inst.classValue());

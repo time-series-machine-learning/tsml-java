@@ -95,8 +95,7 @@ public class ClassifierLists {
     public static String[] distance= {
         "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
             "DD_DTW","DTD_C","CID_DTW","NN_CID","NN_ShapeDTW_Raw","NN_ShapeDTW_PAA","NN_ShapeDTW_DWT",
-            "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp","SVM_ShapeDTW_Poly",
-            "SVM_ShapeDTW_RBF"
+            "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -171,12 +170,6 @@ public class ClassifierLists {
                 DWT dwt2 = new DWT();
                 HOG1D h2 = new HOG1D();
                 c=new ShapeDTW_1NN(30,dwt2,true,h2);
-                break;
-            case "SVM_ShapeDTW_Poly":
-                c = new ShapeDTW_SVM(30, ShapeDTW_SVM.KernelType.PolyNomial);
-                break;
-            case "SVM_ShapeDTW_RBF":
-                c = new ShapeDTW_SVM(30,ShapeDTW_SVM.KernelType.RBF);
                 break;
             default:
                 System.out.println("Unknown distance based classifier "+classifier+" should not be able to get here ");
