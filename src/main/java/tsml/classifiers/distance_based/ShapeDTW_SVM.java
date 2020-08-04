@@ -142,7 +142,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
             System.out.println("Chosen Gamma Value - " + chosenParamValue.var1);
             System.out.println("Chosen C Value - " + chosenParamValue.var2);
         }
-
+        this.svmClassifier.buildClassifier(trainData);
     }
 
     /**
