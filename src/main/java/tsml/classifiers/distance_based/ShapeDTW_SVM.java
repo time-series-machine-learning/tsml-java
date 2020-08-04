@@ -11,6 +11,7 @@ import utilities.samplers.RandomStratifiedSampler;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.LibSVM;
 import weka.classifiers.functions.SMO;
+import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.core.Instance;
@@ -34,10 +35,6 @@ import java.util.stream.IntStream;
  */
 public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
 
-    // Defines the split from training to reference, 0.5 indicates
-    // 0.5 train, 0.5 reference. 0.4 indicates 0.4 train, 0.6 reference
-    // and so on.
-    private double trainRefSplit = 0.5;
     private Subsequences subsequenceTransformer;
     //The transformer used to produce the shape dtw features.
     private ShapeDTWFeatures sdtwFeats;
@@ -56,15 +53,14 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         this.sampler = new RandomStratifiedSampler();
     }
 
-    public ShapeDTW_SVM(int subsequenceLength) {
+    public ShapeDTW_SVM(int subsequenceLength, KernelType k) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceTransformer = new Subsequences(subsequenceLength);
         this.svmClassifier = new SMO();
         this.sampler = new RandomStratifiedSampler();
+        this.kernelType = k;
     }
     /* Getters and Setters */
-    public double getTrainRefSplit() { return trainRefSplit; }
-    public void setTrainRefSplit(double trainRefSplit) {this.trainRefSplit = trainRefSplit;}
     public KernelType getKernelType() {return kernelType; }
     public void setKernelType(KernelType k) {this.kernelType = k;}
 
@@ -77,7 +73,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         // Convert the data into an appropriate form (ShapeDTW features)
         Instances trainingData = preprocessData(trainInsts);
         // Tune the exponent (just values 1,2 and 3 and C values 10^-5 to 10^5).
-        int numFolds = trainingData.numInstances();
+        int numFolds = 10;
         tuneSVMClassifier(trainingData,numFolds);
         // Store the timing results.
         buildTime = System.nanoTime() - buildTime ;
@@ -263,7 +259,6 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         return folds;
     }
 
-
     /**
      * Private method for performing the subsequence extraction on an instance,
      * performing a stratfied sample and creating the ShapeDTW features.
@@ -274,40 +269,9 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
     private Instances preprocessData(Instances trainInsts) {
         // Transform the trainInsts into subsequences
         Instances transformedInsts = this.subsequenceTransformer.transform(trainInsts);
-        // Do a stratified sample to produce a training and reference set.
-        Instances [] trainRefSplit = createTrainAndRefSplit(transformedInsts);
         // Create the shapeDTW features on the training set
-        this.sdtwFeats = new ShapeDTWFeatures(trainRefSplit[1]);
-        return this.sdtwFeats.transform(trainRefSplit[0]);
-    }
-
-    /**
-     * Private function for splitting an Instances object into
-     * a train and a reference set.
-     *
-     * @param data
-     * @return
-     */
-    private Instances [] createTrainAndRefSplit(Instances data) {
-        int trainSize = (int) Math.floor(this.trainRefSplit * (double) data.numInstances());
-        int refSize = data.numInstances() - trainSize;
-        //Use the sampler to produce the sampled set.
-        Instances sampledSet = new Instances(data,data.numInstances());
-        this.sampler.setInstances(data);
-        while(this.sampler.hasNext()) {
-            sampledSet.add(this.sampler.next());
-        }
-        //Split the sampled set into a train/ref split.
-        Instances trainSet = new Instances(data,trainSize);
-        Instances refSet = new Instances(data,refSize);
-        for(int i=0;i<sampledSet.numInstances();i++) {
-            if(i<trainSize) {
-                trainSet.add(sampledSet.get(i));
-            } else {
-                refSet.add(sampledSet.get(i));
-            }
-        }
-        return new Instances [] {trainSet,refSet};
+        this.sdtwFeats = new ShapeDTWFeatures(transformedInsts);
+        return this.sdtwFeats.transform(transformedInsts);
     }
 
     @Override
