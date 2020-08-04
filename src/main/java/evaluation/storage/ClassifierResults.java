@@ -27,17 +27,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
-import tsml.classifiers.TrainEstimateTimeable;
-import tsml.classifiers.TrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.SysUtils;
 import utilities.*;
-import weka.classifiers.Classifier;
-import weka.core.Instances;
-import weka.core.OptionHandler;
-import weka.core.Randomizable;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
@@ -64,15 +54,16 @@ import weka.core.Randomizable;
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
- *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
- *    - get/setBuildTime(long)
- *    - get/setTestTime(long)
- *    - get/setBenchmarkTime(long)
- *    - get/setMemory(long)
- *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
- *    - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
- *    - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
- *    - get/setBuildAndEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *   1 - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
+ *   2 - get/setBuildTime(long)
+ *   3 - get/setTestTime(long)
+ *   4 - get/setBenchmarkTime(long)
+ *   5 - get/setMemory(long)
+ *   6 - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
+ *   7 - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
+ *   8 - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
+ *   9 - get/setBuildPlusEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  *
@@ -140,106 +131,7 @@ import weka.core.Randomizable;
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
  */
-public class ClassifierResults implements DebugPrinting, Serializable, MemoryWatchable, TrainTimeable,
-                                          TrainEstimateTimeable {
-
-    @Override public long getMaxMemoryUsageInBytes() {
-        return getMemory();
-    }
-
-    @Override public double getVarianceMemoryUsageInBytes() {
-        return Math.pow(stdDevMemoryUsageInBytes, 2);
-    }
-
-    @Override public long getMemoryReadingCount() {
-        return memoryReadingCount;
-    }
-
-    @Override public long getTrainTimeNanos() {
-        return getBuildTimeInNanos();
-    }
-
-    @Override public long getTrainEstimateTimeNanos() {
-        return getBuildPlusEstimateTime() - getBuildTime();
-    }
-
-    @Override public long getTrainPlusEstimateTimeNanos() {
-        return getBuildPlusEstimateTime();
-    }
-
-    private String os = "unknown";
-    private String cpuInfo = "unknown";
-
-    public String getOs() {
-        return os;
-    }
-
-    public void setOs(final String os) {
-        this.os = os;
-    }
-
-    public String getCpuInfo() {
-        return cpuInfo;
-    }
-
-    public void setCpuInfo(final String cpuInfo) {
-        this.cpuInfo = cpuInfo;
-    }
-
-    public void setNonResourceDetails(final Classifier classifier, final Instances data) {
-        setDatasetName(data.relationName());
-        if(classifier instanceof EnhancedAbstractClassifier) {
-            setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
-            setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
-        } else {
-            setClassifierName(classifier.getClass().getSimpleName());
-        }
-        if(classifier instanceof Randomizable) {
-            setFoldID(((Randomizable) classifier).getSeed());
-        }
-        if(classifier instanceof OptionHandler) {
-            setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
-        }
-        setOs(SysUtils.getOsName());
-        setCpuInfo(SysUtils.findCpuInfo());
-    }
-
-    public void setDetails(final Classifier classifier, final Instances data) {
-        setNonResourceDetails(classifier, data);
-        setMemoryDetails(classifier);
-        setTimeDetails(classifier);
-    }
-
-    public void setTimeDetails(final Object obj) {
-        if(obj instanceof TrainEstimateTimeable) {
-            setTimeDetails((TrainEstimateTimeable) obj);
-        } else if(obj instanceof TrainTimeable) {
-            setTimeDetails((TrainTimeable) obj);
-        }
-    }
-
-    public void setTimeDetails(final TrainTimeable trainTimeable) {
-        setBuildTime(trainTimeable.getTrainTimeNanos());
-    }
-
-    public void setTimeDetails(final TrainEstimateTimeable trainTimeable) {
-        setTimeDetails((TrainTimeable) trainTimeable);
-        setBuildPlusEstimateTime(trainTimeable.getTrainPlusEstimateTimeNanos());
-    }
-
-    public void setMemoryDetails(final Object obj) {
-        if(obj instanceof MemoryWatchable) {
-            setMemoryDetails((MemoryWatchable) obj);
-        }
-    }
-
-    public void setMemoryDetails(final MemoryWatchable memoryWatchable) {
-        setMemory(memoryWatchable.getMaxMemoryUsageInBytes());
-        setMeanMemoryUsageInBytes(memoryWatchable.getMeanMemoryUsageInBytes());
-        setGarbageCollectionTimeInMillis(memoryWatchable.getGarbageCollectionTimeInMillis());
-        setStdDevMemoryUsageInBytes(memoryWatchable.getStdDevMemoryUsageInBytes());
-        setMemoryReadingCount(memoryWatchable.getMemoryReadingCount());
-    }
+public class ClassifierResults implements DebugPrinting, Serializable {
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -255,40 +147,6 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
-    private double meanMemoryUsageInBytes = -1;
-    private double stdDevMemoryUsageInBytes = -1;
-    private long garbageCollectionTimeInMillis = -1;
-
-    public void setMemoryReadingCount(final long memoryReadingCount) {
-        this.memoryReadingCount = memoryReadingCount;
-    }
-
-    private long memoryReadingCount = 0;
-
-    public double getMeanMemoryUsageInBytes() {
-        return meanMemoryUsageInBytes;
-    }
-
-    public void setMeanMemoryUsageInBytes(final double meanMemoryUsageInBytes) {
-        this.meanMemoryUsageInBytes = meanMemoryUsageInBytes;
-    }
-
-    public double getStdDevMemoryUsageInBytes() {
-        return stdDevMemoryUsageInBytes;
-    }
-
-    public void setStdDevMemoryUsageInBytes(final double stdDevMemoryUsageInBytes) {
-        this.stdDevMemoryUsageInBytes = stdDevMemoryUsageInBytes;
-    }
-
-    public long getGarbageCollectionTimeInMillis() {
-        return garbageCollectionTimeInMillis;
-    }
-
-    public void setGarbageCollectionTimeInMillis(final long garbageCollectionTimeInMillis) {
-        this.garbageCollectionTimeInMillis = garbageCollectionTimeInMillis;
-    }
-
 
     private enum FileType {
         /**
@@ -528,12 +386,21 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
 
     public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
 
-    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_buildTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
-    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_totalTestTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
-    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_avgTestPredTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
-    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
-    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
-    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (ClassifierResults cr) -> {return GETTER_additionalTimeForEstimateDoubleMillis.apply(cr) / GETTER_benchmarkTime.apply(cr);};
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_buildTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalTestTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_avgTestPredTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_additionalTimeForEstimateDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+
+    private static double divideAvoidInfinity(double a, double b) {
+        if(b == 0) {
+            // avoid divide by 0 --> infinity
+            return a;
+        } else {
+            return a / b;
+        }
+    }
 
 
     private static double toDoubleMillis(long time, TimeUnit unit) {
@@ -1031,6 +898,8 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     public void setErrorEstimateTime(long errorEstimateTime) {
         this.errorEstimateTime = errorEstimateTime;
     }
+
+
 
 
     /**
@@ -1763,24 +1632,6 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
             errorEstimateTime = Long.parseLong(parts[7]);
         if (parts.length > 8)
             buildPlusEstimateTime = Long.parseLong(parts[8]);
-        if(parts.length > 9) {
-            os = parts[9];
-        }
-        if(parts.length > 10) {
-            cpuInfo = parts[10];
-        }
-        if(parts.length > 11) {
-            meanMemoryUsageInBytes = Double.parseDouble(parts[11]);
-        }
-        if(parts.length > 12) {
-            stdDevMemoryUsageInBytes = Double.parseDouble(parts[12]);
-        }
-        if(parts.length > 13) {
-            garbageCollectionTimeInMillis = Long.parseLong(parts[13]);
-        }
-        if(parts.length > 14) {
-            memoryReadingCount = Long.parseLong(parts[14]);
-        }
         return acc;
     }
     private String generateThirdLine() {
@@ -1792,14 +1643,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
             + "," + numClasses()
             + "," + errorEstimateMethod
             + "," + errorEstimateTime
-            + "," + buildPlusEstimateTime
-            + "," + os
-            + "," + cpuInfo
-            + "," + meanMemoryUsageInBytes
-            + "," + stdDevMemoryUsageInBytes
-            + "," + garbageCollectionTimeInMillis
-            + "," + memoryReadingCount
-            ;
+            + "," + buildPlusEstimateTime;
 
         return res;
     }

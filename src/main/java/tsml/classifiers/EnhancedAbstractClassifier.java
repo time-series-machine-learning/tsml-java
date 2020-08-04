@@ -14,14 +14,12 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
@@ -51,8 +49,7 @@ train set predictions produced internally.
 *there are three components to the time that may be spent building a classifier
 
 * 1. timing
-
-buildTime 
+buildTime
 * the minimum any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
  or nanoTime() at the start and end of the method, stored in trainResults, with
@@ -63,8 +60,6 @@ errorEstimateTime
 * the exact usage of this statistic has not been finalised. Conceptually measures
 * how long is spent estimating the test error from the train data
 buildPlusEstimateTime
-* 
- 
  * 2. Recording train set results
 ClassifierResults trainResults can also store other information about the training,
  including estimate of accuracy, predictions and probabilities. The mechanism for finding
@@ -76,8 +71,9 @@ ClassifierResults trainResults can also store other information about the traini
  
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
- * 
- * @author Tony Bagnall and James Large
+ * Update 1/7/2020:
+ * @author Tony Bagnall and James Large EstimatorMethod estimator moved up from subclasses, since the pattern
+ * appears in multiple forest based ensembles
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,
@@ -91,14 +87,22 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
 
+    /**
+     * get the classifier RNG	
+     * @return Random
+     */
     public Random getRandom() {
         return rand;
     }
 
+    /**
+     * Set the classifier RNG	
+     * @param rand
+     */
     public void setRandom(Random rand) {
         this.rand = rand;
     }
-
+    
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
      * be used to describe this classifier. By default, this will simply be the
@@ -138,6 +142,29 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)
      */
     protected boolean estimateOwnPerformance = false;
+
+    /** If trainAccuracy is required, there are two options that can be implemented
+     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+     */
+    public enum EstimatorMethod{CV,OOB,NONE}
+    protected EstimatorMethod estimator=EstimatorMethod.NONE;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else if(s.equals("NONE")) {
+            estimator = EstimatorMethod.NONE;
+        }
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
+    }
+
+    public String getEstimatorMethod() {
+        return estimator.name();
+    }
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;

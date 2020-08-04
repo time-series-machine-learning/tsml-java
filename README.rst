@@ -63,6 +63,7 @@ ElasticEnsemble  BOP                               FastShapelets      LPS
 NN_CID           WEASEL        
 SAX_1NN          SAXVSM
 ProximityForest  SpatialBOSS
+                 TDE
 ===============  ================  ==============  =================  ==============  =========
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
@@ -104,6 +105,8 @@ Transformers
 We will be shifting over to a bespoke Transformer interface
 ===================
 ShapeletTransorm
+catch22
+===================
 
 Paper-Supporting Branches
 -------------------------
@@ -124,11 +127,12 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * James Large (@James-Large, `@jammylarge <https://twitter.com/jammylarge>`__, james.large@uea.ac.uk)
 * Jason Lines (@jasonlines), 
 * George Oastler (@goastler), 
-* Matthew Middlehurst (@MatthewMiddlehurst), 
-* Michael Flynn (@Michael Flynn), 
-* Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@nua.ac.uk), 
+* Matthew Middlehurst (@MatthewMiddlehurst, `@M_Middlehurst <https://twitter.com/M_Middlehurst>`__, m.middlehurst@uea.ac.uk), 
+* Michael Flynn (GitHub - `@MJFlynn <https://github.com/MJFlynn>`__, Twitter - `@M_J_Flynn <https://twitter.com/M_J_Flynn>`__, Email - Michael.Flynn@uea.ac.uk)
+* Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@uea.ac.uk), 
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
+* Alejandro Pasos Ruiz (a.pasos-ruiz@uea.ac.uk)
 
 We welcome anyone who would like to contribute their algorithms! 
 

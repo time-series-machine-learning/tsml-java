@@ -228,20 +228,27 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public void setMemoryLimit(DataUnit unit, long amount){
-        switch (unit){
-            case GIGABYTE:
-                memoryLimit = amount*1073741824;
-                break;
-            case MEGABYTE:
-                memoryLimit = amount*1048576;
-                break;
-            case BYTES:
-                memoryLimit = amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid data unit");
+        try {
+            throw new Exception("Memory contract currently unavailable");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
-        memoryContract = true;
+
+//        switch (unit){
+//            case GIGABYTE:
+//                memoryLimit = amount*1073741824;
+//                break;
+//            case MEGABYTE:
+//                memoryLimit = amount*1048576;
+//                break;
+//            case BYTES:
+//                memoryLimit = amount;
+//                break;
+//            default:
+//                throw new InvalidParameterException("Invalid data unit");
+//        }
+//        memoryContract = true;
     }
 
     @Override
@@ -271,9 +278,9 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public void copyFromSerObject(Object obj) throws Exception{
         if(!(obj instanceof cBOSS))
-            throw new Exception("The SER file is not an instance of BOSS");
+            throw new Exception("The SER file is not an instance of cBOSS");
         cBOSS saved = ((cBOSS)obj);
-        System.out.println("Loading BOSS.ser");
+        System.out.println("Loading cBOSS" + seed + ".ser");
 
         //copy over variables from serialised object
         paramAccuracy = saved.paramAccuracy;
@@ -344,14 +351,14 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         for (int n = 0; n < numSeries; n++) {
             classifiers[n] = new LinkedList();
             for (int i = 0; i < saved.numClassifiers[n]; i++) {
-                System.out.println("Loading BOSSIndividual" + n + "-" + i + ".ser");
+                System.out.println("Loading cBOSSIndividual" + seed + n + "-" + i + ".ser");
 
-                FileInputStream fis = new FileInputStream(checkpointPath + "BOSSIndividual" + n + "-" + i + ".ser");
+                FileInputStream fis = new FileInputStream(checkpointPath + "cBOSSIndividual" + seed + n + "-" + i + ".ser");
                 try (ObjectInputStream in = new ObjectInputStream(fis)) {
                     Object indv = in.readObject();
 
                     if (!(indv instanceof IndividualBOSS))
-                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of BOSSIndividual");
+                        throw new Exception("The SER file " + n + "-" + i + " is not an instance of cBOSSIndividual");
                     IndividualBOSS ser = ((IndividualBOSS) indv);
                     classifiers[n].add(ser);
                 }
@@ -462,12 +469,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         //path checkpoint files will be saved to
 //        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
-        File file = new File(checkpointPath + "BOSS" + seed + ".ser");
+        File file = new File(checkpointPath + "cBOSS" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){
             //path checkpoint files will be saved to
             printLineDebug("Loading from checkpoint file");
-            loadFromFile(checkpointPath + "BOSS" + seed + ".ser");
+            loadFromFile(checkpointPath + "cBOSS" + seed + ".ser");
             //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
         //initialise variables
@@ -596,7 +603,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated *************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained  = ");
+
+        if (randomCVAccEnsemble)
+            printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated " +
+                "*************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained = " + classifiers[0].size());
 
     }
 
@@ -808,7 +818,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                         //save the last build individual classifier
                         IndividualBOSS indiv = classifiers[seriesNo].get(classifierNo);
 
-                        FileOutputStream fos = new FileOutputStream(checkpointPath + "BOSSIndividual" + seriesNo + "-" + classifierNo + ".ser");
+                        FileOutputStream fos = new FileOutputStream(checkpointPath + "cBOSSIndividual" + seed + seriesNo + "-" + classifierNo + ".ser");
                         try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
                             out.writeObject(indiv);
                             out.close();
@@ -822,10 +832,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 checkpointTime = System.nanoTime();
 
                 //save this, classifiers and train data not included
-                saveToFile(checkpointPath + "RandomBOSStemp.ser");
+                saveToFile(checkpointPath + "cBOSS" + seed + "temp.ser");
 
-                File file = new File(checkpointPath + "RandomBOSStemp.ser");
-                File file2 = new File(checkpointPath + "BOSS.ser");
+                File file = new File(checkpointPath + "cBOSS" + seed + "temp.ser");
+                File file2 = new File(checkpointPath + "cBOSS" + seed + ".ser");
                 file2.delete();
                 file.renameTo(file2);
 
@@ -1498,21 +1508,21 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
 
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
-        c = new cBOSS(false);
-        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train2);
-        accuracy = ClassifierTools.accuracy(test2, c);
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        c = new cBOSS(false);
+//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
 
         System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 

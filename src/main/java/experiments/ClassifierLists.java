@@ -19,10 +19,11 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
+import tsml.classifiers.distance_based.proximity.ProximityForest;
+import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.early_classification.SR1CF1;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -31,6 +32,7 @@ import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
@@ -41,6 +43,7 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.shapelet_based.ShapeletTree;
+import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -94,7 +97,19 @@ public class ClassifierLists {
      */
     public static String[] distance= {
         "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","PF","FastElasticEnsemble",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID"
+            "DD_DTW","DTD_C","CID_DTW","NN_CID",
+        "PF_R1",
+        "PF_R5",
+        "PF_R10",
+        "PF_WRAPPED",
+        "PF_R5_OOB",
+        "PF_R5_OOB_R",
+        "PF_R5_OOB_W",
+        "PF_R5_OOB_R_W",
+        "PF_R5_CV",
+        "PF_R5_CV_W",
+            "DD_DTW","DTD_C","CID_DTW","NN_CID","NN_ShapeDTW_Raw","NN_ShapeDTW_PAA","NN_ShapeDTW_DWT",
+            "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -102,6 +117,36 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
+            case "PF_R1":
+                c = ProximityForest.Config.PF_R1.configure(new ProximityForest());
+                break;
+            case "PF_R5":
+                c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                break;
+            case "PF_R10":
+                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB":
+                c = ProximityForest.Config.PF_R5_OOB.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R":
+                c = ProximityForest.Config.PF_R5_OOB_R.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_W":
+                c = ProximityForest.Config.PF_R5_OOB_W.configure(new ProximityForest());
+                break;
+            case "PF_R5_OOB_R_W":
+                c = ProximityForest.Config.PF_R5_OOB_R_W.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV":
+                c = ProximityForest.Config.PF_R5_CV.configure(new ProximityForest());
+                break;
+            case "PF_R5_CV_W":
+                c = ProximityForest.Config.PF_R5_CV_W.configure(new ProximityForest());
+                break;
+            case "PF_WRAPPED":
+                c = new ProximityForestWrapper();
+                break;
             case "ED":
                 c = new KNN();
                 break;
@@ -141,6 +186,35 @@ public class ClassifierLists {
             case "NN_CID":
                 c = new NN_CID();
                 break;
+            case "NN_ShapeDTW_Raw":
+                c=new ShapeDTW_1NN(30,null,false,null);
+                break;
+            case "NN_ShapeDTW_PAA":
+                PAA p = new PAA();
+                p.setNumIntervals(5);
+                c=new ShapeDTW_1NN(30,p,false,null);
+                break;
+            case "NN_ShapeDTW_DWT":
+                DWT dwt = new DWT();
+                c=new ShapeDTW_1NN(30,dwt,false,null);
+                break;
+            case "NN_ShapeDTW_Der":
+                Derivative der = new Derivative();
+                c=new ShapeDTW_1NN(30,der,false,null);
+                break;
+            case "NN_ShapeDTW_Slope":
+                Slope s = new Slope(5);
+                c=new ShapeDTW_1NN(30,s,false,null);
+                break;
+            case "NN_ShapeDTW_Hog":
+                HOG1D h = new HOG1D();
+                c=new ShapeDTW_1NN(30,h,false,null);
+                break;
+            case "NN_ShapeDTW_Comp":
+                DWT dwt2 = new DWT();
+                HOG1D h2 = new HOG1D();
+                c=new ShapeDTW_1NN(30,dwt2,true,h2);
+                break;
             default:
                 System.out.println("Unknown distance based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array distance and the switch statement ");
@@ -154,7 +228,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -187,7 +261,9 @@ public class ClassifierLists {
                 break;
             case "WEASEL":
                 c = new WEASEL();
-
+                break;
+            case "TDE":
+                c = new TDE();
                 break;
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
@@ -202,7 +278,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","SR1-CF1"};
+    public static String[] interval= {"LPS","TSF","CIF","SR1-CF1"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -214,6 +290,9 @@ public class ClassifierLists {
                 break;
             case "TSF":
                 c=new TSF();
+                break;
+            case "CIF":
+                c=new CIF();
                 break;
 
             case "SR1-CF1":
@@ -289,7 +368,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -312,6 +391,14 @@ public class ClassifierLists {
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
+            case "catch22":
+                c = new Catch22Classifier();
+                ((Catch22Classifier) c).setSeed(fold);
+                RandomForest r = new RandomForest();
+                r.setSeed(fold);
+                r.setNumTrees(500);
+                ((Catch22Classifier) c).setClassifier(r);
+                break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between array hybrids and the switch statement ");
@@ -325,7 +412,9 @@ public class ClassifierLists {
     /**
      * MULTIVARIATE time series classifiers, all in one list for now
      */
-    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","DTW_I","DTW_D","DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I","HIVE-COTEn_I"};//Not enough to classify yet
+    public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D",
+            "DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I",
+            "HIVE-COTEn_I","WEASEL-MUSE"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -425,6 +514,9 @@ public class ClassifierLists {
                 else
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "WEASEL-MUSE":
+                c=new WEASEL_MUSE();
                 break;
 
                 default:

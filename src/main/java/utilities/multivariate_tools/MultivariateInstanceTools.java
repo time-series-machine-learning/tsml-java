@@ -139,7 +139,7 @@ public class MultivariateInstanceTools {
     }
     
     
-    private static Instances createRelationFrom(Instances header, double[][] data){
+    public static Instances createRelationFrom(Instances header, double[][] data){
         int numAttsInChannel = data[0].length;
         Instances output = new Instances(header, data.length);
 
@@ -474,8 +474,8 @@ public class MultivariateInstanceTools {
             
             double[][] data = new double[d][length];
             for(int j=0; j<d; j++){
-                for(int k=0; k<length; k++){                    
-                    data[j][k] = flat.get(i).value(j*d+k);
+                for(int k=0; k<length; k++){
+                    data[j][k] = flat.get(i).value(j*length+k);
                 }
             }            
             //set relation for the dataset/

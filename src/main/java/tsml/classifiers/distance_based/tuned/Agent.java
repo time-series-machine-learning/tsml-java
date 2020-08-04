@@ -1,7 +1,7 @@
 package tsml.classifiers.distance_based.tuned;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.collections.DefaultIterator;
+import tsml.classifiers.distance_based.utils.collections.iteration.DefaultIterator;
 
 import java.util.Set;
 
