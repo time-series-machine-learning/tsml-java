@@ -14,16 +14,28 @@ import java.util.stream.Collectors;
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
+
+    String problemName;
     boolean isEquallySpaced;
     boolean hasMissing;
     boolean isEqualLength;
 
     boolean isMultivariate;
+    boolean hasTimeStamps;
 
     // this could be by dimension, so could be a list.
     int minLength;
     int maxLength;
     int maxNumChannels;
+
+
+	public String getProblemName() {
+		return problemName;
+	}
+
+	public boolean hasTimeStamps() {
+		return hasTimeStamps;
+	}
 
     public boolean hasMissing() {
         return hasMissing;
@@ -180,6 +192,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return classLabels;
     }
 
+    public String getClassLabelsFormatted(){
+        String output = " ";
+        for(String s : classLabels)
+            output += s + " ";
+        return output;
+    }
+
     public int[] getClassCounts(){
         return classCounts;
     }
@@ -329,6 +348,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 	public int numInstances() {
 		return series_collection.size();
     }
+
 
     
 }

@@ -1,4 +1,4 @@
-package tsml.data_containers.file_readers;
+package tsml.data_containers.fileIO;
 
 
 import java.io.File;
@@ -57,7 +57,6 @@ public class TSReader {
         readHeader();
 
         CreateTimeSeriesInstances();
-
     }
 
     private void CreateTimeSeriesInstances() throws IOException {

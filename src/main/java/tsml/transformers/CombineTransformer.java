@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.file_readers.TSReader;
+import tsml.data_containers.fileIO.TSReader;
 import utilities.InstanceTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;

@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.file_readers.TSReader;
+import tsml.data_containers.fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
 import tsml.data_containers.utilities.TimeSeriesResampler.TrainTest;
 import utilities.InstanceTools;
@@ -72,6 +72,7 @@ public class ResamplingExamples {
         example1();
 
         System.out.println("----------------------------------------------------");
+
         example2();
     }
     
