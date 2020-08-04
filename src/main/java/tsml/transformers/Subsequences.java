@@ -23,7 +23,7 @@ public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
-    private boolean normalise = true;
+    private boolean normalise = false;
     public Subsequences() {this.subsequenceLength = 30;}
     public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;

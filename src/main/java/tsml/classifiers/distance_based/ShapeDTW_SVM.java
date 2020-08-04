@@ -1,9 +1,9 @@
 package tsml.classifiers.distance_based;
 
 import experiments.data.DatasetLoading;
-import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.transformers.*;
+import tsml.transformers.ShapeDTWFeatures;
+import tsml.transformers.Subsequences;
 import utilities.generic_storage.Pair;
 import utilities.samplers.RandomStratifiedSampler;
 import weka.classifiers.AbstractClassifier;
@@ -45,9 +45,6 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
     private SMO svmClassifier;
     public enum KernelType {PolyNomial,RBF};
     private KernelType kernelType = KernelType.PolyNomial;
-    private Instances compoundDataset;
-    private DimensionIndependentTransformer d1 = new DimensionIndependentTransformer(new DWT());
-    private DimensionIndependentTransformer d2 = new DimensionIndependentTransformer(new Slope(5));
 
     public ShapeDTW_SVM() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
@@ -265,22 +262,6 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
         return folds;
     }
 
-    /**
-     * Private method for performing the subsequence extraction on an instance and creating the ShapeDTW features.
-     *
-     * @param testInsts
-     * @return just the training set.
-     */
-    private Instance preprocessData(Instance testInsts) {
-        // Transform the trainInsts into subsequences
-        Instance subsequences = this.subsequenceTransformer.transform(testInsts);
-        // Then, transform into compound shape descs (used DWT and Slope)
-        Instance s1 = this.d1.transform(subsequences);
-        Instance s2 = this.d2.transform(subsequences);
-        Instance res = combineInstances(s1,s2);
-        return this.sdtwFeats.transform(res);
-    }
-
 
     /**
      * Private method for performing the subsequence extraction on an instance,
@@ -291,143 +272,24 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
      */
     private Instances preprocessData(Instances trainInsts) {
         // Transform the trainInsts into subsequences
-        Instances subsequences = this.subsequenceTransformer.transform(trainInsts);
-        // Then, transform into compound shape descs (used DWT and Slope)
-        // this was found to be the most powerful one
-        Instances s1 = this.d1.transform(subsequences);
-        Instances s2 = this.d2.transform(subsequences);
-        Instances res = combineInstances(s1,s2);
+        Instances transformedInsts = this.subsequenceTransformer.transform(trainInsts);
         // Create the shapeDTW features on the training set
-        this.sdtwFeats = new ShapeDTWFeatures(res);
-        return this.sdtwFeats.transform(res);
-    }
-
-    /**
-     * Private function for creating the relation along each dimension within
-     * inst1 and inst2.
-     *
-     * @param inst1
-     * @param inst2
-     * @return
-     */
-    private Instances createRelationalData(Instance inst1, Instance inst2, Instances header) {
-        Instances rel1 = inst1.relationalValue(0);
-        Instances rel2 = inst2.relationalValue(0);
-
-        //  Iterate over each dimension
-        for(int i=0;i<rel1.numInstances();i++) {
-            double [] dim1 = rel1.get(i).toDoubleArray();
-            double [] dim2 = rel2.get(i).toDoubleArray();
-            double [] both = ArrayUtils.addAll(dim1,dim2);
-            //Create the new Instance
-            DenseInstance newInst = new DenseInstance(both.length);
-            for(int j=0;j<both.length;j++) {
-                newInst.setValue(j,both[j]);
-            }
-            header.add(newInst);
-        }
-        return header;
-    }
-
-    /**
-     * Private function for creating the header for the compound shape descriptor data.
-     *
-     * @param shapeDesc1 - Instances of the first shape descriptor.
-     * @param shapeDesc2 - Instances of the second shape descriptor.
-     * @return
-     */
-    private Instances createCompoundHeader(Instances shapeDesc1,Instances shapeDesc2) {
-        // Create the Instances object
-        ArrayList<Attribute> atts = new ArrayList<>();
-        //Create the relational attribute
-        ArrayList<Attribute> relationalAtts = new ArrayList<>();
-        int numAttributes = shapeDesc1.attribute(0).relation().numAttributes() +
-                shapeDesc2.attribute(0).relation().numAttributes();
-        // Add the original elements
-        for (int i = 0; i < numAttributes; i++)
-            relationalAtts.add(new Attribute("Compound_element_" + i));
-        // Create the relational table
-        Instances relationTable = new Instances("Compound_Elements", relationalAtts, shapeDesc1.numInstances());
-        // Create the attribute from the relational table
-        atts.add(new Attribute("relationalAtt", relationTable));
-        // Add the class attribute
-        atts.add(shapeDesc1.classAttribute());
-        Instances compoundShapeDesc = new Instances("Compound_Elements",atts,shapeDesc1.numInstances());
-        return compoundShapeDesc;
-    }
-
-    /**
-     * Private function for concatenating two shape descriptors together.
-     *
-     * @param shapeDesc1
-     * @param shapeDesc2
-     * @return
-     */
-    private Instances combineInstances(Instances shapeDesc1,Instances shapeDesc2) {
-        if(shapeDesc2 == null) {
-            return shapeDesc1;
-        }
-        //Create the header for the new data to be stored in.
-        Instances compoundHeader = createCompoundHeader(shapeDesc1,shapeDesc2);
-        for(int i=0;i<shapeDesc1.numInstances();i++) {
-            Instances relationHeader = new Instances(compoundHeader.attribute(0).relation());
-            DenseInstance newInst = new DenseInstance(2);
-            newInst.setDataset(compoundHeader);
-            //Combine all the dimensions together to create the relation
-            Instances relation = createRelationalData(shapeDesc1.get(i), shapeDesc2.get(i), relationHeader);
-            //Add relation to the first value of newInst
-            int index = newInst.attribute(0).addRelation(relation);
-            newInst.setValue(0, index);
-            //Add the class value.
-            newInst.setValue(1, shapeDesc1.get(i).classValue());
-            compoundHeader.add(newInst);
-        }
-        compoundHeader.setClassIndex(1);
-        this.compoundDataset = compoundHeader;
-        return compoundHeader;
-    }
-
-    /**
-     * Private function for concatenating two shape descriptors together.
-     *
-     * @param shapeDesc1
-     * @param shapeDesc2
-     * @return
-     */
-    private Instance combineInstances(Instance shapeDesc1, Instance shapeDesc2) {
-        if(shapeDesc2 == null) {
-            return shapeDesc1;
-        }
-        Instance combinedInst = new DenseInstance(2);
-        //Create the relational table
-        ArrayList<Attribute> relationalAtts = new ArrayList<>();
-        int numAttributes = shapeDesc1.attribute(0).relation().numAttributes() +
-                shapeDesc2.attribute(0).relation().numAttributes();
-        // Add the original elements
-        for (int i = 0; i < numAttributes; i++)
-            relationalAtts.add(new Attribute("Compound_element_" + i));
-        // Create the relational table
-        Instances relationTable = new Instances("Compound_Elements", relationalAtts,
-                shapeDesc1.attribute(0).relation().numInstances());
-        Instances relation = createRelationalData(shapeDesc1,shapeDesc2,relationTable);
-        combinedInst.setDataset(this.compoundDataset);
-        int index = combinedInst.attribute(0).addRelation(relation);
-        combinedInst.setValue(0, index);
-        //Add the class value.
-        combinedInst.setValue(1, shapeDesc1.classValue());
-        return combinedInst;
+        this.sdtwFeats = new ShapeDTWFeatures(transformedInsts);
+        return this.sdtwFeats.transform(transformedInsts);
     }
 
     @Override
     public double classifyInstance(Instance testInst) throws Exception {
-        Instance testData = preprocessData(testInst);
-        return this.svmClassifier.classifyInstance(testData);
+        Instance transformedInst = this.subsequenceTransformer.transform(testInst);
+        transformedInst = this.sdtwFeats.transform(transformedInst);
+        return this.svmClassifier.classifyInstance(transformedInst);
     }
 
     @Override
     public double [] distributionForInstance(Instance testInst) throws Exception {
-        Instance testData = preprocessData(testInst);
-        return this.svmClassifier.distributionForInstance(testData);
+        Instance transformedInst = this.subsequenceTransformer.transform(testInst);
+        transformedInst = this.sdtwFeats.transform(transformedInst);
+        return this.svmClassifier.distributionForInstance(transformedInst);
     }
 
     /**
@@ -436,7 +298,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
      * @param args - the command line arguments.
      */
     public static void main(String[] args) throws Exception {
-        Instances [] data = DatasetLoading.sampleBeef(0);
+        Instances [] data = DatasetLoading.sampleBeef(0);//new Instances [] {createTrainData(),createTestData()};
         ShapeDTW_SVM s = new ShapeDTW_SVM();
         s.setKernelType(KernelType.PolyNomial);
         System.out.println(calculateAccuracy(s,data));
