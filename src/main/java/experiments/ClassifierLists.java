@@ -175,7 +175,7 @@ public class ClassifierLists {
             case "SVM_ShapeDTW_Poly":
                 c=new ShapeDTW_SVM();
                 break;
-            case "NN_ShapeDTW_RBF":
+            case "SVM_ShapeDTW_RBF":
                 c=new ShapeDTW_SVM(30, ShapeDTW_SVM.KernelType.RBF);
                 break;
             default:
