@@ -15,16 +15,21 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;
+
+import java.io.Serializable;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class Evaluator implements Randomizable, Copy {
+public abstract class Evaluator implements Randomizable, ParamHandler, Serializable {
     
     int seed;
     
@@ -111,10 +116,9 @@ public abstract class Evaluator implements Randomizable, Copy {
     
     public abstract ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception;
     
-    
     public Evaluator cloneEvaluator() {
         try {
-            return (Evaluator) Copy.deepCopy(this);
+            return (Evaluator) CopierUtils.deepCopy(this);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }

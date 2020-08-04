@@ -14,14 +14,12 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import weka.classifiers.Classifier;
 import weka.core.Capabilities;
@@ -90,7 +88,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected transient boolean debug=false;
 
     /**
-     * get the classifier RNG
+     * get the classifier RNG	
      * @return Random
      */
     public Random getRandom() {
@@ -98,13 +96,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     }
 
     /**
-     * Set the classifier RNG
+     * Set the classifier RNG	
      * @param rand
      */
     public void setRandom(Random rand) {
         this.rand = rand;
     }
-
+    
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
      * be used to describe this classifier. By default, this will simply be the
@@ -157,11 +155,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
             estimator=EstimatorMethod.CV;
         else if(s.equals("OOB"))
             estimator=EstimatorMethod.OOB;
+        else if(s.equals("NONE")) {
+            estimator = EstimatorMethod.NONE;
+        }
         else
             throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
     }
 
-
+    public String getEstimatorMethod() {
+        return estimator.name();
+    }
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;

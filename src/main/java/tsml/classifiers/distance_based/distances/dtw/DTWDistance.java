@@ -1,157 +1,141 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * DTW distance measure.
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends BaseDistanceMeasure implements DTW {
+public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW {
 
-    // the distance matrix produced by the distance function
-    private double[][] distanceMatrix;
-    // whether to keep the distance matrix
-    private boolean keepDistanceMatrix = false;
-    private int warpingWindow = -1;
+    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
+    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
+    private final WarpingParameter warpingParameter = new WarpingParameter();
 
-    public DTWDistance() {
-    }
+    @Override protected double findDistance(final Instance a, final Instance b, final double limit) {
 
-    public DTWDistance(int warpingWindow) {
-        this();
-        setWarpingWindow(warpingWindow);
-    }
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
-    public int getWarpingWindow() {
-        return warpingWindow;
-    }
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
 
-    public void setWarpingWindow(int warpingWindow) {
-        this.warpingWindow = warpingWindow;
-    }
+        // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
+        // Full DTW
+        final int windowSize = findWindowSize(aLength);
 
-    public double[][] getDistanceMatrix() {
-        return distanceMatrix;
-    }
-
-    private void setDistanceMatrix(double[][] distanceMatrix) {
-        if(keepDistanceMatrix) {
-            this.distanceMatrix = distanceMatrix;
+        double[] row = new double[bLength];
+        double[] prevRow = new double[bLength];
+        // top left cell of matrix will simply be the sq diff
+        // min can be init'd to the top left cell
+        double min = Math.pow(a.value(0) - b.value(0), 2);
+        row[0] = min;
+        // start and end of window
+        // start at the next cell of the first row
+        int start = 1;
+        // end at window or bLength, whichever smallest
+        int end = Math.min(bLength - 1, windowSize);
+        // must set the value before and after the window to inf if available as the following row will use these
+        // in top / left / top-left comparisons
+        if(end + 1 < bLength) {
+            row[end + 1] = Double.POSITIVE_INFINITY;
         }
-    }
-
-    public boolean isKeepDistanceMatrix() {
-        return keepDistanceMatrix;
-    }
-
-    public void setKeepDistanceMatrix(final boolean keepDistanceMatrix) {
-        this.keepDistanceMatrix = keepDistanceMatrix;
-    }
-
-    @Override
-    public void clean() {
-        super.clean();
-        cleanDistanceMatrix();
-    }
-
-    public void cleanDistanceMatrix() {
-        distanceMatrix = null;
-    }
-
-    @Override
-    public double distance(final Instance first, final Instance second, final double limit,
-        final PerformanceStats stats) {
-        checkData(first, second);
-
-        double minDist;
-        boolean tooBig;
-
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
-
-        /*  Parameter 0<=r<=1. 0 == no warpingWindow, 1 == full warpingWindow
-         generalised for variable window size
-         * */
-        int windowSize = warpingWindow + 1; // + 1 to include the current cell
-        if(warpingWindow < 0) {
-            windowSize = aLength + 1; // todo how would this work for unequal length time series?
+        // the first row is populated from the sq diff + the cell before
+        for(int j = start; j <= end; j++) {
+            double cost = row[j - 1] + Math.pow(a.value(0) - b.value(j), 2);
+            row[j] = cost;
+            min = Math.min(min, cost);
         }
-        //Extra memory than required, could limit to windowsize,
-        //        but avoids having to recreate during CV
-        //for varying window sizes
-        double[][] distanceMatrix = new double[aLength][bLength];
-        setDistanceMatrix(distanceMatrix);
-
-        /*
-         //Set boundary elements to max.
-         */
-        int start, end;
-        for(int i = 0; i < aLength; i++) {
-            start = windowSize < i ? i - windowSize : 0;
-            end = Math.min(i + windowSize + 1, bLength);
-            for(int j = start; j < end; j++) {
-                distanceMatrix[i][j] = Double.POSITIVE_INFINITY;
-            }
+        if(generateDistanceMatrix) {
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
         }
-        distanceMatrix[0][0] = (first.value(0) - second.value(0)) * (first.value(0) - second.value(0));
-        //a is the longer series.
-        //Base cases for warping 0 to all with max interval	r
-        //Warp first[0] onto all second[1]...second[r+1]
-        for(int j = 1; j < windowSize && j < bLength; j++) {
-            distanceMatrix[0][j] =
-                distanceMatrix[0][j - 1] + (first.value(0) - second.value(j)) * (first.value(0) - second.value(j));
+        // early abandon if work has been done populating the first row for >1 entry
+        if(min > limit) {
+            return Double.POSITIVE_INFINITY;
         }
-
-        //	Warp second[0] onto all first[1]...first[r+1]
-        for(int i = 1; i < windowSize && i < aLength; i++) {
-            distanceMatrix[i][0] =
-                distanceMatrix[i - 1][0] + (first.value(i) - second.value(0)) * (first.value(i) - second.value(0));
-        }
-        //Warp the rest,
         for(int i = 1; i < aLength; i++) {
-            tooBig = true;
-            start = windowSize < i ? i - windowSize + 1 : 1;
-            end = Math.min(i + windowSize, bLength);
-            if(distanceMatrix[i][start - 1] < limit) {
-                tooBig = false;
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
             }
-            for(int j = start; j < end; j++) {
-                minDist = distanceMatrix[i][j - 1];
-                if(distanceMatrix[i - 1][j] < minDist) {
-                    minDist = distanceMatrix[i - 1][j];
-                }
-                if(distanceMatrix[i - 1][j - 1] < minDist) {
-                    minDist = distanceMatrix[i - 1][j - 1];
-                }
-                distanceMatrix[i][j] =
-                    minDist + (first.value(i) - second.value(j)) * (first.value(i) - second.value(j));
-                if(tooBig && distanceMatrix[i][j] < limit) {
-                    tooBig = false;
-                }
+            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+            min = Double.POSITIVE_INFINITY;
+            // start and end of window
+            start = Math.max(0, i - windowSize);
+            end = Math.min(bLength - 1, i + windowSize);
+            // must set the value before and after the window to inf if available as the following row will use these
+            // in top / left / top-left comparisons
+            if(start - 1 >= 0) {
+                row[start - 1] = Double.POSITIVE_INFINITY;
             }
-            //Early abandon
-            if(tooBig) {
+            if(end + 1 < bLength) {
+                row[end + 1] = Double.POSITIVE_INFINITY;
+            }
+            // if assessing the left most column then only top is the option - not left or left-top
+            if(start == 0) {
+                final double cost = prevRow[start] + Math.pow(a.value(i) - b.value(0), 2);
+                row[start] = cost;
+                min = Math.min(min, cost);
+                // shift to next cell
+                start++;
+            }
+            for(int j = start; j <= end; j++) {
+                // compute squared distance of feature vectors
+                final double topLeft = prevRow[j - 1];
+                final double left = row[j - 1];
+                final double top = prevRow[j];
+                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a.value(i) - b.value(j), 2);
+                row[j] = cost;
+                min = Math.min(min, cost);
+            }
+            if(generateDistanceMatrix) {
+                System.arraycopy(row, 0, matrix[i], 0, row.length);
+            }
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
             }
         }
         //Find the minimum distance at the end points, within the warping window.
-        double distance = distanceMatrix[aLength - 1][bLength - 1];
-        return distance;
+        return row[bLength - 1];
     }
 
-    @Override
-    public ParamSet getParams() {
-        return super.getParams().add(DTW.getWarpingWindowFlag(), getWarpingWindow());
+    @Override public int getWindowSize() {
+        return warpingParameter.getWindowSize();
     }
 
-    @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, DTW.getWarpingWindowFlag(), this::setWarpingWindow, Integer.class);
+    @Override public void setWindowSize(final int windowSize) {
+        warpingParameter.setWindowSize(windowSize);
+    }
+
+    @Override public double getWindowSizePercentage() {
+        return warpingParameter.getWindowSizePercentage();
+    }
+
+    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
+        warpingParameter.setWindowSizePercentage(windowSizePercentage);
+    }
+
+    @Override public boolean isWindowSizeInPercentage() {
+        return warpingParameter.isWindowSizeInPercentage();
+    }
+
+    @Override public void setParams(final ParamSet param) throws Exception {
+        warpingParameter.setParams(param);
+    }
+
+    @Override public ParamSet getParams() {
+        return warpingParameter.getParams();
+    }
+
+    @Override public int findWindowSize(final int length) {
+        return warpingParameter.findWindowSize(length);
     }
 }

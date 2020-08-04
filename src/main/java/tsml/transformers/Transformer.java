@@ -1,10 +1,13 @@
 package tsml.transformers;
 
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import org.apache.commons.lang3.NotImplementedException;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
 import weka.core.Instances;
+
+import java.io.Serializable;
 
 /**
  * Interface for time series transformers.
@@ -18,7 +21,7 @@ import weka.core.Instances;
  * @author Tony Bagnall 1/1/2020, Aaron Bostrom
  *
  */
-public interface Transformer extends CapabilitiesHandler{
+public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializable {
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform

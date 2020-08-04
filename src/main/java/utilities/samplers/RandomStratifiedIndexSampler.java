@@ -1,7 +1,6 @@
 package utilities.samplers;
 
 import utilities.ArrayUtilities;
-import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.List;
@@ -44,7 +43,7 @@ public class RandomStratifiedIndexSampler implements Sampler{
         List<Integer> homogeneousInstances = instancesByClass.get(sampleClass); // instances of the class value
         int sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));
         classSamplingProbabilities[sampleClass]--;
-        ArrayUtilities.addInPlace(classSamplingProbabilities, classDistribution);
+        ArrayUtilities.add(classSamplingProbabilities, classDistribution);
         return sampledInstance;
     }
 }
