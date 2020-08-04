@@ -28,19 +28,17 @@ public class FileWritingExample {
         TimeSeriesInstances ts_test_data = ts_reader.GetInstances();
 
         TrainTest out2 = TimeSeriesResampler.resampleTrainTest(ts_train_data, ts_test_data, 1);
-        System.out.println(out2.train.get(0));
-        System.out.println(out2.test.get(0));
 
 
-        //TSWriter writer = new TSWriter(new File(dataset + "_TRAIN " + 1 + ".ts"));
-        TSWriter writer = new TSWriter();
-        writer.setDestination(System.out);
+        TSWriter writer = new TSWriter(new File(dataset + "_TRAIN " + 1 + ".ts"));
+        //TSWriter writer = new TSWriter();
+        //writer.setDestination(System.out);
         writer.setData(out2.train);
         writer.writeBatch();
 
-        //writer = new TSWriter(new File(dataset + "_TEST " + 1 + ".ts"));
-        writer = new TSWriter();
-        writer.setDestination(System.out);
+        writer = new TSWriter(new File(dataset + "_TEST " + 1 + ".ts"));
+        //writer = new TSWriter();
+        //writer.setDestination(System.out);
         writer.setData(out2.test);
         writer.writeBatch();
     }

@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
-
+    String description;
     String problemName;
-    boolean isEquallySpaced;
+    boolean isEquallySpaced = true;
     boolean hasMissing;
     boolean isEqualLength;
 
@@ -65,10 +65,33 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return classLabels.length;
     }
 
-    
 	public int getMaxNumChannels() {
 		return maxNumChannels;
 	}
+
+    public void setProblemName(String problemName) {
+        this.problemName = problemName;
+    }
+
+    public void setEquallySpaced(boolean isEquallySpaced) {
+        this.isEquallySpaced = isEquallySpaced;
+    }
+
+    public boolean isHasTimeStamps() {
+        return hasTimeStamps;
+    }
+
+    public void setHasTimeStamps(boolean hasTimeStamps) {
+        this.hasTimeStamps = hasTimeStamps;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     /* End Meta Information */
 
@@ -348,6 +371,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 	public int numInstances() {
 		return series_collection.size();
     }
+
+
 
 
     
