@@ -347,7 +347,6 @@ public class Experiments  {
                 LOGGER.log(Level.WARNING, "Serialisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Serializable.");
         }
 
-
         if (expSettings.visualise) {
             if (classifier instanceof Visualisable) {
                 ((Visualisable) classifier).setVisualisationSavePath(expSettings.supportingFilePath);
@@ -358,8 +357,20 @@ public class Experiments  {
                     LOGGER.log(Level.SEVERE, "Visualisation attempted but failed for classifier ("+classifier.getClass().getName()+")", ex);
                 }
             }
-            else
-                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Visualisable.");
+            else {
+                expSettings.visualise = false;
+                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier (" + classifier.getClass().getName() + ") does not extend Visualisable.");
+            }
+        }
+
+        if (expSettings.interpret) {
+            if (classifier instanceof Interpretable) {
+                ((Interpretable) classifier).setInterpretabilitySavePath(expSettings.supportingFilePath);
+            }
+            else {
+                expSettings.interpret = false;
+                LOGGER.log(Level.WARNING, "Interpretability requested, but the classifier (" + classifier.getClass().getName() + ") does not extend Interpretable.");
+            }
         }
     }
 
@@ -700,7 +711,7 @@ public class Experiments  {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true, exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         return eval.evaluate(classifier, testSet);
     }
@@ -900,6 +911,10 @@ public class Experiments  {
                 + "Figures are created using Python. Exact requirements are to be determined, but a a Python 3.7 installation is the current recommendation with the numpy and matplotlib packages installed on the global environment. "
                 + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         public boolean visualise = false;
+
+        @Parameter(names={"-int","--interpretability"}, description = "(boolean) Turns on the production of interpretability files, if the classifier implements the Interpretable interface. "
+                + "The classifier by default will write its interpretability files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+        public boolean interpret = false;
 
         @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
                 + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"

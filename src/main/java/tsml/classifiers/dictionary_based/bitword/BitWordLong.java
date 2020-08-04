@@ -101,11 +101,13 @@ public class BitWordLong implements BitWord {
 
     public Number getWord() { return word; }
     public byte getLength() { return length; }
-    
+
+    public void setWord(Number word) { this.word = word.longValue(); }
+
     public void setWord(int [] letters) throws Exception {
          if (letters.length > MAX_LENGTH)
             throw new Exception("requested word length exceeds max(" + MAX_LENGTH + "): " + letters.length);
-         
+
          word = 0;
          length = (byte)letters.length;
          
@@ -116,7 +118,7 @@ public class BitWordLong implements BitWord {
         word = (word << BITS_PER_LETTER) | letter;
         ++length;
     }
-    
+
     public long pop() {
         long letter = word & POP_MASK;
         shorten(1);
@@ -196,12 +198,51 @@ public class BitWordLong implements BitWord {
                 return "err"; //impossible with enum, but must have return
         }
     }
-    
-    public static void main(String [] args) throws Exception {
-        quickTest();
+
+    public String toStringUnigram() {
+        long[] letters = new long[length];
+        int shift = WORD_SPACE-(length*BITS_PER_LETTER);
+        for (int i = length-1; i > -1; --i) {
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift += BITS_PER_LETTER;
+        }
+
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters[i]));
+        }
+
+        return str.toString();
     }
-    
-    private static void quickTest() throws Exception {
+
+    public String toStringBigram() {
+        long[] letters = new long[length];
+        int shift = WORD_SPACE-(length*BITS_PER_LETTER);
+        for (int i = length-1; i > -1; --i) {
+            letters[length-1-i] = (word << shift) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift += BITS_PER_LETTER;
+        }
+
+        long[] letters2 = new long[length];
+        int shift2 = WORD_SPACE/2-(length*2);
+        for (int i = length-1; i > -1; --i) {
+            letters2[length-1-i] = (word << shift2) >>> (WORD_SPACE-BITS_PER_LETTER);
+            shift2 += BITS_PER_LETTER;
+        }
+
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters2[i]));
+        }
+        str.append("+");
+        for (int i = 0; i < length; i++){
+            str.append((char)('A'+letters[i]));
+        }
+
+        return str.toString();
+    }
+
+    public static void main(String [] args) throws Exception {
         int [] letters = {2,1,2,3,2,1,2,0,1,1,2,3,1,2,3,1};
         BitWordLong b = new BitWordLong();
         for (int i = 0; i < letters.length; i++){
