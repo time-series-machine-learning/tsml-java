@@ -7,16 +7,9 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.WarpingParameter;
 
-public interface DTW extends DistanceMeasureable {
-    void setWarpingWindow(int warpingWindow);
-    int getWarpingWindow();
-    static String getWarpingWindowFlag() {
-        return "w";
-    }
-    double[][] getDistanceMatrix();
-    boolean isKeepDistanceMatrix();
-    void setKeepDistanceMatrix(boolean state);
-    void cleanDistanceMatrix();
+public interface DTW extends WarpingDistanceMeasure {
+
 }

@@ -14,6 +14,7 @@
  */
 package utilities;
 
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.math.BigDecimal;
@@ -47,15 +48,18 @@ public class StatisticalUtilities {
     
 
     public static double pStdDev(Instances input){
-        // todo make sure class val at end of attributes
+        if(input.classIndex() != input.numAttributes() - 1) {
+            throw new IllegalArgumentException("class value must be at the end");
+        }
         double sumx = 0;
         double sumx2 = 0;
         double[] ins2array;
         for(int i = 0; i < input.numInstances(); i++){
-            ins2array = input.instance(i).toDoubleArray();
-            for(int j = 0; j < ins2array.length-1; j++){//-1 to avoid classVal
-                sumx+=ins2array[j];
-                sumx2+=ins2array[j]*ins2array[j];
+            final Instance instance = input.instance(i);
+            for(int j = 0; j < instance.numAttributes()-1; j++){//-1 to avoid classVal
+                final double value = instance.value(j);
+                sumx+= value;
+                sumx2+= value * value;
             }
         }
         int n = input.numInstances()*(input.numAttributes()-1);
