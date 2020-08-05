@@ -84,6 +84,7 @@ public class DimensionIndependentTransformer implements Transformer {
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         // TODO Auto-generated method stub
+        //not implementing this as for TSInstances we already support multi out of the box.
         return null;
     }
 }

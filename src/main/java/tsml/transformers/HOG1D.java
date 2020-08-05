@@ -2,6 +2,7 @@ package tsml.transformers;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -132,6 +133,17 @@ public class HOG1D implements Transformer {
             startIndex = startIndex + intervalSize;
         }
         return intervals;
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumChannels()][];
+        int i =0;
+        for(TimeSeries ts : inst){
+            out[i++] = getHOG1Ds(ts.toArray());
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**
@@ -315,11 +327,5 @@ public class HOG1D implements Transformer {
         }
         inst.setDataset(dataset);
         dataset.add(inst);
-    }
-
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

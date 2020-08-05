@@ -145,6 +145,13 @@ public class TimeSeries{
         return toListWithIndexes(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
     }
 
+    @Override
+    public int hashCode(){
+        return this.series.hashCode();
+    }
+
+
+
     public static void main(String[] args) {
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }

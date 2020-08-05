@@ -372,7 +372,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 		return series_collection.size();
     }
 
-
+    @Override
+    public int hashCode(){
+        return this.series_collection.hashCode();
+    }
 
 
     

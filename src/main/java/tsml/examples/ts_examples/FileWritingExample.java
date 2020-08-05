@@ -1,4 +1,4 @@
-package tsml.data_containers.examples;
+package tsml.examples.ts_examples;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,8 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.fileIO.TSReader;
-import tsml.data_containers.fileIO.TSWriter;
+import tsml.data_containers.ts_fileIO.TSReader;
+import tsml.data_containers.ts_fileIO.TSWriter;
 import tsml.data_containers.utilities.TimeSeriesResampler;
 import tsml.data_containers.utilities.TimeSeriesResampler.TrainTest;
 

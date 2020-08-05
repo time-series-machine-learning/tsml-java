@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 
 /**
  * Purpose: transforms a set of instances into a set of hashed instances. This
@@ -120,8 +121,16 @@ public class HashTransformer implements Transformer {
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
+        //TimeSeriesInstance are already hashable out of the box.
+        //this is just so that it plays nicely with other code.
+        return inst;
+    }
+
+    @Override
+    public TimeSeriesInstances transform(TimeSeriesInstances data) {
+        //TimeSeriesInstance are already hashable out of the box.
+        //this is just so that it plays nicely with other code.
+        return data;
     }
 
 }

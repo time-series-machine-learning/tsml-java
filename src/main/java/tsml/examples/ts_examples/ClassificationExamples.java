@@ -1,4 +1,4 @@
-package tsml.data_containers.examples;
+package tsml.examples.ts_examples;
 
 import machine_learning.classifiers.kNN;
 import tsml.classifiers.TSClassifier;

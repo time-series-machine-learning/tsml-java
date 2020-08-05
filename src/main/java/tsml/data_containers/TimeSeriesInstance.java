@@ -250,6 +250,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
 
+    @Override
+    public int hashCode(){
+        return this.series_channels.hashCode();
+    }
 
 	public TimeSeries get(int i) {
         return this.series_channels.get(i);

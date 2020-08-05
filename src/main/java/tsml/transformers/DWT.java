@@ -2,6 +2,7 @@ package tsml.transformers;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -145,6 +146,19 @@ public class DWT implements Transformer {
         }
         return coeffs;
     }
+    
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        //could do this across all dimensions.
+        double[][] out = new double[inst.getNumChannels()][];
+        int i = 0;
+        for(TimeSeries ts : inst){
+            out[i++] = getDWTCoefficients(ts.toArray());
+        }
+        
+        //create a new output instance with the ACF data.
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
+    }
 
     @Override
     public Instances determineOutputFormat(Instances inputFormat) throws IllegalArgumentException {
@@ -283,9 +297,5 @@ public class DWT implements Transformer {
         dataset.add(inst);
     }
 
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
-    }
+
 }
