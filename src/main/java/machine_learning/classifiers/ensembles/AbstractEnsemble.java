@@ -36,7 +36,6 @@ import tsml.classifiers.TrainTimeContractable;
 import tsml.transformers.Transformer;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
-import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
@@ -600,7 +599,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             for (EnsembleModule module : modules) //                 +time for each member's predictions
                 predTime += module.trainResults.getPredictionTime(i);
 
-            pred = utilities.GenericTools.indexOfMax(dist);
+            pred = findIndexOfMax(dist, rand);
             actual = data.instance(i).classValue();
 
             trainResults.turnOffZeroTimingsErrors();
@@ -974,7 +973,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         }
         
         testResults.turnOffZeroTimingsErrors();
-        testResults.addPrediction(dist, indexOfMax(dist), predTime, "");
+        testResults.addPrediction(dist, findIndexOfMax(dist, rand), predTime, "");
         testResults.turnOnZeroTimingsErrors();
         
         if (prevTestInstance != instance)
@@ -987,7 +986,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] dist = distributionForInstance(instance);
-        return utilities.GenericTools.indexOfMax(dist);
+        return findIndexOfMax(dist, rand);
     }
 
     /**

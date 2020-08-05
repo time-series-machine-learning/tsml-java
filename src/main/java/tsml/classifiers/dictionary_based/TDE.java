@@ -894,7 +894,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     Arrays.fill(probs, 1.0 / train.numClasses());
                 }
 
-                trainResults.addPrediction(train.get(i).classValue(), probs, argMax(probs, rand), -1, "");
+                trainResults.addPrediction(train.get(i).classValue(), probs, findIndexOfMax(probs, rand), -1, "");
             }
 
             trainResults.setClassifierName("TDEOOB");
@@ -942,7 +942,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     probs = distributionForInstance(i);
                 }
 
-                trainResults.addPrediction(train.get(i).classValue(), probs, argMax(probs, rand), -1, "");
+                trainResults.addPrediction(train.get(i).classValue(), probs, findIndexOfMax(probs, rand), -1, "");
             }
         }
 
@@ -1000,20 +1000,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] probs = distributionForInstance(instance);
-
-        int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass]) {
-                maxClass = n;
-            }
-            else if (probs[n] == probs[maxClass]){
-                if (rand.nextBoolean()){
-                    maxClass = n;
-                }
-            }
-        }
-
-        return maxClass;
+        return findIndexOfMax(probs, rand);
     }
 
     @Override

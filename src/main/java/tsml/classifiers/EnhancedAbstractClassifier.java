@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
-import weka.core.Instances;
-import weka.core.Randomizable;
+import weka.core.*;
 
 /**
  *
@@ -351,7 +349,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         // Can only handle discrete class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         // instances
-        result.setMinimumNumberInstances(1);
+        result.setMinimumNumberInstances(2);
         return result;
     }
     
@@ -375,10 +373,10 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * then the best index is chosen randomly.
      *
      * @param x a list of doubles.
+     * @param rand a Random object.
      * @return the index of the highest value in x.
      */
-    public static int findIndexOfMax(double [] x) {
-
+    public static int findIndexOfMax(double [] x, Random rand) {
         double currentMax = Double.MIN_VALUE;
         ArrayList<Integer> bestIndexes = new ArrayList<>();
 
@@ -395,11 +393,69 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
         //No ties occured
         if(bestIndexes.size() == 1) {
-            return (int) bestIndexes.get(0);
+            return bestIndexes.get(0);
         } else {
             //ties did occur
-            Random rnd = new Random();
-            return bestIndexes.get(rnd.nextInt(bestIndexes.size()));
+            return bestIndexes.get(rand.nextInt(bestIndexes.size()));
+        }
+    }
+
+    /**
+     * Method to find the best index in a list of doubles. If a tie occurs,
+     * then the best index is chosen randomly.
+     *
+     * @param x a list of doubles.
+     * @param seed a long seed for a Random object.
+     * @return the index of the highest value in x.
+     */
+    public static int findIndexOfMax(double [] x, long seed) {
+        double currentMax = Double.MIN_VALUE;
+        ArrayList<Integer> bestIndexes = new ArrayList<>();
+
+        //Find the best index(es)
+        for(int i=0;i<x.length;i++) {
+            if(x[i] > currentMax) {
+                bestIndexes.clear();
+                bestIndexes.add(i);
+                currentMax = x[i];
+            } else if(x[i] == currentMax) {
+                bestIndexes.add(i);
+            }
+        }
+
+        //No ties occured
+        if(bestIndexes.size() == 1) {
+            return bestIndexes.get(0);
+        } else {
+            //ties did occur
+            return bestIndexes.get(new Random(seed).nextInt(bestIndexes.size()));
+        }
+    }
+
+    /**
+     * Overrides default AbstractClassifier classifyInstance to use random tie breaks.
+     * Classifies the given test instance. The instance has to belong to a
+     * dataset when it's being classified. Note that a classifier MUST
+     * implement either this or distributionForInstance().
+     *
+     * @param instance the instance to be classified
+     * @return the predicted most likely class for the instance or
+     * Utils.missingValue() if no prediction is made
+     * @exception Exception if an error occurred during the prediction
+     */
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        double [] dist = distributionForInstance(instance);
+        if (dist == null) {
+            throw new Exception("Null distribution predicted");
+        }
+        switch (instance.classAttribute().type()) {
+            case Attribute.NOMINAL:
+                return findIndexOfMax(dist, rand);
+            case Attribute.NUMERIC:
+                return dist[0];
+            default:
+                return Utils.missingValue();
         }
     }
     
