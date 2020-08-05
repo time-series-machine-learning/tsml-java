@@ -14,10 +14,7 @@
  */
 package tsml.classifiers.dictionary_based;
 
-import java.security.InvalidParameterException;
 import java.util.*;
-
-//import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
 
 import java.io.File;

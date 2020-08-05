@@ -18,6 +18,7 @@ import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import evaluation.storage.ClassifierResults;
@@ -383,11 +384,12 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * @return the index of the highest value in x.
      */
     public static int findIndexOfMax(double [] x, Random rand) {
-        double currentMax = Double.MIN_VALUE;
+        double currentMax = x[0];
         ArrayList<Integer> bestIndexes = new ArrayList<>();
+        bestIndexes.add(0);
 
         //Find the best index(es)
-        for(int i=0;i<x.length;i++) {
+        for(int i = 1; i < x.length; i++) {
             if(x[i] > currentMax) {
                 bestIndexes.clear();
                 bestIndexes.add(i);
@@ -415,11 +417,12 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * @return the index of the highest value in x.
      */
     public static int findIndexOfMax(double [] x, long seed) {
-        double currentMax = Double.MIN_VALUE;
+        double currentMax = x[0];
         ArrayList<Integer> bestIndexes = new ArrayList<>();
+        bestIndexes.add(0);
 
         //Find the best index(es)
-        for(int i=0;i<x.length;i++) {
+        for(int i = 1; i < x.length; i++) {
             if(x[i] > currentMax) {
                 bestIndexes.clear();
                 bestIndexes.add(i);

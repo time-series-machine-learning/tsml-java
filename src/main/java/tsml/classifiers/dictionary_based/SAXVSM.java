@@ -313,7 +313,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[] distribution = distributionForInstance(instance);
+        double[] distribution = distributionForInstance(instance); //outputs 0's during cv sometimes
         return findIndexOfMax(distribution, rand);
     }
 
