@@ -15,8 +15,14 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import experiments.data.DatasetLoading;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.InstanceTools;
 import utilities.NumUtils;
 import weka.core.Attribute;
@@ -24,9 +30,8 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
-public class NormalizeCase implements Transformer {
+public class RowNormalizer implements Transformer {
 	public enum NormType {
 		INTERVAL, STD, STD_NORMAL
 	};
@@ -35,11 +40,11 @@ public class NormalizeCase implements Transformer {
 
 	NormType norm = NormType.STD_NORMAL;
 
-	public NormalizeCase(){
+	public RowNormalizer(){
 		this(NormType.STD_NORMAL);
 	}
 
-	public NormalizeCase(NormType type){
+	public RowNormalizer(NormType type){
 		norm = type;
 	}
 
@@ -80,6 +85,8 @@ public class NormalizeCase implements Transformer {
 	public Instance intervalNorm(Instance inst) {
 		return intervalInCopy(inst, InstanceTools.max(inst), InstanceTools.min(inst));
 	}
+
+
 
 	public Instances standard(Instances data) {
 		Instances out = determineOutputFormat(data);
@@ -197,9 +204,140 @@ public class NormalizeCase implements Transformer {
 
         return copy;
 	}
-	
 	/* END BLOCK */
 
+
+	/* TimeSeries Utilities */
+
+	@Override
+	public TimeSeriesInstances transform(TimeSeriesInstances data) {
+		switch (norm) {
+			case INTERVAL: // Map onto [0,1]
+				return intervalNorm(data);
+			case STD: // Subtract the mean of the series
+				return standard(data);
+			default: // Transform to zero mean, unit variance
+				return standardNorm(data);
+		}
+	}
+
+	public static TimeSeriesInstances standardNorm(TimeSeriesInstances data) {
+		TimeSeriesInstances out = new TimeSeriesInstances(data.getClassLabels());
+		for(TimeSeriesInstance inst : data){
+			out.add(standardNorm(inst));
+		}
+		
+		return out;
+	}
+
+	public static TimeSeriesInstances standard(TimeSeriesInstances data) {
+		TimeSeriesInstances out = new TimeSeriesInstances(data.getClassLabels());
+		for(TimeSeriesInstance inst : data){
+			out.add(standard(inst));
+		}
+		
+		return out;
+	}
+
+	public static TimeSeriesInstances intervalNorm(TimeSeriesInstances data) {
+		TimeSeriesInstances out = new TimeSeriesInstances(data.getClassLabels());
+		for(TimeSeriesInstance inst : data){
+			out.add(intervalNorm(inst));
+		}
+		
+		return out;
+	}
+
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		switch (norm) {
+			case INTERVAL: // Map onto [0,1]
+				return intervalNorm(inst);
+			case STD: // Subtract the mean of the series
+				return standard(inst);
+			default: // Transform to zero mean, unit variance
+				return standardNorm(inst);
+		}
+	}
+
+	public static TimeSeriesInstance standardNorm(TimeSeriesInstance inst) {
+		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		for(TimeSeries ts : inst){
+			out.add(standardNorm(ts));
+		}
+		
+		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+	}
+
+	public static TimeSeriesInstance standard(TimeSeriesInstance inst) {
+		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		for(TimeSeries ts : inst){
+			out.add(standard(ts));
+		}
+		
+		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+	}
+
+	public static TimeSeriesInstance intervalNorm(TimeSeriesInstance inst) {
+		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		for(TimeSeries ts : inst){
+			out.add(intervalNorm(ts));
+		}
+		
+		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+	}
+
+	public static TimeSeries standardNorm(TimeSeries ts) {
+		double[] out = ts.toArray(); //this is a copy.
+
+		double mean = TimeSeriesSummaryStatistics.mean(out);
+		double var = TimeSeriesSummaryStatistics.variance(ts, mean);
+		boolean constant = NumUtils.isNearlyEqual(var,0);
+
+		//if we have zero variance, then just return array of 0's
+		if(constant){
+			for(int i =0; i<out.length; i++){
+				out[i] = 0;
+			}
+		}
+		else{
+			double std = Math.sqrt(var);
+
+			for(int i =0; i<out.length; i++){
+				out[i] =  (out[i] - mean) / std;
+			}
+		}
+		return new TimeSeries(out);
+	}
+
+
+	public static TimeSeries standard(TimeSeries ts){
+		double[] out = ts.toArray(); //this is a copy.
+
+		double mean = TimeSeriesSummaryStatistics.mean(out);
+
+		for(int i =0; i<out.length; i++){
+			out[i] =  (out[i] - mean);
+		}
+
+		return new TimeSeries(out);
+	}
+
+	public static TimeSeries intervalNorm(TimeSeries ts){
+		double[] out = ts.toArray(); //this is a copy.
+
+		double max = TimeSeriesSummaryStatistics.max(out);
+		double min =  TimeSeriesSummaryStatistics.min(out);
+
+		for(int i =0; i<out.length; i++){
+			out[i] =  (out[i] - min) / (max - min);
+		}
+
+		return new TimeSeries(out);
+	}
+
+
+	
 	static String[] fileNames = { // Number of train,test cases,length,classes
 			"Beef", // 30,30,470,5
 			"Coffee", // 28,28,286,2
@@ -211,7 +349,7 @@ public class NormalizeCase implements Transformer {
         String dataset_name = "ChinaTown";
         Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
         Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
-        NormalizeCase hTransform= new NormalizeCase();
+        RowNormalizer hTransform= new RowNormalizer();
         Instances out_train = hTransform.transform(train);
         Instances out_test = hTransform.transform(test);
         System.out.println(out_train.toString());

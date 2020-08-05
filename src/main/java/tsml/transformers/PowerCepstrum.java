@@ -20,6 +20,8 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 
+import tsml.data_containers.TimeSeriesInstance;
+
 /**
  *
  * @author ajb
@@ -89,6 +91,42 @@ public class PowerCepstrum extends PowerSpectrum{
 
         return out;
     }
+
+    @Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        TimeSeriesInstance f_inst = super.transform(inst);
+
+        double[][] values = f_inst.toValueArray();
+
+        //log all the output/
+        for(int i=0; i<values.length;i++){
+
+            int length = values[i].length;
+
+            for(int j=0; j<length; j++)
+                values[i][j] = Math.log(values[i][j]);
+            
+            //Have to pad
+            int n = (int)MathsPower2.roundPow2(length);
+            if(n<length)
+                n*=2;
+            FFT.Complex[] complex=new FFT.Complex[n];
+            for(int j=0;j<length;j++)
+                complex[j]=new FFT.Complex(values[i][j],0);
+            for(int j=length;j<n;j++)
+                complex[j]=new FFT.Complex(0,0);
+
+            //Take inverse FFT
+            inverseFFT(complex,complex.length);
+            //Square the terms for the PowerCepstrum 
+            for(int j=0; j<length; j++)
+                values[i][j] = complex[j].real*complex[j].real+complex[j].imag*complex[j].imag;
+        }
+
+        return new TimeSeriesInstance(values, inst.getLabelIndex());
+    }
+    
+
 
     public void logDataSet(Instances out ){
         for(int i=0;i<out.numInstances();i++){

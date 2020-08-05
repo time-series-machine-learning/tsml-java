@@ -2,6 +2,9 @@ package tsml.transformers;
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import org.apache.commons.lang3.NotImplementedException;
+
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
@@ -23,6 +26,9 @@ import java.io.Serializable;
  */
 public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializable {
 
+
+    /********* Instances ************/
+
     /**
      * perform the transform process. Some algorithms may require a fit before transform
      * (e.g. shapelets, PCA) others may not (FFT, PAA etc).
@@ -36,6 +42,10 @@ public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializ
             output.add(transform(inst));
         }
         return output;
+    }
+
+    default TimeSeriesInstances transformConverter(Instances data){
+        return transform(Converter.fromArff(data));
     }
 
     /**
@@ -80,4 +90,35 @@ public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializ
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         return result;
     }
+
+
+    /********* TimeSeriesInstances ************/
+    
+    /**
+     * perform the transform process. Some algorithms may require a fit before transform
+     * (e.g. shapelets, PCA) others may not (FFT, PAA etc).
+     * Should we throw an exception? Default to calling instance transform?
+     * Need to determine where to setOut
+     * @return Instances of transformed data
+     */
+    default TimeSeriesInstances transform(TimeSeriesInstances data){
+        //when cloning skeleton of TSInstances, copy across classLabels.
+        TimeSeriesInstances output = new TimeSeriesInstances(data.getClassLabels());
+        for(TimeSeriesInstance inst : data){
+            output.add(transform(inst));
+        }
+        return output;
+    }
+
+
+    default Instances transformConverter(TimeSeriesInstances data){
+        return Converter.toArff(transform(data));
+    }
+
+    /**
+     * Transform a new instance into the format described in determineOutputFormat
+     * @param Instance inst
+     * @return transformed Instance
+     */
+    TimeSeriesInstance transform(TimeSeriesInstance inst);
 }

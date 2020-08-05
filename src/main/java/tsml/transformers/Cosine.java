@@ -15,8 +15,11 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.util.Arrays;
 
 import experiments.data.DatasetLoading;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 import weka.core.*;
 
@@ -27,37 +30,47 @@ import weka.core.*;
  * */
 public class Cosine implements Transformer {
 
+
     @Override
-    public Instances transform(Instances data) {
-        //for k=1 to n: f_k = sum_{i=1}^n f_i cos[(k-1)*(\pi/n)*(i-1/2)] 
-    //Assumes the class attribute is in the last one for simplicity            
-        Instances result = determineOutputFormat(data);     
-		for(Instance inst : data) 
-            result.add(transform(inst));
-            
-        //System.out.println(result.firstInstance().toString());
-        return result;
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        //multidimensional cosine. Cosine applied series wise for each dimension
+        double[][] out = new double[inst.getNumChannels()][];
+        int index = 0;
+        for(TimeSeries ts : inst){
+            double[] data = new double[ts.getSeriesLength()];
+            double n = data.length;
+            for (int k = 0; k < n; k++) {
+                double fk = 0;
+                for (int i = 0; i < n; i++) {
+                    double c = k * (i + 0.5) * (Math.PI / n);
+                    fk += ts.get(i) * Math.cos(c);
+                }
+                data[k] = fk;
+            }
+            out[index++] = data;
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     @Override
-    public Instance transform(Instance inst) {       
-        int n=inst.numAttributes()-1;
-        Instance newInst= new DenseInstance(inst.numAttributes());
-        for(int k=0;k<n;k++){
-            double fk=0;
-            for(int i=0;i<n;i++){
-                double c=k*(i+0.5)*(Math.PI/n);
-                fk+=inst.value(i)*Math.cos(c);
+    public Instance transform(Instance inst) {
+        int n = inst.numAttributes() - 1;
+        Instance newInst = new DenseInstance(inst.numAttributes());
+        for (int k = 0; k < n; k++) {
+            double fk = 0;
+            for (int i = 0; i < n; i++) {
+                double c = k * (i + 0.5) * (Math.PI / n);
+                fk += inst.value(i) * Math.cos(c);
             }
             newInst.setValue(k, fk);
         }
 
-        //overrided cosine class value, with original.
-        if(inst.classIndex() >= 0)
+        // overrided cosine class value, with original.
+        if (inst.classIndex() >= 0)
             newInst.setValue(inst.classIndex(), inst.classValue());
         return newInst;
     }
-
 
     public Instances determineOutputFormat(Instances inputFormat) {
         FastVector<Attribute> atts = new FastVector<>();
@@ -86,22 +99,26 @@ public class Cosine implements Transformer {
         return result;
     }
 
+    public static void main(String[] args) {
+        // final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI *
+        // 1.5, Math.PI*2.5}};
+        // final double[] labels = {1,2};
+        // final Instances train = InstanceTools.toWekaInstances(t1, labels);
 
-    public static void main(String[] args){
-        //final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI * 1.5, Math.PI*2.5}};
-        //final double[] labels = {1,2};
-        //final Instances train = InstanceTools.toWekaInstances(t1, labels);
-
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
         String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
-        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
-        Cosine cosTransform= new Cosine();
+        Instances train = DatasetLoading
+                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
+        Instances test = DatasetLoading
+                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
+        Cosine cosTransform = new Cosine();
         Instances out_train = cosTransform.transform(train);
         Instances out_test = cosTransform.transform(test);
         System.out.println(out_train.toString());
         System.out.println(out_test.toString());
 
     }
+
+
 
 }
