@@ -15,6 +15,9 @@
 package tsml.transformers.shapelet_tools.class_value;
 
 import java.io.Serializable;
+
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Instance;
@@ -33,6 +36,11 @@ public class NormalClassValue implements Serializable{
     {
         classDistributions = new TreeSetClassCounts(inst);
     }
+
+    public void init(TimeSeriesInstances inst)
+    {
+        classDistributions = new TreeSetClassCounts(inst);
+    }
     
     public ClassCounts getClassDistributions()
     {
@@ -44,9 +52,19 @@ public class NormalClassValue implements Serializable{
     {
         shapeletValue = shapeletSeries.classValue();
     }
+
+    //this will get updated as and when we work with a new shapelet.
+    public void setShapeletValue(TimeSeriesInstance shapeletSeries)
+    {
+        shapeletValue = shapeletSeries.getLabelIndex();
+    }
     
     public double getClassValue(Instance in){
         return in.classValue();
+    }
+
+    public double getClassValue(TimeSeriesInstance in){
+        return in.getLabelIndex();
     }
 
     public double getShapeletValue() {

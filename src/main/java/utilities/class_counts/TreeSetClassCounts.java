@@ -18,6 +18,9 @@ import java.util.Collection;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.TreeMap;
+
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -43,6 +46,13 @@ public class TreeSetClassCounts extends ClassCounts{
 
             val = (val != null) ? val + 1 : 1;
             classDistribution.put(classValue, val);
+        }
+    }
+
+    public TreeSetClassCounts(TimeSeriesInstances data) {
+        classDistribution = new TreeMap<>();
+        for(TimeSeriesInstance inst : data){
+            classDistribution.merge((double)inst.getLabelIndex(), 1, Integer::sum);
         }
     }
     

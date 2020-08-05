@@ -15,6 +15,9 @@
 package tsml.transformers;
 
 import experiments.data.DatasetLoading;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.InstanceTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -34,14 +37,14 @@ import java.util.ArrayList;
  * */
 public class SummaryStats implements Transformer {
     private int numMoments;
-    private final String[] moment_names = {"mean", "variance", "skewness", "kurtosis", "slope", "min", "max"};
+    private final String[] moment_names = { "mean", "variance", "skewness", "kurtosis", "slope", "min", "max" };
 
-    public SummaryStats(){
+    public SummaryStats() {
         this(5);
     }
 
-    public SummaryStats(int numM){
-        numMoments = Math.max(Math.min(numM, 5), 0); //no less than 0
+    public SummaryStats(int numM) {
+        numMoments = Math.max(Math.min(numM, 5), 0); // no less than 0
     }
 
     public Instances determineOutputFormat(Instances inputFormat) {
@@ -70,8 +73,6 @@ public class SummaryStats implements Transformer {
         return result;
     }
 
-
-
     @Override
     public Instance transform(Instance inst) {
 
@@ -91,14 +92,14 @@ public class SummaryStats implements Transformer {
         double totalKur = 0;
         double p = 0;
         // Find variance
-        if(numMoments > 0){
+        if (numMoments > 0) {
             for (int j = 0; j < d.length; j++) {
                 p = (d[j] - moments[0]) * (d[j] - moments[0]); // ^2
                 totalVar += p;
-    
+
                 p *= (d[j] - moments[0]); // ^3
                 totalSkew += p;
-    
+
                 p *= (d[j] - moments[0]); // ^4
                 totalKur += p;
             }
@@ -107,14 +108,14 @@ public class SummaryStats implements Transformer {
             double standardDeviation = Math.sqrt(moments[1]);
             moments[1] = standardDeviation;
 
-            if(numMoments > 1){
+            if (numMoments > 1) {
                 double std3 = Math.pow(standardDeviation, 3);
                 double skew = totalSkew / (std3);
                 moments[2] = skew / d.length;
-                if(numMoments > 2){
+                if (numMoments > 2) {
                     double kur = totalKur / (std3 * standardDeviation);
                     moments[3] = kur / d.length;
-                    if(numMoments > 3){
+                    if (numMoments > 3) {
                         // slope
                         moments[4] = standardDeviation != 0 ? InstanceTools.slope(inst, sum, sumSq) : 0;
                     }
@@ -126,10 +127,10 @@ public class SummaryStats implements Transformer {
             atts[j] = moments[j];
         }
         atts[numMoments] = min;
-        atts[numMoments+1]= max;
+        atts[numMoments + 1] = max;
 
         if (inst.classIndex() >= 0)
-            atts[atts.length-1] = inst.classValue();
+            atts[atts.length - 1] = inst.classValue();
 
         return new DenseInstance(1.0, atts);
     }
@@ -138,12 +139,48 @@ public class SummaryStats implements Transformer {
 
         String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
         String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
-        Instances test = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
+        Instances train = DatasetLoading
+                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
+        Instances test = DatasetLoading
+                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
         // Instances filter=new SummaryStats().process(test);
         SummaryStats m = new SummaryStats();
         Instances filter = m.transform(test);
         System.out.println(filter);
     }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        
+        double[][] out = new double[inst.getNumChannels()][];
+
+        int i=0;
+        for(TimeSeries ts : inst){
+            TimeSeriesSummaryStatistics stats = new TimeSeriesSummaryStatistics(ts);
+            //{ "mean", "variance", "skewness", "kurtosis", "slope", "min", "max" };
+            int j=0;
+            out[i] = new double[numMoments + 2];
+            if (numMoments >= 0){
+                out[i][j++] = stats.getMean();
+                if (numMoments >= 1){
+                    out[i][j++] = stats.getVariance();
+                    if (numMoments >= 2){
+                        out[i][j++] = stats.getSkew();
+                        if (numMoments >= 3){
+                            out[i][j++] = stats.getKurtosis();
+                            if (numMoments >= 4){
+                                out[i][j++] = stats.getSlope();
+                            }
+                        }
+                    }
+                }
+            }
+            out[i][j++] = stats.getMin();
+            out[i][j++] = stats.getMax();
+            i++;
+        }
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
+    }
+
 
 }

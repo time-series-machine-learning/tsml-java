@@ -35,10 +35,14 @@ package tsml.transformers;
 
 import org.apache.commons.lang3.NotImplementedException;
 
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
+import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class NormalizeAttribute implements Transformer {
+public class ColumnNormalizer implements TrainableTransformer {
 	enum NormType {
 		INTERVAL, STD_NORMAL
 	};
@@ -50,11 +54,12 @@ public class NormalizeAttribute implements Transformer {
 	double[] stdev;
 	int classIndex;
 	NormType norm = NormType.INTERVAL;
+	boolean isFit;
 
-	public NormalizeAttribute() {
+	public ColumnNormalizer() {
 	}
 
-	public NormalizeAttribute(Instances data) {
+	public ColumnNormalizer(Instances data) {
 		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
@@ -97,6 +102,22 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
+	protected void findStats(TimeSeriesInstances r) {
+		max = new double[r.getMaxLength()];
+		min = new double[r.getMaxLength()];
+		mean = new double[r.getMaxLength()];
+		stdev = new double[r.getMaxLength()];
+
+		for (int j = 0; j < r.getMaxLength(); j++) {
+			double[] slice = r.getVSliceArray(j);
+
+			max[j] = TimeSeriesSummaryStatistics.max(slice);
+			min[j] = TimeSeriesSummaryStatistics.min(slice);
+			mean[j] = TimeSeriesSummaryStatistics.mean(slice);
+			stdev[j] = Math.sqrt(TimeSeriesSummaryStatistics.variance(slice, mean[j]));
+		}
+	}
+
 	public double[] getRanges() {
 		double[] r = new double[max.length];
 		for (int i = 0; i < r.length; i++)
@@ -104,12 +125,16 @@ public class NormalizeAttribute implements Transformer {
 		return r;
 	}
 
-	
 	@Override
 	public Instance transform(Instance inst) {
 		throw new NotImplementedException("Column wise normalisation doesn't make sense for single instances");
 	}
-	
+
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		throw new NotImplementedException("Column wise normalisation doesn't make sense for single instances");
+	}
+
 	// This should probably be connected to trainData?
 	public Instances determineOutputFormat(Instances inputFormat) {
 		return new Instances(inputFormat, 0);
@@ -126,13 +151,58 @@ public class NormalizeAttribute implements Transformer {
 		norm = n;
 	}
 
-	public Instances transform(Instances inst) {
-		if (trainData == null) {
-			trainData = inst;
-			classIndex = inst.classIndex();
-			// Finds all the stats, doesnt cost much more really
-			findStats(inst);
+	
+	@Override
+	public TimeSeriesInstances transform(TimeSeriesInstances inst) {
+		
+		double[][][] out = null;
+		switch (norm) {
+			case INTERVAL:
+				out = intervalNorm(inst);
+				break;
+			case STD_NORMAL:
+				out = standardNorm(inst);
+				break;
 		}
+
+		return new TimeSeriesInstances(out, inst.getClassIndexes(), inst.getClassLabels());
+	}
+
+	/* Wont normalise the class value */
+	public double[][][] intervalNorm(TimeSeriesInstances r) {
+		double[][][] out = new double[r.numInstances()][][];
+		int i =0;
+		for (TimeSeriesInstance inst : r) {			
+			out[i++] = ArrayUtilities.transposeMatrix(intervalNorm(inst));
+		}
+
+		return out;
+	}
+
+	public double[][] intervalNorm(TimeSeriesInstance r) {
+		double[][] out = new double[r.getMaxLength()][];
+		for (int j = 0; j < r.getMaxLength(); j++) {
+			out[j] = TimeSeriesSummaryStatistics.intervalNorm(r.getSingleVSliceArray(j), min[j], max[j]);
+		}
+
+		return out;
+	}
+
+	public double[][][] standardNorm(TimeSeriesInstances r) {
+		double[][][] out = new double[r.numInstances()][][];
+
+		int index=0;
+		for(int i=0; i<r.numInstances(); i++){
+			out[index] =  new double[r.getMaxLength()][];
+			for (int j = 0; j < r.getMaxLength(); j++) {
+				out[index][j] = TimeSeriesSummaryStatistics.standardNorm(r.get(i).getSingleVSliceArray(j), mean[j], stdev[j]);
+			}
+			out[index++] = ArrayUtilities.transposeMatrix(out[index]);
+		}
+		return out;
+	}
+
+	public Instances transform(Instances inst) {
 		Instances result = new Instances(inst);
 		switch (norm) {
 			case INTERVAL:
@@ -152,13 +222,11 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
-	public void intervalNorm(Instance r){
+	public void intervalNorm(Instance r) {
 		for (int j = 0; j < r.numAttributes(); j++) {
 			if (j != classIndex) {
 				double x = r.value(j);
 				r.setValue(j, (x - min[j]) / (max[j] - min[j]));
-				// System.out.println("instance ="+i+" Attribute ="+j+" Value = "+x+" Min
-				// ="+min[j]+" max = "+max[j]);
 			}
 		}
 	}
@@ -174,44 +242,25 @@ public class NormalizeAttribute implements Transformer {
 		}
 	}
 
-	public String globalInfo() {
-		// TODO Auto-generated method stub
-		return null;
+	@Override
+	public boolean isFit() {
+		return isFit;
 	}
 
-	public String getRevision() {
-		// TODO Auto-generated method stub
-		return null;
+	@Override
+	public void fit(Instances data) {
+		trainData = data;
+		classIndex = data.classIndex();
+		// Finds all the stats, doesnt cost much more really
+		findStats(data);
+		isFit = true;
 	}
-	/*
-	 * Test Harness.
-	 * 
-	 * public static void main(String[] args){ Instances
-	 * test=weka.classifiers.evaluation.ClassifierTools.loadData(
-	 * "C:\\Research\\Data\\WekaTest\\NormalizeTest"); Instances
-	 * train=weka.classifiers.evaluation.ClassifierTools.loadData(
-	 * "C:\\Research\\Data\\WekaTest\\NormalizeTrain");
-	 * test.setClassIndex(test.numAttributes()-1);
-	 * train.setClassIndex(test.numAttributes()-1);
-	 * 
-	 * NormalizeAttribute na=new NormalizeAttribute(test); try{
-	 * 
-	 * na.setNormMethod(NormalizeAttribute.NormType.INTERVAL); //Defaults to
-	 * interval anyway Instances newTrain=na.process(train); Instances
-	 * newTest=na.process(test);
-	 * System.out.println(" Fixed interval train ="+newTrain);
-	 * System.out.println(" Fixed interval test ="+newTest);
-	 * na.setNormMethod(NormalizeAttribute.NormType.STD_NORMAL); //Defaults to
-	 * interval anyway na.setTrainData(train); newTrain=na.process(train);
-	 * newTest=na.process(test); System.out.println(" Std Normal train ="+newTrain);
-	 * System.out.println(" Std Normal test ="+newTest);
-	 * 
-	 * }catch(Exception e){
-	 * System.out.println(" Exception thrown somewhere, caught main ="+e); }
-	 * 
-	 * 
-	 * }
-	 */
 
-	
+	@Override
+	public void fit(TimeSeriesInstances data) {
+		findStats(data);
+		isFit = true;
+	}
+
+
 }
