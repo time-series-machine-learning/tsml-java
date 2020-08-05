@@ -216,9 +216,7 @@ public class TSReader {
      * @throws IOException if reading the next token fails
      */
     protected void getFirstToken() throws IOException {
-        while (m_Tokenizer.nextToken() == StreamTokenizer.TT_EOL) {
-            System.out.println(m_Tokenizer.sval);
-        }
+        while (m_Tokenizer.nextToken() == StreamTokenizer.TT_EOL) {}
         ;
         // this handles quotations single and double/
         if ((m_Tokenizer.ttype == '\'') || (m_Tokenizer.ttype == '"')) {

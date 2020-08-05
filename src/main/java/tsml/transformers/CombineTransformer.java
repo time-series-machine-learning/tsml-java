@@ -57,7 +57,7 @@ public class CombineTransformer implements Transformer {
 
         //initiliase empty container.
         List<List<Double>> data = new ArrayList<>();
-        for(int i=0; i< inst.getNumChannels(); i++){
+        for(int i=0; i< inst.getNumDimensions(); i++){
             data.add(new ArrayList<>());
         }
 

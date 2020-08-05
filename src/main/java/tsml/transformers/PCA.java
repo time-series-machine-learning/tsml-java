@@ -8,6 +8,8 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
+import tsml.data_containers.utilities.Splitter;
 import weka.attributeSelection.PrincipalComponents;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -161,7 +163,7 @@ public class PCA implements TrainableTransformer {
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         
-        List<TimeSeriesInstance> split_inst = Splitter.SplitTimeSeriesInstance(inst);
+        List<TimeSeriesInstance> split_inst = Splitter.splitTimeSeriesInstance(inst);
         List<TimeSeriesInstance> out = new ArrayList<>(split_inst.size());
         for(int i=0; i<pca_transforms.length; i++){
             pca = pca_transforms[i];
@@ -169,12 +171,12 @@ public class PCA implements TrainableTransformer {
             out.add(Converter.fromArff(transform(Converter.toArff(split_inst.get(i)))));
         }
 
-        return Splitter.MergeTimeSeriesInstance(out);
+        return Splitter.mergeTimeSeriesInstance(out);
     }
 
     @Override
     public void fit(TimeSeriesInstances data) {
-        List<TimeSeriesInstances> split = Splitter.SplitTimeSeriesInstances(data);
+        List<TimeSeriesInstances> split = Splitter.splitTimeSeriesInstances(data);
         
         pca_transforms = new PrincipalComponents[split.size()];
         attributesToKeep_dims = new int[split.size()];

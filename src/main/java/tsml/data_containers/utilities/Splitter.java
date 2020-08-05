@@ -1,4 +1,4 @@
-package tsml.transformers;
+package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +12,14 @@ import tsml.data_containers.TimeSeriesInstances;
 //that can only take univariate data.
 public class Splitter{
 
+    
+    /** 
+     * @param inst
+     * @return List<TimeSeriesInstance>
+     */
     //splitty splitty.
-    public static List<TimeSeriesInstance> SplitTimeSeriesInstance(TimeSeriesInstance inst){
-        List<TimeSeriesInstance> output = new ArrayList<>(inst.getNumChannels());
+    public static List<TimeSeriesInstance> splitTimeSeriesInstance(TimeSeriesInstance inst){
+        List<TimeSeriesInstance> output = new ArrayList<>(inst.getNumDimensions());
 
         for(TimeSeries ts : inst){
             double[][] wrapped_raw = new double[1][];
@@ -26,8 +31,13 @@ public class Splitter{
         return output;
     }
 
+    
+    /** 
+     * @param inst
+     * @return List<TimeSeriesInstances>
+     */
     //horizontally slice into univariate TimeSeriesInstances.
-    public static List<TimeSeriesInstances> SplitTimeSeriesInstances(TimeSeriesInstances inst){
+    public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst){
         List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumChannels());
 
         for(int i=0; i< inst.getMaxNumChannels(); i++){
@@ -39,8 +49,13 @@ public class Splitter{
         return output;
     }
 
+    
+    /** 
+     * @param inst_dims
+     * @return TimeSeriesInstance
+     */
     //mergey mergey
-    public static TimeSeriesInstance MergeTimeSeriesInstance(List<TimeSeriesInstance> inst_dims){
+    public static TimeSeriesInstance mergeTimeSeriesInstance(List<TimeSeriesInstance> inst_dims){
         double[][] wrapped_raw = new double[inst_dims.size()][];
         int i=0;
         for(TimeSeriesInstance inst : inst_dims){
