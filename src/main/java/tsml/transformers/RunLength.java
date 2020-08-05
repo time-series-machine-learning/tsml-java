@@ -11,13 +11,15 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 package tsml.transformers;
 
 import java.io.FileReader;
 import java.util.ArrayList;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.InstanceTools;
 import weka.filters.*;
 import weka.core.Attribute;
@@ -81,17 +83,31 @@ public class RunLength implements Transformer {
 	@Override
 	public Instance transform(Instance inst) {
 		// 1: Get series into an array, remove class value if present
-		Instance newInst = new DenseInstance(inst.numAttributes());
+		
 		double[] d = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
-
-		// 2: Form histogram of run lengths: note missing values assumed in the same run
-		double[] histogram = new double[newInst.numAttributes()];
 		double t = 0;
 		if (useGlobalMean)
 			t = globalMean;
 		else { // Find average
 			t = InstanceTools.mean(inst);
 		}
+		double[] histogram = create_data(d, t);
+
+		Instance newInst = new DenseInstance(inst.numAttributes());
+
+		// 3. Put run lengths and class value into instances
+		for (int j = 0; j < histogram.length; j++)
+			newInst.setValue(j, histogram[j]);
+
+		if (inst.classIndex() >= 0)
+			newInst.setValue(inst.numAttributes() - 1, inst.classValue());
+
+		return newInst;
+	}
+
+	private double[] create_data(double[] d, double t) {
+		// 2: Form histogram of run lengths: note missing values assumed in the same run
+		double[] histogram = new double[d.length];
 		int pos = 1;
 		int length = 0;
 		boolean u2 = false;
@@ -99,7 +115,7 @@ public class RunLength implements Transformer {
 		while (pos < d.length) {
 			u2 = d[pos] < t ? true : false;
 			// System.out.println("Pos ="+pos+" currentUNDER ="+under+" newUNDER = "+u2);
-			if (inst.isMissing(pos) || under == u2) {
+			if (Double.isNaN(d[pos]) || under == u2) {
 				length++;
 			} else {
 				// System.out.println("Position "+pos+" has run length "+length);
@@ -116,15 +132,7 @@ public class RunLength implements Transformer {
 			histogram[length]++;
 		else
 			histogram[maxRunLength - 1]++;
-
-		// 3. Put run lengths and class value into instances
-		for (int j = 0; j < histogram.length; j++)
-			newInst.setValue(j, histogram[j]);
-
-		if (inst.classIndex() >= 0)
-			newInst.setValue(inst.numAttributes() - 1, inst.classValue());
-
-		return newInst;
+		return histogram;
 	}
 
 	// Primitives version, assumes zero mean global, passes max run length
@@ -182,12 +190,16 @@ public class RunLength implements Transformer {
 		}
 	}
 
-	@Override
-	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumChannels()][];
+        int i =0;
+        for(TimeSeries ts : inst){
+            out[i++] = create_data(ts.toArray(), useGlobalMean ? globalMean : TimeSeriesSummaryStatistics.mean(ts));
+        }
 
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
+    }
 	
 	
 }

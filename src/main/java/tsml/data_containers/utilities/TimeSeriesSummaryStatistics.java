@@ -269,6 +269,12 @@ public class TimeSeriesSummaryStatistics {
         return new TimeSeries(standardNorm(ts.toArray(), mean, std));
     }
 
+    public static TimeSeries standardNorm(TimeSeries ts){
+        double mean = mean(ts);
+        double std = Math.sqrt(variance(ts, mean));
+        return new TimeSeries(standardNorm(ts.toArray(), mean, std));
+    }
+
     public static double[] standardNorm(double[] data, double mean, double std){
         double[] out = new double[data.length];
         for(int i=0; i<out.length; i++)

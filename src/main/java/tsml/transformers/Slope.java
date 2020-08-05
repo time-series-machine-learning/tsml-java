@@ -1,5 +1,6 @@
 package tsml.transformers;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.Transformer;
 import weka.core.Attribute;
@@ -67,6 +68,19 @@ public class Slope implements Transformer {
         if (inst.classIndex() >= 0)
             newInstance.setValue(newInstance.numAttributes() - 1, inst.classValue());
         return newInstance;
+    }
+
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumChannels()][];
+        int i =0;
+        for(TimeSeries ts : inst){
+            checkParameters(ts.getSeriesLength());
+            out[i++] = getGradients(ts.toArray());
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**
@@ -275,11 +289,5 @@ public class Slope implements Transformer {
         }
         inst.setDataset(dataset);
         dataset.add(inst);
-    }
-
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

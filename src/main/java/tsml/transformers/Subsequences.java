@@ -8,7 +8,9 @@ import weka.core.Instances;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 
 /**
  * This class is used to extract subsequences (default length = 30) of a time
@@ -76,6 +78,22 @@ public class Subsequences implements Transformer {
         // Add the class value
         newInstance.setValue(1, inst.classValue());
         return newInstance;
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumChannels()][];
+        int i =0;
+        for(TimeSeries ts : inst){
+            // Extract the subsequences.
+            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toArray());
+            
+            //stack subsequences if we're multivariate.
+            for(double[] d : subsequences)
+                out[i++] = d;
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**
@@ -304,9 +322,5 @@ public class Subsequences implements Transformer {
         dataset.add(inst);
     }
 
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
-    }
+
 }
