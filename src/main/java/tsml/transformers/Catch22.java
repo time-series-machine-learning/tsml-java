@@ -76,18 +76,10 @@ public class Catch22 implements Transformer {
     }
 
     @Override
-    public Instances transform(Instances data) {
-        Instances newInst = determineOutputFormat(data);
-        for (Instance inst : data) {
-            newInst.add(transform(inst));
-        }
-        return newInst;
-    }
-
-    @Override
     public Instance transform(Instance inst) {
         double[] arr = extractTimeSeries(inst);
-        double[] featureSet = transform(arr, inst.classValue());
+        double cls = inst.classIndex() >= 0 ? inst.classValue() : Double.MIN_VALUE;
+        double[] featureSet = transform(arr, cls);
         return new DenseInstance(1, featureSet);
     }
 
@@ -110,22 +102,20 @@ public class Catch22 implements Transformer {
         for (int i = 1; i <= 22; i++) {
             atts.add(new Attribute("att" + i));
         }
-        atts.add(data.classAttribute());
+        if (data.classIndex() >= 0) atts.add(data.classAttribute());
         Instances transformedData = new Instances("Catch22Transform", atts, data.numInstances());
-        transformedData.setClassIndex(transformedData.numAttributes() - 1);
+        if (data.classIndex() >= 0) transformedData.setClassIndex(transformedData.numAttributes()-1);
         return transformedData;
     }
 
-    public double[] transform(double[] series) {
-        return transform(series, Double.NaN, false);
+    public double[] transform(double[] series){
+        return transform(series, Double.MIN_VALUE);
     }
 
-    public double[] transform(double[] series, double classVal) {
-        return transform(series, classVal, true);
-    }
-
-    // no class value in series
-    public double[] transform(double[] series, double classVal, boolean includeClassValue) {
+    //no class value in series
+    public double[] transform(double[] series, double classValue){
+        int atts = classValue == Double.MIN_VALUE ? 22 : 23;
+        double[] featureSet = new double[atts];
 
         double[] arr;
         double[] outlierArr;
@@ -177,7 +167,6 @@ public class Catch22 implements Transformer {
         }
         double[] ac = autoCorr(arr, fftClone);
 
-        double[] featureSet = new double[includeClassValue ? 23 : 22];
         featureSet[0] = histMode5DN(arr, min, max);
         featureSet[1] = histMode10DN(arr, min, max);
         featureSet[2] = binaryStatsMeanLongstretch1SB(arr, mean);
@@ -203,8 +192,10 @@ public class Catch22 implements Transformer {
         if(includeClassValue)
             featureSet[22] = classVal;
 
-        for (int i = 0; i < featureSet.length; i++) {
-            if (Double.isNaN(featureSet[i]) || Double.isInfinite(featureSet[i])) {
+        if (classValue > Double.MIN_VALUE) featureSet[22] = classValue;
+
+        for (int i = 0; i < featureSet.length; i++){
+            if (Double.isNaN(featureSet[i]) || Double.isInfinite(featureSet[i])){
                 featureSet[i] = 0;
             }
         }
@@ -372,53 +363,30 @@ public class Catch22 implements Transformer {
     }
 
     public static String getSummaryStatNameByIndex(int summaryStatIndex) throws Exception {
-        switch (summaryStatIndex) {
-            case 0:
-                return "histMode5DN";
-            case 1:
-                return "histMode10DN";
-            case 2:
-                return "binaryStatsMeanLongstretch1SB";
-            case 3:
-                return "outlierIncludeP001mdrmdDN";
-            case 4:
-                return "outlierIncludeN001mdrmdDN";
-            case 5:
-                return "f1ecacCO";
-            case 6:
-                return "firstMinacCO";
-            case 7:
-                return "summariesWelchRectArea51SP";
-            case 8:
-                return "summariesWelchRectCentroidSP";
-            case 9:
-                return "localSimpleMean3StderrFC";
-            case 10:
-                return "trev1NumCO";
-            case 11:
-                return "histogramAMIeven25CO";
-            case 12:
-                return "autoMutualInfoStats40GaussianFmmiIN";
-            case 13:
-                return "hrvClassicPnn40MD";
-            case 14:
-                return "binaryStatsDiffLongstretch0SB";
-            case 15:
-                return "motifThreeQuantileHhSB";
-            case 16:
-                return "localSimpleMean1TauresratFC";
-            case 17:
-                return "embed2DistTauDExpfitMeandiffCO";
-            case 18:
-                return "fluctAnal2Dfa5012LogiPropR1SC";
-            case 19:
-                return "fluctAnal2Rsrangefit501LogiPropR1SC";
-            case 20:
-                return "transitionMatrix3acSumdiagcovSB";
-            case 21:
-                return "periodicityWangTh001PD";
-            default:
-                throw new Exception("Invalid Catch22 summary stat index.");
+        switch(summaryStatIndex){
+            case 0: return "DN_HistogramMode_5";
+            case 1: return "DN_HistogramMode_10";
+            case 2: return "SB_BinaryStats_mean_longstretch1";
+            case 3: return "DN_OutlierInclude_p_001_mdrmd";
+            case 4: return "DN_OutlierInclude_n_001_mdrmd";
+            case 5: return "CO_f1ecac";
+            case 6: return "CO_FirstMin_ac";
+            case 7: return "SP_Summaries_welch_rect_area_5_1";
+            case 8: return "SP_Summaries_welch_rect_centroid";
+            case 9: return "FC_LocalSimple_mean3_stderr";
+            case 10: return "CO_trev_1_num";
+            case 11: return "CO_HistogramAMI_even_2_5";
+            case 12: return "IN_AutoMutualInfoStats_40_gaussian_fmmi";
+            case 13: return "MD_hrv_classic_pnn40";
+            case 14: return "SB_BinaryStats_diff_longstretch0";
+            case 15: return "SB_MotifThree_quantile_hh";
+            case 16: return "FC_LocalSimple_mean1_tauresrat";
+            case 17: return "CO_Embed2_Dist_tau_d_expfit_meandiff";
+            case 18: return "SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1";
+            case 19: return "SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1";
+            case 20: return "SB_TransitionMatrix_3ac_sumdiagcov";
+            case 21: return "PD_PeriodicityWang_th0_01";
+            default: throw new Exception("Invalid Catch22 summary stat index.");
         }
     }
 
@@ -1114,12 +1082,12 @@ public class Catch22 implements Transformer {
 
         ArrayList<Integer> a = new ArrayList<>();
         a.add(5);
-        double min = 1.6094379124341003; // Math.log(5);
-        double max = Math.log(ogLength / 2);
-        double inc = (max - min) / 49;
-        for (int i = 1; i < 50; i++) {
-            int val = (int) Math.round(Math.exp(min + inc * (i)));
-            if (val != a.get(a.size() - 1)) {
+        double min = 1.6094379124341003; //Math.log(5);
+        double max = Math.log(ogLength/2);
+        double inc = (max - min)/49;
+        for (int i = 1; i < 50; i++){
+            int val = (int)Math.round(Math.exp(min + inc*i));
+            if (val != a.get(a.size()-1)){
                 a.add(val);
             }
         }

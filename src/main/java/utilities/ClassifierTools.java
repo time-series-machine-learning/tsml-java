@@ -32,6 +32,18 @@ import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
+import java.util.logging.Level;
+
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import weka.classifiers.*;
+import weka.classifiers.bayes.*;
+
 import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.functions.SMO;
@@ -49,6 +61,10 @@ import weka.core.Randomizable;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
+
+import fileIO.OutFile;
+import statistics.distributions.NormalDistribution;
+import machine_learning.classifiers.kNN;
 
 /**
  * @author ajb
@@ -462,8 +478,104 @@ public class ClassifierTools {
         //use up to date method in case external usages exist
         return new SingleTestSetEvaluator().evaluate(classifier, test);
     }
-	
-    
+
+    /**
+     * Conducts a full run of a classifier on some train and test data with a set seed, printing off the stats / results. This is intended for reducing boilerplate main method code in each classifier.
+     * @param classifier
+     * @param trainAndTestData
+     * @param seed
+     * @throws Exception
+     */
+    public static void trainTestPrint(Classifier classifier, Instances[] trainAndTestData, int seed) throws Exception {
+        Random random = new Random(seed);
+        MemoryWatcher overallMemoryWatcher = new MemoryWatcher();
+        StopWatch overallTimer = new StopWatch();
+        overallMemoryWatcher.resetAndStart();
+        overallTimer.resetAndStart();
+        MemoryWatcher memoryWatcher = new MemoryWatcher();
+        StopWatch timer = new StopWatch();
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
+        }
+        final Instances trainData = trainAndTestData[0];
+        final Instances testData = trainAndTestData[1];
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
+        classifier.buildClassifier(trainData);
+        timer.stop();
+        memoryWatcher.stop();
+        System.out.println();
+        System.out.println("train time: " + timer.getTime());
+        System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println();
+//        GcFinalization.awaitFullGc();
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            if(((EnhancedAbstractClassifier) classifier).getEstimateOwnPerformance()) {
+                ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
+                ResultUtils.setInfo(trainResults, classifier, trainData);
+                System.out.println("train results:");
+                System.out.println(trainResults.writeFullResultsToString());
+                System.out.println();
+            }
+        }
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
+        ClassifierResults testResults = new ClassifierResults();
+        for(Instance instance : testData) {
+            addPrediction(classifier, instance, testResults, random);
+        }
+        memoryWatcher.stop();
+        timer.stop();
+        ResultUtils.setInfo(testResults, classifier, trainData);
+        System.out.println("test time: " + timer.getTime());
+        System.out.println("test mem: " + memoryWatcher.toString());
+        System.out.println("test results:");
+        System.out.println(testResults.writeFullResultsToString());
+        overallMemoryWatcher.stop();
+        overallTimer.stop();
+        System.out.println();
+        System.out.println("overall time: " + overallTimer.getTime());
+        System.out.println("overall mem: " + overallMemoryWatcher.toString());
+    }
+
+    /**
+     * Add the prediction of several test cases to a results object.
+     * @param classifier
+     * @param testData
+     * @param results
+     * @param random
+     * @throws Exception
+     */
+    public static void addPredictions(Classifier classifier, Instances testData, ClassifierResults results, Random random)
+            throws Exception {
+        for(Instance test : testData) {
+            addPrediction(classifier, test, results, random);
+        }
+    }
+
+    /**
+     * Add a prediction of a single test case to a results obj.
+     * @param classifier
+     * @param test
+     * @param results
+     * @param random
+     * @throws Exception
+     */
+    public static void addPrediction(Classifier classifier, Instance test, ClassifierResults results, Random random) throws Exception {
+        final double classValue = test.classValue();
+        test.setClassMissing();
+        long timestamp = System.nanoTime();
+        final double[] distribution = classifier.distributionForInstance(test);
+        long testTime = System.nanoTime() - timestamp;
+        if(classifier instanceof TestTimeable) {
+            testTime = ((TestTimeable) classifier).getTestTime();
+        }
+        final double prediction = Utilities.argMax(distribution, random);
+        results.addPrediction(classValue, distribution, prediction, testTime, null);
+        test.setClassValue(classValue);
+    }
+
+
     public static class ResultsStats{
         public double accuracy;
         public double sd;
@@ -752,36 +864,4 @@ public class ClassifierTools {
         return res.getAcc() == expectedTestAccuracy;
     }
 
-
-    public static ClassifierResults trainAndTest(String dataPath, String datasetName, int seed, Classifier classifier)
-        throws Exception {
-        Instances[] data = DatasetLoading.sampleDataset(dataPath, datasetName, seed);
-        return trainAndTest(data[0], data[1], classifier);
-    }
-
-    public static ClassifierResults trainAndTest(Instances[] data, Classifier classifier) throws Exception {
-        return trainAndTest(data[0], data[1], classifier);
-    }
-
-    public static ClassifierResults trainAndTest(Instances trainData, Instances testData, Classifier classifier)
-        throws Exception {
-        classifier.buildClassifier(trainData);
-        ClassifierResults results = new ClassifierResults();
-        for(Instance testCase : testData) {
-            long timestamp = System.nanoTime();
-            double[] distribution = classifier.distributionForInstance(testCase);
-            long timeTaken = System.nanoTime() - timestamp;
-            int prediction = ArrayUtilities.argMax(distribution);
-            results.addPrediction(testCase.classValue(), distribution, prediction, timeTaken, "");
-        }
-        return results;
-    }
-
-    public static ClassifierResults trainAndTest(String path, String name, Classifier classifier, int seed) throws Exception {
-        if(classifier instanceof Randomizable) {
-            ((Randomizable) classifier).setSeed(seed);
-        }
-        Instances[] data = DatasetLoading.sampleDataset(path, name, seed);
-        return trainAndTest(data, classifier);
-    }
 }

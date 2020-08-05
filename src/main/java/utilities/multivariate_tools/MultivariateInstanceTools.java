@@ -139,7 +139,7 @@ public class MultivariateInstanceTools {
     }
     
     
-    private static Instances createRelationFrom(Instances header, double[][] data){
+    public static Instances createRelationFrom(Instances header, double[][] data){
         int numAttsInChannel = data[0].length;
         Instances output = new Instances(header, data.length);
 

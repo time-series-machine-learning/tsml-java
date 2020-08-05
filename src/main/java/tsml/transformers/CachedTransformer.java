@@ -1,9 +1,13 @@
 package tsml.transformers;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import tsml.data_containers.TimeSeriesInstance;
+import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -15,15 +19,17 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler, abostrom
  */
-public class CachedTransformer implements Transformer {
+public class CachedTransformer extends BaseTrainableTransformer {
 
-    // the filter to cache the output of
-    private Transformer transformer;
+    public boolean isCacheFittedDataOnly() {
+        return cacheFittedDataOnly;
+    }
 
-    private HashTransformer hasher = new HashTransformer();
+    public void setCacheFittedDataOnly(final boolean cacheFittedDataOnly) {
+        this.cacheFittedDataOnly = cacheFittedDataOnly;
+    }
 
     // the cache to store instances against their corresponding output
-    private Map<Instance, Instance> cache;
     private Map<TimeSeriesInstance, TimeSeriesInstance> ts_cache;
 
     public CachedTransformer(Transformer transformer) {
@@ -34,6 +40,54 @@ public class CachedTransformer implements Transformer {
         this.transformer = transformer;
         this.cache = cache;
         this.ts_cache = ts_cache;
+
+    } 
+    
+    public static class TransformedInstance implements Serializable {
+        private TransformedInstance(final Instance instance) {
+            this.instance = instance;
+        }
+
+        private Instance instance;
+
+        public Instance getInstance() {
+            return instance;
+        }
+
+        public void setInstance(final Instance instance) {
+            this.instance = instance;
+        }
+    }
+
+    // the filter to cache the output of
+    private Transformer transformer;
+    // whether to only cache instances from the fit() call OR all instances handed to the transform method
+    private boolean cacheFittedDataOnly;
+
+    // the cache to store instances against their corresponding transform output
+    private Map<Instance, TransformedInstance> cache;
+
+    public CachedTransformer(Transformer transformer) {
+        setTransformer(transformer);
+        setCacheFittedDataOnly(true);
+        reset();
+    }
+
+    public void reset() {
+        super.reset();
+        cache = null;
+    }
+
+    @Override
+    public void fit(final Instances data) {
+        super.fit(data);
+        // make the cache match the size of the data (as that is the max expected cache entries at any point in time)
+        // . Load factor of 1 should mean if no more than data size instances are added, the hashmap will not expand
+        // and waste cpu time
+        cache = new HashMap<>(data.size(), 1);
+        for(Instance instance : data) {
+            cache.put(instance, new TransformedInstance(null));
+        }
     }
 
     @Override
@@ -43,6 +97,16 @@ public class CachedTransformer implements Transformer {
 
     public Capabilities getCapabilities() {
         return transformer.getCapabilities();
+    }
+
+    public void setTransformer(final Transformer transformer) {
+        Assert.assertNotNull(transformer);
+        this.transformer = transformer;
+    }
+
+    public void setCache(final Map<Instance, TransformedInstance> cache) {
+        Assert.assertNotNull(cache);
+        this.cache = cache;
     }
 
     @Override
@@ -74,6 +138,27 @@ public class CachedTransformer implements Transformer {
 
 
 
+    public Instance transform(Instance instance) {
+        if(!isFit()) {
+            throw new IllegalStateException("must be fitted first");
+        }
+        TransformedInstance transformedInstance = cache.get(instance);
+        Instance transform;
+        if(transformedInstance == null) {
+            transform = transformer.transform(instance);
+            if(!cacheFittedDataOnly) {
+                cache.put(instance, new TransformedInstance(transform));
+            }
+        } else {
+            transform = transformedInstance.getInstance();
+            if(transform == null) {
+                transform = transformer.transform(instance);
+                transformedInstance.setInstance(transform);
+            }
+        }
+        return transform;
+    }
+
     @Override
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         return transformer.determineOutputFormat(data);
@@ -85,8 +170,21 @@ public class CachedTransformer implements Transformer {
 
     public Map<Instance, Instance> getCache() {
         return cache;
+    } 
+    public Map<Instance, TransformedInstance> getTSCache() {
+        return ts_cache;
     }
 
+    @Override
+    public void setParams(final ParamSet paramSet) throws Exception {
+        super.setParams(paramSet);
+        ParamHandlerUtils.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+    }
 
+    @Override
+    public ParamSet getParams() {
+        return new ParamSet().add(TRANSFORMER_FLAG, transformer);
+    }
 
+    public static final String TRANSFORMER_FLAG = "f";
 }
