@@ -189,8 +189,6 @@ public class Catch22 implements Transformer {
         featureSet[19] = fluctAnal2Rsrangefit501LogiPropR1SC(arr);
         featureSet[20] = transitionMatrix3acSumdiagcovSB(arr, ac);
         featureSet[21] = periodicityWangTh001PD(arr);
-        if(includeClassValue)
-            featureSet[22] = classVal;
 
         if (classValue > Double.MIN_VALUE) featureSet[22] = classValue;
 

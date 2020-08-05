@@ -39,8 +39,8 @@ public class ArrayUtilities {
         return array;
     }
 
-    public static void addInPlace(double[] a, double[] b) {
-        if(a.length < b.length) {
+    public static void add(double[] src, double[] addend) {
+        if(src.length < addend.length) {
             throw new IllegalArgumentException();
         }
         for(int i = 0; i < addend.length; i++) {

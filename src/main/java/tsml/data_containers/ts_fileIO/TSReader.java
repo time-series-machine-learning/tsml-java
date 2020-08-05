@@ -1,4 +1,4 @@
-package tsml.data_containers.fileIO;
+package tsml.data_containers.ts_fileIO;
 
 import java.io.File;
 import java.io.FileReader;

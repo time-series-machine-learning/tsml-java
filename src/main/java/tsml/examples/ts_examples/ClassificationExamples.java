@@ -7,7 +7,6 @@ import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.Converter;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
-import weka.core.Instances;
 
 public class ClassificationExamples {
 
