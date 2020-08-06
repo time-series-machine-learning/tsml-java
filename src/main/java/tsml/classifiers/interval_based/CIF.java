@@ -629,10 +629,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             for(int j=0;j<data.numInstances();j++){
                 long predTime = System.nanoTime();
                 for(int k=0;k<trainDistributions[j].length;k++)
-                    trainDistributions[j][k]/=oobCounts[j];
-                preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
-                actuals[j]=data.instance(j).classValue();
-                predTimes[j]=System.nanoTime()-predTime;
+                    trainDistributions[j][k] /= oobCounts[j];
+                preds[j] = findIndexOfMax(trainDistributions[j], rand);
+                actuals[j] = data.instance(j).classValue();
+                predTimes[j] = System.nanoTime()-predTime;
             }
             trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
@@ -805,15 +805,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public double classifyInstance(Instance ins) throws Exception {
         double[] probs = distributionForInstance(ins);
-
-        int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
-                maxClass = n;
-            }
-        }
-
-        return maxClass;
+        return findIndexOfMax(probs, rand);
     }
 
     @Override //Checkpointable

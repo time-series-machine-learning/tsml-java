@@ -366,25 +366,15 @@ public class BOSS extends EnhancedAbstractClassifier implements
         for (int i = 0; i < data.numInstances(); ++i) {
             actuals[i]=data.instance(i).classValue();
             long predTime = System.nanoTime();
+            // classify series i, while ignoring its corresponding histogram i
             double[] probs = distributionForInstance(i, data.numClasses());
             predTime = System.nanoTime() - predTime;
 
-            int maxClass = 0;
-            for (int n = 1; n < probs.length; ++n) {
-                if (probs[n] > probs[maxClass]) {
-                    maxClass = n;
-                }
-                else if (probs[n] == probs[maxClass]){
-                    if (rand.nextBoolean()){
-                        maxClass = n;
-                    }
-                }
-            }
-           //No need to do it againclassifyInstance(i, data.numClasses());
-            // classify series i, while ignoring its corresponding histogram i
+            int maxClass = findIndexOfMax(probs, rand);
             if (maxClass == data.get(i).classValue())
                 ++correct;
             this.ensembleCvPreds[i] = maxClass;
+
             trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, predTime, "");
         }
         trainResults.finaliseResults(actuals);
@@ -450,20 +440,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] probs = distributionForInstance(instance);
-
-        int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass]) {
-                maxClass = n;
-            }
-            else if (probs[n] == probs[maxClass]){
-                if (rand.nextBoolean()){
-                    maxClass = n;
-                }
-            }
-        }
-
-        return maxClass;
+        return findIndexOfMax(probs, rand);
     }
 
     @Override

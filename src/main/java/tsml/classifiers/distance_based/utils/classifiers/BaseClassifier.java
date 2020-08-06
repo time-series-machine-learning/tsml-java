@@ -166,7 +166,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] distribution = distributionForInstance(instance);
-        return Utilities.argMax(distribution, rand);
+        return findIndexOfMax(distribution, rand);
     }
 
 }
