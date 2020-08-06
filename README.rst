@@ -60,7 +60,7 @@ Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval B
 DD_DTW           BOSS              RISE            LearnShapelets     TSF             HIVE-COTE
 DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            TS-CHIEF
 ElasticEnsemble  BOP                               FastShapelets      LPS
-NN_CID           WEASEL        
+NN_CID           WEASEL                                               CIF
 SAX_1NN          SAXVSM
 ProximityForest  SpatialBOSS
                  TDE
@@ -72,7 +72,7 @@ And we have implemented the following bespoke classifiers for multivariate, equa
 NN_ED_D   MultivariateShapeletTransform
 NN_ED_I   ConcatenateClassifier
 NN_DTW_D  NN_DTW_A
-NN_DTW_I
+NN_DTW_I  WEASEL+MUSE
 ========  =============================
 
 Clusterers
@@ -103,6 +103,7 @@ SAX                  Sine                 SummaryStats
 
 Transformers
 We will be shifting over to a bespoke Transformer interface
+
 ===================
 ShapeletTransorm
 catch22
@@ -127,7 +128,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * James Large (@James-Large, `@jammylarge <https://twitter.com/jammylarge>`__, james.large@uea.ac.uk)
 * Jason Lines (@jasonlines), 
 * George Oastler (@goastler), 
-* Matthew Middlehurst (@MatthewMiddlehurst, `@M_Middlehurst <https://twitter.com/M_Middlehurst>`__, m.middlehurst@uea.ac.uk), 
+* Matthew Middlehurst (@MatthewMiddlehurst, `@M_Middlehurst <https://twitter.com/M_Middlehurst>`__, m.middlehurst@uea.ac.uk),
 * Michael Flynn (GitHub - `@MJFlynn <https://github.com/MJFlynn>`__, Twitter - `@M_J_Flynn <https://twitter.com/M_J_Flynn>`__, Email - Michael.Flynn@uea.ac.uk)
 * Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@uea.ac.uk), 
 * Patrick Schäfer (@patrickzib)
