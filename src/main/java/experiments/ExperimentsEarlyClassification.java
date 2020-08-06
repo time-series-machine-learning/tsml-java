@@ -14,10 +14,7 @@
  */
 package experiments;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.JCommander.Builder;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
+
 import com.google.common.testing.GcFinalization;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
@@ -30,13 +27,11 @@ import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.utils.StrUtils;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +41,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import experiments.Experiments.ExperimentalArguments;
 
+import static java.lang.System.exit;
 import static utilities.GenericTools.indexOfMax;
 import static utilities.InstanceTools.*;
 import static utilities.InstanceTools.truncateInstance;
@@ -314,8 +310,21 @@ public class ExperimentsEarlyClassification {
 
         long buildTime = System.nanoTime();
 
-        boolean shortenAndAdd = true;
-        if (shortenAndAdd){
+        boolean shorten = true;
+        boolean shortenAndAdd = false;
+        if (shorten){
+            double i = Double.parseDouble(expSettings.trainEstimateMethod);
+            String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
+                    PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + (i*100) + "%testFold"
+                    + expSettings.foldId + ".csv";
+            if (CollateResults.validateSingleFoldFile(path)) {
+                exit(0);
+            }
+            Instances instances = truncateInstances(trainSet, i);
+            classifier.buildClassifier(instances);
+            buildTime = System.nanoTime() - buildTime;
+        }
+        else if (shortenAndAdd){
             Instances instances = new Instances(trainSet);
             for (double i = 0.05; i < 1.01; i += 0.05) {
                 i = Math.round(i * 100.0) / 100.0;
@@ -402,8 +411,33 @@ public class ExperimentsEarlyClassification {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
+                boolean shorten = true;
                 boolean earlyClassiifer = false;
-                if (earlyClassiifer){
+                if (shorten){
+                    double i = Double.parseDouble(expSettings.trainEstimateMethod);
+                    String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
+                            PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + (i*100) + "%testFold"
+                            + expSettings.foldId + ".csv";
+                    if (!CollateResults.validateSingleFoldFile(path)) {
+                        Instances shortData = shortenInstances(testSet, i, true);
+
+                        testResults = evaluateClassifier(expSettings, classifier, shortData);
+                        testResults.setParas(trainResults.getParas());
+                        testResults.turnOffZeroTimingsErrors();
+                        testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
+                        testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
+                        testResults.turnOnZeroTimingsErrors();
+                        testResults.setMemory(trainResults.getMemory());
+                        LOGGER.log(Level.FINE, "Testing complete");
+
+                        writeResults(expSettings, testResults, path, "test");
+                        LOGGER.log(Level.FINE, "Test results written");
+                    }
+                    else{
+                        testResults = new ClassifierResults(path);
+                    }
+                }
+                else if (earlyClassiifer){
                     testResults = evaluateEarlyClassifier(expSettings, classifier, testSet);
                     testResults.setParas(trainResults.getParas());
                     testResults.turnOffZeroTimingsErrors();
