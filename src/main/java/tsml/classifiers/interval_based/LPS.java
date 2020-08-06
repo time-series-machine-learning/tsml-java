@@ -49,7 +49,7 @@ import weka.core.WeightedInstancesHandler;
  *
  * @author ajb. Implementation of the learned pattern similarity algorithm
  * by M. Baydogan
- * @article{baydogan15lps,
+ * article{baydogan15lps,
   title={Time series representation and similarity based on local autopatterns},
   author={M. Baydogan and G. Runger},
   journal={Data Mining and Knowledge Discovery},

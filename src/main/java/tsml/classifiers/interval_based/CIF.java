@@ -228,8 +228,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /**
      * main buildClassifier
-     * @param data
-     * @throws Exception
+     * @param data weka Instances object
+     * @throws Exception e
      */
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -698,7 +698,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * @param ins to classifier
      * @return array of doubles: probability of each class
-     * @throws Exception
+     * @throws Exception e
      */
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
@@ -798,9 +798,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return d;
     }
     /**
-     * @param ins
-     * @return
-     * @throws Exception
+     * @param ins weka Instance object
+     * @return predicted class value
+     * @throws Exception e
      */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
@@ -943,6 +943,102 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         System.out.println(attSubsampleSize + " " + maxIntervalLengthFinder.apply(100));
     }
 
+    /**
+     * @param path
+     * @return
+     */
+    @Override //Visualisable
+    public boolean setVisualisationSavePath(String path) {
+        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
+        if(validPath){
+            visSavePath = path;
+        }
+        return validPath;
+    }
+
+    /**
+     * Finds the temporal importance curves for model. Outputs a matplotlib figure using the visCIF.py file using the
+     * generated curves.
+     *
+     * @return true if python file to create visualisation ran, false if no path set or invalid classifier
+     * @throws Exception
+     */
+    @Override //Visualisable
+    public boolean createVisualisation() throws Exception {
+        if (!(base instanceof TimeSeriesTree)) {
+            System.err.println("CIF temporal importance curve only available for time series tree.");
+            return false;
+        }
+
+        if (visSavePath == null){
+            System.err.println("CIF visualisation save path not set.");
+            return false;
+        }
+
+        //get information gain from all tree node splits for each attribute/time point
+        double[][] curves = new double[startNumAttributes][seriesLength];
+        for (int i = 0; i < trees.size(); i++){
+            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
+            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
+
+            for (int n = 0; n < sg[0].size(); n++){
+                double split = sg[0].get(n);
+                double gain = sg[1].get(n);
+                int interval = (int)(split/numAttributes);
+                int att = (int)(split%numAttributes);
+                att = subsampleAtts.get(i).get(att);
+
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
+                    curves[att][j] += gain;
+                }
+            }
+        }
+
+        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
+        for (int i = 0 ; i < startNumAttributes; i++){
+            switch(i){
+                case 22:
+                    of.writeLine("Mean");
+                    break;
+                case 23:
+                    of.writeLine("Standard Deviation");
+                    break;
+                case 24:
+                    of.writeLine("Slope");
+                    break;
+                default:
+                    of.writeLine(Catch22.getSummaryStatNameByIndex(i));
+            }
+            of.writeLine(Arrays.toString(curves[i]));
+        }
+        of.closeFile();
+
+        //run python file to output temporal importance curves graph
+        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
+                + " " + visNumTopAtts);
+
+        if (debug) {
+            System.out.println("CIF vis python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public boolean setInterpretabilitySavePath(String path) {
         boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
@@ -1036,99 +1132,23 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return interpCount;
     }
 
-    @Override
-    public boolean setVisualisationSavePath(String path) {
-        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
-        if(validPath){
-            visSavePath = path;
-        }
-        return validPath;
-    }
-
-    @Override
-    public boolean createVisualisation() throws Exception {
-        if (!(base instanceof TimeSeriesTree)) {
-            System.err.println("CIF temporal importance curve only available for time series tree.");
-            return false;
-        }
-
-        if (visSavePath == null){
-            System.err.println("CIF visualisation save path not set.");
-            return false;
-        }
-
-        //get information gain from all tree node splits for each attribute/time point
-        double[][] curves = new double[startNumAttributes][seriesLength];
-        for (int i = 0; i < trees.size(); i++){
-            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
-            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
-
-            for (int n = 0; n < sg[0].size(); n++){
-                double split = sg[0].get(n);
-                double gain = sg[1].get(n);
-                int interval = (int)(split/numAttributes);
-                int att = (int)(split%numAttributes);
-                att = subsampleAtts.get(i).get(att);
-
-                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
-                    curves[att][j] += gain;
-                }
-            }
-        }
-
-        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-        for (int i = 0 ; i < startNumAttributes; i++){
-            switch(i){
-                case 22:
-                    of.writeLine("Mean");
-                    break;
-                case 23:
-                    of.writeLine("Standard Deviation");
-                    break;
-                case 24:
-                    of.writeLine("Slope");
-                    break;
-                default:
-                    of.writeLine(Catch22.getSummaryStatNameByIndex(i));
-            }
-            of.writeLine(Arrays.toString(curves[i]));
-        }
-        of.closeFile();
-
-        //run python file to output temporal importance curves graph
-        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
-                + " " + visNumTopAtts);
-
-        if (debug) {
-            System.out.println("CIF vis python output:");
-            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            System.out.println("output : ");
-            String outLine = out.readLine();
-            while (outLine != null) {
-                System.out.println(outLine);
-                outLine = out.readLine();
-            }
-            System.out.println("error : ");
-            String errLine = err.readLine();
-            while (errLine != null) {
-                System.out.println(errLine);
-                errLine = err.readLine();
-            }
-        }
-
-        return true;
-    }
-
-    //Nested class to store three simple summary features used to construct train data
-    public static class FeatureSet{
+    /**
+     * Nested class to find and store three simple summary features for an interval
+     */
+    private static class FeatureSet {
         double mean;
         double stDev;
         double slope;
         boolean calculatedFeatures = false;
 
-        public void setFeatures(double[] data, int start, int end){
+        /**
+         * Calculates and stores the mean, standard deviation and slope for a time series interval.
+         *
+         * @param data time series double array
+         * @param start time series interval start index, inclusive
+         * @param end time series interval end index, inclusive
+         */
+        public void setFeatures(double[] data, int start, int end) {
             double sumX=0,sumYY=0;
             double sumY=0,sumXY=0,sumXX=0;
             int length=end-start+1;
@@ -1157,6 +1177,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
     }
 
+    /**
+     * Development tests for the CIF classifier.
+     *
+     * @param arg arguments, unused
+     * @throws Exception
+     */
     public static void main(String[] arg) throws Exception{
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
         String problem="ItalyPowerDemand";

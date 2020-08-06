@@ -20,7 +20,7 @@ public interface Tuneable {
     /**
      * getDefaultParameterSearchSpace returns the possible parameter values
      * that can be looked for with the TunedClassifier
-     * @return 
+     * @return default parameter space for tuning
      */
     ParameterSpace getDefaultParameterSearchSpace();
 }
