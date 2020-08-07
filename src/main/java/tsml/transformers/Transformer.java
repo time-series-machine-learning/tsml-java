@@ -1,16 +1,17 @@
 package tsml.transformers;
 
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import java.io.Serializable;
+
 import org.apache.commons.lang3.NotImplementedException;
 
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
 import weka.core.Instances;
-
-import java.io.Serializable;
 
 /**
  * Interface for time series transformers.

@@ -261,7 +261,7 @@ public class RowNormalizer implements Transformer {
 	}
 
 	public static TimeSeriesInstance standardNorm(TimeSeriesInstance inst) {
-		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		List<TimeSeries> out = new ArrayList<>(inst.getNumDimensions());
 		for(TimeSeries ts : inst){
 			out.add(standardNorm(ts));
 		}
@@ -270,7 +270,7 @@ public class RowNormalizer implements Transformer {
 	}
 
 	public static TimeSeriesInstance standard(TimeSeriesInstance inst) {
-		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		List<TimeSeries> out = new ArrayList<>(inst.getNumDimensions());
 		for(TimeSeries ts : inst){
 			out.add(standard(ts));
 		}
@@ -279,7 +279,7 @@ public class RowNormalizer implements Transformer {
 	}
 
 	public static TimeSeriesInstance intervalNorm(TimeSeriesInstance inst) {
-		List<TimeSeries> out = new ArrayList<>(inst.getNumChannels());
+		List<TimeSeries> out = new ArrayList<>(inst.getNumDimensions());
 		for(TimeSeries ts : inst){
 			out.add(intervalNorm(ts));
 		}

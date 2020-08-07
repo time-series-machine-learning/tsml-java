@@ -34,7 +34,7 @@ public class Cosine implements Transformer {
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         //multidimensional cosine. Cosine applied series wise for each dimension
-        double[][] out = new double[inst.getNumChannels()][];
+        double[][] out = new double[inst.getNumDimensions()][];
         int index = 0;
         for(TimeSeries ts : inst){
             double[] data = new double[ts.getSeriesLength()];

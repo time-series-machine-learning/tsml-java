@@ -93,7 +93,7 @@ public class Hilbert implements Transformer {
 
 	@Override
 	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-		double[][] out = new double[inst.getNumChannels()][];
+		double[][] out = new double[inst.getNumDimensions()][];
 		int index = 0;
 		for (TimeSeries ts : inst) {
 			int n = ts.getSeriesLength();

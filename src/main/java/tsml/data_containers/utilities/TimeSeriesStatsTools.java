@@ -4,15 +4,30 @@ import tsml.data_containers.TimeSeries;
 
 public class TimeSeriesStatsTools {
 
+    
+    /** 
+     * @param ts
+     * @return double
+     */
     public static double mean(TimeSeries ts){
         return TimeSeriesSummaryStatistics.mean(ts);
     }
 
+    
+    /** 
+     * @param ts
+     * @return double
+     */
     public static double std(TimeSeries ts){
         double mean = TimeSeriesSummaryStatistics.mean(ts);
         return Math.sqrt(TimeSeriesSummaryStatistics.variance(ts, mean));
     }
 
+    
+    /** 
+     * @param ts
+     * @return TimeSeriesSummaryStatistics
+     */
     public static TimeSeriesSummaryStatistics getTimeSeriesSummaryStats(TimeSeries ts){
         TimeSeriesSummaryStatistics stats = ts.getSeries().stream().collect(new TimeSeriesCollector());
         return stats;

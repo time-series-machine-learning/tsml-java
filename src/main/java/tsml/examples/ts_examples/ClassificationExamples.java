@@ -4,7 +4,7 @@ import machine_learning.classifiers.kNN;
 import tsml.classifiers.TSClassifier;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.transformers.Converter;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 
@@ -75,7 +75,7 @@ public class ClassificationExamples {
 			}
         };
 
-        nn.fit(data1);
+        nn.buildClassifier(data1);
 
         double acc = ClassifierTools.accuracy(data2, nn);
         System.out.println(acc);
@@ -110,7 +110,7 @@ public class ClassificationExamples {
         data2.setClassLabels(new String[]{"A", "B"});
 
         TSClassifier stc = new ShapeletTransformClassifier();
-        stc.fit(data1);
+        stc.buildClassifier(data1);
         double acc = ClassifierTools.accuracy(data2, stc);
         System.out.println(acc);
     }
