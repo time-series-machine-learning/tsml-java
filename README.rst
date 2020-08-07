@@ -63,7 +63,7 @@ ElasticEnsemble  BOP                               FastShapelets      LPS
 NN_CID           WEASEL                                               CIF
 SAX_1NN          SAXVSM
 ProximityForest  SpatialBOSS
-\                 TDE
+\                TDE
 ===============  ================  ==============  =================  ==============  =========
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
@@ -82,6 +82,7 @@ Currently quite limited, aside from those already shipped with Weka.
 
 =====================  =======
 UnsupervisedShapelets
+K-Shape
 =====================  =======
 
 Filters
@@ -105,7 +106,7 @@ Transformers
 We will be shifting over to a bespoke Transformer interface
 
 =================== =======
-ShapeletTransorm
+ShapeletTransform
 catch22
 =================== =======
 
