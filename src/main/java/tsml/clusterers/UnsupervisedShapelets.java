@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package tsml.clusterers;
 
 import java.util.ArrayList;
@@ -96,7 +110,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
             int maxDistIndex = -1;
 
             //Finds the instance with the max dist to the shapelet and all with a dist lower than the distance used
-            //to generate the gap value.
+            //to generate the gap value
             for (int i = 0; i < distances.length; i++){
                 if (distances[i] < best.dt){
                     lesserDists.add(distances[i]);
@@ -288,7 +302,7 @@ public class UnsupervisedShapelets extends AbstractTimeSeriesClusterer{
 
                 double ratio = lesserDists.size()/greaterDists.size();
 
-                if (1/k < ratio){
+                if (1.0/k < ratio){
                     double lesserMean = mean(lesserDists);
                     double greaterMean = mean(greaterDists);
                     double lesserStdev = standardDeviation(lesserDists, lesserMean);
