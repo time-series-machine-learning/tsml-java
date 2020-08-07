@@ -357,12 +357,12 @@ public class DensityPeaks extends AbstractVectorClusterer {
     }
 
     public static void main(String[] args) throws Exception{
-        String[] datasets = {"Z:/Data/ClusteringTestDatasets/DensityPeakVector/aggregation.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/clustersynth.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest1k.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest4k.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/flame.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/spiral.arff"};
+        String[] datasets = {"Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\aggregation.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\clustersynth.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\dptest1k.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\dptest4k.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\flame.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\spiral.arff"};
         String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
         double[] cutoffs = {0.75, 1.5, 1, 4, 2, 0.3};
 
@@ -372,7 +372,8 @@ public class DensityPeaks extends AbstractVectorClusterer {
         boolean output = true;
 
         if(output){
-            System.out.println("cd('Z:/Data/ClusteringTestDatasets/DensityPeakVector')");
+            System.out.println("cd('Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\" +
+                    "DensityPeakVector')");
             System.out.println("load('matlabCluster.mat')");
         }
 

@@ -260,10 +260,10 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        System.out.println(sbd.yShift);
 
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TEST.arff");
-//        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
-//        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
