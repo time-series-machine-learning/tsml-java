@@ -4,6 +4,8 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.searchers.GridSearcher;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.transformers.DWT;
+import tsml.transformers.DimensionIndependentTransformer;
 import tsml.transformers.ShapeDTWFeatures;
 import tsml.transformers.Subsequences;
 import utilities.generic_storage.Pair;
@@ -28,7 +30,7 @@ import java.util.stream.IntStream;
 /*
  * This class extends on the idea of ShapeDTW_1NN by transforming
  * a test instance into ShapeDTW distance features (note that it uses
- * the default shape descriptor which is 'raw'). It calculates the test
+ * the best performing shape descriptor which was found to be 'dwt'). It calculates the test
  * instance's distance from a reference set and these become the features
  * for the instance. This transformed instance is then fed into a
  * SVM classifier. The same task is done on the training set.
@@ -36,6 +38,9 @@ import java.util.stream.IntStream;
 public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
 
     private Subsequences subsequenceTransformer;
+    private DimensionIndependentTransformer d;
+    // Use DWT as this was found to be the best performing shape descriptor function
+    private DWT dwt = new DWT();
     //The transformer used to produce the shape dtw features.
     private ShapeDTWFeatures sdtwFeats;
     //The stratified sampler
@@ -48,6 +53,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
     public ShapeDTW_SVM() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceTransformer = new Subsequences();
+        this.d = new DimensionIndependentTransformer(dwt);
         //Use a polynomial kernel (default exponent is 1, a linear kernel)
         this.svmClassifier = new SMO();
         this.sampler = new RandomStratifiedSampler();
@@ -56,6 +62,7 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
     public ShapeDTW_SVM(int subsequenceLength, KernelType k) {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
         this.subsequenceTransformer = new Subsequences(subsequenceLength);
+        this.d = new DimensionIndependentTransformer(dwt);
         this.svmClassifier = new SMO();
         this.sampler = new RandomStratifiedSampler();
         this.kernelType = k;
@@ -261,30 +268,45 @@ public class ShapeDTW_SVM extends EnhancedAbstractClassifier {
 
     /**
      * Private method for performing the subsequence extraction on an instance,
-     * performing a stratfied sample and creating the ShapeDTW features.
+     * transforming it using DWT and creating the ShapeDTW features.
      *
      * @param trainInsts
-     * @return just the training set (the reference set is stored in ShapeDtwFeatures).
      */
     private Instances preprocessData(Instances trainInsts) {
         // Transform the trainInsts into subsequences
-        Instances transformedInsts = this.subsequenceTransformer.transform(trainInsts);
+        Instances subsequences = this.subsequenceTransformer.transform(trainInsts);
+        //Transform the subsequences into DWT (best performing shape descriptor)
+        Instances transformedInsts = this.d.transform(subsequences);
         // Create the shapeDTW features on the training set
         this.sdtwFeats = new ShapeDTWFeatures(transformedInsts);
         return this.sdtwFeats.transform(transformedInsts);
     }
 
+    /**
+     * Private method for performing the subsequence extraction on an instance,
+     * transforming it using DWT and creating the ShapeDTW features.
+     *
+     * @param trainInsts
+     * @return just the training set (the reference set is stored in ShapeDtwFeatures).
+     */
+    private Instance preprocessData(Instance trainInsts) {
+        // Transform the trainInsts into subsequences
+        Instance subsequences = this.subsequenceTransformer.transform(trainInsts);
+        //Transform the subsequences into DWT (best performing shape descriptor)
+        Instance transformedInsts = this.d.transform(subsequences);
+        // Create the shapeDTW features
+        return this.sdtwFeats.transform(transformedInsts);
+    }
+
     @Override
     public double classifyInstance(Instance testInst) throws Exception {
-        Instance transformedInst = this.subsequenceTransformer.transform(testInst);
-        transformedInst = this.sdtwFeats.transform(transformedInst);
+        Instance transformedInst = this.preprocessData(testInst);
         return this.svmClassifier.classifyInstance(transformedInst);
     }
 
     @Override
     public double [] distributionForInstance(Instance testInst) throws Exception {
-        Instance transformedInst = this.subsequenceTransformer.transform(testInst);
-        transformedInst = this.sdtwFeats.transform(transformedInst);
+        Instance transformedInst = this.preprocessData(testInst);
         return this.svmClassifier.distributionForInstance(transformedInst);
     }
 

@@ -29,6 +29,10 @@ public class Subsequences implements Transformer {
         this.subsequenceLength = subsequenceLength;
     }
 
+    public void setNormalise(boolean normalise) {this.normalise = normalise;}
+
+    public boolean getNormalise() {return normalise;}
+
     @Override
     public Instance transform(Instance inst) {
         double [] timeSeries = inst.toDoubleArray();
