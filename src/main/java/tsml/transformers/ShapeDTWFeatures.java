@@ -1,6 +1,7 @@
 package tsml.transformers;
 
 import tsml.classifiers.distance_based.ShapeDTW_1NN;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -88,5 +89,10 @@ public class ShapeDTWFeatures implements Transformer {
         }
         this.dataset = result;
         return result;
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        return null;
     }
 }
