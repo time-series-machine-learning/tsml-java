@@ -7,10 +7,10 @@ package tsml.classifiers;
  */
 public interface TrainEstimateTimeable extends TrainTimeable {
 
-    long getTrainEstimateTimeNanos();
+    long getTrainEstimateTime();
 
-    default long getTrainPlusEstimateTimeNanos() {
-        return getTrainEstimateTimeNanos() + getTrainTimeNanos();
+    default long getTrainPlusEstimateTime() {
+        return getTrainEstimateTime() + getTrainTime();
     }
 
 }

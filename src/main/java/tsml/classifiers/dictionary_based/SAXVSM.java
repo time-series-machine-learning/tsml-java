@@ -313,19 +313,8 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        int numClasses = corpus.numInstances();
-        
-        double[] distribution = distributionForInstance(instance);
-        
-        //find max probability
-        double maxIndex = 0, max = distribution[0];
-        for (int i = 1; i < numClasses; ++i)
-            if (distribution[i] > max) {
-                max = distribution[i];
-                maxIndex = i;
-            }
-        
-        return maxIndex;
+        double[] distribution = distributionForInstance(instance); //outputs 0's during cv sometimes
+        return findIndexOfMax(distribution, rand);
     }
 
     @Override

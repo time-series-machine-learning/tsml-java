@@ -69,6 +69,7 @@ public class BasicReproductionTests {
         tsClassifiers + "dictionary_based.SAXVSM",
         tsClassifiers + "dictionary_based.WEASEL",
         tsClassifiers + "dictionary_based.cBOSS",
+        tsClassifiers + "dictionary_based.TDE",
        
         tsClassifiers + "distance_based.DTWCV",
         tsClassifiers + "distance_based.ProximityForestWrapper",
@@ -82,6 +83,7 @@ public class BasicReproductionTests {
         
         tsClassifiers + "interval_based.LPS",
         tsClassifiers + "interval_based.TSF",
+        tsClassifiers + "interval_based.CIF",
         
         tsClassifiers + "shapelet_based.FastShapelets",
         tsClassifiers + "shapelet_based.LearnShapelets",        

@@ -18,6 +18,8 @@ import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
+
+import tsml.classifiers.Interpretable;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -43,7 +45,13 @@ public class SingleTestSetEvaluator extends Evaluator {
     public SingleTestSetEvaluator(int seed, boolean cloneData, boolean setClassMissing) {
         super(seed,cloneData,setClassMissing);
     }
-    
+
+    private boolean vis = false;
+    public SingleTestSetEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean vis) {
+        super(seed,cloneData,setClassMissing);
+        this.vis = vis;
+    }
+
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
 
@@ -66,7 +74,9 @@ public class SingleTestSetEvaluator extends Evaluator {
             double[] dist = classifier.distributionForInstance(testinst);
             long predTime = System.nanoTime() - startTime;
 
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+            if (vis) ((Interpretable)classifier).lastClassifiedInterpretability();
+
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, ""); //todo indexOfMax does not break ties randomly.
         }
 
         res.turnOnZeroTimingsErrors();
