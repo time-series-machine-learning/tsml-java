@@ -844,16 +844,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
             //Add to trainResults.
-            double acc = 0.0;
             for (int i = 0; i < finalDistributions.length; i++) {
-                double predClass = 0;
-                double predProb = 0.0;
-                for (int j = 0; j < finalDistributions[i].length; j++) {
-                    if (finalDistributions[i][j] > predProb) {
-                        predProb = finalDistributions[i][j];
-                        predClass = j;
-                    }
-                }
+                double predClass = findIndexOfMax(finalDistributions[i], rand);
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
             trainResults.setClassifierName("RISEOOB");
@@ -1090,13 +1082,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[]distribution = distributionForInstance(instance);
-
-        int maxVote=0;
-        for(int i = 1; i < distribution.length; i++)
-            if(distribution[i] > distribution[maxVote])
-                maxVote = i;
-        return maxVote;
+        double[] distribution = distributionForInstance(instance);
+        return findIndexOfMax(distribution, rand);
     }
 
     /**

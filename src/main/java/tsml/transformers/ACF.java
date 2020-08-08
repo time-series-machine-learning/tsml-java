@@ -18,6 +18,8 @@ package tsml.transformers;
 import experiments.SimulationExperiments;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 
 import java.text.DecimalFormat;
@@ -180,8 +182,9 @@ public class ACF implements Transformer {
         // 2. Fit Autocorrelations, if not already set externally
         double[] autoCorr = fitAutoCorrelations(d);
 
-        //int length = autoCorr.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional
-          int length = autoCorr.length + 1;                                                             // classvalue.
+        // int length = autoCorr.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts +
+        // PACF atts + optional
+        int length = autoCorr.length + 1; // classvalue.
 
         // 6. Stuff back into new Instances.
         Instance out = new DenseInstance(length);
@@ -511,5 +514,19 @@ public class ACF implements Transformer {
             out.writeString("\n");
         }
 
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+
+        //could do this across all dimensions.
+        double[][] out = new double[inst.getNumDimensions()][];
+        int i = 0;
+        for(TimeSeries ts : inst){
+            out[i++] = this.fitAutoCorrelations(ts.toArray());
+        }
+        
+        //create a new output instance with the ACF data.
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 }

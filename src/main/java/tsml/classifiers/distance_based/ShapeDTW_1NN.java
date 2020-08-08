@@ -611,7 +611,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
                 return clostestInsts.get(0).classValue();
             }
             //Else, choose a random one
-            Random rnd = new Random();
+            Random rnd = new Random(0);
             int index = rnd.nextInt(clostestInsts.size());
             return clostestInsts.get(index).classValue();
         }

@@ -46,7 +46,7 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
 
         for (int i=0;i<instancesLength;i++){
 
-            classifiers[i] = getClassifier();
+            classifiers[i] = getClassifierFromString();
             classifierNames[i] = this.classifierName;
         }
 
@@ -55,7 +55,7 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
 
     }
 
-    private Classifier getClassifier(){
+    private Classifier getClassifierFromString(){
         switch (this.classifierName){
             case "cBOSS": return new cBOSS();
             case "RISE": return new RISE();

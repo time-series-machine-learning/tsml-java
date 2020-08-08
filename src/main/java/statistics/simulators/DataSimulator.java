@@ -20,7 +20,7 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.transformers.NormalizeCase;
+import tsml.transformers.RowNormalizer;
 
 /**
  *
@@ -148,7 +148,7 @@ public class DataSimulator {
 //        initialise();//Rest models? depends if the model is deterministic! might cause some problems either way
         data[1]=generateDataSet();
  //Normalise
-        NormalizeCase nc= new NormalizeCase();
+        RowNormalizer nc= new RowNormalizer();
         data[0]=nc.transform(data[0]);
         data[1]=nc.transform(data[1]);
             return data;
