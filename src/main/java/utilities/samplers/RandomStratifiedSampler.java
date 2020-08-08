@@ -3,10 +3,8 @@ package utilities.samplers;
 import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
-
 import java.util.List;
 import java.util.Random;
-
 import static utilities.InstanceTools.classDistribution;
 import static utilities.InstanceTools.instancesByClass;
 import static utilities.Utilities.argMax;
