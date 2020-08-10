@@ -15,6 +15,8 @@
 package tsml.transformers.shapelet_tools.distance_functions;
 
 import java.io.Serializable;
+
+import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
 import static utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToArrays;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
@@ -60,5 +62,25 @@ public class MultivariateDistance extends ShapeletDistance implements Serializab
             temp = seriesRescaler.rescaleSeries(temp, false); //normalise each series.
             cand.setShapeletContent(i, temp);
         } 
-    }    
+    } 
+    
+    @Override
+    public void setCandidate(TimeSeriesInstance inst, int start, int len, int dim) {
+        //extract shapelet and nomrliase.
+        cand = new ShapeletCandidate(numChannels);
+        startPos = start;
+        length = len;
+        dimension =  dim;
+
+        if(candidateInst==null || candidateInst != inst){
+            candidateArray2 = inst.toValueArray();
+            candidateTSInst = inst;
+        }
+        
+        for(int i=0; i< numChannels; i++){
+            double[] temp = inst.get(dimension).getSlidingWindowArray(start, start+length);
+            temp = seriesRescaler.rescaleSeries(temp, false); //normalise each series.
+            cand.setShapeletContent(i, temp);
+        } 
+    }
 }

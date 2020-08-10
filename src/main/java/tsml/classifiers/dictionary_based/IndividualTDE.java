@@ -79,9 +79,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     private int seed = 0;
     private Random rand;
 
-    private static final long serialVersionUID = 22551L;
-
-    static int count = 0;
+    private static final long serialVersionUID = 1L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
                          boolean multiThread, int numThreads, ExecutorService ex) {
@@ -823,7 +821,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     @Override
     public void buildClassifier(Instances data) throws Exception {
         if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
-            throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
+            throw new Exception("TDE_BuildClassifier: Class attribute not set as last attribute in dataset");
 
         if (IGB) breakpoints = IGB(data);
         else breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data

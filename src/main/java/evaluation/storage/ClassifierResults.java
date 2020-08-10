@@ -1615,14 +1615,11 @@ public class ClassifierResults implements DebugPrinting, Serializable {
 
                 buildTimeDuplicateWarningPrinted = true;
             }
-            double temp=Double.parseDouble(parts[1]);
-            buildTime = (long)temp;
-        }
-        if (parts.length > 2) {
-            double temp=Double.parseDouble(parts[2]);
-            testTime = (long)temp;
-        }
 
+            buildTime = Long.parseLong(parts[1]);
+        }
+        if (parts.length > 2)
+            testTime = Long.parseLong(parts[2]);
         if (parts.length > 3)
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4)

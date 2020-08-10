@@ -14,10 +14,8 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package tsml.classifiers.interval_based;
- 
-import java.io.BufferedReader;
+
 import java.io.File;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import evaluation.storage.ClassifierResults;
@@ -27,7 +25,6 @@ import tsml.classifiers.*;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -116,7 +113,7 @@ import weka.core.Utils;
 */
  
 public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable, Tuneable , Visualisable{
+        TrainTimeContractable, Checkpointable, Tuneable, Visualisable {
 //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
  
@@ -543,13 +540,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
             for(int j=0;j<data.numInstances();j++){
-
-
                 long predTime = System.nanoTime();
                 for(int k=0;k<trainDistributions[j].length;k++)
                     if(oobCounts[j]>0)
                         trainDistributions[j][k]/=oobCounts[j];
-                preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
+                preds[j]=findIndexOfMax(trainDistributions[j],rand);
                 actuals[j]=data.instance(j).classValue();
                 predTimes[j]=System.nanoTime()-predTime;
             }
@@ -653,11 +648,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public double classifyInstance(Instance ins) throws Exception {
         double[] d=distributionForInstance(ins);
-        int max=0;
-        for(int i=1;i<d.length;i++)
-            if(d[i]>d[max])
-                max=i;
-        return (double)max;
+        return findIndexOfMax(d, rand);
     }
   /**
    * Parses a given list of options to set the parameters of the classifier.
@@ -896,15 +887,15 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     @Override
-    public void createVisualisation() throws Exception {
+    public boolean createVisualisation() throws Exception {
         if (!(classifier instanceof TimeSeriesTree)) {
-            System.err.println("Temporal importance curve only available for time series tree.");
-            return;
+            System.err.println("TSF temporal importance curve only available for time series tree.");
+            return false;
         }
 
         if (visSavePath == null){
-            System.err.println("CIF visualisation save path not set.");
-            return;
+            System.err.println("TSF visualisation save path not set.");
+            return false;
         }
 
         double[][] curves = new double[3][seriesLength];
@@ -924,7 +915,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
         }
 
-        OutFile of = new OutFile(visSavePath + "/temporalImportanceCurves" + seed + ".txt");
+        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
         String[] atts = new String[]{"mean","stdev","slope"};
         for (int i = 0 ; i < 3; i++){
             of.writeLine(atts[i]);
@@ -932,26 +923,10 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/temporalImportanceCurves.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " " + 3);
+        Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " 3 3");
 
-        //the following will output the Python output and error messaged. used for debugging
-        BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-        System.out.println("output : ");
-        String outLine = out.readLine();
-        while (outLine != null){
-            System.out.println(outLine);
-            outLine = out.readLine();
-        }
-
-        System.out.println("error : ");
-        String errLine = err.readLine();
-        while (errLine != null){
-            System.out.println(errLine);
-            errLine = err.readLine();
-        }
+        return true;
     }
 
     public static void main(String[] arg) throws Exception{
@@ -1000,8 +975,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         System.out.println(tsf.trainResults.getBuildTime());
         a=ClassifierTools.accuracy(test, tsf);
         System.out.println("Test Accuracy ="+a);
-         
-         
     }
 }
   

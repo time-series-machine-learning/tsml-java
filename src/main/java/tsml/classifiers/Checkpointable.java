@@ -14,8 +14,7 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Copy;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import utilities.FileUtils;
 
 import java.io.*;
@@ -37,7 +36,7 @@ number
 
  * @author Tony Bagnall 2018, goastler
  */
-public interface Checkpointable extends Serializable, Copy {
+public interface Checkpointable extends Serializable {
 
     /**
      * Store the path to write checkpoint files,
