@@ -542,10 +542,9 @@ public class MultivariateInstanceTools {
       Instances[] channels = splitMultivariateInstances(data);
       
       NormalizeCase norm = new NormalizeCase();
-      for (Instances channel : channels) {
-          channel = norm.transform(channel);
+      for (int i = 0; i < channels.length; i++) {
+          channels[i] = norm.transform(channels[i]);
       }
-      
       return mergeToMultivariateInstances(channels);
   }
 
