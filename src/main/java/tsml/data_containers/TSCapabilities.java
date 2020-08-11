@@ -54,6 +54,10 @@ public class TSCapabilities {
     public static TSCapability MULTIVARIATE = new Multivariate();
     public static TSCapability NO_MISSING_VALUES = new Not(new MissingValues());
     public static TSCapability MISSING_VALUES = new MissingValues();
+    
+    public static TSCapability MIN_LENGTH(int length){
+        return new MinLength(length);
+    }
 
     //adapter wrapper to flip a boolean to simplify capabilities objects.
     private static final class Not extends TSCapability{
@@ -105,6 +109,25 @@ public class TSCapabilities {
         @Override
         public boolean test(TimeSeriesInstance inst) {
             return inst.hasMissing;
+        }
+    }
+
+    protected static final class MinLength extends TSCapability{
+
+        int minL;
+
+        protected MinLength(int minL){
+            this.minL = minL;
+        }
+
+        @Override
+        public boolean test(TimeSeriesInstances data) {
+            return data.minLength >= minL;
+        }
+
+        @Override
+        public boolean test(TimeSeriesInstance inst) {
+            return inst.minLength >= minL;
         }
     }
     
