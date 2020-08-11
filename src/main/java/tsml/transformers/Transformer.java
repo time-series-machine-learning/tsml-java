@@ -84,13 +84,10 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      */
     default TSCapabilities getTSCapabilities(){
         TSCapabilities result = new TSCapabilities(this);
-        // result.disableAll();
+        result.enable(TSCapabilities.EQUAL_LENGTH)
+              .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
+              .enable(TSCapabilities.NO_MISSING_VALUES);
 
-        // result.setMinimumNumberInstances(2);
-        // // attributes
-        // result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // // class
-        // result.enable(Capabilities.Capability.NOMINAL_CLASS);
         return result;
     }
 
