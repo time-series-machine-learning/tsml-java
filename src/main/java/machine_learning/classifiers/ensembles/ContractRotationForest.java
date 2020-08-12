@@ -873,14 +873,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         //Add to trainResults.
         double acc = 0.0;
         for (int i = 0; i < finalDistributions.length; i++) {
-            double predClass = 0;
-            double predProb = 0.0;
-            for (int j = 0; j < finalDistributions[i].length; j++) {
-                if (finalDistributions[i][j] > predProb) {
-                    predProb = finalDistributions[i][j];
-                    predClass = j;
-                }
-            }
+            double predClass = findIndexOfMax(finalDistributions[i], rand);
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             if (predClass == data.get(i).classValue()) {
                 acc++;

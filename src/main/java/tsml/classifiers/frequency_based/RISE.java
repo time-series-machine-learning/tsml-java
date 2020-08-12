@@ -121,24 +121,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
     private TransformType transformType = TransformType.ACF_FFT;
     private Instances data = null;
 
-    /** If trainAccuracy is required, there are two mechanisms to obtain it:
-     * 2. estimator=CV: do a 10x CV on the train set with a clone
-     * of this classifier
-     * 3. estimator=OOB: build an OOB model just to get the OOB
-     * accuracy estimate
-     */
-    enum EstimatorMethod{CV,OOB}
-    private EstimatorMethod estimator=EstimatorMethod.CV;
-    public void setEstimatorMethod(String str){
-        String s=str.toUpperCase();
-        if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
-        else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else
-            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
-    }
-
 
 /**** Checkpointing variables *****/
     private boolean checkpoint = false;
@@ -676,14 +658,18 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
 
         if (getEstimateOwnPerformance()) {
+            long est1 = System.nanoTime();
             estimateOwnPerformance(data);
+            long est2 = System.nanoTime();
+            trainResults.setErrorEstimateTime(est2 - est1);
+
             initialise();
             timer.reset();
             if(trainTimeContract)
                 this.setTrainTimeLimit(TimeUnit.NANOSECONDS, (long) ((timer.forestTimeLimit * (1.0 / perForBag))));
         }
 
-        for (; classifiersBuilt < numClassifiers && (System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime()); classifiersBuilt++) {
+        for (; classifiersBuilt < numClassifiers && ((classifiersBuilt==0)||(System.nanoTime() - timer.forestStartTime) < (timer.forestTimeLimit - getTime())); classifiersBuilt++) {
             if(debug && classifiersBuilt%100==0)
                 printLineDebug("Building RISE tree "+classifiersBuilt+" time taken = "+(System.nanoTime()-startTime)+" contract ="+trainContractTimeNanos+" nanos");
 
@@ -692,9 +678,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             timer.treeStartTime = System.nanoTime();
 
             //Compute maximum interval length given time remaining.
-            timer.buildModel();
-            maxIntervalLength = (int)timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
-
+            if(trainTimeContract) {
+                timer.buildModel();
+                maxIntervalLength = (int) timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
+            }
 
             //Produce intervalInstances from trainingData using interval attributes.
             Instances intervalInstances;
@@ -715,11 +702,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
             }
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
-            try{
-                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
-            }catch(Exception e){
-                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
-            }
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
             //Add dependant variable to model (time taken).
@@ -742,7 +724,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
         }
         if(classifiersBuilt==0){//Not enough time to build a single classifier
-            throw new Exception((" ERROR in RISE, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
+            throw new Exception((" ERROR in RISE, no trees built, this should not happen. Contract time ="+trainContractTimeNanos/1000000000));
         }
 
         if (checkpoint) {
@@ -756,6 +738,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         super.trainResults.setBuildTime(timer.forestElapsedTime);
         trainResults.setParas(getParameters());
+        if(getEstimateOwnPerformance()){
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+        }
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
         /*for (int i = 0; i < this.startEndPoints.size(); i++) {
@@ -859,24 +844,17 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
             //Add to trainResults.
-            double acc = 0.0;
             for (int i = 0; i < finalDistributions.length; i++) {
-                double predClass = 0;
-                double predProb = 0.0;
-                for (int j = 0; j < finalDistributions[i].length; j++) {
-                    if (finalDistributions[i][j] > predProb) {
-                        predProb = finalDistributions[i][j];
-                        predClass = j;
-                    }
-                }
+                double predClass = findIndexOfMax(finalDistributions[i], rand);
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
+            trainResults.setClassifierName("RISEOOB");
+            trainResults.setErrorEstimateMethod("OOB");
         }
         else if(estimator==EstimatorMethod.CV) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
-            long est1 = System.nanoTime();
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (seedClassifier)
@@ -893,7 +871,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             rise.setEstimateOwnPerformance(false);
             trainResults = cv.evaluate(rise, data);
             long est2 = System.nanoTime();
-            trainResults.setErrorEstimateTime(est2 - est1);
             trainResults.setClassifierName("RISECV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
@@ -989,16 +966,21 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             startEndPoints.add(new int[2]);
             if (rand.nextBoolean()) {
                 startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
+                printLineDebug(" start end points ="+startEndPoints.get(startEndPoints.size() - 1)[0]);
                 int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
                         ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
+                printLineDebug("TRUE range = "+range+" min = "+minIntervalLength+" "+" max = "+maxIntervalLength);
                 int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
+
             } else {
                 startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength) + minIntervalLength; //Start point
                 int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
                         ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
                 int length;
-                if (range - minIntervalLength == 0) length = 3;
+                printLineDebug("FALSE range = "+range+" min = "+minIntervalLength+" ");
+                if (range - minIntervalLength == 0)
+                    length = 3;
                 else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[0] = startEndPoints.get(startEndPoints.size() - 1)[1] - length;
             }
@@ -1100,13 +1082,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[]distribution = distributionForInstance(instance);
-
-        int maxVote=0;
-        for(int i = 1; i < distribution.length; i++)
-            if(distribution[i] > distribution[maxVote])
-                maxVote = i;
-        return maxVote;
+        double[] distribution = distributionForInstance(instance);
+        return findIndexOfMax(distribution, rand);
     }
 
     /**
@@ -1414,7 +1391,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 x = maxIntervalLength;
             }
             if(x < minIntervalLength){
-                x = minIntervalLength;
+                x = minIntervalLength+1;
             }
 
             return x;

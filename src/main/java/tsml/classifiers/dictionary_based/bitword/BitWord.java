@@ -25,6 +25,8 @@ public interface BitWord extends Comparable<BitWord>, Serializable {
     Number getWord();
     byte getLength();
 
+    void setWord(Number word);
+
     void push(int letter);
     void shorten(int amount);
 }

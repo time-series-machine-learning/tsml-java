@@ -14,19 +14,17 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.logging.LogUtils;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
-
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
-import java.util.logging.Logger;
 
+import evaluation.storage.ClassifierResults;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.core.Capabilities;
-import weka.core.Instances;
-import weka.core.Randomizable;
+import weka.core.*;
 
 /**
  *
@@ -51,8 +49,7 @@ train set predictions produced internally.
 *there are three components to the time that may be spent building a classifier
 
 * 1. timing
-
-buildTime 
+buildTime
 * the minimum any classifier that extends this should store
  is the build time in buildClassifier, through calls to System.currentTimeMillis()
  or nanoTime() at the start and end of the method, stored in trainResults, with
@@ -63,8 +60,6 @@ errorEstimateTime
 * the exact usage of this statistic has not been finalised. Conceptually measures
 * how long is spent estimating the test error from the train data
 buildPlusEstimateTime
-* 
- 
  * 2. Recording train set results
 ClassifierResults trainResults can also store other information about the training,
  including estimate of accuracy, predictions and probabilities. The mechanism for finding
@@ -76,12 +71,14 @@ ClassifierResults trainResults can also store other information about the traini
  
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
- * 
- * @author Tony Bagnall and James Large
+ * Update 1/7/2020:
+ * @author Tony Bagnall and James Large EstimatorMethod estimator moved up from subclasses, since the pattern
+ * appears in multiple forest based ensembles
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,
-                                                                                       Randomizable {
+                                                                                       Randomizable,
+                                                                                       TSClassifier {
 
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
@@ -91,14 +88,26 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     protected boolean seedClassifier=false;
     protected transient boolean debug=false;
 
+    /**
+     * get the classifier RNG	
+     * @return Random
+     */
     public Random getRandom() {
         return rand;
     }
 
+    public AbstractClassifier getClassifier(){
+        return this;
+    }
+
+    /**
+     * Set the classifier RNG	
+     * @param rand
+     */
     public void setRandom(Random rand) {
         this.rand = rand;
     }
-
+    
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally
      * be used to describe this classifier. By default, this will simply be the
@@ -138,6 +147,29 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * nested cv (e.g. a 1NN classifier could perform an efficient internal loocv)
      */
     protected boolean estimateOwnPerformance = false;
+
+    /** If trainAccuracy is required, there are two options that can be implemented
+     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+     */
+    public enum EstimatorMethod{CV,OOB,NONE}
+    protected EstimatorMethod estimator=EstimatorMethod.NONE;
+    public void setEstimatorMethod(String str){
+        String s=str.toUpperCase();
+        if(s.equals("CV"))
+            estimator=EstimatorMethod.CV;
+        else if(s.equals("OOB"))
+            estimator=EstimatorMethod.OOB;
+        else if(s.equals("NONE")) {
+            estimator = EstimatorMethod.NONE;
+        }
+        else
+            throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
+    }
+
+    public String getEstimatorMethod() {
+        return estimator.name();
+    }
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
@@ -324,7 +356,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         // Can only handle discrete class
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
         // instances
-        result.setMinimumNumberInstances(1);
+        result.setMinimumNumberInstances(2);
         return result;
     }
     
@@ -348,15 +380,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      * then the best index is chosen randomly.
      *
      * @param x a list of doubles.
+     * @param rand a Random object.
      * @return the index of the highest value in x.
      */
-    public static int findIndexOfMax(double [] x) {
-
-        double currentMax = Double.MIN_VALUE;
+    public static int findIndexOfMax(double [] x, Random rand) {
+        double currentMax = x[0];
         ArrayList<Integer> bestIndexes = new ArrayList<>();
+        bestIndexes.add(0);
 
         //Find the best index(es)
-        for(int i=0;i<x.length;i++) {
+        for(int i = 1; i < x.length; i++) {
             if(x[i] > currentMax) {
                 bestIndexes.clear();
                 bestIndexes.add(i);
@@ -368,11 +401,70 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 
         //No ties occured
         if(bestIndexes.size() == 1) {
-            return (int) bestIndexes.get(0);
+            return bestIndexes.get(0);
         } else {
             //ties did occur
-            Random rnd = new Random();
-            return bestIndexes.get(rnd.nextInt(bestIndexes.size()));
+            return bestIndexes.get(rand.nextInt(bestIndexes.size()));
+        }
+    }
+
+    /**
+     * Method to find the best index in a list of doubles. If a tie occurs,
+     * then the best index is chosen randomly.
+     *
+     * @param x a list of doubles.
+     * @param seed a long seed for a Random object.
+     * @return the index of the highest value in x.
+     */
+    public static int findIndexOfMax(double [] x, long seed) {
+        double currentMax = x[0];
+        ArrayList<Integer> bestIndexes = new ArrayList<>();
+        bestIndexes.add(0);
+
+        //Find the best index(es)
+        for(int i = 1; i < x.length; i++) {
+            if(x[i] > currentMax) {
+                bestIndexes.clear();
+                bestIndexes.add(i);
+                currentMax = x[i];
+            } else if(x[i] == currentMax) {
+                bestIndexes.add(i);
+            }
+        }
+
+        //No ties occured
+        if(bestIndexes.size() == 1) {
+            return bestIndexes.get(0);
+        } else {
+            //ties did occur
+            return bestIndexes.get(new Random(seed).nextInt(bestIndexes.size()));
+        }
+    }
+
+    /**
+     * Overrides default AbstractClassifier classifyInstance to use random tie breaks.
+     * Classifies the given test instance. The instance has to belong to a
+     * dataset when it's being classified. Note that a classifier MUST
+     * implement either this or distributionForInstance().
+     *
+     * @param instance the instance to be classified
+     * @return the predicted most likely class for the instance or
+     * Utils.missingValue() if no prediction is made
+     * @exception Exception if an error occurred during the prediction
+     */
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        double [] dist = distributionForInstance(instance);
+        if (dist == null) {
+            throw new Exception("Null distribution predicted");
+        }
+        switch (instance.classAttribute().type()) {
+            case Attribute.NOMINAL:
+                return findIndexOfMax(dist, rand);
+            case Attribute.NUMERIC:
+                return dist[0];
+            default:
+                return Utils.missingValue();
         }
     }
     

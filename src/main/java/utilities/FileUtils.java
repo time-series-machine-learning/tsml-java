@@ -49,6 +49,11 @@ public class FileUtils {
         }
     }
 
+    public static boolean rename(final String src, final String dest) {
+        makeParentDir(dest);
+        return new File(src).renameTo(new File(dest));
+    }
+
     public static class FileLock implements AutoCloseable {
         public static class LockException extends Exception {
 

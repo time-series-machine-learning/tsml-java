@@ -1013,7 +1013,7 @@ public class DatasetLists {
 
                 
 
-//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">    
+	//<editor-fold defaultstate="collapsed" desc="five splits of the new 85 UCR datasets">
 		public static String[][] fiveSplits={	
       {			"Adiac",        // 390,391,176,37
 			"ArrowHead",    // 36,175,251,3
@@ -1281,13 +1281,7 @@ public class DatasetLists {
                 };  */ 
       //</editor-fold>    
 
- //Large Problems  
-    //<editor-fold defaultstate="collapsed" desc="largProblems:">    
-    public static String[] largeProblems={	
-"HeartbeatBIDMC","MNIST",
-//"CambridgeMEG","KaggleMEG",        
-    };
-                
+
 //Sets used in papers                
                 
 //<editor-fold defaultstate="collapsed" desc="rakthanmanon13fastshapelets">             

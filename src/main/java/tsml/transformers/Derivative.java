@@ -16,11 +16,11 @@ package tsml.transformers;
 
 import java.io.Serializable;
 
-import tsml.transformers.Transformer;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 /**
  * Purpose: class to take the derivative of a time series.
@@ -35,11 +35,6 @@ public class Derivative implements Transformer, Serializable {
     // instead fetch from the cache the second time
     private static CachedTransformer GLOBAL_CACHE;
 
-    // prefix for dataset name
-    public static String getPrefix() {
-        return "der_";
-    }
-
     public static Derivative getGlobalInstance() {
         if (INSTANCE == null) {
             INSTANCE = new Derivative();
@@ -47,7 +42,7 @@ public class Derivative implements Transformer, Serializable {
         return INSTANCE;
     }
 
-    public static CachedTransformer getGlobalCache() {
+    public static CachedTransformer getGlobalCachedTransformer() {
         if (GLOBAL_CACHE == null) {
             GLOBAL_CACHE = new CachedTransformer(getGlobalInstance());
         }
@@ -77,22 +72,32 @@ public class Derivative implements Transformer, Serializable {
 
     @Override
     public Instances determineOutputFormat(Instances inputFormat) {
-        if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
-            throw new IllegalArgumentException("cannot handle class values not at end");
-        }
-        inputFormat = new Instances(inputFormat, 0);
-        for (int i = 0; i < inputFormat.numAttributes(); i++) {
-            if (i != inputFormat.classIndex()) {
-                inputFormat.renameAttribute(i, getPrefix() + inputFormat.attribute(i).name());
+        //If the class index exists.
+        if(inputFormat.classIndex() >= 0) {
+            if (inputFormat.classIndex() != inputFormat.numAttributes() - 1) {
+                throw new IllegalArgumentException("cannot handle class values not at end");
             }
         }
-        inputFormat.setRelationName(getPrefix() + inputFormat.relationName());
-        return inputFormat;
+        return new Instances(inputFormat, inputFormat.size());
     }
 
     @Override
     public Instance transform(Instance inst) {
-        return new DenseInstance(1, getDerivative(inst.toDoubleArray(), true));// class value has now been removed - be careful!
+        final double[] derivative = getDerivative(inst.toDoubleArray(), true);
+        final Instance copy = new DenseInstance(inst.weight(), derivative);
+        copy.setDataset(inst.dataset());
+        return copy;                                                                      // careful!
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumDimensions()][];
+        int i = 0;
+        for (TimeSeries ts : inst) {
+            out[i++] = getDerivative(ts.toArray(), false);
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 
