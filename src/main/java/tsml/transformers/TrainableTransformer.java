@@ -1,7 +1,7 @@
 package tsml.transformers;
 
-import tschief.datasets.TimeSeries;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Instances;
 /**
  * Interface for time series transformers that require training, extending Transformer interface,

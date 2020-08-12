@@ -1,12 +1,11 @@
 package tsml.examples.ts_examples;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
-import tsml.transformers.Converter;
 import weka.core.Instances;
 
 public class DataManipulationExample {

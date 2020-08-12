@@ -113,7 +113,7 @@ public class ClassifierTools {
 		{
 			d=test.get(i);
 			try{
-				predictedClass=c.predict(d);
+				predictedClass=c.classifyInstance(d);
 				trueClass=d.getLabelIndex();
 				if(trueClass==predictedClass)
 					a++;

@@ -1,12 +1,26 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
+import machine_learning.clusterers.CAST;
+import machine_learning.clusterers.PAM;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
-import machine_learning.clusterers.CAST;
-import machine_learning.clusterers.PAM;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,10 +133,10 @@ public class TTC extends AbstractTimeSeriesClusterer {
 
     public static void main(String[] args) throws Exception{
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
-//        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
-//        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
