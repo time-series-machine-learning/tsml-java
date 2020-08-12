@@ -42,12 +42,27 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 /**
  * Implementation of the catch22 Interval Forest algorithm
  *
- * Author: Matthew Middlehurst
- *
- * date 22/05/20
+ * @author Matthew Middlehurst
  **/
 public class CIF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
         Checkpointable, Tuneable, Visualisable, Interpretable {
+
+    /**
+     * Paper defining CIF.
+     *
+     * @return TechnicalInformation for CIF
+     */
+    @Override //TechnicalInformationHandler
+    public TechnicalInformation getTechnicalInformation() {
+        //TODO update
+        TechnicalInformation result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, J. Large and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "The Canonical Interval Forest (CIF) Classifier for " +
+                "Time Series Classifciation");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
+        return result;
+    }
 
     /** Primary parameters potentially tunable */
     private int numClassifiers = 500;
@@ -71,6 +86,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /** Secondary parameters */
     /** Mainly there to avoid single item intervals, which have no slope or std dev*/
+    /** Min defaults to 3, Max defaults to m/2 */
     private int minIntervalLength = -1;
     private transient Function<Integer,Integer> minIntervalLengthFinder;
     private int maxIntervalLength = -1;
@@ -135,27 +151,67 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     protected static final long serialVersionUID = 1L;
 
+    /**
+     * Default constructor for CIF. Can estimate own performance.
+     */
     public CIF(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
 
+    /**
+     * Set the number of trees to be built.
+     *
+     * @param t number of trees
+     */
     public void setNumTrees(int t){
         numClassifiers = t;
     }
 
+    /**
+     * Set tje number of attributes to be subsampled per tree.
+     *
+     * @param a number of attributes sumsampled
+     */
     public void setAttSubsampleSize(int a) { attSubsampleSize = a; }
 
+    /**
+     * Set whether to use the original TSF statistics as well as catch22 features.
+     *
+     * @param b boolean to use summary stats
+     */
     public void setUseSummaryStats(boolean b) { useSummaryStats = b; }
 
+    /**
+     * Set a function for finding the number of intervals randomly selected per tree.
+     *
+     * @param f a function for the number of intervals
+     */
     public void setNumIntervalsFinder(Function<Integer,Integer> f){ numIntervalsFinder = f; }
 
+    /**
+     * Set a function for finding the min interval length for randomly selected intervals.
+     *
+     * @param f a function for min interval length
+     */
     public void setMinIntervalLengthFinder(Function<Integer,Integer> f){ minIntervalLengthFinder = f; }
 
+    /**
+     * Set a function for finding the max interval length for randomly selected intervals.
+     *
+     * @param f a function for max interval length
+     */
     public void setMaxIntervalLengthFinder(Function<Integer,Integer> f){ maxIntervalLengthFinder = f; }
 
+    /**
+     * Set whether to normalise the outlier catch22 features.
+     *
+     * @param b boolean to set outlier normalisation
+     */
     public void setOutlierNorm(boolean b) { outlierNorm = b; }
 
     /**
+     * Sets the base classifier for the ensemble.
+     *
      * @param c a base classifier constructed elsewhere and cloned into ensemble
      */
     public void setBaseClassifier(Classifier c){
@@ -163,17 +219,26 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Set whether to sum distributions for each classifier (false) or sum votes (true) when classifying.
+     *
      * @param b boolean to set vote ensemble
      */
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble = b;
     }
 
+    /**
+     * Set whether to perform bagging with replacement.
+     *
+     * @param b boolean to set bagging
+     */
     public void setBagging(boolean b){
         bagging = b;
     }
 
     /**
+     * Outputs CIF parameters as a String.
+     *
      * @return String written to results files
      */
     @Override
@@ -189,26 +254,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * paper defining TSF. need update when published
-     * @return TechnicalInformation
+     * Returns the capabilities for CIF. These are that the
+     * data must be numeric or relational, with no missing and a nominal class
+     *
+     * @return the capabilities of CIF
      */
-    @Override
-    public TechnicalInformation getTechnicalInformation() {
-        //TODO update
-//        TechnicalInformation result;
-//        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-//        result.setValue(TechnicalInformation.Field.AUTHOR, "H. Deng, G. Runger, E. Tuv and M. Vladimir");
-//        result.setValue(TechnicalInformation.Field.YEAR, "2013");
-//        result.setValue(TechnicalInformation.Field.TITLE, "A time series forest for classification and " +
-//                "feature extraction");
-//        result.setValue(TechnicalInformation.Field.JOURNAL, "Information Sciences");
-//        result.setValue(TechnicalInformation.Field.VOLUME, "239");
-//        result.setValue(TechnicalInformation.Field.PAGES, "142-153");
-//        return result;
-
-        return null;
-    }
-
     @Override
     public Capabilities getCapabilities(){
         Capabilities result = super.getCapabilities();
@@ -227,9 +277,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * main buildClassifier
+     * Build the CIF classifier.
+     *
      * @param data weka Instances object
-     * @throws Exception e
+     * @throws Exception unable to train model
      */
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -298,11 +349,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     maxIntervalLength = seriesLength;
                 }
                 else {
-                    maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength);
+                    maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
                 }
 
                 if (maxIntervalLength > seriesLength){
                     maxIntervalLength = seriesLength;
+                }
+
+                if (maxIntervalLength < minIntervalLength){
+                    maxIntervalLength = minIntervalLength;
                 }
             }
 
@@ -614,11 +669,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         printLineDebug("*************** Finished TSF Build with "+trees.size()+" Trees built in "+trainResults.getBuildTime()/1000000000+" Seconds  ***************");
     }
 
-    /** Estimate accuracy stage: Three scenarios
-     * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB
-     *  If we built on all data (bagging ==false) we estimate either
-     *  2. with a 10xCV or (if
-     *  3. Build a bagged model simply to get the estimate.
+    /**
+     * Estimate accuracy stage: Three scenarios
+     * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB.
+     *    If we built on all data (bagging ==false) we estimate either:
+     * 2. With a 10 fold CV .
+     * 3. Build a bagged model simply to get the estimate.
+     *
+     * @param data Instances to estimate with
+     * @throws Exception unable to obtain estimate
      */
     private void estimateOwnPerformance(Instances data) throws Exception {
         if(bagging){
@@ -678,6 +737,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
     }
 
+    /**
+     * Copy the parameters of a CIF object to this.
+     *
+     * @param other A CIF object
+     */
     private void copyParameters(CIF other){
         this.numClassifiers = other.numClassifiers;
         this.attSubsampleSize = other.attSubsampleSize;
@@ -696,9 +760,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * @param ins to classifier
+     * Find class probabilities of an instance using the trained model.
+     *
+     * @param ins weka Instance object
      * @return array of doubles: probability of each class
-     * @throws Exception e
+     * @throws Exception failure to classify
      */
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
@@ -797,10 +863,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         return d;
     }
+
     /**
+     * Classify an instance using the trained model.
+     *
      * @param ins weka Instance object
      * @return predicted class value
-     * @throws Exception e
+     * @throws Exception failure to classify
      */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
@@ -808,6 +877,35 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return findIndexOfMax(probs, rand);
     }
 
+    /**
+     * Set the train time limit for a contracted classifier.
+     *
+     * @param amount contract time in nanoseconds
+     */
+    @Override //TrainTimeContractable
+    public void setTrainTimeLimit(long amount) {
+        contractTime = amount;
+        trainTimeContract = true;
+    }
+
+    /**
+     * Check if a contracted classifier is within its train time limit.
+     *
+     * @param start classifier build start time
+     * @return true if within the contract or not contracted, false otherwise.
+     */
+    @Override //TrainTimeContractable
+    public boolean withinTrainContract(long start){
+        if(contractTime<=0) return true; //Not contracted
+        return System.nanoTime()-start-checkpointTimeDiff < contractTime;
+    }
+
+    /**
+     * Set the path to save checkpoint files to.
+     *
+     * @param path string for full path for the directory to store checkpointed files
+     * @return true if valid path, false otherwise
+     */
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
         boolean validPath = Checkpointable.super.createDirectories(path);
@@ -818,13 +916,42 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return validPath;
     }
 
+    /**
+     * Set the time between checkpoints in hours.
+     *
+     * @param t number of hours between checkpoints
+     * @return true
+     */
     @Override //Checkpointable
     public boolean setCheckpointTimeHours(int t){
         checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
         return true;
     }
 
-    @Override
+    /**
+     * Serialises this CIF object to the specified path.
+     *
+     * @param path save path for object
+     * @throws Exception object fails to save
+     */
+    @Override //Checkpointable
+    public void saveToFile(String path) throws Exception{
+        lastCheckpointTime = System.nanoTime();
+        Checkpointable.super.saveToFile(path + "CIF" + seed + "temp.ser");
+        File file = new File(path + "CIF" + seed + "temp.ser");
+        File file2 = new File(path + "CIF" + seed + ".ser");
+        file2.delete();
+        file.renameTo(file2);
+        if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime()-lastCheckpointTime;
+    }
+
+    /**
+     * Copies values from a loaded CIF object into this object.
+     *
+     * @param obj a CIF object
+     * @throws Exception if obj is not an instance of CIF
+     */
+    @Override //Checkpointable
     public void copyFromSerObject(Object obj) throws Exception {
         if (!(obj instanceof CIF))
             throw new Exception("The SER file is not an instance of TSF");
@@ -893,30 +1020,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
     }
 
-    @Override
-    public void setTrainTimeLimit(long amount) {
-        contractTime = amount;
-        trainTimeContract = true;
-    }
-
-    @Override //TrainTimeContractable
-    public boolean withinTrainContract(long start){
-        if(contractTime<=0) return true; //Not contracted
-        return System.nanoTime()-start-checkpointTimeDiff < contractTime;
-    }
-
-    @Override //Checkpointable
-    public void saveToFile(String filename) throws Exception{
-        lastCheckpointTime = System.nanoTime();
-        Checkpointable.super.saveToFile(checkpointPath + "CIF" + seed + "temp.ser");
-        File file = new File(checkpointPath + "CIF" + seed + "temp.ser");
-        File file2 = new File(checkpointPath + "CIF" + seed + ".ser");
-        file2.delete();
-        file.renameTo(file2);
-        if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime()-lastCheckpointTime;
-    }
-
-    @Override
+    /**
+     * Returns the default set of possible parameter values for use in setOptions when tuning.
+     *
+     * @return default parameter space for tuning
+     */
+    @Override //Tunable
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
         String[] numAtts={"8","16","25"};
@@ -926,7 +1035,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return ps;
     }
 
-    @Override
+    /**
+     * Parses a given list of options. Valid options are:
+     *
+     * -A  The number of attributes to subsample as an integer from 1-25.
+     * -L  Max interval length as a proportion of series length as a double from 0-1.
+     *
+     * @param options the list of options as an array of strings
+     * @throws Exception if an option value is invalid
+     */
+    @Override //AbstractClassifier
     public void setOptions(String[] options) throws Exception{
         System.out.println(Arrays.toString(options));
 
@@ -944,8 +1062,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * @param path
-     * @return
+     * Creates and stores a path to save visualisation files to.
+     *
+     * @param path String directory path
+     * @return true if path is valid, false otherwise.
      */
     @Override //Visualisable
     public boolean setVisualisationSavePath(String path) {
@@ -961,7 +1081,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      * generated curves.
      *
      * @return true if python file to create visualisation ran, false if no path set or invalid classifier
-     * @throws Exception
+     * @throws Exception if failure to set path or create visualisation
      */
     @Override //Visualisable
     public boolean createVisualisation() throws Exception {
@@ -1039,7 +1159,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return true;
     }
 
-    @Override
+    /**
+     * Stores a path to save interpretability files to.
+     *
+     * @param path String directory path
+     * @return true if path is valid, false otherwise.
+     */
+    @Override //Interpretable
     public boolean setInterpretabilitySavePath(String path) {
         boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
         if(validPath){
@@ -1048,7 +1174,14 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return validPath;
     }
 
-    @Override
+    /**
+     * Outputs a summary/visualisation of how the last classifier prediction was made to a set path. Runs
+     * interpretabilityCIF.py for visualisations.
+     *
+     * @return true if python file to create visualisation ran, false if no path set or invalid classifier
+     * @throws Exception if failure to set path or output files
+     */
+    @Override //Interpretable
     public boolean lastClassifiedInterpretability() throws Exception {
         if (!(base instanceof TimeSeriesTree)) {
             System.err.println("CIF interpretability output only available for time series tree.");
@@ -1127,7 +1260,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         return true;
     }
 
-    @Override
+    /**
+     * Get a unique indentifier for the last prediction made, used for filenames etc.
+     *
+     * @return int ID for the last prediction
+     */
+    @Override //Interpretable
     public int getPredID(){
         return interpCount;
     }
@@ -1181,7 +1319,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      * Development tests for the CIF classifier.
      *
      * @param arg arguments, unused
-     * @throws Exception
+     * @throws Exception if tests fail
      */
     public static void main(String[] arg) throws Exception{
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
