@@ -303,24 +303,29 @@ public class ExperimentsEarlyClassification {
             //train data
             if (EnhancedAbstractClassifier.classifierAbleToEstimateOwnPerformance(classifier))
                 ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
-            else
-                trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
+            else {
+                boolean truncate = true;
+                if (truncate){
+                    double i = Double.parseDouble(expSettings.trainEstimateMethod);
+                    Instances instances = truncateInstances(trainSet, i);
+                    instances = zNormaliseWithClass(instances);
+                    trainResults = findExternalTrainEstimate(expSettings, classifier, instances, expSettings.foldId);
+                }
+                else {
+                    trainResults = findExternalTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId);
+                }
+            }
         }
         LOGGER.log(Level.FINE, "Train estimate ready.");
 
         long buildTime = System.nanoTime();
 
-        boolean shorten = true;
+        boolean truncate = true;
         boolean shortenAndAdd = false;
-        if (shorten){
+        if (truncate){
             double i = Double.parseDouble(expSettings.trainEstimateMethod);
-            String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
-                    PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + (i*100) + "%testFold"
-                    + expSettings.foldId + ".csv";
-            if (CollateResults.validateSingleFoldFile(path)) {
-                exit(0);
-            }
             Instances instances = truncateInstances(trainSet, i);
+            instances = zNormaliseWithClass(instances);
             classifier.buildClassifier(instances);
             buildTime = System.nanoTime() - buildTime;
         }
@@ -411,31 +416,24 @@ public class ExperimentsEarlyClassification {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                boolean shorten = true;
+                boolean truncate = true;
                 boolean earlyClassiifer = false;
-                if (shorten){
+                if (truncate){
                     double i = Double.parseDouble(expSettings.trainEstimateMethod);
-                    String path = expSettings.resultsWriteLocation + expSettings.classifierName + "/" +
-                            PREDICTIONS_DIR + "/" + expSettings.datasetName + "/" + (i*100) + "%testFold"
-                            + expSettings.foldId + ".csv";
-                    if (!CollateResults.validateSingleFoldFile(path)) {
-                        Instances shortData = shortenInstances(testSet, i, true);
+                    Instances shortData = truncateInstances(testSet, i);
+                    shortData = zNormaliseWithClass(shortData);
 
-                        testResults = evaluateClassifier(expSettings, classifier, shortData);
-                        testResults.setParas(trainResults.getParas());
-                        testResults.turnOffZeroTimingsErrors();
-                        testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
-                        testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
-                        testResults.turnOnZeroTimingsErrors();
-                        testResults.setMemory(trainResults.getMemory());
-                        LOGGER.log(Level.FINE, "Testing complete");
+                    testResults = evaluateClassifier(expSettings, classifier, shortData);
+                    testResults.setParas(trainResults.getParas());
+                    testResults.turnOffZeroTimingsErrors();
+                    testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
+                    testResults.setBuildTime(testResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
+                    testResults.turnOnZeroTimingsErrors();
+                    testResults.setMemory(trainResults.getMemory());
+                    LOGGER.log(Level.FINE, "Testing complete");
 
-                        writeResults(expSettings, testResults, path, "test");
-                        LOGGER.log(Level.FINE, "Test results written");
-                    }
-                    else{
-                        testResults = new ClassifierResults(path);
-                    }
+                    writeResults(expSettings, testResults, expSettings.testFoldFileName, "test");
+                    LOGGER.log(Level.FINE, "Test results written");
                 }
                 else if (earlyClassiifer){
                     testResults = evaluateEarlyClassifier(expSettings, classifier, testSet);
@@ -502,7 +500,13 @@ public class ExperimentsEarlyClassification {
         if (!f.exists())
             f.mkdirs();
 
-        expSettings.testFoldFileName = fullWriteLocation + "100.0%testFold" + expSettings.foldId + ".csv";
+        if (!expSettings.trainEstimateMethod.equals("cv_10")){
+            double x = 100*Double.parseDouble(expSettings.trainEstimateMethod);
+            expSettings.testFoldFileName = fullWriteLocation + x + "%testFold" + expSettings.foldId + ".csv";
+        }
+        else {
+            expSettings.testFoldFileName = fullWriteLocation + "100.0%testFold" + expSettings.foldId + ".csv";
+        }
         expSettings.trainFoldFileName = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
 
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)
@@ -988,13 +992,5 @@ public class ExperimentsEarlyClassification {
         while (!executor.isTerminated()) {
         }
         System.out.println("Finished all threads");
-    }
-
-    public static int[] defaultTimeStamps(int length){
-        int[] ts = new int[20];
-        for (int i = 0; i < 20; i++){
-            ts[i] = (int)Math.round((i+1)*0.05 * length);
-        }
-        return ts;
     }
 }

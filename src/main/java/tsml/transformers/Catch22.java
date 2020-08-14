@@ -664,8 +664,8 @@ public class Catch22 implements Transformer {
         double min = min(d);
         double max = max(d);
         double range = max - min;
-        int numBins = (int) Math
-                .ceil(range / (3.5 * standardDeviation(d, false, dMean) / Math.pow(d.length, 0.3333333333333333)));
+        int numBins = (int) Math.ceil(range / (3.5 * standardDeviation(d, false, dMean) /
+                Math.pow(d.length, 0.3333333333333333)));
         double binWidth = range / numBins;
 
         if (numBins == 0)

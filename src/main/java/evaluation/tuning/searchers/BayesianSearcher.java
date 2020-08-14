@@ -1,6 +1,21 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package evaluation.tuning.searchers;
 
 import evaluation.tuning.ParameterSet;
+import statistics.distributions.NormalDistribution;
 import weka.classifiers.functions.GaussianProcesses;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
@@ -12,29 +27,26 @@ import weka.core.Instances;
 import java.util.*;
 import java.util.function.Function;
 
-//Needs to be improved on, not currently used in any classifier. Waiting for Aaron's version to make improvements.
-public class BayesianSearcher extends ParameterSearcher{
+//pretty bad, untested -MM
+public class BayesianSearcher extends ParameterSearcher {
 
     private GaussianProcesses gp = new GaussianProcesses();
     private Function<ParameterSet, Double> objectiveFunction;
-    private int maxIterations = 100;
-    private int numSeedPoints = 20;
+    private int maxIterations = 500;
+    private int numSeedPoints = 50;
 
     private String[] keys;
     private List<String>[] values;
     private Instance bestParameters;
 
-    public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction){
+    public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction) {
+        System.err.println("BayesianSearcher is not tested properly and most likely broken.");
         this.objectiveFunction = objectiveFunction;
         gp.setKernel(new RBFKernel());
-        try {
-            gp.setOptions(new String[]{"-N","2"});
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        gp.setNoise(2);
     }
 
-    public ParameterSet getBestParameters(){ return instanceToPSet(bestParameters); }
+    public ParameterSet getBestParameters(){ return instanceToParameterSet(bestParameters); }
 
     public void setKernel(Kernel kernel){ gp.setKernel(kernel); }
 
@@ -45,7 +57,7 @@ public class BayesianSearcher extends ParameterSearcher{
     @Override
     public Iterator<ParameterSet> iterator() { return new BayesianSearchIterator(); }
 
-    private ParameterSet instanceToPSet(Instance inst){
+    private ParameterSet instanceToParameterSet(Instance inst){
         ParameterSet pset = new ParameterSet();
         for (int i = 0; i < inst.numAttributes()-1; i++) {
             pset.parameterSet.put(keys[i], values[i].get((int)inst.value(i)));
@@ -53,12 +65,11 @@ public class BayesianSearcher extends ParameterSearcher{
         return pset;
     }
 
-    public class BayesianSearchIterator implements Iterator<ParameterSet> {
+    private class BayesianSearchIterator implements Iterator<ParameterSet> {
 
         private boolean improvementExpected = true;
         private Instances parameterPool;
         private Instances pastParameters;
-        private Instance chosenParameters;
         private double maxObjVal = 0;
         private int numIterations = 0;
 
@@ -69,12 +80,13 @@ public class BayesianSearcher extends ParameterSearcher{
 
             keys = new String[space.numParas()];
             values = new List[space.numParas()];
-            int g = 0;
+            bestParameters = null;
 
+            int n = 0;
             for (Map.Entry<String, List<String>> entry : space.parameterLists.entrySet()) {
-                keys[g] = entry.getKey();
-                values[g] = entry.getValue();
-                g++;
+                keys[n] = entry.getKey();
+                values[n] = entry.getValue();
+                n++;
             }
 
             int numAtts = keys.length+1;
@@ -113,11 +125,12 @@ public class BayesianSearcher extends ParameterSearcher{
         @Override
         public ParameterSet next() {
             ParameterSet pset = null;
+            Instance chosenParameters = null;
 
             if (numIterations < numSeedPoints){
                 chosenParameters = parameterPool.remove(rand.nextInt(parameterPool.size()));
 
-                pset = instanceToPSet(chosenParameters);
+                pset = instanceToParameterSet(chosenParameters);
                 double objVal = objectiveFunction.apply(pset);
                 chosenParameters.setValue(chosenParameters.classIndex(), objVal);
                 pastParameters.add(chosenParameters);
@@ -126,7 +139,6 @@ public class BayesianSearcher extends ParameterSearcher{
                     maxObjVal = objVal;
                     bestParameters = chosenParameters;
                 }
-
             }
             else{
                 try {
@@ -134,41 +146,40 @@ public class BayesianSearcher extends ParameterSearcher{
 
                     double maxVal = 0;
 
-                    for (Instance inst : parameterPool) {
-                        double pred = gp.classifyInstance(inst);
-
-                        if (pred - maxObjVal > maxVal) {
-                            maxVal = pred - maxObjVal;
-                            chosenParameters = inst;
-                        }
-                    }
-
-//                    //Expected improvement, probably broken
+//                    for (Instance inst : parameterPool) {
+//                        double pred = gp.classifyInstance(inst);
 //
-//                    for (Instance inst: parameterPool){
-//                        double mean = gp.classifyInstance(inst);
-//                        double std = gp.getStandardDeviation(inst); //different from sktime std
-//
-//                        if (std != 0){
-//                            NormalDistribution n = new NormalDistribution();
-//                            double imp = (mean - maxObjVal - 0.01);
-//                            double z = imp / std;
-//                            double ei = imp * n.cumulativeProbability(z) + std * n.density(z);
-//
-//                            if (ei > maxVal){
-//                                maxVal = ei;
-//                                chosenParameters = inst;
-//                            }
+//                        if (pred - maxObjVal > maxVal) {
+//                            maxVal = pred - maxObjVal;
+//                            chosenParameters = inst;
 //                        }
 //                    }
+
+                    //Expected improvement, probably broken
+                    for (Instance inst: parameterPool){
+                        double mean = gp.classifyInstance(inst);
+                        double std = gp.getStandardDeviation(inst);
+
+                        if (std != 0){
+                            NormalDistribution n = new NormalDistribution();
+                            double imp = (mean - maxObjVal - 0.01);
+                            double z = imp / std;
+                            double ei = imp * n.getCDF(z) + std * n.getDensity(z);
+
+                            if (ei > maxVal){
+                                maxVal = ei;
+                                chosenParameters = inst;
+                            }
+                        }
+                    }
 
                     if (maxVal == 0 || numIterations == maxIterations){
                         improvementExpected = false;
                         chosenParameters = bestParameters;
-                        pset = instanceToPSet(chosenParameters);
+                        pset = instanceToParameterSet(chosenParameters);
                     }
                     else{
-                        pset = instanceToPSet(chosenParameters);
+                        pset = instanceToParameterSet(chosenParameters);
                         double objVal = objectiveFunction.apply(pset);
                         chosenParameters.setValue(chosenParameters.classIndex(), objVal);
                         pastParameters.add(chosenParameters);

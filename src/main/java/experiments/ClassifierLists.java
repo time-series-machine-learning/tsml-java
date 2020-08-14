@@ -295,10 +295,6 @@ public class ClassifierLists {
                 c=new CIF();
                 break;
 
-            case "SR1-CF1":
-                c=new SR1CF1();
-                break;
-
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
