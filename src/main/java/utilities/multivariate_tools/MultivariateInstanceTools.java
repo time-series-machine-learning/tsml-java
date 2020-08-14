@@ -540,12 +540,10 @@ public class MultivariateInstanceTools {
 
   public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
-      
       RowNormalizer norm = new RowNormalizer();
-      for (Instances channel : channels) {
-          channel = norm.transform(channel);
+      for (int i = 0; i < channels.length; i++) {
+          channels[i] = norm.transform(channels[i]);
       }
-      
       return mergeToMultivariateInstances(channels);
   }
 
