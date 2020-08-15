@@ -266,7 +266,7 @@ public class TimeSeriesSummaryStatistics {
      * @return double
      */
     public static double mean(List<Double> data){
-        return min(convert(data));
+        return mean(convert(data));
     }
 
     
@@ -275,7 +275,7 @@ public class TimeSeriesSummaryStatistics {
      * @return double
      */
     public static double mean(TimeSeries ts){
-        return min(ts.getSeries());
+        return mean(ts.getSeries());
     }
 
     

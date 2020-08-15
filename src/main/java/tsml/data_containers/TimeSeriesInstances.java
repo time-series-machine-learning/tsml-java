@@ -317,7 +317,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             classCounts[new_series.classLabelIndex]++;
 
         minLength = Math.min(new_series.minLength, minLength);
-        maxLength = Math.min(new_series.maxLength, maxLength);
+        maxLength = Math.max(new_series.maxLength, maxLength);
         hasMissing |= new_series.hasMissing;
         isEqualLength = minLength == maxLength;
     }
