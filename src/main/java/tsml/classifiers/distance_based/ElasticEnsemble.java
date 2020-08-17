@@ -179,7 +179,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
             }
             
             if(bsfClassVals.size()>1){
-                pred = bsfClassVals.get(new Random().nextInt(bsfClassVals.size()));
+                pred = bsfClassVals.get(new Random(i).nextInt(bsfClassVals.size()));
             }else{
                 pred = bsfClassVals.get(0);
             }

@@ -158,7 +158,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         double[] probs = distributionForInstance(instance);
 
         int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
+        for (int n = 1; n < probs.length; n++) {
             if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }
@@ -171,7 +171,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         double[] probs = distributionForInstance(instance, info);
 
         int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
+        for (int n = 1; n < probs.length; n++) {
             if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }

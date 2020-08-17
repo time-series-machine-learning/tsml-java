@@ -5,6 +5,8 @@ import weka.core.*;
 
 import java.util.ArrayList;
 
+import tsml.data_containers.TimeSeriesInstance;
+
 /*
  * This class uses a univariate transformer on a multivariate dataset by executing
  * the transformer along each dimension of a time series.
@@ -43,7 +45,7 @@ public class DimensionIndependentTransformer implements Transformer {
 
         res.setDataset(dataHeader);
         int index = res.attribute(0).addRelation(transformedInsts);
-        res.setValue(0,index);
+        res.setValue(0, index);
         if (inst.classIndex() >= 0) {
             res.setClassValue(inst.classValue());
             res.setValue(1, inst.classValue());
@@ -55,14 +57,16 @@ public class DimensionIndependentTransformer implements Transformer {
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         // Create the relation from the transformer
         Instances outputFormat = transformer.determineOutputFormat(data.attribute(0).relation());
-        // Just 2 attributes, the relational attribute and the class value (if it has one).
+        // Just 2 attributes, the relational attribute and the class value (if it has
+        // one).
         ArrayList<Attribute> attributes = new ArrayList<>();
-        attributes.add(new Attribute("relationalAtt",outputFormat));
-        if(data.classIndex() >= 0) {
+        attributes.add(new Attribute("relationalAtt", outputFormat));
+        if (data.classIndex() >= 0) {
             attributes.add(data.classAttribute());
         }
         // Create the header to store the data in
-        Instances result = new Instances("MultiDimensional_" + outputFormat.relationName(), attributes, data.numInstances());
+        Instances result = new Instances("MultiDimensional_" + outputFormat.relationName(), attributes,
+                data.numInstances());
         if (data.classIndex() >= 0) {
             result.setClassIndex(1);
         }
@@ -71,9 +75,9 @@ public class DimensionIndependentTransformer implements Transformer {
     }
 
     @Override
-    public Capabilities getCapabilities(){
-        Capabilities c=Transformer.super.getCapabilities();
-        c.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
-        return c;
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        // TODO Auto-generated method stub
+        //not implementing this as for TSInstances we already support multi out of the box.
+        return null;
     }
 }

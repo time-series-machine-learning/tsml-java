@@ -16,6 +16,7 @@ package tsml.transformers.shapelet_tools.distance_functions;
 
 import java.io.Serializable;
 
+import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.shapelet_tools.Shapelet;
 import weka.core.Instance;
 
@@ -32,6 +33,19 @@ public class MultivariateIndependentDistance extends MultivariateDistance implem
         double cumulative_distance=0;
         for(int i=0; i< channel.length; i++){
             cumulative_distance += calculate(cand.getShapeletContent(i), channel[i].toDoubleArray());
+        }
+        
+        //return candidate back into the holder and the instance it comes from.
+        return cumulative_distance;
+    }
+
+        //calculate the minimum distance for each channel, and then average.
+    @Override
+    public double calculate(TimeSeriesInstance timeSeries, int timeSeriesId){
+        double[][] data = timeSeries.toValueArray();
+        double cumulative_distance=0;
+        for(int i=0; i< data.length; i++){
+            cumulative_distance += calculate(cand.getShapeletContent(i), data[i]);
         }
         
         //return candidate back into the holder and the instance it comes from.

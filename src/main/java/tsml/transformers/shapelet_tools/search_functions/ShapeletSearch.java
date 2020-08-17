@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import weka.core.Instance;
 import weka.core.Instances;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.shapelet_tools.Shapelet;
 import static utilities.multivariate_tools.MultivariateInstanceTools.channelLength;
 /**
@@ -85,7 +87,14 @@ public class ShapeletSearch implements Serializable{
     public interface ProcessCandidate{
         public default Shapelet process(Instance candidate, int start, int length) {return process(candidate, start, length, 0);}
         public Shapelet process(Instance candidate, int start, int length, int dimension);
-    }
+
+   }
+
+   public interface ProcessCandidateTS{
+        public default Shapelet process(TimeSeriesInstance candidate, int start, int length) {return process(candidate, start, length, 0);}
+        public Shapelet process(TimeSeriesInstance candidate, int start, int length, int dimension);
+   }
+
     protected ArrayList<String> shapeletsVisited = new ArrayList<>();
     protected int seriesCount;
     
@@ -109,6 +118,7 @@ public class ShapeletSearch implements Serializable{
     protected int positionIncrement = 1;
     
     protected Instances inputData;
+    protected TimeSeriesInstances inputDataTS;
     
     transient protected ShapeletSearchOptions options;
 
@@ -149,9 +159,17 @@ public class ShapeletSearch implements Serializable{
         //we need to detect whether it's multivariate or univariate.
         //this feels like a hack. BOO.
         //one relational and a class att.
-        //TO DO: Tony says: this is both a hack and incorrect: it is counting the class value.
+        //TODO: Tony says: this is both a hack and incorrect: it is counting the class value.
+        //TODO: Aaron says: it doesn't count class Value. as we do the calculation seriesLength - Length + 1 for no. shapelets.
+        //but because we do -1 for the class value +1 and -1 cancel out. leaving seriesLength - Length... See line 172...
         seriesLength = setSeriesLength();
     }
+
+    public void init(TimeSeriesInstances input){
+        inputDataTS = input;
+        seriesLength = inputDataTS.getMaxLength();
+    }
+
     public int getSeriesLength(){
         return seriesLength; //we add one here, because lots of code assumes it has a class value on the end/ TO DO: CLARIFY THIS
     }
@@ -159,6 +177,30 @@ public class ShapeletSearch implements Serializable{
     public int setSeriesLength(){
         return inputData.numAttributes() >= maxShapeletLength ? inputData.numAttributes() : channelLength(inputData) + 1; //we add one here, because lots of code assumes it has a class value on the end/
     }
+
+    //given a series and a function to find a shapelet 
+    public ArrayList<Shapelet> searchForShapeletsInSeries(TimeSeriesInstance timeSeries, ProcessCandidateTS checkCandidate){
+        ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
+        
+        //for univariate this will just evaluate all shapelets
+        for (int length = minShapeletLength; length <= maxShapeletLength; length+=lengthIncrement) {
+            //for all possible starting positions of that length. -1 to remove classValue but would be +1 (m-l+1) so cancel.
+            for (int start = 0; start < seriesLength - length; start+=positionIncrement) {
+                //for univariate this will be just once.
+                for(int dim = 0; dim < numDimensions; dim++)   {
+                    Shapelet shapelet = checkCandidate.process(timeSeries, start, length, dim);
+                    if (shapelet != null) {
+                        seriesShapelets.add(shapelet);
+                        shapeletsVisited.add(seriesCount+","+length+","+start+","+shapelet.qualityValue);
+                    }
+                }
+            }
+        }
+        
+        seriesCount++;
+        return seriesShapelets;
+    }
+
     
     //given a series and a function to find a shapelet 
     public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){

@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -347,7 +347,6 @@ public class Experiments  {
                 LOGGER.log(Level.WARNING, "Serialisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Serializable.");
         }
 
-
         if (expSettings.visualise) {
             if (classifier instanceof Visualisable) {
                 ((Visualisable) classifier).setVisualisationSavePath(expSettings.supportingFilePath);
@@ -358,8 +357,20 @@ public class Experiments  {
                     LOGGER.log(Level.SEVERE, "Visualisation attempted but failed for classifier ("+classifier.getClass().getName()+")", ex);
                 }
             }
-            else
-                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier ("+classifier.getClass().getName()+") does not extend Visualisable.");
+            else {
+                expSettings.visualise = false;
+                LOGGER.log(Level.WARNING, "Visualisation requested, but the classifier (" + classifier.getClass().getName() + ") does not extend Visualisable.");
+            }
+        }
+
+        if (expSettings.interpret) {
+            if (classifier instanceof Interpretable) {
+                ((Interpretable) classifier).setInterpretabilitySavePath(expSettings.supportingFilePath);
+            }
+            else {
+                expSettings.interpret = false;
+                LOGGER.log(Level.WARNING, "Interpretability requested, but the classifier (" + classifier.getClass().getName() + ") does not extend Interpretable.");
+            }
         }
     }
 
@@ -700,7 +711,7 @@ public class Experiments  {
      * any info directly calculable from that here
      */
     public static ClassifierResults evaluateClassifier(ExperimentalArguments exp, Classifier classifier, Instances testSet) throws Exception {
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true, exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         return eval.evaluate(classifier, testSet);
     }
@@ -901,6 +912,10 @@ public class Experiments  {
                 + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         public boolean visualise = false;
 
+        @Parameter(names={"-int","--interpretability"}, description = "(boolean) Turns on the production of interpretability files, if the classifier implements the Interpretable interface. "
+                + "The classifier by default will write its interpretability files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
+        public boolean interpret = false;
+
         @Parameter(names={"-sp","--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
                 + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
                 + "the --resultsPath. If a path is supplied via this parameter however, the files shall be written to that precisely that directory, as opposed to e.g. [-sp]/[--classifierName]/Predictions... "
@@ -942,7 +957,7 @@ public class Experiments  {
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
 
-        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+        @Parameter(names={"-tem", "--trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
         public String trainEstimateMethod = "cv_10";
 
