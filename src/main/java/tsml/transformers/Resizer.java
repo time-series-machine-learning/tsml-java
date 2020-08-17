@@ -137,11 +137,11 @@ public class Resizer implements TrainableTransformer {
             // we're shorter than the average
             else {
                 // pad with mean.
-                double mean = InstanceTools.mean(inst);
+                double pad = padMetric.calculatePadValue(data);
 
                 System.arraycopy(data, 0, output, 0, length);
                 for (int i = length; i < resizeLength; i++)
-                    output[i] = mean;
+                    output[i] = pad;
             }
 
             DenseInstance out = new DenseInstance(resizeLength + 1);
