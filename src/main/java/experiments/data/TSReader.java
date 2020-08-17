@@ -159,8 +159,6 @@ public class TSReader {
         }
         //have to cast the null to arraylist type (this is taken from WEKAS OWN CODE.) to force it to use the right method.
 
-        System.out.println(classLabels.toString());
-
         if(classLabel)
             attList.add(new Attribute("classVal", classLabels, classLabels.size()));
 

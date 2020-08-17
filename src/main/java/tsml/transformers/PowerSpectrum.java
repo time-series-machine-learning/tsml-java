@@ -14,12 +14,16 @@
  */
 package tsml.transformers;
 
-import experiments.data.DatasetLoading;
-import fileIO.OutFile;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import experiments.data.DatasetLoading;
+import fileIO.OutFile;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -110,6 +114,35 @@ public class PowerSpectrum extends FFT {
             out.setValue(length, f.classValue());
 
         return out;
+    }
+
+    @Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        TimeSeriesInstance f_inst =fftTransformer.transform(inst);
+
+        List<List<Double>> out_data = new ArrayList<>();
+
+        int length = inst.getMaxLength() / 2;
+        
+        for(TimeSeries f : f_inst){
+            List<Double> vals = new ArrayList<>(length);
+            if(log){
+                double l1;		
+                for(int j=0;j<length;j++){
+                    l1= Math.sqrt(f.get(j*2)*f.get(j*2)+f.get(j*2+1)*f.get(j*2+1));
+                    vals.set(j,Math.log(l1));
+                }
+            }
+            else{
+                for (int j = 0; j < length; j++) {
+                    vals.set(j, Math.sqrt(f.get(j * 2) * f.get(j * 2) + f.get(j * 2 + 1) * f.get(j * 2 + 1)));
+                }
+            }
+
+            out_data.add(vals);
+        }
+
+        return new TimeSeriesInstance(out_data, inst.getLabelIndex());
     }
 
 

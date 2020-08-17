@@ -18,12 +18,20 @@ package utilities;
 
  */
 
-import evaluation.storage.ClassifierResults;
-import evaluation.evaluators.SingleTestSetEvaluator;
-import experiments.data.DatasetLoading;
-
 import java.util.ArrayList;
 import java.util.Random;
+
+import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
+import fileIO.OutFile;
+import machine_learning.classifiers.kNN;
+import statistics.distributions.NormalDistribution;
+import tsml.classifiers.TSClassifier;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
 import java.util.logging.Level;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -44,7 +52,12 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.*;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.Randomizable;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
@@ -79,6 +92,29 @@ public class ClassifierTools {
 			try{
 				predictedClass=c.classifyInstance(d);
 				trueClass=d.classValue();
+				if(trueClass==predictedClass)
+					a++;
+//				System.out.println("True = "+trueClass+" Predicted = "+predictedClass);
+			}catch(Exception e){
+                            System.out.println(" Error with instance "+i+" with Classifier "+c.getClass().getName()+" Exception ="+e);
+                            e.printStackTrace();
+                            System.exit(0);
+                        }
+		}
+		return a/size;
+    }	
+    
+    public static double accuracy(TimeSeriesInstances test, TSClassifier c){
+		double a=0;
+		int size=test.numInstances();
+		TimeSeriesInstance d;
+		double predictedClass,trueClass;
+		for(int i=0;i<size;i++)
+		{
+			d=test.get(i);
+			try{
+				predictedClass=c.classifyInstance(d);
+				trueClass=d.getLabelIndex();
 				if(trueClass==predictedClass)
 					a++;
 //				System.out.println("True = "+trueClass+" Predicted = "+predictedClass);

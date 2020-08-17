@@ -4,6 +4,7 @@ import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.intervals.IntervalInstance;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -25,16 +26,17 @@ public class IntervalTransform implements Transformer {
         setDeepCopyInstances(false);
     }
 
-    @Override public Instance transform(Instance inst) {
-        if(deepCopyInstances) {
+    @Override
+    public Instance transform(Instance inst) {
+        if (deepCopyInstances) {
             throw new UnsupportedOperationException(); // todo
-        } else if(inst instanceof IntervalInstance) {
+        } else if (inst instanceof IntervalInstance) {
             ((IntervalInstance) inst).setInterval(interval);
         } else {
             inst = new IntervalInstance(interval, inst);
         }
-        if(inst.dataset().numAttributes() != inst.numAttributes()) {
-            if(header == null || inst.dataset().numAttributes() != header.numAttributes()) {
+        if (inst.dataset().numAttributes() != inst.numAttributes()) {
+            if (header == null || inst.dataset().numAttributes() != header.numAttributes()) {
                 header = determineOutputFormat(inst.dataset());
             }
             inst.setDataset(header);
@@ -42,13 +44,14 @@ public class IntervalTransform implements Transformer {
         return inst;
     }
 
-    @Override public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
+    @Override
+    public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         Assert.assertEquals(data.numAttributes() - 1, data.classIndex());
-        if(deepCopyInstances) {
+        if (deepCopyInstances) {
             throw new UnsupportedOperationException(); // todo
         } else {
             ArrayList<Attribute> attributes = new ArrayList<>(interval.size() + 1);
-            for(int i = 0; i < interval.size(); i++) {
+            for (int i = 0; i < interval.size(); i++) {
                 final int j = interval.translate(i);
                 Attribute attribute = data.attribute(j);
                 attribute = attribute.copy(String.valueOf(j));
@@ -83,5 +86,11 @@ public class IntervalTransform implements Transformer {
         final Instance instance = instances.get(0);
         final IntervalInstance intervalInstance = new IntervalInstance(new Interval(10, 5), instance);
         System.out.println(intervalInstance.toString());
+    }
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

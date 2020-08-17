@@ -83,7 +83,7 @@ import weka.core.Utils;
 </pre>
 <!-- technical-bibtex-end -->
  <!-- options-start -->
- * Valid options are: <p/>
+ * Valid options are:
  * 
  * <pre> -T
  *  set number of trees in the ensemble.</pre>
@@ -92,16 +92,15 @@ import weka.core.Utils;
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
  
-* @version1.0 author Tony Bagnall
+*       version1.0 author Tony Bagnall
 * date 7/10/15  Tony Bagnall
 * update 14/2/19 Tony Bagnall
  * A few changes made to enable testing refinements.
  * 1. general baseClassifier rather than a hard coded RandomTree. We tested a few
  *  alternatives, they did not improve things
- * 2. Added setOptions to allow parameter tuning. Tuning on parameters
- *       #trees, #features
+ * 2. Added setOptions to allow parameter tuning. Tuning on parameters: #trees, #features
  * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
-*  @version2.0 13/03/20 Matthew Middlehurst. contractable, checkpointable and tuneable,
+*       version2.0 13/03/20 Matthew Middlehurst. contractable, checkpointable and tuneable,
  * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
  *  results for this classifier on 112 UCR data sets can be found at
  *  www.timeseriesclassification.com/results/ResultsByClassifier/TSF.csv. The first column of results  are on the default
@@ -540,13 +539,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
             for(int j=0;j<data.numInstances();j++){
-
-
                 long predTime = System.nanoTime();
                 for(int k=0;k<trainDistributions[j].length;k++)
                     if(oobCounts[j]>0)
                         trainDistributions[j][k]/=oobCounts[j];
-                preds[j]=utilities.GenericTools.indexOfMax(trainDistributions[j]);
+                preds[j]=findIndexOfMax(trainDistributions[j],rand);
                 actuals[j]=data.instance(j).classValue();
                 predTimes[j]=System.nanoTime()-predTime;
             }
@@ -650,11 +647,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public double classifyInstance(Instance ins) throws Exception {
         double[] d=distributionForInstance(ins);
-        int max=0;
-        for(int i=1;i<d.length;i++)
-            if(d[i]>d[max])
-                max=i;
-        return (double)max;
+        return findIndexOfMax(d, rand);
     }
   /**
    * Parses a given list of options to set the parameters of the classifier.

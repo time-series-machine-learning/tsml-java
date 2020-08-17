@@ -25,7 +25,7 @@ import tsml.classifiers.distance_based.DTWCV;
 import machine_learning.classifiers.kNN;
 import weka.core.Instance;
 import weka.core.Instances;
-import tsml.transformers.NormalizeAttribute;
+import tsml.transformers.ColumnNormalizer;
 import weka.filters.SimpleBatchFilter;
 
 public class TransformEnsembles extends AbstractClassifier{
@@ -47,7 +47,7 @@ public class TransformEnsembles extends AbstractClassifier{
 	PowerSpectrum ps;
 	ACF acf;
 	PrincipalComponents pca;
-	NormalizeAttribute nPs,nAcf,nPca;
+	ColumnNormalizer nPs,nAcf,nPca;
 	ArrayList<double[][]> predictions=new ArrayList<double[][]>();
 	static double CRITICAL=2.32;
 	int testPos=0;
@@ -205,9 +205,9 @@ public class TransformEnsembles extends AbstractClassifier{
 			Instances t1=ps.transform(data);
 			Instances t2=acf.transform(data);
 			if(normaliseAtts){
-				nPs=new NormalizeAttribute(t1);
+				nPs=new ColumnNormalizer(t1);
 				t1=nPs.transform(t1);
-				nAcf=new NormalizeAttribute(t2);
+				nAcf=new ColumnNormalizer(t2);
 				t2=nAcf.transform(t2);
 			}
 			pca.buildEvaluator(data);

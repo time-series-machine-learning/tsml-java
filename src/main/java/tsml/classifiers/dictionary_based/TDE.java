@@ -121,16 +121,14 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //TODO update
-//        TechnicalInformation result;
-//        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-//        result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
-//        result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
-//        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
-//        result.setValue(TechnicalInformation.Field.VOLUME, "29");
-//        result.setValue(TechnicalInformation.Field.NUMBER, "6");
-//        result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
-//        result.setValue(TechnicalInformation.Field.YEAR, "2015");
+        TechnicalInformation result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, J. Large, G. Cawley and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "The Temporal Dictionary Ensemble (TDE) Classifier for " +
+                "Time Series Classification");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "The European Conference on Machine Learning and " +
+                "Principles and Practice of Knowledge Discovery in Databases");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
         return null;
     }
 
@@ -894,7 +892,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     Arrays.fill(probs, 1.0 / train.numClasses());
                 }
 
-                trainResults.addPrediction(train.get(i).classValue(), probs, argMax(probs, rand), -1, "");
+                trainResults.addPrediction(train.get(i).classValue(), probs, findIndexOfMax(probs, rand), -1, "");
             }
 
             trainResults.setClassifierName("TDEOOB");
@@ -942,7 +940,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     probs = distributionForInstance(i);
                 }
 
-                trainResults.addPrediction(train.get(i).classValue(), probs, argMax(probs, rand), -1, "");
+                trainResults.addPrediction(train.get(i).classValue(), probs, findIndexOfMax(probs, rand), -1, "");
             }
         }
 
@@ -1000,20 +998,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] probs = distributionForInstance(instance);
-
-        int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass]) {
-                maxClass = n;
-            }
-            else if (probs[n] == probs[maxClass]){
-                if (rand.nextBoolean()){
-                    maxClass = n;
-                }
-            }
-        }
-
-        return maxClass;
+        return findIndexOfMax(probs, rand);
     }
 
     @Override

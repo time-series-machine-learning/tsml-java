@@ -14,10 +14,7 @@
  */
 package tsml.classifiers.dictionary_based;
 
-import java.security.InvalidParameterException;
 import java.util.*;
-
-//import net.sourceforge.sizeof.SizeOf;
 import tsml.classifiers.*;
 
 import java.io.File;
@@ -154,16 +151,15 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //TODO update
         TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
-        result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
-        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
-        result.setValue(TechnicalInformation.Field.VOLUME, "29");
-        result.setValue(TechnicalInformation.Field.NUMBER,"6");
-        result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
-        result.setValue(TechnicalInformation.Field.YEAR, "2015");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, W. Vickers and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "Scalable dictionary classifiers for time series " +
+                "classification");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "International Conference on Intelligent Data " +
+                "Engineering and Automated Learning");
+        result.setValue(TechnicalInformation.Field.PAGES, "11-19");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
         return result;
     }
 
@@ -1181,7 +1177,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         for (int i = 0; i < data.numInstances(); ++i) {
             double[] probs;
-
             if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)){
                 probs = trainDistributions[i];
             }
@@ -1189,20 +1184,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 probs = distributionForInstance(i);
             }
 
-            int maxClass = 0;
-            for (int n = 1; n < probs.length; ++n) {
-                if (probs[n] > probs[maxClass]) {
-                    maxClass = n;
-                }
-                else if (probs[n] == probs[maxClass]){
-                    if (rand.nextBoolean()){
-                        maxClass = n;
-                    }
-                }
-            }
+            int maxClass = findIndexOfMax(probs, rand);
             if (maxClass == data.get(i).classValue())
                 ++correct;
             this.ensembleCvPreds[i] = maxClass;
+
             trainResults.addPrediction(data.get(i).classValue(), probs, maxClass, -1, "");
         }
         trainResults.finaliseResults();
@@ -1289,20 +1275,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] probs = distributionForInstance(instance);
-
-        int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
-            if (probs[n] > probs[maxClass]) {
-                maxClass = n;
-            }
-            else if (probs[n] == probs[maxClass]){
-                if (rand.nextBoolean()){
-                    maxClass = n;
-                }
-            }
-        }
-
-        return maxClass;
+        return findIndexOfMax(probs, rand);
     }
 
     @Override
