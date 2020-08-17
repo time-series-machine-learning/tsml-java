@@ -11,7 +11,7 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 package tsml.transformers;
 
 import weka.core.Capabilities;
@@ -24,6 +24,7 @@ import java.util.*;
 
 import org.apache.commons.lang3.NotImplementedException;
 
+import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.DenseInstance;
 
@@ -113,11 +114,11 @@ public class RankOrder implements Transformer {
 		return result;
 	}
 
-	public Capabilities getCapabilities() {
-		Capabilities result = Transformer.super.getCapabilities();
-		result.enableAllAttributes();
+	public TSCapabilities getTSCapabilities() {
+		TSCapabilities result = Transformer.super.getTSCapabilities();
+		/*result.enableAllAttributes();
 		result.enableAllClasses();
-		result.enable(Capability.NO_CLASS); // filter doesn't need class to be set
+		result.enable(Capability.NO_CLASS); // filter doesn't need class to be set*/
 		return result;
 	}
 
