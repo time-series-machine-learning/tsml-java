@@ -2,20 +2,19 @@ package tsml.classifiers.distance_based.knn;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.*;
-import tsml.classifiers.distance_based.distances.DistanceMeasureable;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
-import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.classifier_mixins.Rebuildable;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.classifiers.Rebuildable;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import utilities.*;
-import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -24,15 +23,13 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static experiments.data.DatasetLoading.sampleGunPoint;
-
 /**
  * k-nearest-neighbour classifier.
  *
  * Contributors: goastler
  */
-public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, GcMemoryWatchable,
-    StopWatchTrainTimeable {
+public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, WatchedMemory,
+    TimedTrain {
 
     /**
      * flag for k variable. This is used in representing parameters in the form of a string.
@@ -67,13 +64,13 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     // whether to early abandon on distance measure calculations
     private boolean earlyAbandon = true;
     // the distance function
-    private DistanceFunction distanceFunction = new DTWDistance(0);
+    private DistanceFunction distanceFunction = new DTWDistance();
     // track the train time
     private StopWatch trainTimer = new StopWatch();
     // track the memory
     private MemoryWatcher memoryWatcher = new MemoryWatcher();
     // min time between checkpointing
-    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    private transient long minCheckpointIntervalNanos = 0;//Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     // last timestamp of checkpoint
     private transient long lastCheckpointTimeStamp = 0;
     // path to save checkpoints to
@@ -85,17 +82,14 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
     // whether to random tie break (defaults to true / yes and drawing neighbours are put into a majority vote)
     private boolean randomTieBreak = true;
 
-    @Override
     public boolean isSkipFinalCheckpoint() {
         return skipFinalCheckpoint;
     }
 
-    @Override
     public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
         this.skipFinalCheckpoint = skipFinalCheckpoint;
     }
 
-    @Override
     public String getSavePath() {
         return savePath;
     }
@@ -111,18 +105,12 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return result;
     }
 
-    @Override public String getLoadPath() {
-        return loadPath;
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+
     }
 
-    @Override public boolean setLoadPath(final String path) {
-        boolean result = Checkpointable.super.setLoadPath(path);
-        if(result) {
-            loadPath = StrUtils.asDirPath(path);
-        } else {
-            loadPath = null;
-        }
-        return result;
+    public String getLoadPath() {
+        return loadPath;
     }
 
     public StopWatch getTrainTimer() {
@@ -137,22 +125,27 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
-        trainTimer.suspend();
-        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
-        memoryWatcher.unsuspend();
-        trainTimer.unsuspend();
-        return result;
+    public boolean checkpointIfIntervalExpired() throws Exception {
+//        trainTimer.suspend();
+//        memoryWatcher.suspend();
+//        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(),
+//            isBuilt()
+//            &&
+//                                                                !skipFinalCheckpoint);
+//        memoryWatcher.unsuspend();
+//        trainTimer.unsuspend(); todo fix
+//        return result;
+        return true;
     }
 
-    public boolean loadFromCheckpoint() {
-        trainTimer.suspend(); // todo interface for this
-        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
-        memoryWatcher.unsuspend();
-        trainTimer.unsuspend();
-        return result;
+    public boolean loadCheckpoint() {
+//        trainTimer.suspend(); // todo interface for this
+//        memoryWatcher.suspend();
+//        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
+//        memoryWatcher.unsuspend(); todo fix
+//        trainTimer.unsuspend();
+//        return result;
+        return true;
     }
 
     public void setMinCheckpointIntervalNanos(final long nanos) {
@@ -172,17 +165,18 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                     .add(getEarlyAbandonFlag(), earlyAbandon)
                     .add(getKFlag(), k)
                     .add(getRandomTieBreakFlag(), randomTieBreak)
-                    .add(DistanceMeasureable.getDistanceFunctionFlag(), distanceFunction);
+                    .add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
     }
 
-    @Override public void setParams(final ParamSet params) {
-        ParamHandler.setParam(params, DistanceMeasureable.getDistanceFunctionFlag(), this::setDistanceFunction, DistanceFunction.class);
-        ParamHandler.setParam(params, getKFlag(), this::setK, Integer.class);
-        ParamHandler.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
-        ParamHandler.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
+    @Override public void setParams(final ParamSet params) throws Exception {
+        ParamHandlerUtils
+                .setParam(params, DistanceMeasure.DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandlerUtils.setParam(params, getKFlag(), this::setK, Integer.class);
+        ParamHandlerUtils.setParam(params, getEarlyAbandonFlag(), this::setEarlyAbandon, Boolean.class);
+        ParamHandlerUtils.setParam(params, getRandomTieBreakFlag(), this::setRandomTieBreak, Boolean.class);
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
@@ -205,15 +199,15 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // load from a previous checkpoint
-        boolean loadedFromCheckpoint = loadFromCheckpoint();
+        boolean loadedFromCheckpoint = loadCheckpoint();
         // enable resource monitors
-        memoryWatcher.enable(); // todo can we share emitters in mem watcher?
-        trainTimer.enable();
+        memoryWatcher.start(); // todo can we share emitters in mem watcher?
+        trainTimer.start();
         final boolean rebuild = isRebuild();
         if(rebuild) {
             // if we're rebuilding then reset resource monitors
-            memoryWatcher.resetAndEnable();
-            trainTimer.resetAndEnable();
+            memoryWatcher.resetAndStart();
+            trainTimer.resetAndStart();
         }
         // build parent
         super.buildClassifier(trainData);
@@ -222,13 +216,13 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         // save our model data
         this.trainData = trainData;
         // we're fully built now
-        setBuilt(true);
+//        setBuilt(true);
         // disable resource monitors
-        trainTimer.disable();
-        memoryWatcher.disable();
+        trainTimer.stop();
+        memoryWatcher.stop();
         // save checkpoint unless we loaded from checkpoint
         if(!loadedFromCheckpoint) {
-            saveToCheckpoint();
+            checkpointIfIntervalExpired();
         } else {
             // if we've loaded from checkpoint then there's no point in re saving a checkpoint as we haven't done any
             // further work
@@ -275,28 +269,29 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
 
         // add an instance, finding the distance between the target instance and the given instance
         public double add(Instance neighbour) {
-            StopWatch timer = StopWatch.newStopWatchEnabled();
+            StopWatch timer = new StopWatch();
+            timer.start();
             final double distance = distanceFunction.distance(this.instance, neighbour, limit);
-            timer.disable();
-            add(neighbour, distance, timer.getTimeNanos());
+            timer.stop();
+            add(neighbour, distance, timer.getTime());
             return distance;
         }
 
         // add an instance given a precomputed distance and corresponding time it took to find that distance
         public void add(Instance neighbour, double distance, long distanceMeasurementTime) {
-            comparisonTimer.enable();
+            comparisonTimer.start();
             prunedMap.put(distance, neighbour);
             if(earlyAbandon) {
                 limit = prunedMap.lastKey();
             }
             comparisonTimer.add(distanceMeasurementTime);
-            comparisonTimer.disable();
+            comparisonTimer.stop();
         }
 
         public double[] predict() {
-            predictTimer.resetAndEnable();
+            predictTimer.resetAndStart();
             final PrunedMultimap<Double, Instance> nearestNeighbourMap = prunedMap;
-            final Random random = getRandom();
+            final Random random = null; //getRandom();
             final Logger logger = getLogger();
             final double[] distribution = new double[instance.numClasses()];
             if(nearestNeighbourMap.isEmpty()) {
@@ -308,15 +303,15 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
                         distribution[(int) nearestNeighbour.classValue()]++;
                     }
                 }
-                ArrayUtilities.normaliseInPlace(distribution);
+                ArrayUtilities.normalise(distribution);
             }
-            predictTimer.disable();
+            predictTimer.stop();
             return distribution;
         }
 
         public long getTimeInNanos() {
             // the time taken to find the nearest neighbours and make a prediction for the target instance
-            return predictTimer.getTimeNanos() + comparisonTimer.getTimeNanos();
+            return predictTimer.getTime() + comparisonTimer.getTime();
         }
 
         public double getLimit() {
@@ -334,10 +329,6 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
         return searcher.predict();
     }
 
-    @Override public double classifyInstance(final Instance instance) throws Exception {
-        return Utilities.argMax(distributionForInstance(instance), getRandom());
-    }
-
     public int getK() {
         return k;
     }
@@ -352,11 +343,6 @@ public class KNN extends BaseClassifier implements Rebuildable, Checkpointable, 
 
     public void setDistanceFunction(final DistanceFunction distanceFunction) {
         this.distanceFunction = distanceFunction;
-    }
-
-    public static void main(String[] args) throws Exception {
-        ClassifierResults results = ClassifierTools.trainAndTest("/bench/datasets/", "GunPoint", new KNN(), 0);
-        System.out.println(results.writeSummaryResultsToString());
     }
 
 }

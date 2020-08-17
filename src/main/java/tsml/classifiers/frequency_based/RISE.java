@@ -678,9 +678,10 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             timer.treeStartTime = System.nanoTime();
 
             //Compute maximum interval length given time remaining.
-            timer.buildModel();
-            maxIntervalLength = (int)timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
-
+            if(trainTimeContract) {
+                timer.buildModel();
+                maxIntervalLength = (int) timer.getFeatureSpace((timer.forestTimeLimit) - (System.nanoTime() - (timer.forestStartTime - getTime())));
+            }
 
             //Produce intervalInstances from trainingData using interval attributes.
             Instances intervalInstances;
@@ -701,11 +702,6 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
             }
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
-            try{
-                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
-            }catch(Exception e){
-                baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
-            }
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
             //Add dependant variable to model (time taken).
@@ -848,16 +844,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
             //Add to trainResults.
-            double acc = 0.0;
             for (int i = 0; i < finalDistributions.length; i++) {
-                double predClass = 0;
-                double predProb = 0.0;
-                for (int j = 0; j < finalDistributions[i].length; j++) {
-                    if (finalDistributions[i][j] > predProb) {
-                        predProb = finalDistributions[i][j];
-                        predClass = j;
-                    }
-                }
+                double predClass = findIndexOfMax(finalDistributions[i], rand);
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
             trainResults.setClassifierName("RISEOOB");
@@ -978,16 +966,21 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             startEndPoints.add(new int[2]);
             if (rand.nextBoolean()) {
                 startEndPoints.get(startEndPoints.size() - 1)[0] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength); //Start point
+                printLineDebug(" start end points ="+startEndPoints.get(startEndPoints.size() - 1)[0]);
                 int range = (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0] > maxIntervalLength
                         ? maxIntervalLength : (data.numAttributes() - 1) - startEndPoints.get(startEndPoints.size() - 1)[0];
+                printLineDebug("TRUE range = "+range+" min = "+minIntervalLength+" "+" max = "+maxIntervalLength);
                 int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[1] = startEndPoints.get(startEndPoints.size() - 1)[0] + length;
+
             } else {
                 startEndPoints.get(startEndPoints.size() - 1)[1] = rand.nextInt((data.numAttributes() - 1) - minIntervalLength) + minIntervalLength; //Start point
                 int range = startEndPoints.get(startEndPoints.size() - 1)[1] > maxIntervalLength
                         ? maxIntervalLength : startEndPoints.get(startEndPoints.size() - 1)[1];
                 int length;
-                if (range - minIntervalLength == 0) length = 3;
+                printLineDebug("FALSE range = "+range+" min = "+minIntervalLength+" ");
+                if (range - minIntervalLength == 0)
+                    length = 3;
                 else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                 startEndPoints.get(startEndPoints.size() - 1)[0] = startEndPoints.get(startEndPoints.size() - 1)[1] - length;
             }
@@ -1089,13 +1082,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[]distribution = distributionForInstance(instance);
-
-        int maxVote=0;
-        for(int i = 1; i < distribution.length; i++)
-            if(distribution[i] > distribution[maxVote])
-                maxVote = i;
-        return maxVote;
+        double[] distribution = distributionForInstance(instance);
+        return findIndexOfMax(distribution, rand);
     }
 
     /**
@@ -1403,7 +1391,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 x = maxIntervalLength;
             }
             if(x < minIntervalLength){
-                x = minIntervalLength;
+                x = minIntervalLength+1;
             }
 
             return x;

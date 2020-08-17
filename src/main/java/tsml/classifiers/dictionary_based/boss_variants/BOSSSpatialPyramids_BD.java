@@ -454,22 +454,11 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
         double correct = 0;
         for (int i = 0; i < data.numInstances(); ++i) {
             long predTime = System.nanoTime();
+            //classify series i, while ignoring its corresponding histogram i
             double[] probs = distributionForInstance(i, data.numClasses());
             predTime = System.nanoTime() - predTime;
 
-            int maxClass = 0;
-            for (int n = 1; n < probs.length; ++n) {
-                if (probs[n] > probs[maxClass]) {
-                    maxClass = n;
-                }
-                else if (probs[n] == probs[maxClass]){
-                    if (rand.nextBoolean()){
-                        maxClass = n;
-                    }
-                }
-            }
-
-            //No need to do it againclassifyInstance(i, data.numClasses()); //classify series i, while ignoring its corresponding histogram i
+            int maxClass = findIndexOfMax(probs, rand);
             if (maxClass == data.get(i).classValue())
                 ++correct;
 
@@ -488,15 +477,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
      */
     public double classifyInstance(int test, int numclasses) throws Exception {
         double[] dist = distributionForInstance(test, numclasses);
-        
-        double maxFreq=dist[0], maxClass=0;
-        for (int i = 1; i < dist.length; ++i) 
-            if (dist[i] > maxFreq) {
-                maxFreq = dist[i];
-                maxClass = i;
-            }
-        
-        return maxClass;
+        return findIndexOfMax(dist, rand);
     }
 
     public double[] distributionForInstance(int test, int numclasses) throws Exception {
@@ -524,15 +505,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double[] dist = distributionForInstance(instance);
-        
-        double maxFreq=dist[0], maxClass=0;
-        for (int i = 1; i < dist.length; ++i) 
-            if (dist[i] > maxFreq) {
-                maxFreq = dist[i];
-                maxClass = i;
-            }
-        
-        return maxClass;
+        return findIndexOfMax(dist, rand);
     }
 
     @Override

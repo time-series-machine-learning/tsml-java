@@ -1,10 +1,9 @@
 package tsml.classifiers.distance_based.distances.msm;
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
+import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instance;
-import weka.core.neighboursearch.PerformanceStats;
 
 /**
  * MSM distance measure.
@@ -12,25 +11,23 @@ import weka.core.neighboursearch.PerformanceStats;
  * Contributors: goastler
  */
 public class MSMDistance
-    extends BaseDistanceMeasure {
+    extends DoubleMatrixBasedDistanceMeasure {
 
 
-    private double cost = 1;
+    private double c = 1;
 
     public MSMDistance() {
 
     }
 
-    public static String getCostFlag() {
-        return "c";
+    public static final String C_FLAG = "c";
+
+    public double getC() {
+        return c;
     }
 
-    public double getCost() {
-        return cost;
-    }
-
-    public void setCost(double cost) {
-        this.cost = cost;
+    public void setC(double c) {
+        this.c = c;
     }
 
     private double findCost(double newPoint, double x, double y) {
@@ -38,71 +35,115 @@ public class MSMDistance
 
         if(((x <= newPoint) && (newPoint <= y)) ||
             ((y <= newPoint) && (newPoint <= x))) {
-            dist = getCost();
+            dist = c;
         } else {
-            dist = getCost() + Math.min(Math.abs(newPoint - x), Math.abs(newPoint - y));
+            dist = c + Math.min(Math.abs(newPoint - x), Math.abs(newPoint - y));
         }
 
         return dist;
     }
 
     @Override
-    public double distance(final Instance first,
-        final Instance second,
-        final double limit,
-        final PerformanceStats stats) {
+    public double findDistance(Instance a, Instance b, final double limit) {
 
-        checkData(first, second);
+        int aLength = a.numAttributes() - 1;
+        int bLength = b.numAttributes() - 1;
 
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
+        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
+        setDistanceMatrix(matrix);
 
-        double[][] cost = new double[aLength][bLength];
+        final int windowSize = aLength;
 
-        // Initialization
-        cost[0][0] = Math.abs(first.value(0) - second.value(0));
-        for(int i = 1; i < aLength; i++) {
-            cost[i][0] = cost[i - 1][0] + findCost(first.value(i), first.value(i - 1), second.value(0));
+        double[] row = new double[bLength];
+        double[] prevRow = new double[bLength];
+        // top left cell of matrix will simply be the sq diff
+        double min = Math.abs(a.value(0) - b.value(0));
+        row[0] = min;
+        // start and end of window
+        // start at the next cell of the first row
+        int start = 1;
+        // end at window or bLength, whichever smallest
+        int end = Math.min(bLength - 1, windowSize);
+        // must set the value before and after the window to inf if available as the following row will use these
+        // in top / left / top-left comparisons
+        if(end + 1 < bLength) {
+            row[end + 1] = Double.POSITIVE_INFINITY;
         }
-        for(int i = 1; i < bLength; i++) {
-            cost[0][i] = cost[0][i - 1] + findCost(second.value(i), first.value(0), second.value(i - 1));
+        // the first row is populated from the sq diff + the cell before
+        for(int j = start; j <= end; j++) {
+            double cost = row[j - 1] + findCost(b.value(j), a.value(0), b.value(j - 1));
+            row[j] = cost;
+            min = Math.min(min, cost);
         }
-
-        // Main Loop
-        double min;
+        if(generateDistanceMatrix) {
+            System.arraycopy(row, 0, matrix[0], 0, row.length);
+        }
+        // early abandon if work has been done populating the first row for >1 entry
+        if(min > limit) {
+            return Double.POSITIVE_INFINITY;
+        }
         for(int i = 1; i < aLength; i++) {
-            min = limit;
-            for(int j = 1; j < bLength; j++) {
-                double d1, d2, d3;
-                d1 = cost[i - 1][j - 1] + Math.abs(first.value(i) - second.value(j));
-                d2 = cost[i - 1][j] + findCost(first.value(i), first.value(i - 1), second.value(j));
-                d3 = cost[i][j - 1] + findCost(second.value(j), first.value(i), second.value(j - 1));
-                cost[i][j] = Math.min(d1, Math.min(d2, d3));
-
-                if(cost[i][j] >= limit) {
-                    cost[i][j] = Double.POSITIVE_INFINITY;
-                }
-
-                if(cost[i][j] < min) {
-                    min = cost[i][j];
-                }
+            // Swap current and prevRow arrays. We'll just overwrite the new row.
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
             }
-            if(min >= limit) {
+            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+            min = Double.POSITIVE_INFINITY;
+            // start and end of window
+            start = Math.max(0, i - windowSize);
+            end = Math.min(bLength - 1, i + windowSize);
+            // must set the value before and after the window to inf if available as the following row will use these
+            // in top / left / top-left comparisons
+            if(start - 1 >= 0) {
+                row[start - 1] = Double.POSITIVE_INFINITY;
+            }
+            if(end + 1 < bLength) {
+                row[end + 1] = Double.POSITIVE_INFINITY;
+            }
+            // if assessing the left most column then only top is the option - not left or left-top
+            final double ai = a.value(i);
+            final double aiPrev = a.value(i - 1);
+            if(start == 0) {
+                final double cost = prevRow[start] + findCost(ai, aiPrev, b.value(start));
+                row[start] = cost;
+                min = Math.min(min, cost);
+                // shift to next cell
+                start++;
+            }
+            for(int j = start; j <= end; j++) {
+                final double bj = b.value(j);
+                // compute squared distance of feature vectors
+                final double topLeft = prevRow[j - 1] + Math.abs(ai - bj);
+                final double top = prevRow[j] + findCost(ai, aiPrev, bj);
+                final double left = row[j - 1] + findCost(bj, ai, b.value(j - 1));
+                final double cost = Math.min(top, Math.min(left, topLeft));
+
+                row[j] = cost;
+                min = Math.min(min, cost);
+            }
+            if(generateDistanceMatrix) {
+                System.arraycopy(row, 0, matrix[i], 0, row.length);
+            }
+            if(min > limit) {
                 return Double.POSITIVE_INFINITY;
             }
         }
-        // Output
-        return cost[aLength - 1][bLength - 1];
+        //Find the minimum distance at the end points, within the warping window.
+        return row[bLength - 1];
+
     }
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().add(getCostFlag(), cost);
+        return super.getParams().add(C_FLAG, c);
     }
 
     @Override
-    public void setParams(final ParamSet param) {
-        ParamHandler.setParam(param, getCostFlag(), this::setCost, Double.class);
+    public void setParams(final ParamSet param) throws Exception {
+        super.setParams(param);
+        ParamHandlerUtils.setParam(param, C_FLAG, this::setC, Double.class);
     }
-
 }

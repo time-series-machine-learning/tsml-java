@@ -27,6 +27,7 @@ import trees.ProximityForest;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  * 
@@ -81,7 +82,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class ProximityForestWrapper extends AbstractClassifier {
+public class ProximityForestWrapper extends AbstractClassifier implements Randomizable {
 
     //from paper, pg18-19: 
     /*
@@ -160,7 +161,7 @@ public class ProximityForestWrapper extends AbstractClassifier {
         numClasses = data.numClasses();
         header = new Instances(data,0);
 
-        if (AppContext.rand == null) AppContext.rand = new Random();
+        if (AppContext.rand == null) AppContext.rand = new Random(AppContext.rand_seed);
                 
         AppContext.num_trees = num_trees;
         AppContext.num_candidates_per_split = num_candidates_per_split;

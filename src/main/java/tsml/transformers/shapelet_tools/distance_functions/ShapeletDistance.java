@@ -17,6 +17,8 @@ package tsml.transformers.shapelet_tools.distance_functions;
 import java.io.Serializable;
 
 import weka.core.Instances;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.shapelet_tools.Shapelet;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
 import utilities.rescalers.SeriesRescaler;
@@ -49,6 +51,7 @@ public class ShapeletDistance implements Serializable{
 //Should the seriesRescaler not depend on RescalerType??
     public SeriesRescaler seriesRescaler = new ZNormalisation();
     
+    protected TimeSeriesInstance candidateTSInst;
     protected Instance candidateInst;
     protected double[] candidateArray;
     
@@ -62,6 +65,11 @@ public class ShapeletDistance implements Serializable{
     protected long count;
     
     public void init(Instances data)
+    {
+        count =0;
+    }
+
+    public void init(TimeSeriesInstances data)
     {
         count =0;
     }
@@ -103,6 +111,26 @@ public class ShapeletDistance implements Serializable{
         // znorm candidate here so it's only done once, rather than in each distance calculation
         cand.setShapeletContent(seriesRescaler.rescaleSeries(cand.getShapeletContent(), false));
     }
+
+    public void setCandidate(TimeSeriesInstance inst, int start, int len, int dim) {
+        //extract shapelet and nomrliase.
+        cand = new ShapeletCandidate();
+        startPos = start;
+        length = len;
+        dimension =  dim;
+
+        //only call to double array when we've changed series.
+        if(candidateTSInst==null || candidateTSInst != inst){
+            candidateArray = inst.get(dimension).toArray();
+            candidateTSInst = inst;
+        }
+        
+        double[] temp = inst.get(dimension).getSlidingWindowArray(start, start+length);
+        cand.setShapeletContent(temp);
+        
+        // znorm candidate here so it's only done once, rather than in each distance calculation
+        cand.setShapeletContent(seriesRescaler.rescaleSeries(cand.getShapeletContent(), false));
+    }
     
     public void setSeries(int srsId) {
         seriesId = srsId;
@@ -111,6 +139,10 @@ public class ShapeletDistance implements Serializable{
     public double calculate(Instance timeSeries, int timeSeriesId){
         return calculate(timeSeries.toDoubleArray(), timeSeriesId);
     }
+
+    public double calculate(TimeSeriesInstance timeSeriesInstance, int timeSeriesId) {
+		return calculate(timeSeriesInstance.get(dimension).toArray(), timeSeriesId);
+	}
          
     public double distanceToShapelet(Shapelet otherShapelet){
         
@@ -160,4 +192,6 @@ public class ShapeletDistance implements Serializable{
         double dist = (bestSum == 0.0) ? 0.0 : (1.0 / length * bestSum);
         return dist;
     }
+
+
 }
