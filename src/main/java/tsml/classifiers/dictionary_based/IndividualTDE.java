@@ -15,14 +15,19 @@
 package tsml.classifiers.dictionary_based;
 
 import com.carrotsearch.hppc.*;
-import com.carrotsearch.hppc.cursors.IntCursor;
+import com.carrotsearch.hppc.cursors.*;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
+import tsml.classifiers.multivariate.WEASEL_MUSE;
+import utilities.generic_storage.ComparablePair;
 import utilities.generic_storage.SerialisableComparablePair;
 import weka.classifiers.AbstractClassifier;
-import weka.core.*;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.Statistics;
+import weka.core.UnassignedClassException;
 
 import java.io.Serializable;
 import java.util.*;
@@ -51,35 +56,39 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     //breakpoints to be found by MCB or IGB
     private double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
-    private int windowSize;
-    private int wordLength;
-    private int alphabetSize;
-    private boolean norm;
-    private int levels;
-    private boolean IGB;
+    protected int windowSize;
+    protected int wordLength;
+    protected int alphabetSize;
+    protected boolean norm;
+    protected int levels;
+    protected boolean IGB;
 
-    private boolean histogramIntersection = true;
-    private boolean useBigrams = true;
-    private double levelWeighting = 0.5;
-    private boolean numerosityReduction = true;
-    private double inverseSqrtWindowSize;
-    private boolean cleanAfterBuild = false;
-    private int seriesLength;
+    protected boolean histogramIntersection = true;
+    protected boolean useBigrams = true;
+    protected double levelWeighting = 0.5;
+    protected boolean numerosityReduction = true;
+    protected double inverseSqrtWindowSize;
+    protected boolean cleanAfterBuild = false;
+    protected int seriesLength;
 
-    private int ensembleID = -1;
-    private double accuracy = -1;
-    private double weight = 1;
-    private ArrayList<Integer> subsampleIndices;
-    private ArrayList<Integer> trainPreds;
+    protected boolean featureSelection = false;
+    private ObjectHashSet<SerialisableComparablePair<BitWord, Byte>> chiSquare;
+    protected int chiLimit = 2;
 
-    private boolean multiThread = false;
-    private int numThreads = 1;
-    private ExecutorService ex;
+    protected int ensembleID = -1;
+    protected double accuracy = -1;
+    protected double weight = 1;
+    protected ArrayList<Integer> subsampleIndices;
+    protected ArrayList<Integer> trainPreds;
 
-    private int seed = 0;
-    private Random rand;
+    protected boolean multiThread = false;
+    protected int numThreads = 1;
+    protected ExecutorService ex;
 
-    private static final long serialVersionUID = 1L;
+    protected int seed = 0;
+    protected Random rand;
+
+    private static final long serialVersionUID = 2L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
                          boolean multiThread, int numThreads, ExecutorService ex) {
@@ -117,8 +126,10 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         this.alphabetSize = boss.alphabetSize;
         this.norm = boss.norm;
         this.levels = boss.levels;
+        this.IGB = boss.IGB;
 
         this.histogramIntersection = boss.histogramIntersection;
+        this.useBigrams = boss.useBigrams;
         this.levelWeighting = boss.levelWeighting;
         this.numerosityReduction = boss.numerosityReduction;
         this.inverseSqrtWindowSize = boss.inverseSqrtWindowSize;
@@ -132,9 +143,11 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         this.seed = boss.seed;
         this.rand = boss.rand;
 
-        this.SFAwords = boss.SFAwords;
-        this.bags = new ArrayList<>(boss.bags.size());
-        this.breakpoints = boss.breakpoints;
+        if (!(boss instanceof MultivariateIndividualTDE)) {
+            this.SFAwords = boss.SFAwords;
+            this.bags = new ArrayList<>(boss.bags.size());
+            this.breakpoints = boss.breakpoints;
+        }
     }
 
     @Override
@@ -148,7 +161,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     //map of <word, level> => count
-    public static class SPBag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
+    public static class SPBag extends ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> {
         double classVal;
 
         public SPBag() {
@@ -191,7 +204,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         SFAwords = null;
     }
 
-    private double[][] performDFT(double[][] windows) {
+    protected double[][] performDFT(double[][] windows) {
         double[][] dfts = new double[windows.length][wordLength];
         for (int i = 0; i < windows.length; ++i) {
             dfts[i] = DFT(windows[i]);
@@ -199,7 +212,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dfts;
     }
 
-    private double stdDev(double[] series) {
+    protected double stdDev(double[] series) {
         double sum = 0.0;
         double squareSum = 0.0;
         for (int i = 0; i < windowSize; i++) {
@@ -212,7 +225,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return variance > 0 ? Math.sqrt(variance) : 1.0;
     }
 
-    private double[] DFT(double[] series) {
+    protected double[] DFT(double[] series) {
         //taken from FFT.java but
         //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
         //instead of Complex[] size n/2
@@ -243,7 +256,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[] DFTunnormed(double[] series) {
+    protected double[] DFTunnormed(double[] series) {
         //taken from FFT.java but
         //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
         //instead of Complex[] size n/2
@@ -270,7 +283,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[] normalizeDFT(double[] dft, double std) {
+    protected double[] normalizeDFT(double[] dft, double std) {
         double normalisingFactor = (std > 0? 1.0 / std : 1.0) * inverseSqrtWindowSize;
         for (int i = 0; i < dft.length; i++)
             dft[i] *= normalisingFactor;
@@ -278,7 +291,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[][] performMFT(double[] series) {
+    protected double[][] performMFT(double[] series) {
         // ignore DC value?
         int startOffset = norm ? 2 : 0;
         int l = wordLength;
@@ -321,7 +334,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return transformed;
     }
 
-    private void calcIncrementalMeanStddev(int windowLength, double[] series, double[] means, double[] stds) {
+    protected void calcIncrementalMeanStddev(int windowLength, double[] series, double[] means, double[] stds) {
         double sum = 0;
         double squareSum = 0;
         // it is faster to multiply than to divide
@@ -343,23 +356,23 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private static double complexMulReal(double r1, double im1, double r2, double im2) {
+    protected static double complexMulReal(double r1, double im1, double r2, double im2) {
         return r1 * r2 - im1 * im2;
     }
 
-    private static double complexMulImag(double r1, double im1, double r2, double im2) {
+    protected static double complexMulImag(double r1, double im1, double r2, double im2) {
         return r1 * im2 + r2 * im1;
     }
 
-    private static double realephi(double u, double M) {
+    protected static double realephi(double u, double M) {
         return Math.cos(2 * Math.PI * u / M);
     }
 
-    private static double complexephi(double u, double M) {
+    protected static double complexephi(double u, double M) {
         return -Math.sin(2 * Math.PI * u / M);
     }
 
-    private double[][] disjointWindows(double [] data) {
+    protected double[][] disjointWindows(double [] data) {
         int amount = (int)Math.ceil(data.length/(double)windowSize);
         double[][] subSequences = new double[amount][windowSize];
 
@@ -374,7 +387,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return subSequences;
     }
 
-    private double[][] MCB(Instances data) {
+    protected double[][] MCB(Instances data) {
         double[][][] dfts = new double[data.numInstances()][][];
 
         ArrayList<double[]> samples = new ArrayList<>();
@@ -408,7 +421,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         int numWindowsPerInst = dfts[0].length;
         int totalNumWindows = numInsts*numWindowsPerInst;
 
-        breakpoints = new double[wordLength][alphabetSize];
+        double[][] breakpoints = new double[wordLength][alphabetSize];
 
         for (int letter = 0; letter < wordLength; ++letter) { //for each dft coeff
 
@@ -438,7 +451,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     //IGB code by Patrick Schaefer from the WEASEL class
-    private double[][] IGB(Instances data) {
+    protected double[][] IGB(Instances data) {
         ArrayList<SerialisableComparablePair<Double,Double>>[] orderline = new ArrayList[wordLength];
         for (int i = 0; i < orderline.length; i++) {
             orderline[i] = new ArrayList<>();
@@ -474,7 +487,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             allLabels[i] = labels.get(i);
         }
 
-        breakpoints = new double[wordLength][alphabetSize];
+        double[][] breakpoints = new double[wordLength][alphabetSize];
 
         for (int i = 0; i < orderline.length; i++) {
             if (!orderline[i].isEmpty()) {
@@ -496,7 +509,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return breakpoints;
     }
 
-    private void findBestSplit(List<SerialisableComparablePair<Double,Double>> element, int start, int end, int remainingSymbols,
+    protected void findBestSplit(List<SerialisableComparablePair<Double,Double>> element, int start, int end, int remainingSymbols,
                                  List<Integer> splitPoints) {
         double bestGain = -1;
         int bestPos = -1;
@@ -551,7 +564,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private double entropy(ObjectIntHashMap<Double> frequency, double total) {
+    protected double entropy(ObjectIntHashMap<Double> frequency, double total) {
         double entropy = 0;
         double log2 = 1.0 / Math.log(2.0);
         for (IntCursor element : frequency.values()) {
@@ -563,7 +576,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return entropy;
     }
 
-    private double calculateInformationGain(ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
+    protected double calculateInformationGain(ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
                                               double class_entropy, double total_c_in, double total) {
         double total_c_out = (total - total_c_in);
         return class_entropy
@@ -571,11 +584,71 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 - total_c_out / total * entropy(cOut, total_c_out);
     }
 
-    private int moveElement(List<SerialisableComparablePair<Double,Double>> element, ObjectIntHashMap<Double> cIn,
+    protected int moveElement(List<SerialisableComparablePair<Double,Double>> element, ObjectIntHashMap<Double> cIn,
                               ObjectIntHashMap<Double> cOut, int pos) {
         cIn.putOrAdd(element.get(pos).var2, 1, 1);
         cOut.putOrAdd(element.get(pos).var2, -1, -1);
         return 1;
+    }
+
+    private void trainChiSquared() {
+        // Chi2 Test
+        ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> featureCount
+                = new ObjectIntHashMap<>(bags.get(0).size());
+        DoubleDoubleHashMap classProb = new DoubleDoubleHashMap(10);
+        DoubleObjectHashMap<ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>>> observed
+                = new DoubleObjectHashMap<>(bags.get(0).size());
+
+        // count number of samples with this word
+        for (SPBag bag : bags) {
+            if (!observed.containsKey(bag.classVal)) {
+                observed.put(bag.classVal, new ObjectIntHashMap<>());
+            }
+            for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> word : bag) {
+                if (word.value > 0) {
+                    featureCount.putOrAdd(word.key, 1, 1);
+                    observed.get(bag.classVal).putOrAdd(word.key, 1, 1);
+                }
+            }
+
+            classProb.putOrAdd(bag.classVal, 1, 1);
+        }
+
+        // chi-squared: observed minus expected occurrence
+        chiSquare = new ObjectHashSet<>(featureCount.size());
+        for (DoubleDoubleCursor classLabel : classProb) {
+            classLabel.value /= bags.size();
+            if (observed.get(classLabel.key) != null) {
+                ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> observe = observed.get(classLabel.key);
+                for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> feature : featureCount) {
+                    double expected = classLabel.value * feature.value;
+                    double chi = observe.get(feature.key) - expected;
+                    double newChi = chi * chi / expected;
+                    if (newChi >= chiLimit && !chiSquare.contains(feature.key)) {
+                        chiSquare.add(feature.key);
+                    }
+                }
+            }
+        }
+
+        // best elements above limit
+        for (SPBag bag : bags) {
+            for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> cursor : bag) {
+                if (!chiSquare.contains(cursor.key)) {
+                    bag.remove(cursor.key);
+                }
+            }
+        }
+    }
+
+    private SPBag filterChiSquared(SPBag bag) {
+        SPBag newBag = new SPBag(bag.classVal);
+        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> cursor : bag) {
+            if (chiSquare.contains(cursor.key)) {
+                newBag.put(cursor.key, cursor.value);
+            }
+        }
+        return newBag;
     }
 
     /**
@@ -646,7 +719,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * @return data of passed instance in a double array with the class value removed if present
      */
-    private static double[] toArrayNoClass(Instance inst) {
+    protected static double[] toArrayNoClass(Instance inst) {
         int length = inst.numAttributes();
         if (inst.classIndex() >= 0)
             --length;
@@ -663,7 +736,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    public SPBag BOSSSpatialPyramidsTransform(Instance inst) {
+    private SPBag BOSSSpatialPyramidsTransform(Instance inst) {
 
         double[][] mfts = performMFT(toArrayNoClass(inst)); //approximation
         SPBag bag2 = createSPBagSingle(mfts); //discretisation/bagging
@@ -752,7 +825,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return bag;
     }
 
-    private void changeNumLevels(int newLevels) {
+    public void changeNumLevels(int newLevels) {
         //curently, simply remaking bags from words
         //alternatively: un-weight all bags, add(run through SFAwords again)/remove levels, re-weight all
 
@@ -769,9 +842,9 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     private void applyPyramidWeights(SPBag bag) {
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
+        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> ent : bag) {
             //find level that this quadrant is on
-            int quadrant = ent.getKey().var2;
+            int quadrant = ent.key.var2;
             int qEnd = 0;
             int level = 0;
             while (qEnd < quadrant) {
@@ -780,8 +853,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             }
 
             //double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
-            int val = ent.getValue() * (int)Math.pow(2,level);
-            bag.put(ent.getKey(), val);
+            int val = ent.value * (int)Math.pow(2,level);
+            bag.put(ent.key, val);
         }
     }
 
@@ -864,7 +937,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     /**
-     * Computes BOSSSpatialPyramids distance between two bags d(test, train), is NON-SYMETRIC operation,
+     * Computes BOSS distance between two bags d(test, train), is NON-SYMETRIC operation,
      * ie d(a,b) != d(b,a).
      *
      * Quits early if the dist-so-far is greater than bestDist (assumed is in fact the dist still squared),
@@ -872,15 +945,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSSpatialPyramidsDistance(SPBag instA, SPBag instB, double bestDist) {
+    public double BOSSdistance(SPBag instA, SPBag instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
-            Integer valA = entry.getValue();
-            Integer valB = instB.get(entry.getKey());
-            if (valB == null)
-                valB = 0;
+        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> entry : instA) {
+            int valA = entry.value;
+            int valB = instB.get(entry.key);
             dist += (valA-valB)*(valA-valB);
 
             if (dist > bestDist)
@@ -898,10 +969,10 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         double sim = 0.0;
 
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
-            Integer valA = entry.getValue();
-            Integer valB = instB.get(entry.getKey());
-            if (valB == null)
+        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> entry : instA) {
+            int valA = entry.value;
+            int valB = instB.get(entry.key);
+            if (valB == 0)
                 continue;
 
             sim += Math.min(valA,valB);
@@ -912,7 +983,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        IndividualTDE.SPBag testBag = BOSSSpatialPyramidsTransform(instance);;
+        SPBag testBag = BOSSSpatialPyramidsTransform(instance);;
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -922,7 +993,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
@@ -942,7 +1013,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        IndividualTDE.SPBag testBag = bags.get(testIndex);
+        SPBag testBag = bags.get(testIndex);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -952,11 +1023,10 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             if (i == testIndex) //skip 'this' one, leave-one-out
                 continue;
 
-
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
@@ -976,14 +1046,17 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         @Override
         public Double call() {
-            IndividualTDE.SPBag testBag = BOSSSpatialPyramidsTransform(inst);
+            SPBag testBag = BOSSSpatialPyramidsTransform(inst);;
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
             for (int i = 0; i < bags.size(); ++i) {
-                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+                double dist;
+                if (histogramIntersection)
+                    dist = -histogramIntersection(testBag, bags.get(i));
+                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
@@ -1004,7 +1077,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         @Override
         public Double call() {
-            IndividualTDE.SPBag testBag = bags.get(testIndex);
+            SPBag testBag = bags.get(testIndex);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
@@ -1014,7 +1087,10 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 if (i == testIndex) //skip 'this' one, leave-one-out
                     continue;
 
-                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+                double dist;
+                if (histogramIntersection)
+                    dist = -histogramIntersection(testBag, bags.get(i));
+                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;

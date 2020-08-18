@@ -84,6 +84,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private int currentSeries = 0;
     private boolean isMultivariate = false;
     private Instances seriesHeader;
+    private boolean weightedColumnEnsemble = false;
 
     private String checkpointPath;
     private boolean checkpoint = false;
@@ -236,6 +237,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         currentSeries = saved.currentSeries;
         isMultivariate = saved.isMultivariate;
         seriesHeader = saved.seriesHeader;
+        weightedColumnEnsemble = saved.weightedColumnEnsemble;
         //checkpointPath = saved.checkpointPath;
         //checkpoint = saved.checkpoint;
         //checkpointTime = saved.checkpointTime;
@@ -351,6 +353,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
 
+        // if weighted column ensemble is true, let this class handle multivariate data, else let IndividualBOSS
+        // handle it.
         if (data.checkForAttributeType(Attribute.RELATIONAL)) {
             isMultivariate = true;
         }
@@ -358,7 +362,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         train = data;
 
         //Window length settings
-        int seriesLength = isMultivariate ? channelLength(data) - 1 : data.numAttributes() - 1; //minus class attribute
+        int seriesLength = isMultivariate ? channelLength(data) :
+                data.numAttributes() - 1; //minus class attribute
         int minWindow = 10;
         int maxWindow = (int) (seriesLength * maxWinLenProportion);
         if (maxWindow < minWindow) minWindow = maxWindow / 2;
@@ -386,7 +391,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 throw new Exception("TDE_BuildClassifier: Class attribute not set as last attribute in dataset");
 
             //Multivariate
-            if (isMultivariate) {
+            if (isMultivariate && weightedColumnEnsemble) {
                 numSeries = numDimensions(data);
                 classifiers = new LinkedList[numSeries];
                 for (int n = 0; n < numSeries; n++) {
@@ -443,7 +448,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         Instances[] series;
 
         //Multivariate
-        if (isMultivariate) {
+        if (isMultivariate && weightedColumnEnsemble) {
             series = splitMultivariateInstances(data);
             seriesHeader = new Instances(series[0], 0);
         }
@@ -498,9 +503,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 continue;
             }
 
-            IndividualTDE indiv = new IndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
-                    parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
-                    multiThread, numThreads, ex);
+            IndividualTDE indiv;
+            if (isMultivariate && !weightedColumnEnsemble){
+                indiv = new MultivariateIndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
+                        parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
+                        multiThread, numThreads, ex);
+            }
+            else{
+                indiv = new IndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
+                        parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
+                        multiThread, numThreads, ex);
+            }
             Instances data = trainProportion < 1 && trainProportion > 0 ? resampleData(series[currentSeries], indiv)
                     : series[currentSeries];
             indiv.buildClassifier(data);
@@ -567,7 +580,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             classifiersBuilt[currentSeries]++;
 
             int prev = currentSeries;
-            if (isMultivariate) {
+            if (isMultivariate && weightedColumnEnsemble) {
                 nextSeries();
             }
 
@@ -633,7 +646,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         if (trainTimeContract) {
             name += ("TTC" + trainContractTimeNanos);
-        } else if (isMultivariate && parametersConsideredPerChannel > 0) {
+        } else if (isMultivariate && weightedColumnEnsemble && parametersConsideredPerChannel > 0) {
             name += ("PC" + (parametersConsideredPerChannel * numSeries));
         } else {
             name += ("S" + parametersConsidered);
@@ -817,8 +830,12 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         if (multiThread) {
             ArrayList<Future<Double>> futures = new ArrayList<>(series.numInstances());
 
-            for (int i = 0; i < series.numInstances(); ++i)
-                futures.add(ex.submit(indiv.new TrainNearestNeighbourThread(i)));
+            for (int i = 0; i < series.numInstances(); ++i) {
+                if (isMultivariate && !weightedColumnEnsemble)
+                    futures.add(ex.submit(((MultivariateIndividualTDE)indiv).new TrainNearestNeighbourThread(i)));
+                else
+                    futures.add(ex.submit(indiv.new TrainNearestNeighbourThread(i)));
+            }
 
             int idx = 0;
             for (Future<Double> f : futures) {
@@ -863,7 +880,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         if (estimator == EstimatorMethod.OOB && trainProportion < 1){
             for (int i = 0; i < train.numInstances(); ++i) {
                 Instance[] series;
-                if (isMultivariate) {
+                if (isMultivariate && weightedColumnEnsemble) {
                     series = splitMultivariateInstanceWithClassVal(train.get(i));
                 }
                 else{
@@ -969,7 +986,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 }
                 else if (estimator == EstimatorMethod.CV) {
                     Instance series = train.get(test);
-                    if (isMultivariate){
+                    if (isMultivariate && weightedColumnEnsemble){
                         series = splitMultivariateInstanceWithClassVal(series)[n];
                         series.setDataset(seriesHeader);
                     }
@@ -1012,7 +1029,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         Instance[] series;
 
         //Multivariate
-        if (isMultivariate) {
+        if (isMultivariate && weightedColumnEnsemble) {
             series = splitMultivariateInstanceWithClassVal(instance);
         }
         //Univariate
@@ -1027,7 +1044,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             for (int n = 0; n < numSeries; n++) {
                 futures[n] = new ArrayList<>(numClassifiers[n]);
                 for (IndividualTDE classifier : classifiers[n]) {
-                    futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
+                    if (isMultivariate && !weightedColumnEnsemble)
+                        futures[n].add(ex.submit(((MultivariateIndividualTDE)classifier)
+                                .new TestNearestNeighbourThread(instance)));
+                    else
+                        futures[n].add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
                 }
             }
 
@@ -1097,7 +1118,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         c = new TDE();
         c.setSeed(fold);
-        c.setCutoff(true);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
@@ -1107,31 +1127,42 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         c = new TDE();
         c.setSeed(fold);
-        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        c.setCleanupCheckpointFiles(true);
-        c.setCheckpointPath("D:\\");
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset + " fold " + fold + " = "
-                + accuracy);
-        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
-                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
-
-
-        c = new TDE();
-        c.setSeed(fold);
-        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        c.setCleanupCheckpointFiles(true);
-        c.setCheckpointPath("D:\\");
         c.setCutoff(true);
+        c.setEstimateOwnPerformance(true);
+        c.weightedColumnEnsemble = true;
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
-        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset2 + " fold " + fold + " = "
-                + accuracy);
-        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
-                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+        System.out.println("TDE accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
+        System.out.println("Train accuracy on " + dataset2 + " fold " + fold + " = " + c.trainResults.getAcc());
+
+//        c = new TDE();
+//        c.setSeed(fold);
+//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+//        c.setCleanupCheckpointFiles(true);
+//        c.setCheckpointPath("D:\\");
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset + " fold " + fold + " = "
+//                + accuracy);
+//        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+//                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+//
+//
+//        c = new TDE();
+//        c.setSeed(fold);
+//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+//        c.setCleanupCheckpointFiles(true);
+//        c.setCheckpointPath("D:\\");
+//        c.setCutoff(true);
+//        c.buildClassifier(train2);
+//        accuracy = ClassifierTools.accuracy(test2, c);
+//
+//        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset2 + " fold " + fold + " = "
+//                + accuracy);
+//        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
+//                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
         //Output 24/06/20
         /*
