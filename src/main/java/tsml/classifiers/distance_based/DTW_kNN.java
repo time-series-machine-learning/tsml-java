@@ -36,8 +36,7 @@ import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
  * 2. Set the increment size 
  * setIncrementSize(int s) where s is on range 1...trainSetSize 
  * 
- * This is a basic brute force implementation, not optimised! There are probably ways of 
- * incrementally doing this. It could further be speeded up by using PAA to reduce the dimensionality first.
+ * This is a basic brute force implementation,
  * 
  */
 
@@ -58,10 +57,12 @@ public class DTW_kNN extends kNN {
             setDistanceFunction(dtw);
             super.setKNN(1);
     }
-
+    public String getParameters(){
+        return "BestWarp,"+bestWarp+",IncrementSize,"+incrementSize+",OptimiseWindow,"+optimiseWindow;
+    }
     public void optimiseWindow(boolean b){ optimiseWindow=b;}
     public void setMaxR(double r){ maxWindowSize=r;}
-
+    public void setIncrementSize(int x){incrementSize=x;}
 
     public DTW_kNN(int k){
             super(k);
@@ -79,18 +80,24 @@ public class DTW_kNN extends kNN {
 /*Set the maximum warping window: Not this is all a bit mixed up. 
 The window size in the r value is range 0..1, but the increments should be set by the 
 data*/
-            int dataLength=train.numAttributes()-1;
+            int dataLength=0;
+            if(train.attribute(0).isRelationValued()){
+                dataLength=train.instance(0).relationalValue(0).instance(0).numAttributes();
+            }
+            else
+                dataLength=train.numAttributes()-1;
             int max=(int)(dataLength*maxWindowSize);
-//			System.out.println(" MAX ="+max+" increment size ="+incrementSize);
+			System.out.println(" MAX ="+max+" increment size ="+incrementSize);
             for(double i=0;i<max;i+=incrementSize){
+
                 //Set r for current value
                 dtw.setR(i/(double)dataLength);
                 double acc=crossValidateAccuracy();
-//				System.out.println("\ti="+i+" r="+(i/(double)dataLength)+" Acc = "+acc);
+				System.out.println("\ti="+i+" r="+(i/(double)dataLength)+" Acc = "+acc);
                 if(acc>maxAcc){
                     maxR=i/dataLength;
                     maxAcc=acc;
-//					System.out.println(" Best so far ="+maxR +" Warps ="+i+" has Accuracy ="+maxAcc);
+					System.out.println(" Best so far ="+maxR +" Warps ="+i+" has Accuracy ="+maxAcc);
                 }
             }
             bestWarp=(int)(maxR*dataLength);
@@ -125,5 +132,19 @@ data*/
         }
         return a/(double)trainSize;
     }
+    @Override
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+        // attributes must be numeric
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // Can only handle discrete class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+        // instances
+        result.setMinimumNumberInstances(1);
+        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        return result;
+    }
+
 
 }
