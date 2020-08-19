@@ -3,17 +3,19 @@ package tsml.classifiers.distance_based.knn.strategies;
 import com.google.common.collect.ImmutableSet;
 import evaluation.storage.ClassifierResults;
 import java.util.logging.Logger;
+import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.tuned.*;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.knn.KNNLOOCV;
-import tsml.classifiers.distance_based.utils.logging.Loggable;
+import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.IndexedParameterSpace;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
 import utilities.*;
-import tsml.classifiers.distance_based.utils.collections.PrunedMultimap;
-import tsml.classifiers.distance_based.utils.collections.Utils;
+import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.box.Box;
-import tsml.classifiers.distance_based.utils.iteration.RandomListIterator;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-import tsml.classifiers.distance_based.utils.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -21,8 +23,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static tsml.classifiers.distance_based.utils.StrUtils.extractNameAndParams;
-import static tsml.classifiers.distance_based.utils.collections.Utils.replace;
+import static tsml.classifiers.distance_based.utils.strings.StrUtils.extractNameAndParams;
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.replace;
 
 /**
  * Purpose: reinforce-learn a knn. This explores two dimensions: parameters and number of neighbours. In this case,
@@ -123,8 +125,8 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         public Iterator<EnhancedAbstractClassifier> apply(List<EnhancedAbstractClassifier> benchmarks) {
             // use a random iterator to explore the improveable benchmarks
             getLogger().info(() -> "building new improveable benchmark iterator for " + benchmarks.size() + " benchmarks");
-            RandomListIterator<EnhancedAbstractClassifier> iterator = new RandomListIterator<>(
-                rlTunedClassifier.getSeed(), new ArrayList<>(
+            RandomIterator<EnhancedAbstractClassifier> iterator = new RandomIterator<>(new Random(
+                rlTunedClassifier.getSeed()), new ArrayList<>(
                 RLTunedKNNSetup.this.improveableBenchmarks));
             return iterator;
         }
@@ -193,8 +195,9 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
                 getLogger().info(() -> "finding final classifiers");
                 // randomly pick 1 of the best classifiers
                 final Collection<EnhancedAbstractClassifier> benchmarks = finalBenchmarks.values();
-                final List<EnhancedAbstractClassifier> selectedBenchmarks = Utilities.randPickN(benchmarks, 1,
-                    rlTunedClassifier.getRandom());
+                final List<EnhancedAbstractClassifier> selectedBenchmarks = null;
+//                        Utilities.randPickN(benchmarks, 1,
+//                    rlTunedClassifier.getRandom());
                 if(selectedBenchmarks.size() > 1) {
                     throw new IllegalStateException("there shouldn't be more than 1");
                 }
@@ -223,15 +226,15 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
             if(!isImproveable(classifier)) {
                 // put it in the unimproveable pile
                 rlTunedClassifier
-                    .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
-                Utils.put(classifier, unimproveableBenchmarks);
+                        .getLogger().info(() -> "unimproveable classifier " + extractNameAndParams(classifier));
+                CollectionUtils.put(classifier, unimproveableBenchmarks);
                 // we won't be using that benchmark again
                 result = false;
             } else {
                 // else the classifier can be improved, so put it in the improveable pile
                 rlTunedClassifier
-                    .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
-                Utils.put(classifier, nextImproveableBenchmarks);
+                        .getLogger().info(() -> "improveable classifier " + extractNameAndParams(classifier));
+                CollectionUtils.put(classifier, nextImproveableBenchmarks);
                 // we will be using that benchmark again
                 result = true;
             }
@@ -498,8 +501,8 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
         finalBenchmarks.setSoftLimit(1);
         final int seed = rlTunedClassifier.getSeed();
         paramSpace = paramSpaceBuilder.apply(trainData);
-        paramSetIterator = new RandomListIterator<>(this.paramSpace, seed).setRemovedOnNext(true);
-        fullParamSpaceSize = this.paramSpace.size();
+        paramSetIterator = new RandomSearchIterator(new Random(seed), this.paramSpace, seed).setReplacement(true);
+        fullParamSpaceSize = new IndexedParameterSpace(this.paramSpace).size();
         fullNeighbourhoodSize = trainData.size(); // todo check all seeds set
         maxNeighbourhoodSize = findLimit(fullNeighbourhoodSize, neighbourhoodSizeLimit, neighbourhoodSizeLimitPercentage);
         maxParamSpaceSize = findLimit(fullParamSpaceSize, paramSpaceSizeLimit, paramSpaceSizeLimitPercentage);
@@ -523,7 +526,11 @@ public class RLTunedKNNSetup implements RLTunedClassifier.TrainSetupFunction, Lo
             ParamSet paramSet = paramSetIterator.next();
             paramCount.set(paramCount.get() + 1);
             final KNNLOOCV knn = knnSupplier.get();
-            knn.setParams(paramSet);
+            try {
+                knn.setParams(paramSet);
+            } catch(Exception e) {
+                throw new IllegalStateException(e);
+            }
             final String name = knn.getClassifierName() + "_" + (id++);
             knn.setClassifierName(name);
             knn.setNeighbourLimit(neighbourCount.get());

@@ -28,13 +28,38 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import static utilities.Utilities.normalise;
-
 /**
  *
  * @author Aaron
  */
 public class InstanceTools {
+
+    public static double[] countClasses(Instances data) {
+        return countClasses(data, data.numClasses());
+    }
+
+    public static double[] countClasses(List<? extends Instance> data, int numClasses) {
+        double[] distribution = new double[numClasses];
+        for(Instance instance : data) {
+            final int classValue = (int) instance.classValue();
+            distribution[classValue] += instance.weight();
+        }
+        return distribution;
+    }
+
+    public static Map<Instance, Integer> indexInstances(Instances instances) {
+        Map<Instance, Integer> instanceIntegerMap = new HashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            instanceIntegerMap.put(instances.get(i), i);
+        }
+        return instanceIntegerMap;
+    }
+
+    public static void setClassMissing(Instances data) {
+        for(Instance instance : data) {
+            instance.setClassMissing();
+        }
+    }
 
     public static Pair<Instance, Double> findMinDistance(Instances data, Instance inst, DistanceFunction dist){
         double min = dist.distance(data.get(0), inst);
@@ -756,7 +781,7 @@ public class InstanceTools {
         for(Instance instance : instances) {
             distribution[(int) instance.classValue()]++;
         }
-        normalise(distribution);
+        ArrayUtilities.normalise(distribution);
         return distribution;
     }
     /**
@@ -945,7 +970,7 @@ public class InstanceTools {
         double mean = 0;
         int k = 0;
         for (int j = 0; j < inst.numAttributes(); j++) {
-            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal() && !inst.isMissing(j)){// Ignore all nominal atts{
                 double x = inst.value(j);
                 mean +=x;
             }

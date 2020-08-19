@@ -1,5 +1,7 @@
 package tsml.transformers;
 
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -73,6 +75,20 @@ public class Padder implements TrainableTransformer{
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         return null;
     }
+
+    
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void fit(TimeSeriesInstances data) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 
 }

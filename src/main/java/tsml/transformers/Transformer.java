@@ -1,6 +1,15 @@
 package tsml.transformers;
 
+import java.io.Serializable;
+
 import org.apache.commons.lang3.NotImplementedException;
+
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.data_containers.TSCapabilities;
+import tsml.data_containers.TSCapabilitiesHandler;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
@@ -18,7 +27,10 @@ import weka.core.Instances;
  * @author Tony Bagnall 1/1/2020, Aaron Bostrom
  *
  */
-public interface Transformer extends CapabilitiesHandler{
+public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serializable {
+
+
+    /********* Instances ************/
 
     /**
      * perform the transform process. Some algorithms may require a fit before transform
@@ -33,6 +45,10 @@ public interface Transformer extends CapabilitiesHandler{
             output.add(transform(inst));
         }
         return output;
+    }
+
+    default TimeSeriesInstances transformConverter(Instances data){
+        return transform(Converter.fromArff(data));
     }
 
     /**
@@ -66,15 +82,43 @@ public interface Transformer extends CapabilitiesHandler{
      * all numeric  attributes, nominal class, no missing values
      * @return
      */
-    default Capabilities getCapabilities(){
-        Capabilities result = new Capabilities(this);
-        result.disableAll();
+    default TSCapabilities getTSCapabilities(){
+        TSCapabilities result = new TSCapabilities(this);
+        result.enable(TSCapabilities.EQUAL_LENGTH)
+              .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
+              .enable(TSCapabilities.NO_MISSING_VALUES);
 
-        result.setMinimumNumberInstances(2);
-        // attributes
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
         return result;
     }
+
+
+    /********* TimeSeriesInstances ************/
+    
+    /**
+     * perform the transform process. Some algorithms may require a fit before transform
+     * (e.g. shapelets, PCA) others may not (FFT, PAA etc).
+     * Should we throw an exception? Default to calling instance transform?
+     * Need to determine where to setOut
+     * @return Instances of transformed data
+     */
+    default TimeSeriesInstances transform(TimeSeriesInstances data){
+        //when cloning skeleton of TSInstances, copy across classLabels.
+        TimeSeriesInstances output = new TimeSeriesInstances(data.getClassLabels());
+        for(TimeSeriesInstance inst : data){
+            output.add(transform(inst));
+        }
+        return output;
+    }
+
+
+    default Instances transformConverter(TimeSeriesInstances data){
+        return Converter.toArff(transform(data));
+    }
+
+    /**
+     * Transform a new instance into the format described in determineOutputFormat
+     * @param Instance inst
+     * @return transformed Instance
+     */
+    TimeSeriesInstance transform(TimeSeriesInstance inst);
 }
