@@ -22,14 +22,29 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     boolean isMultivariate;
     boolean isEquallySpaced;
     boolean hasMissing;
+    boolean isEqualLength;
 
     int minLength;
     int maxLength;
 
+    /** 
+     * @return boolean
+     */
+    public boolean isEqualLength(){
+        return isEqualLength;
+    }
+
+    /** 
+     * @return int
+     */
     public int getMinLength() {
         return minLength;
     }
 
+    
+    /** 
+     * @return int
+     */
     public int getMaxLength() {
         return maxLength;
     }
@@ -38,7 +53,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
 
     /* Data */
-    List<TimeSeries> series_channels;
+    List<TimeSeries> seriesDimensions;
     int classLabelIndex;
     double targetValue;
 
@@ -60,10 +75,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     //do the ctor this way round to avoid erasure problems :(
     public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
-        series_channels = new ArrayList<TimeSeries>();
+        seriesDimensions = new ArrayList<TimeSeries>();
 
-        for (TimeSeries channel : series) {
-            series_channels.add(channel);
+        for (TimeSeries ts : series) {
+            seriesDimensions.add(ts);
         }
 
         classLabelIndex = labelIndex; 
@@ -73,31 +88,31 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public TimeSeriesInstance(List<List<Double>> series) {
         // process the input list to produce TimeSeries Objects.
         // this allows us to pad if need be, or if we want to squarify the data etc.
-        series_channels = new ArrayList<TimeSeries>();
+        seriesDimensions = new ArrayList<TimeSeries>();
 
-        for (List<Double> channel : series) {
+        for (List<Double> ts : series) {
             // convert List<Double> to double[]
-            series_channels.add(new TimeSeries(channel.stream().mapToDouble(Double::doubleValue).toArray()));
+            seriesDimensions.add(new TimeSeries(ts.stream().mapToDouble(Double::doubleValue).toArray()));
         }
 
         dataChecks();
     }
 
     public TimeSeriesInstance(double[][] data) {
-        series_channels = new ArrayList<TimeSeries>();
+        seriesDimensions = new ArrayList<TimeSeries>();
 
         for(double[] in : data){
-            series_channels.add(new TimeSeries(in));
+            seriesDimensions.add(new TimeSeries(in));
         }
 
         dataChecks();
 	}
 
     public TimeSeriesInstance(double[][] data, int labelIndex) {
-        series_channels = new ArrayList<TimeSeries>();
+        seriesDimensions = new ArrayList<TimeSeries>();
 
         for(double[] in : data){
-            series_channels.add(new TimeSeries(in));
+            seriesDimensions.add(new TimeSeries(in));
         }
 
         classLabelIndex = labelIndex;
@@ -112,55 +127,84 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
     
     private void calculateIfMultivariate(){
-        isMultivariate = series_channels.size() > 1;
+        isMultivariate = seriesDimensions.size() > 1;
     }
 
 	private void calculateLengthBounds() {
-        minLength = series_channels.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
-        maxLength = series_channels.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
+        minLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
+        maxLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
+        isEqualLength = minLength == maxLength;
     }
 
     private void calculateIfMissing() {
         // if any of the series have a NaN value, across all dimensions then this is
         // true.
-        hasMissing = series_channels.stream().map(e -> e.stream().anyMatch(Double::isNaN))
+        hasMissing = seriesDimensions.stream().map(e -> e.stream().anyMatch(Double::isNaN))
                 .anyMatch(Boolean::booleanValue);
     };
 
-    public int getNumChannels() {
-        return series_channels.size();
+    
+    /** 
+     * @return int
+     */
+    public int getNumDimensions() {
+        return seriesDimensions.size();
     }
 
+    
+    /** 
+     * @return int
+     */
     public int getLabelIndex(){
         return classLabelIndex;
     }
 
+    
+    /** 
+     * @param index
+     * @return List<Double>
+     */
     public List<Double> getSingleVSliceList(int index){
-        List<Double> out = new ArrayList<>(getNumChannels());
-        for(TimeSeries ts : series_channels){
+        List<Double> out = new ArrayList<>(getNumDimensions());
+        for(TimeSeries ts : seriesDimensions){
             out.add(ts.get(index));
         }
 
         return out;
     }
 
+    
+    /** 
+     * @param index
+     * @return double[]
+     */
     public double[] getSingleVSliceArray(int index){
-        double[] out = new double[getNumChannels()];
+        double[] out = new double[getNumDimensions()];
         int i=0;
-        for(TimeSeries ts : series_channels){
+        for(TimeSeries ts : seriesDimensions){
             out[i++] = ts.get(index);
         }
 
         return out;
     }
 
+    
+    /** 
+     * @param indexesToKeep
+     * @return List<List<Double>>
+     */
     public List<List<Double>> getVSliceList(int[] indexesToKeep){
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
+    
+    /** 
+     * @param indexesToKeep
+     * @return List<List<Double>>
+     */
     public List<List<Double>> getVSliceList(List<Integer> indexesToKeep){
-        List<List<Double>> out = new ArrayList<>(getNumChannels());
-        for(TimeSeries ts : series_channels){
+        List<List<Double>> out = new ArrayList<>(getNumDimensions());
+        for(TimeSeries ts : seriesDimensions){
             out.add(ts.toListWithIndexes(indexesToKeep));
         }
 
@@ -168,14 +212,24 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
  
+    
+    /** 
+     * @param indexesToKeep
+     * @return double[][]
+     */
     public double[][] getVSliceArray(int[] indexesToKeep){
         return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
+    
+    /** 
+     * @param indexesToKeep
+     * @return double[][]
+     */
     public double[][] getVSliceArray(List<Integer> indexesToKeep){
-        double[][] out = new double[getNumChannels()][];
+        double[][] out = new double[getNumDimensions()][];
         int i=0;
-        for(TimeSeries ts : series_channels){
+        for(TimeSeries ts : seriesDimensions){
             out[i++] = ts.toArrayWithIndexes(indexesToKeep);
         }
 
@@ -183,80 +237,135 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
 
+    
+    /** 
+     * @param dim
+     * @return List<Double>
+     */
     public List<Double> getSingleHSliceList(int dim){
-        return series_channels.get(dim).getSeries();
+        return seriesDimensions.get(dim).getSeries();
     }
 
+    
+    /** 
+     * @param dim
+     * @return double[]
+     */
     public double[] getSingleHSliceArray(int dim){
-        return series_channels.get(dim).toArray();
+        return seriesDimensions.get(dim).toArray();
     }
 
+    
+    /** 
+     * @param dimensionsToKeep
+     * @return List<List<Double>>
+     */
     public List<List<Double>> getHSliceList(int[] dimensionsToKeep){
         return getHSliceList(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
-    //TODO: not a clone. may need to be careful...
+    
+    /** 
+     * TODO: not a clone. may need to be careful...
+     * @param dimensionsToKeep
+     * @return List<List<Double>>
+     */
     public List<List<Double>> getHSliceList(List<Integer> dimensionsToKeep){
         List<List<Double>> out = new ArrayList<>(dimensionsToKeep.size());
         for(Integer dim : dimensionsToKeep)
-            out.add(series_channels.get(dim).getSeries());
+            out.add(seriesDimensions.get(dim).getSeries());
 
         return out;
     }
 
+    
+    /** 
+     * @param dimensionsToKeep
+     * @return double[][]
+     */
     public double[][] getHSliceArray(int[] dimensionsToKeep){
         return getHSliceArray(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
+    
+    /** 
+     * @param dimensionsToKeep
+     * @return double[][]
+     */
     public double[][] getHSliceArray(List<Integer> dimensionsToKeep){
         double[][] out = new double[dimensionsToKeep.size()][];
         int i=0;
         for(Integer dim : dimensionsToKeep){
-            out[i++] = series_channels.get(dim).toArray();
+            out[i++] = seriesDimensions.get(dim).toArray();
         }
 
         return out;
     }
 
+    
+    /** 
+     * @return String
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Num Channels: ").append(getNumChannels()).append(" Class Label Index: ").append(classLabelIndex);
-        for (TimeSeries channel : series_channels) {
+        sb.append("Num Dimensions: ").append(getNumDimensions()).append(" Class Label Index: ").append(classLabelIndex);
+        for (TimeSeries ts : seriesDimensions) {
             sb.append(System.lineSeparator());
-            sb.append(channel.toString());
+            sb.append(ts.toString());
         }
 
         return sb.toString();
     }
 
+    
+    /** 
+     * @return Iterator<TimeSeries>
+     */
     @Override
     public Iterator<TimeSeries> iterator() {
-        return series_channels.iterator();
+        return seriesDimensions.iterator();
     }
 
+    
+    /** 
+     * @return double[][]
+     */
     public double[][] toValueArray(){
-        double[][] output = new double[this.series_channels.size()][];
+        double[][] output = new double[this.seriesDimensions.size()][];
         for (int i=0; i<output.length; ++i){
              //clone the data so the underlying representation can't be modified
-            output[i] = series_channels.get(i).toArray();
+            output[i] = seriesDimensions.get(i).toArray();
         }
         return output;
     }
 
+    
+    /** 
+     * @return double[][]
+     */
     public double[][] toTransposedArray(){
         return this.getVSliceArray(IntStream.range(0, maxLength).toArray());
     }
 
 
+    
+    /** 
+     * @return int
+     */
     @Override
     public int hashCode(){
-        return this.series_channels.hashCode();
+        return this.seriesDimensions.hashCode();
     }
 
-	public TimeSeries get(int i) {
-        return this.series_channels.get(i);
+	
+    /** 
+     * @param i
+     * @return TimeSeries
+     */
+    public TimeSeries get(int i) {
+        return this.seriesDimensions.get(i);
 	}
 
 

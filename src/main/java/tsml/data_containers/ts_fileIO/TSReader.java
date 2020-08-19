@@ -216,9 +216,7 @@ public class TSReader {
      * @throws IOException if reading the next token fails
      */
     protected void getFirstToken() throws IOException {
-        while (m_Tokenizer.nextToken() == StreamTokenizer.TT_EOL) {
-            System.out.println(m_Tokenizer.sval);
-        }
+        while (m_Tokenizer.nextToken() == StreamTokenizer.TT_EOL) {}
         ;
         // this handles quotations single and double/
         if ((m_Tokenizer.ttype == '\'') || (m_Tokenizer.ttype == '"')) {
@@ -278,37 +276,22 @@ public class TSReader {
     public static void main(String[] args) throws IOException {
 
         String local_path = "D:\\Work\\Data\\Univariate_ts\\";
-        String local_path_orig = "D:\\Work\\Data\\Univariate_arff\\";
         String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
-        String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
 
-        // for(String dataset : DatasetLists.tscProblems2018){
-        String dataset = "AllGestureWiimoteZ";
+        String dataset = "ArrowHead";
         String filepath = local_path + dataset + "\\" + dataset;
-        // String filepath_orig = local_path_orig + dataset + "\\" + dataset;
-
         File f = new File(filepath + "_TRAIN" + ".ts");
-        // System.out.println(f);
-
         long time = System.nanoTime();
         TSReader ts_reader = new TSReader(new FileReader(f));
         System.out.println("after: " + (System.nanoTime() - time));
 
         TimeSeriesInstances train_data = ts_reader.GetInstances();
-        // System.out.println(train_data);
-        // }
 
-        // File f_orig = new File(filepath_orig);
-        // Instances train_data_orig = new Instances(new FileReader(f_orig));
+        System.out.println(train_data.toString());
 
-        // System.out.println(train_data.toString());
 
-        // for(String dataset_multi : DatasetLists.mtscProblems2018){
         String dataset_multi = "CharacterTrajectories";
         String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
-        // String filepath_orig_multi = m_local_path_orig + dataset_multi + "\\" +
-        // dataset_multi;
-
         File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
         System.out.println(f1);
         time = System.nanoTime();
@@ -319,19 +302,5 @@ public class TSReader {
 
         System.out.println("Min: " + train_data_multi.getMinLength());
         System.out.println("Max: " + train_data_multi.getMaxLength());
-
-        // JAMESL ADDED TESTS
-        // Instances tsisntances = DatasetLoading.loadData(filepath_multi + "_TRAIN");
-        // }
-
-        // File f_orig_multi = new File(filepath_orig_multi);
-        // Instances train_data_orig_multi = new Instances(new
-        // FileReader(f_orig_multi));
-
-        // System.out.println(train_data_multi.instance(0));
-
-        // do some comparison!
-        // System.out.println(train_data_multi.toString());
-
     }
 }

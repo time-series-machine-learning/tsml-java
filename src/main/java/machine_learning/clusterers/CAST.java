@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package machine_learning.clusterers;
 
 import experiments.data.DatasetLoading;
@@ -118,10 +132,9 @@ public class CAST extends AbstractVectorClusterer {
                 double[] indiciesAffinities = getAffinities(indicies, subcluster);
                 int minIdx = minIndex(indiciesAffinities);
 
-                int i = 0;
-
                 //Addition step
-                while (indiciesAffinities.length > 0 && indiciesAffinities[minIdx] <= affinityThreshold*subcluster.size()){
+                while (indiciesAffinities.length > 0 && indiciesAffinities[minIdx] <=
+                        affinityThreshold*subcluster.size()){
                     subcluster.add(indicies.remove(minIdx));
                     indiciesAffinities = getAffinities(indicies, subcluster);
                     minIdx = minIndex(indiciesAffinities);
@@ -199,7 +212,7 @@ public class CAST extends AbstractVectorClusterer {
     }
 
     private void normaliseDistanceMatrix(){
-        double maxDist = 0;
+        double maxDist = Double.MIN_VALUE;
         double minDist = Double.MAX_VALUE;
 
         for (int i = 0; i < distanceMatrix.length; i++){
@@ -207,7 +220,7 @@ public class CAST extends AbstractVectorClusterer {
                 if (distanceMatrix[i][n] > maxDist){
                     maxDist = distanceMatrix[i][n];
                 }
-                else if (distanceMatrix[i][n] < minDist){
+                if (distanceMatrix[i][n] < minDist){
                     minDist = distanceMatrix[i][n];
                 }
             }
@@ -251,17 +264,18 @@ public class CAST extends AbstractVectorClusterer {
     }
 
     public static void main(String[] args) throws Exception{
-        String[] datasets = {"Z:/Data/ClusteringTestDatasets/DensityPeakVector/aggregation.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/clustersynth.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest1k.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/dptest4k.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/flame.arff",
-                "Z:/Data/ClusteringTestDatasets/DensityPeakVector/spiral.arff"};
+        String[] datasets = {"Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\aggregation.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\clustersynth.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\dptest1k.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\dptest4k.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\flame.arff",
+                "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\spiral.arff"};
         String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
         boolean output = true;
 
         if (output){
-            System.out.println("cd('Z:/Data/ClusteringTestDatasets/DensityPeakVector')");
+            System.out.println("cd('Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\" +
+                    "DensityPeakVector')");
             System.out.println("load('matlabCluster.mat')");
             System.out.println("k = [1,2,3,4,5,6,7,8,9,10]");
         }
@@ -270,6 +284,7 @@ public class CAST extends AbstractVectorClusterer {
             Instances inst = DatasetLoading.loadDataNullable(datasets[i]);
             inst.setClassIndex(inst.numAttributes()-1);
             CAST cast = new CAST();
+            cast.setDynamicAffinityThreshold(true);
             cast.buildClusterer(inst);
 
             if(output){

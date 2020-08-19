@@ -123,7 +123,7 @@ public class Fast_FFT implements Transformer {
     
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        double[][] out = new double[inst.getNumChannels()][];
+        double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
             //TODO: make this NaN Safe. Mean is NaN safe but toArray isnt.

@@ -1071,7 +1071,7 @@ public class InstanceTools {
         double mean = 0;
         int k = 0;
         for (int j = 0; j < inst.numAttributes(); j++) {
-            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal() && !inst.isMissing(j)){// Ignore all nominal atts{
                 double x = inst.value(j);
                 mean +=x;
             }

@@ -235,7 +235,7 @@ public class BagOfPatterns implements TrainableTransformer {
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
 
         //could do this across all dimensions.
-        double[][] out = new double[inst.getNumChannels()][];
+        double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for(TimeSeries ts : inst){
             out[i++] = bagToArray(buildBag(ts));

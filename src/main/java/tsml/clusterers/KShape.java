@@ -1,7 +1,16 @@
-    /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package tsml.clusterers;
 
@@ -34,14 +43,14 @@ public class KShape extends AbstractTimeSeriesClusterer {
     //Paparrizos, John, and Luis Gravano.
     //"k-shape: Efficient and accurate clustering of time series."
     //Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data. ACM, 2015.
-    
+
     private int k = 2;
     private int seed = Integer.MIN_VALUE;
-    
+
     private Instances centroids;
-    
+
     public KShape(){}
-    
+
     @Override
     public int numberOfClusters(){
         return k;
@@ -57,28 +66,28 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         deleteClassAttribute(data);
         zNormalise(data);
-        
+
         ArrayList<Attribute> atts = new ArrayList(data.numAttributes());
-        
+
         for (int i = 0; i < data.numAttributes(); i++){
             atts.add(new Attribute("att" + i));
         }
-        
+
         centroids = new Instances("centroids", atts, k);
-        
+
         for (int i = 0; i < k; i++) {
             centroids.add(new DenseInstance(1, new double[data.numAttributes()]));
         }
-        
+
         Random rand;
-        
+
         if (seed == Integer.MIN_VALUE){
             rand = new Random();
         }
         else{
             rand = new Random(seed);
         }
-        
+
         int iterations = 0;
         assignments = new int[data.numInstances()];
 
@@ -102,7 +111,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             //Set each instance to the cluster of its closest centroid using shape based distance
             for (int i = 0; i < data.numInstances(); i++){
                 double minDist = Double.MAX_VALUE;
-                
+
                 for (int n = 0; n < k; n++){
                     SBD sbd = new SBD(centroids.get(n), data.get(i), false);
 
@@ -112,7 +121,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
                     }
                 }
             }
-            
+
             iterations++;
         }
 
@@ -133,7 +142,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
             }
         }
     }
-    
+
     private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum) throws Exception {
         Instances subsample = new Instances(data, 0);
         int seriesSize = centroid.numAttributes();
@@ -229,14 +238,14 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
         return newCent;
     }
-    
+
     public static void main(String[] args) throws Exception{
 //        double[] d = {1,2,3,4,5,6,7,8,9,10};
 //        DenseInstance inst1 = new DenseInstance(1, d);
-//        
+//
 //        double[] d2 = {-1,-1,-1,1,1,1,2,2,2,2,3,3,3};
 //        DenseInstance inst2 = new DenseInstance(1, d2);
-//        
+//
 //        ArrayList<Attribute> atts = new ArrayList();
 //        for (int i = 0; i < d2.length; i++){
 //            atts.add(new Attribute("att" + i));
@@ -244,17 +253,17 @@ public class KShape extends AbstractTimeSeriesClusterer {
 //        Instances data = new Instances("test", atts, 0);
 //        inst1.setDataset(data);
 //        inst2.setDataset(data);
-//        
+//
 //        SBD sbd = new SBD(inst1, inst2);
-//        
+//
 //        System.out.println(sbd.dist);
 //        System.out.println(sbd.yShift);
 
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" + dataset + "_TEST.arff");
-//        Instances inst = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TRAIN.arff");
-//        Instances inst2 = ClassifierTools.loadData("Z:\\Data\\TSCProblems2018\\" + dataset + "/" + dataset + "_TEST.arff");
+        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TRAIN.arff");
+        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+                dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes()-1);
         inst.addAll(inst2);
 
@@ -271,14 +280,14 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
     //Class for calculating Shape Based Distance
     private class SBD {
-        
+
         public double dist;
         public Instance yShift;
-        
+
         private FFT fft;
 
         public SBD(){}
-    
+
         public SBD(Instance first, Instance second, boolean calcShift){
             calculateDistance(first, second, calcShift);
         }
@@ -296,33 +305,33 @@ public class KShape extends AbstractTimeSeriesClusterer {
 
             //FFT and IFFT
             fft = new FFT();
-                    
+
             Complex[] firstC = fft(first, oldLength, length);
             Complex[] secondC = fft(second, oldLengthY, length);
-            
+
             for (int i = 0; i < length; i++){
                 secondC[i].conjugate();
                 firstC[i].multiply(secondC[i]);
             }
-            
+
             fft.inverseFFT(firstC, length);
 
             //Calculate NCCc values
             double firstNorm = sumSquare(first);
             double secondNorm = sumSquare(second);
             double norm = Math.sqrt(firstNorm * secondNorm);
-            
+
             double[] ncc = new double[oldLength*2-1];
             int idx = 0;
-            
+
             for (int i = length-oldLength+1; i < length; i++){
                 ncc[idx++] = firstC[i].getReal()/norm;
             }
-            
+
             for (int i = 0; i < oldLength; i++){
                 ncc[idx++] = firstC[i].getReal()/norm;
             }
-            
+
             double maxValue = 0;
             int shift = -1;
 
@@ -333,7 +342,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
                     shift = i;
                 }
             }
-            
+
             dist = 1 - maxValue;
 
             //Create y', shifting the second instance in a direction and padding with 0s
@@ -370,7 +379,7 @@ public class KShape extends AbstractTimeSeriesClusterer {
         //Run FFT and return array of complex numbers
         private Complex[] fft(Instance inst, int oldLength, int length){
             Complex[] complex = new Complex[length];
-            
+
             for (int i = 0; i < oldLength; i++){
                 complex[i] = new Complex(inst.value(i), 0);
             }
@@ -378,20 +387,20 @@ public class KShape extends AbstractTimeSeriesClusterer {
             for (int i = oldLength; i < length; i++){
                 complex[i] = new Complex(0,0);
             }
-            
+
             fft.fft(complex, length);
-            
+
             return complex;
         }
-        
+
         private double sumSquare(Instance inst){
             double sum = 0;
-            
+
             for (int i = 0; i < inst.numAttributes(); i++){
                 sum += inst.value(i)*inst.value(i);
             }
-            
+
             return sum;
         }
-    } 
+    }
 }

@@ -1,16 +1,19 @@
 package tsml.transformers;
 
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import java.io.Serializable;
+
 import org.apache.commons.lang3.NotImplementedException;
 
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.data_containers.TSCapabilities;
+import tsml.data_containers.TSCapabilitiesHandler;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
 import weka.core.Instance;
 import weka.core.Instances;
-
-import java.io.Serializable;
 
 /**
  * Interface for time series transformers.
@@ -24,7 +27,7 @@ import java.io.Serializable;
  * @author Tony Bagnall 1/1/2020, Aaron Bostrom
  *
  */
-public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializable {
+public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serializable {
 
 
     /********* Instances ************/
@@ -79,15 +82,12 @@ public interface Transformer extends CapabilitiesHandler, ParamHandler, Serializ
      * all numeric  attributes, nominal class, no missing values
      * @return
      */
-    default Capabilities getCapabilities(){
-        Capabilities result = new Capabilities(this);
-        result.disableAll();
+    default TSCapabilities getTSCapabilities(){
+        TSCapabilities result = new TSCapabilities(this);
+        result.enable(TSCapabilities.EQUAL_LENGTH)
+              .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
+              .enable(TSCapabilities.NO_MISSING_VALUES);
 
-        result.setMinimumNumberInstances(2);
-        // attributes
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // class
-        result.enable(Capabilities.Capability.NOMINAL_CLASS);
         return result;
     }
 

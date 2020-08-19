@@ -1,4 +1,4 @@
-package tsml.transformers;
+package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,29 +9,12 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class Converter implements Transformer {
-
-    @Override
-    public Instance transform(Instance inst) {
-        return inst;
-    }
-
-    @Override
-    public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        return inst;
-    }
+public class Converter {
 
     public static TimeSeriesInstances fromArff(Instances data){
         List<List<List<Double>>> raw_data = new ArrayList<>(data.numInstances());
@@ -120,10 +103,10 @@ public class Converter implements Transformer {
                 output.add(new DenseInstance(2));
                                 
                 //set relation for the dataset/
-                Instances relational = new Instances(relationalHeader, data.get(i).getNumChannels());
+                Instances relational = new Instances(relationalHeader, data.get(i).getNumDimensions());
         
                 //each dense instance is row/ which is actually a channel.
-                for(int j=0; j< data.get(i).getNumChannels(); j++){
+                for(int j=0; j< data.get(i).getNumDimensions(); j++){
                     double[] vals = new double[numAttributes];
                     System.arraycopy(values[i][j], 0, vals, 0, values[i][j].length);
                     for(int k=values[i][j].length; k<numAttributes; k++)
@@ -171,7 +154,7 @@ public class Converter implements Transformer {
     }
 
     public static Instance toArff(TimeSeriesInstance data){
-        int numChannels = data.getNumChannels();
+        int numChannels = data.getNumDimensions();
         if(numChannels == 1)
             return new DenseInstance(1.0, ArrayUtils.add(data.toValueArray()[0], data.getLabelIndex()));
 
@@ -219,14 +202,6 @@ public class Converter implements Transformer {
 
     public static void main(String[] args) {
         
-        TimeSeriesInstances insts_ts = null;
-        Instances insts_arff = null;
-
-        Transformer conv = new Converter();
-
-        insts_ts = conv.transform(insts_ts);
-
-        insts_arff = conv.transform(insts_arff);
     }
     
 }
