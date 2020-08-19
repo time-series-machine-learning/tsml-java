@@ -1,6 +1,7 @@
 package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import tsml.data_containers.TimeSeries;
@@ -62,9 +63,11 @@ public class Splitter{
     }
 
     public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst){
-        int[][] indexes = new int[inst.getMaxNumChannels()][1];
+        int[][] indexes = new int[inst.getMaxNumChannels()][];
         for(int i=0; i< indexes.length; i++)
             indexes[i] = new int[]{i};
+
+        System.out.println(Arrays.deepToString(indexes));
         return splitTimeSeriesInstances(inst, indexes);
     }
 
@@ -77,15 +80,14 @@ public class Splitter{
 
     //could merge dimension slices like. {0,1}, {2}, {3,4}
     public static TimeSeriesInstance mergeTimeSeriesInstance(List<TimeSeriesInstance> inst_dims){
-        double[][] wrapped_raw = new double[inst_dims.size()][];
-        int i=0;
+        List<TimeSeries> ts_data = new ArrayList<>();
         for(TimeSeriesInstance inst : inst_dims){
             double[][] out = inst.toValueArray();
             //concat the hslice.
             for(double[] o : out)
-                wrapped_raw[i++] = o;
+                ts_data.add(new TimeSeries(o));
         }   
-        return new TimeSeriesInstance(wrapped_raw, inst_dims.get(0).getLabelIndex());
+        return new TimeSeriesInstance(inst_dims.get(0).getLabelIndex(), ts_data);
     }
 
      //could merge dimension slices like. {0,1}, {2}, {3,4}
