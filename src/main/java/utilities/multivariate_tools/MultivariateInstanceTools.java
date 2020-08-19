@@ -234,8 +234,8 @@ public class MultivariateInstanceTools {
     
     //function which returns the separate channels of a multivariate problem as Instances[].
     public static Instances[] splitMultivariateInstances(Instances multiInstances){
-        Instances[] output = new Instances[numDimensions(multiInstances)];
-        
+        int d=numDimensions(multiInstances);
+        Instances[] output = new Instances[d];
         int length = channelLength(multiInstances); //all the values + a class value.
 
         //each channel we want to build an Instances object which contains the data, and the class attribute.
@@ -263,8 +263,8 @@ public class MultivariateInstanceTools {
                 //add the denseinstance to write too.
                 output[i].add(new DenseInstance(length+1));
 
-                //System.out.println(index);
-                double [] channel = multiInstances.get(j).relationalValue(0).get(i).toDoubleArray();
+                Instances inst=multiInstances.get(j).relationalValue(0);
+                double [] channel = inst.get(i).toDoubleArray();
                 int k=0;
                 for(; k<channel.length; k++){
                     output[i].instance(j).setValue(k, channel[k]);
