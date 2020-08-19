@@ -19,13 +19,24 @@ public class Splitter{
      */
     //splitty splitty.
     public static List<TimeSeriesInstance> splitTimeSeriesInstance(TimeSeriesInstance inst){
-        List<TimeSeriesInstance> output = new ArrayList<>(inst.getNumDimensions());
+        int[][] indexes = new int[inst.getNumDimensions()][1];
+        for(int i=0; i< indexes.length; i++)
+            indexes[i] = new int[]{i};
+        return splitTimeSeriesInstance(inst, indexes);
+    }
 
-        for(TimeSeries ts : inst){
-            double[][] wrapped_raw = new double[1][];
-            wrapped_raw[0] = ts.toArray();
+        /** 
+     * @param inst
+     * @return List<TimeSeriesInstances>
+     */
+    //horizontally slice into univariate TimeSeriesInstances.
+    //can slice {{0},{1,2}}
+    public static List<TimeSeriesInstance> splitTimeSeriesInstance(TimeSeriesInstance inst, int[][] slicingIndexes){
+        List<TimeSeriesInstance> output = new ArrayList<>(slicingIndexes.length);
 
-            output.add(new TimeSeriesInstance(wrapped_raw, inst.getLabelIndex()));
+        for(int[] i : slicingIndexes){
+            TimeSeriesInstance temp = new TimeSeriesInstance(inst.getHSliceArray(i), inst.getLabelIndex());
+            output.add(temp);
         }
 
         return output;
@@ -37,16 +48,24 @@ public class Splitter{
      * @return List<TimeSeriesInstances>
      */
     //horizontally slice into univariate TimeSeriesInstances.
-    public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst){
+    //can slice {{0},{1,2}}
+    public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst, int[][] slicingIndexes){
         List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumChannels());
 
-        for(int i=0; i< inst.getMaxNumChannels(); i++){
-            TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(new int[]{i}), inst.getClassIndexes());
+        for(int[] i : slicingIndexes){
+            TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(i), inst.getClassIndexes());
             temp.setClassLabels(inst.getClassLabels());
             output.add(temp);
         }
 
         return output;
+    }
+
+    public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst){
+        int[][] indexes = new int[inst.getMaxNumChannels()][1];
+        for(int i=0; i< indexes.length; i++)
+            indexes[i] = new int[]{i};
+        return splitTimeSeriesInstances(inst, indexes);
     }
 
     
@@ -55,15 +74,34 @@ public class Splitter{
      * @return TimeSeriesInstance
      */
     //mergey mergey
+
+    //could merge dimension slices like. {0,1}, {2}, {3,4}
     public static TimeSeriesInstance mergeTimeSeriesInstance(List<TimeSeriesInstance> inst_dims){
         double[][] wrapped_raw = new double[inst_dims.size()][];
         int i=0;
         for(TimeSeriesInstance inst : inst_dims){
-            //ignore any other dimensions, because they should only be single 
-            wrapped_raw[i++] = inst.toValueArray()[0]; 
+            double[][] out = inst.toValueArray();
+            //concat the hslice.
+            for(double[] o : out)
+                wrapped_raw[i++] = o;
         }   
-
         return new TimeSeriesInstance(wrapped_raw, inst_dims.get(0).getLabelIndex());
     }
-    
+
+     //could merge dimension slices like. {0,1}, {2}, {3,4}
+    public static TimeSeriesInstances mergeTimeSeriesInstances(List<TimeSeriesInstances> inst_dims){
+        TimeSeriesInstances out = new TimeSeriesInstances();
+        for ( int i=0; i<inst_dims.get(0).numInstances(); i++ ){
+            List<TimeSeriesInstance> single_instance = new ArrayList<>();
+            //each TSInstances is a HSlice of the data.
+            for(TimeSeriesInstances dim : inst_dims){
+                single_instance.add(dim.get(i));
+            }
+
+            out.add(mergeTimeSeriesInstance(single_instance));
+        }
+
+        out.setClassLabels(inst_dims.get(0).getClassLabels());
+        return out;
+    }
 }
