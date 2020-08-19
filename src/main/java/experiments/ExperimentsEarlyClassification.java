@@ -503,11 +503,12 @@ public class ExperimentsEarlyClassification {
         if (!expSettings.trainEstimateMethod.equals("cv_10")){
             double x = 100*Double.parseDouble(expSettings.trainEstimateMethod);
             expSettings.testFoldFileName = fullWriteLocation + x + "%testFold" + expSettings.foldId + ".csv";
+            expSettings.trainFoldFileName = fullWriteLocation + x + "%trainFold" + expSettings.foldId + ".csv";
         }
         else {
             expSettings.testFoldFileName = fullWriteLocation + "100.0%testFold" + expSettings.foldId + ".csv";
+            expSettings.trainFoldFileName = fullWriteLocation + "100.0%trainFold" + expSettings.foldId + ".csv";
         }
-        expSettings.trainFoldFileName = fullWriteLocation + "trainFold" + expSettings.foldId + ".csv";
 
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)
             expSettings.testFoldFileName = expSettings.trainFoldFileName = fullWriteLocation + "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
@@ -712,6 +713,9 @@ public class ExperimentsEarlyClassification {
         String para2 = null;
         if (parts.length > 2)
             para2 = parts[2];
+
+        method = "cv";
+        para1 = "10";
 
         switch (method) {
             case "cv":
