@@ -558,7 +558,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         }
         //Either do a CV, or bag and get the estimates
-        else if(estimator==EstimatorMethod.CV){
+        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE){
             // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds=setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
