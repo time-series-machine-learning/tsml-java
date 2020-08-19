@@ -103,10 +103,6 @@ public class CachedTransformer extends BaseTrainableTransformer {
         return transformer.getClass().getSimpleName();
     }
 
-    public Capabilities getCapabilities() {
-        return transformer.getCapabilities();
-    }
-
     public void setTransformer(final Transformer transformer) {
         Assert.assertNotNull(transformer);
         this.transformer = transformer;

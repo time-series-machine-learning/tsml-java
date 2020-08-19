@@ -18,6 +18,7 @@ package tsml.transformers;
 import experiments.SimulationExperiments;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
+import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
@@ -160,18 +161,18 @@ public class ACF implements Transformer {
      * 
      * @return Capabilities object
      */
-    public Capabilities getCapabilities() {
-        Capabilities result = new Capabilities(this);
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // result.enable(Capabilities.Capability.MISSING_VALUES);
+    public TSCapabilities getCapabilities() {
+        TSCapabilities result = new TSCapabilities(this);
+        // result.disableAll();
+        // // attributes must be numeric
+        // // Here add in relational when ready
+        // result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // // result.enable(Capabilities.Capability.MISSING_VALUES);
 
-        // class
-        result.enableAllClasses();
-        result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
-        result.enable(Capabilities.Capability.NO_CLASS);
+        // // class
+        // result.enableAllClasses();
+        // result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
+        // result.enable(Capabilities.Capability.NO_CLASS);
 
         return result;
     }

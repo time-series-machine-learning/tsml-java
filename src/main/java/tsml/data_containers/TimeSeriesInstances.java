@@ -2,8 +2,11 @@ package tsml.data_containers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -317,7 +320,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             classCounts[new_series.classLabelIndex]++;
 
         minLength = Math.min(new_series.minLength, minLength);
-        maxLength = Math.min(new_series.maxLength, maxLength);
+        maxLength = Math.max(new_series.maxLength, maxLength);
         hasMissing |= new_series.hasMissing;
         isEqualLength = minLength == maxLength;
     }
@@ -543,6 +546,17 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return this.seriesCollection.hashCode();
     }
 
+
+    public Map<Integer, Integer> getHistogramOfLengths(){
+        Map<Integer, Integer> out = new TreeMap<>();
+        for(TimeSeriesInstance inst : seriesCollection){
+            for(TimeSeries ts : inst){
+                out.merge(ts.getSeriesLength(), 1, Integer::sum);
+            }
+        }
+
+        return out;
+    }
 
     
 }

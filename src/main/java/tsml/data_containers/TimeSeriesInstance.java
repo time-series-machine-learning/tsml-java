@@ -22,9 +22,17 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     boolean isMultivariate;
     boolean isEquallySpaced;
     boolean hasMissing;
+    boolean isEqualLength;
 
     int minLength;
     int maxLength;
+
+    /** 
+     * @return boolean
+     */
+    public boolean isEqualLength(){
+        return isEqualLength;
+    }
 
     /** 
      * @return int
@@ -125,6 +133,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 	private void calculateLengthBounds() {
         minLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
         maxLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
+        isEqualLength = minLength == maxLength;
     }
 
     private void calculateIfMissing() {
