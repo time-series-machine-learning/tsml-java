@@ -38,10 +38,14 @@ public class Pipeline extends EnhancedAbstractClassifier {
         layers.add(new ConcatLayer(name, concats));
     }
 
-    public void split(String name, Pipeline... models) {
+    public void splitAndEnsemble(String name, Pipeline... models) {
         layers.add(new PipelineLayer(name, models));
         layers.add(new EnsembleLayer());
-	}
+    }
+    
+    public void splitAndMerge(String name, Pipeline... models){
+        layers.add(new PipelineLayer(name, models));
+    }
 
     @Override
     public void buildClassifier(TimeSeriesInstances trainData) throws Exception {
@@ -116,18 +120,19 @@ public class Pipeline extends EnhancedAbstractClassifier {
             if (pipelines.length != split.size()) {
                 System.out.println("layers Split MisMatch");
             }
-            List<TimeSeriesInstances> t_split = new ArrayList<TimeSeriesInstances>(split.size());
 
+            List<TimeSeriesInstances> t_split = new ArrayList<TimeSeriesInstances>(split.size());
             for (int i = 0; i < pipelines.length; i++) {
                 t_split.add(pipelines[i].fit(split.get(i)));
             }
 
-            return Splitter.mergeTimeSeriesInstances(t_split);
+            TimeSeriesInstances out = Splitter.mergeTimeSeriesInstances(t_split);
+            System.out.println(out);
+            return out;
         }
 
         @Override
         TimeSeriesInstances predict(TimeSeriesInstances inst) throws Exception {
-            System.out.println(inst);
 
             List<TimeSeriesInstances> split = Splitter.splitTimeSeriesInstances(inst);
 
@@ -224,6 +229,8 @@ public class Pipeline extends EnhancedAbstractClassifier {
 
         @Override
         public void buildClassifier(Instances trainData) throws Exception {
+            System.out.println(trainData);
+
             super.buildClassifier(trainData);
             classifier.buildClassifier(trainData);
         }

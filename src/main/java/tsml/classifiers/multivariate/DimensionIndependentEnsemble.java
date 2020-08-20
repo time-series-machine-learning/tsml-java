@@ -150,7 +150,7 @@ public class DimensionIndependentEnsemble extends AbstractClassifier{
             dist = modules[m].getClassifier().distributionForInstance(testInstance[m]);
             long predTime = System.currentTimeMillis() - startTime;
             
-            vs.storeModuleTestResult(modules[m], dist, predTime);
+            //vs.storeModuleTestResult(modules[m], dist, predTime);
             
             pred = (int)indexOfMax(dist);
             preds[pred] += modules[m].priorWeight * 

@@ -326,7 +326,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         maxNumDimensions = Math.max(new_series.getNumDimensions(), maxNumDimensions);
         hasMissing |= new_series.hasMissing;
         isEqualLength = minLength == maxLength;
-        
+        isMultivariate |= new_series.isMultivariate;
     }
 
     
