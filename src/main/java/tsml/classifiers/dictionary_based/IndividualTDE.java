@@ -339,38 +339,29 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         double squareSum = 0;
         // it is faster to multiply than to divide
         double rWindowLength = 1.0 / (double) windowLength;
-        double[] tsData = series;
         for (int ww = 0; ww < windowLength; ww++) {
-            sum += tsData[ww];
-            squareSum += tsData[ww] * tsData[ww];
+            sum += series[ww];
+            squareSum += series[ww] * series[ww];
         }
         means[0] = sum * rWindowLength;
         double buf = squareSum * rWindowLength - means[0] * means[0];
         stds[0] = buf > 0 ? Math.sqrt(buf) : 0;
-        for (int w = 1, end = tsData.length - windowLength + 1; w < end; w++) {
-            sum += tsData[w + windowLength - 1] - tsData[w - 1];
+        for (int w = 1, end = series.length - windowLength + 1; w < end; w++) {
+            sum += series[w + windowLength - 1] - series[w - 1];
             means[w] = sum * rWindowLength;
-            squareSum += tsData[w + windowLength - 1] * tsData[w + windowLength - 1] - tsData[w - 1] * tsData[w - 1];
+            squareSum += series[w + windowLength - 1] * series[w + windowLength - 1] - series[w - 1] * series[w - 1];
             buf = squareSum * rWindowLength - means[w] * means[w];
             stds[w] = buf > 0 ? Math.sqrt(buf) : 0;
         }
     }
 
-    protected static double complexMulReal(double r1, double im1, double r2, double im2) {
-        return r1 * r2 - im1 * im2;
-    }
+    protected static double complexMulReal(double r1, double im1, double r2, double im2) { return r1 * r2 - im1 * im2; }
 
-    protected static double complexMulImag(double r1, double im1, double r2, double im2) {
-        return r1 * im2 + r2 * im1;
-    }
+    protected static double complexMulImag(double r1, double im1, double r2, double im2) { return r1 * im2 + r2 * im1; }
 
-    protected static double realephi(double u, double M) {
-        return Math.cos(2 * Math.PI * u / M);
-    }
+    protected static double realephi(double u, double M) { return Math.cos(2 * Math.PI * u / M); }
 
-    protected static double complexephi(double u, double M) {
-        return -Math.sin(2 * Math.PI * u / M);
-    }
+    protected static double complexephi(double u, double M) { return -Math.sin(2 * Math.PI * u / M); }
 
     protected double[][] disjointWindows(double [] data) {
         int amount = (int)Math.ceil(data.length/(double)windowSize);
@@ -390,31 +381,10 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     protected double[][] MCB(Instances data) {
         double[][][] dfts = new double[data.numInstances()][][];
 
-        ArrayList<double[]> samples = new ArrayList<>();
-        ArrayList<double[]> transformedSamples = new ArrayList<>();
-        ArrayList<Double> labels = new ArrayList<>();
-
         int sample = 0;
         for (Instance inst : data) {
             double[][] windows = disjointWindows(toArrayNoClass(inst));
-            dfts[sample] = performDFT(windows); //approximation
-
-            for (int i = 0; i < dfts[sample].length; i++) {
-                samples.add(windows[i]);
-                transformedSamples.add(dfts[sample][i]);
-                labels.add(inst.classValue());
-            }
-
-            sample++;
-        }
-
-        double[][] allSamples = new double[samples.size()][];
-        double[][] allTransformedSamples = new double[transformedSamples.size()][];
-        double[] allLabels = new double[samples.size()];
-        for (int i = 0; i < samples.size(); i++) {
-            allSamples[i] = samples.get(i);
-            allTransformedSamples[i] = transformedSamples.get(i);
-            allLabels[i] = labels.get(i);
+            dfts[sample++] = performDFT(windows); //approximation
         }
 
         int numInsts = dfts.length;
@@ -457,34 +427,18 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             orderline[i] = new ArrayList<>();
         }
 
-        ArrayList<double[]> samples = new ArrayList<>();
-        ArrayList<double[]> transformedSamples = new ArrayList<>();
-        ArrayList<Double> labels = new ArrayList<>();
         for (Instance inst : data) {
             double[][] windows = disjointWindows(toArrayNoClass(inst));
             double[][] dfts = performDFT(windows); //approximation
 
-            for (int i = 0; i < dfts.length; i++) {
-                for (int n = 0; n < dfts[i].length; n++) {
+            for (double[] dft : dfts) {
+                for (int n = 0; n < dft.length; n++) {
                     // round to 2 decimal places to reduce noise
-                    double value = Math.round(dfts[i][n] * 100.0) / 100.0;
+                    double value = Math.round(dft[n] * 100.0) / 100.0;
 
                     orderline[n].add(new SerialisableComparablePair<>(value, inst.classValue()));
                 }
-
-                samples.add(windows[i]);
-                transformedSamples.add(dfts[i]);
-                labels.add(inst.classValue());
             }
-        }
-
-        double[][] allSamples = new double[samples.size()][];
-        double[][] allTransformedSamples = new double[transformedSamples.size()][];
-        double[] allLabels = new double[samples.size()];
-        for (int i = 0; i < samples.size(); i++) {
-            allSamples[i] = samples.get(i);
-            allTransformedSamples[i] = transformedSamples.get(i);
-            allLabels[i] = labels.get(i);
         }
 
         double[][] breakpoints = new double[wordLength][alphabetSize];
@@ -509,8 +463,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return breakpoints;
     }
 
-    protected void findBestSplit(List<SerialisableComparablePair<Double,Double>> element, int start, int end, int remainingSymbols,
-                                 List<Integer> splitPoints) {
+    protected void findBestSplit(List<SerialisableComparablePair<Double,Double>> element, int start, int end,
+                                 int remainingSymbols, List<Integer> splitPoints) {
         double bestGain = -1;
         int bestPos = -1;
 
@@ -674,11 +628,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                     BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.putOrAdd(key, 1, 1);
                 }
             }
 
@@ -795,11 +745,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                     BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.putOrAdd(key, 1, 1);
                 }
             }
 
@@ -871,11 +817,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             int quadrant = qStart + (pos/quadrantSize);
 
             SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
-            Integer val = bag.get(key);
-
-            if (val == null)
-                val = 0;
-            bag.put(key, ++val);
+            bag.putOrAdd(key, 1, 1);
 
             qStart += numQuadrants;
         }
@@ -931,6 +873,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             }
         }
 
+        if (featureSelection) trainChiSquared();
+
         if (cleanAfterBuild) {
             clean();
         }
@@ -983,21 +927,23 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        SPBag testBag = BOSSSpatialPyramidsTransform(instance);;
+        SPBag testBag = BOSSSpatialPyramidsTransform(instance);
+
+        if (featureSelection) testBag = filterChiSquared(testBag);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (int i = 0; i < bags.size(); ++i) {
+        for (SPBag bag : bags) {
             double dist;
             if (histogramIntersection)
-                dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                dist = -histogramIntersection(testBag, bag);
+            else dist = BOSSdistance(testBag, bag, bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = bag.getClassVal();
             }
         }
 
@@ -1046,21 +992,23 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         @Override
         public Double call() {
-            SPBag testBag = BOSSSpatialPyramidsTransform(inst);;
+            SPBag testBag = BOSSSpatialPyramidsTransform(inst);
+
+            if (featureSelection) testBag = filterChiSquared(testBag);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
-            for (int i = 0; i < bags.size(); ++i) {
+            for (SPBag bag : bags) {
                 double dist;
                 if (histogramIntersection)
-                    dist = -histogramIntersection(testBag, bags.get(i));
-                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                    dist = -histogramIntersection(testBag, bag);
+                else dist = BOSSdistance(testBag, bag, bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
-                    nn = bags.get(i).getClassVal();
+                    nn = bag.getClassVal();
                 }
             }
 

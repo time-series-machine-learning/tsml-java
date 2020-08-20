@@ -27,6 +27,7 @@ import utilities.generic_storage.SerialisableComparablePair;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -63,7 +64,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         super(wordLength, alphabetSize, windowSize, normalise, levels, IGB, multiThread, numThreads, ex);
     }
 
-    public MultivariateIndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB) {
+    public MultivariateIndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
+                                     boolean IGB) {
         super(wordLength, alphabetSize, windowSize, normalise, levels, IGB);
     }
 
@@ -96,7 +98,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         public void setClassVal(double classVal) { this.classVal = classVal; }
     }
 
-    public static class Word {
+    public static class Word implements Serializable {
         BitWord word;
         byte level;
         int dimension;
@@ -109,9 +111,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            Word w = (Word)o;
-            return word ==  w.word && dimension == w.dimension && level == w.level;
+            if (o instanceof Word) {
+                return word.equals(((Word) o).word) && dimension == ((Word) o).dimension && level == ((Word) o).level;
+            }
+            return false;
         }
 
         @Override
@@ -121,6 +124,11 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             result = 31 * result + Byte.hashCode(level);
             result = 31 * result + Integer.hashCode(dimension);
             return result;
+        }
+
+        @Override
+        public String toString(){
+            return "[" + word + "," + level + "," + dimension + "]";
         }
     }
 
@@ -213,11 +221,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                     BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     Word key = new Word(bigram, (byte) -1, dimension);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.putOrAdd(key, 1, 1);
                 }
             }
 
@@ -320,11 +324,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                     BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     Word key = new Word(bigram, (byte) -1, dimension);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.putOrAdd(key, 1, 1);
                 }
             }
 
@@ -396,11 +396,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             int quadrant = qStart + (pos/quadrantSize);
 
             Word key = new Word(word, (byte)quadrant, dimension);
-            Integer val = bag.get(key);
-
-            if (val == null)
-                val = 0;
-            bag.put(key, ++val);
+            bag.putOrAdd(key, 1, 1);
 
             qStart += numQuadrants;
         }
@@ -457,6 +453,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             }
         }
 
+        if (featureSelection) trainChiSquared();
+
         if (cleanAfterBuild) {
             clean();
         }
@@ -509,21 +507,23 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     @Override
     public double classifyInstance(Instance instance) throws Exception{
-        SPBagMV testBag = BOSSSpatialPyramidsTransform(instance);;
+        SPBagMV testBag = BOSSSpatialPyramidsTransform(instance);
+
+        if (featureSelection) testBag = filterChiSquared(testBag);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (int i = 0; i < bags.size(); ++i) {
+        for (SPBagMV bag : bags) {
             double dist;
             if (histogramIntersection)
-                dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                dist = -histogramIntersection(testBag, bag);
+            else dist = BOSSdistance(testBag, bag, bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = bag.getClassVal();
             }
         }
 
@@ -532,8 +532,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     /**
      * Used within BOSSEnsemble as part of a leave-one-out crossvalidation, to skip having to rebuild
-     * the classifier every time (since the n histograms would be identical each time anyway), therefore this classifies
-     * the instance at the index passed while ignoring its own corresponding histogram
+     * the classifier every time (since the n histograms would be identical each time anyway), therefore this
+     * classifies the instance at the index passed while ignoring its own corresponding histogram
      *
      * @param testIndex index of instance to classify
      * @return classification
@@ -573,21 +573,23 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         @Override
         public Double call() {
-          SPBagMV testBag = BOSSSpatialPyramidsTransform(inst);;
+            SPBagMV testBag = BOSSSpatialPyramidsTransform(inst);
+
+            if (featureSelection) testBag = filterChiSquared(testBag);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
-            for (int i = 0; i < bags.size(); ++i) {
+            for (SPBagMV bag : bags) {
                 double dist;
                 if (histogramIntersection)
-                    dist = -histogramIntersection(testBag, bags.get(i));
-                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
+                    dist = -histogramIntersection(testBag, bag);
+                else dist = BOSSdistance(testBag, bag, bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
-                    nn = bags.get(i).getClassVal();
+                    nn = bag.getClassVal();
                 }
             }
 
