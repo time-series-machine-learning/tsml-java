@@ -129,7 +129,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         result.setValue(TechnicalInformation.Field.JOURNAL, "The European Conference on Machine Learning and " +
                 "Principles and Practice of Knowledge Discovery in Databases");
         result.setValue(TechnicalInformation.Field.YEAR, "2020");
-        return null;
+        return result;
     }
 
     @Override
