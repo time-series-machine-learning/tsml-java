@@ -312,47 +312,38 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             seriesLength = dimensions[0].numAttributes()-1;
             numInstances = dimensions[0].numInstances();
 
-            if (numIntervals < 0){
-                if (numIntervalsFinder == null){
-                    numIntervals = (int)(Math.sqrt(seriesLength) * Math.sqrt(numDimensions));
-                }
-                else {
-                    numIntervals = numIntervalsFinder.apply(seriesLength);
-                }
+            if (numIntervalsFinder == null){
+                numIntervals = (int)(Math.sqrt(seriesLength) * Math.sqrt(numDimensions));
+            }
+            else {
+                numIntervals = numIntervalsFinder.apply(seriesLength);
             }
 
-            if (minIntervalLength < 0){
-                if (minIntervalLengthFinder == null){
-                    minIntervalLength = 3;
-                }
-                else {
-                    minIntervalLength = minIntervalLengthFinder.apply(seriesLength);
-                }
-
-                if (minIntervalLength < 3){
-                    minIntervalLength = 3;
-                }
-
-                if (seriesLength <= minIntervalLength){
-                    minIntervalLength = seriesLength/2;
-                }
+            if (minIntervalLengthFinder == null){
+                minIntervalLength = 3;
+            }
+            else {
+                minIntervalLength = minIntervalLengthFinder.apply(seriesLength);
+            }
+            if (minIntervalLength < 3){
+                minIntervalLength = 3;
+            }
+            if (seriesLength <= minIntervalLength){
+                minIntervalLength = seriesLength/2;
             }
 
-            if (maxIntervalLength < 0){
-                if (maxIntervalLengthFinder == null){
-                    maxIntervalLength = seriesLength;
-                }
-                else {
-                    maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
-                }
+            if (maxIntervalLengthFinder == null){
+                maxIntervalLength = seriesLength;
+            }
+            else {
+                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
+            }
+            if (maxIntervalLength > seriesLength){
+                maxIntervalLength = seriesLength;
+            }
 
-                if (maxIntervalLength > seriesLength){
-                    maxIntervalLength = seriesLength;
-                }
-
-                if (maxIntervalLength < minIntervalLength){
-                    maxIntervalLength = minIntervalLength;
-                }
+            if (maxIntervalLength < minIntervalLength){
+                maxIntervalLength = minIntervalLength;
             }
 
             if (!useSummaryStats){
