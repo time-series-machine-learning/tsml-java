@@ -95,7 +95,7 @@ public class PAA implements Transformer {
             newInstance.setValue(j, intervals[j]);
 
         if (inst.classIndex() >= 0)
-            newInstance.setValue(inst.classIndex(), inst.classValue());
+            newInstance.setValue(newInstance.numAttributes()-1, inst.classValue());
 
         return newInstance;
     }
