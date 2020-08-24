@@ -98,7 +98,7 @@ public class ACF_PACF extends PACF {
                 pi[k] = partials[k][k];
         }
 
-        int length = autos.length + pi.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional
+        int length = autos.length + (pi.length + inst.classIndex() >= 0 ? 1 : 0); // ACF atts + PACF atts + optional
                                                                                 // classvalue.
 
         // 6. Stuff back into new Instances.

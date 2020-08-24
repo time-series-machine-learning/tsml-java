@@ -93,7 +93,7 @@ public class PowerSpectrum extends FFT {
             length--;
         length /= 2;
 
-        Instance out=new DenseInstance(length + inst.classIndex() >= 0 ? 1 : 0);
+        Instance out=new DenseInstance(length + (inst.classIndex() >= 0 ? 1 : 0));
 
         if(log)
         {
@@ -111,7 +111,7 @@ public class PowerSpectrum extends FFT {
 
         //Set class value.
         if(inst.classIndex()>=0)
-            out.setValue(length, f.classValue());
+            out.setValue(out.numAttributes()-1, f.classValue());
 
         return out;
     }
