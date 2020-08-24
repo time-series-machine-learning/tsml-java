@@ -851,7 +851,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             trainResults.setClassifierName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if(estimator==EstimatorMethod.CV) {
+        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */

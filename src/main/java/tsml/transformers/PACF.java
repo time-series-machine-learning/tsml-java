@@ -156,7 +156,7 @@ public class PACF implements Transformer {
 
         double[] pi = convertInstance(d);
 
-        int length = pi.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional classvalue.
+        int length = pi.length + (inst.classIndex() >= 0 ? 1 : 0); // ACF atts + PACF atts + optional classvalue.
 
         // 6. Stuff back into new Instances.
         Instance out = new DenseInstance(length);

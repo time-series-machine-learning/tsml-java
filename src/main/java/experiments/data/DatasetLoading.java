@@ -250,7 +250,8 @@ public class DatasetLoading {
 //                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
 //                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                 if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
-                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+//                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(data[0], data[1], fold);
 
                 } else {
                     data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);

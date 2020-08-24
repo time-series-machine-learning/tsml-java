@@ -1615,11 +1615,13 @@ public class ClassifierResults implements DebugPrinting, Serializable {
 
                 buildTimeDuplicateWarningPrinted = true;
             }
-
-            buildTime = Long.parseLong(parts[1]);
+            double x=Double.parseDouble(parts[1]); //todo fix this hack. Why just these two? should doubles be allowed?
+            buildTime = (long)x;
         }
-        if (parts.length > 2)
-            testTime = Long.parseLong(parts[2]);
+        if (parts.length > 2) {
+            double x = Double.parseDouble(parts[1]);
+            testTime  = (long)x;
+        }
         if (parts.length > 3)
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4)

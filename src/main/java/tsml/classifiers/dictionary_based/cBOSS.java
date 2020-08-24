@@ -151,16 +151,15 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //TODO update
         TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
-        result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
-        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
-        result.setValue(TechnicalInformation.Field.VOLUME, "29");
-        result.setValue(TechnicalInformation.Field.NUMBER,"6");
-        result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
-        result.setValue(TechnicalInformation.Field.YEAR, "2015");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, W. Vickers and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "Scalable dictionary classifiers for time series " +
+                "classification");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "International Conference on Intelligent Data " +
+                "Engineering and Automated Learning");
+        result.setValue(TechnicalInformation.Field.PAGES, "11-19");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
         return result;
     }
 

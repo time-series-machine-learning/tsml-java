@@ -174,7 +174,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
-    private int numClasses = -1;
+    protected int numClasses = -1;
 
     public int getNumClasses() {
         return numClasses;

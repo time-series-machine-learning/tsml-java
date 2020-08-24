@@ -121,17 +121,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //TODO update
-//        TechnicalInformation result;
-//        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-//        result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
-//        result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
-//        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
-//        result.setValue(TechnicalInformation.Field.VOLUME, "29");
-//        result.setValue(TechnicalInformation.Field.NUMBER, "6");
-//        result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
-//        result.setValue(TechnicalInformation.Field.YEAR, "2015");
-        return null;
+        TechnicalInformation result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, J. Large, G. Cawley and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "The Temporal Dictionary Ensemble (TDE) Classifier for " +
+                "Time Series Classification");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "The European Conference on Machine Learning and " +
+                "Principles and Practice of Knowledge Discovery in Databases");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
+        return result;
     }
 
     @Override
@@ -252,9 +250,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         paramAccuracy = saved.paramAccuracy;
         paramTime = saved.paramTime;
         //train = saved.train;
-        numThreads = saved.numThreads;
-        multiThread = saved.multiThread;
-        ex = saved.ex;
+        //numThreads = saved.numThreads;
+        //multiThread = saved.multiThread;
+        //ex = saved.ex;
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
@@ -434,11 +432,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             lowestAcc = new double[numSeries];
             for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
             maxAcc = 0;
+        }
 
-            if (multiThread) {
-                if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
-                if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
-            }
+        if (multiThread) {
+            ex = Executors.newFixedThreadPool(numThreads);
         }
 
         //required to deal with multivariate datasets, each channel is split into its own instances
