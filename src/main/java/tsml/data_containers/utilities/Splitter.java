@@ -66,8 +66,6 @@ public class Splitter{
         int[][] indexes = new int[inst.getMaxNumChannels()][];
         for(int i=0; i< indexes.length; i++)
             indexes[i] = new int[]{i};
-
-        System.out.println(Arrays.deepToString(indexes));
         return splitTimeSeriesInstances(inst, indexes);
     }
 
