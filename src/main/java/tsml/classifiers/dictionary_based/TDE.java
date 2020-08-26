@@ -17,6 +17,9 @@ package tsml.classifiers.dictionary_based;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import utilities.samplers.RandomIndexSampler;
 import utilities.samplers.Sampler;
@@ -48,6 +51,11 @@ import static weka.core.Utils.sum;
  */
 public class TDE extends EnhancedAbstractClassifier implements TrainTimeContractable,
         Checkpointable, TechnicalInformationHandler, MultiThreadable {
+
+
+    public boolean fs = false;
+    public double dimensionProportion = 1;
+
 
     private int parametersConsidered = 250;
     private int parametersConsideredPerChannel = -1;
@@ -347,8 +355,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     public void setCutoffThreshold(double d) { cutoffThreshold = d; }
 
     @Override
-    public void buildClassifier(final Instances data) throws Exception {
-        super.buildClassifier(data);
+    public void buildClassifier(final TimeSeriesInstances data) throws Exception {
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+        numClasses = trainData.numClasses();
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
+
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -489,6 +502,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
     }
 
+    @Override
+    public void buildClassifier(final Instances data) throws Exception {
+        buildClassifier(Converter.fromArff(data));
+    }
+
     private void buildTDE(Instances[] series) throws Exception {
         //build classifiers up to a set size
         while ((underContractTime || sum(classifiersBuilt) < parametersConsidered)
@@ -504,22 +522,26 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
 
             IndividualTDE indiv;
+            Instances data;
             if (isMultivariate && !weightedColumnEnsemble){
                 indiv = new MultivariateIndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
+                data = dimensionProportion < 1 && dimensionProportion > 0 ? subsampleDimensions(series[currentSeries],
+                        (MultivariateIndividualTDE) indiv) : series[currentSeries];
             }
             else{
                 indiv = new IndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
+                data = series[currentSeries];
             }
-            Instances data = trainProportion < 1 && trainProportion > 0 ? resampleData(series[currentSeries], indiv)
-                    : series[currentSeries];
-            indiv.buildClassifier(data);
+            data = trainProportion < 1 && trainProportion > 0 ? subsampleData(data, indiv) : data;
             indiv.setCleanAfterBuild(true);
             indiv.setHistogramIntersection(histogramIntersection);
             indiv.setSeed(seed);
+            indiv.featureSelection = fs;
+            indiv.buildClassifier(data);
 
             double accuracy = individualTrainAcc(indiv, data, numClassifiers[currentSeries] < maxEnsembleSize
                     ? Double.MIN_VALUE : lowestAcc[currentSeries]);
@@ -801,7 +823,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         return params.toDoubleArray();
     }
 
-    private Instances resampleData(Instances series, IndividualTDE indiv) {
+    private Instances subsampleData(Instances series, IndividualTDE indiv) {
         int newSize = (int) (series.numInstances() * trainProportion);
         Instances data = new Instances(series, newSize);
 
@@ -815,6 +837,37 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             subsampleIndices.add(n);
         }
         indiv.setSubsampleIndices(subsampleIndices);
+
+        return data;
+    }
+
+    private Instances subsampleDimensions(Instances series, MultivariateIndividualTDE indiv) {
+        int newSize = (int) (numDimensions(series) * dimensionProportion);
+        Instances data = new Instances(series);
+
+        ArrayList<Integer> subsampleIndices = new ArrayList<>();
+        for (int n = 0; n < numDimensions(series); n++){
+            subsampleIndices.add(n);
+        }
+
+        while (subsampleIndices.size() > newSize){
+            subsampleIndices.remove(rand.nextInt(subsampleIndices.size()));
+        }
+        subsampleIndices.sort(Collections.reverseOrder());
+
+
+        for (int i = 0; i < newSize; i++) {
+            for (int n = 0; n < data.numInstances(); n++) {
+                data.get(n).relationalValue(0).delete(subsampleIndices.get(i));
+            }
+        }
+
+        System.out.println(numDimensions(series));
+        System.out.println(subsampleIndices);
+        System.out.println(data.get(0).relationalValue(0).numInstances());
+        System.out.println();
+
+        indiv.dimensionSubsample = subsampleIndices;
 
         return data;
     }
@@ -1065,7 +1118,22 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         else {
             for (int n = 0; n < numSeries; n++) {
                 for (IndividualTDE classifier : classifiers[n]) {
-                    double classification = classifier.classifyInstance(series[n]);
+
+                    Instance d;
+                    if (isMultivariate && !weightedColumnEnsemble && dimensionProportion > 0 && dimensionProportion < 1) {
+                        d = new DenseInstance(series[n]);
+                        d.setDataset(series[n].dataset());
+
+                        for (int i = 0; i < ((MultivariateIndividualTDE)classifier).dimensionSubsample.size(); i++) {
+                            d.relationalValue(0).delete(((MultivariateIndividualTDE)classifier).dimensionSubsample.get(i));
+                        }
+                    }
+                    else{
+                        d = series[n];
+                    }
+
+
+                    double classification = classifier.classifyInstance(d);
                     classHist[(int) classification] += classifier.getWeight();
                     sum += classifier.getWeight();
                 }
@@ -1080,7 +1148,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         else{
             for (int i = 0; i < classHist.length; ++i)
-                distributions[i] += 1 / numClasses;
+                distributions[i] += 1.0 / numClasses;
         }
 
         return distributions;
@@ -1107,18 +1175,19 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         TDE c;
         double accuracy;
 
+//        c = new TDE();
+//        c.setSeed(fold);
+//        c.setEstimateOwnPerformance(true);
+//        c.buildClassifier(train);
+//        accuracy = ClassifierTools.accuracy(test, c);
+//
+//        System.out.println("TDE accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+//        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
+
         c = new TDE();
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("TDE accuracy on " + dataset + " fold " + fold + " = " + accuracy);
-        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
-
-        c = new TDE();
-        c.setSeed(fold);
-        c.setEstimateOwnPerformance(true);
+        c.dimensionProportion = 0.7;
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 

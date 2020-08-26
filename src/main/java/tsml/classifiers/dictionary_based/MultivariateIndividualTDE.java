@@ -57,6 +57,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     private ObjectHashSet<Word> chiSquare;
 
+    public ArrayList<Integer> dimensionSubsample;
+
     private static final long serialVersionUID = 2L;
 
     public MultivariateIndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
