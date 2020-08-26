@@ -63,8 +63,72 @@ public class DTW_DistanceBasic extends EuclideanDistance{
             s=a.toDoubleArray();
         return s;
     }
+    public double multivariateDistance(Instance first, Instance second, double cutOffValue) {
+        double minDist;
+        boolean tooBig=true;
+        Instances data1=first.relationalValue(0);
+        Instances data2=second.relationalValue(0);
+        int n=data1.numAttributes();
+        int m=data2.numAttributes();
+        if(n!=m) throw new RuntimeException("Cannot handle unequal length series");
+//  Parameter 0<=r<=1. 0 == no warp, 1 == full warp
+        matrixD = new double[n][n];
+        windowSize = getWindowSize(n);
+//Set all to max. This is necessary for the window but I dont need to do
+
+        for(int i=0;i<n;i++)
+            for(int j=0;j<n;j++)
+                matrixD[i][j]=Double.MAX_VALUE;
+
+
+        matrixD[0][0]=multivariatePointDistance(data1,data2,0,0);
+
+//Base cases for warping 0 to all with max interval	r
+//Warp a[0] onto all b[1]...b[r+1]
+        for(int j=1;j<windowSize && j<n;j++)
+            matrixD[0][j]=matrixD[0][j-1]+multivariatePointDistance(data1,data2,0,j);
+
+//	Warp b[0] onto all a[1]...a[r+1]
+        for(int i=1;i<windowSize && i<n;i++)
+            matrixD[i][0]=matrixD[i-1][0]+multivariatePointDistance(data1,data2,i,0);
+        //Warp the rest,
+        for (int i=1;i<n;i++){
+            tooBig=true;
+            for (int j = 1;j<m;j++){
+//Find the min of matrixD[i][j-1],matrixD[i-1][j] and matrixD[i-1][j-1]
+                if (i < j + windowSize && j < i + windowSize) {
+                    minDist=matrixD[i][j-1];
+                    if(matrixD[i-1][j]<minDist)
+                        minDist=matrixD[i-1][j];
+                    if(matrixD[i-1][j-1]<minDist)
+                        minDist=matrixD[i-1][j-1];
+                    matrixD[i][j]=minDist+multivariatePointDistance(data1,data2,i,j);
+                    if(tooBig&&matrixD[i][j]<cutOffValue)
+                        tooBig=false;
+                }
+            }
+            //Early abandon
+            if(tooBig){
+                return Double.MAX_VALUE;
+            }
+
+        }
+//Find the minimum distance at the end points, within the warping window.
+        return matrixD[n-1][m-1];
+    }
+    private static double multivariatePointDistance(Instances data1, Instances data2, int posA, int posB){
+        double diff=0;
+        for(int i=0;i<data1.numInstances();i++)
+            diff += (data1.instance(i).value(posA) - data2.instance(i).value(posB))*(data1.instance(i).value(posA) - data2.instance(i).value(posB));
+        return diff;
+    }
+
     @Override
     public double distance(Instance first, Instance second, double cutOffValue) {
+//Hack to handle multivariate
+//        System.out.println(" Multivariate, cut off value ="+cutOffValue);
+        if(first.attribute(0).isRelationValued())
+            return multivariateDistance(first,second,cutOffValue);
         double[] f=extractSeries(first);
         double[] s=extractSeries(second);
         return distance(f,s,cutOffValue);

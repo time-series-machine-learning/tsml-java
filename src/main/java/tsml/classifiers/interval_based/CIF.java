@@ -32,7 +32,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
+import java.util.Random;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static utilities.Utilities.argMax;
@@ -45,7 +46,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  * @author Matthew Middlehurst
  **/
 public class CIF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
-        Checkpointable, Tuneable, Visualisable, Interpretable {
+        Checkpointable, Tuneable, MultiThreadable, Visualisable, Interpretable {
 
     /**
      * Paper defining CIF.
@@ -106,13 +107,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**Holding variable for test classification in order to retain the header info*/
     private Instances testHolder;
 
-    /** voteEnsemble determines whether to aggregate classifications or
-     * probabilities when predicting */
-    private boolean voteEnsemble = true;
-
     /** Flags and data required if Bagging **/
     private boolean bagging = false;
-    private boolean[][] inBag;
     private int[] oobCounts;
     private double[][] trainDistributions;
 
@@ -129,6 +125,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private long contractTime = 0;
     private int maxClassifiers = 500;
 
+    /** Multithreading **/
+    private int numThreads = 1;
+    private boolean multiThread = false;
+    private ExecutorService ex;
+
     /** Visualisation and interpretability **/
     private String visSavePath;
     private int visNumTopAtts = 3;
@@ -139,12 +140,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private double[] interpSeries;
     private int interpPred;
 
-    /** Stored for temporal importance curves **/
+    /** data information **/
     private int seriesLength;
+    private int numInstances;
 
     /** Multivariate **/
-    private int numColumns;
-    private ArrayList<ArrayList<Integer>> intervalColumns;
+    private int numDimensions;
+    private ArrayList<ArrayList<Integer>> intervalDimensions;
 
     /** Transformer used to obtain catch22 features **/
     private transient Catch22 c22;
@@ -219,15 +221,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * Set whether to sum distributions for each classifier (false) or sum votes (true) when classifying.
-     *
-     * @param b boolean to set vote ensemble
-     */
-    public void setProbabilityEnsemble(boolean b){
-        voteEnsemble = b;
-    }
-
-    /**
      * Set whether to perform bagging with replacement.
      *
      * @param b boolean to set bagging
@@ -248,7 +241,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         String temp=super.getParameters()+",numTrees,"+nt+",attSubsampleSize,"+attSubsampleSize+
                 ",outlierNorm,"+outlierNorm+",basicSummaryStats,"+useSummaryStats+",numIntervals,"+numIntervals+
                 ",minIntervalLength,"+minIntervalLength+",maxIntervalLength,"+maxIntervalLength+
-                ",baseClassifier,"+base.getClass().getSimpleName()+",voting,"+voteEnsemble+",bagging,"+bagging+
+                ",baseClassifier,"+base.getClass().getSimpleName()+",bagging,"+bagging+
                 ",estimator,"+estimator.name()+",contractTime,"+contractTime;
         return temp;
     }
@@ -293,17 +286,17 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         getCapabilities().testWithFail(data);
 
         //required to deal with multivariate datasets, each channel is split into its own instances
-        Instances[] columns;
+        Instances[] dimensions;
 
         //Multivariate
         if (data.checkForAttributeType(Attribute.RELATIONAL)) {
-            columns = splitMultivariateInstances(data);
-            numColumns = numDimensions(data);
+            dimensions = splitMultivariateInstances(data);
+            numDimensions = numDimensions(data);
         }
         //Univariate
         else{
-            columns = new Instances[]{data};
-            numColumns = 1;
+            dimensions = new Instances[]{data};
+            numDimensions = 1;
         }
 
         File file = new File(checkpointPath + "CIF" + seed + ".ser");
@@ -316,49 +309,41 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         //initialise variables
         else {
-            seriesLength = columns[0].numAttributes()-1;
+            seriesLength = dimensions[0].numAttributes()-1;
+            numInstances = dimensions[0].numInstances();
 
-            if (numIntervals < 0){
-                if (numIntervalsFinder == null){
-                    numIntervals = (int)(Math.sqrt(seriesLength) * Math.sqrt(numColumns));
-                }
-                else {
-                    numIntervals = numIntervalsFinder.apply(seriesLength);
-                }
+            if (numIntervalsFinder == null){
+                numIntervals = (int)(Math.sqrt(seriesLength) * Math.sqrt(numDimensions));
+            }
+            else {
+                numIntervals = numIntervalsFinder.apply(seriesLength);
             }
 
-            if (minIntervalLength < 0){
-                if (minIntervalLengthFinder == null){
-                    minIntervalLength = 3;
-                }
-                else {
-                    minIntervalLength = minIntervalLengthFinder.apply(seriesLength);
-                }
-
-                if (minIntervalLength < 3){
-                    minIntervalLength = 3;
-                }
-
-                if (seriesLength <= minIntervalLength){
-                    minIntervalLength = seriesLength/2;
-                }
+            if (minIntervalLengthFinder == null){
+                minIntervalLength = 3;
+            }
+            else {
+                minIntervalLength = minIntervalLengthFinder.apply(seriesLength);
+            }
+            if (minIntervalLength < 3){
+                minIntervalLength = 3;
+            }
+            if (seriesLength <= minIntervalLength){
+                minIntervalLength = seriesLength/2;
             }
 
-            if (maxIntervalLength < 0){
-                if (maxIntervalLengthFinder == null){
-                    maxIntervalLength = seriesLength;
-                }
-                else {
-                    maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
-                }
+            if (maxIntervalLengthFinder == null){
+                maxIntervalLength = seriesLength;
+            }
+            else {
+                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
+            }
+            if (maxIntervalLength > seriesLength){
+                maxIntervalLength = seriesLength;
+            }
 
-                if (maxIntervalLength > seriesLength){
-                    maxIntervalLength = seriesLength;
-                }
-
-                if (maxIntervalLength < minIntervalLength){
-                    maxIntervalLength = minIntervalLength;
-                }
+            if (maxIntervalLength < minIntervalLength){
+                maxIntervalLength = minIntervalLength;
             }
 
             if (!useSummaryStats){
@@ -373,13 +358,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
 
             //Set up for Bagging if required
-            if(bagging){
-                inBag=new boolean[numClassifiers][data.numInstances()];
-
-                if (getEstimateOwnPerformance()){
-                    trainDistributions = new double[data.numInstances()][data.numClasses()];
-                    oobCounts=new int[data.numInstances()];
-                }
+            if(bagging && getEstimateOwnPerformance()) {
+                trainDistributions = new double[numInstances][numClasses];
+                oobCounts = new int[numInstances];
             }
 
             //cancel loop using time instead of number built.
@@ -395,7 +376,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 attUsage = new ArrayList<>(numClassifiers);
             }
 
-            intervalColumns = new ArrayList<>();
+            intervalDimensions = new ArrayList<>();
+        }
+
+        if (multiThread) {
+            ex = Executors.newFixedThreadPool(numThreads);
+            if (checkpoint) System.out.println("Unable to checkpoint until end of build when multi threading.");
         }
 
         c22 = new Catch22();
@@ -404,35 +390,76 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         //Set up instances size and format.
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
-        for(int j=0;j<numIntervals*numAttributes;j++){
+        for(int j = 0; j < numIntervals*numAttributes; j++){
             name = "F"+j;
             atts.add(new Attribute(name));
         }
         //Get the class values as an array list
-        Attribute target =data.attribute(data.classIndex());
-        ArrayList<String> vals=new ArrayList<>(target.numValues());
-        for(int j=0;j<target.numValues();j++)
+        Attribute target = data.attribute(data.classIndex());
+        ArrayList<String> vals = new ArrayList<>(target.numValues());
+        for(int j = 0; j < target.numValues(); j++)
             vals.add(target.value(j));
-        atts.add(new Attribute(data.attribute(data.classIndex()).name(),vals));
+        atts.add(new Attribute(data.attribute(data.classIndex()).name(), vals));
         //create blank instances with the correct class value
-        Instances result = new Instances("Tree",atts,data.numInstances());
+        Instances result = new Instances("Tree", atts, numInstances);
         result.setClassIndex(result.numAttributes()-1);
-        for(int i=0;i<data.numInstances();i++){
-            DenseInstance in=new DenseInstance(result.numAttributes());
-            in.setValue(result.numAttributes()-1,data.instance(i).classValue());
+        for(int i = 0; i < numInstances; i++){
+            DenseInstance in = new DenseInstance(result.numAttributes());
+            in.setValue(result.numAttributes()-1, data.instance(i).classValue());
             result.add(in);
         }
 
-        testHolder = new Instances(result,0);
-        DenseInstance in=new DenseInstance(result.numAttributes());
+        testHolder = new Instances(result,1);
+        DenseInstance in = new DenseInstance(testHolder.numAttributes());
+        in.setValue(testHolder.numAttributes()-1, -1);
         testHolder.add(in);
 
-        /** For each base classifier
-         *      generate random intervals
-         *      do the transfrorms
-         *      build the classifier
-         * */
-        while(withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers){
+        if (multiThread){
+            multiThreadBuildCIF(dimensions, result);
+        }
+        else{
+            buildCIF(dimensions, result);
+        }
+
+        if(trees.size() == 0){//Not enough time to build a single classifier
+            throw new Exception((" ERROR in CIF, no trees built, contract time probably too low. Contract time = "
+                    + contractTime));
+        }
+
+        if(checkpoint) {
+            saveToFile(checkpointPath);
+        }
+
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
+                - trainResults.getErrorEstimateTime());
+
+
+        if(getEstimateOwnPerformance()){
+            long est1 = System.nanoTime();
+            estimateOwnPerformance(data);
+            long est2 = System.nanoTime();
+            trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+        }
+
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished TSF Build with " + trees.size() + " Trees built in " +
+                trainResults.getBuildTime()/1000000000 + " Seconds  ***************");
+    }
+
+    /**
+     * Build the CIF classifier
+     * For each base classifier
+     *     generate random intervals
+     *     do the transfrorms
+     *     build the classifier
+     *
+     * @param dimensions Instances data split by dimension
+     * @param result Instances object formatted for transformed data
+     * @throws Exception unable to build CIF
+     */
+    public void buildCIF(Instances[] dimensions, Instances result) throws Exception {
+        while(withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
             int i = trees.size();
 
             //1. Select random intervals for tree i
@@ -447,7 +474,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                     interval[j][1] = interval[j][0] + length;
                 } else {
-                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength) + minIntervalLength; //Start point
+                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
+                            + minIntervalLength; //Start point
 
                     int range = Math.min(interval[j][1], maxIntervalLength);
                     int length;
@@ -459,21 +487,24 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             //If bagging find instances with replacement
 
-            int[] instInclusions = new int[data.numInstances()];
+            int[] instInclusions = null;
+            boolean[] inBag = null;
             if (bagging) {
-                for (int n = 0; n < data.numInstances(); n++) {
-                    instInclusions[rand.nextInt(data.numInstances())]++;
+                inBag = new boolean[numInstances];
+                instInclusions = new int[numInstances];
+
+                for (int n = 0; n < numInstances; n++) {
+                    instInclusions[rand.nextInt(numInstances)]++;
                 }
 
-                for (int n = 0; n < data.numInstances(); n++) {
+                for (int n = 0; n < numInstances; n++) {
                     if (instInclusions[n] > 0) {
-                        inBag[i][n] = true;
+                        inBag[n] = true;
                     }
                 }
             }
 
             //find attributes to subsample
-
             subsampleAtts.add(new ArrayList<>());
             for (int n = 0; n < startNumAttributes; n++){
                 subsampleAtts.get(i).add(n);
@@ -483,19 +514,19 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 subsampleAtts.get(i).remove(rand.nextInt(subsampleAtts.get(i).size()));
             }
 
-            intervalColumns.add(new ArrayList<>());
-            //find columns for each interval
+            //find dimensions for each interval
+            intervalDimensions.add(new ArrayList<>());
             for (int n = 0; n < numIntervals; n++) {
-                intervalColumns.get(i).add(rand.nextInt(numColumns));
+                intervalDimensions.get(i).add(rand.nextInt(numDimensions));
             }
-            Collections.sort(intervalColumns.get(i));
+            Collections.sort(intervalDimensions.get(i));
 
             //For bagging
             int instIdx = 0;
             int lastIdx = -1;
 
             //2. Generate and store attributes
-            for (int k = 0; k < data.numInstances(); k++) {
+            for (int k = 0; k < numInstances; k++) {
                 //For each instance
 
                 if (bagging) {
@@ -520,21 +551,21 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
                     if (sameInst) continue;
 
-                    result.instance(k).setValue(result.classIndex(), data.instance(instIdx).classValue());
+                    result.instance(k).setValue(result.classIndex(), dimensions[0].instance(instIdx).classValue());
                 } else {
                     instIdx = k;
                 }
 
                 for (int j = 0; j < numIntervals; j++) {
                     //extract the interval
-                    double[] series = columns[intervalColumns.get(i).get(j)].instance(instIdx).toDoubleArray();
+                    double[] series = dimensions[intervalDimensions.get(i).get(j)].instance(instIdx).toDoubleArray();
 
                     FeatureSet f = new FeatureSet();
                     double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
 
                     //process features
 
-                    for (int g = 0; g < subsampleAtts.get(i).size(); g++) {
+                    for (int g = 0; g < numAttributes; g++) {
                         if (subsampleAtts.get(i).get(g) < 22) {
                             result.instance(k).setValue(j * numAttributes + g,
                                     c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
@@ -585,17 +616,17 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 long t1 = System.nanoTime();
                 boolean[] usedAtts = attUsage.get(i);
 
-                for (int n = 0; n < data.numInstances(); n++) {
-                    if (inBag[i][n])
+                for (int n = 0; n < numInstances; n++) {
+                    if (inBag[n])
                         continue;
 
                     for (int j = 0; j < numIntervals; j++) {
-                        double[] series = columns[intervalColumns.get(i).get(j)].instance(n).toDoubleArray();
+                        double[] series = dimensions[intervalDimensions.get(i).get(j)].instance(n).toDoubleArray();
 
                         FeatureSet f = new FeatureSet();
                         double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
 
-                        for (int g = 0; g < subsampleAtts.get(i).size(); g++) {
+                        for (int g = 0; g < numAttributes; g++) {
                             if (!usedAtts[j * numAttributes + g]) {
                                 testHolder.instance(0).setValue(j * numAttributes + g, 0);
                                 continue;
@@ -643,30 +674,56 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 saveToFile(checkpointPath);
             }
         }
+    }
 
-        if(trees.size()==0){//Not enough time to build a single classifier
-            throw new Exception((" ERROR in CIF, no trees built, contract time probably too low. Contract time = "
-                    + contractTime));
+    /**
+     * Build the CIF classifier using multiple threads.
+     * Unable to checkpoint until after the build process while using multiple threads.
+     * For each base classifier
+     *     generate random intervals
+     *     do the transfrorms
+     *     build the classifier
+     *
+     * @param dimensions Instances data split by dimension
+     * @param result Instances object formatted for transformed data
+     * @throws Exception unable to build CIF
+     */
+    private void multiThreadBuildCIF(Instances[] dimensions, Instances result) throws Exception {
+        int buildStep = trainTimeContract ? numThreads : numClassifiers;
+
+        while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
+            ArrayList<Future<MultiThreadBuildHolder>> futures = new ArrayList<>(buildStep);
+
+            int end = trees.size()+buildStep;
+            for (int i = trees.size(); i < end; ++i) {
+                Instances resultCopy = new Instances(result, numInstances);
+                for(int n = 0; n < numInstances; n++){
+                    DenseInstance in = new DenseInstance(result.numAttributes());
+                    in.setValue(result.numAttributes()-1, result.instance(n).classValue());
+                    resultCopy.add(in);
+                }
+
+                futures.add(ex.submit(new TreeBuildThread(i, dimensions, resultCopy)));
+            }
+
+            for (Future<MultiThreadBuildHolder> f : futures) {
+                MultiThreadBuildHolder h = f.get();
+                trees.add(h.tree);
+                intervals.add(h.interval);
+                subsampleAtts.add(h.subsampleAtts);
+                intervalDimensions.add(h.intervalDimensions);
+                attUsage.add(h.attUsage);
+
+                if (bagging && getEstimateOwnPerformance()){
+                    trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + h.errorTime);
+                    for (int n = 0; n < numInstances; n++) {
+                        oobCounts[n] += h.oobCounts[n];
+                        for (int k = 0; k < numClasses; k++)
+                            trainDistributions[n][k] += h.trainDistribution[n][k];
+                    }
+                }
+            }
         }
-
-        if(checkpoint) {
-            saveToFile(checkpointPath);
-        }
-
-        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
-                - trainResults.getErrorEstimateTime());
-
-
-        if(getEstimateOwnPerformance()){
-            long est1=System.nanoTime();
-            estimateOwnPerformance(data);
-            long est2=System.nanoTime();
-            trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
-        }
-
-        trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished TSF Build with "+trees.size()+" Trees built in "+trainResults.getBuildTime()/1000000000+" Seconds  ***************");
     }
 
     /**
@@ -722,7 +779,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setClassifierName("CIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
-        else if(estimator== EstimatorMethod.OOB){
+        else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
             /** Build a single new TSF using Bagging, and extract the estimate from this
              */
             CIF tsf=new CIF();
@@ -770,16 +827,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] d=new double[ins.numClasses()];
 
-        Instance[] columns;
+        Instance[] dimensions;
 
         //Multivariate
-        if (numColumns > 1) {
-            columns = splitMultivariateInstanceWithClassVal(ins);
+        if (numDimensions > 1) {
+            dimensions = splitMultivariateInstanceWithClassVal(ins);
         }
         //Univariate
         else {
-            columns = new Instance[1];
-            columns[0] = ins;
+            dimensions = new Instance[1];
+            dimensions[0] = ins;
         }
 
         if (interpSavePath != null){
@@ -787,77 +844,93 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             interpTreePreds = new ArrayList<>();
         }
 
-        //Build transformed instance
-        for(int i=0;i<trees.size();i++){
-            Catch22 c22 = new Catch22();
-            c22.setOutlierNormalise(outlierNorm);
-            boolean[] usedAtts = attUsage.get(i);
+        if (multiThread){
+            ArrayList<Future<MultiThreadPredictionHolder>> futures = new ArrayList<>(trees.size());
 
-            for(int j=0;j<numIntervals;j++){
-                double[] series = columns[intervalColumns.get(i).get(j)].toDoubleArray();
+            for (int i = 0; i < trees.size(); ++i) {
+                Instances testCopy = new Instances(testHolder, 1);
+                DenseInstance in = new DenseInstance(testHolder.numAttributes());
+                in.setValue(testHolder.numAttributes()-1, -1);
+                testCopy.add(in);
 
-                FeatureSet f = new FeatureSet();
-                double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
-                        intervals.get(i)[j][1]+1);
-
-                for (int g = 0; g < numAttributes; g++){
-                    if (!usedAtts[j * numAttributes + g]) {
-                        testHolder.instance(0).setValue(j * numAttributes + g, 0);
-                        continue;
-                    }
-
-                    if (subsampleAtts.get(i).get(g) < 22) {
-                        testHolder.instance(0).setValue(j * numAttributes + g,
-                                c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
-                    }
-                    else{
-                        if (!f.calculatedFeatures) {
-                            f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
-                        }
-                        switch(subsampleAtts.get(i).get(g)) {
-                            case 22:
-                                testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
-                                break;
-                            case 23:
-                                testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
-                                break;
-                            case 24:
-                                testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
-                                break;
-                            default:
-                                throw new Exception("att subsample basic features broke");
-                        }
-                    }
-                }
+                futures.add(ex.submit(new TreePredictionThread(i, dimensions, trees.get(i), testCopy)));
             }
 
-            if(voteEnsemble){
+            for (Future<MultiThreadPredictionHolder> f : futures) {
+                MultiThreadPredictionHolder h = f.get();
+                d[h.c]++;
+
+                if (interpSavePath != null && base instanceof TimeSeriesTree){
+                    interpData.add(h.al);
+                    interpTreePreds.add(h.c);
+                }
+            }
+        }
+        else {
+            //Build transformed instance
+            for (int i = 0; i < trees.size(); i++) {
+                Catch22 c22 = new Catch22();
+                c22.setOutlierNormalise(outlierNorm);
+                boolean[] usedAtts = attUsage.get(i);
+
+                for (int j = 0; j < numIntervals; j++) {
+                    double[] series = dimensions[intervalDimensions.get(i).get(j)].toDoubleArray();
+
+                    FeatureSet f = new FeatureSet();
+                    double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
+                            intervals.get(i)[j][1] + 1);
+
+                    for (int g = 0; g < numAttributes; g++) {
+                        if (!usedAtts[j * numAttributes + g]) {
+                            testHolder.instance(0).setValue(j * numAttributes + g, 0);
+                            continue;
+                        }
+
+                        if (subsampleAtts.get(i).get(g) < 22) {
+                            testHolder.instance(0).setValue(j * numAttributes + g,
+                                    c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
+                        } else {
+                            if (!f.calculatedFeatures) {
+                                f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                            }
+                            switch (subsampleAtts.get(i).get(g)) {
+                                case 22:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
+                                    break;
+                                case 23:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
+                                    break;
+                                case 24:
+                                    testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
+                                    break;
+                                default:
+                                    throw new Exception("att subsample basic features broke");
+                            }
+                        }
+                    }
+                }
+
                 int c;
-                if(interpSavePath != null && base instanceof TimeSeriesTree) {
+                if (interpSavePath != null && base instanceof TimeSeriesTree) {
                     ArrayList<double[]> al = new ArrayList<>();
-                    c=(int)((TimeSeriesTree)trees.get(i)).classifyInstance(testHolder.instance(0), al);
+                    c = (int) ((TimeSeriesTree) trees.get(i)).classifyInstance(testHolder.instance(0), al);
                     interpData.add(al);
                     interpTreePreds.add(c);
-                }
-                else {
-                    c=(int)trees.get(i).classifyInstance(testHolder.instance(0));
+                } else {
+                    c = (int) trees.get(i).classifyInstance(testHolder.instance(0));
                 }
                 d[c]++;
-            }else{
-                double[] temp=trees.get(i).distributionForInstance(testHolder.instance(0));
-                for(int j=0;j<temp.length;j++)
-                    d[j]+=temp[j];
             }
         }
 
-        double sum=0;
-        for(double x:d)
-            sum+=x;
-        for(int i=0;i<d.length;i++)
-            d[i]=d[i]/sum;
+        double sum = 0;
+        for(double x: d)
+            sum += x ;
+        for(int i = 0; i < d.length; i++)
+            d[i] = d[i]/sum;
 
         if (interpSavePath != null) {
-            interpSeries = extractTimeSeries(columns[0]);
+            interpSeries = extractTimeSeries(dimensions[0]);
             interpPred = argMax(d,rand);
         }
 
@@ -977,9 +1050,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             attUsage = saved.attUsage;
             intervals = saved.intervals;
             //testHolder = saved.testHolder;
-            voteEnsemble = saved.voteEnsemble;
             bagging = saved.bagging;
-            inBag = saved.inBag;
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
             //checkpoint = saved.checkpoint;
@@ -991,6 +1062,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainTimeContract = saved.trainTimeContract;
             if (internalContractCheckpointHandling) contractTime = saved.contractTime;
             maxClassifiers = saved.maxClassifiers;
+            //numThreads = saved.numThreads;
+            //multiThread = saved.multiThread;
+            //ex = saved.ex;
             visSavePath = saved.visSavePath;
             visNumTopAtts = saved.visNumTopAtts;
             interpSavePath = saved.interpSavePath;
@@ -1000,8 +1074,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             //interpSeries = saved.interpSeries;
             //interpPred = saved.interpPred;
             seriesLength = saved.seriesLength;
-            numColumns = saved.numColumns;
-            intervalColumns = saved.intervalColumns;
+            numInstances = saved.numInstances;
+            numDimensions = saved.numDimensions;
+            intervalDimensions = saved.intervalDimensions;
             //c22 = saved.c22;
 
             trainResults = saved.trainResults;
@@ -1011,6 +1086,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             rand = saved.rand;
             estimateOwnPerformance = saved.estimateOwnPerformance;
             estimator = saved.estimator;
+            numClasses = saved.numClasses;
 
             lastCheckpointTime = System.nanoTime();
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
@@ -1059,6 +1135,22 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             maxIntervalLengthFinder = (numAtts) -> (int)(numAtts*Double.parseDouble(maxIntervalLengthsString));
 
         System.out.println(attSubsampleSize + " " + maxIntervalLengthFinder.apply(100));
+    }
+
+    /**
+     * Enables multi threading with a set number of threads to use.
+     *
+     * @param numThreads number of threads available for multi threading
+     */
+    @Override //MultiThreadable
+    public void enableMultiThreading(int numThreads) {
+        if (numThreads > 1) {
+            this.numThreads = numThreads;
+            multiThread = true;
+        } else {
+            this.numThreads = 1;
+            multiThread = false;
+        }
     }
 
     /**
@@ -1316,6 +1408,351 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Class to hold data about a CIF tree when multi threading.
+     */
+    private static class MultiThreadBuildHolder {
+        ArrayList<Integer> subsampleAtts;
+        ArrayList<Integer> intervalDimensions;
+        Classifier tree;
+        int[][] interval;
+        boolean[] attUsage;
+
+        double[][] trainDistribution;
+        int[] oobCounts;
+        long errorTime;
+
+        public MultiThreadBuildHolder() { }
+    }
+
+    /**
+     * Class to build a CIF tree when multi threading.
+     */
+    private class TreeBuildThread implements Callable<MultiThreadBuildHolder> {
+        int i;
+        Instances[] dimensions;
+        Instances result;
+
+        public TreeBuildThread(int i, Instances[] dimensions, Instances result){
+            this.i = i;
+            this.dimensions = dimensions;
+            this.result = result;
+        }
+
+        /**
+         *   generate random intervals
+         *   do the transfrorms
+         *   build the classifier
+         **/
+        @Override
+        public MultiThreadBuildHolder call() throws Exception{
+            MultiThreadBuildHolder h = new MultiThreadBuildHolder();
+            Random rand = new Random(seed + i);
+
+            //1. Select random intervals for tree i
+
+            int[][] interval = new int[numIntervals][2];  //Start and end
+
+            for (int j = 0; j < numIntervals; j++) {
+                if (rand.nextBoolean()) {
+                    interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
+
+                    int range = Math.min(seriesLength - interval[j][0], maxIntervalLength);
+                    int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                    interval[j][1] = interval[j][0] + length;
+                } else {
+                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
+                            + minIntervalLength; //Start point
+
+                    int range = Math.min(interval[j][1], maxIntervalLength);
+                    int length;
+                    if (range - minIntervalLength == 0) length = 3;
+                    else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                    interval[j][0] = interval[j][1] - length;
+                }
+            }
+
+            //If bagging find instances with replacement
+
+            int[] instInclusions = null;
+            boolean[] inBag = null;
+            if (bagging) {
+                inBag = new boolean[numInstances];
+                instInclusions = new int[numInstances];
+
+                for (int n = 0; n < numInstances; n++) {
+                    instInclusions[rand.nextInt(numInstances)]++;
+                }
+
+                for (int n = 0; n < numInstances; n++) {
+                    if (instInclusions[n] > 0) {
+                        inBag[n] = true;
+                    }
+                }
+            }
+
+            //find attributes to subsample
+            ArrayList<Integer> subsampleAtts = new ArrayList<>();
+            for (int n = 0; n < startNumAttributes; n++){
+                subsampleAtts.add(n);
+            }
+
+            while (subsampleAtts.size() > numAttributes){
+                subsampleAtts.remove(rand.nextInt(subsampleAtts.size()));
+            }
+
+            //find dimensions for each interval
+            ArrayList<Integer> intervalDimensions = new ArrayList<>();
+            for (int n = 0; n < numIntervals; n++) {
+                intervalDimensions.add(rand.nextInt(numDimensions));
+            }
+            Collections.sort(intervalDimensions);
+
+            h.subsampleAtts = subsampleAtts;
+            h.intervalDimensions = intervalDimensions;
+
+            //For bagging
+            int instIdx = 0;
+            int lastIdx = -1;
+
+            //2. Generate and store attributes
+            for (int k = 0; k < numInstances; k++) {
+                //For each instance
+
+                if (bagging) {
+                    boolean sameInst = false;
+
+                    while (true) {
+                        if (instInclusions[instIdx] == 0) {
+                            instIdx++;
+                        } else {
+                            instInclusions[instIdx]--;
+
+                            if (instIdx == lastIdx) {
+                                result.set(k, new DenseInstance(result.instance(k - 1)));
+                                sameInst = true;
+                            } else {
+                                lastIdx = instIdx;
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (sameInst) continue;
+
+                    result.instance(k).setValue(result.classIndex(), dimensions[0].instance(instIdx).classValue());
+                } else {
+                    instIdx = k;
+                }
+
+                for (int j = 0; j < numIntervals; j++) {
+                    //extract the interval
+                    double[] series = dimensions[intervalDimensions.get(j)].instance(instIdx).toDoubleArray();
+
+                    FeatureSet f = new FeatureSet();
+                    double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
+
+                    //process features
+                    Catch22 c22 = new Catch22();
+
+                    for (int g = 0; g < numAttributes; g++) {
+                        if (subsampleAtts.get(g) < 22) {
+                            result.instance(k).setValue(j * numAttributes + g,
+                                    c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
+                        } else {
+                            if (!f.calculatedFeatures) {
+                                f.setFeatures(series, interval[j][0], interval[j][1]);
+                            }
+
+                            switch (subsampleAtts.get(g)) {
+                                case 22:
+                                    result.instance(k).setValue(j * numAttributes + g, f.mean);
+                                    break;
+                                case 23:
+                                    result.instance(k).setValue(j * numAttributes + g, f.stDev);
+                                    break;
+                                case 24:
+                                    result.instance(k).setValue(j * numAttributes + g, f.slope);
+                                    break;
+                                default:
+                                    throw new Exception("att subsample basic features broke");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bagging) {
+                result.randomize(rand);
+            }
+
+            //3. Create and build tree using all the features. Feature selection
+            Classifier tree = AbstractClassifier.makeCopy(base);
+            if (seedClassifier && tree instanceof Randomizable)
+                ((Randomizable) tree).setSeed(seed * (i + 1));
+
+            tree.buildClassifier(result);
+
+            boolean[] attUsage;
+            if (base instanceof TimeSeriesTree) {
+                attUsage = ((TimeSeriesTree)tree).getAttributesUsed();
+            }
+            else{
+                attUsage = new boolean[numAttributes*numIntervals];
+                Arrays.fill(attUsage,true);
+            }
+
+            h.attUsage = attUsage;
+
+            if (bagging && getEstimateOwnPerformance()) {
+                long t1 = System.nanoTime();
+                int[] oobCounts = new int[numInstances];
+                double[][] trainDistributions = new double[numInstances][numClasses];
+
+                for (int n = 0; n < numInstances; n++) {
+                    if (inBag[n])
+                        continue;
+
+                    for (int j = 0; j < numIntervals; j++) {
+                        double[] series = dimensions[intervalDimensions.get(j)].instance(n).toDoubleArray();
+
+                        FeatureSet f = new FeatureSet();
+                        double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
+
+                        for (int g = 0; g < numAttributes; g++) {
+                            if (!attUsage[j * numAttributes + g]) {
+                                testHolder.instance(0).setValue(j * numAttributes + g, 0);
+                                continue;
+                            }
+
+                            if (subsampleAtts.get(g) < 22) {
+                                testHolder.instance(0).setValue(j * numAttributes + g,
+                                        c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
+                            } else {
+                                if (!f.calculatedFeatures) {
+                                    f.setFeatures(series, interval[j][0], interval[j][1]);
+                                }
+                                switch (subsampleAtts.get(g)) {
+                                    case 22:
+                                        testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
+                                        break;
+                                    case 23:
+                                        testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
+                                        break;
+                                    case 24:
+                                        testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
+                                        break;
+                                    default:
+                                        throw new Exception("att subsample basic features broke");
+                                }
+                            }
+                        }
+                    }
+
+                    double[] newProbs = tree.distributionForInstance(testHolder.instance(0));
+                    oobCounts[n]++;
+                    for (int k = 0; k < newProbs.length; k++)
+                        trainDistributions[n][k] += newProbs[k];
+                }
+
+                h.oobCounts = oobCounts;
+                h.trainDistribution = trainDistributions;
+                h.errorTime = System.nanoTime() - t1;
+            }
+
+            h.tree = tree;
+            h.interval = interval;
+
+            return h;
+        }
+    }
+
+    /**
+     * Class to hold data about a CIF tree when multi threading.
+     */
+    private static class MultiThreadPredictionHolder {
+        int c;
+
+        ArrayList<double[]> al;
+
+        public MultiThreadPredictionHolder() { }
+    }
+
+    /**
+     * Class to make a class prediction using a CIF tree when multi threading.
+     */
+    private class TreePredictionThread implements Callable<MultiThreadPredictionHolder> {
+        int i;
+        Instance[] dimensions;
+        Classifier tree;
+        Instances testHolder;
+
+        public TreePredictionThread(int i, Instance[] dimensions, Classifier tree, Instances testHolder){
+            this.i = i;
+            this.dimensions = dimensions;
+            this.tree = tree;
+            this.testHolder = testHolder;
+        }
+
+        @Override
+        public MultiThreadPredictionHolder call() throws Exception{
+            MultiThreadPredictionHolder h = new MultiThreadPredictionHolder();
+
+            //Build transformed instance
+            Catch22 c22 = new Catch22();
+            c22.setOutlierNormalise(outlierNorm);
+            boolean[] usedAtts = attUsage.get(i);
+
+            for (int j = 0; j < numIntervals; j++) {
+                double[] series = dimensions[intervalDimensions.get(i).get(j)].toDoubleArray();
+
+                FeatureSet f = new FeatureSet();
+                double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
+                        intervals.get(i)[j][1] + 1);
+
+                for (int g = 0; g < numAttributes; g++) {
+                    if (!usedAtts[j * numAttributes + g]) {
+                        testHolder.instance(0).setValue(j * numAttributes + g, 0);
+                        continue;
+                    }
+
+                    if (subsampleAtts.get(i).get(g) < 22) {
+                        testHolder.instance(0).setValue(j * numAttributes + g,
+                                c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
+                    } else {
+                        if (!f.calculatedFeatures) {
+                            f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                        }
+                        switch (subsampleAtts.get(i).get(g)) {
+                            case 22:
+                                testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
+                                break;
+                            case 23:
+                                testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
+                                break;
+                            case 24:
+                                testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
+                                break;
+                            default:
+                                throw new Exception("att subsample basic features broke");
+                        }
+                    }
+                }
+            }
+
+            if (interpSavePath != null && base instanceof TimeSeriesTree) {
+                ArrayList<double[]> al = new ArrayList<>();
+                h.c = (int) ((TimeSeriesTree) tree).classifyInstance(testHolder.instance(0), al);
+                h.al = al;
+            } else {
+                h.c = (int) tree.classifyInstance(testHolder.instance(0));
+            }
+
+            return h;
+        }
+    }
+
+    /**
      * Development tests for the CIF classifier.
      *
      * @param arg arguments, unused
@@ -1342,5 +1779,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         a= ClassifierTools.accuracy(test, c);
         System.out.println("Test Accuracy = "+a);
         System.out.println("Train Accuracy = "+c.trainResults.getAcc());
+
+        //Test Accuracy = 0.9620991253644315
+        //Train Accuracy = 0.9701492537313433
     }
 }

@@ -138,7 +138,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         result.setValue(TechnicalInformation.Field.JOURNAL, "The European Conference on Machine Learning and " +
                 "Principles and Practice of Knowledge Discovery in Databases");
         result.setValue(TechnicalInformation.Field.YEAR, "2020");
-        return null;
+        return result;
     }
 
     @Override
@@ -260,9 +260,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         paramAccuracy = saved.paramAccuracy;
         paramTime = saved.paramTime;
         //train = saved.train;
-        numThreads = saved.numThreads;
-        multiThread = saved.multiThread;
-        ex = saved.ex;
+        //numThreads = saved.numThreads;
+        //multiThread = saved.multiThread;
+        //ex = saved.ex;
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
@@ -450,11 +450,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             lowestAcc = new double[numSeries];
             for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
             maxAcc = 0;
+        }
 
-            if (multiThread) {
-                if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
-                if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
-            }
+        if (multiThread) {
+            ex = Executors.newFixedThreadPool(numThreads);
         }
 
         //required to deal with multivariate datasets, each channel is split into its own instances
