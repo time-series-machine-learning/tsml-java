@@ -20,10 +20,12 @@ import com.carrotsearch.hppc.ObjectHashSet;
 import com.carrotsearch.hppc.ObjectIntHashMap;
 import com.carrotsearch.hppc.cursors.DoubleDoubleCursor;
 import com.carrotsearch.hppc.cursors.ObjectIntCursor;
+import evaluation.storage.ClassifierResults;
 import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
-import utilities.generic_storage.SerialisableComparablePair;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -43,6 +45,8 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  * as defined in the original BOSS paper
  *
  * Params: wordLength, alphabetSize, windowLength, normalise, levels, IGB
+ *
+ * @author Matthew Middlehurst
  */
 public class MultivariateIndividualTDE extends IndividualTDE {
 
@@ -85,19 +89,19 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     //map of <word, level, dimension> => count
     public static class SPBagMV extends ObjectIntHashMap<Word> {
-        private double classVal;
+        private int classVal;
 
         public SPBagMV() {
             super();
         }
 
-        public SPBagMV(double classValue) {
+        public SPBagMV(int classValue) {
             super();
             classVal = classValue;
         }
 
-        public double getClassVal() { return classVal; }
-        public void setClassVal(double classVal) { this.classVal = classVal; }
+        public int getClassVal() { return classVal; }
+        public void setClassVal(int classVal) { this.classVal = classVal; }
     }
 
     public static class Word implements Serializable {
@@ -260,17 +264,18 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    private SPBagMV BOSSSpatialPyramidsTransform(Instance inst) {
-        Instance[] split = splitMultivariateInstance(inst);
+    private SPBagMV BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
+        SPBagMV bag = new SPBagMV(inst.getLabelIndex());
 
-        SPBagMV bag2 = new SPBagMV(inst.classValue());
-        for (int d = 0; d < split.length; d++) {
-            double[][] mfts = performMFT(toArrayNoClass(split[d])); //approximation
-            addToSPBagSingle(bag2, mfts, d); //discretisation/bagging
+        double[][] split = inst.toValueArray();
+
+        for (int d = 0; d < inst.getNumDimensions(); d++) {
+            double[][] mfts = performMFT(split[d]); //approximation
+            addToSPBagSingle(bag, mfts, d); //discretisation/bagging
         }
-        applyPyramidWeights(bag2);
+        applyPyramidWeights(bag);
 
-        return bag2;
+        return bag;
     }
 
     /**
@@ -404,8 +409,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private BitWord[] createSFAwords(Instance inst, int dimension) {
-        double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
+    private BitWord[] createSFAwords(double[] inst, int dimension) {
+        double[][] dfts = performMFT(inst); //approximation
         BitWord[] words = new BitWord[dfts.length];
         for (int window = 0; window < dfts.length; ++window) {
             words[window] = createWord(dfts[window], dimension);//discretisation
@@ -415,21 +420,27 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     @Override
-    public void buildClassifier(Instances data) throws Exception {
-        if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
-            throw new Exception("TDE_BuildClassifier: Class attribute not set as last attribute in dataset");
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+        numClasses = data.numClasses();
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
+        trainResults.setBuildTime(System.nanoTime());
 
-        Instances[] split = splitMultivariateInstances(data);
-        breakpoints = new double[split.length][][];
-        for (int d = 0; d < split.length; d++) {
-            if (IGB) breakpoints[d] = IGB(split[d]);
-            else breakpoints[d] = MCB(split[d]); //breakpoints to be used for making sfa words for train AND test data
+        double[][][] split = data.toValueArray();
+
+        breakpoints = new double[data.getMaxNumChannels()][][];
+        for (int d = 0; d < breakpoints.length; d++) {
+            if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes());
+            else breakpoints[d] = MCB(split, d); //breakpoints to be used for making sfa words for train
+                                                 //AND test data
         }
 
-        SFAwords = new BitWord[numDimensions(data)][data.numInstances()][];
+        SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
-        seriesLength = channelLength(data);
+        seriesLength = data.getMaxLength();
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -445,9 +456,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
-                SPBagMV bag = new SPBagMV(data.get(inst).classValue());
-                for (int d = 0; d < split.length; d++) {
-                    SFAwords[d][inst] = createSFAwords(split[d].get(inst), d);
+                SPBagMV bag = new SPBagMV(data.get(inst).getLabelIndex());
+                for (int d = 0; d < data.getMaxNumChannels(); d++) {
+                    SFAwords[d][inst] = createSFAwords(split[inst][d], d);
                     addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d);
                 }
                 applyPyramidWeights(bag);
@@ -508,7 +519,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     @Override
-    public double classifyInstance(Instance instance) throws Exception{
+    public double classifyInstance(TimeSeriesInstance instance) throws Exception{
         SPBagMV testBag = BOSSSpatialPyramidsTransform(instance);
 
         if (featureSelection) testBag = filterChiSquared(testBag);
@@ -567,9 +578,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{
-        Instance inst;
+        TimeSeriesInstance inst;
 
-        public TestNearestNeighbourThread(Instance inst){
+        public TestNearestNeighbourThread(TimeSeriesInstance inst){
             this.inst = inst;
         }
 
@@ -635,19 +646,20 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     private class TransformThread implements Callable<SPBagMV>{
         int i;
-        Instance inst;
+        TimeSeriesInstance inst;
 
-        public TransformThread(int i, Instance inst){
+        public TransformThread(int i, TimeSeriesInstance inst){
             this.i = i;
             this.inst = inst;
         }
 
         @Override
         public SPBagMV call() {
-            Instance[] split = splitMultivariateInstance(inst);
+            SPBagMV bag = new SPBagMV(inst.getLabelIndex());
 
-            SPBagMV bag = new SPBagMV(inst.classValue());
-            for (int d = 0; d < split.length; d++) {
+            double[][] split = inst.toValueArray();
+
+            for (int d = 0; d < inst.getNumDimensions(); d++) {
                 SFAwords[d][i] = createSFAwords(split[d], d);
                 addWordsToSPBag(bag, wordLength, SFAwords[d][i], d);
             }

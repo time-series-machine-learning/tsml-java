@@ -15,11 +15,16 @@
 package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
+import tsml.data_containers.TSCapabilities;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -37,8 +42,6 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static utilities.Utilities.argMax;
-import static utilities.Utilities.extractTimeSeries;
-import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
  * Implementation of the catch22 Interval Forest algorithm
@@ -86,7 +89,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private transient Function<Integer,Integer> numIntervalsFinder;
 
     /** Secondary parameters */
-    /** Mainly there to avoid single item intervals, which have no slope or std dev*/
+    /** Mainly there to avoid single item intervals, which have no slope or std dev */
     /** Min defaults to 3, Max defaults to m/2 */
     private int minIntervalLength = -1;
     private transient Function<Integer,Integer> minIntervalLengthFinder;
@@ -104,7 +107,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      ends  at  intervals.get(i)[j][1] */
     private  ArrayList<int[][]> intervals;
 
-    /**Holding variable for test classification in order to retain the header info*/
+    /** Holding variable for test classification in order to retain the header info*/
     private Instances testHolder;
 
     /** Flags and data required if Bagging **/
@@ -170,46 +173,58 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * Set tje number of attributes to be subsampled per tree.
+     * Set the number of attributes to be subsampled per tree.
      *
      * @param a number of attributes sumsampled
      */
-    public void setAttSubsampleSize(int a) { attSubsampleSize = a; }
+    public void setAttSubsampleSize(int a) {
+        attSubsampleSize = a;
+    }
 
     /**
      * Set whether to use the original TSF statistics as well as catch22 features.
      *
      * @param b boolean to use summary stats
      */
-    public void setUseSummaryStats(boolean b) { useSummaryStats = b; }
+    public void setUseSummaryStats(boolean b) {
+        useSummaryStats = b;
+    }
 
     /**
      * Set a function for finding the number of intervals randomly selected per tree.
      *
      * @param f a function for the number of intervals
      */
-    public void setNumIntervalsFinder(Function<Integer,Integer> f){ numIntervalsFinder = f; }
+    public void setNumIntervalsFinder(Function<Integer,Integer> f){
+        numIntervalsFinder = f;
+    }
 
     /**
      * Set a function for finding the min interval length for randomly selected intervals.
      *
      * @param f a function for min interval length
      */
-    public void setMinIntervalLengthFinder(Function<Integer,Integer> f){ minIntervalLengthFinder = f; }
+    public void setMinIntervalLengthFinder(Function<Integer,Integer> f){
+        minIntervalLengthFinder = f;
+    }
 
     /**
      * Set a function for finding the max interval length for randomly selected intervals.
      *
      * @param f a function for max interval length
      */
-    public void setMaxIntervalLengthFinder(Function<Integer,Integer> f){ maxIntervalLengthFinder = f; }
+    public void setMaxIntervalLengthFinder(Function<Integer,Integer> f){
+        maxIntervalLengthFinder = f;
+    }
 
     /**
      * Set whether to normalise the outlier catch22 features.
      *
      * @param b boolean to set outlier normalisation
      */
-    public void setOutlierNorm(boolean b) { outlierNorm = b; }
+    public void setOutlierNorm(boolean b) {
+        outlierNorm = b;
+    }
 
     /**
      * Sets the base classifier for the ensemble.
@@ -230,11 +245,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
-     * Outputs CIF parameters as a String.
+     * Outputs CIF parameters information as a String.
      *
      * @return String written to results files
      */
-    @Override
+    @Override //SaveParameterInfo
     public String getParameters() {
         int nt = numClassifiers;
         if (trees != null) nt = trees.size();
@@ -252,7 +267,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      *
      * @return the capabilities of CIF
      */
-    @Override
+    @Override //AbstractClassifier
     public Capabilities getCapabilities(){
         Capabilities result = super.getCapabilities();
         result.disableAll();
@@ -270,34 +285,37 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Returns the time series capabilities for CIF. These are that the
+     * data must be equal length, with no missing values
+     *
+     * @return the time series capabilities of CIF
+     */
+    public TSCapabilities getTSCapabilities(){
+        TSCapabilities capabilities = new TSCapabilities();
+        capabilities.enable(TSCapabilities.EQUAL_LENGTH)
+                .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
+                .enable(TSCapabilities.NO_MISSING_VALUES);
+        return capabilities;
+    }
+
+    /**
      * Build the CIF classifier.
      *
-     * @param data weka Instances object
+     * @param data TimeSeriesInstances object
      * @throws Exception unable to train model
      */
-    @Override
-    public void buildClassifier(Instances data) throws Exception {
+    @Override //TSClassifier
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
         /** Build Stage:
          *  Builds the final classifier with or without bagging.
          */
-        super.buildClassifier(data);
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+        numClasses = data.numClasses();
+        trainResults.setClassifierName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
-        getCapabilities().testWithFail(data);
-
-        //required to deal with multivariate datasets, each channel is split into its own instances
-        Instances[] dimensions;
-
-        //Multivariate
-        if (data.checkForAttributeType(Attribute.RELATIONAL)) {
-            dimensions = splitMultivariateInstances(data);
-            numDimensions = numDimensions(data);
-        }
-        //Univariate
-        else{
-            dimensions = new Instances[]{data};
-            numDimensions = 1;
-        }
+        getTSCapabilities().test(data);
 
         File file = new File(checkpointPath + "CIF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
@@ -309,8 +327,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         //initialise variables
         else {
-            seriesLength = dimensions[0].numAttributes()-1;
-            numInstances = dimensions[0].numInstances();
+            seriesLength = data.getMaxLength();
+            numInstances = data.numInstances();
+            numDimensions = data.getMaxNumChannels();
 
             if (numIntervalsFinder == null){
                 numIntervals = (int)(Math.sqrt(seriesLength) * Math.sqrt(numDimensions));
@@ -395,17 +414,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             atts.add(new Attribute(name));
         }
         //Get the class values as an array list
-        Attribute target = data.attribute(data.classIndex());
-        ArrayList<String> vals = new ArrayList<>(target.numValues());
-        for(int j = 0; j < target.numValues(); j++)
-            vals.add(target.value(j));
-        atts.add(new Attribute(data.attribute(data.classIndex()).name(), vals));
+        ArrayList<String> vals = new ArrayList<>(numClasses);
+        for(int j = 0; j < numClasses; j++)
+            vals.add(Integer.toString(j));
+        atts.add(new Attribute("cls", vals));
         //create blank instances with the correct class value
         Instances result = new Instances("Tree", atts, numInstances);
         result.setClassIndex(result.numAttributes()-1);
         for(int i = 0; i < numInstances; i++){
             DenseInstance in = new DenseInstance(result.numAttributes());
-            in.setValue(result.numAttributes()-1, data.instance(i).classValue());
+            in.setValue(result.numAttributes()-1, data.get(i).getLabelIndex());
             result.add(in);
         }
 
@@ -415,10 +433,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         testHolder.add(in);
 
         if (multiThread){
-            multiThreadBuildCIF(dimensions, result);
+            multiThreadBuildCIF(data, result);
         }
         else{
-            buildCIF(dimensions, result);
+            buildCIF(data, result);
         }
 
         if(trees.size() == 0){//Not enough time to build a single classifier
@@ -448,17 +466,30 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Build the CIF classifier.
+     *
+     * @param data weka Instances object
+     * @throws Exception unable to train model
+     */
+    @Override //AbstractClassifier
+    public void buildClassifier(Instances data) throws Exception {
+        buildClassifier(Converter.fromArff(data));
+    }
+
+    /**
      * Build the CIF classifier
      * For each base classifier
      *     generate random intervals
      *     do the transfrorms
      *     build the classifier
      *
-     * @param dimensions Instances data split by dimension
+     * @param data TimeSeriesInstances data
      * @param result Instances object formatted for transformed data
      * @throws Exception unable to build CIF
      */
-    public void buildCIF(Instances[] dimensions, Instances result) throws Exception {
+    public void buildCIF(TimeSeriesInstances data, Instances result) throws Exception {
+        double[][][] dimensions = data.toValueArray();
+
         while(withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
             int i = trees.size();
 
@@ -479,7 +510,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
                     int range = Math.min(interval[j][1], maxIntervalLength);
                     int length;
-                    if (range - minIntervalLength == 0) length = 3;
+                    if (range - minIntervalLength == 0) length = minIntervalLength;
                     else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                     interval[j][0] = interval[j][1] - length;
                 }
@@ -528,7 +559,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             //2. Generate and store attributes
             for (int k = 0; k < numInstances; k++) {
                 //For each instance
-
                 if (bagging) {
                     boolean sameInst = false;
 
@@ -551,14 +581,14 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
                     if (sameInst) continue;
 
-                    result.instance(k).setValue(result.classIndex(), dimensions[0].instance(instIdx).classValue());
+                    result.instance(k).setValue(result.classIndex(), data.get(instIdx).getLabelIndex());
                 } else {
                     instIdx = k;
                 }
 
                 for (int j = 0; j < numIntervals; j++) {
                     //extract the interval
-                    double[] series = dimensions[intervalDimensions.get(i).get(j)].instance(instIdx).toDoubleArray();
+                    double[] series = dimensions[instIdx][intervalDimensions.get(i).get(j)];
 
                     FeatureSet f = new FeatureSet();
                     double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
@@ -621,7 +651,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                         continue;
 
                     for (int j = 0; j < numIntervals; j++) {
-                        double[] series = dimensions[intervalDimensions.get(i).get(j)].instance(n).toDoubleArray();
+                        double[] series = dimensions[n][intervalDimensions.get(i).get(j)];
 
                         FeatureSet f = new FeatureSet();
                         double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
@@ -684,11 +714,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      *     do the transfrorms
      *     build the classifier
      *
-     * @param dimensions Instances data split by dimension
+     * @param dimensions TimeSeriesInstances data
      * @param result Instances object formatted for transformed data
      * @throws Exception unable to build CIF
      */
-    private void multiThreadBuildCIF(Instances[] dimensions, Instances result) throws Exception {
+    private void multiThreadBuildCIF(TimeSeriesInstances data, Instances result) throws Exception {
+        double[][][] dimensions = data.toValueArray();
+        int[] classVals = data.getClassIndexes();
         int buildStep = trainTimeContract ? numThreads : numClassifiers;
 
         while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
@@ -703,7 +735,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     resultCopy.add(in);
                 }
 
-                futures.add(ex.submit(new TreeBuildThread(i, dimensions, resultCopy)));
+                futures.add(ex.submit(new TreeBuildThread(i, dimensions, classVals, resultCopy)));
             }
 
             for (Future<MultiThreadBuildHolder> f : futures) {
@@ -730,13 +762,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      * Estimate accuracy stage: Three scenarios
      * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB.
      *    If we built on all data (bagging ==false) we estimate either:
-     * 2. With a 10 fold CV .
+     * 2. With a 10 fold CV.
      * 3. Build a bagged model simply to get the estimate.
      *
-     * @param data Instances to estimate with
+     * @param data TimeSeriesInstances to estimate with
      * @throws Exception unable to obtain estimate
      */
-    private void estimateOwnPerformance(Instances data) throws Exception {
+    private void estimateOwnPerformance(TimeSeriesInstances data) throws Exception {
         if(bagging){
             // Use bag data, counts normalised to probabilities
             double[] preds=new double[data.numInstances()];
@@ -747,13 +779,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 for(int k=0;k<trainDistributions[j].length;k++)
                     trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
-                actuals[j] = data.instance(j).classValue();
+                actuals[j] = data.get(j).getLabelIndex();
                 predTimes[j] = System.nanoTime()-predTime;
             }
             trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
             trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setClassifierName("CIFBagging");
-            trainResults.setDatasetName(data.relationName());
+            trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
             trainResults.setErrorEstimateMethod("OOB");
@@ -764,7 +796,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
-            int numFolds=setNumberOfFolds(data);
+            int numFolds=Math.min(data.numInstances(), 10);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
             if (seedClassifier)
                 cv.setSeed(seed*5);
@@ -775,7 +807,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 cif.setSeed(seed*100);
             cif.setEstimateOwnPerformance(false);
             long tt = trainResults.getBuildTime();
-            trainResults=cv.evaluate(cif,data);
+            trainResults=cv.evaluate(cif,Converter.toArff(data));
             trainResults.setClassifierName("CIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
@@ -819,30 +851,20 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param ins TimeSeriesInstance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
-    @Override
-    public double[] distributionForInstance(Instance ins) throws Exception {
-        double[] d=new double[ins.numClasses()];
-
-        Instance[] dimensions;
-
-        //Multivariate
-        if (numDimensions > 1) {
-            dimensions = splitMultivariateInstanceWithClassVal(ins);
-        }
-        //Univariate
-        else {
-            dimensions = new Instance[1];
-            dimensions[0] = ins;
-        }
+    @Override //TSClassifier
+    public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
+        double[] d = new double[numClasses];
 
         if (interpSavePath != null){
             interpData = new ArrayList<>();
             interpTreePreds = new ArrayList<>();
         }
+
+        double[][] dimensions = ins.toValueArray();
 
         if (multiThread){
             ArrayList<Future<MultiThreadPredictionHolder>> futures = new ArrayList<>(trees.size());
@@ -874,7 +896,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 boolean[] usedAtts = attUsage.get(i);
 
                 for (int j = 0; j < numIntervals; j++) {
-                    double[] series = dimensions[intervalDimensions.get(i).get(j)].toDoubleArray();
+                    double[] series = dimensions[intervalDimensions.get(i).get(j)];
 
                     FeatureSet f = new FeatureSet();
                     double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
@@ -930,11 +952,36 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             d[i] = d[i]/sum;
 
         if (interpSavePath != null) {
-            interpSeries = extractTimeSeries(dimensions[0]);
+            interpSeries = dimensions[0];
             interpPred = argMax(d,rand);
         }
 
         return d;
+    }
+
+    /**
+     * Find class probabilities of an instance using the trained model.
+     *
+     * @param ins weka Instance object
+     * @return array of doubles: probability of each class
+     * @throws Exception failure to classify
+     */
+    @Override //AbstractClassifier
+    public double[] distributionForInstance(Instance ins) throws Exception {
+        return distributionForInstance(Converter.fromArff(ins));
+    }
+
+    /**
+     * Classify an instance using the trained model.
+     *
+     * @param ins TimeSeriesInstance object
+     * @return predicted class value
+     * @throws Exception failure to classify
+     */
+    @Override //TSClassifier
+    public double classifyInstance(TimeSeriesInstance ins) throws Exception {
+        double[] probs = distributionForInstance(ins);
+        return findIndexOfMax(probs, rand);
     }
 
     /**
@@ -944,10 +991,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      * @return predicted class value
      * @throws Exception failure to classify
      */
-    @Override
+    @Override //AbstractClassifier
     public double classifyInstance(Instance ins) throws Exception {
-        double[] probs = distributionForInstance(ins);
-        return findIndexOfMax(probs, rand);
+        return classifyInstance(Converter.fromArff(ins));
     }
 
     /**
@@ -1429,12 +1475,14 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     private class TreeBuildThread implements Callable<MultiThreadBuildHolder> {
         int i;
-        Instances[] dimensions;
+        double[][][] dimensions;
+        int[] classVals;
         Instances result;
 
-        public TreeBuildThread(int i, Instances[] dimensions, Instances result){
+        public TreeBuildThread(int i, double[][][] dimensions, int[] classVals, Instances result){
             this.i = i;
             this.dimensions = dimensions;
+            this.classVals = classVals;
             this.result = result;
         }
 
@@ -1540,14 +1588,14 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
                     if (sameInst) continue;
 
-                    result.instance(k).setValue(result.classIndex(), dimensions[0].instance(instIdx).classValue());
+                    result.instance(k).setValue(result.classIndex(), classVals[instIdx]);
                 } else {
                     instIdx = k;
                 }
 
                 for (int j = 0; j < numIntervals; j++) {
                     //extract the interval
-                    double[] series = dimensions[intervalDimensions.get(j)].instance(instIdx).toDoubleArray();
+                    double[] series = dimensions[instIdx][intervalDimensions.get(j)];
 
                     FeatureSet f = new FeatureSet();
                     double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
@@ -1614,7 +1662,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                         continue;
 
                     for (int j = 0; j < numIntervals; j++) {
-                        double[] series = dimensions[intervalDimensions.get(j)].instance(n).toDoubleArray();
+                        double[] series = dimensions[n][intervalDimensions.get(j)];
 
                         FeatureSet f = new FeatureSet();
                         double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
@@ -1683,11 +1731,11 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     private class TreePredictionThread implements Callable<MultiThreadPredictionHolder> {
         int i;
-        Instance[] dimensions;
+        double[][] dimensions;
         Classifier tree;
         Instances testHolder;
 
-        public TreePredictionThread(int i, Instance[] dimensions, Classifier tree, Instances testHolder){
+        public TreePredictionThread(int i, double[][] dimensions, Classifier tree, Instances testHolder){
             this.i = i;
             this.dimensions = dimensions;
             this.tree = tree;
@@ -1704,7 +1752,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             boolean[] usedAtts = attUsage.get(i);
 
             for (int j = 0; j < numIntervals; j++) {
-                double[] series = dimensions[intervalDimensions.get(i).get(j)].toDoubleArray();
+                double[] series = dimensions[intervalDimensions.get(i).get(j)];
 
                 FeatureSet f = new FeatureSet();
                 double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],

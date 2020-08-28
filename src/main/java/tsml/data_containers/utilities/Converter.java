@@ -61,17 +61,30 @@ public class Converter {
         return output;
     }
 
-
-    //TODO: implement singular conversion
+    //assumes last index is class variable
     public static TimeSeriesInstance fromArff(Instance data){
+        List<List<Double>> raw_data = new ArrayList<>();
 
-        //check if the first attribute is relational.
+        //we multivariate
+        if(data.attribute(0).isRelationValued()){
+            Instances timeseries = data.relationalValue(data.attribute(0));
+            //number of channels is numInstances
+            for(int j=0; j<timeseries.numInstances(); j++){
+                raw_data.add(new ArrayList<>(timeseries.numAttributes()));
+                for(int k=0; k< timeseries.get(j).numAttributes(); k++){
+                    raw_data.get(j).add(timeseries.get(j).value(k));
+                }
+            }
+        }
+        else{
+            //add dimension 0
+            raw_data.add(new ArrayList<>(data.numAttributes()-1));
+            for(int j=0; j< data.numAttributes()-1; j++){
+                raw_data.get(0).add(data.value(j));
+            }
+        }
 
-        //if its multivariate, get class index / value from index 1,
-        //loop through all the series in the Instances of the relational attribute.
-
-        //if it its not then convert it to double array, strip out class index and good to go.
-        return null;
+        return new TimeSeriesInstance(raw_data, data.classValue());
     }
 
     public static Instances toArff(TimeSeriesInstances  data){
