@@ -227,13 +227,13 @@ public class SAX implements Transformer, TechnicalInformationHandler {
         convertSequence(data);
 
         // Now in SAX form, extract out the terms and set the attributes of new instance
-        Instance newInstance = new DenseInstance(numIntervals + inst.classIndex() >= 0 ? 1 : 0);
+        Instance newInstance = new DenseInstance(numIntervals + (inst.classIndex() >= 0 ? 1 : 0));
 
         for (int j = 0; j < numIntervals; j++)
             newInstance.setValue(j, data[j]);
 
         if (inst.classIndex() >= 0)
-            newInstance.setValue(inst.classIndex(), inst.classValue());
+            newInstance.setValue(newInstance.numAttributes()-1, inst.classValue());
 
         return newInstance;
     }
