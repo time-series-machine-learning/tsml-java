@@ -223,6 +223,17 @@ public class ClassifierLists {
                 ((TDE) c).dimensionProportion = 0.5;
                 break;
 
+
+            case "TDE-MV2-BI":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                break;
+            case "TDE-MV2-RA":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).dimensionProportion = -1;
+                break;
+
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array dictionary and the switch statement ");
