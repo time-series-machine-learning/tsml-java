@@ -149,7 +149,8 @@ public class ClassifierLists {
     public static String[] dictionary= {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble","TDE",
 
-            "TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50"};
+            "TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50",
+            "TDE-MV2-BI","TDE-MV2-RA"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
