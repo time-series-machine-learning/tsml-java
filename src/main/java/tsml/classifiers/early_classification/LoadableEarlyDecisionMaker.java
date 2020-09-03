@@ -16,6 +16,11 @@ package tsml.classifiers.early_classification;
 
 import weka.core.Instances;
 
+/**
+ * Interface for decision makers which can use train files to fit.
+ *
+ * @author Matthew Middlehurst
+ */
 public interface LoadableEarlyDecisionMaker {
 
     void loadFromFile(Instances data, String directoryPath, int[] thresholds) throws Exception;

@@ -744,6 +744,7 @@ public class InstanceTools {
             data.deleteAttributeAt(clsIndex);
         }
     }
+
     public static List<Instances> instancesByClass(Instances instances) {
         List<Instances> instancesByClass = new ArrayList<>();
         int numClasses = instances.get(0).numClasses();

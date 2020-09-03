@@ -30,6 +30,12 @@ import static utilities.ArrayUtilities.mean;
 import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
+/**
+ * Early classification classifier which makes use of a tsml/weka classifier and decision maker.
+ * Can load from test and train files.
+ *
+ * @author Matthew Middlehurst
+ */
 public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implements Randomizable {
 
     private Classifier classifier;

@@ -1134,9 +1134,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             estimator = saved.estimator;
             numClasses = saved.numClasses;
 
-            lastCheckpointTime = System.nanoTime();
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
-                    + (System.nanoTime() - checkpointTime);
+                    + (System.nanoTime() - saved.lastCheckpointTime);
+            lastCheckpointTime = System.nanoTime();
         }catch(Exception ex){
             System.out.println("Unable to assign variables when loading serialised file");
         }

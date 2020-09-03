@@ -21,6 +21,7 @@ import com.carrotsearch.hppc.ObjectIntHashMap;
 import com.carrotsearch.hppc.cursors.DoubleDoubleCursor;
 import com.carrotsearch.hppc.cursors.ObjectIntCursor;
 import evaluation.storage.ClassifierResults;
+import scala.Int;
 import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
@@ -84,7 +85,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     //map of <word, level, dimension> => count
-    public static class SPBagMV extends ObjectIntHashMap<Word> {
+    public static class SPBagMV extends HashMap<Word, Integer> implements Serializable {
         private int classVal;
 
         public SPBagMV() {
@@ -154,10 +155,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             if (!observed.containsKey(bag.classVal)) {
                 observed.put(bag.classVal, new ObjectIntHashMap<>());
             }
-            for (ObjectIntCursor<Word> word : bag) {
-                if (word.value > 0) {
-                    featureCount.putOrAdd(word.key, 1, 1);
-                    observed.get(bag.classVal).putOrAdd(word.key, 1, 1);
+            for (Map.Entry<Word, Integer> word : bag.entrySet()) {
+                if (word.getValue() > 0) {
+                    featureCount.putOrAdd(word.getKey(), 1, 1);
+                    observed.get(bag.classVal).putOrAdd(word.getKey(), 1, 1);
                 }
             }
 
@@ -183,9 +184,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         // best elements above limit
         for (SPBagMV bag : bags) {
-            for (ObjectIntCursor<Word> cursor : bag) {
-                if (!chiSquare.contains(cursor.key)) {
-                    bag.remove(cursor.key);
+            for (Map.Entry<Word, Integer> cursor : bag.entrySet()) {
+                if (!chiSquare.contains(cursor.getKey())) {
+                    bag.remove(cursor.getKey());
                 }
             }
         }
@@ -193,9 +194,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     private SPBagMV filterChiSquared(SPBagMV bag) {
         SPBagMV newBag = new SPBagMV(bag.classVal);
-        for (ObjectIntCursor<Word> cursor : bag) {
-            if (chiSquare.contains(cursor.key)) {
-                newBag.put(cursor.key, cursor.value);
+        for (Map.Entry<Word, Integer> cursor : bag.entrySet()) {
+            if (chiSquare.contains(cursor.getKey())) {
+                newBag.put(cursor.getKey(), cursor.getValue());
             }
         }
         return newBag;
@@ -223,7 +224,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                     BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     Word key = new Word(bigram, (byte) -1, dimension);
-                    bag.putOrAdd(key, 1, 1);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -327,7 +328,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                     BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     Word key = new Word(bigram, (byte) -1, dimension);
-                    bag.putOrAdd(key, 1, 1);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -370,9 +371,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     private void applyPyramidWeights(SPBagMV bag) {
-        for (ObjectIntCursor<Word> ent : bag) {
+        for (Map.Entry<Word, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
-            int quadrant = ent.key.level;
+            int quadrant = ent.getKey().level;
             int qEnd = 0;
             int level = 0;
             while (qEnd < quadrant) {
@@ -381,8 +382,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             }
 
             //double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
-            int val = ent.value * (int)Math.pow(2,level);
-            bag.put(ent.key, val);
+            int val = ent.getValue() * (int)Math.pow(2,level);
+            bag.put(ent.getKey(), val);
         }
     }
 
@@ -399,7 +400,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             int quadrant = qStart + (pos/quadrantSize);
 
             Word key = new Word(word, (byte)quadrant, dimension);
-            bag.putOrAdd(key, 1, 1);
+            bag.merge(key, 1, Integer::sum);
 
             qStart += numQuadrants;
         }
@@ -430,7 +431,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         for (int d = 0; d < breakpoints.length; d++) {
             if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes());
             else breakpoints[d] = MCB(split, d); //breakpoints to be used for making sfa words for train
-            //AND test data
+                                                 //AND test data
         }
 
         SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
@@ -482,9 +483,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (ObjectIntCursor<Word> entry : instA) {
-            int valA = entry.value;
-            int valB = instB.get(entry.key);
+        for (Map.Entry<Word, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
+            if (valB == null) valB = 1;
             dist += (valA-valB)*(valA-valB);
 
             if (dist > bestDist)
@@ -502,10 +504,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         double sim = 0.0;
 
-        for (ObjectIntCursor<Word> entry : instA) {
-            int valA = entry.value;
-            int valB = instB.get(entry.key);
-            if (valB == 0)
+        for (Map.Entry<Word, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
+            if (valB == null)
                 continue;
 
             sim += Math.min(valA,valB);

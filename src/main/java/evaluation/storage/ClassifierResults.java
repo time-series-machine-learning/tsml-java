@@ -2079,18 +2079,20 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     //Early classification
     //Currently assumes each predictions earliness is stored in the prediction description alone.
     public double findEarliness(){
-        double earliness = 0;
-        for (String e : predDescriptions){
-            earliness += Double.parseDouble(e);
+        double e = 0;
+        for (String d : predDescriptions){
+            earliness += Double.parseDouble(d);
         }
-        return earliness / predDescriptions.size();
+        earliness = e / predDescriptions.size();
+        return earliness;
     }
 
     //Early classification
     public double findHarmonicMean(){
         if (earliness < 0) earliness = findEarliness();
         if (acc < 0) calculateAcc();
-        return (2 * acc * (1 - earliness)) / (acc + (1 - earliness));
+        harmonicMean = (2 * acc * (1 - earliness)) / (acc + (1 - earliness));
+        return harmonicMean;
     }
 
     public String allPerformanceMetricsToString() {

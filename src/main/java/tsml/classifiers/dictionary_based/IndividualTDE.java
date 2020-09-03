@@ -30,6 +30,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.UnassignedClassException;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -167,7 +168,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     //map of <word, level> => count
-    public static class SPBag extends ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> {
+    public static class SPBag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
         private int classVal;
 
         public SPBag() {
@@ -565,10 +566,10 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             if (!observed.containsKey(bag.classVal)) {
                 observed.put(bag.classVal, new ObjectIntHashMap<>());
             }
-            for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> word : bag) {
-                if (word.value > 0) {
-                    featureCount.putOrAdd(word.key, 1, 1);
-                    observed.get(bag.classVal).putOrAdd(word.key, 1, 1);
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> word : bag.entrySet()) {
+                if (word.getValue() > 0) {
+                    featureCount.putOrAdd(word.getKey(), 1, 1);
+                    observed.get(bag.classVal).putOrAdd(word.getKey(), 1, 1);
                 }
             }
 
@@ -594,9 +595,9 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         // best elements above limit
         for (SPBag bag : bags) {
-            for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> cursor : bag) {
-                if (!chiSquare.contains(cursor.key)) {
-                    bag.remove(cursor.key);
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
+                if (!chiSquare.contains(cursor.getKey())) {
+                    bag.remove(cursor.getKey());
                 }
             }
         }
@@ -604,9 +605,9 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
     private SPBag filterChiSquared(SPBag bag) {
         SPBag newBag = new SPBag(bag.classVal);
-        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> cursor : bag) {
-            if (chiSquare.contains(cursor.key)) {
-                newBag.put(cursor.key, cursor.value);
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
+            if (chiSquare.contains(cursor.getKey())) {
+                newBag.put(cursor.getKey(), cursor.getValue());
             }
         }
         return newBag;
@@ -635,7 +636,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
                     BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    bag.putOrAdd(key, 1, 1);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -750,7 +751,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
                     BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    bag.putOrAdd(key, 1, 1);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -793,9 +794,9 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     private void applyPyramidWeights(SPBag bag) {
-        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> ent : bag) {
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
-            int quadrant = ent.key.var2;
+            int quadrant = ent.getKey().var2;
             int qEnd = 0;
             int level = 0;
             while (qEnd < quadrant) {
@@ -804,8 +805,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             }
 
             //double val = ent.getValue() * (Math.pow(levelWeighting, levels-level-1)); //weighting ^ (levels - level)
-            int val = ent.value * (int)Math.pow(2,level);
-            bag.put(ent.key, val);
+            int val = ent.getValue() * (int)Math.pow(2,level);
+            bag.put(ent.getKey(), val);
         }
     }
 
@@ -822,7 +823,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             int quadrant = qStart + (pos/quadrantSize);
 
             SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
-            bag.putOrAdd(key, 1, 1);
+            bag.merge(key, 1, Integer::sum);
 
             qStart += numQuadrants;
         }
@@ -906,9 +907,10 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         double dist = 0.0;
 
         //find dist only from values in instA
-        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> entry : instA) {
-            int valA = entry.value;
-            int valB = instB.get(entry.key);
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
+            if (valB == null) valB = 1;
             dist += (valA-valB)*(valA-valB);
 
             if (dist > bestDist)
@@ -926,10 +928,10 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         double sim = 0.0;
 
-        for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> entry : instA) {
-            int valA = entry.value;
-            int valB = instB.get(entry.key);
-            if (valB == 0)
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
+            Integer valA = entry.getValue();
+            Integer valB = instB.get(entry.getKey());
+            if (valB == null)
                 continue;
 
             sim += Math.min(valA,valB);

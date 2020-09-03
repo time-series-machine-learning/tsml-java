@@ -16,20 +16,21 @@ package tsml.classifiers.early_classification;
 
 import weka.classifiers.AbstractClassifier;
 
-
+/**
+ * Abstract classifier class for early classification classifiers.
+ *
+ * @author Matthew Middlehurst
+ */
 public abstract class AbstractEarlyClassifier extends AbstractClassifier {
 
+    /** Time point thresholds for classifiers to make predictions at */
     protected int[] thresholds;
 
     protected boolean normalise = false;
 
-    public int[] getThresholds(){
-        return thresholds;
-    }
+    public int[] getThresholds(){ return thresholds; }
 
-    public void setThresholds(int[] t){
-        thresholds = t;
-    }
+    public void setThresholds(int[] t){ thresholds = t; }
 
     public void setNormalise(boolean b) { normalise = b; }
 }

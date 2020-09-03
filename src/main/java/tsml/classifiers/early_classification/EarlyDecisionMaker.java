@@ -13,13 +13,19 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package tsml.classifiers.early_classification;
-;
+
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
 
-
+/**
+ * Class for early classification decision makers.
+ * When presented with a series to predict, decide on whether to make a prediction or delay until more of the series
+ * is available.
+ *
+ * @author Matthew Middlehurst
+ */
 public abstract class EarlyDecisionMaker {
 
     protected boolean normalise = false;

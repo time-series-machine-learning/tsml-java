@@ -29,6 +29,17 @@ import static utilities.GenericTools.linSpace;
 import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
+/**
+ * Modified SR1CF1 decision maker. Uses gridsearch for parameter values instead of the genetic algorithm used in the
+ * paper.
+ * Tunes parameters to find a suitable accuracy and earliness balance, one can be favoured over the other using the
+ * alpha parameter.
+ *
+ * Mori, Usue, et al. "Early classification of time series by simultaneously optimizing the accuracy and earliness."
+ * IEEE transactions on neural networks and learning systems 29.10 (2017): 4569-4578.
+ *
+ * @author Matthew Middlehurst
+ */
 public class SR1CF1 extends EarlyDecisionMaker implements Randomizable, LoadableEarlyDecisionMaker {
 
     private double alpha = 0.8;
@@ -118,12 +129,12 @@ public class SR1CF1 extends EarlyDecisionMaker implements Randomizable, Loadable
         double[] pVals = linSpace(numParamValues, -1, 1);
         double bestGain = 0;
         double[] bestP = null;
-        for (int i = 0; i < pVals.length; i++) {
-            for (int n = 0; n < pVals.length; n++) {
-                for (int g = 0; g < pVals.length; g++) {
-                    p[0] = pVals[i];
-                    p[1] = pVals[n];
-                    p[2] = pVals[g];
+        for (double v : pVals) {
+            for (double b : pVals) {
+                for (double n : pVals) {
+                    p[0] = v;
+                    p[1] = b;
+                    p[2] = n;
 
                     double gain = gainFunction();
                     if (gain > bestGain || (gain == bestGain && rand.nextBoolean())) {
@@ -140,12 +151,12 @@ public class SR1CF1 extends EarlyDecisionMaker implements Randomizable, Loadable
     private boolean stoppingRule(double[] probs, int length) {
         double largestVal = -1;
         double secondLargestVal = -1;
-        for (int i = 0; i < probs.length; i++) {
-            if (probs[i] > largestVal) {
+        for (double prob : probs) {
+            if (prob > largestVal) {
                 secondLargestVal = largestVal;
-                largestVal = probs[i];
-            } else if (probs[i] > secondLargestVal) {
-                secondLargestVal = probs[i];
+                largestVal = prob;
+            } else if (prob > secondLargestVal) {
+                secondLargestVal = prob;
             }
         }
 

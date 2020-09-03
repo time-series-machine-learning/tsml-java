@@ -31,6 +31,16 @@ import static utilities.InstanceTools.truncateInstances;
 import static utilities.InstanceTools.zNormaliseWithClass;
 import static utilities.Utilities.argMax;
 
+/**
+ * TEASER early classification decision maker.
+ * Trains a 1-class SVM for each threshold, requires v positive decisions in a row to return a true decision.
+ *
+ * Schäfer, Patrick, and Ulf Leser. "Teaser: Early and accurate time series classification."
+ * Data Mining and Knowledge Discovery (2020): 1-27.
+ * https://link.springer.com/article/10.1007/s10618-020-00690-z
+ *
+ * @author Matthew Middlehurst
+ */
 public class TEASER extends EarlyDecisionMaker implements Randomizable, LoadableEarlyDecisionMaker {
 
     private static final double[] SVM_GAMMAS = new double[]{100, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.5, 1};

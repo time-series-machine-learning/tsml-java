@@ -37,6 +37,12 @@ import static utilities.ArrayUtilities.mean;
 import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
+/**
+ * Early classification classifier using the shapelet transform.
+ * Extracts shapelets from the full series and uses them and a decision maker to classify.
+ *
+ * @author Matthew Middlehurst
+ */
 public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
 
     private Classifier classifier;

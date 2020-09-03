@@ -22,6 +22,12 @@ import java.util.Random;
 
 import static utilities.Utilities.argMax;
 
+/**
+ * Probability threshold decision maker.
+ * Only makes a prediction if the highest probability is past a set threshold or the full series has been seen.
+ *
+ * @author Matthew Middlehurst
+ */
 public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomizable {
 
     private double threshold = 0.9;
@@ -48,6 +54,6 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
 
     @Override
     public boolean decide(int thresholdIndex, double[] probabilities) {
-        return (thresholdIndex == finalIndex || argMax(probabilities, rand) > threshold);
+        return (thresholdIndex == finalIndex || probabilities[argMax(probabilities, rand)] > threshold);
     }
 }
