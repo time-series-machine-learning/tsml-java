@@ -723,6 +723,11 @@ public class Experiments  {
         return eval.evaluate(classifier, testSet);
     }
 
+    /**
+     * Mimics SingleTestSetEvaluator but for early classification classifiers.
+     * Earliness for each test instance is written to the description.
+     * Normalisation for experimental purposes should be handled by the individual classifiers/decision makers.
+     */
     public static ClassifierResults evaluateEarlyClassifier(ExperimentalArguments exp, AbstractEarlyClassifier classifier, Instances testSet) throws Exception {
         ClassifierResults res = new ClassifierResults(testSet.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);

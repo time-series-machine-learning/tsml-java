@@ -40,7 +40,9 @@ public class BayesianSearcher extends ParameterSearcher {
     private Instance bestParameters;
 
     public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction) {
+
         System.err.println("BayesianSearcher is not tested properly and most likely broken.");
+
         this.objectiveFunction = objectiveFunction;
         gp.setKernel(new RBFKernel());
         gp.setNoise(2);
