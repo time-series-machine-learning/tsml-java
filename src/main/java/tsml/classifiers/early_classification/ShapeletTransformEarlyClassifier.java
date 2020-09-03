@@ -23,7 +23,7 @@ import static utilities.ArrayUtilities.mean;
 import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
-public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
+public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
 
     private Classifier classifier;
     private EarlyDecisionMaker decisionMaker;
@@ -31,7 +31,6 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
     private ShapeletTransform transform;
     private Instances shapeletData;
     private int[] redundantFeatures;
-    private int[] thresholds;
 
     private int seed;
     private Random rand;
@@ -41,8 +40,12 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
     @Override
     public void buildClassifier(Instances data) throws Exception {
         rand = new Random(seed);
+        decisionMaker.setNormalise(normalise);
         int n = data.numInstances();
         int m = data.numAttributes()-1;
+
+        Instances newData = data;
+        if (normalise) newData = zNormaliseWithClass(data);
 
         ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;
         ShapeletTransformFactoryOptions.ShapeletTransformOptions transformOptions
@@ -84,7 +87,7 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
         transformOptions.setSearchOptions(searchBuilder.build());
 
         transform = new ShapeletTransformFactory(transformOptions.build()).getTransform();
-        shapeletData = transform.fitTransform(data);
+        shapeletData = transform.fitTransform(newData);
         redundantFeatures = InstanceTools.removeRedundantTrainAttributes(shapeletData);
 
         RotationForest rotf = new RotationForest();
@@ -96,7 +99,7 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
         ProbabilityThreshold pt = new ProbabilityThreshold();
         decisionMaker = pt;
         thresholds = decisionMaker.defaultTimeStamps(data.numAttributes()-1);
-        decisionMaker.fit(data, classifier, thresholds);
+        decisionMaker.fit(newData, classifier, thresholds);
 
         shapeletData = new Instances(data,0);
     }
@@ -118,9 +121,12 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
         }
         if (idx == -1) throw new Exception("Input instance length does not match any given timestamps.");
 
+        Instance newData = instance;
+        if (normalise) newData = zNormaliseWithClass(instance);
+
         shapeletData = new Instances(instance.dataset(),0);
-        shapeletData.add(instance);
-        Instances temp  = transform.transform(shapeletData);
+        shapeletData.add(newData);
+        Instances temp = transform.transform(shapeletData);
 
         for (int del: redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -142,12 +148,11 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
         train = data[0];
         test = data[1];
 
-        train = zNormaliseWithClass(train);
-
         Random r = new Random(fold);
 
         ShapeletTransformEarlyClassifier cls = new ShapeletTransformEarlyClassifier();
         cls.seed = fold;
+        cls.normalise = true;
         cls.buildClassifier(train);
 
         int length = test.numAttributes()-1;
@@ -158,7 +163,6 @@ public class ShapeletTransformEarlyClassifier extends AbstractClassifier {
         for (int i = 0; i < 20; i++){
             int newLength = (int)Math.round((i+1)*0.05 * length);
             Instances newData = truncateInstances(test, length, newLength);
-            newData = zNormaliseWithClass(newData);
 
             for (int n = 0; n < test.numInstances(); n++){
                 if (testProbs[n] == null) {

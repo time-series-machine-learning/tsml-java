@@ -2,7 +2,6 @@ package tsml.classifiers.early_classification;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import tsml.classifiers.dictionary_based.WEASEL;
 import tsml.classifiers.interval_based.TSF;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -17,12 +16,11 @@ import static utilities.ArrayUtilities.mean;
 import static utilities.InstanceTools.*;
 import static utilities.Utilities.argMax;
 
-public class EarlyDecisionMakerClassifier extends AbstractClassifier implements Randomizable {
+public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implements Randomizable {
 
     private Classifier classifier;
     private EarlyDecisionMaker decisionMaker;
 
-    private int[] thresholds;
     private Classifier[] classifiers;
 
     private int seed = 0;
@@ -41,8 +39,6 @@ public class EarlyDecisionMakerClassifier extends AbstractClassifier implements 
     @Override
     public int getSeed() { return 0; }
 
-    public void setThresholds(int[] t) { thresholds = t; }
-
     @Override
     public void setSeed(int i) { seed = i; }
 
@@ -57,9 +53,11 @@ public class EarlyDecisionMakerClassifier extends AbstractClassifier implements 
         classifiers = new Classifier[thresholds.length];
         if (classifier instanceof Randomizable) ((Randomizable) classifier).setSeed(seed);
         if (decisionMaker instanceof Randomizable) ((Randomizable) decisionMaker).setSeed(seed);
+        decisionMaker.setNormalise(normalise);
         rand = new Random(seed);
 
         if (loadFromFile) {
+            loadedResults = new ClassifierResults[thresholds.length];
             for (int i = 0; i < thresholds.length; i++) {
                 loadedResults[i] = new ClassifierResults(loadPath + thresholds[i] + "testFold" + seed +
                         ".csv");
@@ -83,7 +81,7 @@ public class EarlyDecisionMakerClassifier extends AbstractClassifier implements 
                 }
 
                 Instances newData = truncateInstances(data, length, thresholds[i]);
-                newData = zNormaliseWithClass(newData);
+                if (normalise) newData = zNormaliseWithClass(newData);
 
                 classifiers[i] = AbstractClassifier.makeCopy(classifier);
                 classifiers[i].buildClassifier(newData);
@@ -116,7 +114,9 @@ public class EarlyDecisionMakerClassifier extends AbstractClassifier implements 
 
         double[] probs;
         boolean decision;
-        Instance newData = zNormaliseWithClass(instance);
+
+        Instance newData = instance;
+        if (normalise) newData = zNormaliseWithClass(instance);
 
         if (loadFromFile){
             probs = loadedResults[idx].getProbabilityDistribution(testInstanceCounter);
@@ -145,11 +145,10 @@ public class EarlyDecisionMakerClassifier extends AbstractClassifier implements 
         Random r = new Random(fold);
 
         Classifier c = new TSF();
-        if (c instanceof Randomizable) ((Randomizable) c).setSeed(fold);
         EarlyDecisionMaker dm = new TEASER();
-        if (dm instanceof Randomizable) ((Randomizable) dm).setSeed(fold);
 
         EarlyDecisionMakerClassifier cls = new EarlyDecisionMakerClassifier(c, dm);
+        cls.normalise = true;
         cls.buildClassifier(train);
 
         int length = test.numAttributes() - 1;

@@ -22,6 +22,10 @@ import java.util.Arrays;
 
 public abstract class EarlyDecisionMaker {
 
+    protected boolean normalise = false;
+
+    public void setNormalise(boolean b) { normalise = b; }
+
     public abstract void fit(Instances data, Classifier[] classifiers, int[] thresholds) throws Exception;
 
     public void fit(Instances data, Classifier classifier, int[] thresholds) throws Exception {
@@ -38,8 +42,9 @@ public abstract class EarlyDecisionMaker {
 
     public int[] defaultTimeStamps(int length) {
         int[] ts = new int[20];
-        for (int i = 0; i < 20; i++){
-            ts[i] = (int)Math.round((i+1)*0.05 * length);
+        ts[19] = length;
+        for (int i = 0; i < 19; i++){
+            ts[i] = (int)Math.round((i+1) * 0.05 * length);
         }
         return ts;
     }

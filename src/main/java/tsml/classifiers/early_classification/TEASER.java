@@ -49,7 +49,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
             }
             else {
                 Instances truncatedData = truncateInstances(data, data.numAttributes() - 1, thresholds[i]);
-                zNormaliseWithClass(truncatedData);
+                if (normalise) zNormaliseWithClass(truncatedData);
 
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 cv.setSeed(seed);
@@ -78,6 +78,8 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
 
     @Override
     public boolean decide(int thresholdIndex, double[] probabilities) throws Exception {
+        if (thresholdIndex == timeStamps.length-1) return true;
+
         int pred = argMax(probabilities, rand);
         double minDiff = 1;
         for (int g = 0; g < probabilities.length; g++) {
@@ -93,14 +95,14 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
 
         if (thresholdIndex == 0) predCounts = new IntIntHashMap();
 
-        if (svm[thresholdIndex].distributionForInstance(inst)[0] == 1 || thresholdIndex == timeStamps.length-1) {
+        if (svm[thresholdIndex].distributionForInstance(inst)[0] == 1) {
             int count = predCounts.get(pred);
-            if (count == 0 && thresholdIndex < timeStamps.length-1) {
+            if (count == 0) {
                 predCounts.clear();
                 predCounts.put(pred, 1);
             } else {
                 count++;
-                if (count >= v || thresholdIndex == timeStamps.length-1) {
+                if (count >= v) {
                     return true;
                 } else {
                     predCounts.put(pred, count);

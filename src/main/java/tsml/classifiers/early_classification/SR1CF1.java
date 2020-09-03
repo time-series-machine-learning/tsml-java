@@ -75,7 +75,7 @@ public class SR1CF1 extends EarlyDecisionMaker implements Randomizable, Loadable
             }
             else {
                 Instances truncatedData = truncateInstances(data, fullLength, timeStamps[i]);
-                zNormaliseWithClass(truncatedData);
+                if (normalise) zNormaliseWithClass(truncatedData);
 
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 cv.setSeed(seed);
