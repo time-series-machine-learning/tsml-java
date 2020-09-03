@@ -24,7 +24,6 @@ import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.Catch22Classifier;
-import tsml.classifiers.early_classification.SR1CF1;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
 import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
@@ -64,7 +63,6 @@ import weka.classifiers.trees.RandomForest;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -278,7 +276,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","CIF","SR1-CF1"};
+    public static String[] interval= {"LPS","TSF","CIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -294,7 +292,6 @@ public class ClassifierLists {
             case "CIF":
                 c=new CIF();
                 break;
-
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -346,7 +343,6 @@ public class ClassifierLists {
                 break;
             case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
-                ((ShapeletTransformClassifier)c).setTrainTimeLimit(1, TimeUnit.HOURS);
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();
