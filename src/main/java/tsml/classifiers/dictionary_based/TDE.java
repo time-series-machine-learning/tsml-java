@@ -1257,28 +1257,28 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         TDE c;
         double accuracy;
 
-//        c = new TDE();
-//        c.setSeed(fold);
-//        c.setEstimateOwnPerformance(true);
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("TDE accuracy on " + dataset + " fold " + fold + " = " + accuracy);
-//        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
-//
-//        c = new TDE();
-//        c.setSeed(fold);
-//        c.setEstimateOwnPerformance(true);
-//        c.buildClassifier(train2);
-//        accuracy = ClassifierTools.accuracy(test2, c);
-//
-//        System.out.println("TDE accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
-//        System.out.println("Train accuracy on " + dataset2 + " fold " + fold + " = " + c.trainResults.getAcc());
+        c = new TDE();
+        c.setSeed(fold);
+        c.setEstimateOwnPerformance(true);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("TDE accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
+
+        c = new TDE();
+        c.setSeed(fold);
+        c.setEstimateOwnPerformance(true);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("TDE accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
+        System.out.println("Train accuracy on " + dataset2 + " fold " + fold + " = " + c.trainResults.getAcc());
 
         c = new TDE();
         c.setSeed(fold);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        //c.setCleanupCheckpointFiles(true);
+        c.setCleanupCheckpointFiles(true);
         c.setCheckpointPath("D:\\");
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
@@ -1292,7 +1292,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         c = new TDE();
         c.setSeed(fold);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-        //c.setCleanupCheckpointFiles(true);
+        c.setCleanupCheckpointFiles(true);
         c.setCheckpointPath("D:\\");
         c.setCutoff(true);
         c.buildClassifier(train2);

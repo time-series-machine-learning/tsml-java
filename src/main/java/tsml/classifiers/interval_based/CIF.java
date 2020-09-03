@@ -352,10 +352,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
 
             if (maxIntervalLengthFinder == null){
-                maxIntervalLength = seriesLength;
+                maxIntervalLength = seriesLength/2;
             }
             else {
-                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
+                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength);
             }
             if (maxIntervalLength > seriesLength){
                 maxIntervalLength = seriesLength;
