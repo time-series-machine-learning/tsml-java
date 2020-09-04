@@ -37,7 +37,6 @@ import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import tsml.classifiers.early_classification.AbstractEarlyClassifier;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -54,11 +53,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import weka.core.Instance;
 import weka.core.Instances;
-
-import static utilities.GenericTools.indexOfMax;
-import static utilities.InstanceTools.*;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -395,9 +390,7 @@ public class Experiments  {
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
             if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                if (classifier instanceof AbstractEarlyClassifier) testResults = evaluateEarlyClassifier(expSettings,
-                        (AbstractEarlyClassifier) classifier, testSet);
-                else testResults = evaluateClassifier(expSettings, classifier, testSet);
+                testResults = evaluateClassifier(expSettings, classifier, testSet);
                 testResults.setParas(trainResults.getParas());
                 testResults.turnOffZeroTimingsErrors();
                 testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
@@ -721,61 +714,6 @@ public class Experiments  {
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true, exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         return eval.evaluate(classifier, testSet);
-    }
-
-    /**
-     * Mimics SingleTestSetEvaluator but for early classification classifiers.
-     * Earliness for each test instance is written to the description.
-     * Normalisation for experimental purposes should be handled by the individual classifiers/decision makers.
-     */
-    public static ClassifierResults evaluateEarlyClassifier(ExperimentalArguments exp, AbstractEarlyClassifier classifier, Instances testSet) throws Exception {
-        ClassifierResults res = new ClassifierResults(testSet.numClasses());
-        res.setTimeUnit(TimeUnit.NANOSECONDS);
-        res.setClassifierName(classifier.getClass().getSimpleName());
-        res.setDatasetName(testSet.relationName());
-        res.setFoldID(exp.foldId);
-        res.setSplit("test");
-
-        int length = testSet.numAttributes()-1;
-        int[] thresholds = classifier.getThresholds();
-        Instances[] truncatedInstances = new Instances[thresholds.length];
-        truncatedInstances[thresholds.length-1] = new Instances(testSet, 0);
-        for (int i = 0; i < thresholds.length-1; i++) {
-            truncatedInstances[i] = truncateInstances(truncatedInstances[thresholds.length-1], length, thresholds[i]);
-        }
-
-        res.turnOffZeroTimingsErrors();
-        for (Instance testinst : testSet) {
-            double trueClassVal = testinst.classValue();
-            testinst.setClassMissing();
-
-            long startTime = System.nanoTime();
-
-            double[] dist = null;
-            double earliness = 0;
-            for (int i = 0; i < thresholds.length; i++){
-                Instance newInst = truncateInstance(testinst, length, thresholds[i]);
-                newInst.setDataset(truncatedInstances[i]);
-
-                dist = classifier.distributionForInstance(newInst);
-
-                if (dist != null) {
-                    earliness = thresholds[i]/(double)length;
-                    break;
-                }
-            }
-
-            long predTime = System.nanoTime() - startTime;
-
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, Double.toString(earliness));
-        }
-
-        res.turnOnZeroTimingsErrors();
-
-        res.finaliseResults();
-        res.findAllStatsOnce();
-
-        return res;
     }
 
     /**
