@@ -27,15 +27,16 @@ public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
-    private boolean normalise = false;
-
-    public Subsequences() {
-        this.subsequenceLength = 30;
-    }
+    private boolean normalise = true;
+    public Subsequences() {this.subsequenceLength = 30;}
 
     public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
     }
+
+    public void setNormalise(boolean normalise) {this.normalise = normalise;}
+
+    public boolean getNormalise() {return normalise;}
 
     @Override
     public Instance transform(Instance inst) {
