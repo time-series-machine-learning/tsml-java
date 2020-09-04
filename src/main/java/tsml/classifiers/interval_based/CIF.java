@@ -1828,7 +1828,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         System.out.println("Test Accuracy = "+a);
         System.out.println("Train Accuracy = "+c.trainResults.getAcc());
 
-        //Test Accuracy = 0.9620991253644315
+        //Test Accuracy = 0.967930029154519
         //Train Accuracy = 0.9701492537313433
     }
 }
