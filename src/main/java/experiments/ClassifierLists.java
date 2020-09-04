@@ -202,37 +202,34 @@ public class ClassifierLists {
 
             case "TDE-MV2":
                 c = new TDE();
-                ((TDE) c).setUseBigrams(false);
                 ((TDE) c).setMaxEnsembleSize(50);
                 break;
             case "TDE-MV2-FS":
                 c = new TDE();
-                ((TDE) c).setUseBigrams(false);
                 ((TDE) c).setMaxEnsembleSize(50);
-                ((TDE) c).fs = true;
+                ((TDE) c).setUseFeatureSelection(true);
                 break;
             case "TDE-MV2-R70":
                 c = new TDE();
-                ((TDE) c).setUseBigrams(false);
                 ((TDE) c).setMaxEnsembleSize(50);
-                ((TDE) c).dimensionProportion = 0.7;
+                ((TDE) c).setDimensionProportion(0.7);
                 break;
             case "TDE-MV2-R50":
                 c = new TDE();
-                ((TDE) c).setUseBigrams(false);
                 ((TDE) c).setMaxEnsembleSize(50);
-                ((TDE) c).dimensionProportion = 0.5;
+                ((TDE) c).setDimensionProportion(0.5);
                 break;
 
 
             case "TDE-MV2-BI":
                 c = new TDE();
+                ((TDE) c).setUseBigrams(false);
                 ((TDE) c).setMaxEnsembleSize(50);
                 break;
             case "TDE-MV2-RA":
                 c = new TDE();
                 ((TDE) c).setMaxEnsembleSize(50);
-                ((TDE) c).dimensionProportion = -1;
+                ((TDE) c).setDimensionProportion(-1);
                 break;
 
             default:

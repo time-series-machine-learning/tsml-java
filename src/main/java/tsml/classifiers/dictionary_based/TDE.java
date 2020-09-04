@@ -306,6 +306,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         train = data;
 
+        if (dimensionProportion == -1){
+            if (data.getMaxNumChannels() <= 10){
+                dimensionProportion = 1;
+            }
+            else {
+                dimensionProportion = (10 + (data.getMaxNumChannels() - 10) / 2.0) / data.getMaxNumChannels();
+            }
+        }
+
         //Window length settings
         int minWindow = 10;
         int maxWindow = (int) (data.getMaxLength() * maxWinLenProportion);
