@@ -352,10 +352,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
 
             if (maxIntervalLengthFinder == null){
-                maxIntervalLength = seriesLength;
+                maxIntervalLength = seriesLength/2;
             }
             else {
-                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength/2);
+                maxIntervalLength = maxIntervalLengthFinder.apply(seriesLength);
             }
             if (maxIntervalLength > seriesLength){
                 maxIntervalLength = seriesLength;
@@ -1134,9 +1134,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             estimator = saved.estimator;
             numClasses = saved.numClasses;
 
-            lastCheckpointTime = System.nanoTime();
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
-                    + (System.nanoTime() - checkpointTime);
+                    + (System.nanoTime() - saved.lastCheckpointTime);
+            lastCheckpointTime = System.nanoTime();
         }catch(Exception ex){
             System.out.println("Unable to assign variables when loading serialised file");
         }
@@ -1828,7 +1828,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         System.out.println("Test Accuracy = "+a);
         System.out.println("Train Accuracy = "+c.trainResults.getAcc());
 
-        //Test Accuracy = 0.9620991253644315
+        //Test Accuracy = 0.967930029154519
         //Train Accuracy = 0.9701492537313433
     }
 }

@@ -69,18 +69,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         return result;
     }
 
-
-    public boolean fs = false;
-    public double dimensionProportion = 1;
-
-
     private int parametersConsidered = 250;
     private int maxEnsembleSize = 100;
 
     private boolean histogramIntersection = true;
     private boolean useBigrams = true;
+    private boolean useFeatureSelection = false;
 
     private double trainProportion = 0.7;
+    private double dimensionProportion = 1;
 
     private boolean bayesianParameterSelection = true;
     private int initialRandomParameters = 50;
@@ -145,99 +142,91 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      *
      * @param size number of parameters considered
      */
-    public void setParametersConsidered(int size) {
-        parametersConsidered = size;
-    }
+    public void setParametersConsidered(int size) { parametersConsidered = size; }
 
     /**
      * Max number of classifiers for the ensemble.
      *
      * @param size max ensemble size
      */
-    public void setMaxEnsembleSize(int size) {
-        maxEnsembleSize = size;
-    }
+    public void setMaxEnsembleSize(int size) { maxEnsembleSize = size; }
 
     /**
      * Proportion of train set to be randomly subsampled for each classifier.
      *
      * @param d train subsample proportion
      */
-    public void setTrainProportion(double d) {
-        trainProportion = d;
-    }
+    public void setTrainProportion(double d) { trainProportion = d; }
+
+    /**
+     * Proportion of dimensions to be randomly subsampled for each classifier.
+     *
+     * @param d dimension subsample proportion
+     */
+    public void setDimensionProportion(double d) { dimensionProportion = d; }
 
     /**
      * Whether to delete checkpoint files after building has finished.
      *
      * @param b clean up checkpoint files
      */
-    public void setCleanupCheckpointFiles(boolean b) {
-        cleanupCheckpointFiles = b;
-    }
+    public void setCleanupCheckpointFiles(boolean b) { cleanupCheckpointFiles = b; }
 
     /**
      * Whether to load checkpoint files and finish building from the loaded state.
      *
      * @param b load ser files and finish building
      */
-    public void loadAndFinish(boolean b) {
-        loadAndFinish = b;
-    }
+    public void loadAndFinish(boolean b) { loadAndFinish = b; }
 
     /**
      * Max window length as proportion of the series length.
      *
      * @param d max window length proportion
      */
-    public void setMaxWinLenProportion(double d) {
-        maxWinLenProportion = d;
-    }
+    public void setMaxWinLenProportion(double d) { maxWinLenProportion = d; }
 
     /**
      * Max number of window lengths to search through as proportion of the series length.
      *
      * @param d window length search proportion
      */
-    public void setMaxWinSearchProportion(double d) {
-        maxWinSearchProportion = d;
-    }
+    public void setMaxWinSearchProportion(double d) { maxWinSearchProportion = d; }
 
     /**
      * Whether to use GP parameter selection for IndividualBOSS classifiers.
      *
      * @param b use GP parameter selection
      */
-    public void setBayesianParameterSelection(boolean b) {
-        bayesianParameterSelection = b;
-    }
+    public void setBayesianParameterSelection(boolean b) { bayesianParameterSelection = b; }
 
     /**
      * Wether to use bigrams in IndividualBOSS classifiers.
      *
      * @param b use bigrams
      */
-    public void setUseBigrams(boolean b) {
-        useBigrams = b;
-    }
+    public void setUseBigrams(boolean b) { useBigrams = b; }
+
+    /**
+     * Wether to use feature selection in IndividualBOSS classifiers.
+     *
+     * @param b use feature selection
+     */
+    public void setUseFeatureSelection(boolean b) { useFeatureSelection = b; }
 
     /**
      * Whether to remove ensemble members below a proportion of the highest accuracy.
      *
      * @param b use ensemble cutoff
      */
-    public void setCutoff(boolean b) {
-        cutoff = b;
-    }
+    public void setCutoff(boolean b) { cutoff = b; }
 
     /**
      * Ensemble accuracy cutoff as proportion of highest ensemble memeber accuracy.
      *
      * @param d cutoff proportion
      */
-    public void setCutoffThreshold(double d) {
-        cutoffThreshold = d;
-    }
+    public void setCutoffThreshold(double d) { cutoffThreshold = d; }
 
     /**
      * Outputs TDE and IndivdiualTDE parameters as a String.
@@ -317,18 +306,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         train = data;
 
-
-
-        if (dimensionProportion == -1){
-            if (data.getMaxNumChannels() <= 10){
-                dimensionProportion = 1;
-            }
-            else {
-                dimensionProportion = (10 + (data.getMaxNumChannels() - 10) / 2.0) / data.getMaxNumChannels();
-            }
-        }
-
-
         //Window length settings
         int minWindow = 10;
         int maxWindow = (int) (data.getMaxLength() * maxWinLenProportion);
@@ -384,6 +361,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             buildTDE(data);
         }
 
+        if (checkpoint) {
+            checkpoint(null, false);
+        }
+
         //end train time in nanoseconds
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
@@ -429,6 +410,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             long indivBuildTime = System.nanoTime();
             boolean checkpointChange = false;
             double[] parameters = selectParameters();
+            if (parameters == null) break;
 
             IndividualTDE indiv;
             TimeSeriesInstances data;
@@ -448,8 +430,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             data = trainProportion < 1 && trainProportion > 0 ? subsampleData(data, indiv) : data;
             indiv.setCleanAfterBuild(true);
             indiv.setHistogramIntersection(histogramIntersection);
+            indiv.setUseBigrams(useBigrams);
+            indiv.setUseFeatureSelection(useFeatureSelection);
             indiv.setSeed(seed);
-            indiv.featureSelection = fs;
             indiv.buildClassifier(data);
 
             double accuracy = individualTrainAcc(indiv, data, classifiers.size() < maxEnsembleSize
@@ -697,6 +680,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                         i--;
                     }
                 }
+
+                if (parameterPool.size() == 0) return null;
             }
         }
 
@@ -1153,7 +1138,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         maxEnsembleSize = saved.maxEnsembleSize;
         histogramIntersection = saved.histogramIntersection;
         useBigrams = saved.useBigrams;
+        useFeatureSelection = saved.useFeatureSelection;
         trainProportion = saved.trainProportion;
+        dimensionProportion = saved.dimensionProportion;
         bayesianParameterSelection = saved.bayesianParameterSelection;
         initialRandomParameters = saved.initialRandomParameters;
         initialParameterCount = saved.initialParameterCount;
@@ -1219,7 +1206,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
-                + (System.nanoTime() - checkpointTime);
+                + (System.nanoTime() - saved.checkpointTime);
         underContractTime = withinTrainContract(trainResults.getBuildTime());
     }
 
@@ -1250,15 +1237,19 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
+                "\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
+                "\\"+dataset+"_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+                "\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+                "\\"+dataset2+"_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];
@@ -1278,7 +1269,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         c = new TDE();
         c.setSeed(fold);
         c.setEstimateOwnPerformance(true);
-        c.dimensionProportion = 0.7;
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
@@ -1287,52 +1277,42 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         c = new TDE();
         c.setSeed(fold);
+        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+        c.setCleanupCheckpointFiles(true);
+        c.setCheckpointPath("D:\\");
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset + " fold " + fold + " = "
+                + accuracy);
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+
+        c = new TDE();
+        c.setSeed(fold);
+        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
+        c.setCleanupCheckpointFiles(true);
+        c.setCheckpointPath("D:\\");
         c.setCutoff(true);
-        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
 
-        System.out.println("TDE accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
-        System.out.println("Train accuracy on " + dataset2 + " fold " + fold + " = " + c.trainResults.getAcc());
+        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset2 + " fold " + fold + " = "
+                + accuracy);
+        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
-//        c = new TDE();
-//        c.setSeed(fold);
-//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-//        c.setCleanupCheckpointFiles(true);
-//        c.setCheckpointPath("D:\\");
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset + " fold " + fold + " = "
-//                + accuracy);
-//        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
-//                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
-//
-//
-//        c = new TDE();
-//        c.setSeed(fold);
-//        c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
-//        c.setCleanupCheckpointFiles(true);
-//        c.setCheckpointPath("D:\\");
-//        c.setCutoff(true);
-//        c.buildClassifier(train2);
-//        accuracy = ClassifierTools.accuracy(test2, c);
-//
-//        System.out.println("Contract 1 Min Checkpoint TDE accuracy on " + dataset2 + " fold " + fold + " = "
-//                + accuracy);
-//        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
-//                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
-
-        //Output 24/06/20
+        //Output 03/09/20
         /*
             TDE accuracy on ItalyPowerDemand fold 0 = 0.9484936831875608
             Train accuracy on ItalyPowerDemand fold 0 = 0.9552238805970149
-            TDE accuracy on ERing fold 0 = 0.9481481481481482
+            TDE accuracy on ERing fold 0 = 0.9629629629629629
             Train accuracy on ERing fold 0 = 0.9
             Contract 1 Min Checkpoint TDE accuracy on ItalyPowerDemand fold 0 = 0.9523809523809523
-            Build time on ItalyPowerDemand fold 0 = 7 seconds
-            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9629629629629629
-            Build time on ERing fold 0 = 60 seconds
+            Build time on ItalyPowerDemand fold 0 = 9 seconds
+            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9592592592592593
+            Build time on ERing fold 0 = 59 seconds
         */
     }
 }

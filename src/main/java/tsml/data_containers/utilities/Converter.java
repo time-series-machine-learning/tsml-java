@@ -57,6 +57,7 @@ public class Converter {
 
         TimeSeriesInstances output = new TimeSeriesInstances(raw_data, label_indexes);
         output.setClassLabels(labels);
+        output.setProblemName(data.relationName());
 
         return output;
     }
