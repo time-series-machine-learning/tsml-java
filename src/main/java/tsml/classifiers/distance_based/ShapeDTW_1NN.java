@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based;
 
-import experiments.data.DatasetLoading;
 import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.multivariate.MultivariateAbstractClassifier;
@@ -9,7 +8,6 @@ import tsml.transformers.HOG1D;
 import tsml.transformers.Slope;
 import tsml.transformers.Subsequences;
 import tsml.transformers.*;
-import utilities.GenericTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
@@ -563,7 +561,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
      *
      * TODO: Make this not static once testing has been completed.
      */
-    private static class NN_DTW_Subsequences extends MultivariateAbstractClassifier {
+    public static class NN_DTW_Subsequences extends MultivariateAbstractClassifier {
 
         private Instances train;
 
@@ -607,7 +605,6 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
             }
             //return the instance with the lowest distance
             Double lowestDist = treeMap.firstKey();
-            System.out.println(lowestDist);
             ArrayList<Instance> clostestInsts = treeMap.get(lowestDist);
             //If only one, return it.
             if(clostestInsts.size() == 1) {
@@ -621,13 +618,14 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
 
         /**
          * Private function for calculating the distance between two instances
-         * that are represented as a set of subsequences.
+         * that are represented as a set of subsequences. It's static so that
+         * it can be used elsewhere (also used in the ShapeDTWFeatures transformer).
          *
          * @param inst1
          * @param inst2
          * @return
          */
-        private double calculateDistance(Instance inst1, Instance inst2) {
+        public static double calculateDistance(Instance inst1, Instance inst2) {
             /*
              * This code has been adopted from the Slow_DTW_1NN class except for a few differences.
              */
@@ -687,7 +685,7 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
          * @param subsequence2
          * @return
          */
-        private double calculateEuclideanDistance(double [] subsequence1, double [] subsequence2) {
+        private static double calculateEuclideanDistance(double [] subsequence1, double [] subsequence2) {
             double total = 0.0;
             for(int i=0;i<subsequence1.length;i++) {
                 total += Math.pow(subsequence1[i] - subsequence2[i],2);
