@@ -21,7 +21,6 @@ import com.carrotsearch.hppc.ObjectIntHashMap;
 import com.carrotsearch.hppc.cursors.DoubleDoubleCursor;
 import com.carrotsearch.hppc.cursors.ObjectIntCursor;
 import evaluation.storage.ClassifierResults;
-import scala.Int;
 import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
@@ -45,28 +44,26 @@ import java.util.concurrent.Future;
  *
  * @author Matthew Middlehurst
  */
-public class MultivariateIndividualTDE extends IndividualTDE {
+public class MultivariateIndividualTDE2 extends IndividualTDE {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
-    private BitWord[/*dimension*/][/*instance*/][/*windowindex*/] SFAwords;
+    private BitWord[/*instance*/][/*dimension*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
-    private ArrayList<SPBagMV> bags;
+    private ArrayList<BagMV> bags;
 
     //breakpoints to be found by MCB or IGB
     private double[/*dimension*/][/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
-    private ObjectHashSet<Word> chiSquare;
-
     private static final long serialVersionUID = 2L;
 
-    public MultivariateIndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
-                                     boolean IGB, boolean multiThread, int numThreads, ExecutorService ex) {
+    public MultivariateIndividualTDE2(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
+                                      boolean IGB, boolean multiThread, int numThreads, ExecutorService ex) {
         super(wordLength, alphabetSize, windowSize, normalise, levels, IGB, multiThread, numThreads, ex);
     }
 
-    public MultivariateIndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
-                                     boolean IGB) {
+    public MultivariateIndividualTDE2(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels,
+                                      boolean IGB) {
         super(wordLength, alphabetSize, windowSize, normalise, levels, IGB);
     }
 
@@ -74,7 +71,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      * Used when shortening histograms, copies 'meta' data over, but with shorter
      * word length, actual shortening happens separately
      */
-    public MultivariateIndividualTDE(MultivariateIndividualTDE boss, int wordLength) {
+    public MultivariateIndividualTDE2(MultivariateIndividualTDE2 boss, int wordLength) {
         super(boss, wordLength);
 
         this.SFAwords = boss.SFAwords;
@@ -83,14 +80,14 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     //map of <word, level, dimension> => count
-    public static class SPBagMV extends HashMap<Word, Integer> implements Serializable {
+    public static class BagMV extends HashMap<Word, Integer> implements Serializable {
         private int classVal;
 
-        public SPBagMV() {
+        public BagMV() {
             super();
         }
 
-        public SPBagMV(int classValue) {
+        public BagMV(int classValue) {
             super();
             classVal = classValue;
         }
@@ -100,20 +97,18 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     public static class Word implements Serializable {
-        BitWord word;
+        BitWord[] word;
         byte level;
-        int dimension;
 
-        public Word(BitWord word, byte level, int dimension) {
+        public Word(BitWord[] word, byte level) {
             this.word = word;
             this.level = level;
-            this.dimension = dimension;
         }
 
         @Override
         public boolean equals(Object o) {
             if (o instanceof Word) {
-                return word.equals(((Word) o).word) && dimension == ((Word) o).dimension && level == ((Word) o).level;
+                return Arrays.equals(word, ((Word) o).word) && level == ((Word) o).level;
             }
             return false;
         }
@@ -121,85 +116,22 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         @Override
         public int hashCode() {
             int result = 1;
-            result = 31 * result + word.hashCode();
+            result = 31 * result + Arrays.hashCode(word);
             result = 31 * result + Byte.hashCode(level);
-            result = 31 * result + Integer.hashCode(dimension);
             return result;
         }
 
         @Override
         public String toString(){
-            return "[" + word + "," + level + "," + dimension + "]";
+            return "[" + Arrays.toString(word) + "," + level + "]";
         }
     }
 
-    public ArrayList<SPBagMV> getMultivariateBags() { return bags; }
+    public ArrayList<BagMV> getMultivariateBags() { return bags; }
 
     @Override
     public void clean() {
         SFAwords = null;
-    }
-
-    private void trainChiSquared() {
-        // Chi2 Test
-        ObjectIntHashMap<Word> featureCount
-                = new ObjectIntHashMap<>(bags.get(0).size());
-        DoubleDoubleHashMap classProb = new DoubleDoubleHashMap(10);
-        DoubleObjectHashMap<ObjectIntHashMap<Word>> observed
-                = new DoubleObjectHashMap<>(bags.get(0).size());
-
-        // count number of samples with this word
-        for (SPBagMV bag : bags) {
-            if (!observed.containsKey(bag.classVal)) {
-                observed.put(bag.classVal, new ObjectIntHashMap<>());
-            }
-            for (Map.Entry<Word, Integer> word : bag.entrySet()) {
-                if (word.getValue() > 0) {
-                    featureCount.putOrAdd(word.getKey(), 1, 1);
-                    observed.get(bag.classVal).putOrAdd(word.getKey(), 1, 1);
-                }
-            }
-
-            classProb.putOrAdd(bag.classVal, 1, 1);
-        }
-
-        // chi-squared: observed minus expected occurrence
-        chiSquare = new ObjectHashSet<>(featureCount.size());
-        for (DoubleDoubleCursor classLabel : classProb) {
-            classLabel.value /= bags.size();
-            if (observed.get(classLabel.key) != null) {
-                ObjectIntHashMap<Word> observe = observed.get(classLabel.key);
-                for (ObjectIntCursor<Word> feature : featureCount) {
-                    double expected = classLabel.value * feature.value;
-                    double chi = observe.get(feature.key) - expected;
-                    double newChi = chi * chi / expected;
-                    if (newChi >= chiLimit && !chiSquare.contains(feature.key)) {
-                        chiSquare.add(feature.key);
-                    }
-                }
-            }
-        }
-
-        // best elements above limit
-        for (int i = 0; i < bags.size(); i++) {
-            SPBagMV newBag = new SPBagMV(bags.get(i).classVal);
-            for (Map.Entry<Word, Integer> cursor : bags.get(i).entrySet()) {
-                if (chiSquare.contains(cursor.getKey())) {
-                    newBag.put(cursor.getKey(), cursor.getValue());
-                }
-            }
-            bags.set(i, newBag);
-        }
-    }
-
-    private SPBagMV filterChiSquared(SPBagMV bag) {
-        SPBagMV newBag = new SPBagMV(bag.classVal);
-        for (Map.Entry<Word, Integer> cursor : bag.entrySet()) {
-            if (chiSquare.contains(cursor.getKey())) {
-                newBag.put(cursor.getKey(), cursor.getValue());
-            }
-        }
-        return newBag;
     }
 
     /**
@@ -208,36 +140,41 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      *
      * to be used e.g to transform new test instances
      */
-    private void addToSPBagSingle(SPBagMV bag, double[][] dfts, int dimension) {
-        BitWord lastWord = new BitWordInt();
-        BitWord[] words = new BitWord[dfts.length];
+    private void addToSPBagSingle(BagMV bag, double[][][] dfts) {
+        BitWord[] lastWord = new BitWordInt[dfts.length];
+        BitWord[][] words = new BitWordInt[dfts[0].length][];
 
         int wInd = 0;
         int trivialMatchCount = 0;
 
-        for (double[] d : dfts) {
-            BitWord word = createWord(d, dimension);
+        for (int i = 0; i < dfts[0].length; i++) {
+            BitWord[] word = new BitWordInt[dfts.length];
+            for (int n = 0; n < dfts.length; n++) {
+                word[n] = new BitWordInt(createWord(dfts[n][i], n));
+            }
             words[wInd] = word;
 
             if (useBigrams) {
                 if (wInd - windowSize >= 0) {
-                    BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
+                    BitWord[] bigram = new BitWordLong[dfts.length];
+                    for (int n = 0; n < dfts.length; n++) {
+                        bigram[n] = new BitWordLong(words[wInd - windowSize][n], word[n]);
+                    }
 
-                    Word key = new Word(bigram, (byte) -1, dimension);
+                    Word key = new Word(bigram, (byte) -1);
                     bag.merge(key, 1, Integer::sum);
                 }
             }
 
             //add to bag, unless num reduction applies
-            if (numerosityReduction && word.equals(lastWord)) {
+            if (numerosityReduction && Arrays.equals(word, lastWord)) {
                 ++trivialMatchCount;
                 ++wInd;
-            }
-            else {
+            } else {
                 //if a run of equivalent words, those words essentially representing the same
                 //elongated pattern. still apply numerosity reduction, however use the central
                 //time position of the elongated pattern to represent its position
-                addWordToPyramid(word, wInd - (trivialMatchCount/2), bag, dimension);
+                addWordToPyramid(word, wInd - (trivialMatchCount / 2), bag);
 
                 lastWord = word;
                 trivialMatchCount = 0;
@@ -261,79 +198,55 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    private SPBagMV BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
-        SPBagMV bag = new SPBagMV(inst.getLabelIndex());
+    private BagMV BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
+        BagMV bag = new BagMV(inst.getLabelIndex());
 
         double[][] split = inst.toValueArray();
 
-        for (int d = 0; d < inst.getNumDimensions(); d++) {
-            double[][] mfts = performMFT(split[d]); //approximation
-            addToSPBagSingle(bag, mfts, d); //discretisation/bagging
+        double[][][] mfts = new double[inst.getNumDimensions()][][];
+        for (int d = 0; d < mfts.length; d++) {
+            mfts[d] = performMFT(split[d]); //approximation
         }
+        addToSPBagSingle(bag, mfts); //discretisation/bagging
         applyPyramidWeights(bag);
 
         return bag;
     }
 
     /**
-     * Shortens all bags in this BOSSSpatialPyramids_Redo instance (histograms) to the newWordLength, if wordlengths
-     * are same, instance is UNCHANGED
-     *
-     * @param newWordLength wordLength to shorten it to
-     * @return new boss classifier with newWordLength, or passed in classifier if wordlengths are same
-     */
-    @Override
-    public MultivariateIndividualTDE buildShortenedSPBags(int newWordLength) throws Exception {
-        if (newWordLength == wordLength) //case of first iteration of word length search in ensemble
-            return this;
-        if (newWordLength > wordLength)
-            throw new Exception("Cannot incrementally INCREASE word length, current:"+wordLength+", requested:"
-                    +newWordLength);
-        if (newWordLength < 2)
-            throw new Exception("Invalid wordlength requested, current:"+wordLength+", requested:"+newWordLength);
-
-        MultivariateIndividualTDE newBoss = new MultivariateIndividualTDE(this, newWordLength);
-
-        //build hists with new word length from SFA words, and copy over the class values of original insts
-        for (int i = 0; i < bags.size(); ++i) {
-            SPBagMV newSPBag = new SPBagMV(bags.get(i).classVal);
-            for (int d = 0; d < SFAwords.length; d++) {
-                addWordsToSPBag(newSPBag, newWordLength, SFAwords[d][i], d);
-            }
-            applyPyramidWeights(newSPBag);
-            newBoss.bags.add(newSPBag);
-        }
-
-        return newBoss;
-    }
-
-    /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    private void addWordsToSPBag(SPBagMV bag, int thisWordLength, BitWord[] words, int dimension) {
-        BitWord lastWord = new BitWordInt();
-        BitWord[] newWords = new BitWord[words.length];
+    private void addWordsToSPBag(BagMV bag, int thisWordLength, BitWord[][] words) {
+        BitWord[] lastWord = new BitWordInt[words.length];
+        BitWord[][] newWords = new BitWord[words[0].length][];
 
         int wInd = 0;
         int trivialMatchCount = 0; //keeps track of how many words have been the same so far
 
-        for (BitWord w : words) {
-            BitWord word = new BitWordInt(w);
-            if (wordLength != thisWordLength)
-                word.shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
+        for (int i = 0; i < words[0].length; i++) {
+            BitWord[] word = new BitWordInt[words.length];
+            for (int n = 0; n < words.length; n++){
+                word[n] = new BitWordInt(words[n][i]);
+
+                if (wordLength != thisWordLength)
+                    word[n].shorten(16-thisWordLength); //max word length, no classifier currently uses past 16.
+            }
             newWords[wInd] = word;
 
             if (useBigrams) {
                 if (wInd - windowSize >= 0) {
-                    BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
+                    BitWord[] bigram = new BitWordLong[words.length];
+                    for (int n = 0; n < words.length; n++){
+                        bigram[n] = new BitWordLong(newWords[wInd - windowSize][n], word[n]);
+                    }
 
-                    Word key = new Word(bigram, (byte) -1, dimension);
+                    Word key = new Word(bigram, (byte) -1);
                     bag.merge(key, 1, Integer::sum);
                 }
             }
 
             //add to bag, unless num reduction applies
-            if (numerosityReduction && word.equals(lastWord)) {
+            if (numerosityReduction && Arrays.equals(word, lastWord)) {
                 ++trivialMatchCount;
                 ++wInd;
             }
@@ -341,7 +254,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                 //if a run of equivalent words, those words essentially representing the same
                 //elongated pattern. still apply numerosity reduction, however use the central
                 //time position to represent its position
-                addWordToPyramid(word, wInd - (trivialMatchCount/2), bag, dimension);
+                addWordToPyramid(word, wInd - (trivialMatchCount/2), bag);
 
                 lastWord = word;
                 trivialMatchCount = 0;
@@ -350,27 +263,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    @Override
-    public void changeNumLevels(int newLevels) {
-        //curently, simply remaking bags from words
-        //alternatively: un-weight all bags, add(run through SFAwords again)/remove levels, re-weight all
-
-        if (newLevels == this.levels)
-            return;
-
-        this.levels = newLevels;
-
-        for (int inst = 0; inst < bags.size(); ++inst) {
-            SPBagMV bag = new SPBagMV(bags.get(inst).classVal); //rebuild bag
-            for (int d = 0; d < SFAwords.length; d++) {
-                addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d); //rebuild bag
-            }
-            applyPyramidWeights(bag);
-            bags.set(inst, bag); //overwrite old
-        }
-    }
-
-    private void applyPyramidWeights(SPBagMV bag) {
+    private void applyPyramidWeights(BagMV bag) {
         for (Map.Entry<Word, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().level;
@@ -387,7 +280,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private void addWordToPyramid(BitWord word, int wInd, SPBagMV bag, int dimension) {
+    private void addWordToPyramid(BitWord[] word, int wInd, BagMV bag) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -399,7 +292,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             int pos = wInd + (windowSize/2); //use the middle of the window as its position
             int quadrant = qStart + (pos/quadrantSize);
 
-            Word key = new Word(word, (byte)quadrant, dimension);
+            Word key = new Word(word, (byte)quadrant);
             bag.merge(key, 1, Integer::sum);
 
             qStart += numQuadrants;
@@ -434,36 +327,25 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                                                  //AND test data
         }
 
-        SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
+        SFAwords = new BitWord[data.numInstances()][data.getMaxNumChannels()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
         seriesLength = data.getMaxLength();
 
         if (multiThread){
-            if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
-            if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            ArrayList<Future<SPBagMV>> futures = new ArrayList<>(data.numInstances());
-
-            for (int inst = 0; inst < data.numInstances(); ++inst)
-                futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
-
-            for (Future<SPBagMV> f: futures)
-                bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
-                SPBagMV bag = new SPBagMV(data.get(inst).getLabelIndex());
+                BagMV bag = new BagMV(data.get(inst).getLabelIndex());
                 for (int d = 0; d < data.getMaxNumChannels(); d++) {
-                    SFAwords[d][inst] = createSFAwords(split[inst][d], d);
-                    addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d);
+                    SFAwords[inst][d] = createSFAwords(split[inst][d], d);
                 }
+                addWordsToSPBag(bag, wordLength, SFAwords[inst]);
                 applyPyramidWeights(bag);
                 bags.add(bag);
             }
         }
-
-        if (useFeatureSelection) trainChiSquared();
 
         if (cleanAfterBuild) {
             clean();
@@ -479,7 +361,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSdistance(SPBagMV instA, SPBagMV instB, double bestDist) {
+    public double BOSSdistance(BagMV instA, BagMV instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
@@ -496,7 +378,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         return dist;
     }
 
-    public double histogramIntersection(SPBagMV instA, SPBagMV instB) {
+    public double histogramIntersection(BagMV instA, BagMV instB) {
         //min vals of keys that exist in only one of the bags will always be 0
         //therefore want to only bother looking at counts of words in both bags
         //therefore will simply loop over words in a, skipping those that dont appear in b
@@ -518,15 +400,13 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     @Override
     public double classifyInstance(TimeSeriesInstance instance) throws Exception{
-        SPBagMV testBag = BOSSSpatialPyramidsTransform(instance);
-
-        if (useFeatureSelection) testBag = filterChiSquared(testBag);
+        BagMV testBag = BOSSSpatialPyramidsTransform(instance);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (SPBagMV bag : bags) {
+        for (BagMV bag : bags) {
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bag);
@@ -551,7 +431,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      */
     @Override
     public double classifyInstance(int testIndex) throws Exception{
-        SPBagMV testBag = bags.get(testIndex);
+        BagMV testBag = bags.get(testIndex);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -573,98 +453,6 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
 
         return nn;
-    }
-
-    public class TestNearestNeighbourThread implements Callable<Double>{
-        TimeSeriesInstance inst;
-
-        public TestNearestNeighbourThread(TimeSeriesInstance inst){
-            this.inst = inst;
-        }
-
-        @Override
-        public Double call() {
-            SPBagMV testBag = BOSSSpatialPyramidsTransform(inst);
-
-            if (useFeatureSelection) testBag = filterChiSquared(testBag);
-
-            //1NN distance
-            double bestDist = Double.MAX_VALUE;
-            double nn = 0;
-
-            for (SPBagMV bag : bags) {
-                double dist;
-                if (histogramIntersection)
-                    dist = -histogramIntersection(testBag, bag);
-                else dist = BOSSdistance(testBag, bag, bestDist);
-
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    nn = bag.getClassVal();
-                }
-            }
-
-            return nn;
-        }
-    }
-
-    public class TrainNearestNeighbourThread implements Callable<Double>{
-        int testIndex;
-
-        public TrainNearestNeighbourThread(int testIndex){
-            this.testIndex = testIndex;
-        }
-
-        @Override
-        public Double call() {
-            SPBagMV testBag = bags.get(testIndex);
-
-            //1NN distance
-            double bestDist = Double.MAX_VALUE;
-            double nn = 0;
-
-            for (int i = 0; i < bags.size(); ++i) {
-                if (i == testIndex) //skip 'this' one, leave-one-out
-                    continue;
-
-                double dist;
-                if (histogramIntersection)
-                    dist = -histogramIntersection(testBag, bags.get(i));
-                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
-
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    nn = bags.get(i).getClassVal();
-                }
-            }
-
-            return nn;
-        }
-    }
-
-    private class TransformThread implements Callable<SPBagMV>{
-        int i;
-        TimeSeriesInstance inst;
-
-        public TransformThread(int i, TimeSeriesInstance inst){
-            this.i = i;
-            this.inst = inst;
-        }
-
-        @Override
-        public SPBagMV call() {
-            SPBagMV bag = new SPBagMV(inst.getLabelIndex());
-
-            double[][] split = inst.toValueArray();
-
-            for (int d = 0; d < inst.getNumDimensions(); d++) {
-                SFAwords[d][i] = createSFAwords(split[d], d);
-                addWordsToSPBag(bag, wordLength, SFAwords[d][i], d);
-            }
-            applyPyramidWeights(bag);
-
-            return bag;
-        }
     }
 }
 

@@ -150,7 +150,7 @@ public class ClassifierLists {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble","TDE",
 
             "TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50",
-            "TDE-MV2-BI","TDE-MV2-RA"};
+            "TDE-MV2-BI","TDE-MV2-RA","TDE-MV3","TDE-MV4","TDE-MV3-R70","TDE-MV4-R70"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -230,6 +230,29 @@ public class ClassifierLists {
                 c = new TDE();
                 ((TDE) c).setMaxEnsembleSize(50);
                 ((TDE) c).setDimensionProportion(-1);
+                break;
+
+            case "TDE-MV3":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).mv = 2;
+                break;
+            case "TDE-MV3-R70":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setDimensionProportion(0.7);
+                ((TDE) c).mv = 2;
+                break;
+            case "TDE-MV4":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).mv = 3;
+                break;
+            case "TDE-MV4-R70":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setDimensionProportion(0.7);
+                ((TDE) c).mv = 3;
                 break;
 
             default:

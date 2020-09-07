@@ -88,6 +88,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected int numThreads = 1;
     protected ExecutorService ex;
 
+    public ArrayList<Integer> dimensionSubsample;
+
     private static final long serialVersionUID = 2L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
@@ -829,8 +831,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
     }
 
-    private BitWord[] createSFAwords(TimeSeriesInstance inst) {
-        double[][] dfts = performMFT(inst.toValueArray()[0]); //approximation
+    private BitWord[] createSFAwords(double[] inst) {
+        double[][] dfts = performMFT(inst); //approximation
         BitWord[] words = new BitWord[dfts.length];
         for (int window = 0; window < dfts.length; ++window) {
             words[window] = createWord(dfts[window]);//discretisation
@@ -872,7 +874,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
-                SFAwords[inst] = createSFAwords(data.get(inst));
+                SFAwords[inst] = createSFAwords(data.get(inst).toValueArray()[0]);
                 SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
                 bag.setClassVal(data.get(inst).getLabelIndex());
                 bags.add(bag);
@@ -1094,7 +1096,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         @Override
         public SPBag call() {
-            SFAwords[i] = createSFAwords(inst);
+            SFAwords[i] = createSFAwords(inst.toValueArray()[0]);
 
             SPBag bag = createSPBagFromWords(wordLength, SFAwords[i]);
             try {
