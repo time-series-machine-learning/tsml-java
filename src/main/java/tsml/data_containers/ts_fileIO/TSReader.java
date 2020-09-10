@@ -290,7 +290,7 @@ public class TSReader {
         System.out.println(train_data.toString());
 
 
-        String dataset_multi = "CharacterTrajectories";
+        String dataset_multi = "FaceDetection";
         String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
         File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
         System.out.println(f1);
