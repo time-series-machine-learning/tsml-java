@@ -121,7 +121,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
     private int numIntervals=0;
-    private transient Function<Integer,Integer> numIntervalsFinder = (numAtts) -> (int)(Math.sqrt(numAtts));
+    private transient Function<Integer,Integer> numIntervalsFinder;
     /** Secondary parameter, mainly there to avoid single item intervals, 
      which have no slope or std dev*/
     private int minIntervalLength=3;
@@ -361,7 +361,12 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         else {//else initialise variables
             seriesLength = data.numAttributes() - 1;
-            numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
+            if (numIntervalsFinder == null){
+                numIntervals = (int)Math.sqrt(seriesLength);
+            }
+            else {
+                numIntervals = numIntervalsFinder.apply(data.numAttributes() - 1);
+            }
             printDebug("Building TSF: number of intervals = " + numIntervals+" number of trees ="+numClassifiers+"\n");
             trees = new ArrayList(numClassifiers);
             // Set up for train estimates

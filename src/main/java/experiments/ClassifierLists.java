@@ -94,7 +94,7 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","FastElasticEnsemble",
+        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","PF","FastElasticEnsemble",
             "DD_DTW","DTD_C","CID_DTW","NN_CID",
         "PF_R1",
         "PF_R5",
@@ -166,7 +166,7 @@ public class ClassifierLists {
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;
-            case "ProximityForest":
+            case "ProximityForest": case "PF":
                 c = new ProximityForestWrapper();
                 break;
             case "FastElasticEnsemble":
