@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 import machine_learning.classifiers.kNN;
 import tsml.classifiers.multivariate.ConcatenateClassifier;
-import tsml.classifiers.multivariate.DimensionIndependentEnsemble;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
@@ -103,7 +102,8 @@ public class GraphsExample {
             new Pipeline.TransformerLayer("Cosine1", new Cosine())
         );
 
-        model.add("kNN", new DimensionIndependentEnsemble(new kNN()));
+        //TODO: fix for MultivariateSingleEnsemble
+        //model.add("kNN", new MultivariateSingleEnsemble(new kNN()));
 
         model.buildClassifier(data1);
         double[][] preds = model.distributionForInstances(data2);
@@ -300,7 +300,8 @@ public class GraphsExample {
         //if you're going to split and merge. 
         //unless you want to stack. don't put a classifier on the end of the pipelines.
         model.split("split", model0, model1);
-        model.add("kNN", new DimensionIndependentEnsemble(new kNN()));
+        //TODO: fix for MultivariateSingleEnsemble
+        //model.add("kNN", new MultivariateSingleEnsemble(new kNN()));
 
         model.buildClassifier(data1);
         double[][] preds = model.distributionForInstances(data2);
@@ -372,7 +373,8 @@ public class GraphsExample {
         //this will perform Pipeline one on dims 0 and 1
         //this will perform Pipeline two on dim 2
         model.split("split", new int[][]{{0,1},{2}}, model0, model1);
-        model.add("kNN", new DimensionIndependentEnsemble(new kNN()));
+        //TODO: fix for MultivariateSingleEnsemble
+        //model.add("kNN", new MultivariateSingleEnsemble(new kNN()));
 
         model.buildClassifier(data1);
         double[][] preds = model.distributionForInstances(data2);
