@@ -2,6 +2,7 @@ package tsml.transformers;
 
 import java.util.Arrays;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -12,11 +13,23 @@ public class Convolution implements Transformer {
         FILL, SYMM
     };
 
-    double[] kernel1D;
-    double[][] kernel2D;
+    double[] kernel1D = null;
+    double[][] kernel2D = null;
 
     ConvolutionType convType = ConvolutionType.FILL;
     double padValue = 0;
+
+    public Convolution(int kernelSize1D, double constantValue){
+        kernel1D = new double[kernelSize1D];
+        Arrays.fill(kernel1D, constantValue);
+    }
+
+    public Convolution(int kernelSize2DX, int kernelSize2DY, double constantValue){
+        kernel2D = new double[kernelSize2DX][kernelSize2DY];
+        for(int i=0; i<kernel2D.length; i++)
+            Arrays.fill(kernel2D[i], constantValue);
+    }
+
 
     public Convolution(double[][] kernel) {
         kernel2D = kernel;
@@ -26,6 +39,17 @@ public class Convolution implements Transformer {
         kernel1D = kernel;
     }
 
+    public void setPad(double pad){
+        convType = ConvolutionType.FILL;
+        padValue = pad;
+    }
+
+    public void setSymm(){
+        convType = ConvolutionType.SYMM;
+    }
+
+
+    //TODO: WEKA Version. Bleh
     @Override
     public Instances determineOutputFormat(Instances data) throws IllegalArgumentException {
         // TODO Auto-generated method stub
@@ -40,8 +64,19 @@ public class Convolution implements Transformer {
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
+        double[][] out;
+        if(kernel1D != null){
+            out = new double[inst.getNumDimensions()][];
+            int i = 0;
+            for (TimeSeries ts : inst) {
+                out[i++] = convolution1D(ts.toArray());
+            }
+        }
+        else{
+            out = convolution2D(inst.toValueArray());
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     public double[] convolution1D(double[] data) {
@@ -135,6 +170,14 @@ public class Convolution implements Transformer {
 
         double[][] out = convolution2D(data, kernel, ConvolutionType.FILL, 1);
         System.out.println(Arrays.deepToString(out));
+
+
+        TimeSeriesInstance ts = new TimeSeriesInstance(data);
+        Convolution conv = new Convolution(3, 3, 1.0/9.0);
+        conv.setPad(1);
+        TimeSeriesInstance out_ts = conv.transform(ts);
+        System.out.println(out_ts);
+
     }
 
 }
