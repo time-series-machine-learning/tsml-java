@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Instance;
 import weka.core.Instances;
 
