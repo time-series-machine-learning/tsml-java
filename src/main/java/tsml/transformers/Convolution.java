@@ -80,16 +80,36 @@ public class Convolution implements Transformer {
     }
 
     public double[] convolution1D(double[] data) {
-        return convolution1D(data, this.kernel1D);
+        return convolution1D(data, this.kernel1D, convType, padValue);
     }
 
-    public static double[] convolution1D(double[] data, double[] kernel1D) {
-
-        double[] out = new double[kernel1D.length];
+    public static double[] convolution1D(double[] data, double[] kernel1D, ConvolutionType convType, double padValue) {
+        int kCenter = kernel1D.length / 2;
+        double[] out = new double[data.length];
         for (int i = 0; i < data.length; i++) {
-            out[i] = 0; // set to zero before sum
             for (int j = 0; j < kernel1D.length; j++) {
-                out[i] += data[i - j] * kernel1D[j]; // convolve: multiply and accumulate
+                int mm = kernel1D.length - 1 - j; // row index of flipped kernel
+                int ii = i + (kCenter - mm);
+
+                boolean iPad = ii >= 0 && ii < data.length;
+                // ignore input samples which are out of bound
+                if (iPad)
+                    out[i] += data[ii] * kernel1D[mm];
+                else {
+                    if (convType == ConvolutionType.SYMM) {
+
+                        // symmetrical flip the values.
+                        if (!iPad)
+                            ii = i - (kCenter - mm);
+
+                        out[i] += data[ii] * kernel1D[mm];
+                    }
+                    // else always just do a pad
+                    else {
+                        out[i] += padValue * kernel1D[mm];
+                    }
+                }
+
             }
         }
 
@@ -151,7 +171,6 @@ public class Convolution implements Transformer {
     }
 
     public static void main(String[] args) {
-
         // 3x3 averaging kernel
         double[][] kernel = { { 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0 }, { 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0 },
                 { 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0 } };
@@ -177,6 +196,16 @@ public class Convolution implements Transformer {
         conv.setPad(1);
         TimeSeriesInstance out_ts = conv.transform(ts);
         System.out.println(out_ts);
+
+        double[][] data1 = { { 0.0, 1.0, 2.0, 4.0, 5.0, 5.0, 4.0, 3.0, 2.0, 1.0 } };
+        ts = new TimeSeriesInstance(data1);
+        conv = new Convolution(3, 1.0/3.0);
+        //conv.setPad(1);
+        conv.setSymm();
+        out_ts = conv.transform(ts);
+        System.out.println(out_ts);
+
+
 
     }
 
