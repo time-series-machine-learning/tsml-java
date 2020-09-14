@@ -59,7 +59,7 @@ public class Convolution implements Transformer {
 
     @Override
     public Instance transform(Instance inst) {
-        return transform(Converter.fromArff(data));
+        return Converter.toArff(transform(Converter.fromArff(inst)));
     }
 
     @Override
