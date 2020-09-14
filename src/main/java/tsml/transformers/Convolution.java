@@ -58,8 +58,7 @@ public class Convolution implements Transformer {
 
     @Override
     public Instance transform(Instance inst) {
-        // TODO Auto-generated method stub
-        return null;
+        return transform(Converter.fromArff(data));
     }
 
     @Override
