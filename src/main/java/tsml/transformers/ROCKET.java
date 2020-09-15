@@ -55,13 +55,10 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
         int inputlength = data.getMinLength();
 
-        // TODO Auto-generated method stub
-
         Random random = new Random(this.seed);
         //generate random kernel lengths between 7,9 or 11, for numKernels.
-        //lengths =  random.choice(candidateLengths, numKernels);
+        lengths =  sampleLengths(random, candidateLengths, numKernels);
 
-        
         //generate init values
         //weights - this should be the size of all the lengths summed
         weights= new double[Arrays.stream(lengths).sum()];
@@ -90,8 +87,6 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
             paddings[i] = random.nextInt(2) == 1 ? Math.floorDiv((lengths[i] - 1) * (int)dilations[i], 2) : 0;
 
-
-
             a1 = b1;
         }
 
@@ -109,6 +104,15 @@ public class ROCKET implements TrainableTransformer, Randomizable {
             out[i] = rand.nextGaussian();
         return out;
     }
+
+    int[] sampleLengths(Random random, int[] samples, int size){
+        int[] out = new int[size];
+        for(int i=0; i< size; ++i){
+            out[i] = samples[random.nextInt(samples.length)];
+        }
+        return out;
+    }
+
 
     @Override
     public void setSeed(int seed) {
