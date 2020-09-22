@@ -150,7 +150,8 @@ public class ClassifierLists {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble","TDE",
 
             "TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50",
-            "TDE-MV2-BI","TDE-MV2-RA","TDE-MV3","TDE-MV4","TDE-MV3-R70","TDE-MV4-R70"};
+            "TDE-MV2-BI","TDE-MV2-RA","TDE-MV3","TDE-MV4","TDE-MV3-R70","TDE-MV4-R70","TDE-MV2-RABI","TDE-MV4-RABI",
+            "TDE-MVDP80","TDE-MVDP70","TDE-MVDP60","TDE-MVDP85","TDE-MVDP90","TDE-MVDP285","TDE-MVDP8510","TDE-MVDP8520"};
 
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
@@ -253,6 +254,83 @@ public class ClassifierLists {
                 ((TDE) c).setMaxEnsembleSize(50);
                 ((TDE) c).setDimensionProportion(0.7);
                 ((TDE) c).mv = 3;
+                break;
+
+            case "TDE-MV2-RABI":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setDimensionProportion(-1);
+                break;
+            case "TDE-MV4-RABI":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setDimensionProportion(-1);
+                ((TDE) c).mv = 3;
+                break;
+
+
+            case "TDE-MVDP80":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.8);
+                ((TDE) c).dimensionPrune = true;
+                break;
+            case "TDE-MVDP70":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.7);
+                ((TDE) c).dimensionPrune = true;
+                break;
+            case "TDE-MVDP60":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.6);
+                ((TDE) c).dimensionPrune = true;
+                break;
+            case "TDE-MVDP85":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.85);
+                ((TDE) c).dimensionPrune = true;
+                break;
+            case "TDE-MVDP90":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.9);
+                ((TDE) c).dimensionPrune = true;
+                break;
+
+            case "TDE-MVDP285":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.85);
+                ((TDE) c).dimensionPrune = true;
+                ((TDE) c).dpMaxSize = -100;
+                break;
+
+            case "TDE-MVDP8520":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.85);
+                ((TDE) c).dimensionPrune = true;
+                ((TDE) c).dpMaxSize = 20;
+                break;
+            case "TDE-MVDP8510":
+                c = new TDE();
+                ((TDE) c).setUseBigrams(false);
+                ((TDE) c).setMaxEnsembleSize(50);
+                ((TDE) c).setCutoffThreshold(0.85);
+                ((TDE) c).dimensionPrune = true;
+                ((TDE) c).dpMaxSize = 10;
                 break;
 
             default:
@@ -525,7 +603,8 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HC-V2NoRise","HIVE-COTEV2","HIVE-COTE2","HC-TDE2","HC-WEASEL2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE"};
+    public static String[] bespoke= {"HC-V2Rocket","HC-V2RocketNoRISE","HC-V2NoCIF-RISE","HC-V2NoRISE","HC-V2NoSTC","HC-V2NoPF","HC-V2NoTDE","HC-V2NoCIF","HIVE-COTEV2",
+            "HIVE-COTE2","HC-TDE2","HC-WEASEL2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -539,9 +618,107 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
-            case "HC-V2NoRise":
+            case "HC-V2RocketNoRISE":
                 if(canLoadFromFile){
-                    String[] cls={"CIF","TED","STC","PF"};//RotF for ST
+                    String[] cls={"TDE","STC","PF","CIF","ROCKET"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2Rocket":
+                if(canLoadFromFile){
+                    String[] cls={"TDE","STC","PF","CIF","RISE","ROCKET"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoCIF-RISE":
+                if(canLoadFromFile){
+                    String[] cls={"TDE","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoTDE":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","RISE","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoCIF":
+                if(canLoadFromFile){
+                    String[] cls={"RISE","TDE","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoPF":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","TDE","STC","RISE"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoSTC":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","TDE","RISE","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-V2NoRISE":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","TDE","STC","PF"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
@@ -555,7 +732,7 @@ public class ClassifierLists {
                 break;
             case "HIVE-COTEV2":
                 if(canLoadFromFile){
-                    String[] cls={"CIF","TED","RISE","STC","PF"};//RotF for ST
+                    String[] cls={"CIF","TDE","RISE","STC","PF"}; //RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);

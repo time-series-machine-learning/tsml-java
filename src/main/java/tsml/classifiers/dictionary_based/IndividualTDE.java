@@ -30,7 +30,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.UnassignedClassException;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -54,7 +53,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     private BitWord[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
-    private ArrayList<SPBag> bags;
+    private ArrayList<Bag> bags;
 
     //breakpoints to be found by MCB or IGB
     private double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
@@ -170,14 +169,14 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     //map of <word, level> => count
-    public static class SPBag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
+    public static class Bag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
         private int classVal;
 
-        public SPBag() {
+        public Bag() {
             super();
         }
 
-        public SPBag(int classValue) {
+        public Bag(int classValue) {
             super();
             classVal = classValue;
         }
@@ -192,7 +191,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     public boolean getNorm() { return norm; }
     public int getLevels() { return levels; }
     public boolean getIGB() { return IGB; }
-    public ArrayList<SPBag> getBags() { return bags; }
+    public ArrayList<Bag> getBags() { return bags; }
     public int getEnsembleID() { return ensembleID; }
     public double getAccuracy() { return accuracy; }
     public double getWeight() { return weight; }
@@ -430,7 +429,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return breakpoints;
     }
 
-    //IGB code by Patrick Schaefer from the WEASEL class
+    //IGB code by Patrick Schafer from the WEASEL class
     protected double[][] IGB(double[][][] data, int d, int[] labels) {
         ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
         for (int i = 0; i < orderline.length; i++) {
@@ -564,7 +563,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
                 = new DoubleObjectHashMap<>(bags.get(0).size());
 
         // count number of samples with this word
-        for (SPBag bag : bags) {
+        for (Bag bag : bags) {
             if (!observed.containsKey(bag.classVal)) {
                 observed.put(bag.classVal, new ObjectIntHashMap<>());
             }
@@ -596,7 +595,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         // best elements above limit
-        for (SPBag bag : bags) {
+        for (Bag bag : bags) {
             for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
                 if (!chiSquare.contains(cursor.getKey())) {
                     bag.remove(cursor.getKey());
@@ -605,8 +604,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
     }
 
-    private SPBag filterChiSquared(SPBag bag) {
-        SPBag newBag = new SPBag(bag.classVal);
+    private Bag filterChiSquared(Bag bag) {
+        Bag newBag = new Bag(bag.classVal);
         for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
             if (chiSquare.contains(cursor.getKey())) {
                 newBag.put(cursor.getKey(), cursor.getValue());
@@ -621,8 +620,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
      *
      * to be used e.g to transform new test instances
      */
-    private SPBag createSPBagSingle(double[][] dfts) {
-        SPBag bag = new SPBag();
+    private Bag createSPBagSingle(double[][] dfts) {
+        Bag bag = new Bag();
         BitWord lastWord = new BitWordInt();
         BitWord[] words = new BitWord[dfts.length];
 
@@ -696,9 +695,9 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    private SPBag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
+    private Bag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
         double[][] mfts = performMFT(inst.toValueArray()[0]); //approximation
-        SPBag bag = createSPBagSingle(mfts); //discretisation/bagging
+        Bag bag = createSPBagSingle(mfts); //discretisation/bagging
         bag.setClassVal(inst.getLabelIndex());
         return bag;
     }
@@ -723,7 +722,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         //build hists with new word length from SFA words, and copy over the class values of original insts
         for (int i = 0; i < bags.size(); ++i) {
-            SPBag newSPBag = createSPBagFromWords(newWordLength, SFAwords[i]);
+            Bag newSPBag = createSPBagFromWords(newWordLength, SFAwords[i]);
             newSPBag.setClassVal(bags.get(i).classVal);
             newBoss.bags.add(newSPBag);
         }
@@ -734,8 +733,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    private SPBag createSPBagFromWords(int thisWordLength, BitWord[] words) {
-        SPBag bag = new SPBag();
+    private Bag createSPBagFromWords(int thisWordLength, BitWord[] words) {
+        Bag bag = new Bag();
         BitWord lastWord = new BitWordInt();
         BitWord[] newWords = new BitWord[words.length];
 
@@ -789,13 +788,13 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         this.levels = newLevels;
 
         for (int inst = 0; inst < bags.size(); ++inst) {
-            SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]); //rebuild bag
+            Bag bag = createSPBagFromWords(wordLength, SFAwords[inst]); //rebuild bag
             bag.setClassVal(bags.get(inst).classVal);
             bags.set(inst, bag); //overwrite old
         }
     }
 
-    private void applyPyramidWeights(SPBag bag) {
+    protected void applyPyramidWeights(Bag bag) {
         for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().var2;
@@ -812,7 +811,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
     }
 
-    private void addWordToPyramid(BitWord word, int wInd, SPBag bag) {
+    private void addWordToPyramid(BitWord word, int wInd, Bag bag) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -864,18 +863,18 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            ArrayList<Future<SPBag>> futures = new ArrayList<>(data.numInstances());
+            ArrayList<Future<Bag>> futures = new ArrayList<>(data.numInstances());
 
             for (int inst = 0; inst < data.numInstances(); ++inst)
                 futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
 
-            for (Future<SPBag> f: futures)
+            for (Future<Bag> f: futures)
                 bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
                 SFAwords[inst] = createSFAwords(data.get(inst).toValueArray()[0]);
-                SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
+                Bag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
                 bag.setClassVal(data.get(inst).getLabelIndex());
                 bags.add(bag);
             }
@@ -905,7 +904,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSdistance(SPBag instA, SPBag instB, double bestDist) {
+    public double BOSSdistance(Bag instA, Bag instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
@@ -922,7 +921,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return dist;
     }
 
-    public double histogramIntersection(SPBag instA, SPBag instB) {
+    public double histogramIntersection(Bag instA, Bag instB) {
         //min vals of keys that exist in only one of the bags will always be 0
         //therefore want to only bother looking at counts of words in both bags
         //therefore will simply loop over words in a, skipping those that dont appear in b
@@ -944,7 +943,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
     @Override
     public double classifyInstance(TimeSeriesInstance instance) throws Exception{
-        SPBag testBag = BOSSSpatialPyramidsTransform(instance);
+        Bag testBag = BOSSSpatialPyramidsTransform(instance);
 
         if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
@@ -952,7 +951,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (SPBag bag : bags) {
+        for (Bag bag : bags) {
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bag);
@@ -994,7 +993,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        SPBag testBag = bags.get(testIndex);
+        Bag testBag = bags.get(testIndex);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -1027,7 +1026,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         @Override
         public Double call() {
-            SPBag testBag = BOSSSpatialPyramidsTransform(inst);
+            Bag testBag = BOSSSpatialPyramidsTransform(inst);
 
             if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
@@ -1035,7 +1034,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
-            for (SPBag bag : bags) {
+            for (Bag bag : bags) {
                 double dist;
                 if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bag);
@@ -1060,7 +1059,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         @Override
         public Double call() {
-            SPBag testBag = bags.get(testIndex);
+            Bag testBag = bags.get(testIndex);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
@@ -1085,7 +1084,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
     }
 
-    private class TransformThread implements Callable<SPBag>{
+    private class TransformThread implements Callable<Bag>{
         int i;
         TimeSeriesInstance inst;
 
@@ -1095,10 +1094,10 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         @Override
-        public SPBag call() {
+        public Bag call() {
             SFAwords[i] = createSFAwords(inst.toValueArray()[0]);
 
-            SPBag bag = createSPBagFromWords(wordLength, SFAwords[i]);
+            Bag bag = createSPBagFromWords(wordLength, SFAwords[i]);
             try {
                 bag.setClassVal(inst.getLabelIndex());
             }

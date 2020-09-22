@@ -73,7 +73,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
 
     public int mv = 1;
-
+    public boolean dimensionPrune = false;
+    public int dpMaxSize = -1;
 
 
     private int parametersConsidered = 250;
@@ -322,6 +323,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
 
+        if (dpMaxSize == -100){
+            if (data.getMaxNumChannels() <= 10){
+                dpMaxSize = -1;
+            }
+            else {
+                dpMaxSize = (int)(10 + (data.getMaxNumChannels() - 10) / 2.0);
+            }
+        }
+
         int winLen = data.getMaxLength();
         if (data.isMultivariate() && mv == 3){
             winLen = data.getMaxLength() * (int)(data.getMaxNumChannels() * dimensionProportion);
@@ -439,6 +449,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 indiv = new MultivariateIndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
+                ((MultivariateIndividualTDE)indiv).dimensionPrune = dimensionPrune;
+                ((MultivariateIndividualTDE)indiv).cutoffThreshold = cutoffThreshold;
+                ((MultivariateIndividualTDE)indiv).maxSize = dpMaxSize;
                 data = trainProportion < 1 && trainProportion > 0 ? subsampleData(series, indiv) : series;
                 data = dimensionProportion < 1 && dimensionProportion > 0 ? subsampleDimensions(data, indiv) : data;
             }
@@ -1329,8 +1342,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         c = new TDE();
         c.setSeed(fold);
-        c.mv = 1;
-        c.useFeatureSelection = true;
+        ((TDE) c).setUseBigrams(false);
+        ((TDE) c).setMaxEnsembleSize(50);
+        ((TDE) c).setCutoffThreshold(0.85);
+        ((TDE) c).dimensionPrune = true;
+        ((TDE) c).dpMaxSize = -100;
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train2);
         accuracy = ClassifierTools.accuracy(test2, c);
