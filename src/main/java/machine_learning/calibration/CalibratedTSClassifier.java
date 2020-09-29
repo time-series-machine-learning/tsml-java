@@ -17,8 +17,16 @@ import weka.core.Instances;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Wrapper class to generically add calibration onto any classifier.
+ *
+ * Given a classifier and a calibration method (default Dirichlet), will build the classifier and gather train
+ * estimates (either via internal mechanisms from the classifier or through an external 3 fold cv), and build the calibrator
+ * on these estimates. Predictions of the classifier at test time are then calibrated by the trained calibrator
+ */
 public class CalibratedTSClassifier extends EnhancedAbstractClassifier {
 
+    //todo review classifier vs TSClassifier vs EnhancedAbstractClassifier reference decisions
     Classifier classifier;
     Calibrator calibrator;
 
@@ -82,6 +90,8 @@ public class CalibratedTSClassifier extends EnhancedAbstractClassifier {
     }
 
     private void buildCalibratorTrainResults(TimeSeriesInstances trainData, double[][] calibratedProbs, long calibbuildtime, long calibtime) {
+
+        //this is in fact the train results object made via EnhancedAbstractClassifier
         trainResults = new ClassifierResults();
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(classifierTrainResults.getClassifierName() + "_" + calibrator.getClass().getSimpleName());
