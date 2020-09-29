@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class CalibratedTSClassifier extends EnhancedAbstractClassifier {
 
-    //todo review classifier vs TSClassifier vs EnhancedAbstractClassifier reference decisions
+    //todo review Classifier vs TSClassifier vs EnhancedAbstractClassifier reference decisions
     Classifier classifier;
     Calibrator calibrator;
 
@@ -72,7 +72,9 @@ public class CalibratedTSClassifier extends EnhancedAbstractClassifier {
         double[][] calibratedProbs = calibrator.calibrateInstances(classifierTrainResults);
         long calibinsttime = (long)((System.nanoTime() - startTime) / (double)trainData.numInstances());
 
-        buildCalibratorTrainResults(trainData, calibratedProbs, calibbuildtime, calibinsttime);
+        //this is in fact the train results object made via EnhancedAbstractClassifier
+        trainResults = buildCalibratorTrainResults(classifierTrainResults, calibrator.getClass().getSimpleName(),
+                calibratedProbs, calibbuildtime, calibinsttime);
     }
 
     @Override
@@ -89,25 +91,27 @@ public class CalibratedTSClassifier extends EnhancedAbstractClassifier {
         return calibratedProbs;
     }
 
-    private void buildCalibratorTrainResults(TimeSeriesInstances trainData, double[][] calibratedProbs, long calibbuildtime, long calibtime) {
+    protected static ClassifierResults buildCalibratorTrainResults(ClassifierResults classifierTrainResults,
+                                                                   String calibratorName, double[][] calibratedProbs, long calibbuildtime, long calibtime) {
 
-        //this is in fact the train results object made via EnhancedAbstractClassifier
-        trainResults = new ClassifierResults();
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(classifierTrainResults.getClassifierName() + "_" + calibrator.getClass().getSimpleName());
-        trainResults.setDatasetName(classifierTrainResults.getDatasetName());
-        trainResults.setFoldID(classifierTrainResults.getFoldID());
-        trainResults.setBuildTime(calibbuildtime);
+        ClassifierResults calibratorResults = new ClassifierResults();
+        calibratorResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        calibratorResults.setClassifierName(classifierTrainResults.getClassifierName() + "_" + calibratorName);
+        calibratorResults.setDatasetName(classifierTrainResults.getDatasetName());
+        calibratorResults.setFoldID(classifierTrainResults.getFoldID());
+        calibratorResults.setBuildTime(calibbuildtime);
 
-        for (int i = 0; i < trainData.numInstances(); i++) {
-            double trueval = trainData.get(i).getLabelIndex();
+        for (int i = 0; i < classifierTrainResults.numInstances(); i++) {
+            double trueval = classifierTrainResults.getTrueClassValue(i);
             double predval = EnhancedAbstractClassifier.findIndexOfMax(calibratedProbs[i], i);
             double[] dist = calibratedProbs[i];
             long predtime = classifierTrainResults.getPredictionTime(i) + calibtime;
             String desc = classifierTrainResults.getPredDescription(i);
 
-            trainResults.addPrediction(trueval, dist, predval, predtime, desc);
+            calibratorResults.addPrediction(trueval, dist, predval, predtime, desc);
         }
+
+        return calibratorResults;
     }
 
 

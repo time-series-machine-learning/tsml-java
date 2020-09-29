@@ -18,27 +18,7 @@ public interface Calibrator {
      * @param classifierResults Probability distributions and true class values shall be extracted from the ClassifierResults
      */
     default public void buildCalibrator(ClassifierResults classifierResults) throws Exception {
-        double[][] classifierProbs = classifierResults.getProbabilityDistributionsAsArray();
-        double[] classVals = classifierResults.getTrueClassValsAsArray();
-
-        double[][][] tsdata = new double[classifierProbs.length][][];
-        int[] labelIndices = new int[classifierProbs.length];
-
-        for (int i = 0; i < classifierProbs.length; i++) {
-            tsdata[i] = new double[][] { classifierProbs[i] };
-            labelIndices[i] = (int)classVals[i];
-        }
-
-        TimeSeriesInstances ts = new TimeSeriesInstances(tsdata, labelIndices);
-
-        //build dummy string class labels, needed later in transforms. indices not enough
-        String[] t = new String[classifierResults.numClasses()];
-        for (int i = 0; i < classifierResults.numClasses(); i++) {
-            t[i] = String.valueOf(i);
-        }
-        ts.setClassLabels(t);
-
-        buildCalibrator(ts);
+        buildCalibrator(buildTsInstDistributions(classifierResults));
     }
 
 
@@ -74,6 +54,30 @@ public interface Calibrator {
             calibratedProbs[i] = calibrateInstance(classifierProbs.getProbabilityDistribution(i));
 
         return calibratedProbs;
+    }
+
+    public static TimeSeriesInstances buildTsInstDistributions(ClassifierResults classifierResults) {
+        double[][] classifierProbs = classifierResults.getProbabilityDistributionsAsArray();
+        double[] classVals = classifierResults.getTrueClassValsAsArray();
+
+        double[][][] tsdata = new double[classifierProbs.length][][];
+        int[] labelIndices = new int[classifierProbs.length];
+
+        for (int i = 0; i < classifierProbs.length; i++) {
+            tsdata[i] = new double[][] { classifierProbs[i] };
+            labelIndices[i] = (int)classVals[i];
+        }
+
+        TimeSeriesInstances ts = new TimeSeriesInstances(tsdata, labelIndices);
+
+        //build dummy string class labels, needed later in transforms. indices not enough
+        String[] t = new String[classifierResults.numClasses()];
+        for (int i = 0; i < classifierResults.numClasses(); i++) {
+            t[i] = String.valueOf(i);
+        }
+        ts.setClassLabels(t);
+
+        return ts;
     }
 
 }
