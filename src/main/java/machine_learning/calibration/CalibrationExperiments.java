@@ -1,9 +1,13 @@
 package machine_learning.calibration;
 
+import evaluation.MultipleClassifierEvaluation;
 import evaluation.storage.ClassifierResults;
 import evaluation.storage.ClassifierResultsCollection;
 import experiments.Experiments;
 import experiments.data.DatasetLists;
+import tsml.classifiers.hybrids.HIVE_COTE;
+import utilities.FileHandlingTools;
+import weka.classifiers.Classifier;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -53,7 +57,7 @@ public class CalibrationExperiments {
 
                     ClassifierResults[] traintest = calibrateResults(res[0][cid][did][fid], res[1][cid][did][fid]);
 
-                    String classifierName = col.getClassifierNamesInOutput()[cid];
+                    String classifierName = col.getClassifierNamesInOutput()[cid] + "_calib";
                     String dsetName = col.getDatasetNamesInOutput()[did];
                     String fold = ""+col.getFolds()[fid];
 
@@ -71,21 +75,28 @@ public class CalibrationExperiments {
 
     public static void main(String[] args) throws Exception {
 
-        String[] classifiers = new String[] { "SVML", "C45" };
-        String[] datasets = Arrays.copyOfRange(DatasetLists.tscProblems112, 0, 3);
-        int numFolds = 3;
+//        String[] classifiers = new String[] { "SVML", "C45" };
+//        String[] datasets = Arrays.copyOfRange(DatasetLists.smallTSCProblems, 0, 3);
+//        int numFolds = 3;
+
+//        String[] classifiers = {"TSF","RISE","STC","cBOSS"};
 //        String[] datasets = DatasetLists.tscProblems112;
 //        int numFolds = 30;
+
+        String[] classifiers = {"HIVE-COTE1.0", "HIVE-COTE1.0_innercalib"};
+        String[] datasets = DatasetLists.tscProblems112;
+        int numFolds = 30;
 
         String dataPath = "E:\\MyDocumentsE\\DATA\\Univariate_arff\\";
         String clsResPath = "E:\\MyDocumentsE\\RESULTS\\Calibration\\BaseResults\\";
         String calibResPath = "E:\\MyDocumentsE\\RESULTS\\Calibration\\CalibResults\\";
+        String anaPath = "E:\\MyDocumentsE\\ANALYSIS\\Calibration\\";
 
 
 
 
 
-
+        //uncalib results gen
         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
         exp.dataReadLocation = dataPath;
         exp.resultsWriteLocation = clsResPath;
@@ -97,19 +108,38 @@ public class CalibrationExperiments {
 
 
 
+        //calib results gen
+//        ClassifierResultsCollection col = new ClassifierResultsCollection();
+//        col.setCleanResults(false);
+//
+//        col.addClassifiers(classifiers, clsResPath);
+//        col.setDatasets(datasets);
+//        col.setFolds(numFolds);
+//        col.setSplit_TrainTest();
+//        col.load();
+//
+//        calibrateAllResults(calibResPath, col);
 
 
 
-        ClassifierResultsCollection col = new ClassifierResultsCollection();
-        col.setCleanResults(false);
 
-        col.addClassifiers(classifiers, clsResPath);
-        col.setDatasets(datasets);
-        col.setFolds(numFolds);
-        col.setSplit_TrainTest();
-        col.load();
 
-        calibrateAllResults(calibResPath, col);
+
+
+
+
+        //calib vs uncalib comparison
+        for (String classifier : classifiers) {
+            String expName = classifier + " Calib_" + datasets.length + "dsets";
+
+            MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(anaPath, expName, numFolds);
+            mce.setBuildMatlabDiagrams(false);
+            mce.setTestResultsOnly(true);
+            mce.setDatasets(datasets);
+            mce.readInClassifier(classifier, classifier, clsResPath);
+            mce.readInClassifier(classifier, classifier+"_calib", calibResPath);
+            mce.runComparison();
+        }
     }
 
 }

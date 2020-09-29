@@ -774,7 +774,21 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
-
+            case "HIVE-COTE1.0_innercalib":
+                if(canLoadFromFile){
+                    String[] cls={"TSF_calib","RISE_calib","STC_calib","cBOSS_calib"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                    ((HIVE_COTE)c).setEnsembleName("HIVE-COTE1.0_calib");
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
             default:
                 System.out.println("Unknown bespoke classifier, should not be able to get here ");
                 System.out.println("There is a mismatch between bespokeClassifiers and the switch statement ");
