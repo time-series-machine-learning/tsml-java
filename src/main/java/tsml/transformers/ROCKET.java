@@ -1,18 +1,25 @@
 package tsml.transformers;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import scala.collection.parallel.ParIterableLike.Collect;
+import core.contracts.Dataset;
+import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.ts_fileIO.TSReader;
+import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.generic_storage.Pair;
+import weka.classifiers.functions.Logistic;
+import weka.classifiers.trees.RandomForest;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -20,11 +27,15 @@ import weka.core.Randomizable;
 public class ROCKET implements TrainableTransformer, Randomizable {
 
     int seed;
-
-    int numKernels;
+    boolean fit = false;
+    int numKernels = 100; //either 100. 1000. or 10,000
     int[] candidateLengths = { 7, 9, 11 };
     int[] lengths, dilations, paddings;
     double[] weights, biases;
+
+    public ROCKET(int numKernels){
+        this.numKernels = numKernels;
+    }
 
     @Override
     public Instance transform(Instance inst) {
@@ -46,36 +57,35 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        int dims = inst.getNumDimensions();
+
         // apply kernels to the dataset.
-        double[][] output = new double[1][numKernels * 2]; // 2 features per kernel
+        double[][] output = new double[dims][numKernels * 2]; // 2 features per kernel
 
         int a1 = 0; // for weights
         int a2 = 0; // for features
 
         for (int j = 0; j < numKernels; j++) {
-
             int b1 = a1 + lengths[j];
             int b2 = a2 + 2;
 
-            //TODO: look at multivariate ROCKET 
-            //univariate dim 0.
-            Pair<Double, Double> out = applyKernel(inst.get(0), ArrayUtils.subarray(weights, a1, b1),
-                    lengths[j], biases[j], dilations[j], paddings[j]);
-
-            output[0][a2] = out.var1;
-            output[0][a2 + 1] = out.var2;
+            for (int i = 0; i < dims; i++) {
+                Pair<Double, Double> out = applyKernel(inst.get(i), ArrayUtils.subarray(weights, a1, b1), lengths[j],
+                        biases[j], dilations[j], paddings[j]);
+                output[i][a2] = out.var1;
+                output[i][a2 + 1] = out.var2;
+            }
 
             a1 = b1;
             a2 = b2;
         }
-        
+
         return new TimeSeriesInstance(output, inst.getLabelIndex());
     }
 
     @Override
     public boolean isFit() {
-        // TODO Auto-generated method stub
-        return false;
+        return fit;
     }
 
     @Override
@@ -86,7 +96,6 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         Random random = new Random(this.seed);
         // generate random kernel lengths between 7,9 or 11, for numKernels.
         lengths = sampleLengths(random, candidateLengths, numKernels);
-
         // generate init values
         // weights - this should be the size of all the lengths summed
         weights = new double[Arrays.stream(lengths).sum()];
@@ -97,12 +106,12 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         int a1 = 0;
         int b1 = 0;
         for (int i = 0; i < numKernels; i++) {
-            double[] weights = this.normalDist(random, lengths[i]);
-            double mean = TimeSeriesSummaryStatistics.mean(weights);
+            double[] _weights = this.normalDist(random, lengths[i]);
+            double mean = TimeSeriesSummaryStatistics.mean(_weights);
 
             b1 = a1 + lengths[i];
             for (int j = a1; j < b1; ++j) {
-                weights[j] = weights[j] - mean;
+                weights[j] = _weights[j-a1] - mean;
             }
 
             // draw uniform random sample from 0-1 and shift it to -1 to 1.
@@ -117,6 +126,8 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
             a1 = b1;
         }
+        
+        fit = true;
     }
 
     public Pair<Double, Double> applyKernel(TimeSeries inst, double[] weights, int length, double bias, int dilation,
@@ -179,4 +190,29 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         return seed;
     }
 
+    public static void main(String[] args) throws Exception {
+        
+        // Aarons local path for testing.
+        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
+        // String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
+        // String m_local_path_orig = "D:\\Work\\Data\\Multivariate_arff\\";
+        String dataset_name = "Chinatown";
+
+        TSReader ts_reader = new TSReader(new FileReader(new File(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts")));
+        TimeSeriesInstances train = ts_reader.GetInstances();
+
+        ts_reader = new TSReader(new FileReader(new File(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts")));
+        TimeSeriesInstances test = ts_reader.GetInstances();
+
+        ROCKET rocket = new ROCKET(10000);
+        TimeSeriesInstances ttrain = rocket.fitTransform(train);
+        TimeSeriesInstances ttest = rocket.transform(test);
+
+        Logistic clf = new Logistic();
+        clf.buildClassifier(Converter.toArff(ttrain));
+        double acc = utilities.ClassifierTools.accuracy(Converter.toArff(ttest), clf);
+        System.out.println("acc: " + acc);
+
+
+    }
 }
