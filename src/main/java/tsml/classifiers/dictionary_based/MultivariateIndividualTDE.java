@@ -30,10 +30,7 @@ import utilities.generic_storage.SerialisableComparablePair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Improved BOSS classifier to be used with known parameters, for ensemble use TDE.
@@ -648,6 +645,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         if (cleanAfterBuild) {
             clean();
         }
+
+        //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 
     /**

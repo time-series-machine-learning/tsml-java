@@ -31,10 +31,7 @@ import weka.core.Instances;
 import weka.core.UnassignedClassException;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Improved BOSS classifier to be used with known parameters, for ensemble use TDE.
@@ -888,6 +885,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 
