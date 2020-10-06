@@ -896,7 +896,12 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             //we need to sum the modules' reported build time as well as the weight
             //and voting definition time
             for (EnsembleModule module : modules) {
-                buildTime += module.trainResults.getBuildPlusEstimateTime();
+                if (weightingScheme.needTrainPreds || votingScheme.needTrainPreds) {
+                    buildTime += module.trainResults.getBuildPlusEstimateTime();
+                }
+                else{
+                    buildTime += module.trainResults.getBuildTime();
+                }
             }
         }
         
