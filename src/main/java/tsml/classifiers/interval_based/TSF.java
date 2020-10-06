@@ -505,6 +505,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             saveToFile(checkpointPath);
         }
         long endTime=System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(endTime-startTime-trainResults.getErrorEstimateTime());
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
         /** Estimate accuracy from Train data
@@ -553,7 +554,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 predTimes[j]=System.nanoTime()-predTime;
             }
             trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
-            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setClassifierName("TSFBagging");
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");

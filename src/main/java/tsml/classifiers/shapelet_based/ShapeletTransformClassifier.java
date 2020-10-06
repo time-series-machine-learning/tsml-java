@@ -263,6 +263,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         if(getEstimateOwnPerformance()){
             trainResults.setBuildTime(System.nanoTime()-startTime - trainResults.getErrorEstimateTime());
         }
