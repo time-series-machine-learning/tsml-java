@@ -591,8 +591,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             ensembleCvAcc = findEnsembleTrainAcc(data);
             long end = System.nanoTime();
             trainResults.setErrorEstimateTime(end - start);
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
 
         //delete any serialised files and holding folder for checkpointing on completion

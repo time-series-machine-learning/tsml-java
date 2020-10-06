@@ -457,9 +457,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             estimateOwnPerformance(data);
             long est2 = System.nanoTime();
             trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
-
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished TSF Build with " + trees.size() + " Trees built in " +
                 trainResults.getBuildTime()/1000000000 + " Seconds  ***************");
