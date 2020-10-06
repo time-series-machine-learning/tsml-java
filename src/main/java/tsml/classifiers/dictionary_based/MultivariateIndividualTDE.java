@@ -47,113 +47,25 @@ import java.util.concurrent.Future;
  */
 public class MultivariateIndividualTDE extends IndividualTDE {
 
-
-    double[][][][] dfts;
-    boolean dimensionPrune = false;
-    double cutoffThreshold = 0.7;
-    ArrayList<Integer> dimensionSubsample2;
-    int maxSize = -1;
-
-
-    protected double[][] MCB(double[][][] data, int d, int dimension) {
-        dfts[dimension] = new double[data.length][][];
-
-        int sample = 0;
-        for (int i = 0; i < data.length; i++) {
-            double[][] windows = disjointWindows(data[i][d]);
-            dfts[dimension][sample++] = performDFT(windows); //approximation
-        }
-
-        int numInsts = dfts[dimension].length;
-        int numWindowsPerInst = dfts[dimension][0].length;
-        int totalNumWindows = numInsts*numWindowsPerInst;
-
-        double[][] breakpoints = new double[wordLength][alphabetSize];
-
-        for (int letter = 0; letter < wordLength; ++letter) { //for each dft coeff
-
-            //extract this column from all windows in all instances
-            double[] column = new double[totalNumWindows];
-            for (int inst = 0; inst < numInsts; ++inst)
-                for (int window = 0; window < numWindowsPerInst; ++window) {
-                    //rounding dft coefficients to reduce noise
-                    column[(inst * numWindowsPerInst) + window] = Math.round(dfts[dimension][inst][window][letter]*100.0)/100.0;
-                }
-
-            //sort, and run through to find breakpoints for equi-depth bins
-            Arrays.sort(column);
-
-            double binIndex = 0;
-            double targetBinDepth = (double)totalNumWindows / (double)alphabetSize;
-
-            for (int bp = 0; bp < alphabetSize-1; ++bp) {
-                binIndex += targetBinDepth;
-                breakpoints[letter][bp] = column[(int)binIndex];
-            }
-
-            breakpoints[letter][alphabetSize-1] = Double.MAX_VALUE; //last one can always = infinity
-        }
-
-        return breakpoints;
-    }
-
-    //IGB code by Patrick Schafer from the WEASEL class
-    protected double[][] IGB(double[][][] data, int d, int[] labels, int dimension) {
-        ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
-        for (int i = 0; i < orderline.length; i++) {
-            orderline[i] = new ArrayList<>();
-        }
-
-        dfts[dimension] = new double[data.length][][];
-
-        for (int i = 0; i < data.length; i++) {
-            double[][] windows = disjointWindows(data[i][d]);
-            dfts[dimension][i] = performDFT(windows); //approximation
-
-            for (double[] dft : dfts[dimension][i]) {
-                for (int n = 0; n < dft.length; n++) {
-                    // round to 2 decimal places to reduce noise
-                    double value = Math.round(dft[n] * 100.0) / 100.0;
-
-                    orderline[n].add(new SerialisableComparablePair<>(value, labels[i]));
-                }
-            }
-        }
-
-        double[][] breakpoints = new double[wordLength][alphabetSize];
-
-        for (int i = 0; i < orderline.length; i++) {
-            if (!orderline[i].isEmpty()) {
-                Collections.sort(orderline[i]);
-
-                ArrayList<Integer> splitPoints = new ArrayList<>();
-                findBestSplit(orderline[i], 0, orderline[i].size(), alphabetSize, splitPoints);
-
-                Collections.sort(splitPoints);
-
-                for (int n = 0; n < splitPoints.size(); n++) {
-                    breakpoints[i][n] = orderline[i].get(splitPoints.get(n) + 1).var1;
-                }
-
-                breakpoints[i][alphabetSize-1] = Double.MAX_VALUE;
-            }
-        }
-
-        return breakpoints;
-    }
-
-
-
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     private BitWord[/*dimension*/][/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
     private ArrayList<BagMV> bags;
 
+    //dft transforms for each series found during breakpoint calculation
+    double[][][][] breakpointDFT;
+
     //breakpoints to be found by MCB or IGB
     private double[/*dimension*/][/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
+    //feature selection
     private ObjectHashSet<Word> chiSquare;
+
+    //dimension selection
+    private double dimensionCutoffThreshold = 0.85;
+    private int maxNoDimensions = -1;
+    private ArrayList<Integer> dimensionSubsample;
 
     private static final long serialVersionUID = 2L;
 
@@ -231,6 +143,97 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     public ArrayList<BagMV> getMultivariateBags() { return bags; }
+
+    public void setDimensionCutoffThreshold(double d) { dimensionCutoffThreshold = d; }
+    public void setMaxNoDimensions(int i) { maxNoDimensions = i; }
+
+    protected double[][] MCB(double[][][] data, int d) {
+        breakpointDFT[d] = new double[data.length][][];
+
+        int sample = 0;
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
+            breakpointDFT[d][sample++] = performDFT(windows); //approximation
+        }
+
+        int numInsts = breakpointDFT[d].length;
+        int numWindowsPerInst = breakpointDFT[d][0].length;
+        int totalNumWindows = numInsts*numWindowsPerInst;
+
+        double[][] breakpoints = new double[wordLength][alphabetSize];
+
+        for (int letter = 0; letter < wordLength; ++letter) { //for each dft coeff
+
+            //extract this column from all windows in all instances
+            double[] column = new double[totalNumWindows];
+            for (int inst = 0; inst < numInsts; ++inst)
+                for (int window = 0; window < numWindowsPerInst; ++window) {
+                    //rounding dft coefficients to reduce noise
+                    column[(inst * numWindowsPerInst) + window] = Math.round(
+                            breakpointDFT[d][inst][window][letter]*100.0)/100.0;
+                }
+
+            //sort, and run through to find breakpoints for equi-depth bins
+            Arrays.sort(column);
+
+            double binIndex = 0;
+            double targetBinDepth = (double)totalNumWindows / (double)alphabetSize;
+
+            for (int bp = 0; bp < alphabetSize-1; ++bp) {
+                binIndex += targetBinDepth;
+                breakpoints[letter][bp] = column[(int)binIndex];
+            }
+
+            breakpoints[letter][alphabetSize-1] = Double.MAX_VALUE; //last one can always = infinity
+        }
+
+        return breakpoints;
+    }
+
+    //IGB code by Patrick Schafer from the WEASEL class
+    protected double[][] IGB(double[][][] data, int d, int[] labels) {
+        ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
+        for (int i = 0; i < orderline.length; i++) {
+            orderline[i] = new ArrayList<>();
+        }
+
+        breakpointDFT[d] = new double[data.length][][];
+
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
+            breakpointDFT[d][i] = performDFT(windows); //approximation
+
+            for (double[] dft : breakpointDFT[d][i]) {
+                for (int n = 0; n < dft.length; n++) {
+                    // round to 2 decimal places to reduce noise
+                    double value = Math.round(dft[n] * 100.0) / 100.0;
+
+                    orderline[n].add(new SerialisableComparablePair<>(value, labels[i]));
+                }
+            }
+        }
+
+        double[][] breakpoints = new double[wordLength][alphabetSize];
+
+        for (int i = 0; i < orderline.length; i++) {
+            if (!orderline[i].isEmpty()) {
+                Collections.sort(orderline[i]);
+
+                ArrayList<Integer> splitPoints = new ArrayList<>();
+                findBestSplit(orderline[i], 0, orderline[i].size(), alphabetSize, splitPoints);
+
+                Collections.sort(splitPoints);
+
+                for (int n = 0; n < splitPoints.size(); n++) {
+                    breakpoints[i][n] = orderline[i].get(splitPoints.get(n) + 1).var1;
+                }
+
+                breakpoints[i][alphabetSize-1] = Double.MAX_VALUE;
+            }
+        }
+
+        return breakpoints;
+    }
 
     @Override
     public void clean() {
@@ -363,7 +366,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         double[][] split = inst.toValueArray();
 
-        for (Integer d : dimensionSubsample2) {
+        for (Integer d : dimensionSubsample) {
             double[][] mfts = performMFT(split[d]); //approximation
             addToSPBagSingle(bag, mfts, d); //discretisation/bagging
         }
@@ -513,6 +516,83 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         return words;
     }
 
+    private void selectDimensions(TimeSeriesInstances data, double[][][] split){
+        seriesLength = data.getMaxLength();
+        double[] accuracies = new double[breakpoints.length];
+        for (int d = 0; d < breakpoints.length; d++) {
+            ArrayList<Bag> tempBags = new ArrayList<>();
+            for (int i = 0; i < split.length; i++){
+                Bag bag = new Bag(data.get(i).getLabelIndex());
+                for (int n = 0; n < breakpointDFT[d][i].length; n++){
+                    BitWord word = createWord(breakpointDFT[d][i][n], d);
+                    int qStart = 0; //for this level, whats the start index for quadrants
+                    int wInd = n*windowSize;
+
+                    for (int l = 0; l < levels; ++l) {
+                        //need to do the cell finding thing in the regular grid
+                        int numQuadrants = (int)Math.pow(2, l);
+                        int quadrantSize = seriesLength / numQuadrants;
+                        int pos = wInd + (windowSize/2); //use the middle of the window as its position
+                        int quadrant = qStart + (pos/quadrantSize);
+
+                        SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
+                        bag.merge(key, 1, Integer::sum);
+
+                        qStart += numQuadrants;
+                    }
+                }
+                applyPyramidWeights(bag);
+                tempBags.add(bag);
+            }
+
+            for (int n = 0; n < split.length; n++){
+                Bag testBag = tempBags.get(n);
+
+                //1NN distance
+                double bestDist = Double.MAX_VALUE;
+                double nn = 0;
+
+                for (int i = 0; i < tempBags.size(); ++i) {
+                    if (i == n) //skip 'this' one, leave-one-out
+                        continue;
+
+                    double dist;
+                    if (histogramIntersection)
+                        dist = -histogramIntersection(testBag, tempBags.get(i));
+                    else dist = BOSSdistance(testBag, tempBags.get(i), bestDist);
+
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        nn = tempBags.get(i).getClassVal();
+                    }
+                }
+
+                if (nn == tempBags.get(n).getClassVal()) accuracies[d]++;
+            }
+            accuracies[d] /= split.length;
+        }
+
+        double maxAcc = 0;
+        for (int d = 0; d < breakpoints.length; d++) {
+            if (accuracies[d] > maxAcc) maxAcc = accuracies[d];
+        }
+
+        dimensionSubsample = new ArrayList<>();
+        for (int d = 0; d < breakpoints.length; d++) {
+            if (accuracies[d] >= maxAcc * dimensionCutoffThreshold) {
+                dimensionSubsample.add(d);
+            }
+        }
+
+        if (maxNoDimensions > 0){
+            while (dimensionSubsample.size() > maxNoDimensions){
+                dimensionSubsample.remove(rand.nextInt(dimensionSubsample.size()));
+            }
+        }
+
+        breakpointDFT = null;
+    }
+
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         trainResults = new ClassifierResults();
@@ -523,108 +603,21 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         trainResults.setBuildTime(System.nanoTime());
 
         double[][][] split = data.toValueArray();
+        seriesLength = data.getMaxLength();
 
-
-
-        dfts = new double[data.getMaxNumChannels()][][][];
-
-
-
+        breakpointDFT = new double[data.getMaxNumChannels()][][][];
         breakpoints = new double[data.getMaxNumChannels()][][];
         for (int d = 0; d < breakpoints.length; d++) {
-            if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes(), d);
-            else breakpoints[d] = MCB(split, d, d); //breakpoints to be used for making sfa words for train
+            if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes());
+            else breakpoints[d] = MCB(split, d); //breakpoints to be used for making sfa words for train
                                                  //AND test data
         }
 
-
-        seriesLength = data.getMaxLength();
-        if (dimensionPrune){
-            double[] accuracies = new double[breakpoints.length];
-            for (int d = 0; d < breakpoints.length; d++) {
-                ArrayList<Bag> tempBags = new ArrayList<>();
-                for (int i = 0; i < split.length; i++){
-                    Bag bag = new Bag(data.get(i).getLabelIndex());
-                    for (int n = 0; n < dfts[d][i].length; n++){
-                        BitWord word = createWord(dfts[d][i][n], d);
-                        int qStart = 0; //for this level, whats the start index for quadrants
-                        int wInd = n*windowSize;
-
-                        for (int l = 0; l < levels; ++l) {
-                            //need to do the cell finding thing in the regular grid
-                            int numQuadrants = (int)Math.pow(2, l);
-                            int quadrantSize = seriesLength / numQuadrants;
-                            int pos = wInd + (windowSize/2); //use the middle of the window as its position
-                            int quadrant = qStart + (pos/quadrantSize);
-
-                            SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
-                            bag.merge(key, 1, Integer::sum);
-
-                            qStart += numQuadrants;
-                        }
-                    }
-                    applyPyramidWeights(bag);
-                    tempBags.add(bag);
-                }
-
-                for (int n = 0; n < split.length; n++){
-                    Bag testBag = tempBags.get(n);
-
-                    //1NN distance
-                    double bestDist = Double.MAX_VALUE;
-                    double nn = 0;
-
-                    for (int i = 0; i < tempBags.size(); ++i) {
-                        if (i == n) //skip 'this' one, leave-one-out
-                            continue;
-
-                        double dist;
-                        if (histogramIntersection)
-                            dist = -histogramIntersection(testBag, tempBags.get(i));
-                        else dist = BOSSdistance(testBag, tempBags.get(i), bestDist);
-
-                        if (dist < bestDist) {
-                            bestDist = dist;
-                            nn = tempBags.get(i).getClassVal();
-                        }
-                    }
-
-                    if (nn == tempBags.get(n).getClassVal()) accuracies[d]++;
-                }
-                accuracies[d] /= split.length;
-            }
-
-            double maxAcc = 0;
-            for (int d = 0; d < breakpoints.length; d++) {
-                if (accuracies[d] > maxAcc) maxAcc = accuracies[d];
-            }
-
-            dimensionSubsample2 = new ArrayList<>();
-            for (int d = 0; d < breakpoints.length; d++) {
-                if (accuracies[d] >= maxAcc * cutoffThreshold) {
-                    dimensionSubsample2.add(d);
-                }
-            }
-
-            if (maxSize > 0){
-                while (dimensionSubsample2.size() > maxSize){
-                    dimensionSubsample2.remove(rand.nextInt(dimensionSubsample2.size()));
-                }
-            }
-        }
-        else{
-            dimensionSubsample2 = new ArrayList<>();
-            for (int d = 0; d < breakpoints.length; d++) {
-                dimensionSubsample2.add(d);
-            }
-        }
-        dfts = null;
-
+        selectDimensions(data, split);
 
         SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
-        seriesLength = data.getMaxLength();
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -641,7 +634,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
                 BagMV bag = new BagMV(data.get(inst).getLabelIndex());
-                for (Integer d : dimensionSubsample2) {
+                for (Integer d : dimensionSubsample) {
                     SFAwords[d][inst] = createSFAwords(split[inst][d], d);
                     addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d);
                 }

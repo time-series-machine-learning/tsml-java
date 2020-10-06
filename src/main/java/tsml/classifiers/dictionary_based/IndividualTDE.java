@@ -87,8 +87,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected int numThreads = 1;
     protected ExecutorService ex;
 
-    public ArrayList<Integer> dimensionSubsample;
-
     private static final long serialVersionUID = 2L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
@@ -387,7 +385,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return subSequences;
     }
 
-    protected double[][] MCB(double[][][] data, int d) {
+    private double[][] MCB(double[][][] data, int d) {
         double[][][] dfts = new double[data.length][][];
 
         int sample = 0;
@@ -430,7 +428,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     //IGB code by Patrick Schafer from the WEASEL class
-    protected double[][] IGB(double[][][] data, int d, int[] labels) {
+    private double[][] IGB(double[][][] data, int d, int[] labels) {
         ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
         for (int i = 0; i < orderline.length; i++) {
             orderline[i] = new ArrayList<>();
