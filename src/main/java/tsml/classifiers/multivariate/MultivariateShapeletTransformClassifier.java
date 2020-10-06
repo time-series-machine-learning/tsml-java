@@ -168,9 +168,9 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
             buildCheckpointClassifier(data);
         }
         else{
-            long startTime=System.currentTimeMillis();
+            long startTime=System.nanoTime();
             format = doTransform ? createTransformData(data, timeLimit) : data;
-            transformBuildTime=System.currentTimeMillis()-startTime;
+            transformBuildTime=System.nanoTime()-startTime;
             if(seedClassifier)
                 ensemble.setSeed((int) seed);
 
@@ -178,6 +178,8 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 
             ensemble.buildClassifier(format);
             format=new Instances(data,0);
+
+            res.setTimeUnit(TimeUnit.NANOSECONDS);
             res.setBuildTime(System.currentTimeMillis()-startTime);
         }
     }
