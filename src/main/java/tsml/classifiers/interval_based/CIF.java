@@ -448,6 +448,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             saveToFile(checkpointPath);
         }
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
                 - trainResults.getErrorEstimateTime());
 
@@ -782,7 +783,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 predTimes[j] = System.nanoTime()-predTime;
             }
             trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
-            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.setClassifierName("CIFBagging");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");

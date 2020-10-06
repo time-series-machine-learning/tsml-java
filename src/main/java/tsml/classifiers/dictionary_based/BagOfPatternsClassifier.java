@@ -211,9 +211,9 @@ public class BagOfPatternsClassifier extends EnhancedAbstractClassifier implemen
         //real work
         matrix = bop.fitTransform(data); //transform
         knn.buildClassifier(matrix); //give to 1nn
+
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime()-startTime);
-        
     }
 
     @Override

@@ -582,10 +582,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
-
-        //Estimate train accuracy
-//TO DO: SORT THIS BIT OUT
 
         //Estimate train accuracy
         if (getEstimateOwnPerformance()) {
@@ -1169,7 +1167,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         int totalClassifers = sum(numClassifiers);
         double correct = 0;
 
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);

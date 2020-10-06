@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.cloneArrayList;
 import utilities.InstanceTools;
@@ -100,7 +102,10 @@ public class FastShapelets extends EnhancedAbstractClassifier implements Technic
     @Override
     public void buildClassifier(Instances data) throws Exception {
         long start=System.nanoTime();
+
         train(data, 10, 10);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime()-start);
     }
     @Override

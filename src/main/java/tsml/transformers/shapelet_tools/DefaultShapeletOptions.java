@@ -22,11 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import static tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities.nanoToOp;
-import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.*;
 
 import tsml.filters.shapelet_filters.ShapeletFilter;
 import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
+import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.FULL;
+import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.IMPROVED_RANDOM;
+import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.MAGNIFY;
+import static tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType.TABU;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
 import weka.core.Instances;
 import utilities.TriFunction;
@@ -200,7 +203,7 @@ public class DefaultShapeletOptions {
              
              //we need to find atleast one shapelet in every series.
             searchBuilder.setSeed(seed);
-            searchBuilder.setSearchType(RANDOM);
+            searchBuilder.setSearchType(IMPROVED_RANDOM);
             searchBuilder.setNumShapeletsToEvaluate(numShapelets);
             
             // can't have more final shapelets than we actually search through.
@@ -209,8 +212,6 @@ public class DefaultShapeletOptions {
 
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
-                                            .setMinLength(3)
-                                            .setMaxLength(utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train))
                                             .setKShapelets(K)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.DEPENDENT)

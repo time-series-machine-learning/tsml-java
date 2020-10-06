@@ -24,6 +24,8 @@ import weka.core.Instances;
 import tsml.transformers.SAX;
 import weka.filters.unsupervised.instance.Randomize;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  *
  * @author James
@@ -61,6 +63,8 @@ public class SAX_1NN extends EnhancedAbstractClassifier {
         
         SAXdata = sax.transform(data);
         knn.buildClassifier(SAXdata);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime()-startTime);
     }
 

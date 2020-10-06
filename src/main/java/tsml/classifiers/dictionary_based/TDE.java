@@ -314,14 +314,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         getTSCapabilities().test(data);
 
         train = data;
-        int seriesLength = data.getMaxLength();
 
         //Window length settings
         int minWindow = 10;
-        int maxWindow = (int) (seriesLength * maxWinLenProportion);
+        int maxWindow = (int) (data.getMaxLength() * maxWinLenProportion);
         if (maxWindow < minWindow) minWindow = maxWindow / 2;
         //whats the max number of window sizes that should be searched through
-        double maxWindowSearches = seriesLength * maxWinSearchProportion;
+        double maxWindowSearches = data.getMaxLength() * maxWinSearchProportion;
         int winInc = (int) ((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
 
@@ -378,6 +377,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
@@ -903,7 +903,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
 
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setDatasetName(train.getProblemName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

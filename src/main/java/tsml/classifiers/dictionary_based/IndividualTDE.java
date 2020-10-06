@@ -74,6 +74,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected boolean cleanAfterBuild = false;
     protected int seriesLength;
 
+    //feature selection
     private ObjectHashSet<SerialisableComparablePair<BitWord, Byte>> chiSquare;
     protected int chiLimit = 2;
 
@@ -593,12 +594,14 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         // best elements above limit
-        for (Bag bag : bags) {
-            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
-                if (!chiSquare.contains(cursor.getKey())) {
-                    bag.remove(cursor.getKey());
+        for (int i = 0; i < bags.size(); i++) {
+            Bag newBag = new Bag(bags.get(i).classVal);
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bags.get(i).entrySet()) {
+                if (chiSquare.contains(cursor.getKey())) {
+                    newBag.put(cursor.getKey(), cursor.getValue());
                 }
             }
+            bags.set(i, newBag);
         }
     }
 

@@ -14,16 +14,15 @@
  */
 package tsml.classifiers.multivariate;
 
-import machine_learning.classifiers.ensembles.ContractRotationForest;
 import tsml.classifiers.*;
-import tsml.data_containers.TimeSeriesInstances;
-import tsml.transformers.ShapeletTransform;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
 import tsml.filters.shapelet_filters.ShapeletFilter;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
 import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
+import java.io.File;
+import java.security.InvalidParameterException;
+import java.util.concurrent.TimeUnit;
 
-import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import machine_learning.classifiers.ensembles.CAWPE;
 import weka.core.Instance;
@@ -45,8 +44,6 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import tsml.classifiers.TrainTimeContractable;
 
-import static utilities.multivariate_tools.MultivariateInstanceTools.*;
-
 /**
  *
  * @author raj09hxu
@@ -63,15 +60,15 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 
     private boolean preferShortShapelets = false;
     private String shapeletOutputPath;
-    private EnhancedAbstractClassifier ensemble;
-    private ShapeletTransform transform;
+    private CAWPE ensemble;
+    private ShapeletFilter transform;
     private Instances format;
     int[] redundantFeatures;
     private boolean doTransform=true;
     private long transformBuildTime;
     protected ClassifierResults res =new ClassifierResults();
     int numShapeletsInTransform = MAXTRANSFORMSIZE;
-    private SearchType searchType = SearchType.RANDOM;
+    private SearchType searchType = SearchType.IMPROVED_RANDOM;
     private long numShapelets = 0;
 
     private long timeLimit = Long.MAX_VALUE;
@@ -104,8 +101,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     
     public MultivariateShapeletTransformClassifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        //configureDefaultEnsemble();
-        configureRotationForest();
+        configureDefaultEnsemble();
     }
   
     //careful when setting search type as you could set a type that violates the contract.
@@ -149,11 +145,11 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     }
     
     
-//    public Instances transformDataset(Instances data){
-//        if(transform.isFirstBatchDone())
-//            return transform.process(data);
-//        return null;
-//    }
+    public Instances transformDataset(Instances data){
+        if(transform.isFirstBatchDone())
+            return transform.process(data);
+        return null;
+    }
 
     @Override
     public void setTrainTimeLimit(long amount) {
@@ -169,17 +165,11 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     @Override
     public void buildClassifier(Instances data) throws Exception {
         if(checkpoint){
-            //buildCheckpointClassifier(data);
+            buildCheckpointClassifier(data);
         }
         else{
             long startTime=System.currentTimeMillis();
-            long time = timeLimit == Long.MAX_VALUE ? ShapeletTransformTimingUtilities.dayNano : timeLimit;
-
-            long transformContractTime = time * 2 / 3;
-            long classifierContractTime = time - transformContractTime;
-            ((TrainTimeContractable) ensemble).setTrainTimeLimit(classifierContractTime);
-
-            format = doTransform ? createTransformData(data, transformContractTime) : data;
+            format = doTransform ? createTransformData(data, timeLimit) : data;
             transformBuildTime=System.currentTimeMillis()-startTime;
             if(seedClassifier)
                 ensemble.setSeed((int) seed);
@@ -202,16 +192,10 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 
 //When finished, build classifier
             ensemble.buildClassifier(format);
+            format=new Instances(data,0);
 //            res.buildTime=System.currentTimeMillis()-startTime;
 
     }
-
-    public void configureRotationForest(){
-        ContractRotationForest rotf=new ContractRotationForest();
-        rotf.setMaxNumTrees(200);
-        ensemble=rotf;
-    }
-
 /**
  * Classifiers used in the HIVE COTE paper
  */    
@@ -219,8 +203,8 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 //HIVE_SHAPELET_SVMQ    HIVE_SHAPELET_RandF    HIVE_SHAPELET_RotF    
 //HIVE_SHAPELET_NN    HIVE_SHAPELET_NB    HIVE_SHAPELET_C45    HIVE_SHAPELET_SVML   
         ensemble=new CAWPE();
-        ((CAWPE)ensemble).setWeightingScheme(new TrainAcc(4));
-        ((CAWPE)ensemble).setVotingScheme(new MajorityConfidence());
+        ensemble.setWeightingScheme(new TrainAcc(4));
+        ensemble.setVotingScheme(new MajorityConfidence());
         Classifier[] classifiers = new Classifier[7];
         String[] classifierNames = new String[7];
         
@@ -266,12 +250,12 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         smo.setKernel(k2);
         classifiers[6] = svml;
         classifierNames[6] = "SVML";
-        ((CAWPE)ensemble).setClassifiers(classifiers, classifierNames, null);
+        ensemble.setClassifiers(classifiers, classifierNames, null);
     }
 //This sets up the ensemble to work within the time constraints of the problem    
     public void configureEnsemble(){
-        ((CAWPE)ensemble).setWeightingScheme(new TrainAcc(4));
-        ((CAWPE)ensemble).setVotingScheme(new MajorityConfidence());
+        ensemble.setWeightingScheme(new TrainAcc(4));
+        ensemble.setVotingScheme(new MajorityConfidence());
         
         Classifier[] classifiers = new Classifier[3];
         String[] classifierNames = new String[3];
@@ -303,15 +287,15 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         classifierNames[2] = "RotF";
         
         
-        ((CAWPE)ensemble).setClassifiers(classifiers, classifierNames, null);
+       ensemble.setClassifiers(classifiers, classifierNames, null);
         
     }
     
      @Override
     public double classifyInstance(Instance ins) throws Exception{
-         format = new Instances(ins.dataset(), 1);
         format.add(ins);
-        Instances temp  = doTransform ? transform.transform(format) : format;
+
+        Instances temp  = doTransform ? transform.process(format) : format;
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -322,15 +306,15 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
-        format = new Instances(ins.dataset(), 1);
         format.add(ins);
         
-        Instances temp  = doTransform ? transform.transform(format) : format;
+        Instances temp  = doTransform ? transform.process(format) : format;
 //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
         
         Instance test  = temp.get(0);
+        format.remove(0);
         return ensemble.distributionForInstance(test);
     }
     
@@ -359,69 +343,45 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         ShapeletTransformFactoryOptions options;
         switch(type){
             case INDEP:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("INDEPENDENT").apply(train, time, (long)seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("INDEPENDENT").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;                
             case MULTI_D:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_D").apply(train, time, (long)seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_D").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;
             case MULTI_I: default:
-                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_I").apply(train, time, (long)seed);
+                options = DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_I").apply(train, ShapeletTransformTimingUtilities.dayNano,(long)seed);
                 break;
         }
         
-        transform = new ShapeletTransformFactory(options).getTransform();
+        transform = new ShapeletTransformFactory(options).getFilter();
         if(shapeletOutputPath != null)
             transform.setLogOutputFile(shapeletOutputPath);
         
-        return transform.fitTransform(train);
+        return transform.process(train);
     }
     
     public static void main(String[] args) throws Exception {
-//        String dataLocation = "C:\\Temp\\MTSC\\";
-//        //String dataLocation = "..\\..\\resampled transforms\\BalancedClassShapeletTransform\\";
-//        String saveLocation = "C:\\Temp\\MTSC\\";
-//        String datasetName = "ERing";
-//        int fold = 0;
-//
-//        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
-//        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
-//        String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
-//        String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
-//        String preds=saveLocation+datasetName;
-//
-//        MultivariateShapeletTransformClassifier st= new MultivariateShapeletTransformClassifier();
-//        //st.saveResults(trainS, testS);
-//        st.doSTransform(true);
-//        st.setOneMinuteLimit();
-//        st.buildClassifier(train);
-//
-//        double accuracy = utilities.ClassifierTools.accuracy(test, st);
-//
-//        System.out.println("accuracy: " + accuracy);
+        String dataLocation = "C:\\Temp\\MTSC\\";
+        //String dataLocation = "..\\..\\resampled transforms\\BalancedClassShapeletTransform\\";
+        String saveLocation = "C:\\Temp\\MTSC\\";
+        String datasetName = "ERing";
+        int fold = 0;
 
-        int fold =0;
+        Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
+        Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
+        String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
+        String testS=saveLocation+datasetName+File.separator+"TestPreds.csv";
+        String preds=saveLocation+datasetName;
 
-        String dataset = "ERing";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset+
-                "\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset+
-                "\\"+dataset+"_TEST.arff");
-        Instances[] data = resampleMultivariateTrainAndTestInstances(train, test, fold);
-        train = data[0];
-        test = data[1];
+        MultivariateShapeletTransformClassifier st= new MultivariateShapeletTransformClassifier();
+        //st.saveResults(trainS, testS);
+        st.doSTransform(true);
+        st.setOneMinuteLimit();
+        st.buildClassifier(train);
 
-        MultivariateShapeletTransformClassifier c;
-        double accuracy;
+        double accuracy = utilities.ClassifierTools.accuracy(test, st);
 
-        c=new MultivariateShapeletTransformClassifier();
-        c.setHourLimit(4);
-        c.setTransformType("Shapelet_D");
-        c.setSeed(fold);
-        c.buildClassifier(train);
-        accuracy = ClassifierTools.accuracy(test, c);
-
-        System.out.println("STC accuracy on " + dataset + " fold " + fold + " = " + accuracy);
-        //System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
+        System.out.println("accuracy: " + accuracy);
     }
 /**
  * Checkpoint methods
