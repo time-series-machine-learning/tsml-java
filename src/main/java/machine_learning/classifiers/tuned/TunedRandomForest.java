@@ -22,6 +22,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tsml.classifiers.ParameterSplittable;
@@ -411,7 +412,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
     
     @Override
     public void buildClassifier(Instances data) throws Exception{
-        long startTime=System.currentTimeMillis(); 
+        long startTime=System.nanoTime();
 //********* 1: Set up the main classifier with standard Weka calls ***************/      
     // can classifier handle the data?
         getCapabilities().testWithFail(data);
@@ -504,8 +505,9 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                     res.addPrediction(data.instance(i).classValue(),OOBPredictions[i],indexOfMax(OOBPredictions[i]), -1, "");
             }
         }
-        
-        res.setBuildTime(System.currentTimeMillis()-startTime);
+
+        res.setTimeUnit(TimeUnit.NANOSECONDS);
+        res.setBuildTime(System.nanoTime()-startTime);
         if(trainPath!=""){  //Save basic train results
             res.setClassifierName("TunedRandF");
             res.setDatasetName(data.relationName());

@@ -896,14 +896,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             //we need to sum the modules' reported build time as well as the weight
             //and voting definition time
             for (EnsembleModule module : modules) {
-                buildTime += module.trainResults.getBuildTimeInNanos();
-                
-                //TODO see other todo in trainModules also. Currently working under 
-                //assumption that the estimate time is already accounted for in the build
-                //time of TrainAccuracyEstimators, i.e. those classifiers that will 
-                //estimate their own accuracy during the normal course of training
-                if (!EnhancedAbstractClassifier.classifierIsEstimatingOwnPerformance(module.getClassifier()))
-                    buildTime += module.trainResults.getErrorEstimateTime();
+                buildTime += module.trainResults.getBuildPlusEstimateTime();
             }
         }
         

@@ -117,9 +117,9 @@ public abstract class AbstractStacking extends ModuleVotingScheme {
         double[][] dists = new double[modules.length][];
         
         for(int m = 0; m < modules.length; m++){
-            long startTime = System.currentTimeMillis();
+            long startTime = System.nanoTime();
             dists[m] = modules[m].getClassifier().distributionForInstance(testInstance);
-            long predTime = System.currentTimeMillis() - startTime;
+            long predTime = System.nanoTime() - startTime;
             
             storeModuleTestResult(modules[m], dists[m], predTime);
             

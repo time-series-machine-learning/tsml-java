@@ -262,7 +262,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         printLineDebug("Entering build classifier with classifier contract = "+classifierContractTime);
         classifier.buildClassifier(shapeletData);
         shapeletData=new Instances(data,0);
-        trainResults.setBuildTime(System.nanoTime()-startTime);
+
+        if(getEstimateOwnPerformance()){
+            trainResults.setBuildTime(System.nanoTime()-startTime - trainResults.getErrorEstimateTime());
+        }
+        else{
+            trainResults.setBuildTime(System.nanoTime()-startTime);
+        }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
 //HERE: If the base classifier can estimate its own performance, then lets do it here
 

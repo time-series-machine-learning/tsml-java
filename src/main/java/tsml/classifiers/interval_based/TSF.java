@@ -505,7 +505,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             saveToFile(checkpointPath);
         }
         long endTime=System.nanoTime();
-        trainResults.setBuildTime(endTime-startTime);
+        trainResults.setBuildTime(endTime-startTime-trainResults.getErrorEstimateTime());
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
         /** Estimate accuracy from Train data
          * distributions and predictions stored in trainResults */
@@ -579,7 +579,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             if(trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
                 tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos/numFolds);
             printLineDebug(" Doing CV evaluation estimate performance with  "+tsf.getTrainContractTimeNanos()/1000000000+" secs per fold.");
+            long buildTime = trainResults.getBuildTime();
             trainResults=cv.evaluate(tsf,data);
+            trainResults.setBuildTime(buildTime);
             trainResults.setClassifierName("TSFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
@@ -594,7 +596,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
             printLineDebug(" Doing Bagging estimate performance with "+tsf.getTrainContractTimeNanos()/1000000000+" secs per fold ");
             tsf.buildClassifier(data);
+            long buildTime = trainResults.getBuildTime();
             trainResults=tsf.trainResults;
+            trainResults.setBuildTime(buildTime);
             trainResults.setClassifierName("TSFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }

@@ -149,7 +149,7 @@ public class ClassifierLists {
     public static String[] dictionary= {
         "BOSS", "BOP", "SAXVSM", "SAX_1NN", "WEASEL", "cBOSS", "BOSSC45", "S-BOSS", "SpatialBOSS", "BoTSWEnsemble","TDE",
 
-            "TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50",
+            "TDE50M","TDE-MV2","TDE-MV2-FS","HI-tp90-Bigram-pIGB-BcS-BOSS","HI-tp100-Bigram-pIGB-BcS-BOSS","TDE-MV2-R70","TDE-MV2-R50",
             "TDE-MV2-BI","TDE-MV2-RA","TDE-MV3","TDE-MV4","TDE-MV3-R70","TDE-MV4-R70","TDE-MV2-RABI","TDE-MV4-RABI",
             "TDE-MVDP80","TDE-MVDP70","TDE-MVDP60","TDE-MVDP85","TDE-MVDP90","TDE-MVDP285","TDE-MVDP8510","TDE-MVDP8520"};
 
@@ -188,6 +188,10 @@ public class ClassifierLists {
                 break;
             case "TDE":
                 c = new TDE();
+                break;
+            case "TDE50M":
+                c = new TDE();
+                ((TDE) c).setMaxEnsembleSize(50);
                 break;
 
             case "HI-tp90-Bigram-pIGB-BcS-BOSS":
@@ -430,7 +434,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCote","FlatCote","TSCHIEF"};
+    public static String[] hybrids= {"HiveCote","FlatCote","TS-CHIEF"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -444,7 +448,7 @@ public class ClassifierLists {
                 c=new HiveCote();
                 ((HiveCote)c).setContract(48);
                 break;
-            case "TSCHIEF":
+            case "TS-CHIEF":
                 c=new TSCHIEFWrapper();
                 ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
@@ -471,7 +475,7 @@ public class ClassifierLists {
             case "Shapelet_I": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
-                ((MultivariateShapeletTransformClassifier)c).setOneDayLimit();
+                ((MultivariateShapeletTransformClassifier)c).setHourLimit(4);
                 ((MultivariateShapeletTransformClassifier)c).setSeed(fold);
                 ((MultivariateShapeletTransformClassifier)c).setTransformType(classifier);
                 break;
@@ -603,7 +607,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HC-V2Rocket","HC-V2RocketNoRISE","HC-V2NoCIF-RISE","HC-V2NoRISE","HC-V2NoSTC","HC-V2NoPF","HC-V2NoTDE","HC-V2NoCIF","HIVE-COTEV2",
+    public static String[] bespoke= {"HC-V2mv","HC-V2Rocket","HC-V2RocketNoRISE","HC-V2NoCIF-RISE","HC-V2NoRISE","HC-V2NoSTC","HC-V2NoPF","HC-V2NoTDE","HC-V2NoCIF","HIVE-COTEV2",
             "HIVE-COTE2","HC-TDE2","HC-WEASEL2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
@@ -618,6 +622,20 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
+            case "HC-V2mv":
+                if(canLoadFromFile){
+                    String[] cls={"TDE","STC","CIF","ROCKET"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
             case "HC-V2RocketNoRISE":
                 if(canLoadFromFile){
                     String[] cls={"TDE","STC","PF","CIF","ROCKET"};//RotF for ST

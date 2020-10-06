@@ -21,6 +21,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ParameterSplittable;
@@ -312,7 +313,7 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-         long startTime=System.currentTimeMillis();
+         long startTime=System.nanoTime();
         
 //determine minimum and maximum possible segment length
         if(paramSearch){
@@ -437,7 +438,8 @@ public class LPS extends EnhancedAbstractClassifier implements ParameterSplittab
         }
   */      
         sequences=null;
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
         
         System.gc();
      }

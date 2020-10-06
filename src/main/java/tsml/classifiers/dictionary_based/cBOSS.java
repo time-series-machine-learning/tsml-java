@@ -587,12 +587,15 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         //Estimate train accuracy
 //TO DO: SORT THIS BIT OUT
 
+        //Estimate train accuracy
         if (getEstimateOwnPerformance()) {
-//            trainResults.finaliseResults();
+            long start = System.nanoTime();
             ensembleCvAcc = findEnsembleTrainAcc(data);
-//            System.out.println("CV acc =" + ensembleCvAcc);
-//            setEstimateOwnPerformance(false);
+            long end = System.nanoTime();
+            trainResults.setErrorEstimateTime(end - start);
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
+        trainResults.setParas(getParameters());
 
         //delete any serialised files and holding folder for checkpointing on completion
         if (checkpoint && cleanupCheckpointFiles){

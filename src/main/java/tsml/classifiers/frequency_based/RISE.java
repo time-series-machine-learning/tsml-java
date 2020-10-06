@@ -735,12 +735,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             timer.saveModelToCSV(trainingData.relationName());
         }
         timer.forestElapsedTime = (System.nanoTime() - timer.forestStartTime);
-        super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        super.trainResults.setBuildTime(timer.forestElapsedTime);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
         if(getEstimateOwnPerformance()){
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+            trainResults.setBuildTime(timer.forestElapsedTime - trainResults.getErrorEstimateTime());
         }
+        else{
+            trainResults.setBuildTime(timer.forestElapsedTime);
+        }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
         /*for (int i = 0; i < this.startEndPoints.size(); i++) {

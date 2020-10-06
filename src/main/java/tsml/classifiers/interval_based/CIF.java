@@ -451,7 +451,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
                 - trainResults.getErrorEstimateTime());
 
-
         if(getEstimateOwnPerformance()){
             long est1 = System.nanoTime();
             estimateOwnPerformance(data);

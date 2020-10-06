@@ -99,9 +99,9 @@ public class FastShapelets extends EnhancedAbstractClassifier implements Technic
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        long start=System.currentTimeMillis();
+        long start=System.nanoTime();
         train(data, 10, 10);
-        trainResults.setBuildTime(System.currentTimeMillis()-start);
+        trainResults.setBuildTime(System.nanoTime()-start);
     }
     @Override
     public String getParameters() {
