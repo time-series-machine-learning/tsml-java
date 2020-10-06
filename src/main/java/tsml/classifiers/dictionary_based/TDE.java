@@ -348,7 +348,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 }
             }
 
-            useBigrams = data.isMultivariate() && useBigrams == null;
+            useBigrams = !data.isMultivariate() && useBigrams == null;
 
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
 
@@ -1272,13 +1272,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         //Output 06/10/20
         /*
-            TDE accuracy on ItalyPowerDemand fold 0 = 0.956268221574344
+            TDE accuracy on ItalyPowerDemand fold 0 = 0.9543245869776482
             Train accuracy on ItalyPowerDemand fold 0 = 0.9701492537313433
-            TDE accuracy on ERing fold 0 = 0.9703703703703703
+            TDE accuracy on ERing fold 0 = 0.9629629629629629
             Train accuracy on ERing fold 0 = 0.9333333333333333
-            Contract 1 Min Checkpoint TDE accuracy on ItalyPowerDemand fold 0 = 0.9572400388726919
+            Contract 1 Min Checkpoint TDE accuracy on ItalyPowerDemand fold 0 = 0.9523809523809523
             Build time on ItalyPowerDemand fold 0 = 7 seconds
-            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9740740740740741
+            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9555555555555556
             Build time on ERing fold 0 = 60 seconds
         */
     }
