@@ -14,9 +14,6 @@
  */
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.params.ParamSet;
-
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,8 +37,8 @@ public interface TrainTimeContractable {
 
     /**
      * Are we still within contract? Remove default when fully implemented
-     * @param start
-     * @return
+     * @param start classifier build start time
+     * @return true if classifier is within the train time contract, false otherwise
      */
     default public boolean withinTrainContract(long start){ return false;}
 

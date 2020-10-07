@@ -735,12 +735,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             timer.saveModelToCSV(trainingData.relationName());
         }
         timer.forestElapsedTime = (System.nanoTime() - timer.forestStartTime);
-        super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        super.trainResults.setBuildTime(timer.forestElapsedTime);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
         if(getEstimateOwnPerformance()){
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+            trainResults.setBuildTime(timer.forestElapsedTime - trainResults.getErrorEstimateTime());
         }
+        else{
+            trainResults.setBuildTime(timer.forestElapsedTime);
+        }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
         /*for (int i = 0; i < this.startEndPoints.size(); i++) {
@@ -844,22 +847,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             }
 
             //Add to trainResults.
-            double acc = 0.0;
             for (int i = 0; i < finalDistributions.length; i++) {
-                double predClass = 0;
-                double predProb = 0.0;
-                for (int j = 0; j < finalDistributions[i].length; j++) {
-                    if (finalDistributions[i][j] > predProb) {
-                        predProb = finalDistributions[i][j];
-                        predClass = j;
-                    }
-                }
+                double predClass = findIndexOfMax(finalDistributions[i], rand);
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
             trainResults.setClassifierName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if(estimator==EstimatorMethod.CV) {
+        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -1090,13 +1085,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
      */
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        double[]distribution = distributionForInstance(instance);
-
-        int maxVote=0;
-        for(int i = 1; i < distribution.length; i++)
-            if(distribution[i] > distribution[maxVote])
-                maxVote = i;
-        return maxVote;
+        double[] distribution = distributionForInstance(instance);
+        return findIndexOfMax(distribution, rand);
     }
 
     /**

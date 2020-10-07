@@ -27,6 +27,8 @@ import weka.core.TechnicalInformation;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 import weka.core.neighboursearch.PerformanceStats;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  *Implementation of the algorithm described in 
  * 
@@ -189,12 +191,13 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
     
     @Override
     public void buildClassifier(Instances train){      
-        long startTime=System.currentTimeMillis();
+        long startTime=System.nanoTime();
         this.setDistanceFunction(cid);
 //        cid.setInstances(train);
         super.buildClassifier(train);
         try {
-            res.setBuildTime(System.currentTimeMillis()-startTime);
+            res.setTimeUnit(TimeUnit.NANOSECONDS);
+            res.setBuildTime(System.nanoTime()-startTime);
         } catch (Exception e) {
             System.err.println("Inheritance preventing me from throwing this error...");
             System.err.println(e);

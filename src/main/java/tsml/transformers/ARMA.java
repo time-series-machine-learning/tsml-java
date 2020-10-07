@@ -23,6 +23,9 @@ import weka.core.Instances;
 import weka.core.Utils;
 
 import java.util.ArrayList;
+
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 
 /**
@@ -89,12 +92,26 @@ public class ARMA implements Transformer {
                 return result;
         }
 
-
         @Override
-        public Instance transform(Instance inst){
+        public Instance transform(Instance inst) {
                 // 1. Get series
                 double[] d = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
                 // 2. Fit Autocorrelations
+                final double[] pi = calculateValues(d);
+                // 6. Stuff back into new Instances.
+
+                int length = pi.length + (inst.classIndex() >= 0 ? 1 : 0);
+                final Instance out = new DenseInstance(length);
+                // Set class value.
+                if (inst.classIndex() >= 0)
+                        out.setValue(length - 1, inst.classValue());
+                for (int k = 0; k < pi.length; k++) {
+                        out.setValue(k, pi[k]);
+                }
+                return out;
+        }
+
+        private double[] calculateValues(double[] d) {
                 double[] autos = ACF.fitAutoCorrelations(d, maxLag);
                 // 3. Form Partials
                 double[][] partials = PACF.formPartials(autos);
@@ -106,18 +123,7 @@ public class ARMA implements Transformer {
                 final double[] pi = new double[maxLag];
                 for (int k = 0; k < best; k++)
                         pi[k] = partials[k][best - 1];
-                // 6. Stuff back into new Instances.
-
-
-                int length = pi.length + inst.classIndex() >= 0 ? 1 : 0;
-                final Instance out = new DenseInstance(length);
-                // Set class value.
-                if (inst.classIndex() >= 0)
-                        out.setValue(length-1, inst.classValue());
-                for (int k = 0; k < pi.length; k++) {
-                        out.setValue(k, pi[k]);
-                }
-                return out;
+                return pi;
         }
 
         public static double[] fitAR(final double[] d) {
@@ -179,6 +185,19 @@ public class ARMA implements Transformer {
                         this.maxLag = Integer.parseInt(maxLagString);
                 else
                         this.maxLag = globalMaxLag;
+        }
+
+        @Override
+        public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+                // could do this across all dimensions.
+                double[][] out = new double[inst.getNumDimensions()][];
+                int i = 0;
+                for (TimeSeries ts : inst) {
+                        out[i++] = calculateValues(ts.toArray());
+                }
+
+                // create a new output instance with the ACF data.
+                return new TimeSeriesInstance(out, inst.getLabelIndex());
         }
 
         /*

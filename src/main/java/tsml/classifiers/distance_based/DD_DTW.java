@@ -15,6 +15,7 @@
 package tsml.classifiers.distance_based;
 
 import java.text.DecimalFormat;
+import java.util.concurrent.TimeUnit;
 
 import utilities.InstanceTools;
 import machine_learning.classifiers.kNN;
@@ -219,7 +220,7 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
     
     @Override
     public void buildClassifier(Instances train){
-        long startTime=System.currentTimeMillis();
+        long startTime=System.nanoTime();
         
         if(!paramsSet){
             this.distanceFunction.crossValidateForAandB(train);
@@ -228,7 +229,8 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
         this.setDistanceFunction(this.distanceFunction);
         super.buildClassifier(train);
         try {
-            res.setBuildTime(System.currentTimeMillis()-startTime);
+            res.setTimeUnit(TimeUnit.NANOSECONDS);
+            res.setBuildTime(System.nanoTime()-startTime);
         } catch (Exception e) {
             System.err.println("Inheritance preventing me from throwing this error...");
             System.err.println(e);

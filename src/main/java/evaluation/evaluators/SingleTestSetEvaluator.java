@@ -51,7 +51,7 @@ public class SingleTestSetEvaluator extends Evaluator {
         super(seed,cloneData,setClassMissing);
         this.vis = vis;
     }
-    
+
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
 
@@ -76,7 +76,7 @@ public class SingleTestSetEvaluator extends Evaluator {
 
             if (vis) ((Interpretable)classifier).lastClassifiedInterpretability();
 
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, ""); //todo indexOfMax does not break ties randomly.
         }
 
         res.turnOnZeroTimingsErrors();

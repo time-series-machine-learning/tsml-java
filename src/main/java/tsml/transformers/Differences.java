@@ -20,6 +20,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 import java.util.ArrayList;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+
 /* simple Filter that just creates a new series of differences order k.
  * The new series has k fewer attributes than the original
  * */
@@ -37,11 +40,12 @@ public class Differences implements Transformer {
 		attName = s;
 	}
 
-	public Instances determineOutputFormat(Instances inputFormat){
+	public Instances determineOutputFormat(Instances inputFormat) {
 		// Set up instances size and format.
+		int classIndexMod = (inputFormat.classIndex() >= 0 ? 1 : 0);
 		ArrayList<Attribute> atts = new ArrayList<>();
 		String name;
-		for (int i = 0; i < inputFormat.numAttributes() - order - 1; i++) {
+		for (int i = 0; i < inputFormat.numAttributes() - order - classIndexMod; i++) {
 			name = attName + "Difference" + order + "_" + (i + 1);
 			atts.add(new Attribute(name));
 		}
@@ -62,7 +66,6 @@ public class Differences implements Transformer {
 		return result;
 	}
 
-
 	@Override
 	public Instance transform(Instance inst) {
 		// 1. Get series:
@@ -76,13 +79,10 @@ public class Differences implements Transformer {
 			d = temp;
 		}
 		// 3. Create Difference series
-		int classIndexMod = (c >= 0 ? -1 : 0);
-		int numAtts = inst.numAttributes() - order - 1  + classIndexMod; //if have a classindex then make it one shorter.
+		int classIndexMod = (c >= 0 ? 1 : 0);
+		int numAtts = inst.numAttributes() - order - classIndexMod; //if have a classindex then make it one shorter.
 
-		double[] diffs = new double[numAtts];
-
-		for (int j = 0; j < diffs.length; j++)
-			diffs[j] = d[j] - d[j + order];
+		double[] diffs = calculateDifferences(d, numAtts);
 
 		// Extract out the terms and set the attributes
 		Instance newInst = new DenseInstance(diffs.length + classIndexMod);
@@ -95,6 +95,14 @@ public class Differences implements Transformer {
 			newInst.setValue(diffs.length, inst.classValue());
 
 		return newInst;
+	}
+
+	private double[] calculateDifferences(double[] d, int numAtts) {
+		double[] diffs = new double[numAtts];
+
+		for (int j = 0; j < diffs.length; j++)
+			diffs[j] = d[j] - d[j + order];
+		return diffs;
 	}
 
 	public static void main(String[] args) {
@@ -113,5 +121,16 @@ public class Differences implements Transformer {
 		 * 
 		 */
 	}
+
+    @Override
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        double[][] out = new double[inst.getNumDimensions()][];
+        int i = 0;
+        for (TimeSeries ts : inst) {
+            out[i++] = calculateDifferences(ts.toArray(), ts.getSeriesLength() - order);
+        }
+
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
+    }
 
 }

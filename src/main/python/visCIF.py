@@ -24,7 +24,7 @@ names = []
 for i in range(int(sys.argv[3])):
 	names.append(f.readline().strip())
 	curves.append(array_string_to_list_float(f.readline()))
-	
+
 f.close()
 
 # find num_atts attributes to display by max information gain for any time point
@@ -33,7 +33,7 @@ max = [max(i) for i in curves]
 top = sorted(range(len(max)), key=lambda i: max[i], reverse=True)[:num_atts]
 
 top_curves = [curves[i] for i in top]
-top_names = [names[i] for i in top] 
+top_names = [names[i] for i in top]
 
 # plot curves with highest max and mean information gain for each time point
 for i in range(0, num_atts):

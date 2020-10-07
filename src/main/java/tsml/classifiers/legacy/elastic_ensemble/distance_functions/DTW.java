@@ -6,6 +6,7 @@ package tsml.classifiers.legacy.elastic_ensemble.distance_functions;
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.WarpingPathResults;
 import tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils.GenericTools;
 import weka.core.Instance;
+import weka.core.Instances;
 
 /**
  * @author ajb
@@ -98,6 +99,8 @@ generalised for variable window size
     private final static int[][] minDistanceToDiagonal = new int[MAX_SEQ_LENGTH][MAX_SEQ_LENGTH];
 
     public static WarpingPathResults distanceExt(final Instance first, final Instance second, final int windowSize) {
+        if(first.attribute(0).isRelationValued())
+            return distanceExtMultivariate( first, second, windowSize);
         double minDist = 0.0;
         final int n = first.numAttributes() - 1;
         final int m = second.numAttributes() - 1;
@@ -156,6 +159,76 @@ generalised for variable window size
         resExt.distanceFromDiagonal = minDistanceToDiagonal[n - 1][m - 1];
         return resExt;
     }
+
+    private static double multivariatePointDistance(Instances data1, Instances data2, int posA, int posB){
+        double diff=0;
+        for(int i=0;i<data1.numInstances();i++)
+            diff += (data1.instance(i).value(posA) - data2.instance(i).value(posB))*(data1.instance(i).value(posA) - data2.instance(i).value(posB));
+        return diff;
+    }
+    public static WarpingPathResults distanceExtMultivariate(final Instance first, final Instance second, final int windowSize) {
+        Instances data1=first.relationalValue(0);
+        Instances data2=second.relationalValue(0);
+        double minDist = 0.0;
+        final int n = first.numAttributes() - 1;
+        final int m = second.numAttributes() - 1;
+
+        double diff=0;
+        int i, j, indiceRes, absIJ;
+        int jStart, jEnd, indexInfyLeft;
+        diff=multivariatePointDistance(data1,data2,0,0);
+        distMatrix[0][0] = diff;
+        minDistanceToDiagonal[0][0] = 0;
+        for (i = 1; i < Math.min(n, 1 + windowSize); i++) {
+            diff = multivariatePointDistance(data1,data2,i,0);
+            distMatrix[i][0] = distMatrix[i - 1][0] + diff;
+            minDistanceToDiagonal[i][0] = i;
+        }
+
+        for (j = 1; j < Math.min(m, 1 + windowSize); j++) {
+
+            diff =multivariatePointDistance(data1,data2,0,j);
+            distMatrix[0][j] = distMatrix[0][j - 1] + diff;
+            minDistanceToDiagonal[0][j] = j;
+        }
+        if (j < m) distMatrix[0][j] = Double.POSITIVE_INFINITY;
+
+        for (i = 1; i < n; i++) {
+            jStart = Math.max(1, i - windowSize);
+            jEnd = Math.min(m, i + windowSize + 1);
+            indexInfyLeft = i - windowSize - 1;
+            if (indexInfyLeft >= 0) distMatrix[i][indexInfyLeft] = Double.POSITIVE_INFINITY;
+
+            for (j = jStart; j < jEnd; j++) {
+                absIJ = Math.abs(i - j);
+                indiceRes = GenericTools.argMin3(distMatrix[i - 1][j - 1], distMatrix[i][j - 1], distMatrix[i - 1][j]);
+                switch (indiceRes) {
+                    case DIAGONAL:
+                        minDist = distMatrix[i - 1][j - 1];
+                        minDistanceToDiagonal[i][j] = Math.max(absIJ, minDistanceToDiagonal[i - 1][j - 1]);
+                        break;
+                    case LEFT:
+                        minDist = distMatrix[i][j - 1];
+                        minDistanceToDiagonal[i][j] = Math.max(absIJ, minDistanceToDiagonal[i][j - 1]);
+                        break;
+                    case UP:
+                        minDist = distMatrix[i - 1][j];
+                        minDistanceToDiagonal[i][j] = Math.max(absIJ, minDistanceToDiagonal[i - 1][j]);
+                        break;
+                }
+                diff = multivariatePointDistance(data1,data2,i,j);
+                distMatrix[i][j] = minDist + diff;
+            }
+            if (j < m) distMatrix[i][j] = Double.POSITIVE_INFINITY;
+        }
+
+        WarpingPathResults resExt = new WarpingPathResults();
+        resExt.distance = distMatrix[n - 1][m - 1];
+        resExt.distanceFromDiagonal = minDistanceToDiagonal[n - 1][m - 1];
+        return resExt;
+    }
+
+
 
     public static int getWindowSize(final int n, final double r) {
         return (int) (r * n);

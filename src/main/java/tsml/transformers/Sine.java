@@ -17,6 +17,8 @@ package tsml.transformers;
 import java.io.File;
 
 import experiments.data.DatasetLoading;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 import weka.core.*;
 
@@ -28,13 +30,24 @@ import weka.core.*;
 public class Sine implements Transformer {
 
     @Override
-    public Instances transform(Instances data) {
-        //for k=1 to n: f_k = sum_{i=1}^n f_i sin[(k-1)*(\pi/n)*(i-1/2)] 
-    //Assumes the class attribute is in the last one for simplicity            
-        Instances result = determineOutputFormat(data);     
-		for(Instance inst : data) 
-			result.add(transform(inst));
-        return result;
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        //multidimensional sine. sine applied series wise for each dimension
+        double[][] out = new double[inst.getNumDimensions()][];
+        int index = 0;
+        for(TimeSeries ts : inst){
+            double[] data = new double[ts.getSeriesLength()];
+            double n = data.length;
+            for (int k = 0; k < n; k++) {
+                double fk = 0;
+                for (int i = 0; i < n; i++) {
+                    double c = k * (i + 0.5) * (Math.PI / n);
+                    fk += ts.get(i) * Math.sin(c);
+                }
+                data[k] = fk;
+            }
+            out[index++] = data;
+        }
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     @Override

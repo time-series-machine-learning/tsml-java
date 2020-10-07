@@ -17,7 +17,7 @@ package utilities.multivariate_tools;
 import utilities.InstanceTools;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.*;
-import tsml.transformers.NormalizeCase;
+import tsml.transformers.RowNormalizer;
 
 import java.util.ArrayList;
 
@@ -139,7 +139,7 @@ public class MultivariateInstanceTools {
     }
     
     
-    private static Instances createRelationFrom(Instances header, double[][] data){
+    public static Instances createRelationFrom(Instances header, double[][] data){
         int numAttsInChannel = data[0].length;
         Instances output = new Instances(header, data.length);
 
@@ -234,8 +234,8 @@ public class MultivariateInstanceTools {
     
     //function which returns the separate channels of a multivariate problem as Instances[].
     public static Instances[] splitMultivariateInstances(Instances multiInstances){
-        Instances[] output = new Instances[numDimensions(multiInstances)];
-        
+        int d=numDimensions(multiInstances);
+        Instances[] output = new Instances[d];
         int length = channelLength(multiInstances); //all the values + a class value.
 
         //each channel we want to build an Instances object which contains the data, and the class attribute.
@@ -263,8 +263,8 @@ public class MultivariateInstanceTools {
                 //add the denseinstance to write too.
                 output[i].add(new DenseInstance(length+1));
 
-                //System.out.println(index);
-                double [] channel = multiInstances.get(j).relationalValue(0).get(i).toDoubleArray();
+                Instances inst=multiInstances.get(j).relationalValue(0);
+                double [] channel = inst.get(i).toDoubleArray();
                 int k=0;
                 for(; k<channel.length; k++){
                     output[i].instance(j).setValue(k, channel[k]);
@@ -540,12 +540,10 @@ public class MultivariateInstanceTools {
 
   public static Instances normaliseDimensions(Instances data) throws Exception {
       Instances[] channels = splitMultivariateInstances(data);
-      
-      NormalizeCase norm = new NormalizeCase();
-      for (Instances channel : channels) {
-          channel = norm.transform(channel);
+      RowNormalizer norm = new RowNormalizer();
+      for (int i = 0; i < channels.length; i++) {
+          channels[i] = norm.transform(channels[i]);
       }
-      
       return mergeToMultivariateInstances(channels);
   }
 

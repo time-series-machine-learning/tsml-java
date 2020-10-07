@@ -26,7 +26,7 @@ def array_string_to_list_string(arr):
 	str = str[1:]
 	str = str[:len(str)-1]
 	return str.split(',')
-	
+
 #converts a 2d semi-colona nd comma separated string to a list of floats
 def deep_array_string_to_list_float(arr):
 	x = [array_string_to_list_float(i) for i in arr.split(';')]
