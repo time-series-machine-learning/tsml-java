@@ -680,23 +680,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     /**
-     * @return data of passed instance in a double array with the class value removed if present
-     */
-    protected static double[] toArrayNoClass(Instance inst) {
-        int length = inst.numAttributes();
-        if (inst.classIndex() >= 0)
-            --length;
-
-        double[] data = new double[length];
-
-        for (int i=0, j=0; i < inst.numAttributes(); ++i)
-            if (inst.classIndex() != i)
-                data[j++] = inst.value(i);
-
-        return data;
-    }
-
-    /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
     private Bag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
@@ -1024,8 +1007,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return bags.get(nn).getClassVal();
     }
 
-    public double[] firstWordVis(Instance inst, BitWord word) {
-        double[] dft = performMFT(toArrayNoClass(inst))[0];
+    public double[] firstWordVis(TimeSeriesInstance inst, BitWord word) {
+        double[] dft = performMFT(inst.toValueArray()[0])[0];
         word.setWord(createWord(dft).getWord());
         return dft;
     }

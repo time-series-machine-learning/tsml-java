@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Temporal importance curve diagram generator for interval forests.
+# Temporal importance curve diagram generator for the Canonical Interval Forest.
 # Applicable to other interval forests.
 # Inputs: figure save path, also used to load in attribute/timepoint inforamtion gain from text file
 #         seed, used in save path

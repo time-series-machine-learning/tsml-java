@@ -1,7 +1,10 @@
 package tsml.classifiers;
 
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.dictionary_based.MultivariateIndividualTDE;
+import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.interval_based.CIF;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -14,12 +17,15 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
+import static weka.core.Utils.sum;
 
 public class LEFTIST {
 
@@ -33,9 +39,10 @@ public class LEFTIST {
     private int seed;
     private Random rand;
 
-    private String figureSavePath;
-
     private boolean debug = true;
+
+    int predVal;
+    int[][] predSlices;
 
     public LEFTIST(TimeSeriesInstances train, EnhancedAbstractClassifier classifier, int seed){
         this.train = train;
@@ -59,15 +66,17 @@ public class LEFTIST {
         noNeighbours = i;
     }
 
-    public void setFigureSavePath(String s){
-        figureSavePath = s;
-    }
-
     public double[][] sliceWeights(TimeSeriesInstance inst) throws Exception {
+        if (inst.getNumDimensions() > 1){
+            System.err.println("Only available for univariate series.");
+            return null;
+        }
+
         int[][] slices = slices(inst.getMaxLength());
+        predSlices = slices;
         double[][] activatedSlices = neighbourSliceActivation();
         double[][] transformedNeighbours = transformNeighbours(inst, slices, activatedSlices);
-        double[] neighbourWeights = weightNeighbours(transformedNeighbours);
+        double[] neighbourWeights = weightNeighbours(activatedSlices); //neighbours or masks?
 
         double[][] probas = new double[noNeighbours][];
         for (int i = 0; i < noNeighbours; i++) {
@@ -75,11 +84,12 @@ public class LEFTIST {
             dims[0] = transformedNeighbours[i];
             probas[i] = classifier.distributionForInstance(new TimeSeriesInstance(dims));
         }
+        predVal = argMax(probas[0], rand);
 
         //feature selection?
 
         int noClasses = train.getClassLabels().length;
-        double[][] coefs = new double[noClasses][];
+        double[][] coeffs = new double[noClasses][];
 
         ArrayList<Attribute> atts = new ArrayList<>(noSlices + 1);
         ArrayList<String> vals = new ArrayList<>(2);
@@ -106,25 +116,40 @@ public class LEFTIST {
 
             //score?
 
-            coefs[i] = explainer.coefficients();
+            double[] c = explainer.coefficients();
+            coeffs[i] = new double[noSlices];
+            System.arraycopy(c, 0, coeffs[i], 0, noSlices);
         }
 
-        return coefs;
+        return coeffs;
     }
 
     public double[][] sliceWeights(Instance inst) throws Exception {
         return sliceWeights(Converter.fromArff(inst));
     }
 
-    public void outputFigure(TimeSeriesInstance inst) throws Exception {
-        if (figureSavePath == null) throw new Exception("Figure save path required for output figure.");
-
+    public void outputFigure(TimeSeriesInstance inst, String figureSavePath) throws Exception {
         double[][] weights = sliceWeights(inst);
 
-        //run python file to output graph displaying important attributes and intervals for test series
-        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityCIF.py \"" +
-                figureSavePath.replace("\\", "/")+ "\" " + seed + " " + train.getClassLabels().length
-                + " " + noSlices + " " + noNeighbours);
+        File f = new File(figureSavePath);
+        if(!f.isDirectory()) f.mkdirs();
+
+        OutFile of = new OutFile(figureSavePath + "\\interp" + seed + ".txt");
+        of.writeLine(Arrays.toString(inst.toValueArray()[0]));
+        of.writeString(Arrays.toString(predSlices[0]));
+        for (int i = 1; i < predSlices.length; i++) {
+            of.writeString(";" + Arrays.toString(predSlices[i]));
+        }
+        of.writeLine("");;
+        of.writeLine(Integer.toString(predVal));
+        of.writeLine(Integer.toString(train.getClassLabels().length));
+        for (int i = 0; i < train.getClassLabels().length; i++){
+            of.writeLine(Integer.toString(i));
+            of.writeLine(Arrays.toString(weights[i]));
+        }
+
+        Process p = Runtime.getRuntime().exec("python src/main/python/leftist.py \"" +
+                figureSavePath.replace("\\", "/")+ "\" " + seed);
 
         if (debug) {
             System.out.println("CIF interp python output:");
@@ -145,8 +170,8 @@ public class LEFTIST {
         }
     }
 
-    public void outputFigure(Instance inst) throws Exception {
-        outputFigure(Converter.fromArff(inst));
+    public void outputFigure(Instance inst, String figureSavePath) throws Exception {
+        outputFigure(Converter.fromArff(inst), figureSavePath);
     }
 
     private int[][] slices(int length){
@@ -196,13 +221,24 @@ public class LEFTIST {
     private double[] weightNeighbours(double[][] neighbours){
         double[] weights = new double[neighbours.length];
         for (int i = 0; i < noNeighbours; i++){
-            weights[i] = kernel(euclideanDistance(neighbours[0], neighbours[i])); //neighbours or masks?
+            weights[i] = kernel(cosineDistance(neighbours[0], neighbours[i]));
         }
         return weights;
     }
 
     private double kernel(double distance){
-        return Math.sqrt(Math.exp(-Math.pow(distance, 2) / 0.0625)); //kernel width of 0.25 ^2
+        return Math.sqrt(Math.exp(-Math.pow(distance, 2) / Math.pow(0.25, 2))); //kernel width of 0.25 ^2
+    }
+
+    private double cosineDistance(double[] inst1, double[] inst2){
+        return -(dot(inst1,inst2) / (Math.sqrt(dot(inst1,inst1)) * Math.sqrt(dot(inst2,inst2)))) + 1;
+    }
+
+    private double dot(double[] inst1, double[] inst2){
+        double sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
     }
 
     private double euclideanDistance(double[] inst1, double[] inst2){
@@ -217,7 +253,7 @@ public class LEFTIST {
         int fold = 0;
 
         //Minimum working example
-        String dataset = "GunPoint";
+        String dataset = "EthanolLevel";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset +
                 "\\" + dataset + "_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset +
@@ -228,8 +264,7 @@ public class LEFTIST {
 
         CIF c = new CIF();
         c.buildClassifier(train);
-        System.out.println("Base classifier built.");
         LEFTIST l = new LEFTIST(train, c, 0);
-        System.out.println(Arrays.deepToString(l.sliceWeights(test.get(0))));
+        l.outputFigure(test.get(0), "E:\\Temp\\");
     }
 }

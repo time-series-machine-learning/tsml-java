@@ -1032,7 +1032,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         if (interpSavePath != null) {
-            interpSeries = extractTimeSeries(series[0]);
+            interpSeries = instance.toValueArray()[0];
             interpPred = argMax(distributions,rand);
         }
 
@@ -1224,6 +1224,227 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     @Override
+    public boolean setVisualisationSavePath(String path) {
+        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
+        if(validPath){
+            visSavePath = path;
+        }
+        return validPath;
+    }
+
+    //TODO clean up vis file and python script
+
+    @Override
+    public boolean createVisualisation() throws Exception {
+        if (visSavePath == null){
+            System.err.println("TDE visualisation save path not set.");
+            return false;
+        }
+
+        if (classifiers.get(0) instanceof MultivariateIndividualTDE){
+            System.err.println("TDE visualisation only available for univariate series.");
+            return false;
+        }
+
+        HashMap<Integer, Double> wordLengthCounts = new HashMap<>(wordLengths.length);
+        HashMap<Boolean, Double> normCounts = new HashMap<>(normOptions.length);
+        HashMap<Integer, Double> levelsCounts = new HashMap<>(levels.length);
+        HashMap<Boolean, Double> IGBCounts = new HashMap<>(useIGB.length);
+        ArrayList<Integer> windowLengths = new ArrayList<>(classifiers.size());
+        double weightSum = 0;
+        for (int i = 0; i < classifiers.size(); i++){
+            IndividualTDE cls = classifiers.get(i);
+
+            Double val = wordLengthCounts.get(cls.getWordLength());
+            if (val == null) val = 0.0;
+            wordLengthCounts.put(cls.getWordLength(), val + cls.getWeight());
+
+            Double val2 = normCounts.get(cls.getNorm());
+            if (val2 == null) val2 = 0.0;
+            normCounts.put(cls.getNorm(), val2 + cls.getWeight());
+
+            Double val3 = levelsCounts.get(cls.getLevels());
+            if (val3 == null) val3 = 0.0;
+            levelsCounts.put(cls.getLevels(), val3 + cls.getWeight());
+
+            Double val4 = IGBCounts.get(cls.getIGB());
+            if (val4 == null) val4 = 0.0;
+            IGBCounts.put(cls.getIGB(), val4 + cls.getWeight());
+
+            windowLengths.add(cls.getWindowSize());
+
+            weightSum += cls.getWeight();
+        }
+
+        int maxWordLength = -1;
+        double maxWeight1 = -1;
+        for (Map.Entry<Integer, Double> ent: wordLengthCounts.entrySet()){
+            if (ent.getValue() > maxWeight1 || (ent.getValue() == maxWeight1 && rand.nextBoolean())){
+                maxWordLength = ent.getKey();
+                maxWeight1 = ent.getValue();
+            }
+        }
+
+        int maxLevels = -1;
+        double maxWeight2 = -1;
+        for (Map.Entry<Integer, Double> ent: levelsCounts.entrySet()){
+            if (ent.getValue() > maxWeight2 || (ent.getValue() == maxWeight2 && rand.nextBoolean())){
+                maxLevels = ent.getKey();
+                maxWeight2 = ent.getValue();
+            }
+        }
+
+        Collections.sort(windowLengths);
+        int medianWindowLength;
+        if (windowLengths.size() % 2 == 1)
+            medianWindowLength = windowLengths.get(windowLengths.size()/2);
+        else
+            medianWindowLength = (windowLengths.get(windowLengths.size()/2 - 1) +
+                    windowLengths.get(windowLengths.size()/2)) / 2;
+
+        ArrayList<IndividualTDE> sortedClassifiers = new ArrayList<>(classifiers);
+        Collections.sort(sortedClassifiers,Collections.reverseOrder());
+        IndividualTDE tde = null;
+        int rank = 1;
+        for (IndividualTDE indiv: sortedClassifiers){
+            if (indiv.getWordLength() == maxWordLength && indiv.getLevels() == maxLevels){
+                tde = indiv;
+                break;
+            }
+            rank++;
+        }
+
+        if (tde == null){
+            System.out.println("No TDE classifier with word length: " + maxWordLength + ", levels: " + maxLevels
+                    + ", using top weighted classifier.");
+            tde = sortedClassifiers.get(0);
+            rank = 1;
+        }
+
+        HashMap<SerialisableComparablePair<Byte, String>, Integer>[] classCounts = new HashMap[getNumClasses()];
+        for (int i = 0; i < getNumClasses(); i++){
+            classCounts[i] = new HashMap<>();
+        }
+
+        int[] classCount = new int[getNumClasses()];
+        for (IndividualTDE.Bag bag: tde.getBags()){
+            int cls = bag.getClassVal();
+            if (classCount[cls] >= 1) continue;
+            classCount[cls]++;
+
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : bag.entrySet()) {
+                SerialisableComparablePair<BitWord, Byte> key = entry.getKey();
+
+                String word = key.var2 == -1 ? ((BitWordLong)key.var1).toStringBigram()
+                        : ((BitWordInt)key.var1).toStringUnigram();
+
+                SerialisableComparablePair<Byte, String> newKey = new SerialisableComparablePair<>(key.var2, word);
+                Integer val = classCounts[cls].get(newKey);
+                if (val == null) val = 0;
+                classCounts[cls].put(newKey, val + entry.getValue());
+            }
+        }
+
+        TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
+            int c1 = obj1.var1 - obj2.var1;
+            if (c1 != 0) {
+                return c1;
+            }
+            else {
+                int c2 = obj1.var2.length() - obj2.var2.length();
+                if (c2 != 0) {
+                    return c2;
+                }
+                else {
+                    return obj1.var2.compareTo(obj2.var2);
+                }
+            }
+        });
+        for (HashMap<SerialisableComparablePair<Byte, String>, Integer> map: classCounts){
+            keys.addAll(map.keySet());
+        }
+
+        int numLevels = 1;
+        for (int i = 0; i < tde.getLevels(); i++){
+            numLevels += Math.pow(2,i);
+        }
+
+        ArrayList<Integer>[][] counts = new ArrayList[numLevels][getNumClasses()];
+        ArrayList<String>[] words = new ArrayList[numLevels];
+        for (int i = 0; i < numLevels; i++){
+            words[i] = new ArrayList<>();
+            for (int n = 0; n < getNumClasses(); n++){
+                counts[i][n] = new ArrayList<>();
+            }
+        }
+
+        for (SerialisableComparablePair<Byte, String> key: keys){
+            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
+
+            words[idx].add(key.var2);
+            for (int i = 0; i < getNumClasses(); i++){
+                Integer val = classCounts[i].get(key);
+                if (val == null) val = 0;
+                counts[idx][i].add(val);
+            }
+        }
+
+        TimeSeriesInstance example = train.get(tde.getSubsampleIndices().get(0));
+        BitWordInt word = new BitWordInt();
+        double[] dft = tde.firstWordVis(example, word);
+
+        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
+        of.writeLine(Double.toString(tde.getWeight()));
+        of.writeLine(rank + " " + classifiers.size());
+        of.writeLine(tde.getWordLength() + " " + wordLengthCounts.get(tde.getWordLength()));
+        of.writeLine(tde.getNorm() + " " + normCounts.get(tde.getNorm()));
+        of.writeLine(tde.getLevels() + " " + levelsCounts.get(tde.getLevels()));
+        of.writeLine(tde.getIGB() + " " + IGBCounts.get(tde.getIGB()));
+        of.writeLine(tde.getWindowSize() + " " + medianWindowLength);
+        of.writeLine(Double.toString(weightSum));
+        of.writeLine(Arrays.toString(classCount));
+        of.writeLine(Arrays.toString(example.toValueArray()[0]));
+        of.writeLine(Arrays.toString(dft));
+        of.writeLine(word.toStringUnigram());
+        double[][] breakpoints = tde.getBreakpoints();
+        of.writeString(Arrays.toString(breakpoints[0]));
+        for (int i = 1; i < breakpoints.length; i++) {
+            of.writeString(";" + Arrays.toString(breakpoints[i]));
+        }
+        of.writeLine("");
+        for (int i = 0; i < numLevels; i++) {
+            of.writeLine(words[i].toString());
+            for (int n = 0; n < getNumClasses(); n++) {
+                of.writeLine(counts[i][n].toString());
+            }
+        }
+        of.closeFile();
+
+        Process p = Runtime.getRuntime().exec("python src/main/python/visTDE.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " " + getNumClasses());
+
+        if (debug) {
+            System.out.println("TDE vis python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
+        }
+
+        return true;
+    }
+
+    @Override
     public boolean setInterpretabilitySavePath(String path) {
         boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
         if(validPath){
@@ -1239,17 +1460,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             return false;
         }
 
-        if (classifiers.length > 1){
+        if (classifiers.get(0) instanceof MultivariateIndividualTDE){
             System.err.println("TDE interpretability only available for univariate series.");
             return false;
         }
 
         TreeMap<Integer, Double> topNeighbours = new TreeMap<>(Collections.reverseOrder());
         for (int i = 0; i < interpData.size(); i++){
-            if (train.get(interpData.get(i)).classValue() == interpPred) {
+            if (train.get(interpData.get(i)).getLabelIndex() == interpPred) {
                 Double val = topNeighbours.get(interpData.get(i));
                 if (val == null) val = 0.0;
-                topNeighbours.put(interpData.get(i), val + classifiers[0].get(i).getWeight());
+                topNeighbours.put(interpData.get(i), val + classifiers.get(i).getWeight());
             }
         }
 
@@ -1265,17 +1486,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         int topClassifier = 0;
         double topClassifierWeight = Double.MIN_VALUE;
         for (int i = 0; i < interpData.size(); i++){
-            if (interpData.get(i) == topNeighbour && classifiers[0].get(i).getWeight() > topClassifierWeight){
+            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight){
                 topClassifier = i;
-                topClassifierWeight = classifiers[0].get(i).getWeight();
+                topClassifierWeight = classifiers.get(i).getWeight();
             }
         }
 
-        IndividualTDE tde = classifiers[0].get(topClassifier);
-        double[] nearestSeries = extractTimeSeries(train.get(topNeighbour));
+        IndividualTDE tde = classifiers.get(topClassifier);
+        double[] nearestSeries = train.get(topNeighbour).toValueArray()[0];
 
-        IndividualTDE.SPBag histogram = tde.getLastNNBag();
-        IndividualTDE.SPBag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
+        IndividualTDE.Bag histogram = tde.getLastNNBag();
+        IndividualTDE.Bag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
 
         TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
             int c1 = obj1.var1 - obj2.var1;
@@ -1351,9 +1572,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             of.writeLine(counts[i][1].toString());
         }
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityTDE.py \"" +
+        Process p = Runtime.getRuntime().exec("python src/main/python/interpretabilityTDE.py \"" +
                 interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
-                + " " + tde.getLevels() + " " +  interpPred + " " + (int)train.get(topNeighbour).classValue());
+                + " " + tde.getLevels() + " " +  interpPred + " " + train.get(topNeighbour).getLabelIndex());
 
         interpCount++;
 
@@ -1381,227 +1602,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override
     public int getPredID(){
         return interpCount;
-    }
-
-    @Override
-    public boolean setVisualisationSavePath(String path) {
-        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
-        if(validPath){
-            visSavePath = path;
-        }
-        return validPath;
-    }
-
-    //TODO clean up vis file and python script
-
-    @Override
-    public boolean createVisualisation() throws Exception {
-        if (visSavePath == null){
-            System.err.println("TDE visualisation save path not set.");
-            return false;
-        }
-
-        if (classifiers.length > 1){
-            System.err.println("TDE visualisation only available for univariate series.");
-            return false;
-        }
-
-        HashMap<Integer, Double> wordLengthCounts = new HashMap<>(wordLengths.length);
-        HashMap<Boolean, Double> normCounts = new HashMap<>(normOptions.length);
-        HashMap<Integer, Double> levelsCounts = new HashMap<>(levels.length);
-        HashMap<Boolean, Double> IGBCounts = new HashMap<>(useIGB.length);
-        ArrayList<Integer> windowLengths = new ArrayList<>(classifiers[0].size());
-        double weightSum = 0;
-        for (int i = 0; i < classifiers[0].size(); i++){
-            IndividualTDE cls = classifiers[0].get(i);
-
-            Double val = wordLengthCounts.get(cls.getWordLength());
-            if (val == null) val = 0.0;
-            wordLengthCounts.put(cls.getWordLength(), val + cls.getWeight());
-
-            Double val2 = normCounts.get(cls.getNorm());
-            if (val2 == null) val2 = 0.0;
-            normCounts.put(cls.getNorm(), val2 + cls.getWeight());
-
-            Double val3 = levelsCounts.get(cls.getLevels());
-            if (val3 == null) val3 = 0.0;
-            levelsCounts.put(cls.getLevels(), val3 + cls.getWeight());
-
-            Double val4 = IGBCounts.get(cls.getIGB());
-            if (val4 == null) val4 = 0.0;
-            IGBCounts.put(cls.getIGB(), val4 + cls.getWeight());
-
-            windowLengths.add(cls.getWindowSize());
-
-            weightSum += cls.getWeight();
-        }
-
-        int maxWordLength = -1;
-        double maxWeight1 = -1;
-        for (Map.Entry<Integer, Double> ent: wordLengthCounts.entrySet()){
-            if (ent.getValue() > maxWeight1 || (ent.getValue() == maxWeight1 && rand.nextBoolean())){
-                maxWordLength = ent.getKey();
-                maxWeight1 = ent.getValue();
-            }
-        }
-
-        int maxLevels = -1;
-        double maxWeight2 = -1;
-        for (Map.Entry<Integer, Double> ent: levelsCounts.entrySet()){
-            if (ent.getValue() > maxWeight2 || (ent.getValue() == maxWeight2 && rand.nextBoolean())){
-                maxLevels = ent.getKey();
-                maxWeight2 = ent.getValue();
-            }
-        }
-
-        Collections.sort(windowLengths);
-        int medianWindowLength;
-        if (windowLengths.size() % 2 == 1)
-            medianWindowLength = windowLengths.get(windowLengths.size()/2);
-        else
-            medianWindowLength = (windowLengths.get(windowLengths.size()/2 - 1) +
-                    windowLengths.get(windowLengths.size()/2)) / 2;
-
-        ArrayList<IndividualTDE> sortedClassifiers = new ArrayList<>(classifiers[0]);
-        Collections.sort(sortedClassifiers,Collections.reverseOrder());
-        IndividualTDE tde = null;
-        int rank = 1;
-        for (IndividualTDE indiv: sortedClassifiers){
-            if (indiv.getWordLength() == maxWordLength && indiv.getLevels() == maxLevels){
-                tde = indiv;
-                break;
-            }
-            rank++;
-        }
-
-        if (tde == null){
-            System.out.println("No TDE classifier with word length: " + maxWordLength + ", levels: " + maxLevels
-                    + ", using top weighted classifier.");
-            tde = sortedClassifiers.get(0);
-            rank = 1;
-        }
-
-        HashMap<SerialisableComparablePair<Byte, String>, Integer>[] classCounts = new HashMap[getNumClasses()];
-        for (int i = 0; i < getNumClasses(); i++){
-            classCounts[i] = new HashMap<>();
-        }
-
-        int[] classCount = new int[getNumClasses()];
-        for (IndividualTDE.SPBag bag: tde.getBags()){
-            int cls = (int)bag.classVal;
-            if (classCount[cls] >= 1) continue;
-            classCount[cls]++;
-
-            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : bag.entrySet()) {
-                SerialisableComparablePair<BitWord, Byte> key = entry.getKey();
-
-                String word = key.var2 == -1 ? ((BitWordLong)key.var1).toStringBigram()
-                        : ((BitWordInt)key.var1).toStringUnigram();
-
-                SerialisableComparablePair<Byte, String> newKey = new SerialisableComparablePair<>(key.var2, word);
-                Integer val = classCounts[cls].get(newKey);
-                if (val == null) val = 0;
-                classCounts[cls].put(newKey, val + entry.getValue());
-            }
-        }
-
-        TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
-            int c1 = obj1.var1 - obj2.var1;
-            if (c1 != 0) {
-                return c1;
-            }
-            else {
-                int c2 = obj1.var2.length() - obj2.var2.length();
-                if (c2 != 0) {
-                    return c2;
-                }
-                else {
-                    return obj1.var2.compareTo(obj2.var2);
-                }
-            }
-        });
-        for (HashMap<SerialisableComparablePair<Byte, String>, Integer> map: classCounts){
-            keys.addAll(map.keySet());
-        }
-
-        int numLevels = 1;
-        for (int i = 0; i < tde.getLevels(); i++){
-            numLevels += Math.pow(2,i);
-        }
-
-        ArrayList<Integer>[][] counts = new ArrayList[numLevels][getNumClasses()];
-        ArrayList<String>[] words = new ArrayList[numLevels];
-        for (int i = 0; i < numLevels; i++){
-            words[i] = new ArrayList<>();
-            for (int n = 0; n < getNumClasses(); n++){
-                counts[i][n] = new ArrayList<>();
-            }
-        }
-
-        for (SerialisableComparablePair<Byte, String> key: keys){
-            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
-
-            words[idx].add(key.var2);
-            for (int i = 0; i < getNumClasses(); i++){
-                Integer val = classCounts[i].get(key);
-                if (val == null) val = 0;
-                counts[idx][i].add(val);
-            }
-        }
-
-        Instance example = train.get(tde.getSubsampleIndices().get(0));
-        BitWordInt word = new BitWordInt();
-        double[] dft = tde.firstWordVis(example, word);
-
-        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-        of.writeLine(Double.toString(tde.getWeight()));
-        of.writeLine(rank + " " + classifiers[0].size());
-        of.writeLine(tde.getWordLength() + " " + wordLengthCounts.get(tde.getWordLength()));
-        of.writeLine(tde.getNorm() + " " + normCounts.get(tde.getNorm()));
-        of.writeLine(tde.getLevels() + " " + levelsCounts.get(tde.getLevels()));
-        of.writeLine(tde.getIGB() + " " + IGBCounts.get(tde.getIGB()));
-        of.writeLine(tde.getWindowSize() + " " + medianWindowLength);
-        of.writeLine(Double.toString(weightSum));
-        of.writeLine(Arrays.toString(classCount));
-        of.writeLine(Arrays.toString(example.toDoubleArray()));
-        of.writeLine(Arrays.toString(dft));
-        of.writeLine(word.toStringUnigram());
-        double[][] breakpoints = tde.getBreakpoints();
-        of.writeString(Arrays.toString(breakpoints[0]));
-        for (int i = 1; i < breakpoints.length; i++) {
-            of.writeString(";" + Arrays.toString(breakpoints[i]));
-        }
-        of.writeLine("");
-        for (int i = 0; i < numLevels; i++) {
-            of.writeLine(words[i].toString());
-            for (int n = 0; n < getNumClasses(); n++) {
-                of.writeLine(counts[i][n].toString());
-            }
-        }
-        of.closeFile();
-
-        Process p = Runtime.getRuntime().exec("py src/main/python/visTDE.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " " + getNumClasses());
-
-        if (debug) {
-            System.out.println("TDE vis python output:");
-            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            System.out.println("output : ");
-            String outLine = out.readLine();
-            while (outLine != null) {
-                System.out.println(outLine);
-                outLine = out.readLine();
-            }
-            System.out.println("error : ");
-            String errLine = err.readLine();
-            while (errLine != null) {
-                System.out.println(errLine);
-                errLine = err.readLine();
-            }
-        }
-
-        return true;
     }
 
     /**
