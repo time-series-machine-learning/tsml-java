@@ -883,6 +883,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public long getErrorEstimateTime() {
         return errorEstimateTime;
     }
+    public long getErrorEstimateTimeInNanos() { return timeUnit.toNanos(errorEstimateTime); }
 
     /**
      * todo initially intended as a temporary measure, but might stay here until a switch
@@ -916,6 +917,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public long getBuildPlusEstimateTime() {
         return buildPlusEstimateTime;
     }
+    public long getBuildPlusEstimateTimeInNanos() { return timeUnit.toNanos(buildPlusEstimateTime); }
 
     /**
      * This measures the total time to build the classifier on the train data

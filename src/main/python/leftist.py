@@ -38,4 +38,4 @@ for i in range(0, len(slices)):
 
     plt.axvspan(slices[i][0], slices[i][1], facecolor=c, alpha=abs(coeffs[pred_class][i]*5))
 
-plt.show()
+plt.savefig(sys.argv[1] + 'interp' + sys.argv[2], bbox_inches='tight')

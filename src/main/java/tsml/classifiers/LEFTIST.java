@@ -283,6 +283,10 @@ public class LEFTIST {
         CIF c = new CIF();
         c.buildClassifier(train);
         LEFTIST l = new LEFTIST(train, c, 0);
-        l.outputFigure(test.get(0), "E:\\Temp\\");
+        l.outputFigure(test.get(0), "E:\\Temp\\LEFTIST\\" + dataset + "1\\");
+        l.outputFigure(test.get(1), "E:\\Temp\\LEFTIST\\" + dataset + "2\\");
+        l.outputFigure(test.get(2), "E:\\Temp\\LEFTIST\\" + dataset + "3\\");
+        l.outputFigure(test.get(3), "E:\\Temp\\LEFTIST\\" + dataset + "4\\");
+        l.outputFigure(test.get(4), "E:\\Temp\\LEFTIST\\" + dataset + "5\\");
     }
 }
