@@ -154,7 +154,7 @@ public class Experiments  {
             settings[1]="-rp=C:\\Experiments\\Results\\"; //Where to write results
             settings[2]="-gtf=false"; //Whether to generate train files or not
             settings[3]="-cn="+classifier; //Classifier name
-            settings[4]="-dn="; //Problem file, don't change here as it is overwritten by probFiles
+            settings[4]="-dn="; //Problem name, don't change here as it is overwritten by probFiles
             settings[5]="-f=1"; //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             settings[6]="-ctr=600s"; //Time contract
             settings[7]="-d=true"; //Debugging
