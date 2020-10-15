@@ -368,7 +368,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"ROCKET_1NN","ROCKET_RF","ROCKET","HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22"};
+    public static String[] hybrids= {"ROCKET_RotF","ROCKET_1NN","ROCKET_RF","ROCKET","HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -415,6 +415,14 @@ public class ClassifierLists {
                 ((ROCKETClassifier) c).setSeed(fold);
                 kNN k = new kNN();
                 ((ROCKETClassifier) c).setClassifier(k);
+                break;
+            case "ROCKET_RotF":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier) c).setSeed(fold);
+                RotationForest r3 = new RotationForest();
+                r3.setSeed(fold);
+                r3.setNumIterations(200);
+                ((ROCKETClassifier) c).setClassifier(r3);
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");

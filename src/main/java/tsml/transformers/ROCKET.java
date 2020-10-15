@@ -157,8 +157,6 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         // generate random kernel lengths between 7,9 or 11, for numKernels.
         lengths = sampleLengths(random, candidateLengths, numKernels);
 
-        System.out.println(Arrays.stream(lengths).average());
-
         // randomly select number of dimensions for each kernel
         numDimensionIndices = new int[numKernels];
         if (numDimensions == 1){
@@ -224,11 +222,6 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
             paddings[i] = random.nextInt(2) == 1 ? Math.floorDiv((lengths[i] - 1) * dilations[i], 2) : 0;
         }
-
-        System.out.println(Arrays.stream(weights).average());
-        System.out.println(Arrays.stream(biases).average());
-        System.out.println(Arrays.stream(dilations).average());
-        System.out.println(Arrays.stream(paddings).average());
 
         fit = true;
     }
