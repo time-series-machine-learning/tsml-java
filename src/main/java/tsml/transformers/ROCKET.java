@@ -19,12 +19,18 @@ import weka.core.*;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.StatisticalUtilities.dot;
+import static utilities.StatisticalUtilities.mean;
 import static utilities.Utilities.extractTimeSeries;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
+/**
+ *
+ *
+ * @author Aaron Bostrom, Matthew Middlehurst
+ */
 public class ROCKET implements TrainableTransformer, Randomizable {
 
-    private int numKernels = 10000; //either 100. 1000. or 10,000
+    private int numKernels = 10000;
     private boolean normalise = true;
 
     private int seed;
@@ -151,6 +157,8 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         // generate random kernel lengths between 7,9 or 11, for numKernels.
         lengths = sampleLengths(random, candidateLengths, numKernels);
 
+        System.out.println(Arrays.stream(lengths).average());
+
         // randomly select number of dimensions for each kernel
         numDimensionIndices = new int[numKernels];
         if (numDimensions == 1){
@@ -216,6 +224,11 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
             paddings[i] = random.nextInt(2) == 1 ? Math.floorDiv((lengths[i] - 1) * dilations[i], 2) : 0;
         }
+
+        System.out.println(Arrays.stream(weights).average());
+        System.out.println(Arrays.stream(biases).average());
+        System.out.println(Arrays.stream(dilations).average());
+        System.out.println(Arrays.stream(paddings).average());
 
         fit = true;
     }
@@ -287,24 +300,24 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
         int fold = 0;
 
-//        //Minimum working example
-//        String dataset = "ItalyPowerDemand";
-//        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-//                "\\"+dataset+"_TRAIN.arff");
-//        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-//                "\\"+dataset+"_TEST.arff");
-//        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
-//        train = data[0];
-//        test = data[1];
+        //Minimum working example
+        String dataset = "GunPoint";
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
+                "\\"+dataset+"_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
+                "\\"+dataset+"_TEST.arff");
+        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
+        train = data[0];
+        test = data[1];
 
-        String dataset2 = "ERing";
-        Instances trainMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TRAIN.arff");
-        Instances testMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TEST.arff");
-        Instances[] data2 = resampleMultivariateTrainAndTestInstances(trainMV, testMV, fold);
-        trainMV = data2[0];
-        testMV = data2[1];
+//        String dataset2 = "ERing";
+//        Instances trainMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+//                "\\"+dataset2+"_TRAIN.arff");
+//        Instances testMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+//                "\\"+dataset2+"_TEST.arff");
+//        Instances[] data2 = resampleMultivariateTrainAndTestInstances(trainMV, testMV, fold);
+//        trainMV = data2[0];
+//        testMV = data2[1];
 
 //        ROCKET rocket = new ROCKET(1000);
 //        rocket.seed = fold;
@@ -318,8 +331,8 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
         ROCKET rocket2 = new ROCKET(1000);
         rocket2.seed = fold;
-        Instances ttrain2 = rocket2.fitTransform(trainMV);
-        Instances ttest2 = rocket2.transform(testMV);
+        Instances ttrain2 = rocket2.fitTransform(train);
+        Instances ttest2 = rocket2.transform(test);
 
         Logistic clf2 = new Logistic();
         clf2.buildClassifier(ttrain2);

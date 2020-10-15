@@ -25,6 +25,7 @@ import weka.classifiers.trees.J48;
 import weka.core.*;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
@@ -80,6 +81,8 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier {
         }
 
         cls.buildClassifier(transformedData);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 
