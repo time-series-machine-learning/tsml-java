@@ -139,7 +139,7 @@ public class Experiments  {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunExperiment(expSettings);
         }
-        else {
+        else {//Manually set args
             int folds=1;
             String[] settings=new String[9];
 
@@ -148,19 +148,19 @@ public class Experiments  {
              */
 //            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
 //            String classifier=classifiers[2];
-            String classifier="STC";//Classifier name
+            String classifier="STC";//Classifier name: See ClassifierLists for valid options
 
-            settings[0]="-dp=C:\\Data Working Area\\Datasets";//Where to get datasets
-            settings[1]="-rp=C:\\Experiments\\Results\\";//Where to write results
+            settings[0]="-dp=C:\\Data Working Area\\Datasets"; //Where to get datasets
+            settings[1]="-rp=C:\\Experiments\\Results\\"; //Where to write results
             settings[2]="-gtf=false"; //Whether to generate train files or not
             settings[3]="-cn="+classifier; //Classifier name
-            settings[4]="-dn=";//Problem file, don't change here as it is overwritten by probFiles
-            settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[6]="-ctr=600s";
-            settings[7]="-d=true";
-            settings[8]="--force=true";
+            settings[4]="-dn="; //Problem file, don't change here as it is overwritten by probFiles
+            settings[5]="-f=1"; //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[6]="-ctr=600s"; //Time contract
+            settings[7]="-d=true"; //Debugging
+            settings[8]="--force=true"; //Overwrites existing results if true, otherwise set to false
 
-            String[] probFiles= {"ItalyPowerDemand"}; //Problem files
+            String[] probFiles= {"ItalyPowerDemand"}; //Problem name(s)
 //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             /*
              * END OF SETTINGS
