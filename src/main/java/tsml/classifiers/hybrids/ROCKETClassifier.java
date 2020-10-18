@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances;
 
 /**
  * Contractable classifier making use of the ROCKET transformer.
@@ -194,8 +195,8 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
     public static void main(String[] args) throws Exception {
         int fold = 0;
-        String dataset = "ItalyPowerDemand";
 
+        String dataset = "ItalyPowerDemand";
         Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
                 + "\\" + dataset + "_TRAIN.arff");
         Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
@@ -203,6 +204,15 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];
+
+        String dataset2 = "ERing";
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+                "\\"+dataset2+"_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
+                "\\"+dataset2+"_TEST.arff");
+        Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
+        train2 = data2[0];
+        test2 = data2[1];
 
         ROCKETClassifier c;
         RandomForest cl;
@@ -218,6 +228,18 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
         System.out.println("ROCKETClassifier accuracy on " + dataset + " fold " + fold + " = " + accuracy);
         System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        cl = new RandomForest();
+        cl.setSeed(fold);
+        c.setClassifier(cl);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("ROCKETClassifier accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
+        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
         c = new ROCKETClassifier();

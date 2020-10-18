@@ -19,7 +19,6 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.*;
 
