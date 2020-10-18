@@ -20,7 +20,7 @@ import static utilities.Utilities.extractTimeSeries;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
- * ROCKET transformer. Returns the mean and proportion of positive values (PPV) of n randomly initialised
+ * ROCKET transformer. Returns the max and proportion of positive values (PPV) of n randomly initialised
  * convolutional kernels.
  *
  * @article{dempster2020rocket,
