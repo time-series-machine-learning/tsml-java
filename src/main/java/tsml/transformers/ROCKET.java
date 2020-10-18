@@ -3,41 +3,55 @@ package tsml.transformers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.*;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import experiments.data.DatasetLoading;
-import tsml.data_containers.TimeSeries;
+import tsml.classifiers.MultiThreadable;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.generic_storage.Pair;
-import weka.classifiers.functions.Logistic;
 import weka.core.*;
 
 import static utilities.ClusteringUtilities.zNormalise;
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.StatisticalUtilities.dot;
-import static utilities.StatisticalUtilities.mean;
 import static utilities.Utilities.extractTimeSeries;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
+ * ROCKET transformer. Returns the mean and proportion of positive values (PPV) of n randomly initialised
+ * convolutional kernels.
  *
+ * @article{dempster2020rocket,
+ *   title={ROCKET: Exceptionally fast and accurate time series classification using random convolutional kernels},
+ *   author={Dempster, Angus and Petitjean, Fran{\c{c}}ois and Webb, Geoffrey I},
+ *   journal={Data Mining and Knowledge Discovery},
+ *   volume={34},
+ *   number={5},
+ *   pages={1454--1495},
+ *   year={2020},
+ *   publisher={Springer}
+ * }
+ *
+ * Transform based on sktime python implementation by the author:
+ * https://github.com/alan-turing-institute/sktime/blob/master/sktime/transformers/series_as_features/rocket.py
  *
  * @author Aaron Bostrom, Matthew Middlehurst
  */
-public class ROCKET implements TrainableTransformer, Randomizable {
+public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadable {
 
     private int numKernels = 10000;
     private boolean normalise = true;
 
     private int seed;
 
+    private boolean multithreading = false;
+    private ExecutorService ex;
+
     private boolean fit = false;
     private int[] candidateLengths = { 7, 9, 11 };
-    private int[] numDimensionIndices, dimensionIndicies;
+    private int[] numSampledDimensions, dimensions;
     private int[] lengths, dilations, paddings;
     private double[] weights, biases;
 
@@ -52,10 +66,14 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         return seed;
     }
 
+    public int getNumKernels() { return numKernels; }
+
     @Override
     public void setSeed(int seed) {
         this.seed = seed;
     }
+
+    public void setNumKernels(int numKernels){ this.numKernels = numKernels; }
 
     public void setNormalise(boolean normalise){
         this.normalise = normalise;
@@ -64,6 +82,12 @@ public class ROCKET implements TrainableTransformer, Randomizable {
     @Override
     public boolean isFit() {
         return fit;
+    }
+
+    @Override
+    public void enableMultiThreading(int numThreads){
+        multithreading = true;
+        ex = Executors.newFixedThreadPool(numThreads);
     }
 
     @Override
@@ -80,8 +104,13 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        double[][] output = new double[1][]; // 2 features per kernel
-        output[0] = transformRocket(inst.toValueArray());
+        double[][] output = new double[1][];
+        if (multithreading){
+            output[0] = transformRocketMultithread(inst.toValueArray());
+        }
+        else {
+            output[0] = transformRocket(inst.toValueArray());
+        }
 
         return new TimeSeriesInstance(output, inst.getLabelIndex());
     }
@@ -97,8 +126,16 @@ public class ROCKET implements TrainableTransformer, Randomizable {
             data[0] = extractTimeSeries(inst);
         }
 
+        double[] transform;
+        if (multithreading){
+            transform = transformRocketMultithread(data);
+        }
+        else{
+            transform = transformRocket(data);
+        }
+
         double[] output = new double[numKernels * 2 + 1];
-        System.arraycopy(transformRocket(data), 0, output, 0, numKernels * 2);
+        System.arraycopy(transform, 0, output, 0, numKernels * 2);
         output[output.length - 1] = inst.classValue();
 
         return new DenseInstance(1, output);
@@ -114,23 +151,62 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         // apply kernels to the dataset.
         double[] output = new double[numKernels * 2]; // 2 features per kernel
 
-        int a1 = 0, a2 = 0, a3 = 0; // for weights, channel indices and features
-        int b1, b2, b3;
+        int a1 = 0, a2 = 0, a3 = 0, b1, b2; // for weights, channel indices and features
+        for (int i = 0; i < numKernels; i++) {
+            b1 = a1 + numSampledDimensions[i] * lengths[i];
+            b2 = a2 + numSampledDimensions[i];
 
-        for (int j = 0; j < numKernels; j++) {
-            b1 = a1 + numDimensionIndices[j] * lengths[j];
-            b2 = a2 + numDimensionIndices[j];
-            b3 = a3 + 2;
-
-            Pair<Double, Double> out = applyKernel(inst, ArrayUtils.subarray(weights, a1, b1), lengths[j],
-                    biases[j], dilations[j], paddings[j], numDimensionIndices[j],
-                    ArrayUtils.subarray(dimensionIndicies, a2, b2));
+            Pair<Double, Double> out = applyKernel(inst, ArrayUtils.subarray(weights, a1, b1), lengths[i],
+                    biases[i], dilations[i], paddings[i], numSampledDimensions[i],
+                    ArrayUtils.subarray(dimensions, a2, b2));
             output[a3] = out.var1;
             output[a3 + 1] = out.var2;
 
             a1 = b1;
             a2 = b2;
-            a3 = b3;
+            a3 += 2;
+        }
+
+        return output;
+    }
+
+    private double[] transformRocketMultithread(double[][] inst){
+        if (normalise){
+            for (double[] dim : inst) {
+                zNormalise(dim);
+            }
+        }
+
+        ArrayList<Future<Pair<Double, Double>>> futures = new ArrayList<>(numKernels);
+
+        int a1 = 0, a2 = 0, b1, b2;
+        for (int i = 0; i < numKernels; ++i) {
+            b1 = a1 + numSampledDimensions[i] * lengths[i];
+            b2 = a2 + numSampledDimensions[i];
+
+            Kernel k = new Kernel(ArrayUtils.subarray(weights, a1, b1), lengths[i], biases[i], dilations[i],
+                    paddings[i], numSampledDimensions[i], ArrayUtils.subarray(dimensions, a2, b2));
+
+            futures.add(ex.submit(new TransformThread(i, inst, k)));
+
+            a1 = b1;
+            a2 = b2;
+        }
+
+        double[] output = new double[numKernels * 2];
+        int a3 = 0;
+        for (Future<Pair<Double, Double>> f : futures) {
+            Pair<Double, Double> out;
+            try {
+                out = f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            output[a3] = out.var1;
+            output[a3 + 1] = out.var2;
+            a3 += 2;
         }
 
         return output;
@@ -138,17 +214,31 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
     @Override
     public void fit(TimeSeriesInstances data) {
-        fitRocket(data.getMaxLength(), data.getMaxNumChannels());
+        if (multithreading){
+            fitRocketMultithread(data.getMaxLength(), data.getMaxNumChannels());
+        }
+        else {
+            fitRocket(data.getMaxLength(), data.getMaxNumChannels());
+        }
     }
 
     @Override
     public void fit(Instances data) {
+        int inputLength, numDimensions;
         if (data.checkForAttributeType(Attribute.RELATIONAL)){
-            fitRocket(channelLength(data), numDimensions(data));
+            inputLength = channelLength(data);
+            numDimensions = numDimensions(data);
         }
         else{
-            int inputLength = data.classIndex() > -1 ? data.numAttributes() - 1 : data.numAttributes();
-            fitRocket(inputLength, 1);
+            inputLength = data.classIndex() > -1 ? data.numAttributes() - 1 : data.numAttributes();
+            numDimensions = 1;
+        }
+
+        if (multithreading){
+            fitRocketMultithread(inputLength, numDimensions);
+        }
+        else{
+            fitRocket(inputLength, numDimensions);
         }
     }
 
@@ -158,38 +248,37 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         lengths = sampleLengths(random, candidateLengths, numKernels);
 
         // randomly select number of dimensions for each kernel
-        numDimensionIndices = new int[numKernels];
+        numSampledDimensions = new int[numKernels];
         if (numDimensions == 1){
-            Arrays.fill(numDimensionIndices, 1);
+            Arrays.fill(numSampledDimensions, 1);
         }
         else{
             for (int i = 0; i < numKernels; i++) {
                 int limit = Math.min(numDimensions, lengths[i]);
                 // convert to base 2 log. log2(b) = log10(b) / log10(2)
                 double log2 = Math.log(limit + 1) / Math.log(2.0);
-                numDimensionIndices[i] = (int) Math.floor(Math.pow(2.0, uniform(random, 0, log2)));
+                numSampledDimensions[i] = (int) Math.floor(Math.pow(2.0, uniform(random, 0, log2)));
             }
         }
 
-        dimensionIndicies = new int[Arrays.stream(numDimensionIndices).sum()];
+        dimensions = new int[Arrays.stream(numSampledDimensions).sum()];
 
         // generate init values
         // weights - this should be the size of all the lengths for each dimension summed
-        weights = new double[dot(lengths, numDimensionIndices)];
+        weights = new double[dot(lengths, numSampledDimensions)];
         biases = new double[numKernels];
         dilations = new int[numKernels];
         paddings = new int[numKernels];
 
-        int a1 = 0, a2 = 0; // for weights and channel indices
-        int b1, b2;
+        int a1 = 0, a2 = 0, b1, b2; // for weights and channel indices
         for (int i = 0; i < numKernels; i++) {
             // select weights for each dimension
-            double[][] _weights = new double[numDimensionIndices[i]][];
-            for (int n = 0; n < numDimensionIndices[i]; n++) {
+            double[][] _weights = new double[numSampledDimensions[i]][];
+            for (int n = 0; n < numSampledDimensions[i]; n++) {
                 _weights[n] = normalDist(random, lengths[i]);
             }
 
-            for (int n = 0; n < numDimensionIndices[i]; n++) {
+            for (int n = 0; n < numSampledDimensions[i]; n++) {
                 b1 = a1 + lengths[i];
                 double mean = TimeSeriesSummaryStatistics.mean(_weights[n]);
                 for (int j = a1; j < b1; ++j) {
@@ -205,9 +294,9 @@ public class ROCKET implements TrainableTransformer, Randomizable {
                     al.add(n);
                 }
 
-                b2 = a2 + numDimensionIndices[i];
+                b2 = a2 + numSampledDimensions[i];
                 for (int j = a2; j < b2; j++) {
-                    dimensionIndicies[j] = al.remove(random.nextInt(al.size()));
+                    dimensions[j] = al.remove(random.nextInt(al.size()));
                 }
                 a2 = b2;
             }
@@ -226,9 +315,57 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         fit = true;
     }
 
+    private void fitRocketMultithread(int inputLength, int numDimensions) {
+        ArrayList<Future<Kernel>> futures = new ArrayList<>(numKernels);
+
+        lengths = new int[numKernels];
+        numSampledDimensions = new int[numKernels];
+        int[][] tempDimensions = new int[numKernels][];
+        double[][] tempWeights = new double[numKernels][];
+        biases = new double[numKernels];
+        dilations = new int[numKernels];
+        paddings = new int[numKernels];
+
+        for (int i = 0; i < numKernels; ++i) {
+            futures.add(ex.submit(new FitThread(i, inputLength, numDimensions)));
+        }
+
+        int idx = 0;
+        for (Future<Kernel> f : futures) {
+            Kernel k;
+            try {
+                k = f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+
+            lengths[idx] = k.length;
+            numSampledDimensions[idx] = k.numSampledDimensions;
+            tempDimensions[idx] = k.dimensions;
+            tempWeights[idx] = k.weights;
+            biases[idx] = k.bias;
+            dilations[idx] = k.dilation;
+            paddings[idx] = k.padding;
+
+            idx++;
+        }
+
+        dimensions = new int[Arrays.stream(numSampledDimensions).sum()];
+        weights = new double[dot(lengths, numSampledDimensions)];
+
+        int a1 = 0, a2 = 0; // for weights and channel indices
+        for (int i = 0; i < numKernels; ++i) {
+            System.arraycopy(tempWeights[i], 0, weights, a1, tempWeights[i].length);
+            a1 += tempWeights[i].length;
+
+            System.arraycopy(tempDimensions[i], 0, dimensions, a2, numSampledDimensions[i]);
+            a2 += numSampledDimensions[i];
+        }
+    }
+
     private static Pair<Double, Double> applyKernel(double[][] inst, double[] weights, int length, double bias,
-                                            int dilation, int padding, int numDimensionIndicies,
-                                            int[] dimensionIndicies) {
+                                            int dilation, int padding, int numSampledDimensions, int[] dimensions) {
         int inputLength = inst[0].length;
         int outputLength = (inputLength + (2 * padding)) - ((length - 1) * dilation);
 
@@ -242,8 +379,8 @@ public class ROCKET implements TrainableTransformer, Randomizable {
 
             for (int j = 0; j < length; j++) {
                 if (index > -1 && index < inputLength) {
-                    for (int n = 0; n < numDimensionIndicies; n++) {
-                        _sum = _sum + weights[j + n * numDimensionIndicies] * inst[dimensionIndicies[n]][index];
+                    for (int n = 0; n < numSampledDimensions; n++) {
+                        _sum = _sum + weights[j + n * numSampledDimensions] * inst[dimensions[n]][index];
                     }
                 }
                 index = index + dilation;
@@ -259,7 +396,6 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         return new Pair<>(_ppv / outputLength, _max);
     }
 
-    // TODO: look up better Affine methods - not perfect but will do
     private static double uniform(Random rand, double a, double b) {
         return a + rand.nextDouble() * (b - a);
     }
@@ -278,58 +414,164 @@ public class ROCKET implements TrainableTransformer, Randomizable {
         }
         return out;
     }
+    public void addKernels(ROCKET rocket){
+        if (!fit){
+            lengths = new int[0];
+            numSampledDimensions = new int[0];
+            dimensions = new int[0];
+            weights = new double[0];
+            biases = new double[0];
+            dilations = new int[0];
+            paddings = new int[0];
+            fit = true;
+        }
 
-    public static void main(String[] args) throws Exception {
-//        String local_path = "Z:\\ArchiveData\\Univariate_ts\\";
-//        String dataset_name = "ItalyPowerDemand";
-//
-//        TSReader ts_reader = new TSReader(new FileReader(new File(local_path + dataset_name + File.separator
-//                + dataset_name + "_TRAIN.ts")));
-//        TimeSeriesInstances train = ts_reader.GetInstances();
-//
-//        ts_reader = new TSReader(new FileReader(new File(local_path + dataset_name + File.separator
-//                + dataset_name + "_TEST.ts")));
-//        TimeSeriesInstances test = ts_reader.GetInstances();
+        lengths = ArrayUtils.addAll(lengths, rocket.lengths);
+        numSampledDimensions = ArrayUtils.addAll(numSampledDimensions, rocket.numSampledDimensions);
+        dimensions = ArrayUtils.addAll(dimensions, rocket.dimensions);
+        weights = ArrayUtils.addAll(weights, rocket.weights);
+        biases = ArrayUtils.addAll(biases, rocket.biases);
+        dilations = ArrayUtils.addAll(dilations, rocket.dilations);
+        paddings = ArrayUtils.addAll(paddings, rocket.paddings);
 
-        int fold = 0;
+        numKernels += rocket.numKernels;
+    }
 
-        //Minimum working example
-        String dataset = "GunPoint";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-                "\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-                "\\"+dataset+"_TEST.arff");
-        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
-        train = data[0];
-        test = data[1];
+    private static class Kernel {
+        int numSampledDimensions;
+        int[] dimensions;
+        int length, dilation, padding;
+        double[] weights;
+        double bias;
 
-//        String dataset2 = "ERing";
-//        Instances trainMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-//                "\\"+dataset2+"_TRAIN.arff");
-//        Instances testMV = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-//                "\\"+dataset2+"_TEST.arff");
-//        Instances[] data2 = resampleMultivariateTrainAndTestInstances(trainMV, testMV, fold);
-//        trainMV = data2[0];
-//        testMV = data2[1];
+        public Kernel() { }
 
-//        ROCKET rocket = new ROCKET(1000);
-//        rocket.seed = fold;
-//        TimeSeriesInstances ttrain = rocket.fitTransform(Converter.fromArff(trainMV));
-//        TimeSeriesInstances ttest = rocket.transform(Converter.fromArff(testMV));
-//
-//        Logistic clf = new Logistic();
-//        clf.buildClassifier(Converter.toArff(ttrain));
-//        double acc = utilities.ClassifierTools.accuracy(Converter.toArff(ttest), clf);
-//        System.out.println("acc: " + acc);
+        public Kernel(double[] weights, int length, double bias, int dilation, int padding, int numSampledDimensions,
+                      int[] dimensions) {
+            this.weights = weights;
+            this.length = length;
+            this.bias = bias;
+            this.dilation = dilation;
+            this.padding = padding;
+            this.numSampledDimensions = numSampledDimensions;
+            this.dimensions = dimensions;
+        }
+    }
 
-        ROCKET rocket2 = new ROCKET(1000);
-        rocket2.seed = fold;
-        Instances ttrain2 = rocket2.fitTransform(train);
-        Instances ttest2 = rocket2.transform(test);
+    private class TransformThread implements Callable<Pair<Double, Double>> {
+        int i;
+        double[][] inst;
+        Kernel k;
 
-        Logistic clf2 = new Logistic();
-        clf2.buildClassifier(ttrain2);
-        double acc2 = utilities.ClassifierTools.accuracy(ttest2, clf2);
-        System.out.println("acc: " + acc2);
+        public TransformThread(int i, double[][] inst, Kernel k){
+            this.i = i;
+            this.inst = inst;
+            this.k = k;
+        }
+
+        @Override
+        public Pair<Double, Double> call() {
+            int inputLength = inst[0].length;
+            int outputLength = (inputLength + (2 * k.padding)) - ((k.length - 1) * k.dilation);
+
+            double _ppv = 0;
+            double _max = Double.MIN_VALUE;
+            int end = (inputLength + k.padding) - ((k.length - 1) * k.dilation);
+
+            for (int i = -k.padding; i < end; i++) {
+                double _sum = k.bias;
+                int index = i;
+
+                for (int j = 0; j < k.length; j++) {
+                    if (index > -1 && index < inputLength) {
+                        for (int n = 0; n < k.numSampledDimensions; n++) {
+                            _sum = _sum + k.weights[j + n * k.numSampledDimensions] * inst[k.dimensions[n]][index];
+                        }
+                    }
+                    index = index + k.dilation;
+                }
+
+                if (_sum > _max)
+                    _max = _sum;
+
+                if (_sum > 0)
+                    _ppv += 1;
+            }
+
+            return new Pair<>(_ppv / outputLength, _max);
+        }
+    }
+
+    private class FitThread implements Callable<Kernel>{
+        int i;
+        int inputLength;
+        int numDimensions;
+
+        public FitThread(int i, int inputLength, int numDimensions){
+            this.i = i;
+            this.inputLength = inputLength;
+            this.numDimensions = numDimensions;
+        }
+
+        @Override
+        public Kernel call() {
+            Kernel k = new Kernel();
+            Random random = new Random(seed + i * numKernels);
+
+            k.length = candidateLengths[random.nextInt(candidateLengths.length)];
+
+            // randomly select number of dimensions for each kernel
+            if (numDimensions == 1){
+                k.numSampledDimensions = 1;
+            }
+            else{
+                int limit = Math.min(numDimensions, k.length);
+                // convert to base 2 log. log2(b) = log10(b) / log10(2)
+                double log2 = Math.log(limit + 1) / Math.log(2.0);
+                k.numSampledDimensions = (int) Math.floor(Math.pow(2.0, uniform(random, 0, log2)));
+            }
+
+            // select weights for each dimension
+            double[][] _weights = new double[k.numSampledDimensions][];
+            for (int n = 0; n < k.numSampledDimensions; n++) {
+                _weights[n] = normalDist(random, k.length);
+            }
+
+            k.weights = new double[k.length * k.numSampledDimensions];
+            int a1 = 0, b1;
+            for (int n = 0; n < k.numSampledDimensions; n++) {
+                b1 = a1 + k.length;
+                double mean = TimeSeriesSummaryStatistics.mean(_weights[n]);
+                for (int j = a1; j < b1; ++j) {
+                    k.weights[j] = _weights[n][j - a1] - mean;
+                }
+                a1 = b1;
+            }
+
+            // randomly select dimensions for kernel
+            k.dimensions = new int[k.numSampledDimensions];
+            if (numDimensions > 1){
+                ArrayList<Integer> al = new ArrayList<>(numDimensions);
+                for (int n = 0; n < numDimensions; n++) {
+                    al.add(n);
+                }
+
+                for (int j = 0; j < k.numSampledDimensions; j++) {
+                    k.dimensions[j] = al.remove(random.nextInt(al.size()));
+                }
+            }
+
+            // draw uniform random sample from 0-1 and shift it to -1 to 1.
+            k.bias = (random.nextDouble() * 2.0) - 1.0;
+
+            double value = (double) (inputLength - 1) / (double) (k.length - 1);
+            // convert to base 2 log. log2(b) = log10(b) / log10(2)
+            double log2 = Math.log(value) / Math.log(2.0);
+            k.dilation = (int) Math.floor(Math.pow(2.0, uniform(random, 0, log2)));
+
+            k.padding = random.nextInt(2) == 1 ? Math.floorDiv((k.length - 1) * k.dilation, 2) : 0;
+
+            return k;
+        }
     }
 }

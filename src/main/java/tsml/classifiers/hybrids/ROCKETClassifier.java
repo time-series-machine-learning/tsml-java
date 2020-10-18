@@ -16,28 +16,43 @@ package tsml.classifiers.hybrids;
 
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.transformers.Catch22;
+import tsml.classifiers.MultiThreadable;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.Logistic;
-import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 import weka.core.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
+ * Contractable classifier making use of the ROCKET transformer.
+ *
+ * Transform based on sktime python implementation by the author:
+ * https://github.com/alan-turing-institute/sktime/blob/master/sktime/transformers/series_as_features/rocket.py
+ *
  * @author Matthew Middlehurst
  */
-public class ROCKETClassifier extends EnhancedAbstractClassifier {
+public class ROCKETClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable, MultiThreadable {
 
+    private int numKernels = 10000;
+    private boolean normalise = true;
     private Classifier cls = new Logistic();
+
     private ROCKET rocket;
     private Instances header;
+
+    private long trainContractTimeNanos;
+    private boolean trainTimeContract = false;
+    private int numKernelsStep = 50;
+
+    private boolean multithreading = false;
+    private int threads;
 
     public ROCKETClassifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
@@ -60,8 +75,32 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier {
         return result;
     }
 
+    public void setNumKernels(int numKernels){ this.numKernels = numKernels; }
+
+    public void setNormalise(boolean normalise){
+        this.normalise = normalise;
+    }
+
     public void setClassifier(Classifier cls){
         this.cls = cls;
+    }
+
+    @Override
+    public void setTrainTimeLimit(long time) {
+        trainContractTimeNanos = time;
+        trainTimeContract = true;
+    }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        if(trainContractTimeNanos <= 0) return true; //Not contracted
+        return System.nanoTime() - start < trainContractTimeNanos;
+    }
+
+    @Override
+    public void enableMultiThreading(int numThreads){
+        multithreading = true;
+        threads = numThreads;
     }
 
     @Override
@@ -70,17 +109,68 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier {
         trainResults.setBuildTime(System.nanoTime());
         getCapabilities().testWithFail(data);
 
-        rocket = new ROCKET();
-        rocket.setSeed(seed);
+        if (trainTimeContract){
+            ArrayList<Instances> fragmentedTransformedData = new ArrayList<>();
+            rocket = new ROCKET();
+            rocket.setNumKernels(0);
+            rocket.setNormalise(normalise);
+            rocket.setSeed(seed);
 
-        Instances transformedData = rocket.fitTransform(data);
-        header = new Instances(transformedData,0);
+            int l = 0;
+            while (withinTrainContract(trainResults.getBuildTime())) {
+                ROCKET tempRocket = new ROCKET();
+                tempRocket.setNumKernels(numKernelsStep);
+                tempRocket.setNormalise(normalise);
+                tempRocket.setSeed(seed + l * numKernelsStep);
 
-        if (cls instanceof Randomizable){
-            ((Randomizable) cls).setSeed(seed);
+                if (multithreading) {
+                    tempRocket.enableMultiThreading(threads);
+                }
+
+                fragmentedTransformedData.add(tempRocket.fitTransform(data));
+                rocket.addKernels(tempRocket);
+
+                l++;
+            }
+
+            Instances transformedData = rocket.determineOutputFormat(data);
+            header = new Instances(transformedData, 0);
+
+            for (int i = 0; i < data.numInstances(); i++){
+                double[] arr = new double[transformedData.numAttributes()];
+                int a1 = 0;
+                for (Instances insts : fragmentedTransformedData) {
+                    Instance inst = insts.get(i);
+                    for (int j = 0; j < numKernelsStep*2; j++) {
+                        arr[a1 + j] = inst.value(j);
+                    }
+                    a1 += numKernelsStep*2;
+                }
+                arr[arr.length-1] = data.get(i).classValue();
+                transformedData.add(new DenseInstance(1, arr));
+            }
+
+            cls.buildClassifier(transformedData); //not currently included in contract
         }
+        else {
+            rocket = new ROCKET();
+            rocket.setNumKernels(numKernels);
+            rocket.setNormalise(normalise);
+            rocket.setSeed(seed);
 
-        cls.buildClassifier(transformedData);
+            if (multithreading) {
+                rocket.enableMultiThreading(threads);
+            }
+
+            Instances transformedData = rocket.fitTransform(data);
+            header = new Instances(transformedData, 0);
+
+            if (cls instanceof Randomizable) {
+                ((Randomizable) cls).setSeed(seed);
+            }
+
+            cls.buildClassifier(transformedData);
+        }
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
@@ -115,13 +205,46 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier {
         test = data[1];
 
         ROCKETClassifier c;
+        RandomForest cl;
         double accuracy;
 
         c = new ROCKETClassifier();
         c.seed = fold;
+        cl = new RandomForest();
+        cl.setSeed(fold);
+        c.setClassifier(cl);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("ROCKETClassifier accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        cl = new RandomForest();
+        cl.setSeed(fold);
+        c.setClassifier(cl);
+        c.enableMultiThreading(4);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("ROCKETClassifierMT accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        cl = new RandomForest();
+        cl.setSeed(fold);
+        c.setClassifier(cl);
+        c.setTrainTimeLimit(400, TimeUnit.MILLISECONDS);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("ROCKETClassifierContract accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("No Kernels = " + c.rocket.getNumKernels());
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
     }
 }

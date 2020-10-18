@@ -1494,7 +1494,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         @Override
         public MultiThreadBuildHolder call() throws Exception{
             MultiThreadBuildHolder h = new MultiThreadBuildHolder();
-            Random rand = new Random(seed + i);
+            Random rand = new Random(seed + i * numClassifiers);
 
             //1. Select random intervals for tree i
 
