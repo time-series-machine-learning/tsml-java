@@ -25,6 +25,8 @@ import weka.core.SparseInstance;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Classifier using SAX and Vector Space Model.
  * 
@@ -173,7 +175,7 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        long startTime=System.currentTimeMillis();
+        long startTime=System.nanoTime();
         
         if (data.classIndex() != data.numAttributes()-1)
             throw new Exception("SAXVSM_BuildClassifier: Class attribute not set as last attribute in dataset");
@@ -202,7 +204,8 @@ public class SAXVSM extends EnhancedAbstractClassifier implements TechnicalInfor
         transformedData = bop.fitTransform(data);
         
         corpus = tfxidf(transformedData);
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
     }
     
     /**

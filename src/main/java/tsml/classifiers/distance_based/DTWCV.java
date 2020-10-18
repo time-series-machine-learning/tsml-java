@@ -126,7 +126,7 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
     @Override
     public void buildClassifier(Instances d) throws Exception{
         trainResults =new ClassifierResults();
-        long t=System.currentTimeMillis();
+        long t=System.nanoTime();
         
         train=d;
         trainSize=d.numInstances();
@@ -180,7 +180,8 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
             trainResults.setAcc(maxAcc);
         }
         try {
-            trainResults.setBuildTime(System.currentTimeMillis()-t);
+            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+            trainResults.setBuildTime(System.nanoTime()-t);
         } catch (Exception e) {
             System.err.println("Inheritance preventing me from throwing this error...");
             System.err.println(e);
@@ -215,7 +216,6 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
             //no foldid/seed
             trainResults.setNumClasses(train.numClasses());
             trainResults.setParas(getParameters());
-            trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
             trainResults.finaliseResults();
         }        
         
