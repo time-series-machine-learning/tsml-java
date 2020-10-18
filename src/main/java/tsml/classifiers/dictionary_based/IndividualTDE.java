@@ -31,10 +31,7 @@ import weka.core.Instances;
 import weka.core.UnassignedClassException;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Improved BOSS classifier to be used with known parameters, for ensemble use TDE.
@@ -74,6 +71,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected boolean cleanAfterBuild = false;
     protected int seriesLength;
 
+    //feature selection
     private ObjectHashSet<SerialisableComparablePair<BitWord, Byte>> chiSquare;
     protected int chiLimit = 2;
 
@@ -385,7 +383,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return subSequences;
     }
 
-    protected double[][] MCB(double[][][] data, int d) {
+    private double[][] MCB(double[][][] data, int d) {
         double[][][] dfts = new double[data.length][][];
 
         int sample = 0;
@@ -427,8 +425,8 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         return breakpoints;
     }
 
-    //IGB code by Patrick Schaefer from the WEASEL class
-    protected double[][] IGB(double[][][] data, int d, int[] labels) {
+    //IGB code by Patrick Schafer from the WEASEL class
+    private double[][] IGB(double[][][] data, int d, int[] labels) {
         ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
         for (int i = 0; i < orderline.length; i++) {
             orderline[i] = new ArrayList<>();
@@ -794,7 +792,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
     }
 
-    private void applyPyramidWeights(Bag bag) {
+    protected void applyPyramidWeights(Bag bag) {
         for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().var2;
@@ -887,6 +885,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 

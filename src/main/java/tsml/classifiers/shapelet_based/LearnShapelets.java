@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.ParameterSplittable;
 
@@ -552,7 +554,7 @@ public class LearnShapelets extends EnhancedAbstractClassifier implements Parame
    
     // build a classifier using cross-validation to tune hyper-parameters
     public void buildClassifier(Instances trainData) throws Exception {
-        long startTime=System.currentTimeMillis();
+        long startTime=System.nanoTime();
         
         if(paraSearch){
             double[] paramsLambdaW;
@@ -646,8 +648,9 @@ public class LearnShapelets extends EnhancedAbstractClassifier implements Parame
         }
         
         train(trainData);
-        
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
         
     }
     

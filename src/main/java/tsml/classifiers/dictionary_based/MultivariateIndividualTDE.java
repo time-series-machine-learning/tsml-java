@@ -26,13 +26,11 @@ import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import utilities.generic_storage.SerialisableComparablePair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Improved BOSS classifier to be used with known parameters, for ensemble use TDE.
@@ -50,14 +48,21 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     private BitWord[/*dimension*/][/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
-    private ArrayList<Bag> bags;
+    private ArrayList<BagMV> bags;
+
+    //dft transforms for each series found during breakpoint calculation
+    double[][][][] breakpointDFT;
 
     //breakpoints to be found by MCB or IGB
     private double[/*dimension*/][/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
+    //feature selection
     private ObjectHashSet<Word> chiSquare;
 
-    public ArrayList<Integer> dimensionSubsample;
+    //dimension selection
+    private double dimensionCutoffThreshold = 0.85;
+    private int maxNoDimensions = -1;
+    private ArrayList<Integer> dimensionSubsample;
 
     private static final long serialVersionUID = 2L;
 
@@ -84,14 +89,14 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     }
 
     //map of <word, level, dimension> => count
-    public static class Bag extends HashMap<Word, Integer> implements Serializable {
+    public static class BagMV extends HashMap<Word, Integer> implements Serializable {
         private int classVal;
 
-        public Bag() {
+        public BagMV() {
             super();
         }
 
-        public Bag(int classValue) {
+        public BagMV(int classValue) {
             super();
             classVal = classValue;
         }
@@ -134,7 +139,98 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    public ArrayList<Bag> getMultivariateBags() { return bags; }
+    public ArrayList<BagMV> getMultivariateBags() { return bags; }
+
+    public void setDimensionCutoffThreshold(double d) { dimensionCutoffThreshold = d; }
+    public void setMaxNoDimensions(int i) { maxNoDimensions = i; }
+
+    protected double[][] MCB(double[][][] data, int d) {
+        breakpointDFT[d] = new double[data.length][][];
+
+        int sample = 0;
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
+            breakpointDFT[d][sample++] = performDFT(windows); //approximation
+        }
+
+        int numInsts = breakpointDFT[d].length;
+        int numWindowsPerInst = breakpointDFT[d][0].length;
+        int totalNumWindows = numInsts*numWindowsPerInst;
+
+        double[][] breakpoints = new double[wordLength][alphabetSize];
+
+        for (int letter = 0; letter < wordLength; ++letter) { //for each dft coeff
+
+            //extract this column from all windows in all instances
+            double[] column = new double[totalNumWindows];
+            for (int inst = 0; inst < numInsts; ++inst)
+                for (int window = 0; window < numWindowsPerInst; ++window) {
+                    //rounding dft coefficients to reduce noise
+                    column[(inst * numWindowsPerInst) + window] = Math.round(
+                            breakpointDFT[d][inst][window][letter]*100.0)/100.0;
+                }
+
+            //sort, and run through to find breakpoints for equi-depth bins
+            Arrays.sort(column);
+
+            double binIndex = 0;
+            double targetBinDepth = (double)totalNumWindows / (double)alphabetSize;
+
+            for (int bp = 0; bp < alphabetSize-1; ++bp) {
+                binIndex += targetBinDepth;
+                breakpoints[letter][bp] = column[(int)binIndex];
+            }
+
+            breakpoints[letter][alphabetSize-1] = Double.MAX_VALUE; //last one can always = infinity
+        }
+
+        return breakpoints;
+    }
+
+    //IGB code by Patrick Schafer from the WEASEL class
+    protected double[][] IGB(double[][][] data, int d, int[] labels) {
+        ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
+        for (int i = 0; i < orderline.length; i++) {
+            orderline[i] = new ArrayList<>();
+        }
+
+        breakpointDFT[d] = new double[data.length][][];
+
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
+            breakpointDFT[d][i] = performDFT(windows); //approximation
+
+            for (double[] dft : breakpointDFT[d][i]) {
+                for (int n = 0; n < dft.length; n++) {
+                    // round to 2 decimal places to reduce noise
+                    double value = Math.round(dft[n] * 100.0) / 100.0;
+
+                    orderline[n].add(new SerialisableComparablePair<>(value, labels[i]));
+                }
+            }
+        }
+
+        double[][] breakpoints = new double[wordLength][alphabetSize];
+
+        for (int i = 0; i < orderline.length; i++) {
+            if (!orderline[i].isEmpty()) {
+                Collections.sort(orderline[i]);
+
+                ArrayList<Integer> splitPoints = new ArrayList<>();
+                findBestSplit(orderline[i], 0, orderline[i].size(), alphabetSize, splitPoints);
+
+                Collections.sort(splitPoints);
+
+                for (int n = 0; n < splitPoints.size(); n++) {
+                    breakpoints[i][n] = orderline[i].get(splitPoints.get(n) + 1).var1;
+                }
+
+                breakpoints[i][alphabetSize-1] = Double.MAX_VALUE;
+            }
+        }
+
+        return breakpoints;
+    }
 
     @Override
     public void clean() {
@@ -150,7 +246,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                 = new DoubleObjectHashMap<>(bags.get(0).size());
 
         // count number of samples with this word
-        for (Bag bag : bags) {
+        for (BagMV bag : bags) {
             if (!observed.containsKey(bag.classVal)) {
                 observed.put(bag.classVal, new ObjectIntHashMap<>());
             }
@@ -183,7 +279,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         // best elements above limit
         for (int i = 0; i < bags.size(); i++) {
-            Bag newBag = new Bag(bags.get(i).classVal);
+            BagMV newBag = new BagMV(bags.get(i).classVal);
             for (Map.Entry<Word, Integer> cursor : bags.get(i).entrySet()) {
                 if (chiSquare.contains(cursor.getKey())) {
                     newBag.put(cursor.getKey(), cursor.getValue());
@@ -193,8 +289,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private Bag filterChiSquared(Bag bag) {
-        Bag newBag = new Bag(bag.classVal);
+    private BagMV filterChiSquared(BagMV bag) {
+        BagMV newBag = new BagMV(bag.classVal);
         for (Map.Entry<Word, Integer> cursor : bag.entrySet()) {
             if (chiSquare.contains(cursor.getKey())) {
                 newBag.put(cursor.getKey(), cursor.getValue());
@@ -209,7 +305,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      *
      * to be used e.g to transform new test instances
      */
-    private void addToSPBagSingle(Bag bag, double[][] dfts, int dimension) {
+    private void addToSPBagSingle(BagMV bag, double[][] dfts, int dimension) {
         BitWord lastWord = new BitWordInt();
         BitWord[] words = new BitWord[dfts.length];
 
@@ -262,12 +358,12 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    private Bag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
-        Bag bag = new Bag(inst.getLabelIndex());
+    private BagMV BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
+        BagMV bag = new BagMV(inst.getLabelIndex());
 
         double[][] split = inst.toValueArray();
 
-        for (int d = 0; d < inst.getNumDimensions(); d++) {
+        for (Integer d : dimensionSubsample) {
             double[][] mfts = performMFT(split[d]); //approximation
             addToSPBagSingle(bag, mfts, d); //discretisation/bagging
         }
@@ -297,7 +393,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         //build hists with new word length from SFA words, and copy over the class values of original insts
         for (int i = 0; i < bags.size(); ++i) {
-            Bag newSPBag = new Bag(bags.get(i).classVal);
+            BagMV newSPBag = new BagMV(bags.get(i).classVal);
             for (int d = 0; d < SFAwords.length; d++) {
                 addWordsToSPBag(newSPBag, newWordLength, SFAwords[d][i], d);
             }
@@ -311,7 +407,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    private void addWordsToSPBag(Bag bag, int thisWordLength, BitWord[] words, int dimension) {
+    private void addWordsToSPBag(BagMV bag, int thisWordLength, BitWord[] words, int dimension) {
         BitWord lastWord = new BitWordInt();
         BitWord[] newWords = new BitWord[words.length];
 
@@ -362,7 +458,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         this.levels = newLevels;
 
         for (int inst = 0; inst < bags.size(); ++inst) {
-            Bag bag = new Bag(bags.get(inst).classVal); //rebuild bag
+            BagMV bag = new BagMV(bags.get(inst).classVal); //rebuild bag
             for (int d = 0; d < SFAwords.length; d++) {
                 addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d); //rebuild bag
             }
@@ -371,7 +467,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private void applyPyramidWeights(Bag bag) {
+    private void applyPyramidWeights(BagMV bag) {
         for (Map.Entry<Word, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().level;
@@ -388,7 +484,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private void addWordToPyramid(BitWord word, int wInd, Bag bag, int dimension) {
+    private void addWordToPyramid(BitWord word, int wInd, BagMV bag, int dimension) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -417,6 +513,83 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         return words;
     }
 
+    private void selectDimensions(TimeSeriesInstances data, double[][][] split){
+        seriesLength = data.getMaxLength();
+        double[] accuracies = new double[breakpoints.length];
+        for (int d = 0; d < breakpoints.length; d++) {
+            ArrayList<Bag> tempBags = new ArrayList<>();
+            for (int i = 0; i < split.length; i++){
+                Bag bag = new Bag(data.get(i).getLabelIndex());
+                for (int n = 0; n < breakpointDFT[d][i].length; n++){
+                    BitWord word = createWord(breakpointDFT[d][i][n], d);
+                    int qStart = 0; //for this level, whats the start index for quadrants
+                    int wInd = n*windowSize;
+
+                    for (int l = 0; l < levels; ++l) {
+                        //need to do the cell finding thing in the regular grid
+                        int numQuadrants = (int)Math.pow(2, l);
+                        int quadrantSize = seriesLength / numQuadrants;
+                        int pos = wInd + (windowSize/2); //use the middle of the window as its position
+                        int quadrant = qStart + (pos/quadrantSize);
+
+                        SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
+                        bag.merge(key, 1, Integer::sum);
+
+                        qStart += numQuadrants;
+                    }
+                }
+                applyPyramidWeights(bag);
+                tempBags.add(bag);
+            }
+
+            for (int n = 0; n < split.length; n++){
+                Bag testBag = tempBags.get(n);
+
+                //1NN distance
+                double bestDist = Double.MAX_VALUE;
+                double nn = 0;
+
+                for (int i = 0; i < tempBags.size(); ++i) {
+                    if (i == n) //skip 'this' one, leave-one-out
+                        continue;
+
+                    double dist;
+                    if (histogramIntersection)
+                        dist = -histogramIntersection(testBag, tempBags.get(i));
+                    else dist = BOSSdistance(testBag, tempBags.get(i), bestDist);
+
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        nn = tempBags.get(i).getClassVal();
+                    }
+                }
+
+                if (nn == tempBags.get(n).getClassVal()) accuracies[d]++;
+            }
+            accuracies[d] /= split.length;
+        }
+
+        double maxAcc = 0;
+        for (int d = 0; d < breakpoints.length; d++) {
+            if (accuracies[d] > maxAcc) maxAcc = accuracies[d];
+        }
+
+        dimensionSubsample = new ArrayList<>();
+        for (int d = 0; d < breakpoints.length; d++) {
+            if (accuracies[d] >= maxAcc * dimensionCutoffThreshold) {
+                dimensionSubsample.add(d);
+            }
+        }
+
+        if (maxNoDimensions > 0){
+            while (dimensionSubsample.size() > maxNoDimensions){
+                dimensionSubsample.remove(rand.nextInt(dimensionSubsample.size()));
+            }
+        }
+
+        breakpointDFT = null;
+    }
+
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         trainResults = new ClassifierResults();
@@ -427,7 +600,9 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         trainResults.setBuildTime(System.nanoTime());
 
         double[][][] split = data.toValueArray();
+        seriesLength = data.getMaxLength();
 
+        breakpointDFT = new double[data.getMaxNumChannels()][][][];
         breakpoints = new double[data.getMaxNumChannels()][][];
         for (int d = 0; d < breakpoints.length; d++) {
             if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes());
@@ -435,27 +610,28 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                                                  //AND test data
         }
 
+        selectDimensions(data, split);
+
         SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
-        seriesLength = data.getMaxLength();
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            ArrayList<Future<Bag>> futures = new ArrayList<>(data.numInstances());
+            ArrayList<Future<BagMV>> futures = new ArrayList<>(data.numInstances());
 
             for (int inst = 0; inst < data.numInstances(); ++inst)
                 futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
 
-            for (Future<Bag> f: futures)
+            for (Future<BagMV> f: futures)
                 bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
-                Bag bag = new Bag(data.get(inst).getLabelIndex());
-                for (int d = 0; d < data.getMaxNumChannels(); d++) {
+                BagMV bag = new BagMV(data.get(inst).getLabelIndex());
+                for (Integer d : dimensionSubsample) {
                     SFAwords[d][inst] = createSFAwords(split[inst][d], d);
                     addWordsToSPBag(bag, wordLength, SFAwords[d][inst], d);
                 }
@@ -469,6 +645,10 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         if (cleanAfterBuild) {
             clean();
         }
+
+        //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 
     /**
@@ -480,7 +660,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSdistance(Bag instA, Bag instB, double bestDist) {
+    public double BOSSdistance(BagMV instA, BagMV instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
@@ -497,7 +677,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         return dist;
     }
 
-    public double histogramIntersection(Bag instA, Bag instB) {
+    public double histogramIntersection(BagMV instA, BagMV instB) {
         //min vals of keys that exist in only one of the bags will always be 0
         //therefore want to only bother looking at counts of words in both bags
         //therefore will simply loop over words in a, skipping those that dont appear in b
@@ -519,7 +699,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
     @Override
     public double classifyInstance(TimeSeriesInstance instance) throws Exception{
-        Bag testBag = BOSSSpatialPyramidsTransform(instance);
+        BagMV testBag = BOSSSpatialPyramidsTransform(instance);
 
         if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
@@ -527,7 +707,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (Bag bag : bags) {
+        for (BagMV bag : bags) {
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bag);
@@ -552,7 +732,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
      */
     @Override
     public double classifyInstance(int testIndex) throws Exception{
-        Bag testBag = bags.get(testIndex);
+        BagMV testBag = bags.get(testIndex);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -585,7 +765,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         @Override
         public Double call() {
-            Bag testBag = BOSSSpatialPyramidsTransform(inst);
+            BagMV testBag = BOSSSpatialPyramidsTransform(inst);
 
             if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
@@ -593,7 +773,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
-            for (Bag bag : bags) {
+            for (BagMV bag : bags) {
                 double dist;
                 if (histogramIntersection)
                     dist = -histogramIntersection(testBag, bag);
@@ -618,7 +798,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         @Override
         public Double call() {
-            Bag testBag = bags.get(testIndex);
+            BagMV testBag = bags.get(testIndex);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
@@ -643,7 +823,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
     }
 
-    private class TransformThread implements Callable<Bag>{
+    private class TransformThread implements Callable<BagMV>{
         int i;
         TimeSeriesInstance inst;
 
@@ -653,8 +833,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         }
 
         @Override
-        public Bag call() {
-            Bag bag = new Bag(inst.getLabelIndex());
+        public BagMV call() {
+            BagMV bag = new BagMV(inst.getLabelIndex());
 
             double[][] split = inst.toValueArray();
 
