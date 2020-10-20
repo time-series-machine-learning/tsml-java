@@ -122,11 +122,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     private boolean fullTrainCVEstimate = false;
     private double[][] trainDistributions;
-    private int[] idxSubsampleCount;
+    private double[] idxSubsampleCount;
     private ArrayList<Integer> latestTrainPreds;
     private ArrayList<Integer> latestTrainIdx;
-    private ArrayList<ArrayList>[] filterTrainPreds;
-    private ArrayList<ArrayList>[] filterTrainIdx;
+    private ArrayList<ArrayList<Integer>>[] filterTrainPreds;
+    private ArrayList<ArrayList<Integer>>[] filterTrainIdx;
     private Instances seriesHeader;
 
     private transient Instances train;
@@ -526,6 +526,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     }
                 }
             }
+
+            if (getEstimateOwnPerformance()){
+                trainDistributions = new double[data.numInstances()][data.numClasses()];
+                idxSubsampleCount = new double[data.numInstances()];
+            }
         }
 
 /*        if (memoryContract) {
@@ -538,11 +543,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
 */
         train = data;
-
-        if (getEstimateOwnPerformance()){
-            trainDistributions = new double[data.numInstances()][data.numClasses()];
-            idxSubsampleCount = new int[data.numInstances()];
-        }
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -709,6 +709,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         if (getEstimateOwnPerformance()){
             for (int n = 0; n < numSeries; n++) {
+                System.out.println(filterTrainIdx[n].size());
                 for (int i = 0; i < filterTrainIdx[n].size(); i++) {
                     ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
                     ArrayList<Integer> trainPreds = filterTrainPreds[n].get(i);
@@ -719,6 +720,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     }
                 }
             }
+            System.out.println(Arrays.toString(idxSubsampleCount));
 
             filterTrainPreds = null;
             filterTrainIdx = null;
@@ -730,7 +732,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     for (int n = 0; n < trainDistributions[i].length; n++) {
                         trainDistributions[i][n] /= idxSubsampleCount[i];
                     }
-                    //System.out.println(Arrays.toString(trainDistributions[i]));
                 }
             }
         }
@@ -1173,7 +1174,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         trainResults.setSplit("train");
         trainResults.setParas(getParameters());
 
-        if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
+        if (idxSubsampleCount == null) idxSubsampleCount = new double[train.numInstances()];
 
         for (int i = 0; i < data.numInstances(); ++i) {
             double[] probs;
@@ -1496,8 +1497,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 //        c.setEstimateOwnPerformance(true);
 //        c.buildClassifier(train2);
 //        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
+//
+//        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
 
         //Output 19/11/19
         /*
