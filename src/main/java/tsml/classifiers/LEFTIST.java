@@ -33,6 +33,10 @@ public class LEFTIST {
     private int noSlices = 20;
     private int noNeighbours = 1000;
 
+    public enum FeatureSelectionMethod{HIGHEST_WEIGHTS,FORWARD_SELECTION,NONE}
+    private int noFeatures = 10;
+    private FeatureSelectionMethod fsMethod = FeatureSelectionMethod.HIGHEST_WEIGHTS;
+
     private boolean distanceToSeries = false;
     private boolean predicictionClassOnly = false;
 
@@ -97,7 +101,8 @@ public class LEFTIST {
         }
         e.predVal = argMax(probas[0], rand);
 
-        //feature selection?
+        double[] usedFeatures = featureSelection(activatedSlices, neighbourWeights, probas);
+        int noAtts = usedFeatures.length;
 
         int noClasses;
         if (predicictionClassOnly){
@@ -112,19 +117,19 @@ public class LEFTIST {
         e.coefficientsForClass = new double[noClasses][];
         e.classMeans = new double[noClasses];
 
-        ArrayList<Attribute> atts = new ArrayList<>(noSlices + 1);
+        ArrayList<Attribute> atts = new ArrayList<>(noAtts + 1);
         ArrayList<String> vals = new ArrayList<>(2);
         vals.add("0");
         vals.add("1");
-        for (int i = 0; i < noSlices; i++) {
+        for (int i = 0; i < noAtts; i++) {
             atts.add(new Attribute(Integer.toString(i), vals));
         }
         atts.add(new Attribute("class"));
         Instances maskInstances = new Instances("maskInstances", atts, noNeighbours);
         maskInstances.setClassIndex(maskInstances.numAttributes()-1);
         for (int i = 0; i < noNeighbours; i++) {
-            double[] newArr = new double[noSlices + 1];
-            System.arraycopy(activatedSlices[i], 0, newArr, 0, noSlices);
+            double[] newArr = new double[noAtts + 1];
+            System.arraycopy(usedFeatures[i], 0, newArr, 0, noAtts);
             maskInstances.add(new DenseInstance(neighbourWeights[i], newArr));
         }
 
@@ -135,7 +140,9 @@ public class LEFTIST {
 
             explainer.buildClassifier(maskInstances);
 
-            //score?
+            if (generateScore){
+                e.score = score();
+            }
 
             double[] c = explainer.coefficients();
             e.coefficientsForClass[i] = new double[noSlices];
@@ -248,6 +255,24 @@ public class LEFTIST {
             weights[i] = kernel.apply(similarityMeasure.apply(p));
         }
         return weights;
+    }
+
+    private double[] featureSelection(double[][] activatedSlices, double[] neighbourWeights, double[][] probas){
+        double usedFeatures;
+
+        switch (fsMethod) {
+            case HIGHEST_WEIGHTS:
+
+                break;
+            case FORWARD_SELECTION:
+
+                break;
+            default:
+
+                break;
+        }
+
+        return usedFeatures;
     }
 
     public static class Explanation {
