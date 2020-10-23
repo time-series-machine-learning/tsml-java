@@ -177,11 +177,19 @@ public class TimeSeries extends AbstractList<Double> {
     public TimeSeries getVSlice(int[] indices) {
         return new TimeSeries(getVSliceArray(indices));
     }
+    
+    public TimeSeries getVSlice(int index) {
+	    return getVSlice(new int[] {index});
+    }
 
     public TimeSeries getVSlice(List<Integer> indices) {
 	    return getVSlice(indices.stream().mapToInt(Integer::intValue).toArray());
     }
 
+    public TimeSeries getVSliceComplement(int index) {
+	    return getVSliceComplement(new int[] {index});
+    }
+    
     public TimeSeries getVSliceComplement(int[] indices) {
         return new TimeSeries(getVSliceComplementArray(indices));
     }
@@ -210,6 +218,9 @@ public class TimeSeries extends AbstractList<Double> {
         return getVSliceComplementList(Arrays.stream(indexesToRemove).boxed().collect(Collectors.toList()));
     }
 
+    public List<Double> getVSliceComponentList(int index) {
+        return getVSlice(new int[] {index});
+    }
     
     /** 
      * @param indexesToKeep
@@ -228,6 +239,9 @@ public class TimeSeries extends AbstractList<Double> {
         return getVSliceComplementList(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
     }
     
+    public double[] getVSliceComplementArray(int index) {
+        return getVSliceComplementArray(new int[] {index});
+    }
     
     /** 
      * this is useful if you want to slice a column/truncate the array, but without modifying the original dataset.
@@ -248,7 +262,14 @@ public class TimeSeries extends AbstractList<Double> {
     public List<Double> getVSliceList(int[] indexesToKeep) {
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
+    
+    public List<Double> getVSliceList(int index) {
+        return getVSliceList(new int[] {index});
+    }
 
+    public double[] getVSliceArray(int index) {
+        return getVSliceArray(new int[] {index});
+    }
     
     /** 
      * @param indexesToKeep
