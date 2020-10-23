@@ -13,7 +13,7 @@ import java.util.stream.DoubleStream;
  * */
 public class TimeSeries extends AbstractList<Double> {
 
-    public static double DEFAULT_VALUE = Double.NaN;
+    public final static double DEFAULT_VALUE = Double.NaN;
 
     private List<Double> series;
     private List<Double> indices;
