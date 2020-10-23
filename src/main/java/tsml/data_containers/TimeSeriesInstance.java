@@ -139,8 +139,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     private void calculateIfMissing() {
         // if any of the series have a NaN value, across all dimensions then this is
         // true.
-        hasMissing = seriesDimensions.stream().map(e -> e.stream().anyMatch(Double::isNaN))
-                .anyMatch(Boolean::booleanValue);
+        hasMissing = seriesDimensions.stream().anyMatch(e -> e.streamValues().anyMatch(Double::isNaN));
     };
 
     
@@ -167,7 +166,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public List<Double> getSingleVSliceList(int index){
         List<Double> out = new ArrayList<>(getNumDimensions());
         for(TimeSeries ts : seriesDimensions){
-            out.add(ts.get(index));
+            out.add(ts.getValue(index));
         }
 
         return out;
@@ -182,7 +181,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[] out = new double[getNumDimensions()];
         int i=0;
         for(TimeSeries ts : seriesDimensions){
-            out[i++] = ts.get(index);
+            out[i++] = ts.getValue(index);
         }
 
         return out;
@@ -252,7 +251,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @return double[]
      */
     public double[] getSingleHSliceArray(int dim){
-        return seriesDimensions.get(dim).toArray();
+        return seriesDimensions.get(dim).toValuesArray();
     }
 
     
@@ -296,7 +295,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] out = new double[dimensionsToKeep.size()][];
         int i=0;
         for(Integer dim : dimensionsToKeep){
-            out[i++] = seriesDimensions.get(dim).toArray();
+            out[i++] = seriesDimensions.get(dim).toValuesArray();
         }
 
         return out;
@@ -336,7 +335,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] output = new double[this.seriesDimensions.size()][];
         for (int i=0; i<output.length; ++i){
              //clone the data so the underlying representation can't be modified
-            output[i] = seriesDimensions.get(i).toArray();
+            output[i] = seriesDimensions.get(i).toValuesArray();
         }
         return output;
     }

@@ -69,7 +69,7 @@ public class Convolution implements Transformer {
             out = new double[inst.getNumDimensions()][];
             int i = 0;
             for (TimeSeries ts : inst) {
-                out[i++] = convolution1D(ts.toArray());
+                out[i++] = convolution1D(ts.toValuesArray());
             }
         }
         else{

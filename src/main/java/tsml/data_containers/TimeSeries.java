@@ -1,14 +1,8 @@
 package tsml.data_containers;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 
 /**
  * Class to store a time series. The series can have different indices (time stamps) and store missing values (NaN).
@@ -17,7 +11,7 @@ import java.util.stream.Stream;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries{
+public class TimeSeries extends AbstractList<Double> {
 
     public static double DEFAULT_VALUE = Double.NaN;
 
@@ -66,24 +60,32 @@ public class TimeSeries{
      * @param i
      * @return double
      */
-    public double get(int i){
+    public double getValue(int i){
         return series.get(i);
     }
 
+    /**
+     * Gets a value at a specific index in the time series. This method conducts unboxing so use getValue if you care about performance.
+     * @param i
+     * @return
+     */
+    public Double get(int i) {
+        return series.get(i);
+    }
     
     /** 
      * @param i
      * @return double
      */
     public double getOrDefault(int i){
-        return hasValidValueAt(i) ? get(i) : DEFAULT_VALUE;
+        return hasValidValueAt(i) ? getValue(i) : DEFAULT_VALUE;
     }
 
     
     /** 
      * @return DoubleStream
      */
-    public DoubleStream stream(){
+    public DoubleStream streamValues(){
         return series.stream().mapToDouble(Double::doubleValue);
     }
 
@@ -133,12 +135,31 @@ public class TimeSeries{
         return sb.toString();
     }
 
-    
+
+    /**
+     * Get the length of the series.
+     * @return
+     */
+    @Override public int size() {
+        return getSeriesLength();
+    }
+
+    @Override public void add(final int i, final Double aDouble) {
+        throw new UnsupportedOperationException("time series are not mutable.");
+    }
+
+    @Override public Double set(final int i, final Double aDouble) {
+        throw new UnsupportedOperationException("time series are not mutable.");
+    }
+
+    @Override public void clear() {
+        throw new UnsupportedOperationException("time series are not mutable.");
+    }
+
     /** 
      * @return double[]
      */
-
-	public double[] toArray() {
+	public double[] toValuesArray() {
 		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
     }
 
@@ -148,7 +169,7 @@ public class TimeSeries{
      * @param indexesToRemove
      * @return List<Double>
      */
-public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
+    public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
         //if the current index isn't in the removal list, then copy across.
         List<Double> out = new ArrayList<>(this.getSeriesLength() - indexesToRemove.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
@@ -229,6 +250,5 @@ public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
     public static void main(String[] args) {
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }
-
 
 }

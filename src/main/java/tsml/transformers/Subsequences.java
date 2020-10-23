@@ -87,7 +87,7 @@ public class Subsequences implements Transformer {
         int i =0;
         for(TimeSeries ts : inst){
             // Extract the subsequences.
-            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toArray());
+            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toValuesArray());
             
             //stack subsequences if we're multivariate.
             for(double[] d : subsequences)

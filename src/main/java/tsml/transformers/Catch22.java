@@ -89,7 +89,7 @@ public class Catch22 implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for(TimeSeries ts : inst){
-            out[i++] = transform(ts.toArray());
+            out[i++] = transform(ts.toValuesArray());
         }
         
         //create a new output instance with the ACF data.

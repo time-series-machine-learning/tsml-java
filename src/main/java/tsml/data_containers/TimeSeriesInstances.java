@@ -2,7 +2,6 @@ package tsml.data_containers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -400,7 +399,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         for(TimeSeriesInstance inst : seriesCollection){
             for(TimeSeries ts : inst)
                 // if the index isn't always valid, populate with NaN values.
-                out[i++] = ts.hasValidValueAt(index) ? ts.get(index) : Double.NaN;
+                out[i++] = ts.hasValidValueAt(index) ? ts.getValue(index) : Double.NaN;
         }
 
         return out;
