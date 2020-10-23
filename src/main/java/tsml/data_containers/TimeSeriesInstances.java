@@ -323,16 +323,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
         return sb.toString();
     }
-
-    
-    /** 
-     * @return Iterator<TimeSeriesInstance>
-     */
-    @Override
-    public Iterator<TimeSeriesInstance> iterator() {
-        return seriesCollection.iterator();
-    }
-
     
     /** 
      * @return double[][][]
