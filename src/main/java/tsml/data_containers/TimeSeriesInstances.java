@@ -288,21 +288,21 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     
     /** 
-     * @param new_series
+     * @param newSeries
      */
-    public void add(final TimeSeriesInstance new_series) {
-        seriesCollection.add(new_series);
+    public void add(final TimeSeriesInstance newSeries) {
+        seriesCollection.add(newSeries);
 
         //guard for if we're going to force update classCounts after.
-        if(classCounts != null && new_series.getLabelIndex() < classCounts.length)
-            classCounts[new_series.getLabelIndex()]++;
+        if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
+            classCounts[newSeries.getLabelIndex()]++;
 
-        minLength = Math.min(new_series.getMinLength(), minLength);
-        maxLength = Math.max(new_series.getMaxLength(), maxLength);
-        maxNumDimensions = Math.max(new_series.getNumDimensions(), maxNumDimensions);
-        hasMissing |= new_series.hasMissing();
+        minLength = Math.min(newSeries.getMinLength(), minLength);
+        maxLength = Math.max(newSeries.getMaxLength(), maxLength);
+        maxNumDimensions = Math.max(newSeries.getNumDimensions(), maxNumDimensions);
+        hasMissing |= newSeries.hasMissing();
         isEqualLength = minLength == maxLength;
-        isMultivariate |= new_series.isMultivariate();
+        isMultivariate |= newSeries.isMultivariate();
     }
 
     
