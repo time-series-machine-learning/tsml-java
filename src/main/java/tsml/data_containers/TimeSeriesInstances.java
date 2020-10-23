@@ -463,7 +463,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         int i=0;
         for(TimeSeriesInstance inst : seriesCollection){
             // if the index isn't always valid, populate with NaN values.
-            out[i++] = inst.getSingleHSliceArray(dim);
+            out[i++] = inst.getHSliceArray(dim);
         }
         return out;
     }

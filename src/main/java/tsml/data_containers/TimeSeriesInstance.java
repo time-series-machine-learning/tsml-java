@@ -128,6 +128,14 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
  
         dataChecks();
     }
+    
+    private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
+        this(data);
+        classLabelIndex = other.classLabelIndex;
+        targetValue = other.targetValue;
+        
+        dataChecks();
+    }
 
     private void dataChecks(){
         calculateIfMultivariate();
@@ -172,7 +180,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param index
      * @return List<Double>
      */
-    public List<Double> getSingleVSliceList(int index){
+    public List<Double> getVSliceList(int index){
         List<Double> out = new ArrayList<>(getNumDimensions());
         for(TimeSeries ts : seriesDimensions){
             out.add(ts.getValue(index));
@@ -186,7 +194,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param index
      * @return double[]
      */
-    public double[] getSingleVSliceArray(int index){
+    public double[] getVSliceArray(int index){
         double[] out = new double[getNumDimensions()];
         int i=0;
         for(TimeSeries ts : seriesDimensions){
@@ -243,6 +251,14 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
         return out;
     }
+    
+    public TimeSeriesInstance getVSlice(List<Integer> indexesToKeep) {
+        return new TimeSeriesInstance(getVSliceArray(indexesToKeep), this);
+    }
+    
+    public TimeSeriesInstance getVSlice(int[] indexesToKeep) {
+        return getVSlice(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
 
 
     
@@ -250,7 +266,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param dim
      * @return List<Double>
      */
-    public List<Double> getSingleHSliceList(int dim){
+    public List<Double> getHSliceList(int dim){
         return seriesDimensions.get(dim).getSeries();
     }
 
@@ -259,8 +275,8 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param dim
      * @return double[]
      */
-    public double[] getSingleHSliceArray(int dim){
-        return seriesDimensions.get(dim).toValuesArray();
+    public double[] getHSliceArray(int dim){
+        return seriesDimensions.get(dim).toValueArray();
     }
 
     
@@ -304,10 +320,18 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         double[][] out = new double[dimensionsToKeep.size()][];
         int i=0;
         for(Integer dim : dimensionsToKeep){
-            out[i++] = seriesDimensions.get(dim).toValuesArray();
+            out[i++] = seriesDimensions.get(dim).toValueArray();
         }
 
         return out;
+    }
+    
+    public TimeSeriesInstance getHSlice(List<Integer> dimensionsToKeep) {
+        return new TimeSeriesInstance(getHSliceArray(dimensionsToKeep), this);
+    }
+    
+    public TimeSeriesInstance getHSlice(int[] dimensionsToKeep) {
+        return getHSlice(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
     
@@ -326,16 +350,6 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
         return sb.toString();
     }
-
-    
-    /** 
-     * @return Iterator<TimeSeries>
-     */
-    @Override
-    public Iterator<TimeSeries> iterator() {
-        return seriesDimensions.iterator();
-    }
-
     
     /** 
      * @return double[][]
@@ -344,7 +358,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         double[][] output = new double[this.seriesDimensions.size()][];
         for (int i=0; i<output.length; ++i){
              //clone the data so the underlying representation can't be modified
-            output[i] = seriesDimensions.get(i).toValuesArray();
+            output[i] = seriesDimensions.get(i).toValueArray();
         }
         return output;
     }
