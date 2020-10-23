@@ -373,17 +373,6 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public double[][] toTransposedArray(){
         return this.getVSliceArray(IntStream.range(0, maxLength).toArray());
     }
-
-
-    
-    /** 
-     * @return int
-     */
-    @Override
-    public int hashCode(){
-        return this.seriesDimensions.hashCode();
-    }
-
 	
     /** 
      * @param i
@@ -417,4 +406,5 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     @Override public TimeSeries remove(final int i) {
         throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
     }
+
 }

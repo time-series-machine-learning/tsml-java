@@ -287,24 +287,7 @@ public class TimeSeries extends AbstractList<Double> {
     public double[] getVSliceArray(List<Integer> indexesToKeep){
         return getVSliceList(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
     }
-
     
-    /** 
-     * @return int
-     */
-    @Override
-    public int hashCode(){
-        return this.series.hashCode();
-    }
-
-    @Override public boolean equals(final Object o) {
-        if(!(o instanceof TimeSeries)) {
-            return false;
-        }
-        TimeSeries other = (TimeSeries) o;
-        return series.equals(other.series);
-    }
-
     /** 
      * @param args
      */
