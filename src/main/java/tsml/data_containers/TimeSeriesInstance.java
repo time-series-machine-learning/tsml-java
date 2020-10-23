@@ -17,7 +17,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Meta Information */
     private boolean isMultivariate;
-    private boolean isEquallySpaced;
+    private boolean isEquallySpaced; // todo compute whether timestamps are equally spaced
     private boolean hasMissing;
     private boolean isEqualLength;
 
@@ -63,7 +63,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Data */
     private List<TimeSeries> seriesDimensions;
-    private int classLabelIndex;
+    private int labelIndex;
     private double targetValue;
 
     // this ctor can be made way more sophisticated.
@@ -71,7 +71,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         this(series);
 
         //could be an index, or it could be regression target
-        classLabelIndex = value.intValue();
+        labelIndex = value.intValue();
         targetValue = value;
     }
 
@@ -79,7 +79,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public TimeSeriesInstance(List<List<Double>> series, int label) {
         this(series);
 
-        classLabelIndex = label;
+        labelIndex = label;
     }
 
     //do the ctor this way round to avoid erasure problems :(
@@ -90,7 +90,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
             seriesDimensions.add(ts);
         }
 
-        classLabelIndex = labelIndex; 
+        this.labelIndex = labelIndex; 
         dataChecks();
     }
 
@@ -124,14 +124,14 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
             seriesDimensions.add(new TimeSeries(in));
         }
 
-        classLabelIndex = labelIndex;
+        this.labelIndex = labelIndex;
  
         dataChecks();
     }
     
     private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
         this(data);
-        classLabelIndex = other.classLabelIndex;
+        labelIndex = other.labelIndex;
         targetValue = other.targetValue;
         
         dataChecks();
@@ -172,7 +172,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @return int
      */
     public int getLabelIndex(){
-        return classLabelIndex;
+        return labelIndex;
     }
 
     
@@ -342,7 +342,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Num Dimensions: ").append(getNumDimensions()).append(" Class Label Index: ").append(classLabelIndex);
+        sb.append("Num Dimensions: ").append(getNumDimensions()).append(" Class Label Index: ").append(labelIndex);
         for (TimeSeries ts : seriesDimensions) {
             sb.append(System.lineSeparator());
             sb.append(ts.toString());
@@ -389,11 +389,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public TimeSeries get(int i) {
         return this.seriesDimensions.get(i);
 	}
-
-
-    public int getClassLabelIndex() {
-        return classLabelIndex;
-    }
+	
 
     public double getTargetValue() {
         return targetValue;

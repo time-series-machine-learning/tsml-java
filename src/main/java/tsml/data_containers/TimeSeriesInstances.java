@@ -249,7 +249,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     private void calculateClassCounts() {
         classCounts = new int[classLabels.length];
         for(TimeSeriesInstance inst : seriesCollection){
-            classCounts[inst.getClassLabelIndex()]++;
+            classCounts[inst.getLabelIndex()]++;
         }
     }
 
@@ -317,8 +317,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         seriesCollection.add(new_series);
 
         //guard for if we're going to force update classCounts after.
-        if(classCounts != null && new_series.getClassLabelIndex() < classCounts.length)
-            classCounts[new_series.getClassLabelIndex()]++;
+        if(classCounts != null && new_series.getLabelIndex() < classCounts.length)
+            classCounts[new_series.getLabelIndex()]++;
 
         minLength = Math.min(new_series.getMinLength(), minLength);
         maxLength = Math.max(new_series.getMaxLength(), maxLength);
@@ -382,7 +382,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         int[] out = new int[numInstances()];
         int index=0;
         for(TimeSeriesInstance inst : seriesCollection){
-            out[index++] = inst.getClassLabelIndex();
+            out[index++] = inst.getLabelIndex();
         }
         return out;
     }
