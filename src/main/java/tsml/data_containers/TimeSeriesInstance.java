@@ -1,9 +1,6 @@
 package tsml.data_containers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,7 +13,7 @@ import java.util.stream.IntStream;
  * creation, mutability can break this
  */
 
-public class TimeSeriesInstance implements Iterable<TimeSeries> {
+public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Meta Information */
     private boolean isMultivariate;
@@ -386,5 +383,25 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     public double getTargetValue() {
         return targetValue;
+    }
+
+    @Override public int size() {
+        return getNumDimensions();
+    }
+
+    @Override public void add(final int i, final TimeSeries doubles) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public TimeSeries set(final int i, final TimeSeries doubles) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public void clear() {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public TimeSeries remove(final int i) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
     }
 }
