@@ -172,7 +172,6 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public int getLabelIndex(){
         return labelIndex;
     }
-
     
     /** 
      * @param index
@@ -186,7 +185,6 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
         return out;
     }
-
     
     /** 
      * @param index
@@ -201,7 +199,6 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
         return out;
     }
-
     
     /** 
      * @param indexesToKeep
@@ -256,6 +253,10 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     
     public TimeSeriesInstance getVSlice(int[] indexesToKeep) {
         return getVSlice(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public TimeSeriesInstance getVSlice(int index) {
+        return getVSlice(new int[] {index});
     }
 
 
@@ -330,6 +331,10 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     
     public TimeSeriesInstance getHSlice(int[] dimensionsToKeep) {
         return getHSlice(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public TimeSeriesInstance getHSlice(int index) {
+        return getHSlice(new int[] {index});
     }
 
     
