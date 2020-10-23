@@ -194,7 +194,7 @@ public class RunLength implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            out[i++] = create_data(ts.toValuesArray(), useGlobalMean ? globalMean : TimeSeriesSummaryStatistics.mean(ts));
+            out[i++] = create_data(ts.toValueArray(), useGlobalMean ? globalMean : TimeSeriesSummaryStatistics.mean(ts));
         }
 
         return new TimeSeriesInstance(out, inst.getLabelIndex());

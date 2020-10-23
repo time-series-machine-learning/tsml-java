@@ -520,7 +520,7 @@ public class ACF implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for(TimeSeries ts : inst){
-            out[i++] = this.fitAutoCorrelations(ts.toValuesArray());
+            out[i++] = this.fitAutoCorrelations(ts.toValueArray());
         }
         
         //create a new output instance with the ACF data.

@@ -105,7 +105,7 @@ public class PAA implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            out[i++] = convertInstance(ts.toValuesArray());
+            out[i++] = convertInstance(ts.toValueArray());
         }
 
         return new TimeSeriesInstance(out, inst.getLabelIndex());

@@ -455,7 +455,7 @@ public class TimeSeriesSummaryStatistics {
      * @return TimeSeries
      */
     public static TimeSeries intervalNorm(TimeSeries ts, double min, double max){
-        return new TimeSeries(intervalNorm(ts.toValuesArray(), min, max));
+        return new TimeSeries(intervalNorm(ts.toValueArray(), min, max));
     }
 
     
@@ -492,7 +492,7 @@ public class TimeSeriesSummaryStatistics {
      * @return TimeSeries
      */
     public static TimeSeries standardNorm(TimeSeries ts, double mean, double std){
-        return new TimeSeries(standardNorm(ts.toValuesArray(), mean, std));
+        return new TimeSeries(standardNorm(ts.toValueArray(), mean, std));
     }
 
     
@@ -503,7 +503,7 @@ public class TimeSeriesSummaryStatistics {
     public static TimeSeries standardNorm(TimeSeries ts){
         double mean = mean(ts);
         double std = Math.sqrt(variance(ts, mean));
-        return new TimeSeries(standardNorm(ts.toValuesArray(), mean, std));
+        return new TimeSeries(standardNorm(ts.toValueArray(), mean, std));
     }
 
     

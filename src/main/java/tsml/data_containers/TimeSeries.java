@@ -170,7 +170,7 @@ public class TimeSeries extends AbstractList<Double> {
     /** 
      * @return double[]
      */
-	public double[] toValuesArray() {
+	public double[] toValueArray() {
 		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
     }
 

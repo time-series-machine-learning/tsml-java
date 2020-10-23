@@ -125,7 +125,7 @@ public class Fast_FFT implements Transformer {
         int i = 0;
         for (TimeSeries ts : inst) {
             //TODO: make this NaN Safe. Mean is NaN safe but toArray isnt.
-            out[i++] = calculate_FFT(ts.toValuesArray(), TimeSeriesSummaryStatistics.mean(ts));
+            out[i++] = calculate_FFT(ts.toValueArray(), TimeSeriesSummaryStatistics.mean(ts));
         }
         return new TimeSeriesInstance(out, inst.getLabelIndex()); 
     }

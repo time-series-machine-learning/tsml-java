@@ -191,7 +191,7 @@ public class ARMA implements Transformer {
                 double[][] out = new double[inst.getNumDimensions()][];
                 int i = 0;
                 for (TimeSeries ts : inst) {
-                        out[i++] = calculateValues(ts.toValuesArray());
+                        out[i++] = calculateValues(ts.toValueArray());
                 }
 
                 // create a new output instance with the ACF data.

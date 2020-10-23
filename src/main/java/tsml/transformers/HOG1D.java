@@ -140,7 +140,7 @@ public class HOG1D implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            out[i++] = getHOG1Ds(ts.toValuesArray());
+            out[i++] = getHOG1Ds(ts.toValueArray());
         }
 
         return new TimeSeriesInstance(out, inst.getLabelIndex());

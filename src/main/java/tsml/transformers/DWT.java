@@ -153,7 +153,7 @@ public class DWT implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for(TimeSeries ts : inst){
-            out[i++] = getDWTCoefficients(ts.toValuesArray());
+            out[i++] = getDWTCoefficients(ts.toValueArray());
         }
         
         //create a new output instance with the ACF data.
