@@ -204,7 +204,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public List<List<Double>> getVSliceList(List<Integer> indexesToKeep){
         List<List<Double>> out = new ArrayList<>(getNumDimensions());
         for(TimeSeries ts : seriesDimensions){
-            out.add(ts.toListWithIndexes(indexesToKeep));
+            out.add(ts.getVSliceList(indexesToKeep));
         }
 
         return out;
@@ -229,7 +229,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] out = new double[getNumDimensions()][];
         int i=0;
         for(TimeSeries ts : seriesDimensions){
-            out[i++] = ts.toArrayWithIndexes(indexesToKeep);
+            out[i++] = ts.getVSliceArray(indexesToKeep);
         }
 
         return out;

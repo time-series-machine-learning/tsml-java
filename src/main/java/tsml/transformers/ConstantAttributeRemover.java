@@ -89,7 +89,7 @@ public class ConstantAttributeRemover implements TrainableTransformer {
         
         List<List<Double>> out = new ArrayList<>();
         for(TimeSeries ts : inst){
-            out.add(ts.toListWithoutIndexes(indexesToRemove));
+            out.add(ts.getVSliceComplementList(indexesToRemove));
         }
 
         return new TimeSeriesInstance(out);

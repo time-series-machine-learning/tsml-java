@@ -163,13 +163,28 @@ public class TimeSeries extends AbstractList<Double> {
 		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
     }
 
+    public TimeSeries getVSlice(int[] indices) {
+        return new TimeSeries(getVSliceArray(indices));
+    }
+
+    public TimeSeries getVSlice(List<Integer> indices) {
+	    return getVSlice(indices.stream().mapToInt(Integer::intValue).toArray());
+    }
+
+    public TimeSeries getVSliceComplement(int[] indices) {
+        return new TimeSeries(getVSliceComplementArray(indices));
+    }
+
+    public TimeSeries getVSliceComplement(List<Integer> indices) {
+        return getVSliceComplement(indices.stream().mapToInt(Integer::intValue).toArray());
+    }
     
     /** 
      * this is useful if you want to delete a column/truncate the array, but without modifying the original dataset.
      * @param indexesToRemove
      * @return List<Double>
      */
-    public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
+    public List<Double> getVSliceComplementList(List<Integer> indexesToRemove){
         //if the current index isn't in the removal list, then copy across.
         List<Double> out = new ArrayList<>(this.getSeriesLength() - indexesToRemove.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
@@ -179,14 +194,18 @@ public class TimeSeries extends AbstractList<Double> {
 
         return out;
     }
+    
+    public List<Double> getVSliceComplementList(int[] indexesToRemove) {
+        return getVSliceComplementList(Arrays.stream(indexesToRemove).boxed().collect(Collectors.toList()));
+    }
 
     
     /** 
      * @param indexesToKeep
      * @return double[]
      */
-    public double[] toListWithoutIndexes(int[] indexesToKeep){
-        return toArrayWithoutIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public double[] getVSliceComplementArray(int[] indexesToKeep){
+        return getVSliceComplementArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
     
@@ -194,8 +213,8 @@ public class TimeSeries extends AbstractList<Double> {
      * @param indexesToRemove
      * @return double[]
      */
-    public double[] toArrayWithoutIndexes(List<Integer> indexesToRemove){
-        return toListWithoutIndexes(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
+    public double[] getVSliceComplementArray(List<Integer> indexesToRemove){
+        return getVSliceComplementList(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
     }
     
     
@@ -204,7 +223,7 @@ public class TimeSeries extends AbstractList<Double> {
      * @param indexesToKeep
      * @return List<Double>
      */
-    public List<Double> toListWithIndexes(List<Integer> indexesToKeep){
+    public List<Double> getVSliceList(List<Integer> indexesToKeep){
         //if the current index isn't in the removal list, then copy across.
         List<Double> out = new ArrayList<>(indexesToKeep.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
@@ -214,14 +233,9 @@ public class TimeSeries extends AbstractList<Double> {
 
         return out;
     }
-
     
-    /** 
-     * @param indexesToKeep
-     * @return double[]
-     */
-    public double[] toArrayWithIndexes(int[] indexesToKeep){
-        return toArrayWithIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public List<Double> getVSliceList(int[] indexesToKeep) {
+        return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
     
@@ -229,8 +243,17 @@ public class TimeSeries extends AbstractList<Double> {
      * @param indexesToKeep
      * @return double[]
      */
-    public double[] toArrayWithIndexes(List<Integer> indexesToKeep){
-        return toListWithIndexes(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
+    public double[] getVSliceArray(int[] indexesToKeep){
+        return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+
+    
+    /** 
+     * @param indexesToKeep
+     * @return double[]
+     */
+    public double[] getVSliceArray(List<Integer> indexesToKeep){
+        return getVSliceList(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
     }
 
     
