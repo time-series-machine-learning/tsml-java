@@ -25,6 +25,13 @@ public class TimeSeries extends AbstractList<Double> {
             series.add(dd);
     }
     
+    public TimeSeries(List<Double> d) {
+        series = new ArrayList<>(d);
+    }
+    
+    public TimeSeries(TimeSeries other) {
+        this(other.series);
+    }    
     
     /** 
      * @param ind
