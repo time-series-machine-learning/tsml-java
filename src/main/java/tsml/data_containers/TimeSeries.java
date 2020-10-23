@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * */
 public class TimeSeries{
 
-    public static double defaultValue = Double.NaN;
+    public static double DEFAULT_VALUE = Double.NaN;
 
     /*
     private double[] series;
@@ -82,7 +82,7 @@ public class TimeSeries{
      * @return double
      */
     public double getOrDefault(int i){
-        return hasValidValueAt(i) ? get(i) : defaultValue;
+        return hasValidValueAt(i) ? get(i) : DEFAULT_VALUE;
     }
 
     
