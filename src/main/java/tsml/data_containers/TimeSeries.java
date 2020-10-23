@@ -21,14 +21,8 @@ public class TimeSeries{
 
     public static double DEFAULT_VALUE = Double.NaN;
 
-    /*
-    private double[] series;
-    private double[] indices;
-    */
-
     private List<Double> series;
     private List<Double> indices;
-    MetaData md;
 
 
     public TimeSeries(double[] d){
@@ -123,13 +117,6 @@ public class TimeSeries{
      * @return List<Double>
      */
     public List<Double> getIndices(){ return indices;}
-
-    private class MetaData{
-        String name;
-        Date startDate;
-        double increment;  //Base unit to be ....... 1 day?
-
-    }
 
     
     /** 
