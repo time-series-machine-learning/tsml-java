@@ -163,7 +163,7 @@ public class TSCapabilities {
     protected static final class EqualLength extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.isEqualLength;
+            return data.isEqualLength();
         }
 
         @Override
@@ -175,7 +175,7 @@ public class TSCapabilities {
     protected static final class Multivariate extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.isMultivariate;
+            return data.isMultivariate();
         }
 
         @Override
@@ -187,7 +187,7 @@ public class TSCapabilities {
     protected static final class MissingValues extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.hasMissing;
+            return data.hasMissing();
         }
 
         @Override
@@ -206,7 +206,7 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.minLength >= minL;
+            return data.getMinLength() >= minL;
         }
 
         @Override

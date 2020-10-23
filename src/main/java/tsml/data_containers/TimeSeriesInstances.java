@@ -15,22 +15,24 @@ import java.util.stream.Collectors;
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
-    String description;
-    String problemName;
-    boolean isEquallySpaced = true;
-    boolean hasMissing;
-    boolean isEqualLength;
+    private String description;
+    private String problemName;
+    private boolean isEquallySpaced = true;
+    private boolean hasMissing;
+    private boolean isEqualLength;
 
-    boolean isMultivariate;
-    boolean hasTimeStamps;
+    private boolean isMultivariate;
+    private boolean hasTimeStamps;
 
     // this could be by dimension, so could be a list.
-    int minLength;
-    int maxLength;
-    int maxNumDimensions;
+    private int minLength;
+    private int maxLength;
+    private int maxNumDimensions;
 
+    public int getMaxNumDimensions() {
+        return maxNumDimensions;
+    }
 
-	
     /** 
      * @return String
      */
@@ -160,13 +162,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* End Meta Information */
 
-    List<TimeSeriesInstance> seriesCollection;
+    private List<TimeSeriesInstance> seriesCollection;
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
-    String[] classLabels;
+    private String[] classLabels;
 
-    int[] classCounts;
+    private int[] classCounts;
 
     public TimeSeriesInstances() {
         seriesCollection = new ArrayList<>();
@@ -177,10 +179,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         setClassLabels(classLabels);
     }
 
-    public TimeSeriesInstances(final List<List<List<Double>>> raw_data) {
+    public TimeSeriesInstances(final List<List<List<Double>>> rawData) {
         this();
 
-        for (final List<List<Double>> series : raw_data) {
+        for (final List<List<Double>> series : rawData) {
             seriesCollection.add(new TimeSeriesInstance(series));
         }
 
@@ -188,22 +190,22 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     
-    public TimeSeriesInstances(final List<List<List<Double>>> raw_data, final List<Double> label_indexes) {
+    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes) {
         this();
 
         int index = 0;
-        for (final List<List<Double>> series : raw_data) {
+        for (final List<List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, label_indexes.get(index++)));
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++)));
         }
 
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] raw_data) {
+    public TimeSeriesInstances(final double[][][] rawData) {
         this();
 
-        for (final double[][] series : raw_data) {
+        for (final double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
             seriesCollection.add(new TimeSeriesInstance(series));
         }
@@ -211,20 +213,20 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] raw_data, int[] label_indexes) {
+    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes) {
         this();
 
         int index = 0;
-        for (double[][] series : raw_data) {
+        for (double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, label_indexes[index++]));
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++]));
         }
 
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] raw_data, int[] label_indexes, String[] labels) {
-        this(raw_data, label_indexes);
+    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
+        this(rawData, labelIndexes);
         classLabels = labels;
     }
 
