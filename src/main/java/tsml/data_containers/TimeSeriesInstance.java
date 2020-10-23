@@ -86,9 +86,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
-        for (TimeSeries ts : series) {
-            seriesDimensions.add(ts);
-        }
+        seriesDimensions.addAll(series);
 
         this.labelIndex = labelIndex; 
         dataChecks();
@@ -148,8 +146,8 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     }
 
 	private void calculateLengthBounds() {
-        minLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
-        maxLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
+        minLength = seriesDimensions.stream().mapToInt(TimeSeries::getSeriesLength).min().getAsInt();
+        maxLength = seriesDimensions.stream().mapToInt(TimeSeries::getSeriesLength).max().getAsInt();
         isEqualLength = minLength == maxLength;
     }
 

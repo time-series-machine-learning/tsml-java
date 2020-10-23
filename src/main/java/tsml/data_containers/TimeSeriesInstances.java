@@ -119,31 +119,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public void setProblemName(String problemName) {
         this.problemName = problemName;
     }
-
-    
-    /** 
-     * @param isEquallySpaced
-     */
-    public void setEquallySpaced(boolean isEquallySpaced) {
-        this.isEquallySpaced = isEquallySpaced;
-    }
-
-    
-    /** 
-     * @return boolean
-     */
-    public boolean isHasTimeStamps() {
-        return hasTimeStamps;
-    }
-
-    
-    /** 
-     * @param hasTimeStamps
-     */
-    public void setHasTimeStamps(boolean hasTimeStamps) {
-        this.hasTimeStamps = hasTimeStamps;
-    }
-
     
     /** 
      * @return String
