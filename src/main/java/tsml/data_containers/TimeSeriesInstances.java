@@ -249,13 +249,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     private void calculateClassCounts() {
         classCounts = new int[classLabels.length];
         for(TimeSeriesInstance inst : seriesCollection){
-            classCounts[inst.classLabelIndex]++;
+            classCounts[inst.getClassLabelIndex()]++;
         }
     }
 
     private void calculateLengthBounds() {
-        minLength = seriesCollection.stream().mapToInt(e -> e.minLength).min().getAsInt();
-        maxLength = seriesCollection.stream().mapToInt(e -> e.maxLength).max().getAsInt();
+        minLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMinLength).min().getAsInt();
+        maxLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMaxLength).max().getAsInt();
         isEqualLength = minLength == maxLength;
     }
 
@@ -264,12 +264,12 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
     
     private void calculateIfMultivariate(){
-        isMultivariate = seriesCollection.stream().map(e -> e.isMultivariate).anyMatch(Boolean::booleanValue);
+        isMultivariate = seriesCollection.stream().map(TimeSeriesInstance::isMultivariate).anyMatch(Boolean::booleanValue);
     }
 
     private void calculateIfMissing() {
         // if any of the instance have a missing value then this is true.
-        hasMissing = seriesCollection.stream().map(e -> e.hasMissing).anyMatch(Boolean::booleanValue);
+        hasMissing = seriesCollection.stream().map(TimeSeriesInstance::hasMissing).anyMatch(Boolean::booleanValue);
     }
 
     
@@ -317,15 +317,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         seriesCollection.add(new_series);
 
         //guard for if we're going to force update classCounts after.
-        if(classCounts != null && new_series.classLabelIndex < classCounts.length)
-            classCounts[new_series.classLabelIndex]++;
+        if(classCounts != null && new_series.getClassLabelIndex() < classCounts.length)
+            classCounts[new_series.getClassLabelIndex()]++;
 
-        minLength = Math.min(new_series.minLength, minLength);
-        maxLength = Math.max(new_series.maxLength, maxLength);
+        minLength = Math.min(new_series.getMinLength(), minLength);
+        maxLength = Math.max(new_series.getMaxLength(), maxLength);
         maxNumDimensions = Math.max(new_series.getNumDimensions(), maxNumDimensions);
-        hasMissing |= new_series.hasMissing;
+        hasMissing |= new_series.hasMissing();
         isEqualLength = minLength == maxLength;
-        isMultivariate |= new_series.isMultivariate;
+        isMultivariate |= new_series.isMultivariate();
     }
 
     
@@ -382,7 +382,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         int[] out = new int[numInstances()];
         int index=0;
         for(TimeSeriesInstance inst : seriesCollection){
-            out[index++] = inst.classLabelIndex;
+            out[index++] = inst.getClassLabelIndex();
         }
         return out;
     }

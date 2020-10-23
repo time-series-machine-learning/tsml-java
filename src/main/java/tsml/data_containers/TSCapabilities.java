@@ -168,7 +168,7 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.isEqualLength;
+            return inst.isEqualLength();
         }
     }
     
@@ -180,7 +180,7 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.isMultivariate;
+            return inst.isMultivariate();
         }
     }
 
@@ -192,7 +192,7 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.hasMissing;
+            return inst.hasMissing();
         }
     }
 
@@ -211,7 +211,7 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.minLength >= minL;
+            return inst.getMinLength() >= minL;
         }
     }
     
