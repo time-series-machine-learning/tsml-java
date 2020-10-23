@@ -1,18 +1,13 @@
 package tsml.data_containers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
  */
-public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
+public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     /* Meta Information */
     private String description;
@@ -290,8 +285,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     /** 
      * @param newSeries
      */
-    public void add(final TimeSeriesInstance newSeries) {
-        seriesCollection.add(newSeries);
+    public void add(int i, final TimeSeriesInstance newSeries) {
+        seriesCollection.add(i, newSeries);
 
         //guard for if we're going to force update classCounts after.
         if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
@@ -538,5 +533,19 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-    
+    @Override public TimeSeriesInstance set(final int i, final TimeSeriesInstance instance) {
+        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    }
+
+    @Override public TimeSeriesInstance remove(final int i) {
+        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    }
+
+    @Override public void clear() {
+        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    }
+
+    @Override public int size() {
+        return numInstances();
+    }
 }
