@@ -163,6 +163,10 @@ public class TimeSeries extends AbstractList<Double> {
         throw new UnsupportedOperationException("time series are not mutable.");
     }
 
+    @Override public Double remove(final int i) {
+        throw new UnsupportedOperationException("time series are not mutable.");
+    }
+
     /** 
      * @return double[]
      */
