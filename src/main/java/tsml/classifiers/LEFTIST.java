@@ -2,11 +2,16 @@ package tsml.classifiers;
 
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
+import org.apache.commons.lang3.ArrayUtils;
+import org.w3c.dom.Attr;
 import tsml.classifiers.interval_based.CIF;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
+import utilities.GenericTools;
 import utilities.generic_storage.Pair;
+import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.classifiers.functions.LinearRegression;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -39,6 +44,7 @@ public class LEFTIST {
 
     private boolean distanceToSeries = false;
     private boolean predicictionClassOnly = false;
+    private boolean generateScore = false;
 
     private Function<Pair<double[],double[]>,Double> similarityMeasure = (Pair<double[],double[]> p) ->
             -(dot(p.var1,p.var2) / (Math.sqrt(dot(p.var1,p.var1)) * Math.sqrt(dot(p.var2,p.var2)))) + 1;
@@ -101,9 +107,6 @@ public class LEFTIST {
         }
         e.predVal = argMax(probas[0], rand);
 
-        double[] usedFeatures = featureSelection(activatedSlices, neighbourWeights, probas);
-        int noAtts = usedFeatures.length;
-
         int noClasses;
         if (predicictionClassOnly){
             noClasses = 1;
@@ -116,35 +119,26 @@ public class LEFTIST {
 
         e.coefficientsForClass = new double[noClasses][];
         e.classMeans = new double[noClasses];
-
-        ArrayList<Attribute> atts = new ArrayList<>(noAtts + 1);
-        ArrayList<String> vals = new ArrayList<>(2);
-        vals.add("0");
-        vals.add("1");
-        for (int i = 0; i < noAtts; i++) {
-            atts.add(new Attribute(Integer.toString(i), vals));
-        }
-        atts.add(new Attribute("class"));
-        Instances maskInstances = new Instances("maskInstances", atts, noNeighbours);
-        maskInstances.setClassIndex(maskInstances.numAttributes()-1);
-        for (int i = 0; i < noNeighbours; i++) {
-            double[] newArr = new double[noAtts + 1];
-            System.arraycopy(usedFeatures[i], 0, newArr, 0, noAtts);
-            maskInstances.add(new DenseInstance(neighbourWeights[i], newArr));
-        }
+        e.scores = new double[noClasses];
+        Arrays.fill(e.scores, -1);
 
         for (int i = 0 ; i < noClasses; i++) {
+            int[] usedFeatures = featureSelection(activatedSlices, neighbourWeights, probas, e.classes[i]);
+
+            Instances maskInstances = maskInstances(activatedSlices, neighbourWeights, usedFeatures);
+
             for (int n = 0; n < noNeighbours; n++){
                 maskInstances.get(n).setClassValue(probas[n][e.classes[i]]);
             }
 
-            explainer.buildClassifier(maskInstances);
+            LinearRegression lr = (LinearRegression) AbstractClassifier.makeCopy(explainer);
+            lr.buildClassifier(maskInstances);
 
             if (generateScore){
-                e.score = score();
+                e.scores[i] = score(lr, maskInstances);
             }
 
-            double[] c = explainer.coefficients();
+            double[] c = lr.coefficients();
             e.coefficientsForClass[i] = new double[noSlices];
             System.arraycopy(c, 0, e.coefficientsForClass[i], 0, noSlices);
             e.classMeans[i] = c[c.length-1];
@@ -257,22 +251,113 @@ public class LEFTIST {
         return weights;
     }
 
-    private double[] featureSelection(double[][] activatedSlices, double[] neighbourWeights, double[][] probas){
-        double usedFeatures;
+    private Instances maskInstances(double[][] activatedSlices, double[] neighbourWeights, int[] usedFeatures){
+        int noAtts = usedFeatures.length;
 
-        switch (fsMethod) {
-            case HIGHEST_WEIGHTS:
+        ArrayList<Attribute> atts = new ArrayList<>(noAtts + 1);
+        ArrayList<String> vals = new ArrayList<>(2);
+        vals.add("0");
+        vals.add("1");
+        for (int i = 0; i < noAtts; i++) {
+            atts.add(new Attribute(Integer.toString(i), vals));
+        }
+        atts.add(new Attribute("class"));
 
-                break;
-            case FORWARD_SELECTION:
+        Instances maskInstances = new Instances("maskInstances", atts, noNeighbours);
+        maskInstances.setClassIndex(maskInstances.numAttributes()-1);
+        for (int i = 0; i < noNeighbours; i++) {
+            double[] newArr = new double[noAtts + 1];
+            for (int n = 0; n < noAtts; n++){
+                newArr[n] = activatedSlices[i][usedFeatures[n]];
+            }
+            maskInstances.add(new DenseInstance(neighbourWeights[i], newArr));
+        }
 
-                break;
-            default:
+        return maskInstances;
+    }
 
-                break;
+    private int[] featureSelection(double[][] activatedSlices, double[] neighbourWeights, double[][] probas, int cls)
+            throws Exception {
+        int[] usedFeatures;
+
+        if (fsMethod == FeatureSelectionMethod.NONE || noFeatures >= noSlices){
+            usedFeatures = new int[noSlices];
+            for (int i = 0; i < noSlices; i++) {
+                usedFeatures[i] = i;
+            }
+        }
+        else if (fsMethod == FeatureSelectionMethod.HIGHEST_WEIGHTS) {
+            usedFeatures = new int[noFeatures];
+
+            Integer[] allFeatures = new Integer[noSlices];
+            for (int i = 0; i < noSlices; i++) {
+                allFeatures[i] = i;
+            }
+            Instances maskInstances = maskInstances(activatedSlices, neighbourWeights, Arrays.stream(allFeatures)
+                    .mapToInt(i -> i).toArray());
+
+            LinearRegression lr = new LinearRegression();
+            lr.buildClassifier(maskInstances);
+
+            double[] c = new double[noSlices];
+            System.arraycopy(lr.coefficients(), 0, c, 0, noSlices);
+            Arrays.sort(allFeatures, new GenericTools.SortIndexDescending(c));
+
+            for (int i = 0; i < noFeatures; i++) {
+                usedFeatures[i] = allFeatures[i];
+            }
+        }
+        else if (fsMethod == FeatureSelectionMethod.FORWARD_SELECTION) {
+            usedFeatures = new int[noFeatures];
+            Arrays.fill(usedFeatures, -1);
+
+            ArrayList<String> vals = new ArrayList<>(2);
+            vals.add("0");
+            vals.add("1");
+
+            ArrayList<Attribute> atts = new ArrayList<>(1);
+            atts.add(new Attribute("class"));
+            Instances fsInstances = new Instances("fs", atts, noNeighbours);
+            for (int i = 0; i < noNeighbours; i++){
+                double[] a = new double[]{probas[i][cls]};
+                fsInstances.add(new DenseInstance(neighbourWeights[i], a));
+            }
+
+            for (int i = 0; i < noFeatures; i++) {
+                double max = Double.MIN_VALUE;
+                int feature = 0;
+
+                fsInstances.insertAttributeAt(new Attribute(Integer.toString(i), vals), i);
+
+                for (int n = 0; n < noSlices; n++){
+                    if (ArrayUtils.contains(usedFeatures, n)) continue;
+
+                    for (int g = 0; g < noNeighbours; g++){
+                        fsInstances.get(g).setValue(i, activatedSlices[g][n]);
+                    }
+
+                    LinearRegression lr = new LinearRegression();
+                    lr.buildClassifier(fsInstances);
+                    double score = score(lr, fsInstances);
+
+                    if (score > max){
+                        max = score;
+                        feature = n;
+                    }
+                }
+
+                usedFeatures[i] = feature;
+            }
+        }
+        else {
+            throw new Exception("Invalid feature selection option.");
         }
 
         return usedFeatures;
+    }
+
+    private double score(Classifier cls, Instances insts){
+        return 0;
     }
 
     public static class Explanation {
@@ -281,14 +366,15 @@ public class LEFTIST {
         int[] classes;
         double[][] coefficientsForClass;
         double[] classMeans;
-        double score = -1;
+        double[] scores;
 
         public Explanation() {}
 
         @Override
         public String toString(){
             return predVal + "\n" + Arrays.deepToString(slices) + "\n" + Arrays.toString(classes) + "\n" +
-                    Arrays.deepToString(coefficientsForClass) + "\n" + Arrays.toString(classMeans) + "\n" + score;
+                    Arrays.deepToString(coefficientsForClass) + "\n" + Arrays.toString(classMeans) + "\n" +
+                    Arrays.toString(scores);
         }
     }
 
