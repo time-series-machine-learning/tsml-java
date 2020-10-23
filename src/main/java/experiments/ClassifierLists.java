@@ -15,8 +15,10 @@
 package experiments;
 
 
+import de.bwaldvogel.liblinear.SolverType;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
+import machine_learning.classifiers.LibLinearClassifier;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
@@ -368,7 +370,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET","ROCKET_lldual","ROCKET_llprimal","ROCKET_ll1","ROCKET_ll2","ROCKET_ll3","ROCKET_ll4","ROCKET_ll5"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -396,6 +398,48 @@ public class ClassifierLists {
                 break;
             case "ROCKET":
                 c = new ROCKETClassifier();
+                break;
+            case "ROCKET_lldual":
+                LibLinearClassifier llc = new LibLinearClassifier();
+                llc.solverType = SolverType.L2R_L2LOSS_SVC_DUAL;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc);
+                break;
+            case "ROCKET_llprimal":
+                LibLinearClassifier llc2 = new LibLinearClassifier();
+                llc2.solverType = SolverType.L2R_L2LOSS_SVC;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc2);
+                break;
+            case "ROCKET_ll1":
+                LibLinearClassifier llc3 = new LibLinearClassifier();
+                llc3.solverType = SolverType.L2R_L1LOSS_SVC_DUAL;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc3);
+                break;
+            case "ROCKET_ll2":
+                LibLinearClassifier llc4 = new LibLinearClassifier();
+                llc4.solverType = SolverType.MCSVM_CS;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc4);
+                break;
+            case "ROCKET_ll3":
+                LibLinearClassifier llc5 = new LibLinearClassifier();
+                llc5.solverType = SolverType.L1R_L2LOSS_SVC;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc5);
+                break;
+            case "ROCKET_ll4":
+                LibLinearClassifier llc6 = new LibLinearClassifier();
+                llc6.solverType = SolverType.L1R_LR;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc6);
+                break;
+            case "ROCKET_ll5":
+                LibLinearClassifier llc7 = new LibLinearClassifier();
+                llc7.solverType = SolverType.L2R_LR_DUAL;
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setClassifier(llc7);
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
