@@ -63,9 +63,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
             int seed = i;
-            ProximityTree classifier = new ProximityTree();
+            ProximityTree classifier = Config.PT_R5.build();
             classifier.setSeed(seed);
-            Config.PT_R5.configureFromEnum(classifier);
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.getLogger().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
@@ -74,10 +73,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     // the various configs for this classifier
-    public enum Config implements EnumBasedConfigurer<ProximityTree> {
+    public enum Config implements ClassifierFromEnum<ProximityTree> {
         PT_R1() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree.setClassifierName(name());
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
                         new EDistanceConfigs.EDSpaceBuilder(),
                         new DTWDistanceConfigs.FullWindowDTWSpaceBuilder(),
@@ -101,21 +101,27 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 proximityTree.setMinIntervalSize(-1);
                 proximityTree.setRandomR(false);
                 proximityTree.setRPatience(false);
+                proximityTree.setTrainTimeLimit(-1);
+                proximityTree.setTestTimeLimit(-1);
+                proximityTree.setBreadthFirst(false);
+                proximityTree.setMaxHeight(-1);
                 return proximityTree;
             }
         },
         PT_R5() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
-                proximityTree = PT_R1.configureFromEnum(proximityTree);
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree = PT_R1.configure(proximityTree);
+                proximityTree.setClassifierName(name());
                 proximityTree.setR(5);
                 return proximityTree;
             }
         },
         PT_R10() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
-                proximityTree = PT_R1.configureFromEnum(proximityTree);
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree = PT_R1.configure(proximityTree);
+                proximityTree.setClassifierName(name());
                 proximityTree.setR(10);
                 return proximityTree;
             }
@@ -125,11 +131,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        setTrainTimeLimit(-1);
-        setTestTimeLimit(-1);
-        setBreadthFirst(false);
-        setMaxHeight(-1);
-        Config.PT_R1.configureFromEnum(this);
+        Config.PT_R1.configure(this);
     }
 
     private static final long serialVersionUID = 1;
