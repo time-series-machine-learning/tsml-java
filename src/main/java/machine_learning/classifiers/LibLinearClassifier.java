@@ -1,6 +1,7 @@
 package machine_learning.classifiers;
 
 import de.bwaldvogel.liblinear.*;
+import scala.tools.nsc.transform.patmat.Solving;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -70,7 +71,7 @@ public class LibLinearClassifier extends AbstractClassifier implements Randomiza
         Problem problem = new Problem();
         problem.bias = bias;
         problem.y = labels;
-        problem.n = data.numAttributes();
+        problem.n = data.numAttributes()-1;
         problem.l = features.length;
         problem.x = features;
 
@@ -80,34 +81,34 @@ public class LibLinearClassifier extends AbstractClassifier implements Randomiza
         Linear.disableDebugOutput();
 
         if (tuneC) {
+            final int l = problem.l;
+            if (nr_fold > l) {
+                nr_fold = l;
+            }
+
+            final int[] perm = new int[l];
+            final int[] fold_start = new int[nr_fold + 1];
+
+            Random rand = new Random(seed);
+
+            int k;
+            for (k = 0; k < l; k++) {
+                perm[k] = k;
+            }
+            for (k = 0; k < l; k++) {
+                int j = k + rand.nextInt(l - k);
+                int temp = perm[k];
+                perm[k] = perm[j];
+                perm[j] = temp;
+            }
+            for (k = 0; k <= nr_fold; k++) {
+                fold_start[k] = k * l / nr_fold;
+            }
+
             double[] cVals = new double[]{0.001, 0.01, 0.1, 1, 10, 100};
             int mostCorrect = Integer.MIN_VALUE;
 
             for (double cVal: cVals) {
-                final int l = problem.l;
-                if (nr_fold > l) {
-                    nr_fold = l;
-                }
-
-                final int[] perm = new int[l];
-                final int[] fold_start = new int[nr_fold + 1];
-
-                Random rand = new Random(seed);
-
-                int k;
-                for (k = 0; k < l; k++) {
-                    perm[k] = k;
-                }
-                for (k = 0; k < l; k++) {
-                    int j = k + rand.nextInt(l - k);
-                    int temp = perm[k];
-                    perm[k] = perm[j];
-                    perm[j] = temp;
-                }
-                for (k = 0; k <= nr_fold; k++) {
-                    fold_start[k] = k * l / nr_fold;
-                }
-
                 Parameter subpar = new Parameter(solverType, cVal, e, iterations, p);
                 int correct = 0;
 
@@ -141,7 +142,7 @@ public class LibLinearClassifier extends AbstractClassifier implements Randomiza
                     }
                 }
 
-                if (correct > mostCorrect){
+                if (correct > mostCorrect) {
                     mostCorrect = correct;
                     par = subpar;
                 }
