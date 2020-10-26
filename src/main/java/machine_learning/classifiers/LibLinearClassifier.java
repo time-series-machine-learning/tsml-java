@@ -17,7 +17,7 @@ public class LibLinearClassifier extends AbstractClassifier implements Randomiza
     int nr_fold = 5;
 
     double bias = 0;
-    public SolverType solverType = SolverType.L1R_L2LOSS_SVC;
+    public SolverType solverType = SolverType.L2R_L2LOSS_SVC;
     int iterations = 1000;
     double e = 0.01;
     double p = 0.1;
