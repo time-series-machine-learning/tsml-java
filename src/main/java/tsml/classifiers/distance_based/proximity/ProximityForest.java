@@ -9,9 +9,7 @@ import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Factory;
 import tsml.classifiers.distance_based.utils.classifiers.ClassifierFromEnum;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
@@ -30,7 +28,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Proximity Forest
  * <p>
  * Contributors: goastler
  */
@@ -204,13 +202,15 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // whether to weight trees by their train estimate (if enabled)
     private boolean weightTreesByTrainEstimate;
     // checkpoint config
-    private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
+    private long lastCheckpointTimeStamp = -1;
+    private String checkpointPath;
+    private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
+    private boolean checkpointLoadingEnabled = true;
+    private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
     // whether to rebuild the tree after a train estimate has been produced. This is for evaluation methods like OOB where the evaluated tree may not need rebuilding
     private boolean rebuildConstituentAfterEvaluation;
-
-    @Override public Checkpointer getCheckpointer() {
-        return checkpointer;
-    }
+    // whether work has been done and the train estimate needs to be rebuilt
+    private boolean workDone;
 
     private static class Constituent implements Serializable {
         private ProximityTree proximityTree;
@@ -244,27 +244,29 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
+        workDone = false;
         // load from checkpoint
-        loadCheckpoint();
+        // if checkpoint exists then skip initialisation
+        if(!loadCheckpoint()) {
+            // no checkpoint exists so check whether rebuilding is enabled
+            super.buildClassifier(trainData);
+            // if rebuilding (i.e. building from scratch) initialise the classifier
+            if(isRebuild()) {
+                // reset resources
+                memoryWatcher.resetAndStart();
+                trainTimer.resetAndStart();
+                // no constituents to start with
+                constituents = new ArrayList<>();
+                // zero tree build time so the first tree build will always set the bar
+                longestTrainStageTimeNanos = 0;
+            }
+        }
+        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
         // kick off resource monitors
         memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
-        super.buildClassifier(trainData);
-        // rebuild if set
-        if(isRebuild()) {
-            // reset resouce monitors
-            memoryWatcher.resetAndStart();
-            trainEstimateTimer.resetAndStop();
-            trainTimer.resetAndStart();
-            // no constituents to start with
-            constituents = new ArrayList<>();
-            // zero tree build time so the first tree build will always set the bar
-            longestTrainStageTimeNanos = 0;
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
-        }
-        // lap train timer
-        trainTimer.lap();
+        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
         // while remaining time / more trees need to be built
         while(
                 insideNumTreeLimit()
@@ -521,5 +523,46 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override public long getMaxMemoryUsage() {
         return memoryWatcher.getMaxMemoryUsage();
+    }
+
+    @Override public long getLastCheckpointTimeStamp() {
+        return lastCheckpointTimeStamp;
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
+    @Override public String getCheckpointFileName() {
+        return checkpointFileName;
+    }
+
+    @Override public void setCheckpointFileName(final String checkpointFileName) {
+        this.checkpointFileName = checkpointFileName;
+    }
+
+    @Override public String getCheckpointPath() {
+        return checkpointPath;
+    }
+
+    @Override public boolean setCheckpointPath(final String checkpointPath) {
+        this.checkpointPath = checkpointPath;
+        return true;
+    }
+
+    @Override public void setCheckpointLoadingEnabled(final boolean checkpointLoadingEnabled) {
+        this.checkpointLoadingEnabled = checkpointLoadingEnabled;
+    }
+
+    @Override public boolean isCheckpointLoadingEnabled() {
+        return checkpointLoadingEnabled;
+    }
+
+    @Override public long getCheckpointInterval() {
+        return checkpointInterval;
+    }
+
+    @Override public void setCheckpointInterval(final long checkpointInterval) {
+        this.checkpointInterval = checkpointInterval;
     }
 }

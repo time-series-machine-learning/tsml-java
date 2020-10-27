@@ -157,8 +157,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private boolean breadthFirst;
     // the list of distance function space builders to produce distance functions in splits
     private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
-    // checkpoint config
-    private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
     // max tree height
     private int maxHeight;
     // whether to early abandon distance measurements for distance between instances (data) and exemplars
@@ -184,13 +182,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private boolean randomR;
     // whether to use patience in the R parameter
     private boolean rPatience;
+    // checkpoint config
+    private long lastCheckpointTimeStamp = -1;
+    private String checkpointPath;
+    private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
+    private boolean checkpointLoadingEnabled = true;
+    private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
 
     public boolean hasMaxHeight() {
         return maxHeight > 0;
-    }
-
-    public Checkpointer getCheckpointer() {
-        return checkpointer;
     }
 
     public List<ParamSpaceBuilder> getDistanceFunctionSpaceBuilders() {
@@ -831,5 +831,46 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             };
             return partitionDatas;
         }
+    }
+
+    @Override public long getLastCheckpointTimeStamp() {
+        return lastCheckpointTimeStamp;
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
+    @Override public String getCheckpointFileName() {
+        return checkpointFileName;
+    }
+
+    @Override public void setCheckpointFileName(final String checkpointFileName) {
+        this.checkpointFileName = checkpointFileName;
+    }
+
+    @Override public String getCheckpointPath() {
+        return checkpointPath;
+    }
+
+    @Override public boolean setCheckpointPath(final String checkpointPath) {
+        this.checkpointPath = checkpointPath;
+        return true;
+    }
+
+    @Override public void setCheckpointLoadingEnabled(final boolean checkpointLoadingEnabled) {
+        this.checkpointLoadingEnabled = checkpointLoadingEnabled;
+    }
+
+    @Override public boolean isCheckpointLoadingEnabled() {
+        return checkpointLoadingEnabled;
+    }
+
+    @Override public long getCheckpointInterval() {
+        return checkpointInterval;
+    }
+
+    @Override public void setCheckpointInterval(final long checkpointInterval) {
+        this.checkpointInterval = checkpointInterval;
     }
 }
