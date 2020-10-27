@@ -5,9 +5,7 @@ import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Random;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Assert;
@@ -16,8 +14,6 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import utilities.ArrayUtilities;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -38,11 +34,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     // whether to (re)generate train estimate. Useful with rebuild to incrementally improve classifier.
     private boolean rebuildTrainEstimateResults = true;
 
-    public BaseClassifier() {
+    protected BaseClassifier() {
         this(false);
     }
 
-    public BaseClassifier(boolean a) {
+    protected BaseClassifier(boolean a) {
         super(a);
     }
 
@@ -71,6 +67,10 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         } else {
             setLogLevel(Level.OFF);
         }
+    }
+    
+    protected Logger getLog() {
+        return log;
     }
 
     @Override public void setClassifierName(final String classifierName) {
@@ -115,7 +115,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void setParams(ParamSet params) throws Exception {
-        Assert.assertNotNull(params);
+        Objects.requireNonNull(params);
     }
 
     @Override
@@ -139,19 +139,5 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public abstract double[] distributionForInstance(final Instance instance) throws Exception;
-
-    public boolean isRebuildTrainEstimateResults() {
-        return rebuildTrainEstimateResults;
-    }
-
-    public void setRebuildTrainEstimateResults(final boolean rebuildTrainEstimateResults) {
-        this.rebuildTrainEstimateResults = rebuildTrainEstimateResults;
-    }
-
-    @Override
-    public double classifyInstance(Instance instance) throws Exception {
-        double[] distribution = distributionForInstance(instance);
-        return findIndexOfMax(distribution, rand);
-    }
 
 }

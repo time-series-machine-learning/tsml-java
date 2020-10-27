@@ -244,7 +244,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        final Logger logger = getLog();
         // load from checkpoint
         loadCheckpoint();
         // kick off resource monitors
@@ -262,7 +261,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             constituents = new ArrayList<>();
             // zero tree build time so the first tree build will always set the bar
             longestTrainStageTimeNanos = 0;
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
         }
         // lap train timer
         trainTimer.lap();
@@ -272,13 +271,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 &&
                 insideTrainTimeLimit(trainTimer.getTime() + longestTrainStageTimeNanos)
         ) {
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
             // reset the tree build timer
             trainStageTimer.resetAndStart();
             final int treeIndex = constituents.size();
             // setup a new tree
             final ProximityTree tree = proximityTreeFactory.build();
-//            tree.setLogger(logger);
             final Constituent constituent = new Constituent();
             constituent.setProximityTree(tree);
             constituents.add(constituent);
@@ -290,7 +288,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 final Evaluator evaluator = buildEvaluator();
                 evaluator.setSeed(rand.nextInt());
                 constituent.setEvaluator(evaluator);
-                logger.info(() -> "evaluating tree " + treeIndex);
+                getLog().info(() -> "evaluating tree " + treeIndex);
                 // evaluate the tree
                 final ClassifierResults results = evaluator.evaluate(tree, trainData);
                 constituent.setEvaluationResults(results);
@@ -304,7 +302,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
             if(estimator.equals(EstimatorMethod.NONE) || rebuildConstituentAfterEvaluation) {
-                logger.info(() -> "building tree " + treeIndex);
+                getLog().info(() -> "building tree " + treeIndex);
                 tree.setRebuild(true);
                 tree.buildClassifier(trainData);
             }
@@ -317,7 +315,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // update train timer
             trainTimer.lap();
         }
-        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
         // if work has been done towards estimating the train error
         if(estimateOwnPerformance && isRebuildTrainEstimateResults()) {
             trainEstimateTimer.start();
