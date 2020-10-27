@@ -51,8 +51,12 @@ public interface Checkpointed extends Checkpointable, Copier {
         }
     }
     
-    default boolean saveCheckpoint() {
+    default boolean saveCheckpointIgnoreInterval() {
         return saveCheckpoint(false);
+    }
+    
+    default boolean saveCheckpoint() {
+        return saveCheckpoint(true);
     }
     
     default boolean saveCheckpoint(boolean checkInterval) {
