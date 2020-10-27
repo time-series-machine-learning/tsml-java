@@ -5,7 +5,9 @@ import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
+import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.Factory;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.ClassifierFromEnum;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
@@ -15,12 +17,9 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 import utilities.Utilities;
@@ -36,7 +35,8 @@ import java.util.logging.Logger;
  * <p>
  * Contributors: goastler
  */
-public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TimedTrain, TimedTrainEstimate, TimedTest, WatchedMemory, Checkpointed {
+public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable,
+                                                                       MemoryWatchable, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 1; i < 2; i++) {
@@ -49,7 +49,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/all/", "MiddlePhalanxOutlineCorrect", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/all/", "GunPoint", seed), seed);
         }
         //        Thread.sleep(10000);
 
@@ -80,10 +80,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setEstimatorMethod("none");
                 proximityForest.setNumTreeLimit(100);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
+                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R5);
                 proximityForest.setUseDistributionInVoting(false);
                 proximityForest.setWeightTreesByTrainEstimate(false);
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R1);
+                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R1);
                 return proximityForest;
             }
         },
@@ -92,7 +92,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             public <B extends ProximityForest> B configure(B proximityForest) {
                 proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setClassifierName(name());
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
+                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R5);
                 return proximityForest;
             }
         },
@@ -101,7 +101,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             public <B extends ProximityForest> B configure(B proximityForest) {
                 proximityForest = PF_R1.configure(proximityForest);
                 proximityForest.setClassifierName(name());
-                proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R10);
+                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R10);
                 return proximityForest;
             }
         },
@@ -192,13 +192,13 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the number of trees
     private int numTreeLimit;
     // the train time limit / contract
-    private transient long trainTimeLimitNanos;
+    private long trainTimeLimitNanos;
     // the test time limit / contract
-    private transient long testTimeLimitNanos;
+    private long testTimeLimitNanos;
     // the longest tree build time for predicting train time requirements
-    private transient long longestTrainStageTimeNanos;
+    private long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
-    private Configurer<ProximityTree> proximityTreeConfig;
+    private Factory<ProximityTree> proximityTreeFactory;
     // whether to use distributions in voting or predictions
     private boolean useDistributionInVoting;
     // whether to weight trees by their train estimate (if enabled)
@@ -277,12 +277,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainStageTimer.resetAndStart();
             final int treeIndex = constituents.size();
             // setup a new tree
-            final ProximityTree tree = new ProximityTree();
+            final ProximityTree tree = proximityTreeFactory.build();
 //            tree.setLogger(logger);
             final Constituent constituent = new Constituent();
             constituent.setProximityTree(tree);
             constituents.add(constituent);
-            proximityTreeConfig.configure(tree);
             tree.setSeed(rand.nextInt());
             // estimate the performance of the tree
             if(!estimator.equals(EstimatorMethod.NONE)) {
@@ -456,14 +455,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         this.numTreeLimit = numTreeLimit;
     }
 
-    public Configurer<ProximityTree> getProximityTreeConfig() {
-        return proximityTreeConfig;
+    public Factory<ProximityTree> getProximityTreeFactory() {
+        return proximityTreeFactory;
     }
 
-    public void setProximityTreeConfig(
-            final Configurer<ProximityTree> proximityTreeConfig) {
-        Assert.assertNotNull(proximityTreeConfig);
-        this.proximityTreeConfig = proximityTreeConfig;
+    public void setProximityTreeFactory(
+            final Factory<ProximityTree> proximityTreeFactory) {
+        Assert.assertNotNull(proximityTreeFactory);
+        this.proximityTreeFactory = proximityTreeFactory;
     }
 
     public boolean isUseDistributionInVoting() {
@@ -485,16 +484,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override
-    public StopWatch getTrainTimer() {
-        return trainTimer;
-    }
-
-    @Override
-    public StopWatch getTrainEstimateTimer() {
-        return trainEstimateTimer;
-    }
-
-    @Override
     public long getTestTimeLimit() {
         return testTimeLimitNanos;
     }
@@ -502,16 +491,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     @Override
     public void setTestTimeLimit(final long nanos) {
         testTimeLimitNanos = nanos;
-    }
-
-    @Override
-    public MemoryWatcher getMemoryWatcher() {
-        return memoryWatcher;
-    }
-
-    @Override
-    public StopWatch getTestTimer() {
-        return testTimer;
     }
 
     public boolean isWeightTreesByTrainEstimate() {
@@ -528,5 +507,21 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     public void setRebuildConstituentAfterEvaluation(final boolean rebuildConstituentAfterEvaluation) {
         this.rebuildConstituentAfterEvaluation = rebuildConstituentAfterEvaluation;
+    }
+
+    @Override public long getTrainTime() {
+        return trainTimer.getTime();
+    }
+    
+    @Override public long getTrainEstimateTime() {
+        return trainEstimateTimer.getTime();
+    }
+
+    @Override public long getTestTime() {
+        return testTimer.getTime();
+    }
+
+    @Override public long getMaxMemoryUsage() {
+        return memoryWatcher.getMaxMemoryUsage();
     }
 }

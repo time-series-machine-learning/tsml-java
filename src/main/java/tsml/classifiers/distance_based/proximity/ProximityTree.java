@@ -32,12 +32,10 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.*;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
 import tsml.transformers.IntervalTransform;
 import tsml.transformers.TransformPipeline;
 import utilities.ArrayUtilities;
@@ -58,7 +56,7 @@ import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, TimedTrain, TimedTest, WatchedMemory, Checkpointed {
+public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, MemoryWatchable, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -203,19 +201,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
     }
 
-    @Override
-    public StopWatch getTrainTimer() {
-        return trainTimer;
+    @Override public long getTrainTime() {
+        return trainTimer.getTime();
     }
 
-    @Override
-    public StopWatch getTestTimer() {
-        return testTimer;
+    @Override public long getTestTime() {
+        return testTimer.getTime();
     }
 
-    @Override
-    public MemoryWatcher getMemoryWatcher() {
-        return memoryWatcher;
+    @Override public long getMaxMemoryUsage() {
+        return memoryWatcher.getMaxMemoryUsage();
     }
 
     @Override
