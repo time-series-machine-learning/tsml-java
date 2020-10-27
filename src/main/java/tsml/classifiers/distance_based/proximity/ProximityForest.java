@@ -4,7 +4,6 @@ import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import org.junit.Assert;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Factory;
@@ -25,7 +24,9 @@ import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.logging.Logger;
+
+import static utilities.ArrayUtilities.*;
+import static utilities.Utilities.argMax;
 
 /**
  * Proximity Forest
@@ -74,13 +75,27 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setClassifierName(name());
                 proximityForest.setTrainTimeLimit(-1);
                 proximityForest.setTestTimeLimit(-1);
-                proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setEstimatorMethod("none");
                 proximityForest.setNumTreeLimit(100);
-                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R5);
-                proximityForest.setUseDistributionInVoting(false);
-                proximityForest.setWeightTreesByTrainEstimate(false);
                 proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R1);
+                return proximityForest;
+            }
+        },
+        PF_R1_OOB() {
+            @Override
+            public <B extends ProximityForest> B configure(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setClassifierName(name());
+                proximityForest.setEstimatorMethod("OOB");
+                return proximityForest;
+            }
+        },
+        PF_R1_CV() {
+            @Override
+            public <B extends ProximityForest> B configure(B proximityForest) {
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setClassifierName(name());
+                proximityForest.setEstimatorMethod("CV");
                 return proximityForest;
             }
         },
@@ -93,54 +108,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        PF_R10() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R1.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R10);
-                return proximityForest;
-            }
-        },
         PF_R5_OOB() {
             @Override
             public <B extends ProximityForest> B configure(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
                 proximityForest.setClassifierName(name());
                 proximityForest.setEstimatorMethod("OOB");
-                proximityForest.setRebuildConstituentAfterEvaluation(false);
-                return proximityForest;
-            }
-        },
-        PF_R5_OOB_R() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                proximityForest.setRebuildConstituentAfterEvaluation(true);
-                return proximityForest;
-            }
-        },
-        PF_R5_OOB_W() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                proximityForest.setRebuildConstituentAfterEvaluation(false);
-                proximityForest.setWeightTreesByTrainEstimate(true);
-                return proximityForest;
-            }
-        },
-        PF_R5_OOB_R_W() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                proximityForest.setRebuildConstituentAfterEvaluation(true);
-                proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }
         },
@@ -153,13 +126,30 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 return proximityForest;
             }
         },
-        PF_R5_CV_W() {
+        PF_R10() {
             @Override
             public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
+                proximityForest = PF_R1.configure(proximityForest);
+                proximityForest.setClassifierName(name());
+                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R10);
+                return proximityForest;
+            }
+        },
+        PF_R10_OOB() {
+            @Override
+            public <B extends ProximityForest> B configure(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
+                proximityForest.setClassifierName(name());
+                proximityForest.setEstimatorMethod("OOB");
+                return proximityForest;
+            }
+        },
+        PF_R10_CV() {
+            @Override
+            public <B extends ProximityForest> B configure(B proximityForest) {
+                proximityForest = PF_R10.configure(proximityForest);
                 proximityForest.setClassifierName(name());
                 proximityForest.setEstimatorMethod("CV");
-                proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }
         },
@@ -192,20 +182,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
     private Factory<ProximityTree> proximityTreeFactory;
-    // whether to use distributions in voting or predictions
-    private boolean useDistributionInVoting;
-    // whether to weight trees by their train estimate (if enabled)
-    private boolean weightTreesByTrainEstimate;
     // checkpoint config
     private long lastCheckpointTimeStamp = -1;
     private String checkpointPath;
     private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
     private boolean checkpointLoadingEnabled = true;
     private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
-    // whether to rebuild the tree after a train estimate has been produced. This is for evaluation methods like OOB where the evaluated tree may not need rebuilding
-    private boolean rebuildConstituentAfterEvaluation;
-    // whether work has been done and the train estimate needs to be rebuilt
-    private boolean workDone;
 
     private static class Constituent implements Serializable {
         private ProximityTree proximityTree;
@@ -357,8 +339,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     final int instanceIndexInTrainData = trainDataIndices.get(i);
                     double[] distribution = constituentEvaluationResults.getProbabilityDistribution(i);
                     // weight the vote of this constituent
-                    distribution = vote(constituent, instance);
-                    ArrayUtilities.add(finalDistributions[instanceIndexInTrainData], distribution);
+                    distribution = vote(distribution, instance);
+                    add(finalDistributions[instanceIndexInTrainData], distribution);
                     // add onto the prediction time for this instance
                     time = System.nanoTime() - time;
                     time += constituentEvaluationResults.getPredictionTime(i);
@@ -370,8 +352,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 long time = System.nanoTime();
                 double[] distribution = finalDistributions[i];
                 // normalise the distribution as sum of votes has likely pushed sum of distribution >1
-                ArrayUtilities.normalise(distribution, true);
-                double prediction = Utilities.argMax(distribution, rand);
+                normalise(distribution, true);
+                double prediction = argMax(distribution, rand);
                 double classValue = trainData.get(i).classValue();
                 time = System.nanoTime() - time;
                 times[i] += time;
@@ -382,13 +364,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
-        checkpointIfWorkDone();
+        saveCheckpointIgnoreInterval();
     }
 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         testTimer.resetAndStart();
         long longestTestStageTimeNanos = 0;
+        final StopWatch testStageTimer = new StopWatch();
         final double[] finalDistribution = new double[getNumClasses()];
         for(int i = 0;
             i < constituents.size()
@@ -397,48 +380,25 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 ; i++) {
             testStageTimer.resetAndStart();
             final double[] distribution = vote(constituents.get(i), instance);
-            ArrayUtilities.add(finalDistribution, distribution);
+            add(finalDistribution, distribution);
             testStageTimer.stop();
             longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getTime());
         }
-        ArrayUtilities.normalise(finalDistribution);
+        normalise(finalDistribution);
         testTimer.stop();
         return finalDistribution;
     }
-
-    /**
-     * make a consistuent vote given distributionForInstance (can be precomputed elsewhere, therefore). This is mostly required for processing the train estimate.
-     * @param constituent
-     * @param distribution
-     * @return
-     */
-    private double[] vote(Constituent constituent, double[] distribution) {
-        if(!useDistributionInVoting) {
-            // take majority vote from constituent
-            int index = Utilities.argMax(distribution, rand);
-            distribution = ArrayUtilities.oneHot(distribution.length, index);
-        }
-        if(weightTreesByTrainEstimate) {
-            ClassifierResults treeTrainResult = constituent.getEvaluationResults();
-            if(treeTrainResult != null) {
-                double weight = treeTrainResult.getAcc();
-                ArrayUtilities.multiply(distribution, weight);
-            }
-        }
-        return distribution;
-    }
-
-    /**
-     * make a constituent vote given instance
-     * @param constituent
-     * @param instance
-     * @return
-     * @throws Exception
-     */
+    
     private double[] vote(Constituent constituent, Instance instance) throws Exception {
-        final ProximityTree tree = constituent.getProximityTree();
+        ProximityTree tree = constituent.getProximityTree();
         double[] distribution = tree.distributionForInstance(instance);
-        return vote(constituent, distribution);
+        return vote(constituent, instance, distribution);
+    }
+    
+    private double[] vote(Constituent constituent, Instance instance, double[] distribution) {
+        // vote for the highest probability class
+        int index = argMax(distribution, getRandom());
+        return oneHot(distribution.length, index);
     }
 
     public boolean insideNumTreeLimit() {
@@ -461,18 +421,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         return proximityTreeFactory;
     }
 
-    public void setProximityTreeFactory(
-            final Factory<ProximityTree> proximityTreeFactory) {
-        Assert.assertNotNull(proximityTreeFactory);
-        this.proximityTreeFactory = proximityTreeFactory;
-    }
-
-    public boolean isUseDistributionInVoting() {
-        return useDistributionInVoting;
-    }
-
-    public void setUseDistributionInVoting(final boolean useDistributionInVoting) {
-        this.useDistributionInVoting = useDistributionInVoting;
+    public void setProximityTreeFactory(final Factory<ProximityTree> proximityTreeFactory) {
+        this.proximityTreeFactory = Objects.requireNonNull(proximityTreeFactory);
     }
 
     @Override
@@ -494,23 +444,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     public void setTestTimeLimit(final long nanos) {
         testTimeLimitNanos = nanos;
     }
-
-    public boolean isWeightTreesByTrainEstimate() {
-        return weightTreesByTrainEstimate;
-    }
-
-    public void setWeightTreesByTrainEstimate(final boolean weightTreesByTrainEstimate) {
-        this.weightTreesByTrainEstimate = weightTreesByTrainEstimate;
-    }
-
-    public boolean isRebuildConstituentAfterEvaluation() {
-        return rebuildConstituentAfterEvaluation;
-    }
-
-    public void setRebuildConstituentAfterEvaluation(final boolean rebuildConstituentAfterEvaluation) {
-        this.rebuildConstituentAfterEvaluation = rebuildConstituentAfterEvaluation;
-    }
-
+    
     @Override public long getTrainTime() {
         return trainTimer.getTime();
     }
