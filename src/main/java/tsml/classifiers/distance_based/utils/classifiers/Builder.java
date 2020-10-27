@@ -1,5 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
-public interface Builder<A> {
+import java.io.Serializable;
+
+public interface Builder<A> extends Serializable {
     A build();
 }

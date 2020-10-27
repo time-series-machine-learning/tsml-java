@@ -2,7 +2,9 @@ package tsml.classifiers.distance_based.utils.classifiers;
 
 import weka.classifiers.Classifier;
 
-public interface Configurer<A> {
+import java.io.Serializable;
+
+public interface Configurer<A> extends Serializable {
 
     <B extends A> B configure(B classifier);
 
