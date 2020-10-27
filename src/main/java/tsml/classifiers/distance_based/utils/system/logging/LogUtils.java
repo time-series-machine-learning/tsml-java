@@ -18,16 +18,29 @@ public class LogUtils {
     private LogUtils() {
     }
 
-    public static Logger buildLogger(Object object) {
+    public static final Logger DEFAULT_LOG = buildLogger(LogUtils.class);
+
+    public static Logger updateLogLevel(Object src, Logger log, Level level) {
+        // if setting a log level then this object needs its own logger instance to differentiate the logging levels.
+        // i.e. everything by default is pointed at DEFAULT_LOG. If the level of the DEFAULT_LOG were to be changed it would affect every object's logging. Instead, a specific logger is required to house the log level for this specific object.
+        if(log.equals(DEFAULT_LOG)) {
+            // build the logger for this object. Only do this once if still using the DEFAULT_LOGGER. Once a bespoke logger has been created the log level can be mutated freely on that with no problems.
+            log = LogUtils.buildLogger(src);
+        }
+        log.setLevel(level);
+        return log;
+    }
+
+    public static Logger buildLogger(Object src) {
         String name;
-        if(object instanceof Class) {
-            name = ((Class) object).getSimpleName();
-        } else if(object instanceof String) {
-            name = (String) object;
-        } else if(object instanceof EnhancedAbstractClassifier) {
-            name = ((EnhancedAbstractClassifier) object).getClassifierName();
+        if(src instanceof Class) {
+            name = ((Class) src).getSimpleName();
+        } else if(src instanceof String) {
+            name = (String) src;
+        } else if(src instanceof EnhancedAbstractClassifier) {
+            name = ((EnhancedAbstractClassifier) src).getClassifierName() + "_" + src.hashCode(); // todo bung this into interface
         } else {
-            name = object.getClass().getSimpleName() + "_" + object.hashCode();
+            name = src.getClass().getSimpleName() + "_" + src.hashCode();
         }
         Logger logger = Logger.getLogger(name);
         Handler[] handlers = logger.getHandlers();
@@ -46,12 +59,12 @@ public class LogUtils {
         @Override
         public String format(final LogRecord logRecord) {
             String separator = " | ";
-//            return logRecord.getSequenceNumber() + separator +
-//                logRecord.getLevel() + separator +
-//                logRecord.getLoggerName() + separator +
-//                logRecord.getSourceClassName() + separator +
-//                logRecord.getSourceMethodName() + System.lineSeparator() +
-//                logRecord.getMessage() + System.lineSeparator();
+            //            return logRecord.getSequenceNumber() + separator +
+            //                logRecord.getLevel() + separator +
+            //                logRecord.getLoggerName() + separator +
+            //                logRecord.getSourceClassName() + separator +
+            //                logRecord.getSourceMethodName() + System.lineSeparator() +
+            //                logRecord.getMessage() + System.lineSeparator();
             return LocalDateTime.now().toString().replace("T", " ") + separator + logRecord.getMessage() + System.lineSeparator();
         }
     }
@@ -93,9 +106,9 @@ public class LogUtils {
                 Duration time = Duration.ofNanos(timeNanos);
                 Duration diff = limit.minus(time);
                 return StrUtils.durationToHmsString(time) + " elapsed of " + StrUtils.durationToHmsString(limit) +
-                    " " + name + " "
-                    + "time "
-                    + "limit, " + StrUtils.durationToHmsString(diff) + " train time remaining";
+                               " " + name + " "
+                               + "time "
+                               + "limit, " + StrUtils.durationToHmsString(diff) + " train time remaining";
             });
         }
     }
