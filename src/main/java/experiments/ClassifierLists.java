@@ -19,9 +19,6 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
-import tsml.classifiers.distance_based.knn.KNN;
-import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -146,9 +143,9 @@ public class ClassifierLists {
             case "PF_WRAPPED":
                 c = new ProximityForestWrapper();
                 break;
-            case "ED":
-                c = new KNN();
-                break;
+//            case "ED":
+//                c = new KNN();
+//                break;
             case "DTW":
                 c = new DTW_kNN();
                 ((DTW_kNN)c).optimiseWindow(false);
@@ -157,12 +154,12 @@ public class ClassifierLists {
             case "DTWCV":
                 c = new DTWCV();
                 break;
-            case "EE":
-                c = ElasticEnsemble.FACTORY.EE_V2.build();
-                break;
-            case "LEE":
-                c = ElasticEnsemble.FACTORY.LEE.build();
-                break;
+//            case "EE":
+//                c = ElasticEnsemble.FACTORY.EE_V2.build();
+//                break;
+//            case "LEE":
+//                c = ElasticEnsemble.FACTORY.LEE.build();
+//                break;
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
                 break;
@@ -569,9 +566,9 @@ public class ClassifierLists {
             case "BayesNet":
                 c = new BayesNet();
                 break;
-            case "ED":
-                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();;
-                break;
+//            case "ED":
+//                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();;
+//                break;
             case "C45":
                 c=new J48();
                 break;
