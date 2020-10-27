@@ -172,19 +172,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
     
     private static final long serialVersionUID = 1;
-    // the timer for contracting the estimate of train error
-    private final StopWatch trainEstimateTimer = new StopWatch();
     // train timer for contracting train
     private final StopWatch trainTimer = new StopWatch();
+    // train estimate timer for timing 
+    private final StopWatch trainEstimateTimer = new StopWatch();
     // memory watcher for monitoring memory
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     // test timer for contracting predictions
     private final StopWatch testTimer = new StopWatch();
-    // the train stage timer used to predict how long the next tree will take and whether there is enough contract
-    // remaining
-    private final StopWatch trainStageTimer = new StopWatch();
-    // the test stage timer for checking whether there is enough time to do more prediction work
-    private final StopWatch testStageTimer = new StopWatch();
     // the list of trees in this forest
     private List<Constituent> constituents;
     // the number of trees
@@ -244,7 +239,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        workDone = false;
         // load from checkpoint
         // if checkpoint exists then skip initialisation
         if(!loadCheckpoint()) {
@@ -266,7 +260,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         memoryWatcher.start();
         trainTimer.start();
         trainEstimateTimer.checkStopped();
+        // whether work has been done in this call to buildClassifier
+        boolean rebuildTrainEstimate = false;
+        // log the contract progress
         LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
+        // maintain a timer for how long trees take to build
+        final StopWatch trainStageTimer = new StopWatch();
         // while remaining time / more trees need to be built
         while(
                 insideNumTreeLimit()
@@ -279,12 +278,16 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             final int treeIndex = constituents.size();
             // setup a new tree
             final ProximityTree tree = proximityTreeFactory.build();
+            final int treeSeed = rand.nextInt();
+            tree.setSeed(treeSeed);
+            // setup the constituent
             final Constituent constituent = new Constituent();
             constituent.setProximityTree(tree);
             constituents.add(constituent);
-            tree.setSeed(rand.nextInt());
             // estimate the performance of the tree
             if(!estimator.equals(EstimatorMethod.NONE)) {
+                // the timer for contracting the estimate of train error
+                StopWatch trainEstimateTimer = new StopWatch();
                 trainEstimateTimer.start();
                 // build train estimate based on method
                 final Evaluator evaluator = buildEvaluator();
@@ -295,7 +298,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 final ClassifierResults results = evaluator.evaluate(tree, trainData);
                 constituent.setEvaluationResults(results);
                 // rebuild the train results as the train estimate has been changed
-                setRebuildTrainEstimateResults(true);
+                rebuildTrainEstimate = true;
                 // set meta data
                 ResultUtils.setInfo(results, tree, trainData);
                 results.setErrorEstimateMethod(getEstimatorMethod());
@@ -313,17 +316,16 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // update longest tree build time
             longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getTime());
             // optional checkpoint
-            checkpointIfIntervalExpired();
+            saveCheckpoint();
             // update train timer
             trainTimer.lap();
         }
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
         // if work has been done towards estimating the train error
-        if(estimateOwnPerformance && isRebuildTrainEstimateResults()) {
+        if(estimateOwnPerformance && rebuildTrainEstimate) {
             trainEstimateTimer.start();
             // disable until further work has been done (e.g. buildClassifier called again)
-            setRebuildTrainEstimateResults(false);
-            logger.info("finalising train estimate");
+            getLog().info("finalising train estimate");
             // init final distributions for each train instance
             final double[][] finalDistributions = new double[trainData.size()][getNumClasses()];
             // time for each train instance prediction
@@ -347,19 +349,19 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 } else {
                     throw new UnsupportedOperationException("cannot get train data from evaluator: " + evaluator);
                 }
-                final ClassifierResults constituentTrainResults = constituent.getEvaluationResults();
+                final ClassifierResults constituentEvaluationResults = constituent.getEvaluationResults();
                 // add each prediction to the results weighted by the evaluation of the constituent
                 for(int i = 0; i < dataInTrainEstimate.size(); i++) {
                     long time = System.nanoTime();
                     final Instance instance = dataInTrainEstimate.get(i);
                     final int instanceIndexInTrainData = trainDataIndices.get(i);
-                    double[] distribution = constituentTrainResults.getProbabilityDistribution(i);
+                    double[] distribution = constituentEvaluationResults.getProbabilityDistribution(i);
                     // weight the vote of this constituent
                     distribution = vote(constituent, instance);
                     ArrayUtilities.add(finalDistributions[instanceIndexInTrainData], distribution);
                     // add onto the prediction time for this instance
                     time = System.nanoTime() - time;
-                    time += constituentTrainResults.getPredictionTime(i);
+                    time += constituentEvaluationResults.getPredictionTime(i);
                     times[instanceIndexInTrainData] = time;
                 }
             }
