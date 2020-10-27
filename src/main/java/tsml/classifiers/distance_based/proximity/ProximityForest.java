@@ -173,7 +173,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         Config.PF_R1.configure(this);
     }
-
+    
+    private static final long serialVersionUID = 1;
     // the timer for contracting the estimate of train error
     private final StopWatch trainEstimateTimer = new StopWatch();
     // train timer for contracting train
