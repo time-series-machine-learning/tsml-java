@@ -4,7 +4,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 
 import java.util.Objects;
 
-public interface ClassifierFromEnum<A extends EnhancedAbstractClassifier> extends Configurer<A>, Builder<A> {
+public interface ClassifierFromEnum<A extends EnhancedAbstractClassifier> extends Configurer<A>, Factory<A> {
 
     @Override <B extends A> B configure(B classifier);
 
