@@ -8,7 +8,6 @@ import org.junit.Assert;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.Factory;
-import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.ClassifierFromEnum;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
@@ -245,7 +244,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        final Logger logger = getLogger();
+        final Logger logger = getLog();
         // load from checkpoint
         loadCheckpoint();
         // kick off resource monitors

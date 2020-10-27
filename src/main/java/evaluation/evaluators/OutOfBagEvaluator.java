@@ -28,12 +28,12 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
         super(-1, false, false);
     }
 
-    @Override public Logger getLogger() {
+    @Override public Logger getLog() {
         return logger;
     }
 
-    @Override public void setLogger(final Logger logger) {
-        this.logger = logger;
+    @Override public void setLog(final Logger log) {
+        this.logger = log;
     }
 
     @Override public ClassifierResults evaluate(Classifier classifier, Instances data) throws Exception {
@@ -66,14 +66,14 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
             outOfBagTestData.add(instance);
         }
         // build the tree on the oob train
-        getLogger().info("training on bagged train data");
+        getLog().info("training on bagged train data");
         if(cloneClassifier) {
             classifier = (Classifier) CopierUtils.deepCopy(classifier);
         }
         classifier.buildClassifier(inBagTrainData);
         // test tree on the oob test
         ClassifierResults results = new ClassifierResults();
-        getLogger().info("testing on out-of-bag test data");
+        getLog().info("testing on out-of-bag test data");
         ClassifierTools.addPredictions(classifier, outOfBagTestData, results, random);
         return results;
     }

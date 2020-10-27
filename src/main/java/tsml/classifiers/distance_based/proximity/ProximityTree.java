@@ -64,7 +64,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             ProximityTree classifier = Config.PT_R5.build();
             classifier.setSeed(seed);
 //            classifier.setCheckpointDirPath("checkpoints");
-            classifier.getLogger().setLevel(Level.ALL);
+            classifier.getLog().setLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed), seed);
         }
@@ -238,7 +238,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // start monitoring resources
         memoryWatcher.start();
         trainTimer.start();
-        final Logger logger = getLogger();
+        final Logger logger = getLog();
         // if checkpoint exists then skip initialisation
         if(!loadCheckpoint()) {
             // no checkpoint exists so check whether rebuilding is enabled

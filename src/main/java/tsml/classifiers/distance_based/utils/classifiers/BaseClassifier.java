@@ -30,7 +30,7 @@ import weka.core.Instances;
  */
 public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable, Loggable {
     // method of logging
-    private transient Logger logger = LogUtils.buildLogger(getClass());
+    private transient Logger log = LogUtils.DEFAULT_LOG;
     // whether the classifier is to be built from scratch or not. Set this to true to incrementally improve the model on every buildClassifier call
     private boolean rebuild = true;
     // whether the seed has been set
@@ -64,40 +64,31 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         }
     }
 
-    private void setLogLevelFromDebug() {
-        if(logger != null) {
-            if(debug) {
-                logger.setLevel(Level.FINE);
-            } else {
-                logger.setLevel(Level.OFF);
-            }
+    @Override public void setDebug(final boolean b) {
+        super.setDebug(b);
+        if(debug) {
+            setLogLevel(Level.ALL);
+        } else {
+            setLogLevel(Level.OFF);
         }
     }
 
-    @Override public void setDebug(final boolean b) {
-        super.setDebug(b);
-        setLogLevelFromDebug();
-    }
-
     @Override public void setClassifierName(final String classifierName) {
-        super.setClassifierName(classifierName);
-        setLogger(LogUtils.buildLogger(classifierName));
+        super.setClassifierName(Objects.requireNonNull(classifierName));
+        // set the log level to the current level. If this is different to the default logger then a new logger will be made with the new classifier name
+        setLogLevel(getLogLevel());
     }
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        logger.info(() -> {
+        log.info(() -> {
             String msg = "building " + getClassifierName();
             if(rebuild) {
                 msg += " from scratch";
             }
             return msg;
         });
-        if(estimateOwnPerformance && estimator.equals(EstimatorMethod.NONE)) {
-            throw new IllegalStateException("estimator method NONE but estimate own performance enabled!");
-        }
         if(rebuild) {
-            Assert.assertNotNull(trainData);
             // reset train results
             trainResults = new ClassifierResults();
             // check the seed has been set
@@ -105,22 +96,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
                 throw new IllegalStateException("seed not set");
             }
             // we're rebuilding so set the seed / params, etc, using super
-            super.buildClassifier(trainData);
-            // first run so set the train estimate to be regenerated
-            setRebuildTrainEstimateResults(true);
+            super.buildClassifier(Objects.requireNonNull(trainData));
         }
     }
 
-    @Override
-    public Logger getLogger() {
-        return logger;
+    @Override public Level getLogLevel() {
+        return log.getLevel();
     }
 
-    @Override public void setLogger(final Logger logger) {
-        Assert.assertNotNull(logger);
-        // copy logging level
-        logger.setLevel(this.logger.getLevel());
-        this.logger = logger;
+    @Override public void setLogLevel(final Level level) {
+        log = LogUtils.updateLogLevel(this, log, Objects.requireNonNull(level));
     }
 
     @Override
