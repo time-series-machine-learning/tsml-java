@@ -72,7 +72,7 @@ public class WDTWDistanceConfigs {
      * @return
      */
     public static TransformDistanceMeasure newWDDTWDistance() {
-        return new BaseTransformDistanceMeasure("WDDTWDistance", Derivative.getGlobalCachedTransformer(), new WDTWDistance());
+        return new BaseTransformDistanceMeasure("WDDTWDistance", new Derivative(), new WDTWDistance());
     }
 
     public static ParamSpace buildWDDTWSpace() {
