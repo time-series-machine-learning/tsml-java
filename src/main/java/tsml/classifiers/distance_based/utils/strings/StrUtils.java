@@ -195,8 +195,6 @@ public class StrUtils {
         return fromOptionValue(optionsStr, String::valueOf);
     }
 
-    public static final String STRING_DELIMITER = "#";
-
     /**
      * Given a string containing "{class name} {-flag} {value} ..." construct a new instance of the class given by "class name" and set the remaining options.
      * NOTE: to represent strings, they must be enclosed in quotes.
@@ -217,8 +215,8 @@ public class StrUtils {
             // then this may be a primitive type or string
             String str = parts[0];
             // if string then the str will contain whitespace at the front
-            if(str.startsWith(STRING_DELIMITER)) {
-                str = str.substring(1); // get rid of the char added during encoding
+            if(str.startsWith("\"") && str.endsWith("\"")) {
+                str = str.substring(1, str.length() - 1); // get rid of the char added during encoding
                 return fromString.apply(str);
             }
             // if the first digit is a digit then dealing with a primitive number. Using the opposing case here, i.e. for it to be a non-primitive the first option is the canonical class name. These cannot begin with numbers or hyphens (for neg numbers) therefore we can assume it's a primitive number by this point
@@ -257,8 +255,8 @@ public class StrUtils {
                         value instanceof Boolean) {
             str = String.valueOf(value);
         } else if(value instanceof Character || value instanceof String) {
-            // add string delimiter to denote it's a string and wrap in quotes to maintain whitespace
-            str = "\"" + STRING_DELIMITER + value + "\"";
+            // add quotes to maintain whitespace (the delimited inside-most ones), delimiters to avoid parsing the inner quotes in first pass, and outer quotes to indicate dealing with a string type 
+            str = "\"\\\"" + value + "\\\"\"";
         } else {
             Class<?> classValue;
             if(value instanceof Class<?>) {

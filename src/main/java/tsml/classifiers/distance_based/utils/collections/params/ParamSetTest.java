@@ -170,7 +170,7 @@ public class ParamSetTest {
         String value = StrUtils.toOptionValue(str);
         try {
             Object obj = StrUtils.fromOptionValue(value);
-            Assert.assertEquals(str, value);
+            Assert.assertEquals(str, obj);
         } catch(Exception e) {
             Assert.fail(e.toString());
         }

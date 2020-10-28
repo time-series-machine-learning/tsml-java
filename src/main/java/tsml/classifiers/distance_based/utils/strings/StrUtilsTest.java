@@ -99,7 +99,7 @@ public class StrUtilsTest {
 
     @Test
     public void testToOptionsValueString() {
-        Assert.assertEquals("\"" + StrUtils.STRING_DELIMITER + "hello\"", StrUtils.toOptionValue("hello"));
+        Assert.assertEquals("\"\\\"hello\\\"\"", StrUtils.toOptionValue("hello"));
     }
 
     @Test
@@ -109,7 +109,7 @@ public class StrUtilsTest {
 
     @Test
     public void testToOptionsValueStringWithWhiteSpace() throws Exception {
-        Assert.assertEquals("\"" + StrUtils.STRING_DELIMITER + "hello goodbye\"", StrUtils.toOptionValue("hello goodbye"));
+        Assert.assertEquals("\"\\\"hello goodbye\\\"\"", StrUtils.toOptionValue("hello goodbye"));
     }
 
     @Test
@@ -154,12 +154,12 @@ public class StrUtilsTest {
 
     @Test
     public void testFromOptionsValueString() throws Exception {
-        Assert.assertEquals("hello", StrUtils.fromOptionValue("\"" + StrUtils.STRING_DELIMITER + "hello\""));
+        Assert.assertEquals(StrUtils.fromOptionValue("\"\\\"hello\\\"\""), "hello");
     }
 
     @Test
     public void testFromOptionsValueStringWithWhiteSpace() throws Exception {
-        Assert.assertEquals("hello goodbye", StrUtils.fromOptionValue("\"" + StrUtils.STRING_DELIMITER + "hello goodbye\""));
+        Assert.assertEquals(StrUtils.fromOptionValue("\"\\\"hello goodbye\\\"\""), "hello goodbye");
     }
 
     @Test
