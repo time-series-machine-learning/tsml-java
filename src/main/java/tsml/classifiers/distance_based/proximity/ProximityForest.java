@@ -18,7 +18,6 @@ import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -42,7 +41,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             ProximityForest classifier = Config.PF_R5.build();
 //            classifier.setEstimateOwnPerformance(true);
             classifier.setSeed(seed);
-            classifier.setRebuildConstituentAfterEvaluation(true);
 //            classifier.setNumTreeLimit(2);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
@@ -221,6 +219,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
+        // kick off resource monitors
+        memoryWatcher.start();
+        trainTimer.start();
+        trainEstimateTimer.checkStopped();
         // load from checkpoint
         // if checkpoint exists then skip initialisation
         if(!loadCheckpoint()) {
@@ -238,10 +240,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
         }
         LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
-        // kick off resource monitors
-        memoryWatcher.start();
-        trainTimer.start();
-        trainEstimateTimer.checkStopped();
         // whether work has been done in this call to buildClassifier
         boolean rebuildTrainEstimate = false;
         // log the contract progress
@@ -288,11 +286,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 results.setErrorEstimateTime(trainStageTimer.getTime());
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
-            if(estimator.equals(EstimatorMethod.NONE) || rebuildConstituentAfterEvaluation) {
-                getLog().info(() -> "building tree " + treeIndex);
-                tree.setRebuild(true);
-                tree.buildClassifier(trainData);
-            }
+            getLog().info(() -> "building tree " + treeIndex);
+            tree.setRebuild(true);
+            tree.buildClassifier(trainData);
             // tree fully built
             trainStageTimer.stop();
             // update longest tree build time
@@ -339,7 +335,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     final int instanceIndexInTrainData = trainDataIndices.get(i);
                     double[] distribution = constituentEvaluationResults.getProbabilityDistribution(i);
                     // weight the vote of this constituent
-                    distribution = vote(distribution, instance);
+                    distribution = vote(constituent, instance, distribution);
                     add(finalDistributions[instanceIndexInTrainData], distribution);
                     // add onto the prediction time for this instance
                     time = System.nanoTime() - time;
@@ -364,7 +360,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
-        saveCheckpointIgnoreInterval();
+        forceSaveCheckpoint();
     }
 
     @Override
@@ -397,7 +393,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     
     private double[] vote(Constituent constituent, Instance instance, double[] distribution) {
         // vote for the highest probability class
-        int index = argMax(distribution, getRandom());
+        final int index = argMax(distribution, getRandom());
         return oneHot(distribution.length, index);
     }
 
