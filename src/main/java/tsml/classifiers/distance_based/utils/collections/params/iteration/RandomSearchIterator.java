@@ -25,6 +25,7 @@ public class RandomSearchIterator extends RandomIterator<ParamSet> {
     private int iterationLimit;
     private int iterationCount = 0;
     private boolean replacement;
+    private boolean skipSingle;
 
     public int getIterationCount() {
         return iterationCount;
@@ -150,15 +151,40 @@ public class RandomSearchIterator extends RandomIterator<ParamSet> {
         this.iterationLimit = iterationLimit;
         return this;
     }
-
-    public static ParamSet choice(Random random, ParamSpace paramSpace) {
-        return choice(random, paramSpace, 1).get(0);
+    
+    public static ParamSet choice(ParamSpace space, Random random) {
+        return choice(space, random, 1).get(0);
     }
-
-    public static List<ParamSet> choice(Random random, ParamSpace paramSpace, int numChoices) {
-        final RandomSearchIterator iterator = new RandomSearchIterator(random, paramSpace);
+    
+    public static ParamSet choice(ParamSpace space, Random random, int numChoices) {
+        
+    }
+    
+    public static ParamSet choice(ParamSpace space, Random random, int numChoices, boolean withReplacement, boolean skipSingle) {
+        RandomSearchIterator iterator = new RandomSearchIterator(random, space);
         iterator.setIterationLimit(numChoices);
+        iterator.setWithReplacement(withReplacement);
+        iterator.setSkipSingle(skipSingle);
         return RandomUtils.choice(iterator, numChoices);
     }
+
+    public boolean isSkipSingle() {
+        return skipSingle;
+    }
+
+    public void setSkipSingle(final boolean skipSingle) {
+        this.skipSingle = skipSingle;
+    }
+
+    //
+//    public static ParamSet choice(Random random, ParamSpace paramSpace) {
+//        return choice(random, paramSpace, 1).get(0);
+//    }
+//
+//    public static List<ParamSet> choice(Random random, ParamSpace paramSpace, int numChoices) {
+//        final RandomSearchIterator iterator = new RandomSearchIterator(random, paramSpace);
+//        iterator.setIterationLimit(numChoices);
+//        return RandomUtils.choice(iterator, numChoices);
+//    }
 
 }

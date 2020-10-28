@@ -50,14 +50,14 @@ public class RandomUtilsTest {
 
     @Test
     public void testRandomChoiceWithReplacement() {
-        final List<Integer> choice = RandomUtils.choice(list, random, list.size() * 10, true);
+        final List<Integer> choice = RandomUtils.choiceWithReplacement(list, random, list.size() * 10);
         final Set<Integer> set = new HashSet<>(choice);
         Assert.assertEquals(list.size(), set.size());
     }
 
     @Test
     public void testRandomChoiceWithoutReplacement() {
-        final List<Integer> choice = RandomUtils.choice(list, random, 10, false);
+        final List<Integer> choice = RandomUtils.choice(list, random, 10);
         final Set<Integer> set = new HashSet<>(choice);
         Assert.assertEquals(choice.size(), set.size());
     }

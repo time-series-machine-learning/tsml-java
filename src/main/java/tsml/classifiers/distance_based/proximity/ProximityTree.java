@@ -469,7 +469,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // built that space
             ParamSpace distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
             // randomly pick the distance function / parameters from that space
-            final ParamSet paramSet = RandomSearchIterator.choice(rand, distanceFunctionSpace);
+            final ParamSet paramSet = RandomSearchIterator.choice(distanceFunctionSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceFunction = Objects.requireNonNull((DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
         }
@@ -486,7 +486,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             for(Double classLabel : instancesByClass.keySet()) {
                 final List<Integer> sameClassInstanceIndices = instancesByClass.get(classLabel);
                 // if there are less instances to pick from than exemplars requested
-                final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstanceIndices, rand, 1);
+                final List<Integer> exemplarIndices = RandomUtils.choiceWithNoSkip(sameClassInstanceIndices, rand, 1);
                 // find the exemplars in the data
                 final List<Instance> exemplars = new ArrayList<>(exemplarIndices.size());
                 for(Integer i : exemplarIndices) {
@@ -559,7 +559,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final List<Integer> partitionIndices = distanceToPartitionMap.get(smallestDistance);
             Assert.assertEquals(partitionIndices.size(), 1);
             // random pick the best partition for the instance
-            return RandomUtils.choice(partitionIndices, rand);
+            return RandomUtils.choiceWithNoSkip(partitionIndices, rand);
         }
 
         public Partition findPartitionFor(Instance instance) {

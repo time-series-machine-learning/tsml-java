@@ -18,7 +18,6 @@ public class RandomSearchIteratorTest {
 
     @Test
     public void testIteration() {
-        RandomUtils.setSkipSingleElementPick(true);
         ParamSpace space = new ParamSpaceTest().build2DContinuousSpace();
         final int limit = 10;
         RandomSearchIterator iterator = new RandomSearchIterator(new Random(0), space, limit);
