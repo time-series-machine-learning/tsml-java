@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.Utils;
 
@@ -111,7 +113,19 @@ public class ParamSet implements ParamHandler, Serializable {
      * @return
      */
     public List<Object> get(String name) {
-        return paramMap.get(name);
+        List<Object> list = paramMap.get(name);
+        if(list == null) {
+            return null;
+        }
+        try {
+            List<Object> result = new ArrayList<>(list.size());
+            for(int i = 0; i < list.size(); i++) {
+                result.add(CopierUtils.deepCopy(list.get(i)));
+            }
+            return result;
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public Object getSingle(String name) {
