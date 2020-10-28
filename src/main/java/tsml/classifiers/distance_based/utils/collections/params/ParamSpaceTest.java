@@ -110,14 +110,16 @@ public class ParamSpaceTest {
     public UniformDoubleDistribution buildEDist() {
         UniformDoubleDistribution eDist = new UniformDoubleDistribution();
         eDist.setRandom(buildRandom());
-        eDist.setMinAndMax(0d, 0.25);
+        eDist.setStart(0d);
+        eDist.setEnd(0.25);
         return eDist;
     }
 
     public UniformDoubleDistribution buildDDist() {
         UniformDoubleDistribution eDist = new UniformDoubleDistribution();
         eDist.setRandom(buildRandom());
-        eDist.setMinAndMax(0.5, 1d);
+        eDist.setStart(0.5);
+        eDist.setEnd(1.0);
         return eDist;
     }
 
@@ -161,7 +163,7 @@ public class ParamSpaceTest {
         List<ParameterDimension<?>> dimensions = lParams.get(LCSSDistance.EPSILON_FLAG);
         for(ParameterDimension<?> dimension : dimensions) {
             Object values = dimension.getValues();
-            Assert.assertEquals(values, eDist);
+            Assert.assertEquals(eDist, values);
         }
         dimensions = lParams.get(LCSSDistance.WINDOW_SIZE_FLAG);
         for(ParameterDimension<?> dimension : dimensions) {
@@ -173,9 +175,9 @@ public class ParamSpaceTest {
     @Test
     public void testParamsToString() {
 //        System.out.println(params.toString());
-        Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance -e \"0.01\" -ws \"-1\"], "
-            + "subSpaces=[{e=[{values=UniformDoubleDistribution{min=0.0, max=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{min=0.5, max=1.0}}]}]}, {values=[DTWDistance -ws \"-1\", DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws \"-1\"\" -t \"tsml.transformers.CachedTransformer -f tsml.transformers.Derivative\"], "
+        Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance -e 0.01 -ws -1], "
+            + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
+            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}, {values=[DTWDistance -ws -1, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws -1\" -t tsml.transformers.Derivative], "
             + "subSpaces=[{ws=[{values=[1, 2, 3, 4, 5]}]}]}]}");
     }
 
@@ -188,23 +190,23 @@ public class ParamSpaceTest {
     @Test
     public void testLParamsToString() {
 //        System.out.println(lParams.toString());
-        Assert.assertEquals(lParams.toString(), "{e=[{values=UniformDoubleDistribution{min=0.0, max=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{min=0.5, max=1.0}}]}");
+        Assert.assertEquals(lParams.toString(), "{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
+            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}");
     }
 
     @Test
     public void testWDmParamsToString() {
 //        System.out.println(wDmParams.toString());
-        Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance -ws \"-1\", DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws \"-1\"\" -t \"tsml.transformers.CachedTransformer -f tsml.transformers.Derivative\"], subSpaces=[{ws=[{values=[1, "
+        Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance -ws -1, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws -1\" -t tsml.transformers.Derivative], subSpaces=[{ws=[{values=[1, "
             + "2, 3, 4, 5]}]}]}");
     }
 
     @Test
     public void testLDmParamsToString() {
 //        System.out.println(lDmParams.toString());
-        Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance -e \"0.01\" -ws \"-1\"], "
-            + "subSpaces=[{e=[{values=UniformDoubleDistribution{min=0.0, max=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{min=0.5, max=1.0}}]}]}");
+        Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance -e 0.01 -ws -1], "
+            + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
+            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}");
     }
 
     @Test

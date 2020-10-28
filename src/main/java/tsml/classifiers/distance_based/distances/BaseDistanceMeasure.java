@@ -6,6 +6,7 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Utils;
 import weka.core.neighboursearch.PerformanceStats;
 
 /**
@@ -42,7 +43,7 @@ public abstract class BaseDistanceMeasure implements DistanceMeasure {
 
     @Override
     public String toString() {
-        return getName() + " " + StrUtils.join(" ", getOptions());
+        return getName() + " " + Utils.joinOptions(getOptions());
     }
 
     /**

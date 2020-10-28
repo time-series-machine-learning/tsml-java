@@ -13,6 +13,8 @@ import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.core.Utils;
 
+import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
+
 public class StrUtilsTest {
 
     @Test

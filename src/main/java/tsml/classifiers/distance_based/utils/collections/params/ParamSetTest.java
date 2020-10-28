@@ -83,8 +83,8 @@ public class ParamSetTest {
         paramSet.add(aFlag, anotherAValue);
         paramSet.add(aFlag, yetAnotherAValue);
 //        System.out.println(paramSet);
-        String out = "-a 1 -a 3.3 -a \"\\\"not another!\\\"\"";
-        Assert.assertEquals(paramSet.toString(), out);
+        String out = "-a 1 -a 3.3 -a \"\\\"\\\\\\\"not another!\\\\\\\"\\\"\"";
+        Assert.assertEquals(out, paramSet.toString());
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 3);
         List<Object> list = paramSet.get(aFlag);
