@@ -1,18 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params.distribution.int_based;
 
-import tsml.classifiers.distance_based.utils.collections.params.distribution.NumericDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 
-/**
- * Purpose: // todo - docs - type the purpose of the code here
- * <p>
- * Contributors: goastler
- */
-public abstract class IntDistribution extends NumericDistribution<Integer> {
-
-    public IntDistribution(final Integer min, final Integer max) {
-        super(min, max);
-    }
-
-    public abstract Integer sample();
-
+public interface IntDistribution extends Distribution<Integer> {
 }

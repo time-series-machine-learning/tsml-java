@@ -3,8 +3,9 @@ package tsml.classifiers.distance_based.distances.twed;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.CompositeDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.MultipleDoubleDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import weka.core.Instances;
 
@@ -70,7 +71,7 @@ public class TWEDistanceConfigs {
     }
 
     public static ParamSpace buildContinuousTWEDParams() { // todo make these params continuous
-        DoubleDistribution nuDistribution = new MultipleDoubleDistribution(newArrayList(0.00001,
+        Distribution<Double> nuDistribution = CompositeDistribution.newUniformDoubleCompositeFromRange(newArrayList(0.00001,
                 0.0001,
                 0.0005,
                 0.001,
