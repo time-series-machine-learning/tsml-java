@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import weka.core.OptionHandler;
 import weka.core.Utils;
 
 /**
@@ -44,6 +44,14 @@ public class ParamSet implements ParamHandler, Serializable {
 
     public ParamSet() {
 
+    }
+
+    public ParamSet(String[] options) throws Exception {
+        setOptions(options);
+    }
+
+    public ParamSet(List<String> options) throws Exception {
+        this(options.toArray(new String[0]));
     }
 
     public ParamSet(String name, Object value, List<ParamSet> paramSets) {
@@ -79,7 +87,7 @@ public class ParamSet implements ParamHandler, Serializable {
         return Objects.hash(paramMap);
     }
 
-    private Map<String, List<Object>> paramMap = new HashMap<>();
+    private final Map<String, List<Object>> paramMap = new HashMap<>();
 
     public int size() {
         int size = 0;
@@ -182,9 +190,17 @@ public class ParamSet implements ParamHandler, Serializable {
                         throw new IllegalArgumentException(e);
                     }
                 }
+            } else if(value instanceof OptionHandler) {
+                for(ParamSet param : params) {
+                    try {
+                        ((OptionHandler) value).setOptions(param.getOptions());
+                    } catch(Exception e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
             } else {
                 throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
-                    + "cannot set the parameters {" + params.toString() + "}");
+                                                           + "cannot set the parameters {" + params.toString() + "}");
             }
         }
     }
@@ -229,33 +245,33 @@ public class ParamSet implements ParamHandler, Serializable {
         }
         return list;
     }
+    
+    @Override public void setOptionsList(final List<String> options) throws Exception {
+        setOptions(options.toArray(new String[0]));
+    }
 
-    /**
-     * Goes through a list of strings and builds the corresponding parameter set
-     * @param options
-     * @throws Exception
-     */
-    @Override
-    public void setOptionsList(final List<String> options) throws
-        Exception {
-        for(int i = 0; i < options.size(); i++) {
-            String option = options.get(i);
+    @Override public void setOptions(final String[] options) throws Exception {
+        for(int i = 0; i < options.length; i++) {
+            String option = options[i];
+            if(option.isEmpty()) {
+                // skip this option as it's empty
+                continue;
+            }
             String flag = StrUtils.unflagify(option);
             // if the flag is an option (i.e. key value pair, not just a flag)
             if(StrUtils.isOption(option, options)) {
                 // for example, "-d "DTW -w 5""
                 // get the next value as the option value and split it into sub options
                 // the example would be split into ["DTW", "-w", "5"]
-                String[] subOptions = Utils.splitOptions(options.get(++i));
-                options.set(i, "");
-                options.set(i - 1, "");
+                String[] subOptions = Utils.splitOptions(options[++i]);
                 // the 0th element is the main option value
                 // in the example this is "DTW"
                 String optionValue = subOptions[0];
                 subOptions[0] = "";
                 // get the value from str form
                 Object value = StrUtils.fromOptionValue(optionValue);
-                if(value instanceof ParamHandler) {
+                // if the return value is not a string, there's further options to set and the value can handle options
+                if(subOptions.length > 1 && value instanceof OptionHandler) {
                     // handle sub parameters
                     ParamSet paramSet = new ParamSet();
                     // subOptions contains only the parameters for the option value
@@ -273,7 +289,6 @@ public class ParamSet implements ParamHandler, Serializable {
                 // assume all flags are represented using boolean values
                 add(flag, true);
             }
-            options.set(i, "");
         }
     }
 
@@ -293,7 +308,7 @@ public class ParamSet implements ParamHandler, Serializable {
 
     @Override
     public String toString() {
-        return StrUtils.join(", ", getOptions());
+        return Utils.joinOptions(getOptions());
     }
 
 }

@@ -53,7 +53,7 @@ public interface ParamHandler
     @Override
     default void setOptions(String[] options) throws
                                       Exception {
-        setOptionsList(new ArrayList<>(Arrays.asList(options)));
+        setOptionsList(Arrays.asList(options));
     }
 
     @Override

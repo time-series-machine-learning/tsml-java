@@ -137,7 +137,7 @@ public class WDTWDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG, Double.class);
+        ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG, Double::valueOf);
     }
 
     public int findWindowSize(final int aLength) {

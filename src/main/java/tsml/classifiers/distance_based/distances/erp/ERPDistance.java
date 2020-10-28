@@ -136,7 +136,7 @@ public class ERPDistance extends DoubleMatrixBasedDistanceMeasure implements War
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
         warpingParameter.setParams(param);
-        ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double.class);
+        ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double::valueOf);
     }
 
     @Override public int findWindowSize(final int aLength) {

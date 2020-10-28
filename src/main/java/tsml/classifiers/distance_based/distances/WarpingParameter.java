@@ -62,8 +62,8 @@ public class WarpingParameter implements
     @Override
     public void setParams(final ParamSet param) throws Exception {
         WarpingDistanceMeasure.super.setParams(param);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer.class);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double.class);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer::valueOf);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double::valueOf);
     }
 
     @Override
