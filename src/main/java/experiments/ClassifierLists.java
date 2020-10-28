@@ -116,29 +116,29 @@ public class ClassifierLists {
             case "PF_R1":
                 c = ProximityForest.Config.PF_R1.configure(new ProximityForest());
                 break;
+            case "PF_R1_OOB":
+                c = ProximityForest.Config.PF_R1_OOB.configure(new ProximityForest());
+                break;
+            case "PF_R1_CV":
+                c = ProximityForest.Config.PF_R1_CV.configure(new ProximityForest());
+                break;
             case "PF_R5":
                 c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
-                break;
-            case "PF_R10":
-                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
                 break;
             case "PF_R5_OOB":
                 c = ProximityForest.Config.PF_R5_OOB.configure(new ProximityForest());
                 break;
-            case "PF_R5_OOB_R":
-                c = ProximityForest.Config.PF_R5_OOB_R.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB_W":
-                c = ProximityForest.Config.PF_R5_OOB_W.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB_R_W":
-                c = ProximityForest.Config.PF_R5_OOB_R_W.configure(new ProximityForest());
-                break;
             case "PF_R5_CV":
                 c = ProximityForest.Config.PF_R5_CV.configure(new ProximityForest());
                 break;
-            case "PF_R5_CV_W":
-                c = ProximityForest.Config.PF_R5_CV_W.configure(new ProximityForest());
+            case "PF_R10":
+                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
+                break;
+            case "PF_R10_OOB":
+                c = ProximityForest.Config.PF_R10_OOB.configure(new ProximityForest());
+                break;
+            case "PF_R10_CV":
+                c = ProximityForest.Config.PF_R10_CV.configure(new ProximityForest());
                 break;
             case "PF_WRAPPED":
                 c = new ProximityForestWrapper();
