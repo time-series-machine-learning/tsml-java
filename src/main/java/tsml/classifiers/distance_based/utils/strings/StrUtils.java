@@ -232,6 +232,8 @@ public class StrUtils {
         final Object result = CopierUtils.newInstanceFromClassName(className);
         // if there are options then set them
         if(parts.length > 1) {
+            // get rid of the class name from the options so it won't affect any sub options later on
+            parts[0] = "";
             if(result instanceof OptionHandler) {
                 ((OptionHandler) result).setOptions(parts);
             } else {

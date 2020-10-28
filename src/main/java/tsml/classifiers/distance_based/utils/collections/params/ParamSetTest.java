@@ -164,4 +164,16 @@ public class ParamSetTest {
         }
     }
     
+    @Test
+    public void testStrings() {
+        String str = "string based parameter value";
+        String value = StrUtils.toOptionValue(str);
+        try {
+            Object obj = StrUtils.fromOptionValue(value);
+            Assert.assertEquals(str, value);
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
+    }
+    
 }
