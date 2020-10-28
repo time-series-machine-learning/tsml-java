@@ -1,13 +1,11 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
-import java.lang.reflect.Constructor;
+import java.io.IOException;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.*;
-
-import static tsml.classifiers.distance_based.utils.classifiers.CopierUtils.copyFields;
-import static tsml.classifiers.distance_based.utils.classifiers.CopierUtils.findFields;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 /**
  * Purpose: shallow and deep copy various fields from object to object using reflection. You can filter the fields to
@@ -25,62 +23,88 @@ public interface Copier extends Serializable {
      * @return
      * @throws Exception
      */
-    default Object shallowCopy() throws Exception {
-        return shallowCopy(findFields(this.getClass()));
+    default Object shallowCopy()
+            throws NoSuchMethodException, IllegalAccessException, InstantiationException, ClassNotFoundException,
+                           InvocationTargetException, IOException, NoSuchFieldException {
+        return CopierUtils.shallowCopy(this);
     }
 
-    default Object shallowCopy(Collection<Field> fields) throws Exception {
-        // get the default constructor
-        Constructor<? extends Copier> noArgsConstructor = getClass().getDeclaredConstructor();
-        // find out whether it's accessible from here (no matter if it's not)
-        boolean origAccessible = noArgsConstructor.isAccessible();
-        // force it to be accessible if not already
-        noArgsConstructor.setAccessible(true);
-        // use the constructor to build a default instance
-        Copier copier = noArgsConstructor.newInstance();
-        // set the constructor's accessibility back to what it was
-        noArgsConstructor.setAccessible(origAccessible);
-        // copy over the fields from the current object to the new instance
-        copier.shallowCopyFrom(this, fields);
-        return copier;
+    default void shallowCopyTo(Object dest)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
+                           NoSuchMethodException, IOException, NoSuchFieldException {
+        CopierUtils.shallowCopy(this, dest);
     }
 
-    /**
-     * shallow copy fields from one object to another which already exists
-     * @param object
-     * @throws Exception
-     */
-    default void shallowCopyFrom(Object object) throws
-                                                Exception {
-        shallowCopyFrom(object, findFields(this.getClass()));
+    default void shallowCopyTo(Object dest, Iterable<String> fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.shallowCopy(this, dest, fields);
     }
 
-    default void shallowCopyFrom(Object object, Collection<Field> fields) throws
-                                                         Exception {
-        copyFields(object, this, false, fields);
+    default void shallowCopyTo(Object dest, String... fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.shallowCopy(this, dest, fields);
     }
 
-    // these are the same as the above, just deep versions
-
-    default Object deepCopy() throws
-                                       Exception {
-        return deepCopy(findFields(this.getClass()));
+    default void shallowCopyFrom(Object src)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
+                           NoSuchMethodException, IOException, NoSuchFieldException {
+        CopierUtils.shallowCopy(src, this);
     }
 
-    default Object deepCopy(Collection<Field> fields) throws Exception {
-        Copier copier = getClass().newInstance();
-        copier.deepCopyFrom(this, fields);
-        return copier;
+    default void shallowCopyFrom(Object src, Iterable<String> fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.shallowCopy(src, this, fields);
     }
 
-    default void deepCopyFrom(Object object) throws
-                                             Exception {
-        deepCopyFrom(object, findFields(this.getClass()));
+    default void shallowCopyFrom(Object src, String... fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.shallowCopy(src, this, fields);
     }
 
-    default void deepCopyFrom(Object object, Collection<Field> fields) throws
-                                             Exception {
-        copyFields(object, this, true, fields);
+    default Object deepCopy()
+            throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchFieldException,
+                           InstantiationException, IllegalAccessException {
+        return CopierUtils.deepCopy(this);
+    }
+
+    default void deepCopyFrom(Object src)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
+                           NoSuchMethodException, IOException, NoSuchFieldException {
+        CopierUtils.deepCopy(src, this);
+    }
+
+    default void deepCopyFrom(Object src, Iterable<String> fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.deepCopy(src, this, fields);
+    }
+
+    default void deepCopyFrom(Object src, String... fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.deepCopy(src, this, fields);
+    }
+
+    default void deepCopyTo(Object dest)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
+                           NoSuchMethodException, IOException, NoSuchFieldException {
+        CopierUtils.deepCopy(this, dest);
+    }
+
+    default void deepCopyTo(Object dest, Iterable<String> fields)
+            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
+                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+        CopierUtils.deepCopy(this, dest, fields);
+    }
+
+    default void deepCopyTo(Object dest, String... fields)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
+                           NoSuchMethodException, IOException, NoSuchFieldException {
+        CopierUtils.deepCopy(this, dest, fields);
     }
 
 }
