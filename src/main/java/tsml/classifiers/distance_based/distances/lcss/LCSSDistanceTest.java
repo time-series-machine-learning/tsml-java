@@ -8,6 +8,7 @@ import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTes
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearchIterator;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -25,7 +26,9 @@ public class LCSSDistanceTest {
                     this.data = data;
                     space = LCSSDistanceConfigs.buildLCSSParams(data);
                 }
-                final GridSearchIterator iterator = new GridSearchIterator(space);
+                final RandomSearchIterator iterator = new RandomSearchIterator();
+                iterator.setRandom(random);
+                iterator.buildSearch(space);
 //                int i = 0;
                 while(iterator.hasNext()) {
 //                    System.out.println("i:" + i++);
