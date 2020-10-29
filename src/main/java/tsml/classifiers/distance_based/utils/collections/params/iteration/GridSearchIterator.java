@@ -15,17 +15,20 @@ public class GridSearchIterator extends ParamSpaceSearch {
     private IndexedParamSpace indexedParamSpace;
     private final LinearIterator<ParamSet> iterator = new LinearIterator<>();
 
-    public GridSearchIterator(final ParamSpace paramSpace) {
-        setParamSpace(paramSpace);
-    }
+    public GridSearchIterator() {}
 
     public IndexedParamSpace getIndexedParamSpace() {
         return indexedParamSpace;
     }
 
-    protected void setParamSpace(final ParamSpace paramSpace) {
+    private void setParamSpace(final ParamSpace paramSpace) {
         indexedParamSpace = new IndexedParamSpace(paramSpace);
         iterator.buildIterator(indexedParamSpace);
+    }
+
+    @Override public void buildSearch(final ParamSpace paramSpace) {
+        super.buildSearch(paramSpace);
+        setParamSpace(paramSpace);
     }
 
     @Override
@@ -35,12 +38,12 @@ public class GridSearchIterator extends ParamSpaceSearch {
 
     @Override
     public boolean hasNextParamSet() {
-        return getIterationCount() < size();
+        return iterator.hasNext();
     }
 
     @Override
     public ParamSet nextParamSet() {
-        return getIndexedParamSpace().get(getIterationCount());
+        return iterator.next();
     }
 
     public int size() {

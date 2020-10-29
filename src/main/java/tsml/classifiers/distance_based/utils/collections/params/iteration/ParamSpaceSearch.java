@@ -6,6 +6,7 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.Objects;
 
 public abstract class ParamSpaceSearch implements Iterator<ParamSet>, Serializable {
     
@@ -20,8 +21,7 @@ public abstract class ParamSpaceSearch implements Iterator<ParamSet>, Serializab
     }
 
     public void buildSearch(ParamSpace paramSpace) {
-        Assert.assertNotNull(paramSpace);
-        this.paramSpace = paramSpace;
+        this.paramSpace = Objects.requireNonNull(paramSpace);
         hasNextCalled = false;
         iterationCount = 0;
     }
@@ -38,6 +38,7 @@ public abstract class ParamSpaceSearch implements Iterator<ParamSet>, Serializab
         if(hasNextCalled) {
             return hasNext;
         }
+        if(paramSpace == null) throw new IllegalStateException("param space search has not been built");
         return hasNext = hasNextParamSet();
     }
 

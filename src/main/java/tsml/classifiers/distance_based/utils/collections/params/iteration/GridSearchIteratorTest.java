@@ -16,7 +16,8 @@ public class GridSearchIteratorTest {
     @Test
     public void testIteration() {
         ParamSpace space = new ParamSpaceTest().build2DDiscreteSpace();
-        GridSearchIterator iterator = new GridSearchIterator(space);
+        GridSearchIterator iterator = new GridSearchIterator();
+        iterator.buildSearch(space);
         StringBuilder stringBuilder = new StringBuilder();
         while(iterator.hasNext()) {
             ParamSet paramSet = iterator.next();
