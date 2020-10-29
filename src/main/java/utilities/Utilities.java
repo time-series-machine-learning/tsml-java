@@ -33,6 +33,14 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
+    public static <A, B> ArrayList<B> apply(Collection<A> collection, Function<A, B> func) {
+        final ArrayList<B> list = new ArrayList<>(collection.size());
+        for(A item : collection) {
+            list.add(func.apply(item));
+        }
+        return list;
+    }
+    
     public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
         int sum = 0;
         while(iterator.hasNext()) {

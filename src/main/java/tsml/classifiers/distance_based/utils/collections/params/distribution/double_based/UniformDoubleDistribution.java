@@ -5,20 +5,24 @@ package tsml.classifiers.distance_based.utils.collections.params.distribution.do
  * <p>
  * Contributors: goastler
  */
-public class UniformDoubleDistribution extends DoubleDistribution {
+public class UniformDoubleDistribution extends ClampedDoubleDistribution {
 
     public UniformDoubleDistribution() {
-        this(0d, 1d);
+        super();
+    }
+    
+    public UniformDoubleDistribution(Double end) {
+        super(end);
     }
 
-    public UniformDoubleDistribution(final Double min, final Double max) {
-        super(min, max);
+    public UniformDoubleDistribution(final Double start, final Double end) {
+        super(start, end);
     }
 
     @Override
     public Double sample() {
-        double min = getMin();
-        double max = getMax();
-        return getRandom().nextDouble() * (max - min) + min;
+        double start = getStart();
+        double end = getEnd();
+        return getRandom().nextDouble() * (end - start) + start;
     }
 }

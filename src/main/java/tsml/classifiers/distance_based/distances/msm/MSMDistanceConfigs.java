@@ -3,8 +3,9 @@ package tsml.classifiers.distance_based.distances.msm;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.CompositeDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.MultipleDoubleDistribution;
 import weka.core.Instances;
 
 import java.util.List;
@@ -142,7 +143,7 @@ public class MSMDistanceConfigs {
     }
 
     public static ParamSpace buildContinuousMSMParams() {
-        DoubleDistribution costParams = new MultipleDoubleDistribution(newArrayList(0.01, 0.1, 1d, 10d, 100d));
+        Distribution<Double> costParams = CompositeDistribution.newUniformDoubleCompositeFromRange(newArrayList(0.01, 0.1, 1d, 10d, 100d));
         ParamSpace params = new ParamSpace();
         params.add(MSMDistance.C_FLAG, costParams);
         return params;

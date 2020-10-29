@@ -1,23 +1,24 @@
-package tsml.classifiers.distance_based.utils.collections.params.dimensions;
+package tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete;
+
+import tsml.classifiers.distance_based.utils.collections.DefaultList;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils;
 
 import java.util.List;
-import tsml.classifiers.distance_based.utils.collections.IndexedCollection;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> implements IndexedCollection<Object> {
+public class DiscreteParamDimension<A> extends ParamDimension<List<A>> implements DefaultList<Object> {
 
-    public DiscreteParameterDimension(final List<A> values) {
+    public DiscreteParamDimension(final List<A> values) {
         super(values);
     }
 
-    public DiscreteParameterDimension(final List<A> values,
-        final List<ParamSpace> subSpaces) {
+    public DiscreteParamDimension(final List<A> values, final List<ParamSpace> subSpaces) {
         super(values, subSpaces);
     }
 
@@ -27,7 +28,7 @@ public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> i
 
     @Override
     public Object get(final int index) {
-        return IndexedParameterSpace.get(this, index);
+        return IndexedParamSpace.get(this, index);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class DiscreteParameterDimension<A> extends ParameterDimension<List<A>> i
     }
 
     public List<Integer> getSubSpaceSizes() {
-        return IndexedParameterSpace.sizesParameterSpace(getSubSpaces());
+        return IndexedParamSpace.sizesParameterSpace(getSubSpaces());
     }
 
     public A getValue(int index) {

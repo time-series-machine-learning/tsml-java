@@ -90,7 +90,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static TransformDistanceMeasure newDDTWDistance() {
-        return new BaseTransformDistanceMeasure("DDTWDistance", Derivative.getGlobalCachedTransformer(), new DTWDistance());
+        return new BaseTransformDistanceMeasure("DDTWDistance", new Derivative(), new DTWDistance());
     }
 
     /**

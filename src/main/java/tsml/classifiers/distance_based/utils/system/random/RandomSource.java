@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.system.random;
 
 
+import java.io.Serializable;
 import java.util.Random;
 
 /**
@@ -9,6 +10,6 @@ import java.util.Random;
  * Contributors: goastler
  */
 
-public interface RandomSource extends ReadOnlyRandomSource {
-    void setRandom(Random random);
+public interface RandomSource extends Serializable {
+    Random getRandom();
 }

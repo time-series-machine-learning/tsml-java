@@ -165,7 +165,7 @@ public class CachedTransformer extends BaseTrainableTransformer {
     @Override
     public void setParams(final ParamSet paramSet) throws Exception {
         super.setParams(paramSet);
-        ParamHandlerUtils.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
+        ParamHandlerUtils.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer);
     }
 
     @Override

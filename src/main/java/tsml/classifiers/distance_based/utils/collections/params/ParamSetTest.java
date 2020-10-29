@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -21,7 +22,7 @@ public class ParamSetTest {
         int aValue = 1;
         ParamSet paramSet = new ParamSet(aFlag, aValue);
         String[] options = paramSet.getOptions();
-        Assert.assertArrayEquals(options, new String[] {"-" + aFlag, "\"" + String.valueOf(aValue) + "\""});
+        Assert.assertArrayEquals(options, new String[] {"-" + aFlag, String.valueOf(aValue)});
         ParamSet other = new ParamSet();
         try {
             other.setOptions(options);
@@ -64,7 +65,7 @@ public class ParamSetTest {
         int aValue = 1;
         ParamSet paramSet = new ParamSet(aFlag, aValue);
 //        System.out.println(paramSet);
-        Assert.assertEquals(paramSet.toString(), "-a, \"1\"");
+        Assert.assertEquals(paramSet.toString(), "-a 1");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);
@@ -82,8 +83,8 @@ public class ParamSetTest {
         paramSet.add(aFlag, anotherAValue);
         paramSet.add(aFlag, yetAnotherAValue);
 //        System.out.println(paramSet);
-        String out = "-a, \"1\", -a, \"3.3\", -a, \"\\\"not another!\\\"\"";
-        Assert.assertEquals(paramSet.toString(), out);
+        String out = "-a 1 -a 3.3 -a \"\\\"\\\\\\\"not another!\\\\\\\"\\\"\"";
+        Assert.assertEquals(out, paramSet.toString());
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 3);
         List<Object> list = paramSet.get(aFlag);
@@ -105,19 +106,76 @@ public class ParamSetTest {
         ParamSet subParamSetC = new ParamSet(cFlag, cValue);
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
 //        System.out.println(paramSet);
-        Assert.assertEquals(paramSet.toString(), "-a, \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
-            + "-e \"0.2\" -ws \"5\"\"");
+        aValue.setEpsilon(cValue);
+        aValue.setWindowSize(bValue);
+        Assert.assertEquals(paramSet.toString(), "-a \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
+            + "-e 0.2 -ws 5\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);
         Object aValueOut = list.get(0);
         Assert.assertEquals(list.size(), 1);
-        Assert.assertEquals(aValueOut, aValue);
+        Assert.assertEquals(aValueOut.toString(), aValue.toString());
         list = ((ParamHandler) aValueOut).getParams().get(bFlag);
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0), bValue);
         list = ((ParamHandler) aValueOut).getParams().get(cFlag);
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0), cValue);
+
+        try {
+            ParamHandlerUtils.setParam(paramSet, aFlag, i -> {
+                // should clone so should not be the same instance
+                 Assert.assertFalse(i == aValue);
+                 Assert.assertEquals(aValue.toString(), i.toString());
+            });
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
+
+        try {
+            // value may be in string form
+            ParamHandlerUtils.setParam(new ParamSet(aFlag, StrUtils.toOptionValue(aValue)), aFlag, i -> {
+                // should clone so should not be the same instance
+                Assert.assertFalse(i == aValue);
+                Assert.assertEquals(aValue.toString(), i.toString());
+            });
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
+
+        try {
+            ParamHandlerUtils.setParam(subParamSetC, cFlag, i -> {
+                // should not clone as it's primitive
+                Assert.assertTrue(i == cValue);
+                Assert.assertEquals(cValue, i, 0d);
+            }, Double::valueOf);
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
+
+        try {
+            // value may be in string form
+            ParamHandlerUtils.setParam(new ParamSet().add(cFlag, String.valueOf(cValue)), cFlag, i -> {
+                // should not clone as it's primitive
+                Assert.assertTrue(i == cValue);
+                Assert.assertEquals(cValue, i, 0d);
+            }, Double::valueOf);
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
     }
+    
+    @Test
+    public void testStrings() {
+        String str = "string based parameter value";
+        String value = StrUtils.toOptionValue(str);
+        try {
+            Object obj = StrUtils.fromOptionValue(value);
+            Assert.assertEquals(str, obj);
+        } catch(Exception e) {
+            Assert.fail(e.toString());
+        }
+    }
+    
 }

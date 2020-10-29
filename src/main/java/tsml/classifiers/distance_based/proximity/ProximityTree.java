@@ -9,19 +9,14 @@ import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
 import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
-import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
-import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.classifiers.*;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointer;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.BaseCheckpointer;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
-import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
@@ -32,14 +27,10 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.*;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTest;
-import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
-import tsml.transformers.IntervalTransform;
-import tsml.transformers.TransformPipeline;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 import utilities.Utilities;
@@ -49,35 +40,32 @@ import weka.core.Instances;
 
 import java.util.*;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 /**
- * Purpose: proximity tree
+ * Proximity tree
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, TimedTrain, TimedTest, WatchedMemory, Checkpointed {
+public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, MemoryWatchable, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
             int seed = i;
-            ProximityTree classifier = new ProximityTree();
+            ProximityTree classifier = Config.PT_R5.build();
             classifier.setSeed(seed);
-            Config.PT_R5.configureFromEnum(classifier);
 //            classifier.setCheckpointDirPath("checkpoints");
-            classifier.getLogger().setLevel(Level.ALL);
+            classifier.setLogLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed), seed);
         }
     }
 
     // the various configs for this classifier
-    public enum Config implements EnumBasedConfigurer<ProximityTree> {
+    public enum Config implements ClassifierFromEnum<ProximityTree> {
         PT_R1() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree.setClassifierName(name());
                 proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
                         new EDistanceConfigs.EDSpaceBuilder(),
                         new DTWDistanceConfigs.FullWindowDTWSpaceBuilder(),
@@ -91,31 +79,28 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         new TWEDistanceConfigs.TWEDSpaceBuilder(),
                         new MSMDistanceConfigs.MSMSpaceBuilder()
                 ));
-                proximityTree.setRandomTieBreakDistances(true);
-                proximityTree.setEarlyAbandonDistances(false);
                 proximityTree.setPartitionScorer(new GiniEntropy());
-                proximityTree.setReduceSplitTestSize(false);
-                proximityTree.setImprovedExemplarCheck(false);
                 proximityTree.setR(1);
-                proximityTree.setRandomIntervals(false);
-                proximityTree.setMinIntervalSize(-1);
-                proximityTree.setRandomR(false);
-                proximityTree.setRPatience(false);
+                proximityTree.setTrainTimeLimit(-1);
+                proximityTree.setTestTimeLimit(-1);
+                proximityTree.setBreadthFirst(false);
                 return proximityTree;
             }
         },
         PT_R5() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
-                proximityTree = PT_R1.configureFromEnum(proximityTree);
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree = PT_R1.configure(proximityTree);
+                proximityTree.setClassifierName(name());
                 proximityTree.setR(5);
                 return proximityTree;
             }
         },
         PT_R10() {
             @Override
-            public <B extends ProximityTree> B configureFromEnum(B proximityTree) {
-                proximityTree = PT_R1.configureFromEnum(proximityTree);
+            public <B extends ProximityTree> B configure(B proximityTree) {
+                proximityTree = PT_R1.configure(proximityTree);
+                proximityTree.setClassifierName(name());
                 proximityTree.setR(10);
                 return proximityTree;
             }
@@ -125,11 +110,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public ProximityTree() {
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
-        setTrainTimeLimit(-1);
-        setTestTimeLimit(-1);
-        setBreadthFirst(false);
-        setMaxHeight(-1);
-        Config.PT_R1.configureFromEnum(this);
+        Config.PT_R1.configure(this);
     }
 
     private static final long serialVersionUID = 1;
@@ -139,10 +120,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private final StopWatch testTimer = new StopWatch();
     // memory watcher
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
-    // train stage timer used for predicting whether there's enough time for more training within the train contract
-    private final StopWatch trainStageTimer = new StopWatch();
-    // test stage timer used for predicting whether there's enough time for more prediction within the test contract
-    private final StopWatch testStageTimer = new StopWatch();
     // the tree of splits
     private Tree<Split> tree;
     // the train time limit / contract
@@ -150,47 +127,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the test time limit / contract
     private transient long testTimeLimit;
     // the longest time taken to build a node / split
-    private long maxTimePerInstanceForNodeBuilding;
+    private long longestTimePerInstanceDuringNodeBuild;
     // the queue of nodes left to build
     private Deque<TreeNode<Split>> nodeBuildQueue;
-    // whether to build in breadth first or depth first order
-    private boolean breadthFirst;
     // the list of distance function space builders to produce distance functions in splits
     private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
-    // checkpoint config
-    private transient final Checkpointer checkpointer = new BaseCheckpointer(this);
-    // max tree height
-    private int maxHeight;
-    // whether to early abandon distance measurements for distance between instances (data) and exemplars
-    private boolean earlyAbandonDistances;
-    // whether to random tie break distances (e.g. exemplar A and B have a distance of 3.5 to instance X, which to
-    // choose?)
-    private boolean randomTieBreakDistances;
     // the number of splits to consider for this split
     private int r;
     // a method of scoring the split of data into partitions
     private PartitionScorer partitionScorer;
-    // whether to check for exemplar matching inside the loop (original) or before any looping (improved method)
-    private boolean improvedExemplarCheck;
-    // whether to use intervals
-    private boolean randomIntervals;
-    // the min interval size if using intervals
-    private int minIntervalSize;
-    // whether to reduce the number of instances used in testing split quality
-    private boolean reduceSplitTestSize;
-    // the number of exemplars to pick per class per split
-    private int numExemplarsPerClass = 1;
-    // whether to randomise the R parameter
-    private boolean randomR;
-    // whether to use patience in the R parameter
-    private boolean rPatience;
+    // checkpoint config
+    private long lastCheckpointTimeStamp = -1;
+    private String checkpointPath;
+    private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
+    private boolean checkpointLoadingEnabled = true;
+    private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
+    // whether to build the tree depth first or breadth first
+    private boolean breadthFirst = false;
 
-    public boolean hasMaxHeight() {
-        return maxHeight > 0;
+    public boolean isBreadthFirst() {
+        return breadthFirst;
     }
 
-    public Checkpointer getCheckpointer() {
-        return checkpointer;
+    public void setBreadthFirst(final boolean breadthFirst) {
+        this.breadthFirst = breadthFirst;
     }
 
     public List<ParamSpaceBuilder> getDistanceFunctionSpaceBuilders() {
@@ -201,19 +161,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
     }
 
-    @Override
-    public StopWatch getTrainTimer() {
-        return trainTimer;
+    @Override public long getTrainTime() {
+        return trainTimer.getTime();
     }
 
-    @Override
-    public StopWatch getTestTimer() {
-        return testTimer;
+    @Override public long getTestTime() {
+        return testTimer.getTime();
     }
 
-    @Override
-    public MemoryWatcher getMemoryWatcher() {
-        return memoryWatcher;
+    @Override public long getMaxMemoryUsage() {
+        return memoryWatcher.getMaxMemoryUsage();
     }
 
     @Override
@@ -241,7 +198,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // start monitoring resources
         memoryWatcher.start();
         trainTimer.start();
-        final Logger logger = getLogger();
+        // load from checkpoint
         // if checkpoint exists then skip initialisation
         if(!loadCheckpoint()) {
             // no checkpoint exists so check whether rebuilding is enabled
@@ -253,7 +210,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 trainTimer.resetAndStart();
                 tree = new BaseTree<>();
                 nodeBuildQueue = new LinkedList<>();
-                maxTimePerInstanceForNodeBuilding = 0;
+                longestTimePerInstanceDuringNodeBuild = 0;
                 // setup the root node
                 final TreeNode<Split> root = new BaseTreeNode<>(new Split(trainData), null);
                 // add the root node to the tree
@@ -263,15 +220,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         }
         // update the timings
-        trainTimer.lap();
-        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimit, logger, "train");
+        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+        final StopWatch trainStageTimer = new StopWatch();
         while(
                 // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
                 insideTrainTimeLimit( trainTimer.getTime() +
-                                     maxTimePerInstanceForNodeBuilding *
+                                     longestTimePerInstanceDuringNodeBuild *
                                      nodeBuildQueue.peekFirst().getElement().getData().size())
         ) {
             // time how long it takes to build the node
@@ -290,19 +247,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // done building this node
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
-            maxTimePerInstanceForNodeBuilding = findNodeBuildTime(node, trainStageTimer.getTime());
+            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.getTime());
             // checkpoint if necessary
-            checkpointIfIntervalExpired();
+            saveCheckpoint();
             // update the train timer
-            trainTimer.lap();
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimit, logger, "train");
+            LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
         }
         // stop resource monitoring
         trainTimer.stop();
         memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
         // checkpoint if work has been done since (i.e. tree has been built further)
-        checkpointIfWorkDone();
+        forceSaveCheckpoint();
     }
 
     /**
@@ -339,12 +295,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // to lookup nodes in reverse order here)
                 node = nodes.get(nodes.size() - i - 1);
             }
-            // check the stopping condition hasn't been hit
-            // check the node's level in the tree is not beyond the max height
-            if(hasMaxHeight() && node.getLevel() > maxHeight) {
-                // if so then do not build the node
-                continue;
-            }
             // check the data at the node is not pure
             if(!Utilities.isHomogeneous(node.getElement().getData())) {
                 // if not hit the stopping condition then add node to the build queue
@@ -361,7 +311,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // assume that the time taken to build a node is proportional to the amount of instances at the node
         final Instances data = node.getElement().getData();
         final long timePerInstance = time / data.size();
-        return Math.max(maxTimePerInstanceForNodeBuilding, timePerInstance + 1); // add 1 to account for precision
+        return Math.max(longestTimePerInstanceDuringNodeBuild, timePerInstance + 1); // add 1 to account for precision
         // error in div operation
     }
 
@@ -373,12 +323,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
         if(!node.hasChildren()) {
-            //             root node has not been built, just return random guess
+            // root node has not been built, just return random guess
             return ArrayUtilities.uniformDistribution(getNumClasses());
         }
         int index = -1;
         int i = 0;
         Split split = node.getElement();
+        final StopWatch testStageTimer = new StopWatch();
         // traverse the tree downwards from root
         while(
                 !node.isLeaf()
@@ -415,38 +366,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return tree.size();
     }
 
-    public boolean isBreadthFirst() {
-        return breadthFirst;
-    }
-
-    public void setBreadthFirst(final boolean breadthFirst) {
-        this.breadthFirst = breadthFirst;
-    }
-
-    public int getMaxHeight() {
-        return maxHeight;
-    }
-
-    public void setMaxHeight(final int maxHeight) {
-        this.maxHeight = maxHeight;
-    }
-
-    public boolean isEarlyAbandonDistances() {
-        return earlyAbandonDistances;
-    }
-
-    public void setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
-        this.earlyAbandonDistances = earlyAbandonDistances;
-    }
-
-    public boolean isRandomTieBreakDistances() {
-        return randomTieBreakDistances;
-    }
-
-    public void setRandomTieBreakDistances(final boolean randomTieBreakDistances) {
-        this.randomTieBreakDistances = randomTieBreakDistances;
-    }
-
     public int getR() {
         return r;
     }
@@ -463,85 +382,22 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.partitionScorer = partitionScorer;
     }
 
-    public boolean isImprovedExemplarCheck() {
-        return improvedExemplarCheck;
-    }
-
-    public void setImprovedExemplarCheck(final boolean improvedExemplarCheck) {
-        this.improvedExemplarCheck = improvedExemplarCheck;
-    }
-
-    public boolean isRandomIntervals() {
-        return randomIntervals;
-    }
-
-    public void setRandomIntervals(final boolean randomIntervals) {
-        this.randomIntervals = randomIntervals;
-    }
-
-    public int getMinIntervalSize() {
-        return minIntervalSize;
-    }
-
-    public void setMinIntervalSize(final int minIntervalSize) {
-        this.minIntervalSize = minIntervalSize;
-    }
-
-    public boolean isReduceSplitTestSize() {
-        return reduceSplitTestSize;
-    }
-
-    public void setReduceSplitTestSize(final boolean reduceSplitTestSize) {
-        this.reduceSplitTestSize = reduceSplitTestSize;
-    }
-
-    public int getNumExemplarsPerClass() {
-        return numExemplarsPerClass;
-    }
-
-    public void setNumExemplarsPerClass(final int numExemplarsPerClass) {
-        this.numExemplarsPerClass = numExemplarsPerClass;
-    }
-
-    public boolean isRandomR() {
-        return randomR;
-    }
-
-    public void setRandomR(final boolean randomR) {
-        this.randomR = randomR;
-    }
-
     private Split buildSplit(Split unbuiltSplit) {
         final Instances data = unbuiltSplit.getData();
         double bestSplitScore = Double.NEGATIVE_INFINITY;
         Split bestSplit = null;
-        int r = this.r;
-        if(randomR) {
-            r = rand.nextInt(r) + 1;
-        }
         // need to find the best of R splits
         for(int i = 0; i < r; i++) {
             // construct a new split
             Split split = new Split(data);
-            split.partitionData();
+            split.buildSplit();
             final double score = split.getScore();
             if(score > bestSplitScore) {
                 bestSplit = split;
                 bestSplitScore = score;
-                if(rPatience) {
-                    i = 0;
-                }
             }
         }
         return bestSplit;
-    }
-
-    public boolean isRPatience() {
-        return rPatience;
-    }
-
-    public void setRPatience(final boolean rPatience) {
-        this.rPatience = rPatience;
     }
 
     private static class Partition {
@@ -596,8 +452,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
         // the distance function for comparing instances to exemplars
         private DistanceFunction distanceFunction;
-//        // the exemplars for each partition
-        private Map<Instance, Integer> exemplarIndexToPartitionIndexMap;
         // the score of this split
         private double score = -1;
         // the data at this split (i.e. before being partitioned)
@@ -609,75 +463,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return score;
         }
 
-        public void setupDistanceFunction() {
-            Instances dataForParamSpaceBuilding = data;
-            IntervalTransform intervalTransform = null;
-            if(randomIntervals) {
-                // suppose we're looking at instances of length 41.
-                // the last value is the class label, therefore there's a ts of 40.
-                // the max length of an interval is therefore numAttributes() - 1. +1 for random call is cancelled out
-                // by the -1 for num attributes including the class label
-                // if a min interval size is then included, say 3, then the max size of the interval should be 40 - 3 =
-                // 37. The min size can be subtracted from the rand call and added after to ensure rand numbers between
-                // min and max length (3 and 40).
-                final int length = rand.nextInt(data.numAttributes() - minIntervalSize) + minIntervalSize;
-                Assert.assertTrue(length > 0);
-                // the start point is dependent on the length. Max length of 40 then the start can only be 0. Min length
-                // of 3 then the start can be anywhere between 0..37 inclusively.
-                // The start can therefore lie anywhere from 0 to tsLen - intervalLen inclusively. (shortest interval
-                // would be 3, 40 - 3 = 37, checks out). +1 for random call is cancelled out by the -1 for num attributes
-                // including the class label
-                final int start = rand.nextInt(data.numAttributes() - length);
-                final Interval interval = new Interval(start, length);
-                intervalTransform = new IntervalTransform(interval);
-                dataForParamSpaceBuilding = intervalTransform.transform(data);
-            }
+        private void setupDistanceFunction() {
             // pick a random space
             ParamSpaceBuilder distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, rand);
             // built that space
-            ParamSpace distanceFunctionSpace = distanceFunctionSpaceBuilder.build(dataForParamSpaceBuilding);
+            ParamSpace distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
             // randomly pick the distance function / parameters from that space
-            final ParamSet paramSet = RandomSearchIterator.choice(rand, distanceFunctionSpace);
+            final ParamSet paramSet = RandomSearch.choice(distanceFunctionSpace, getRandom());
             // there is only one distance function in the ParamSet returned
-            distanceFunction = (DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
-            if(randomIntervals) {
-                if(distanceFunction instanceof TransformDistanceMeasure) {
-                    final TransformDistanceMeasure tdf = (TransformDistanceMeasure) distanceFunction;
-                    tdf.setTransformer(new TransformPipeline(newArrayList(tdf.getTransformer(), intervalTransform)));
-                } else {
-                    distanceFunction = new BaseTransformDistanceMeasure(DistanceMeasure.getName(distanceFunction), intervalTransform, distanceFunction);
-                }
-            }
-            Assert.assertNotNull(distanceFunction);
+            distanceFunction = Objects.requireNonNull((DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
         }
 
         /**
          * pick exemplars from the given dataset
          */
-        public void setupExemplarsAndPartitions() {
+        private void setupExemplarsAndPartitions() {
             // change the view of the data into per class
             final Map<Double, List<Integer>> instancesByClass = Utilities.instancesByClass(this.data);
             // pick exemplars per class
-            final int numPartitions = instancesByClass.size();
-            final int totalNumExemplars = numExemplarsPerClass * numPartitions;
-            partitions = new ArrayList<>(numPartitions);
-            // populate an exemplar lookup for the improved exemplar check
-            exemplarIndexToPartitionIndexMap = null;
-            if(improvedExemplarCheck) {
-                exemplarIndexToPartitionIndexMap = new HashMap<>(totalNumExemplars, 1);
-            }
+            partitions = new ArrayList<>(instancesByClass.size());
             // generate a partition per class
             for(Double classLabel : instancesByClass.keySet()) {
                 final List<Integer> sameClassInstanceIndices = instancesByClass.get(classLabel);
                 // if there are less instances to pick from than exemplars requested
-                final List<Integer> exemplarIndices;
-                if(numExemplarsPerClass >= sameClassInstanceIndices.size()) {
-                    // then use all instances in the class
-                    exemplarIndices = sameClassInstanceIndices;
-                } else {
-                    // otherwise randomly pick the exemplars
-                    exemplarIndices = RandomUtils.choice(sameClassInstanceIndices, rand, numExemplarsPerClass);
-                }
+                final List<Integer> exemplarIndices = RandomUtils.choiceWithNoSkip(sameClassInstanceIndices, rand, 1);
                 // find the exemplars in the data
                 final List<Instance> exemplars = new ArrayList<>(exemplarIndices.size());
                 for(Integer i : exemplarIndices) {
@@ -686,20 +495,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // generate the partition with empty data and the chosen exemplar instances
                 final Partition partition = new Partition(new Instances(data, 0), exemplars);
                 partitions.add(partition);
-                final int partitionIndex = partitions.size() - 1;
-                if(improvedExemplarCheck) {
-                    // add exemplar to partition mapping
-                    for(Instance exemplar : exemplars) {
-                        exemplarIndexToPartitionIndexMap.put(exemplar, partitionIndex);
-                    }
-                }
             }
             // sanity checks
             Assert.assertEquals(instancesByClass.size(), partitions.size());
             Assert.assertFalse(partitions.isEmpty());
         }
 
-        public void partitionData() {
+        /**
+         * Partition the data and derive score for this split.
+         */
+        public void buildSplit() {
             // pick the distance function
             setupDistanceFunction();
             // pick the exemplars
@@ -729,46 +534,21 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * @return
          */
         public int findPartitionIndexFor(final Instance instance) {
-            // the instance may be an exemplar, so lookup the partition index
-            if(improvedExemplarCheck) {
-                Integer index = exemplarIndexToPartitionIndexMap.get(instance);
-                if(index != null) {
-                    // the instance is an exemplar and the partition must therefore be the partition that exemplar represents
-                    return index;
-                }
-                // the instance is not an exemplar, so find the distances to each exemplar and pick partition from that
-                // get the partition for this instance (based on proximity to corresponding exemplars)
-            }
-            // the limit for early abandon
-            double limit = Double.POSITIVE_INFINITY;
             // a map to maintain the closest partition indices
             PrunedMultimap<Double, Integer> distanceToPartitionMap = PrunedMultimap.asc();
-            if(randomTieBreakDistances) {
-                // let the map keep all ties and randomly choose at the end
-                distanceToPartitionMap.setSoftLimit(1);
-            } else {
-                // only keep 1 partition at any point in time, even if multiple partitions are equally close
-                distanceToPartitionMap.setHardLimit(1);
-                // discard the newest on tie break situation
-                distanceToPartitionMap.setDiscardType(PrunedMultimap.DiscardType.NEWEST);
-            }
+            // let the map keep all ties and randomly choose at the end
+            distanceToPartitionMap.setSoftLimit(1);
             // loop through exemplars
             for(int i = 0; i < partitions.size(); i++) {
                 final Partition partition = partitions.get(i);
                 for(Instance exemplar : partition.getExemplars()) {
                     // for each exemplar
                     // check the instance isn't an exemplar
-                    if(!improvedExemplarCheck) {
-                        if(instance == exemplar) {
-                            return i;
-                        }
+                    if(instance == exemplar) {
+                        return i;
                     }
                     // find the distance
-                    final double distance = distanceFunction.distance(instance, exemplar, limit);
-                    // adjust early abandon limit
-                    if(earlyAbandonDistances) {
-                        limit = Math.min(distance, limit);
-                    }
+                    final double distance = distanceFunction.distance(instance, exemplar);
                     // add the distance and partition to the map
                     distanceToPartitionMap.put(distance, i);
                 }
@@ -777,11 +557,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final Double smallestDistance = distanceToPartitionMap.firstKey();
             // find the list of corresponding partitions which the instance could belong to
             final List<Integer> partitionIndices = distanceToPartitionMap.get(smallestDistance);
-            if(!randomTieBreakDistances) {
-                Assert.assertEquals(partitionIndices.size(), 1);
-            }
             // random pick the best partition for the instance
-            return RandomUtils.choice(partitionIndices, rand);
+            return RandomUtils.choiceWithNoSkip(partitionIndices, rand);
         }
 
         public Partition findPartitionFor(Instance instance) {
@@ -835,5 +612,46 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             };
             return partitionDatas;
         }
+    }
+
+    @Override public long getLastCheckpointTimeStamp() {
+        return lastCheckpointTimeStamp;
+    }
+
+    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    }
+
+    @Override public String getCheckpointFileName() {
+        return checkpointFileName;
+    }
+
+    @Override public void setCheckpointFileName(final String checkpointFileName) {
+        this.checkpointFileName = checkpointFileName;
+    }
+
+    @Override public String getCheckpointPath() {
+        return checkpointPath;
+    }
+
+    @Override public boolean setCheckpointPath(final String checkpointPath) {
+        this.checkpointPath = checkpointPath;
+        return true;
+    }
+
+    @Override public void setCheckpointLoadingEnabled(final boolean checkpointLoadingEnabled) {
+        this.checkpointLoadingEnabled = checkpointLoadingEnabled;
+    }
+
+    @Override public boolean isCheckpointLoadingEnabled() {
+        return checkpointLoadingEnabled;
+    }
+
+    @Override public long getCheckpointInterval() {
+        return checkpointInterval;
+    }
+
+    @Override public void setCheckpointInterval(final long checkpointInterval) {
+        this.checkpointInterval = checkpointInterval;
     }
 }

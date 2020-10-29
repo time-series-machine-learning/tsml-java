@@ -158,7 +158,7 @@ public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
+        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double::valueOf);
         warpingParameter.setParams(param);
         super.setParams(param);
     }

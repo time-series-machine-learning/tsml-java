@@ -14,7 +14,7 @@ import weka.core.Instances;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class OutOfBagEvaluator extends Evaluator implements Loggable {
+public class OutOfBagEvaluator extends Evaluator {
 
     private static final Logger DEFAULT_LOGGER = LogUtils.buildLogger(OutOfBagEvaluator.class);
     private transient Logger logger = DEFAULT_LOGGER;
@@ -26,14 +26,6 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
 
     public OutOfBagEvaluator() {
         super(-1, false, false);
-    }
-
-    @Override public Logger getLogger() {
-        return logger;
-    }
-
-    @Override public void setLogger(final Logger logger) {
-        this.logger = logger;
     }
 
     @Override public ClassifierResults evaluate(Classifier classifier, Instances data) throws Exception {
@@ -66,14 +58,12 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
             outOfBagTestData.add(instance);
         }
         // build the tree on the oob train
-        getLogger().info("training on bagged train data");
         if(cloneClassifier) {
             classifier = (Classifier) CopierUtils.deepCopy(classifier);
         }
         classifier.buildClassifier(inBagTrainData);
         // test tree on the oob test
         ClassifierResults results = new ClassifierResults();
-        getLogger().info("testing on out-of-bag test data");
         ClassifierTools.addPredictions(classifier, outOfBagTestData, results, random);
         return results;
     }

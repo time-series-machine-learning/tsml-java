@@ -1,24 +1,25 @@
-package tsml.classifiers.distance_based.utils.collections.params.dimensions;
+package tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceTest;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public class IndexedParameterSpaceTest {
+public class IndexedParamSpaceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNonDiscreteParameterDimensionException() {
-        IndexedParameterSpace space = new IndexedParameterSpace(new ParamSpaceTest().buildLParams());
+        IndexedParamSpace space = new IndexedParamSpace(new ParamSpaceTest().buildLParams());
         for(int i = 0; i < space.size(); i++) {
             space.get(i);
         }
@@ -26,7 +27,7 @@ public class IndexedParameterSpaceTest {
 
     @Test
     public void testUniquePermutations() {
-        IndexedParameterSpace space = new IndexedParameterSpace(new ParamSpaceTest().buildWParams());
+        IndexedParamSpace space = new IndexedParamSpace(new ParamSpaceTest().buildWParams());
         int size = space.size();
         Set<ParamSet> paramSets = new HashSet<>();
         for(int i = 0; i < size; i++) {
@@ -42,12 +43,12 @@ public class IndexedParameterSpaceTest {
     @Test
     public void testEquals() {
         ParamSpace wParams = new ParamSpaceTest().buildWParams();
-        IndexedParameterSpace a = new IndexedParameterSpace(wParams);
-        IndexedParameterSpace b = new IndexedParameterSpace(wParams);
+        IndexedParamSpace a = new IndexedParamSpace(wParams);
+        IndexedParamSpace b = new IndexedParamSpace(wParams);
         ParamSpace alt = new ParamSpace();
-        alt.add("letters", new DiscreteParameterDimension<>(Arrays.asList("a", "b", "c")));
-        IndexedParameterSpace c = new IndexedParameterSpace(alt);
-        IndexedParameterSpace d = new IndexedParameterSpace(alt);
+        alt.add("letters", new DiscreteParamDimension<>(Arrays.asList("a", "b", "c")));
+        IndexedParamSpace c = new IndexedParamSpace(alt);
+        IndexedParamSpace d = new IndexedParamSpace(alt);
         Assert.assertEquals(a, b);
         Assert.assertEquals(a.hashCode(), b.hashCode());
         Assert.assertEquals(c, d);

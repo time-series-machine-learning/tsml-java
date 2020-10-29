@@ -90,8 +90,8 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
-        ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer);
+        ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction);
         super.setParams(param);
     }
 

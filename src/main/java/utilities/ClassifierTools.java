@@ -37,12 +37,9 @@ import java.util.logging.Level;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import weka.classifiers.*;
-import weka.classifiers.bayes.*;
 
 import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
@@ -57,14 +54,8 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Randomizable;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
-
-
-import fileIO.OutFile;
-import statistics.distributions.NormalDistribution;
-import machine_learning.classifiers.kNN;
 
 /**
  * @author ajb
@@ -495,7 +486,7 @@ public class ClassifierTools {
         MemoryWatcher memoryWatcher = new MemoryWatcher();
         StopWatch timer = new StopWatch();
         if(classifier instanceof Loggable) {
-            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
+            ((Loggable) classifier).setLogLevel(Level.ALL);
         }
         final Instances trainData = trainAndTestData[0];
         final Instances testData = trainAndTestData[1];
@@ -506,7 +497,7 @@ public class ClassifierTools {
         memoryWatcher.stop();
         System.out.println();
         System.out.println("train time: " + timer.getTime());
-        System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println("train mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println();
 //        GcFinalization.awaitFullGc();
         if(classifier instanceof EnhancedAbstractClassifier) {
@@ -514,7 +505,8 @@ public class ClassifierTools {
                 ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
-                System.out.println(trainResults.writeFullResultsToString());
+                System.out.println(trainResults.writeSummaryResultsToString());
+                System.out.println("train acc: " + trainResults.getAcc());
                 System.out.println();
             }
         }
@@ -528,14 +520,15 @@ public class ClassifierTools {
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
         System.out.println("test time: " + timer.getTime());
-        System.out.println("test mem: " + memoryWatcher.toString());
+        System.out.println("test mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println("test results:");
-        System.out.println(testResults.writeFullResultsToString());
+        System.out.println(testResults.writeSummaryResultsToString());
+        System.out.println("test acc: " + testResults.getAcc());
         overallMemoryWatcher.stop();
         overallTimer.stop();
         System.out.println();
         System.out.println("overall time: " + overallTimer.getTime());
-        System.out.println("overall mem: " + overallMemoryWatcher.toString());
+        System.out.println("overall mem: " + overallMemoryWatcher.getMaxMemoryUsage());
     }
 
     /**

@@ -10,7 +10,7 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearchIterator;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import utilities.InstanceTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -129,7 +129,9 @@ public class ERPDistanceTest {
                     this.data = data;
                     space = ERPDistanceConfigs.buildERPParams(data);
                 }
-                final GridSearchIterator iterator = new GridSearchIterator(space);
+                final RandomSearch iterator = new RandomSearch();
+                iterator.setRandom(random);
+                iterator.buildSearch(space);
 //                int i = 0;
                 while(iterator.hasNext()) {
 //                    System.out.println("i:" + i++);

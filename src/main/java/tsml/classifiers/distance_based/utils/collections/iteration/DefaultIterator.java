@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.collections.iteration;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
 
 public interface DefaultIterator<A> extends Iterator<A>, Serializable {
     @Override
