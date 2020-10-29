@@ -1,9 +1,6 @@
 package tsml.data_containers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,16 +13,28 @@ import java.util.stream.IntStream;
  * creation, mutability can break this
  */
 
-public class TimeSeriesInstance implements Iterable<TimeSeries> {
+public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Meta Information */
-    boolean isMultivariate;
-    boolean isEquallySpaced;
-    boolean hasMissing;
-    boolean isEqualLength;
+    private boolean isMultivariate;
+    private boolean isEquallySpaced; // todo compute whether timestamps are equally spaced
+    private boolean hasMissing;
+    private boolean isEqualLength;
 
-    int minLength;
-    int maxLength;
+    private int minLength;
+    private int maxLength;
+
+    public boolean isMultivariate() {
+        return isMultivariate;
+    }
+
+    public boolean isEquallySpaced() {
+        return isEquallySpaced;
+    }
+
+    public boolean hasMissing() {
+        return hasMissing;
+    }
 
     /** 
      * @return boolean
@@ -53,16 +62,16 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
 
     /* Data */
-    List<TimeSeries> seriesDimensions;
-    int classLabelIndex;
-    double targetValue;
+    private List<TimeSeries> seriesDimensions;
+    private int labelIndex;
+    private double targetValue;
 
     // this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double value) {
         this(series);
 
         //could be an index, or it could be regression target
-        classLabelIndex = value.intValue();
+        labelIndex = value.intValue();
         targetValue = value;
     }
 
@@ -70,18 +79,16 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public TimeSeriesInstance(List<List<Double>> series, int label) {
         this(series);
 
-        classLabelIndex = label;
+        labelIndex = label;
     }
 
     //do the ctor this way round to avoid erasure problems :(
     public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
-        for (TimeSeries ts : series) {
-            seriesDimensions.add(ts);
-        }
+        seriesDimensions.addAll(series);
 
-        classLabelIndex = labelIndex; 
+        this.labelIndex = labelIndex; 
         dataChecks();
     }
 
@@ -115,8 +122,16 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
             seriesDimensions.add(new TimeSeries(in));
         }
 
-        classLabelIndex = labelIndex;
+        this.labelIndex = labelIndex;
  
+        dataChecks();
+    }
+    
+    private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
+        this(data);
+        labelIndex = other.labelIndex;
+        targetValue = other.targetValue;
+        
         dataChecks();
     }
 
@@ -131,16 +146,15 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
 	private void calculateLengthBounds() {
-        minLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).min().getAsInt();
-        maxLength = seriesDimensions.stream().mapToInt(e -> e.getSeriesLength()).max().getAsInt();
+        minLength = seriesDimensions.stream().mapToInt(TimeSeries::getSeriesLength).min().getAsInt();
+        maxLength = seriesDimensions.stream().mapToInt(TimeSeries::getSeriesLength).max().getAsInt();
         isEqualLength = minLength == maxLength;
     }
 
     private void calculateIfMissing() {
         // if any of the series have a NaN value, across all dimensions then this is
         // true.
-        hasMissing = seriesDimensions.stream().map(e -> e.stream().anyMatch(Double::isNaN))
-                .anyMatch(Boolean::booleanValue);
+        hasMissing = seriesDimensions.stream().anyMatch(e -> e.streamValues().anyMatch(Double::isNaN));
     };
 
     
@@ -156,38 +170,35 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @return int
      */
     public int getLabelIndex(){
-        return classLabelIndex;
+        return labelIndex;
     }
-
     
     /** 
      * @param index
      * @return List<Double>
      */
-    public List<Double> getSingleVSliceList(int index){
+    public List<Double> getVSliceList(int index){
         List<Double> out = new ArrayList<>(getNumDimensions());
         for(TimeSeries ts : seriesDimensions){
-            out.add(ts.get(index));
+            out.add(ts.getValue(index));
         }
 
         return out;
     }
-
     
     /** 
      * @param index
      * @return double[]
      */
-    public double[] getSingleVSliceArray(int index){
+    public double[] getVSliceArray(int index){
         double[] out = new double[getNumDimensions()];
         int i=0;
         for(TimeSeries ts : seriesDimensions){
-            out[i++] = ts.get(index);
+            out[i++] = ts.getValue(index);
         }
 
         return out;
     }
-
     
     /** 
      * @param indexesToKeep
@@ -205,7 +216,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public List<List<Double>> getVSliceList(List<Integer> indexesToKeep){
         List<List<Double>> out = new ArrayList<>(getNumDimensions());
         for(TimeSeries ts : seriesDimensions){
-            out.add(ts.toListWithIndexes(indexesToKeep));
+            out.add(ts.getVSliceList(indexesToKeep));
         }
 
         return out;
@@ -230,10 +241,22 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] out = new double[getNumDimensions()][];
         int i=0;
         for(TimeSeries ts : seriesDimensions){
-            out[i++] = ts.toArrayWithIndexes(indexesToKeep);
+            out[i++] = ts.getVSliceArray(indexesToKeep);
         }
 
         return out;
+    }
+    
+    public TimeSeriesInstance getVSlice(List<Integer> indexesToKeep) {
+        return new TimeSeriesInstance(getVSliceArray(indexesToKeep), this);
+    }
+    
+    public TimeSeriesInstance getVSlice(int[] indexesToKeep) {
+        return getVSlice(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public TimeSeriesInstance getVSlice(int index) {
+        return getVSlice(new int[] {index});
     }
 
 
@@ -242,7 +265,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @param dim
      * @return List<Double>
      */
-    public List<Double> getSingleHSliceList(int dim){
+    public List<Double> getHSliceList(int dim){
         return seriesDimensions.get(dim).getSeries();
     }
 
@@ -251,8 +274,8 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @param dim
      * @return double[]
      */
-    public double[] getSingleHSliceArray(int dim){
-        return seriesDimensions.get(dim).toArray();
+    public double[] getHSliceArray(int dim){
+        return seriesDimensions.get(dim).toValueArray();
     }
 
     
@@ -296,10 +319,22 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] out = new double[dimensionsToKeep.size()][];
         int i=0;
         for(Integer dim : dimensionsToKeep){
-            out[i++] = seriesDimensions.get(dim).toArray();
+            out[i++] = seriesDimensions.get(dim).toValueArray();
         }
 
         return out;
+    }
+    
+    public TimeSeriesInstance getHSlice(List<Integer> dimensionsToKeep) {
+        return new TimeSeriesInstance(getHSliceArray(dimensionsToKeep), this);
+    }
+    
+    public TimeSeriesInstance getHSlice(int[] dimensionsToKeep) {
+        return getHSlice(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public TimeSeriesInstance getHSlice(int index) {
+        return getHSlice(new int[] {index});
     }
 
     
@@ -310,7 +345,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Num Dimensions: ").append(getNumDimensions()).append(" Class Label Index: ").append(classLabelIndex);
+        sb.append("Num Dimensions: ").append(getNumDimensions()).append(" Class Label Index: ").append(labelIndex);
         for (TimeSeries ts : seriesDimensions) {
             sb.append(System.lineSeparator());
             sb.append(ts.toString());
@@ -318,16 +353,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
         return sb.toString();
     }
-
-    
-    /** 
-     * @return Iterator<TimeSeries>
-     */
-    @Override
-    public Iterator<TimeSeries> iterator() {
-        return seriesDimensions.iterator();
-    }
-
     
     /** 
      * @return double[][]
@@ -336,7 +361,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         double[][] output = new double[this.seriesDimensions.size()][];
         for (int i=0; i<output.length; ++i){
              //clone the data so the underlying representation can't be modified
-            output[i] = seriesDimensions.get(i).toArray();
+            output[i] = seriesDimensions.get(i).toValueArray();
         }
         return output;
     }
@@ -348,17 +373,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public double[][] toTransposedArray(){
         return this.getVSliceArray(IntStream.range(0, maxLength).toArray());
     }
-
-
-    
-    /** 
-     * @return int
-     */
-    @Override
-    public int hashCode(){
-        return this.seriesDimensions.hashCode();
-    }
-
 	
     /** 
      * @param i
@@ -367,8 +381,30 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public TimeSeries get(int i) {
         return this.seriesDimensions.get(i);
 	}
+	
 
+    public double getTargetValue() {
+        return targetValue;
+    }
 
+    @Override public int size() {
+        return getNumDimensions();
+    }
 
+    @Override public void add(final int i, final TimeSeries doubles) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public TimeSeries set(final int i, final TimeSeries doubles) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public void clear() {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
+
+    @Override public TimeSeries remove(final int i) {
+        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    }
 
 }

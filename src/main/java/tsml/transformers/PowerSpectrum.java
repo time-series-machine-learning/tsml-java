@@ -129,13 +129,13 @@ public class PowerSpectrum extends FFT {
             if(log){
                 double l1;		
                 for(int j=0;j<length;j++){
-                    l1= Math.sqrt(f.get(j*2)*f.get(j*2)+f.get(j*2+1)*f.get(j*2+1));
+                    l1= Math.sqrt(f.getValue(j*2)*f.getValue(j*2)+f.getValue(j*2+1)*f.getValue(j*2+1));
                     vals.set(j,Math.log(l1));
                 }
             }
             else{
                 for (int j = 0; j < length; j++) {
-                    vals.set(j, Math.sqrt(f.get(j * 2) * f.get(j * 2) + f.get(j * 2 + 1) * f.get(j * 2 + 1)));
+                    vals.set(j, Math.sqrt(f.getValue(j * 2) * f.getValue(j * 2) + f.getValue(j * 2 + 1) * f.getValue(j * 2 + 1)));
                 }
             }
 
