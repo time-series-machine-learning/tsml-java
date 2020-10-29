@@ -23,87 +23,59 @@ public interface Copier extends Serializable {
      * @return
      * @throws Exception
      */
-    default Object shallowCopy()
-            throws NoSuchMethodException, IllegalAccessException, InstantiationException, ClassNotFoundException,
-                           InvocationTargetException, IOException, NoSuchFieldException {
+    default Object shallowCopy() {
         return CopierUtils.shallowCopy(this);
     }
 
-    default void shallowCopyTo(Object dest)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
-                           NoSuchMethodException, IOException, NoSuchFieldException {
+    default void shallowCopyTo(Object dest) {
         CopierUtils.shallowCopy(this, dest);
     }
 
-    default void shallowCopyTo(Object dest, Iterable<String> fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void shallowCopyTo(Object dest, Iterable<String> fields) {
         CopierUtils.shallowCopy(this, dest, fields);
     }
 
-    default void shallowCopyTo(Object dest, String... fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void shallowCopyTo(Object dest, String... fields) {
         CopierUtils.shallowCopy(this, dest, fields);
     }
 
-    default void shallowCopyFrom(Object src)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
-                           NoSuchMethodException, IOException, NoSuchFieldException {
+    default void shallowCopyFrom(Object src) {
         CopierUtils.shallowCopy(src, this);
     }
 
-    default void shallowCopyFrom(Object src, Iterable<String> fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void shallowCopyFrom(Object src, Iterable<String> fields) {
         CopierUtils.shallowCopy(src, this, fields);
     }
 
-    default void shallowCopyFrom(Object src, String... fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void shallowCopyFrom(Object src, String... fields) {
         CopierUtils.shallowCopy(src, this, fields);
     }
 
-    default Object deepCopy()
-            throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchFieldException,
-                           InstantiationException, IllegalAccessException {
+    default Object deepCopy() {
         return CopierUtils.deepCopy(this);
     }
 
-    default void deepCopyFrom(Object src)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
-                           NoSuchMethodException, IOException, NoSuchFieldException {
+    default void deepCopyFrom(Object src) {
         CopierUtils.deepCopy(src, this);
     }
 
-    default void deepCopyFrom(Object src, Iterable<String> fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void deepCopyFrom(Object src, Iterable<String> fields) {
         CopierUtils.deepCopy(src, this, fields);
     }
 
-    default void deepCopyFrom(Object src, String... fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void deepCopyFrom(Object src, String... fields) {
         CopierUtils.deepCopy(src, this, fields);
     }
 
-    default void deepCopyTo(Object dest)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
-                           NoSuchMethodException, IOException, NoSuchFieldException {
+    default void deepCopyTo(Object dest) {
         CopierUtils.deepCopy(this, dest);
     }
 
-    default void deepCopyTo(Object dest, Iterable<String> fields)
-            throws IllegalAccessException, InstantiationException, IOException, NoSuchMethodException,
-                           InvocationTargetException, ClassNotFoundException, NoSuchFieldException {
+    default void deepCopyTo(Object dest, Iterable<String> fields) {
         CopierUtils.deepCopy(this, dest, fields);
     }
 
-    default void deepCopyTo(Object dest, String... fields)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException,
-                           NoSuchMethodException, IOException, NoSuchFieldException {
+    default void deepCopyTo(Object dest, String... fields) {
         CopierUtils.deepCopy(this, dest, fields);
     }
 

@@ -253,6 +253,7 @@ public class CopierUtils {
         src = (A) deserialise(serialise(src));
         try {
             // then attempt to invoke the default constructor to make a new instance and copy the deeply copied src into the new instance
+            // this is necessary so a new instance is created and the default constructor is run, initialising any transient variables not copied during the serialisation copy
             return shallowCopyViaDefaultConstructor(src);
         } catch(IllegalStateException e) {
             // if there's no default constructor then use the deep copy already made. This means the default constructor will not be called and transient field may be left null. Users will have to account for this when using transient fields
