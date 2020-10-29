@@ -9,6 +9,8 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
     private int nextIndex = -1;
     private List<A> list;
     private boolean findNextIndex = true;
+    private boolean hasNext;
+    private boolean findHasNext = true;
     
     public AbstractListIterator(List<A> list) {
         buildIterator(list);
@@ -23,6 +25,7 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
     protected void setIndex(int index) {
         this.index = index;
         findNextIndex = true;
+        findHasNext = true;
     }
     
     @Override public A next() {
@@ -31,13 +34,27 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
     }
 
     @Override final public int nextIndex() {
+        if(!hasNext) {
+            throw new IllegalStateException("hasNext false");
+        }
         if(findNextIndex) {
             nextIndex = findNextIndex();
             findNextIndex = false;
         }
         return nextIndex;
     }
+
+    @Override final public boolean hasNext() {
+        if(findHasNext) {
+            if(list == null) throw new IllegalStateException("iterator has not been built");
+            hasNext = findHasNext();
+            findHasNext = false;
+        }
+        return hasNext;
+    }
     
+    abstract protected boolean findHasNext();
+
     abstract protected int findNextIndex();
 
     @Override public void remove() {

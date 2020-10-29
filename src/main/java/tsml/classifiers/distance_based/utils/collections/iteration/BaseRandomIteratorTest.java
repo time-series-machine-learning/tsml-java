@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import java.util.*;
 
-public class RandomIteratorTest {
+public class BaseRandomIteratorTest {
     private RandomIterator<String> iterator;
     private List<String> elements;
 

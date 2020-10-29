@@ -33,8 +33,12 @@ public class RoundRobinIterator<A> extends LinearIterator<A> {
         }
     }
 
+    @Override protected boolean findHasNext() {
+        return !getList().isEmpty();
+    }
+
     @Override
-    public int findNextIndex() {
+    protected int findNextIndex() {
         return super.findNextIndex() % getList().size();
     }
 }

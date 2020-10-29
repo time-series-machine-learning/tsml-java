@@ -23,4 +23,7 @@ public class LinearIterator<A> extends AbstractListIterator<A> {
         return getIndex() + 1;
     }
 
+    @Override protected boolean findHasNext() {
+        return findNextIndex() < getList().size();
+    }
 }

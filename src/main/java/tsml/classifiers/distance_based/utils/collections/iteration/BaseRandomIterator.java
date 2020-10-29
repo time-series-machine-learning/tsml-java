@@ -58,7 +58,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     }
 
     @Override
-    public boolean hasNext() {
+    protected boolean findHasNext() {
         return !indices.isEmpty();
     }
 
