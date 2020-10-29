@@ -30,6 +30,14 @@ public class RandomSearchIterator extends ParamSpaceSearch implements RandomIter
     private final RandomIterator<ParamSet> randomIterator = new BaseRandomIterator<>();
     private boolean discrete;
 
+    @Override public boolean isAllowReordering() {
+        return randomIterator.isAllowReordering();
+    }
+
+    @Override public void setAllowReordering(final boolean allowReordering) {
+        randomIterator.setAllowReordering(allowReordering);
+    }
+
     @Override public void setSkipSingleOption(final boolean skipSingleOption) {
         randomIterator.setSkipSingleOption(skipSingleOption);
     }
@@ -83,7 +91,13 @@ public class RandomSearchIterator extends ParamSpaceSearch implements RandomIter
         }
     }
 
-    public static Object extractRandomValue(Object values, Random random) {
+    /**
+     * CAUTION: this may return an item within a list, therefore mutations of said item will modify the same instance in the list!
+     * @param values
+     * @param random
+     * @return
+     */
+    private static Object extractRandomValue(Object values, Random random) {
         final Object value;
         if(values instanceof Distribution<?>) {
             Distribution<?> distribution = (Distribution<?>) values;
@@ -91,7 +105,6 @@ public class RandomSearchIterator extends ParamSpaceSearch implements RandomIter
             value = distribution.sample(random);
         } else if(values instanceof List<?>) {
             List<?> list = (List<?>) values;
-            // because the value comes from a list, mutations to the value are reflected in the list. If the value is selected multiple times then the mutations will be shared, resulting in annoying bugs! Therefore must copy the value entirely.
             value = RandomUtils.choice(list, random);
         } else {
             throw new IllegalArgumentException("cannot handle type {" + values.getClass() + "} for dimension content");
