@@ -65,7 +65,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         if(debug) {
             setLogLevel(Level.ALL);
         } else {
-            setLogLevel(Level.OFF);
+            log = LogUtils.DEFAULT_LOG;
         }
     }
     
