@@ -15,4 +15,8 @@ public interface RandomIterator<A> extends DefaultListIterator<A>, Serializable 
     boolean isSkipSingleOption();
 
     void setSkipSingleOption(boolean skipSingleOption);
+    
+    boolean isAllowReordering();
+    
+    void setAllowReordering(boolean allowReordering);
 }

@@ -1,5 +1,8 @@
 package tsml.classifiers.distance_based.utils.collections.iteration;
 
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -15,8 +18,9 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
 
     private boolean withReplacement = true;
     private boolean skipSingleOption = true;
+    private boolean allowReordering = true;
     private List<Integer> indices;
-    private int indexOfIndex;
+    private int indexOfIndex = -1;
     private Random random;
 
     @Override public void add(final A a) {
@@ -40,7 +44,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
 
     @Override protected int findNextIndex() {
         final int size = indices.size();
-        if(size == 1) {
+        if(skipSingleOption && size == 1) {
             indexOfIndex = 0;
         } else {
             indexOfIndex = random.nextInt(size);
@@ -63,15 +67,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     }
 
     private void removeIndex() {
-        // rather than removing the element at indexOfIndex and shifting all elements after indexOfIndex down 1, it is more efficient to swap the last element in place of the element being removed and remove the last element. I.e. [1,2,3,4,5] and indexOfIndex=2. Swap in the end element, [1,2,5,4,5], and remove the last element, [1,2,5,4].
-        final int lastIndex = indices.size() - 1;
-        final Integer lastElement = indices.get(lastIndex);
-        indices.remove(lastIndex);
-        // if the indexOfIndex is the last element then don't bother swapping, removal is enough.
-        if(indexOfIndex != lastIndex) {
-            // otherwise need to set the end element in place of the current
-            indices.set(indexOfIndex, lastElement);
-        }
+        CollectionUtils.remove(indices, indexOfIndex, allowReordering);
     }
     
     @Override public void remove() {
@@ -97,5 +93,12 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     @Override public void setSkipSingleOption(final boolean skipSingleOption) {
         this.skipSingleOption = skipSingleOption;
     }
-    
+
+    public boolean isAllowReordering() {
+        return allowReordering;
+    }
+
+    public void setAllowReordering(final boolean allowReordering) {
+        this.allowReordering = allowReordering;
+    }
 }
