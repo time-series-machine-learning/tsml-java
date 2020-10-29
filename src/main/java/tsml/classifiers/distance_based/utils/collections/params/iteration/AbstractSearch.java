@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Objects;
 
-public abstract class ParamSpaceSearch implements Iterator<ParamSet>, Serializable {
+public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable {
     
     private ParamSpace paramSpace;
     private boolean hasNextCalled;

@@ -10,8 +10,7 @@ import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearchIterator;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import utilities.InstanceTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -84,7 +83,7 @@ public class DTWDistanceTest {
                     this.data = data;
                     space = ERPDistanceConfigs.buildERPParams(data);
                 }
-                final RandomSearchIterator iterator = new RandomSearchIterator();
+                final RandomSearch iterator = new RandomSearch();
                 iterator.setRandom(random);
                 iterator.buildSearch(space);
                 while(iterator.hasNext()) {

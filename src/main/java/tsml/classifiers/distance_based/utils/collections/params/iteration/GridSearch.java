@@ -10,12 +10,12 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.discr
  * <p>
  * Contributors: goastler
  */
-public class GridSearchIterator extends ParamSpaceSearch {
+public class GridSearch extends AbstractSearch {
 
     private IndexedParamSpace indexedParamSpace;
     private final LinearIterator<ParamSet> iterator = new LinearIterator<>();
 
-    public GridSearchIterator() {}
+    public GridSearch() {}
 
     public IndexedParamSpace getIndexedParamSpace() {
         return indexedParamSpace;

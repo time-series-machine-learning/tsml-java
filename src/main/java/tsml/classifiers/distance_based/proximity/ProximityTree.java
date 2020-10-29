@@ -16,7 +16,7 @@ import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpoin
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearchIterator;
+import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
@@ -469,7 +469,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // built that space
             ParamSpace distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
             // randomly pick the distance function / parameters from that space
-            final ParamSet paramSet = RandomSearchIterator.choice(distanceFunctionSpace, getRandom());
+            final ParamSet paramSet = RandomSearch.choice(distanceFunctionSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceFunction = Objects.requireNonNull((DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
         }

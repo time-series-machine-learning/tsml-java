@@ -11,12 +11,12 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceTest;
  * <p>
  * Contributors: goastler
  */
-public class GridSearchIteratorTest {
+public class GridSearchTest {
 
     @Test
     public void testIteration() {
         ParamSpace space = new ParamSpaceTest().build2DDiscreteSpace();
-        GridSearchIterator iterator = new GridSearchIterator();
+        GridSearch iterator = new GridSearch();
         iterator.buildSearch(space);
         StringBuilder stringBuilder = new StringBuilder();
         while(iterator.hasNext()) {

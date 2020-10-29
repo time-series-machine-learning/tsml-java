@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -10,8 +9,6 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.discr
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +20,7 @@ import java.util.Random;
  * <p>
  * Contributors: goastler
  */
-public class RandomSearchIterator extends ParamSpaceSearch implements RandomIterator<ParamSet> {
+public class RandomSearch extends AbstractSearch implements RandomIterator<ParamSet> {
 
     public static final int DEFAULT_ITERATION_LIMIT = 100;
     private int iterationLimit = DEFAULT_ITERATION_LIMIT;
@@ -135,7 +132,7 @@ public class RandomSearchIterator extends ParamSpaceSearch implements RandomIter
         return iterationLimit;
     }
 
-    public RandomSearchIterator setIterationLimit(final int iterationLimit) {
+    public RandomSearch setIterationLimit(final int iterationLimit) {
         this.iterationLimit = iterationLimit;
         return this;
     }
@@ -145,7 +142,7 @@ public class RandomSearchIterator extends ParamSpaceSearch implements RandomIter
     }
 
     public static List<ParamSet> choice(ParamSpace paramSpace, Random random, int numChoices) {
-        final RandomSearchIterator iterator = new RandomSearchIterator();
+        final RandomSearch iterator = new RandomSearch();
         iterator.setRandom(random);
         iterator.buildSearch(paramSpace);
         iterator.setIterationLimit(numChoices);

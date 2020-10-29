@@ -5,7 +5,6 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceTest;
-import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 
 import java.util.Random;
 
@@ -14,13 +13,13 @@ import java.util.Random;
  * <p>
  * Contributors: goastler
  */
-public class RandomSearchIteratorTest {
+public class RandomSearchTest {
 
     @Test
     public void testIteration() {
         ParamSpace space = new ParamSpaceTest().build2DContinuousSpace();
         final int limit = 10;
-        RandomSearchIterator iterator = new RandomSearchIterator();
+        RandomSearch iterator = new RandomSearch();
         iterator.setRandom(new Random(0));
         iterator.setIterationLimit(limit);
         iterator.buildSearch(space);
