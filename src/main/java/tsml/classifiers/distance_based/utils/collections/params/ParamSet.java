@@ -174,7 +174,7 @@ public class ParamSet implements ParamHandler, Serializable {
         value = CopierUtils.deepCopy(value); // deep copy the value so it cannot be changed from outside. This is especially important when considering values supplied from a paramspace which contains a list of values. Mutating the object directly would change the values in the param space with dia consequence.
         setParams(value, params);
         paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
-        return add(name, value);
+        return this;
     }
 
     public static void setParams(Object value, ParamSet param) {
