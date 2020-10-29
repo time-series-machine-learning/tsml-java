@@ -14,12 +14,12 @@ public interface ClassifierFromEnum<A extends EnhancedAbstractClassifier> extend
         if(Objects.isNull(parentClass)) {
             throw new IllegalStateException("no parent class found");
         }
-        Class<?> grandParentClass = parentClass.getSuperclass();
-        if(Objects.isNull(grandParentClass)) {
+        Class<?> enclosingClass = parentClass.getEnclosingClass();
+        if(Objects.isNull(enclosingClass)) {
             throw new IllegalStateException("no grand parent class found");
         }
         try {
-            A instance = (A) grandParentClass.newInstance();
+            A instance = (A) enclosingClass.newInstance();
             configure(instance);
             return instance;
         } catch(InstantiationException | IllegalAccessException e) {
