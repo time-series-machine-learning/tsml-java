@@ -20,7 +20,10 @@ public class RandomSearchIteratorTest {
     public void testIteration() {
         ParamSpace space = new ParamSpaceTest().build2DContinuousSpace();
         final int limit = 10;
-        RandomSearchIterator iterator = new RandomSearchIterator(new Random(0), space, limit);
+        RandomSearchIterator iterator = new RandomSearchIterator();
+        iterator.setRandom(new Random(0));
+        iterator.setIterationLimit(limit);
+        iterator.buildSearch(space);
         iterator.setRandom(new ParamSpaceTest().buildRandom());
         StringBuilder stringBuilder = new StringBuilder();
         int count = 0;

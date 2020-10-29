@@ -1,9 +1,5 @@
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-
 import java.util.ArrayList;
 import java.util.List;
 

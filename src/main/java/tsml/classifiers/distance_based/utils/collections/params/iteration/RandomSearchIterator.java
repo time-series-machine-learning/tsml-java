@@ -1,16 +1,21 @@
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
+import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.IndexedParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
+import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParameterDimension;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
-import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 
 /**
  * Purpose: randomly iterate over a parameter space. The random iteration occurs with replacement therefore the same
@@ -18,128 +23,98 @@ import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
  * <p>
  * Contributors: goastler
  */
-public class RandomSearchIterator extends RandomIterator<ParamSet> {
+public class RandomSearchIterator extends ParamSpaceSearch implements RandomIterator<ParamSet> {
 
-    private ParamSpace paramSpace;
-    private static final int DEFAULT_ITERATION_LIMIT = 100;
-    private int iterationLimit;
-    private int iterationCount = 0;
-    private boolean replacement;
-    private boolean skipSingle;
+    public static final int DEFAULT_ITERATION_LIMIT = 100;
+    private int iterationLimit = DEFAULT_ITERATION_LIMIT;
+    private final RandomIterator<ParamSet> randomIterator = new BaseRandomIterator<>();
+    private boolean discrete;
 
-    public int getIterationCount() {
-        return iterationCount;
+    @Override public void setSkipSingleOption(final boolean skipSingleOption) {
+        randomIterator.setSkipSingleOption(skipSingleOption);
     }
 
-    protected void setIterationCount(final int iterationCount) {
-        this.iterationCount = iterationCount;
+    @Override public boolean isSkipSingleOption() {
+        return randomIterator.isSkipSingleOption();
+    }
+
+    @Override public void setRandom(final Random random) {
+        randomIterator.setRandom(random);
+    }
+
+    @Override public Random getRandom() {
+        return randomIterator.getRandom();
+    }
+
+    @Override public void buildSearch(final ParamSpace paramSpace) {
+        super.buildSearch(paramSpace);
+        if(randomIterator.getRandom() == null) throw new IllegalStateException("random not set");
+        // is the param space discrete?
+        try {
+            // if so then build the random iterator
+            randomIterator.buildIterator(new IndexedParamSpace(paramSpace));
+            discrete = true;
+        } catch(IllegalArgumentException e) {
+            // param space is not discrete. Do not use the random iterator
+            discrete = false;
+        }
     }
 
     public boolean hasIterationLimit() {
         return getIterationLimit() >= 0;
     }
 
-    public RandomSearchIterator disableIterationLimit() {
-        return setIterationLimit(-1);
+    public boolean insideIterationCountLimit() {
+        return !hasIterationLimit() || getIterationCount() < getIterationLimit();
+    }
+    
+    @Override protected boolean hasNextParamSet() {
+        return insideIterationCountLimit() && (!discrete || randomIterator.hasNext());
     }
 
-    public boolean withinIterationLimit() {
-        if(!hasIterationLimit()) {
-            return true;
+    @Override protected ParamSet nextParamSet() {
+        // if dealing with a discrete space
+        if(discrete) {
+            // then use the random iterator to iterate over it
+            return randomIterator.next();
         } else {
-            return getIterationCount() < getIterationLimit();
+            // otherwise extract a random param set whilst managing discrete and continuous dimensions
+            return extractRandomParamSet(getParamSpace(), getRandom());
         }
     }
 
-    private void setup(ParamSpace paramSpace, boolean replacement, int numIterations) {
-        setParamSpace(paramSpace);
-        setReplacement(replacement);
-        setIterationLimit(numIterations);
-    }
-
-    public RandomSearchIterator(Random random, ParamSpace paramSpace, int iterationLimit) {
-        this(random, paramSpace, iterationLimit, false);
-    }
-
-    public RandomSearchIterator(Random random, final ParamSpace paramSpace, final int iterationLimit, boolean replacement) {
-        super(random);
-        setup(paramSpace, replacement, iterationLimit);
-    }
-
-    public RandomSearchIterator(Random random, final ParamSpace paramSpace) {
-        this(random, paramSpace, DEFAULT_ITERATION_LIMIT, false);
-    }
-
-    public ParamSpace getParamSpace() {
-        return paramSpace;
-    }
-
-    public RandomSearchIterator setParamSpace(
-        final ParamSpace paramSpace) {
-        Assert.assertNotNull(paramSpace);
-        this.paramSpace = paramSpace;
-        if(!withReplacement()) {
-
-        }
-        return this;
-    }
-
-    public boolean withReplacement() {
-        return replacement;
-    }
-
-    public RandomSearchIterator setReplacement(final boolean replacement) {
-        this.replacement = replacement;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
-    }
-
-    @Override
-    public boolean hasNext() {
-        return withinIterationLimit();
-    }
-
-    private Object extractRandomValue(Object values) {
-        Object value;
+    public static Object extractRandomValue(Object values, Random random) {
+        final Object value;
         if(values instanceof Distribution<?>) {
             Distribution<?> distribution = (Distribution<?>) values;
-            value = distribution.sample(getRandom());
+            // same as below, but a distribution should make a new instance of the value already. Take a copy just in case.
+            value = distribution.sample(random);
         } else if(values instanceof List<?>) {
             List<?> list = (List<?>) values;
-            value = RandomUtils.choice(list, getRandom());
+            // because the value comes from a list, mutations to the value are reflected in the list. If the value is selected multiple times then the mutations will be shared, resulting in annoying bugs! Therefore must copy the value entirely.
+            value = RandomUtils.choice(list, random);
         } else {
             throw new IllegalArgumentException("cannot handle type {" + values.getClass() + "} for dimension content");
         }
         return value;
     }
 
-    private ParamSet extractRandomParamSet(ParamSpace paramSpace) {
-        final Map<String, List<ParameterDimension<?>>> dimensionMap = paramSpace.getDimensionMap();
+    public static ParamSet extractRandomParamSet(ParamSpace paramSpace, Random random) {
+        final Map<String, List<ParamDimension<?>>> dimensionMap = paramSpace.getDimensionMap();
         final ParamSet paramSet = new ParamSet();
-        for(Map.Entry<String, List<ParameterDimension<?>>> entry : dimensionMap.entrySet()) {
-            List<ParameterDimension<?>> dimensions = entry.getValue();
-            ParameterDimension<?> dimension = RandomUtils.choice(dimensions, getRandom());
-            final Object value = extractRandomValue(dimension.getValues());
+        for(Map.Entry<String, List<ParamDimension<?>>> entry : dimensionMap.entrySet()) {
+            final String name = entry.getKey();
+            List<ParamDimension<?>> dimensions = entry.getValue();
+            ParamDimension<?> dimension = RandomUtils.choice(dimensions, random);
+            final Object value = extractRandomValue(dimension.getValues(), random);
             final List<ParamSpace> subSpaces = dimension.getSubSpaces();
-            final List<ParamSet> subParamSets = new ArrayList<>();
+            final List<ParamSet> subParamSets = new ArrayList<>(subSpaces.size());
             for(ParamSpace subSpace : subSpaces) {
-                final ParamSet subParamSet = extractRandomParamSet(subSpace);
+                final ParamSet subParamSet = extractRandomParamSet(subSpace, random);
                 subParamSets.add(subParamSet);
             }
-            final String name = entry.getKey();
             paramSet.add(name, value, subParamSets);
         }
-        return paramSet;
-    }
-
-    @Override
-    public ParamSet next() {
-        ParamSet paramSet = extractRandomParamSet(paramSpace);
-        setIterationCount(getIterationCount() + 1);
         return paramSet;
     }
 
@@ -151,40 +126,24 @@ public class RandomSearchIterator extends RandomIterator<ParamSet> {
         this.iterationLimit = iterationLimit;
         return this;
     }
-    
-    public static ParamSet choice(ParamSpace space, Random random) {
-        return choice(space, random, 1).get(0);
+
+    public static ParamSet choice(ParamSpace paramSpace, Random random) {
+        return choice(paramSpace, random, 1).get(0);
     }
-    
-    public static ParamSet choice(ParamSpace space, Random random, int numChoices) {
-        
-    }
-    
-    public static ParamSet choice(ParamSpace space, Random random, int numChoices, boolean withReplacement, boolean skipSingle) {
-        RandomSearchIterator iterator = new RandomSearchIterator(random, space);
+
+    public static List<ParamSet> choice(ParamSpace paramSpace, Random random, int numChoices) {
+        final RandomSearchIterator iterator = new RandomSearchIterator();
+        iterator.setRandom(random);
+        iterator.buildSearch(paramSpace);
         iterator.setIterationLimit(numChoices);
-        iterator.setWithReplacement(withReplacement);
-        iterator.setSkipSingle(skipSingle);
         return RandomUtils.choice(iterator, numChoices);
     }
 
-    public boolean isSkipSingle() {
-        return skipSingle;
+    @Override public boolean withReplacement() {
+        return randomIterator.withReplacement();
     }
 
-    public void setSkipSingle(final boolean skipSingle) {
-        this.skipSingle = skipSingle;
+    @Override public void setWithReplacement(final boolean withReplacement) {
+        randomIterator.setWithReplacement(withReplacement);
     }
-
-    //
-//    public static ParamSet choice(Random random, ParamSpace paramSpace) {
-//        return choice(random, paramSpace, 1).get(0);
-//    }
-//
-//    public static List<ParamSet> choice(Random random, ParamSpace paramSpace, int numChoices) {
-//        final RandomSearchIterator iterator = new RandomSearchIterator(random, paramSpace);
-//        iterator.setIterationLimit(numChoices);
-//        return RandomUtils.choice(iterator, numChoices);
-//    }
-
 }
