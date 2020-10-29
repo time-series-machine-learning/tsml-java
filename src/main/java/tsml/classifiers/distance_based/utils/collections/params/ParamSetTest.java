@@ -106,6 +106,8 @@ public class ParamSetTest {
         ParamSet subParamSetC = new ParamSet(cFlag, cValue);
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
 //        System.out.println(paramSet);
+        aValue.setEpsilon(cValue);
+        aValue.setWindowSize(bValue);
         Assert.assertEquals(paramSet.toString(), "-a \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
             + "-e 0.2 -ws 5\"");
         Assert.assertFalse(paramSet.isEmpty());
