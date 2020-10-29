@@ -497,7 +497,7 @@ public class ClassifierTools {
         memoryWatcher.stop();
         System.out.println();
         System.out.println("train time: " + timer.getTime());
-        System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println("train mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println();
 //        GcFinalization.awaitFullGc();
         if(classifier instanceof EnhancedAbstractClassifier) {
@@ -505,7 +505,8 @@ public class ClassifierTools {
                 ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
-                System.out.println(trainResults.writeFullResultsToString());
+                System.out.println(trainResults.writeSummaryResultsToString());
+                System.out.println("train acc: " + trainResults.getAcc());
                 System.out.println();
             }
         }
@@ -519,14 +520,15 @@ public class ClassifierTools {
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
         System.out.println("test time: " + timer.getTime());
-        System.out.println("test mem: " + memoryWatcher.toString());
+        System.out.println("test mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println("test results:");
-        System.out.println(testResults.writeFullResultsToString());
+        System.out.println(testResults.writeSummaryResultsToString());
+        System.out.println("test acc: " + testResults.getAcc());
         overallMemoryWatcher.stop();
         overallTimer.stop();
         System.out.println();
         System.out.println("overall time: " + overallTimer.getTime());
-        System.out.println("overall mem: " + overallMemoryWatcher.toString());
+        System.out.println("overall mem: " + overallMemoryWatcher.getMaxMemoryUsage());
     }
 
     /**
