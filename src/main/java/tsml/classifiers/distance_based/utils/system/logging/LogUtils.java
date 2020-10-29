@@ -23,7 +23,7 @@ public class LogUtils {
     public static Logger updateLogLevel(Object src, Logger log, Level level) {
         // if setting a log level then this object needs its own logger instance to differentiate the logging levels.
         // i.e. everything by default is pointed at DEFAULT_LOG. If the level of the DEFAULT_LOG were to be changed it would affect every object's logging. Instead, a specific logger is required to house the log level for this specific object.
-        if(log.equals(DEFAULT_LOG)) {
+        if(DEFAULT_LOG.equals(log)) {
             // build the logger for this object. Only do this once if still using the DEFAULT_LOGGER. Once a bespoke logger has been created the log level can be mutated freely on that with no problems.
             log = LogUtils.buildLogger(src);
         }
