@@ -33,7 +33,13 @@ public class ParamSpace implements Serializable {
     }
 
     public <A> ParamSpace add(String name, List<A> values) {
-        return addDimension(name, new DiscreteParamDimension<A>(values));
+        final DiscreteParamDimension<A> dimension;
+        if(values instanceof DiscreteParamDimension) {
+            dimension = (DiscreteParamDimension<A>) values;
+        } else {
+            dimension = new DiscreteParamDimension<>(values);
+        }
+        return addDimension(name, dimension);
     }
 
     public <A> ParamSpace add(String name, List<A> values, List<ParamSpace> subSpaces) {
