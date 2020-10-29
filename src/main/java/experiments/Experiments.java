@@ -424,6 +424,9 @@ public class Experiments  {
         //Build/make the directory to write the train and/or testFold files to
         // [writeLoc]/[classifier]/Predictions/[dataset]/
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
+        if(expSettings.embedContractInClassifierName) {
+            fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "_" + expSettings.contractTrainTimeString + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
+        }
         File f = new File(fullWriteLocation);
         if (!f.exists())
             f.mkdirs();
@@ -870,6 +873,9 @@ public class Experiments  {
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
 
+        @Parameter(names={"-ectr"}, description = "Embed the train contract time string into the classifer name in the results dir")
+        public boolean embedContractInClassifierName = false;
+        
         //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")

@@ -15,6 +15,7 @@ public class ExperimentRunner {
                 , "-ctr", "30s"
                 , "-l", "all"
                 , "--force", "true"
+                , "-ectr", "true"
         });
     }
 }
