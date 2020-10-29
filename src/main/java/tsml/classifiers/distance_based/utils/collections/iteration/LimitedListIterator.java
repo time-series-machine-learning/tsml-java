@@ -1,6 +1,5 @@
-package tsml.classifiers.distance_based.utils.collections.iteration.limited;
+package tsml.classifiers.distance_based.utils.collections.iteration;
 
-import tsml.classifiers.distance_based.utils.collections.iteration.DefaultIterator;
 import weka.core.OptionHandler;
 
 import java.util.Enumeration;
@@ -13,26 +12,25 @@ import java.util.Iterator;
  *
  * @param <A>
  */
-public class LimitedIterator<A>
-    implements DefaultIterator<A>,
-               OptionHandler {
+public class LimitedListIterator<A> implements DefaultListIterator<A>, OptionHandler { // todo abst limit to abst
+    // class for iterator and listiterator version
 
-    public LimitedIterator() {}
+    public LimitedListIterator() {}
 
-    public LimitedIterator(Iterator<A> iterator) {
+    public LimitedListIterator(Iterator<A> iterator) {
         setIterator(iterator);
     }
 
-    public LimitedIterator(Iterator<A> iterator, int limit) {
+    public LimitedListIterator(Iterator<A> iterator, int limit) {
         setIterator(iterator);
         setLimit(limit);
     }
 
-    public LimitedIterator(int limit, Iterator<A> iterator) {
+    public LimitedListIterator(int limit, Iterator<A> iterator) {
         this(iterator, limit);
     }
 
-    public LimitedIterator(int limit) {
+    public LimitedListIterator(int limit) {
         setLimit(limit);
     }
 
@@ -97,4 +95,5 @@ public class LimitedIterator<A>
     }
 
     // todo pass through other iterator funcs
+
 }

@@ -13,7 +13,9 @@ public class RandomIteratorTest {
     @Before
     public void before() {
         elements = new ArrayList<>(Arrays.asList("a", "b", "c", "d", "e", "f", "g"));
-        iterator = new RandomIterator<>(new Random(0), elements);
+        iterator = new BaseRandomIterator<>();
+        iterator.setRandom(new Random(0));
+        iterator.buildIterator(elements);
     }
 
     @Test

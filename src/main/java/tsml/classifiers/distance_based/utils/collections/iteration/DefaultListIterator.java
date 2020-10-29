@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.iteration;
 
+import java.util.List;
 import java.util.ListIterator;
 
 /**
@@ -10,6 +11,10 @@ import java.util.ListIterator;
  * @param <A>
  */
 public interface DefaultListIterator<A> extends ListIterator<A> {
+    default void buildIterator(List<A> list) {
+        
+    }
+    
     @Override
     default boolean hasNext() {
         throw new UnsupportedOperationException();

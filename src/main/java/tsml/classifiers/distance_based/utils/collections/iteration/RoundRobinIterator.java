@@ -9,18 +9,18 @@ import java.util.List;
  *
  * @param <A>
  */
-public class RoundRobinListIterator<A> extends LinearListIterator<A> {
-    public RoundRobinListIterator(List<A> list) {
+public class RoundRobinIterator<A> extends LinearIterator<A> {
+    public RoundRobinIterator(List<A> list) {
         super(list);
     }
 
-    public RoundRobinListIterator() {}
+    public RoundRobinIterator() {}
 
     @Override
     public A next() {
         A next = super.next();
-        if(index == list.size()) {
-            index = 0;
+        if(getIndex() == getList().size()) {
+            setIndex(0);
         }
         return next;
     }
@@ -28,13 +28,13 @@ public class RoundRobinListIterator<A> extends LinearListIterator<A> {
     @Override
     public void remove() {
         super.remove();
-        if(index < 0) {
-            index = list.size() - 1;
+        if(getIndex() < 0) {
+            setIndex(getList().size() - 1);
         }
     }
 
     @Override
-    public int nextIndex() {
-        return super.nextIndex() % list.size();
+    public int findNextIndex() {
+        return super.findNextIndex() % getList().size();
     }
 }
