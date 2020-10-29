@@ -37,6 +37,7 @@ import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -570,6 +571,9 @@ public class Experiments  {
     private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
         String parameterFileName = null;
 
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).setLogLevel(expSettings.logLevel);
+        }
 
         // Parameter/thread/job splitting and checkpointing are treated as mutually exclusive, thus if/else
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
@@ -1124,7 +1128,7 @@ public class Experiments  {
             }
 
             if(logLevelStr != null) {
-                logLevel = Level.parse(logLevelStr);
+                logLevel = Level.parse(logLevelStr.toUpperCase());
             }
         }
 
