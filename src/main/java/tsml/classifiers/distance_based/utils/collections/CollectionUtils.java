@@ -8,8 +8,54 @@ import java.util.stream.Collectors;
 
 import org.junit.Assert;
 
+import static utilities.ArrayUtilities.unique;
+
 public class CollectionUtils {
     private CollectionUtils() {}
+    
+    public static ArrayList<Integer> complement(int size, List<Integer> indices) {
+        indices = unique(indices);
+        Collections.sort(indices);
+        int i = 0;
+        ArrayList<Integer> complement = new ArrayList<>(Math.max(0, size - indices.size()));
+        for(Integer index : indices) {
+            for(; i < index; i++) {
+                complement.add(i);
+            }
+            i = index + 1;
+        }
+        for(; i < size; i++) {
+            complement.add(i);
+        }
+        return complement;
+    }
+    
+    public static <A> ArrayList<A> retainAll(List<A> list, List<Integer> indices, boolean allowReordering) {
+        return removeAll(list, complement(list.size(), indices), allowReordering);
+    }
+    
+    public static <A> A remove(List<A> list, int index, boolean allowReordering) {
+        final int indexToRemove;
+        if(allowReordering) {
+            // rather than removing the element at indexOfIndex and shifting all elements after indexOfIndex down 1, it is more efficient to swap the last element in place of the element being removed and remove the last element. I.e. [1,2,3,4,5] and indexOfIndex=2. Swap in the end element, [1,2,5,4,5], and remove the last element, [1,2,5,4].
+            indexToRemove = list.size() - 1;
+            Collections.swap(list, index, indexToRemove);
+        } else {
+            indexToRemove = index;
+        }
+        return list.remove(indexToRemove);
+    }
+    
+    public static <A> ArrayList<A> removeAll(List<A> list, List<Integer> indices, boolean allowReordering) {
+        indices = unique(indices);
+        final ArrayList<A> removedList = new ArrayList<>(indices.size());
+        Collections.sort(indices);
+        for(int i = indices.size() - 1; i >= 0; i--) {
+            A removed = remove(list, indices.get(i), allowReordering);
+            removedList.add(removed);
+        }
+        return removedList;
+    }
 
     public static <A> ArrayList<A> newArrayList(A... elements) {
         final ArrayList<A> list = new ArrayList<>(elements.length);
