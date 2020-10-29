@@ -59,7 +59,7 @@ public class ParamSet implements ParamHandler, Serializable {
     }
 
     public ParamSet(String name, Object value, ParamSet paramSet) {
-        this(name, value, Arrays.asList(paramSet));
+        this(name, value, Collections.singletonList(paramSet));
     }
 
     public ParamSet(String name, Object value) {
@@ -150,8 +150,7 @@ public class ParamSet implements ParamHandler, Serializable {
     }
 
     public ParamSet add(String name, Object value) {
-        paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
-        return this;
+        return add(name, value, Collections.emptyList());
     }
 
     public ParamSet add(String name, Object value, ParamSet params) {
@@ -172,7 +171,9 @@ public class ParamSet implements ParamHandler, Serializable {
      * @return
      */
     public ParamSet add(String name, Object value, List<ParamSet> params) {
+        value = CopierUtils.deepCopy(value); // deep copy the value so it cannot be changed from outside. This is especially important when considering values supplied from a paramspace which contains a list of values. Mutating the object directly would change the values in the param space with dia consequence.
         setParams(value, params);
+        paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
         return add(name, value);
     }
 

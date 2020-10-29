@@ -10,8 +10,8 @@ import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.DiscreteParameterDimension;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParameterDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import weka.core.DistanceFunction;
 
@@ -36,8 +36,8 @@ public class ParamSpaceTest {
     private ParamSpace lParams;
     private UniformDoubleDistribution eDist;
     private UniformDoubleDistribution dDist;
-    private DiscreteParameterDimension<DistanceFunction> wDmParams;
-    private DiscreteParameterDimension<DistanceFunction> lDmParams;
+    private DiscreteParamDimension<DistanceFunction> wDmParams;
+    private DiscreteParamDimension<DistanceFunction> lDmParams;
     private ParamSpace params;
 
     @Before
@@ -130,15 +130,15 @@ public class ParamSpaceTest {
         return lParams;
     }
 
-    public DiscreteParameterDimension<DistanceFunction> buildWDmParams() {
-        DiscreteParameterDimension<DistanceFunction> wDmParams = new DiscreteParameterDimension<>(
+    public DiscreteParamDimension<DistanceFunction> buildWDmParams() {
+        DiscreteParamDimension<DistanceFunction> wDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new DTWDistance(), newDDTWDistance()));
         wDmParams.addSubSpace(buildWParams());
         return wDmParams;
     }
 
-    public DiscreteParameterDimension<DistanceFunction> buildLDmParams() {
-        DiscreteParameterDimension<DistanceFunction> lDmParams = new DiscreteParameterDimension<>(
+    public DiscreteParamDimension<DistanceFunction> buildLDmParams() {
+        DiscreteParamDimension<DistanceFunction> lDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new LCSSDistance()));
         lDmParams.addSubSpace(buildLParams());
         return lDmParams;
@@ -153,20 +153,20 @@ public class ParamSpaceTest {
 
     @Test
     public void testAddAndGetForListOfValues() {
-        List<ParameterDimension<?>> valuesOut = wParams.get(WarpingDistanceMeasure.WINDOW_SIZE_FLAG);
+        List<ParamDimension<?>> valuesOut = wParams.get(WarpingDistanceMeasure.WINDOW_SIZE_FLAG);
         Object value = valuesOut.get(0).getValues();
         Assert.assertEquals(value, wParamValues);
     }
 
     @Test
     public void testAddAndGetForDistributionOfValues() {
-        List<ParameterDimension<?>> dimensions = lParams.get(LCSSDistance.EPSILON_FLAG);
-        for(ParameterDimension<?> dimension : dimensions) {
+        List<ParamDimension<?>> dimensions = lParams.get(LCSSDistance.EPSILON_FLAG);
+        for(ParamDimension<?> dimension : dimensions) {
             Object values = dimension.getValues();
             Assert.assertEquals(eDist, values);
         }
         dimensions = lParams.get(LCSSDistance.WINDOW_SIZE_FLAG);
-        for(ParameterDimension<?> dimension : dimensions) {
+        for(ParamDimension<?> dimension : dimensions) {
             Object values = dimension.getValues();
             Assert.assertEquals(values, dDist);
         }
