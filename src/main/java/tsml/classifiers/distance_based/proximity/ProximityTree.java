@@ -557,7 +557,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final Double smallestDistance = distanceToPartitionMap.firstKey();
             // find the list of corresponding partitions which the instance could belong to
             final List<Integer> partitionIndices = distanceToPartitionMap.get(smallestDistance);
-            Assert.assertEquals(partitionIndices.size(), 1);
             // random pick the best partition for the instance
             return RandomUtils.choiceWithNoSkip(partitionIndices, rand);
         }
