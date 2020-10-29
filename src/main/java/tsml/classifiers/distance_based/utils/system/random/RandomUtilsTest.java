@@ -62,7 +62,7 @@ public class RandomUtilsTest {
         Assert.assertEquals(choice.size(), set.size());
     }
 
-    @Test(expected = AssertionError.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testRandomChoiceTooMany() {
         RandomUtils.choice(list, random, list.size() + 1);
     }
