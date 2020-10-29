@@ -23,6 +23,7 @@ import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static utilities.ArrayUtilities.*;
 import static utilities.Utilities.argMax;
@@ -44,8 +45,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setNumTreeLimit(2);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/datasets/all/", "GunPoint", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "SyntheticControl", seed), seed);
         }
         //        Thread.sleep(10000);
 
@@ -239,11 +241,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 longestTrainStageTimeNanos = 0;
             }
         }
+        // log the contract progress
         LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
         // whether work has been done in this call to buildClassifier
         boolean rebuildTrainEstimate = false;
-        // log the contract progress
-        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
         // maintain a timer for how long trees take to build
         final StopWatch trainStageTimer = new StopWatch();
         // while remaining time / more trees need to be built
@@ -252,7 +253,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 &&
                 insideTrainTimeLimit(trainTimer.getTime() + longestTrainStageTimeNanos)
         ) {
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
             // reset the tree build timer
             trainStageTimer.resetAndStart();
             final int treeIndex = constituents.size();
@@ -296,7 +296,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // optional checkpoint
             saveCheckpoint();
             // update train timer
-            trainTimer.lap();
+            LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimitNanos, getLog(), "train");
         }
         LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, getLog(), "train");
         // if work has been done towards estimating the train error
