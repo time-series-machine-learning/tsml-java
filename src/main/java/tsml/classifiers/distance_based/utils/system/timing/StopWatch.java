@@ -1,18 +1,43 @@
 package tsml.classifiers.distance_based.utils.system.timing;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 /**
  * Purpose: track time, ability to pause and add on time from another stop watch
  *
  * Contributors: goastler
  */
 public class StopWatch extends Stated {
-    private transient long timeStamp;
-    private long time;
+    private long timeStamp;
+    private long elapsed;
 
     public StopWatch() {
-        reset();
+        super();
+    }
+    
+    public StopWatch(boolean start) {
+        super(start);
     }
 
+    private void writeObject(java.io.ObjectOutputStream stream)
+            throws IOException {
+        // record the current elapsed time, i.e. if state is currently started this laps the stopwatch
+        if(isStarted()) {
+            lap();
+        }
+        // then write the object
+        stream.defaultWriteObject();
+    }
+    
+    private void readObject(ObjectInputStream serialized) throws ClassNotFoundException, IOException
+    {
+        // read in the object
+        serialized.defaultReadObject();
+        // then reset the clock to current time so if the state is started the clock is resuming from now
+        resetClock();
+    }
+    
     public long getStartTime() {
         if(!isStarted()) {
             throw new IllegalStateException("not started");
@@ -29,22 +54,9 @@ public class StopWatch extends Stated {
     @Override
     protected void beforeStop() {
         super.beforeStop();
-        lap();
-    }
-
-    /**
-     * just update the time
-     * @return
-     */
-    public long lap() {
+        // force the timer to update
         if(isStarted()) {
-            long nextTimeStamp = System.nanoTime();
-            long diff = nextTimeStamp - this.timeStamp;
-            time += diff;
-            this.timeStamp = nextTimeStamp;
-            return time;
-        } else {
-            throw new IllegalStateException("not started, cannot lap");
+            lap();
         }
     }
 
@@ -52,8 +64,18 @@ public class StopWatch extends Stated {
      *
      * @return time in nanos
      */
-    public long getTime() {
-        return time;
+    public long lap() {
+        checkStarted();
+        long nextTimeStamp = System.nanoTime();
+        long diff = nextTimeStamp - this.timeStamp;
+        elapsed += diff;
+        this.timeStamp = nextTimeStamp;
+        return elapsed;
+    }
+    
+    public long getElapsedTimeStopped() {
+        checkStopped();
+        return elapsed;
     }
 
     /**
@@ -66,15 +88,15 @@ public class StopWatch extends Stated {
     /**
      * reset time count
      */
-    public void resetTime() {
-        time = 0;
+    public void resetElapsedTime() {
+        elapsed = 0;
     }
 
     /**
      * reset entirely
      */
     public void onReset() {
-        resetTime();
+        resetElapsedTime();
         resetClock();
     }
 
@@ -83,16 +105,16 @@ public class StopWatch extends Stated {
      * @param nanos
      */
     public void add(long nanos) {
-        time += nanos;
+        elapsed += nanos;
     }
 
     public void add(StopWatch stopWatch) {
-        add(stopWatch.time);
+        add(stopWatch.elapsed);
     }
 
     @Override public String toString() {
         return "StopWatch{" +
-            "time=" + time +
+            "time=" + elapsed +
             ", " + super.toString() +
             ", timeStamp=" + timeStamp +
             '}';

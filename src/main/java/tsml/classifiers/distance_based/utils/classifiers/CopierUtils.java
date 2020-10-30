@@ -68,18 +68,22 @@ public class CopierUtils {
     }
 
     public static void shallowCopy(Object src, Object dest, Iterable<String> fields) {
+        if(src == null || dest == null) return;
         copyFieldValues(src, dest, false, fields);
     }
 
     public static void deepCopy(Object src, Object dest, Iterable<String> fields) {
+        if(src == null || dest == null) return;
         copyFieldValues(src, dest, true, fields);
     }
 
     public static void deepCopy(Object src, Object dest, String... fields) {
+        if(src == null || dest == null) return;
         deepCopy(src, dest, Arrays.asList(fields));
     }
 
     public static void shallowCopy(Object src, Object dest, String... fields) {
+        if(src == null || dest == null) return;
         shallowCopy(src, dest, Arrays.asList(fields));
     }
 
@@ -195,6 +199,7 @@ public class CopierUtils {
     }
 
     public static <A> A shallowCopy(A src) {
+        if(src == null) return null;
         return shallowCopyViaDefaultConstructor(src);
     }
 
@@ -207,6 +212,9 @@ public class CopierUtils {
     }
 
     public static <A> A newInstance(A object) {
+        if(object == null) {
+            return null;
+        }
         return (A) newInstance(object.getClass());
     }
 
@@ -229,6 +237,7 @@ public class CopierUtils {
     }
 
     private static <A> A shallowCopyViaDefaultConstructor(A src) {
+        if(src == null) return null;
         A dest = newInstance(src);
         // copy over the fields from the current object to the new instance
         shallowCopy(src, dest);
@@ -236,6 +245,7 @@ public class CopierUtils {
     }
 
     public static <A> A deepCopy(A src) {
+        if(src == null) return null;
         // quick check for boxed primitives / immutable objects, as these don't need copying
         if(src instanceof String
                 || src instanceof Double

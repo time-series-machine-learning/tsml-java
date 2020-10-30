@@ -27,8 +27,6 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.*;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
-import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import utilities.ArrayUtilities;
@@ -46,7 +44,7 @@ import java.util.logging.Level;
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, MemoryWatchable, Checkpointed {
+public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, Checkpointed {
 
     public static void main(String[] args) throws Exception {
         for(int i = 0; i < 1; i++) {
@@ -118,8 +116,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private final StopWatch trainTimer = new StopWatch();
     // test / predict timer
     private final StopWatch testTimer = new StopWatch();
-    // memory watcher
-    private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     // the tree of splits
     private Tree<Split> tree;
     // the train time limit / contract
@@ -162,15 +158,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.getTime();
+        return trainTimer.getElapsedTimeStopped();
     }
 
     @Override public long getTestTime() {
-        return testTimer.getTime();
-    }
-
-    @Override public long getMaxMemoryUsage() {
-        return memoryWatcher.getMaxMemoryUsage();
+        return testTimer.getElapsedTimeStopped();
     }
 
     @Override
@@ -196,7 +188,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         // start monitoring resources
-        memoryWatcher.start();
         trainTimer.start();
         // load from checkpoint
         // if checkpoint exists then skip initialisation
@@ -206,7 +197,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // if rebuilding (i.e. building from scratch) initialise the classifier
             if(isRebuild()) {
                 // reset resources
-                memoryWatcher.resetAndStart();
                 trainTimer.resetAndStart();
                 tree = new BaseTree<>();
                 nodeBuildQueue = new LinkedList<>();
@@ -227,7 +217,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
-                insideTrainTimeLimit( trainTimer.getTime() +
+                insideTrainTimeLimit( trainTimer.lap() +
                                      longestTimePerInstanceDuringNodeBuild *
                                      nodeBuildQueue.peekFirst().getElement().getData().size())
         ) {
@@ -247,7 +237,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // done building this node
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
-            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.getTime());
+            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.getElapsedTimeStopped());
             // checkpoint if necessary
             saveCheckpoint();
             // update the train timer
@@ -255,7 +245,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
         // stop resource monitoring
         trainTimer.stop();
-        memoryWatcher.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
         // checkpoint if work has been done since (i.e. tree has been built further)
         forceSaveCheckpoint();
@@ -334,7 +323,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         while(
                 !node.isLeaf()
                 &&
-                insideTestTimeLimit(testTimer.getTime() + longestPredictTime)
+                insideTestTimeLimit(testTimer.lap() + longestPredictTime)
         ) {
             testStageTimer.resetAndStart();
             // get the split at that node
@@ -345,7 +334,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // make this the next node to visit
             node = children.get(index);
             testStageTimer.stop();
-            longestPredictTime = testStageTimer.getTime();
+            longestPredictTime = testStageTimer.getElapsedTimeStopped();
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
