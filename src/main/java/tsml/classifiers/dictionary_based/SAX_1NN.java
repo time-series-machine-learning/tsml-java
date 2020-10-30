@@ -24,6 +24,8 @@ import weka.core.Instances;
 import tsml.transformers.SAX;
 import weka.filters.unsupervised.instance.Randomize;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  *
  * @author James
@@ -57,11 +59,13 @@ public class SAX_1NN extends EnhancedAbstractClassifier {
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        long startTime=System.currentTimeMillis();
+        long startTime=System.nanoTime();
         
         SAXdata = sax.transform(data);
         knn.buildClassifier(SAXdata);
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
     }
 
     @Override

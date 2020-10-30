@@ -168,9 +168,9 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
             buildCheckpointClassifier(data);
         }
         else{
-            long startTime=System.currentTimeMillis(); 
+            long startTime=System.nanoTime();
             format = doTransform ? createTransformData(data, timeLimit) : data;
-            transformBuildTime=System.currentTimeMillis()-startTime;
+            transformBuildTime=System.nanoTime()-startTime;
             if(seedClassifier)
                 ensemble.setSeed((int) seed);
 
@@ -178,6 +178,8 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 
             ensemble.buildClassifier(format);
             format=new Instances(data,0);
+
+            res.setTimeUnit(TimeUnit.NANOSECONDS);
             res.setBuildTime(System.currentTimeMillis()-startTime);
         }
     }
@@ -287,14 +289,14 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         classifierNames[2] = "RotF";
         
         
-       ensemble.setClassifiers(classifiers, classifierNames, null);        
+       ensemble.setClassifiers(classifiers, classifierNames, null);
         
     }
     
      @Override
     public double classifyInstance(Instance ins) throws Exception{
         format.add(ins);
-        
+
         Instances temp  = doTransform ? transform.process(format) : format;
 //Delete redundant
         for(int del:redundantFeatures)
@@ -366,7 +368,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         String saveLocation = "C:\\Temp\\MTSC\\";
         String datasetName = "ERing";
         int fold = 0;
-        
+
         Instances train= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
         Instances test= DatasetLoading.loadDataNullable(dataLocation+datasetName+File.separator+datasetName+"_TEST");
         String trainS= saveLocation+datasetName+File.separator+"TrainCV.csv";
@@ -380,7 +382,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         st.buildClassifier(train);
 
         double accuracy = utilities.ClassifierTools.accuracy(test, st);
-        
+
         System.out.println("accuracy: " + accuracy);
     }
 /**

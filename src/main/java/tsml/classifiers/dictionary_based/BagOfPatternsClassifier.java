@@ -28,6 +28,7 @@ import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Converts instances into Bag Of Patterns form, then gives to a 1NN 
@@ -179,7 +180,7 @@ public class BagOfPatternsClassifier extends EnhancedAbstractClassifier implemen
     
     @Override
     public void buildClassifier(final Instances data) throws Exception {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         if (data.classIndex() != data.numAttributes()-1)
             throw new Exception("LinBoP_BuildClassifier: Class attribute not set as last attribute in dataset");
         
@@ -210,8 +211,9 @@ public class BagOfPatternsClassifier extends EnhancedAbstractClassifier implemen
         //real work
         matrix = bop.fitTransform(data); //transform
         knn.buildClassifier(matrix); //give to 1nn
-        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
-        
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime()-startTime);
     }
 
     @Override

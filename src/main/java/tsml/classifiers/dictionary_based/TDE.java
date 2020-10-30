@@ -70,14 +70,16 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     private int parametersConsidered = 250;
-    private int maxEnsembleSize = 100;
+    private int maxEnsembleSize = 50;
 
     private boolean histogramIntersection = true;
-    private boolean useBigrams = true;
+    private Boolean useBigrams; //defaults to true if univariate, false if multivariate
     private boolean useFeatureSelection = false;
 
     private double trainProportion = 0.7;
-    private double dimensionProportion = 1;
+
+    private double dimensionCutoffThreshold = 0.85;
+    private int maxNoDimensions = 20;
 
     private boolean bayesianParameterSelection = true;
     private int initialRandomParameters = 50;
@@ -159,11 +161,18 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     public void setTrainProportion(double d) { trainProportion = d; }
 
     /**
-     * Proportion of dimensions to be randomly subsampled for each classifier.
+     * Dimension accuracy cutoff threshold for multivariate time series.
      *
-     * @param d dimension subsample proportion
+     * @param d dimension cutoff threshold
      */
-    public void setDimensionProportion(double d) { dimensionProportion = d; }
+    public void setDimensionCutoffThreshold(double d) { dimensionCutoffThreshold = d; }
+
+    /**
+     * Maximum number of dimensions kept for multivariate time series.
+     *
+     * @param d Max number of dimensions
+     */
+    public void setMaxNoDimensions(int d) { maxNoDimensions = d; }
 
     /**
      * Whether to delete checkpoint files after building has finished.
@@ -205,7 +214,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      *
      * @param b use bigrams
      */
-    public void setUseBigrams(boolean b) { useBigrams = b; }
+    public void setUseBigrams(Boolean b) { useBigrams = b; }
 
     /**
      * Wether to use feature selection in IndividualBOSS classifiers.
@@ -339,6 +348,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 }
             }
 
+            useBigrams = !data.isMultivariate() && useBigrams == null;
+
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
 
             classifiersBuilt = 0;
@@ -366,6 +377,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
@@ -374,8 +386,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             findEnsembleTrainEstimate();
             long end = System.nanoTime();
             trainResults.setErrorEstimateTime(end - start);
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
 
         //delete any serialised files and holding folder for checkpointing on completion
@@ -413,26 +425,26 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             if (parameters == null) break;
 
             IndividualTDE indiv;
-            TimeSeriesInstances data;
             if (series.isMultivariate()){
                 indiv = new MultivariateIndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
-                data = dimensionProportion < 1 && dimensionProportion > 0 ? subsampleDimensions(series,
-                        (MultivariateIndividualTDE) indiv) : series;
+                ((MultivariateIndividualTDE)indiv).setDimensionCutoffThreshold(dimensionCutoffThreshold);
+                ((MultivariateIndividualTDE)indiv).setMaxNoDimensions(maxNoDimensions);
             }
             else{
                 indiv = new IndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
-                data = series;
             }
-            data = trainProportion < 1 && trainProportion > 0 ? subsampleData(data, indiv) : data;
             indiv.setCleanAfterBuild(true);
             indiv.setHistogramIntersection(histogramIntersection);
             indiv.setUseBigrams(useBigrams);
             indiv.setUseFeatureSelection(useFeatureSelection);
             indiv.setSeed(seed);
+
+            TimeSeriesInstances data = trainProportion < 1 && trainProportion > 0 ? subsampleData(series, indiv)
+                    : series;
             indiv.buildClassifier(data);
 
             double accuracy = individualTrainAcc(indiv, data, classifiers.size() < maxEnsembleSize
@@ -749,33 +761,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     /**
-     * Randomly subsample dimensions for multivariate data.
-     *
-     * @param series data to be subsampled
-     * @param indiv classifier being subsampled for
-     * @return subsampled data
-     */
-    private TimeSeriesInstances subsampleDimensions(TimeSeriesInstances series, MultivariateIndividualTDE indiv) {
-        int newSize = (int) (series.getMaxNumChannels() * dimensionProportion);
-
-        ArrayList<Integer> subsampleIndices = new ArrayList<>();
-        for (int n = 0; n < series.getMaxNumChannels(); n++){
-            subsampleIndices.add(n);
-        }
-
-        while (subsampleIndices.size() > newSize){
-            subsampleIndices.remove(rand.nextInt(subsampleIndices.size()));
-        }
-
-        TimeSeriesInstances data = new TimeSeriesInstances(series.getHSliceArray(subsampleIndices),
-                series.getClassIndexes());
-        data.setClassLabels(series.getClassLabels());
-        indiv.dimensionSubsample = subsampleIndices;
-
-        return data;
-    }
-
-    /**
      * Estimate the accruacy of an IndividualTDE using LOO CV for the subsampled data. Early exit if it is impossible
      * to meet the required accuracy.
      *
@@ -918,7 +903,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
 
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setDatasetName(train.getProblemName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");
@@ -988,20 +972,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             ArrayList<Future<Double>> futures = new ArrayList<>(classifiers.size());
 
             for (IndividualTDE classifier : classifiers) {
-                TimeSeriesInstance d;
-                if (train.isMultivariate() && dimensionProportion > 0 && dimensionProportion < 1) {
-                    d = new TimeSeriesInstance(instance.getHSliceArray(
-                            ((MultivariateIndividualTDE)classifier).dimensionSubsample), instance.getLabelIndex());
-                }
-                else{
-                    d = instance;
-                }
-
                 if (train.isMultivariate())
                     futures.add(ex.submit(((MultivariateIndividualTDE)classifier)
-                            .new TestNearestNeighbourThread(d)));
+                            .new TestNearestNeighbourThread(instance)));
                 else
-                    futures.add(ex.submit(classifier.new TestNearestNeighbourThread(d)));
+                    futures.add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
             }
 
             int idx = 0;
@@ -1014,16 +989,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         else {
             for (IndividualTDE classifier : classifiers) {
-                TimeSeriesInstance d;
-                if (train.isMultivariate() && dimensionProportion > 0 && dimensionProportion < 1) {
-                    d = new TimeSeriesInstance(instance.getHSliceArray(
-                            ((MultivariateIndividualTDE)classifier).dimensionSubsample), instance.getLabelIndex());
-                }
-                else{
-                    d = instance;
-                }
-
-                double classification = classifier.classifyInstance(d);
+                double classification = classifier.classifyInstance(instance);
                 classHist[(int) classification] += classifier.getWeight();
                 sum += classifier.getWeight();
             }
@@ -1140,7 +1106,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         useBigrams = saved.useBigrams;
         useFeatureSelection = saved.useFeatureSelection;
         trainProportion = saved.trainProportion;
-        dimensionProportion = saved.dimensionProportion;
+        dimensionCutoffThreshold = saved.dimensionCutoffThreshold;
+        maxNoDimensions = saved.maxNoDimensions;
         bayesianParameterSelection = saved.bayesianParameterSelection;
         initialRandomParameters = saved.initialRandomParameters;
         initialParameterCount = saved.initialParameterCount;
@@ -1233,7 +1200,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * @throws Exception if tests fail
      */
     public static void main(String[] args) throws Exception{
-        int fold =0;
+        int fold = 0;
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
@@ -1303,16 +1270,16 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
-        //Output 03/09/20
+        //Output 06/10/20
         /*
-            TDE accuracy on ItalyPowerDemand fold 0 = 0.9484936831875608
-            Train accuracy on ItalyPowerDemand fold 0 = 0.9552238805970149
+            TDE accuracy on ItalyPowerDemand fold 0 = 0.9543245869776482
+            Train accuracy on ItalyPowerDemand fold 0 = 0.9701492537313433
             TDE accuracy on ERing fold 0 = 0.9629629629629629
-            Train accuracy on ERing fold 0 = 0.9
+            Train accuracy on ERing fold 0 = 0.9333333333333333
             Contract 1 Min Checkpoint TDE accuracy on ItalyPowerDemand fold 0 = 0.9523809523809523
-            Build time on ItalyPowerDemand fold 0 = 9 seconds
-            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9592592592592593
-            Build time on ERing fold 0 = 59 seconds
+            Build time on ItalyPowerDemand fold 0 = 7 seconds
+            Contract 1 Min Checkpoint TDE accuracy on ERing fold 0 = 0.9555555555555556
+            Build time on ERing fold 0 = 60 seconds
         */
     }
 }

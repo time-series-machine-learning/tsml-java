@@ -367,7 +367,7 @@ public class Pipeline extends EnhancedAbstractClassifier {
             for(int j=0; j< data.numInstances(); j++){
                 double[][] output1 = new double[1][data.get(j).getMaxLength()];
                 for(int i=0; i<data.get(j).getMaxLength(); i++){
-                    output1[0][i] = TimeSeriesSummaryStatistics.mean(data.get(j).getSingleVSliceArray(i));
+                    output1[0][i] = TimeSeriesSummaryStatistics.mean(data.get(j).getVSliceArray(i));
                 }
 
                 output[j] = output1;
