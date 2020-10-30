@@ -873,7 +873,7 @@ public class Experiments  {
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
 
-        @Parameter(names={"-ectr"}, description = "Embed the train contract time string into the classifer name in the results dir")
+        @Parameter(names={"-ectr"}, arity = 1, description = "Embed the train contract time string into the classifer name in the results dir")
         public boolean embedContractInClassifierName = false;
         
         //REQUIRED PARAMETERS
