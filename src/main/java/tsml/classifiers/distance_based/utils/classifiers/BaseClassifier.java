@@ -42,24 +42,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         super(a);
     }
 
-    protected Evaluator buildEvaluator() {
-        switch(estimator) {
-            case OOB:
-                final OutOfBagEvaluator outOfBagEvaluator = new OutOfBagEvaluator();
-                outOfBagEvaluator.setCloneClassifier(false);
-                return outOfBagEvaluator;
-            case CV:
-                final CrossValidationEvaluator crossValidationEvaluator = new CrossValidationEvaluator();
-                crossValidationEvaluator.setCloneClassifiers(false);
-                crossValidationEvaluator.setNumFolds(10);
-                crossValidationEvaluator.setCloneData(false);
-                crossValidationEvaluator.setSetClassMissing(false);
-                return crossValidationEvaluator;
-            default:
-                throw new UnsupportedOperationException("cannot handle " + estimator);
-        }
-    }
-
     @Override public void setDebug(final boolean b) {
         super.setDebug(b);
         if(debug) {

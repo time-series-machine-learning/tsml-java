@@ -16,7 +16,7 @@ import static utilities.ArrayUtilities.sequence;
  */
 public class BaseRandomIterator<A> extends AbstractListIterator<A> implements RandomIterator<A> {
 
-    private boolean withReplacement = true;
+    private boolean withReplacement = false;
     private boolean skipSingleOption = true;
     private boolean allowReordering = true;
     private List<Integer> indices;

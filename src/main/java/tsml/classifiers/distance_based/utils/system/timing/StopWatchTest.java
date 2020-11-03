@@ -35,21 +35,21 @@ public class StopWatchTest {
         stopWatch.start();
         stopWatch.stop();
         stopWatch.reset();
-        Assert.assertEquals(stopWatch.getTime(), 0);
+        Assert.assertEquals(stopWatch.lap(), 0);
     }
 
     @Test
     public void testResetTime() {
         stopWatch.start();
-        stopWatch.resetTime();
-        Assert.assertEquals(stopWatch.getTime(), 0);
+        stopWatch.resetElapsedTime();
+        Assert.assertEquals(stopWatch.lap(), 0);
     }
 
     @Test
     public void testResetClock() {
         stopWatch.start();
-        long startTime = stopWatch.getTime();
-        stopWatch.resetTime();
+        long startTime = stopWatch.lap();
+        stopWatch.resetElapsedTime();
         Assert.assertTrue(stopWatch.getStartTime() > startTime);
     }
 
@@ -76,7 +76,7 @@ public class StopWatchTest {
         long startTime = stopWatch.getStartTime();
         Assert.assertTrue(stopWatch.isStarted());
         stopWatch.stop();
-        long stopTime = stopWatch.getTime();
+        long stopTime = stopWatch.lap();
         Assert.assertTrue(stopTime > 0);
         Assert.assertFalse(stopWatch.isStarted());
     }
@@ -117,13 +117,13 @@ public class StopWatchTest {
     public void testAdd() {
         stopWatch.start();
         stopWatch.stop();
-        long time = stopWatch.getTime();
+        long time = stopWatch.lap();
         long addend = 10;
         stopWatch.add(addend);
-        Assert.assertEquals(addend + time, stopWatch.getTime());
-        long prevTime = stopWatch.getTime();
+        Assert.assertEquals(addend + time, stopWatch.lap());
+        long prevTime = stopWatch.lap();
         stopWatch.add(stopWatch);
-        Assert.assertEquals(stopWatch.getTime(), prevTime * 2);
+        Assert.assertEquals(stopWatch.lap(), prevTime * 2);
     }
 
     @Test(expected = IllegalStateException.class)

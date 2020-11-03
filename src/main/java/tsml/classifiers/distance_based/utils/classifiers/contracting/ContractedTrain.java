@@ -15,12 +15,15 @@ public interface ContractedTrain extends TrainTimeContractable, TrainTimeable {
         return !hasTrainTimeLimit() || nanos < getTrainTimeLimit();
     }
 
-    default long findRemainingTrainTime() {
+    default long findRemainingTrainTime(long trainTime) {
         if(!hasTrainTimeLimit()) {
             return 0;
         }
         final long trainTimeLimit = getTrainTimeLimit();
-        final long trainTime = getTrainTime();
         return trainTimeLimit - trainTime;
+    }
+    
+    default long findRemainingTrainTime() {
+        return findRemainingTrainTime(getTrainTime());
     }
 }
