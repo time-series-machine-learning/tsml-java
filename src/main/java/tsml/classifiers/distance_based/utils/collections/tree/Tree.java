@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.collections.tree;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -9,7 +10,7 @@ import java.util.Collection;
  * Contributors: goastler
  */
 
-public interface Tree<A> extends Serializable, Collection<TreeNode<A>> {
+public interface Tree<A> extends Serializable, List<TreeNode<A>> {
 
     TreeNode<A> getRoot();
 

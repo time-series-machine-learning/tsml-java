@@ -2,9 +2,6 @@ package tsml.classifiers.distance_based.utils.collections.tree;
 
 import java.util.*;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 /**
  * Purpose: node of a tree data structure.
  *
@@ -12,9 +9,8 @@ import org.junit.Test;
  */
 public class BaseTreeNode<A> implements TreeNode<A> {
 
-    private List<TreeNode<A>> children = new ArrayList<>();
+    private final List<TreeNode<A>> children = new ArrayList<>();
     private A element;
-    private int level = 0;
     private TreeNode<A> parent;
 
     public BaseTreeNode() {}
@@ -24,12 +20,8 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     }
 
     public BaseTreeNode(A element, TreeNode<A> parent) {
-        setElement(element);
+        setValue(element);
         setParent(parent);
-    }
-
-    public BaseTreeNode(TreeNode<A> parent) {
-        this(null, parent);
     }
 
     @Override
@@ -41,35 +33,22 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     public void setParent(TreeNode<A> parent) {
         if(parent != null && (this.parent == null || !this.parent.equals(parent))) {
             parent.getChildren().add(this);
-            setLevel(parent.getLevel() + 1);
         }
         this.parent = parent;
     }
 
     @Override
-    public List<TreeNode<A>> getChildren() {
-        return children;
-    }
-
-    protected void setChildren(List<TreeNode<A>> children) {
-        if(children == null) {
-            children = new ArrayList<>();
-        }
-        this.children = children;
-    }
-
-    @Override
-    public A getElement() {
+    public A getValue() {
         return element;
     }
 
     @Override
-    public void setElement(A element) {
+    public void setValue(A element) {
         this.element = element;
     }
 
     @Override
-    public boolean hasElement() {
+    public boolean hasValue() {
         return element != null;
     }
 
@@ -102,59 +81,6 @@ public class BaseTreeNode<A> implements TreeNode<A> {
             backlog.addAll(node.getChildren());
         }
         return count;
-    }
-
-    @Override public boolean isEmpty() {
-        return numChildren() == 0;
-    }
-
-    @Override public boolean contains(final Object o) {
-        for(TreeNode<A> child : children) {
-            if(child.contains(o)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override public Iterator<TreeNode<A>> iterator() {
-        return children.iterator();
-    }
-
-    @Override public Object[] toArray() {
-        return children.toArray();
-    }
-
-    @Override public <T> T[] toArray(final T[] ts) {
-        return children.toArray(ts);
-    }
-
-    @Override public boolean add(final TreeNode<A> aTreeNode) {
-        return children.add(aTreeNode);
-    }
-
-    @Override public boolean remove(final Object o) {
-        return children.remove(o);
-    }
-
-    @Override public boolean containsAll(final Collection<?> collection) {
-        return children.containsAll(collection);
-    }
-
-    @Override public boolean addAll(final Collection<? extends TreeNode<A>> collection) {
-        return children.addAll(collection);
-    }
-
-    @Override public boolean removeAll(final Collection<?> collection) {
-        return children.removeAll(collection);
-    }
-
-    @Override public boolean retainAll(final Collection<?> collection) {
-        return children.retainAll(collection);
-    }
-
-    @Override public void clear() {
-        children.clear();
     }
 
     @Override
@@ -197,11 +123,13 @@ public class BaseTreeNode<A> implements TreeNode<A> {
 
     @Override
     public int getLevel() {
+        TreeNode<A> parent = this.parent;
+        int level = 0;
+        while(parent != null) {
+            parent = parent.getParent();
+            level++;
+        }
         return level;
-    }
-
-    protected void setLevel(int level) {
-        this.level = level;
     }
 
     @Override
@@ -221,8 +149,19 @@ public class BaseTreeNode<A> implements TreeNode<A> {
         return result;
     }
 
-    @Override
-    public String toString() {
-        return element.toString();
+    @Override public String toString() {
+        return "BaseTreeNode{" +
+                       "location=" + getLocation() +
+                       "element=" + element +
+                       "children=" + children +
+                       '}';
+    }
+
+    /**
+     * Get the location of the node within the tree. This is separated by dots on each level
+     * @return
+     */
+    public String getLocation() {
+        
     }
 }

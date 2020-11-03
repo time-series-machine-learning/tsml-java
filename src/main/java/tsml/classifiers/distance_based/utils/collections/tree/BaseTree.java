@@ -35,7 +35,7 @@ public class BaseTree<A> implements Tree<A> {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getSimpleName() + "{root=" + root + "}";
     }
 
     /**

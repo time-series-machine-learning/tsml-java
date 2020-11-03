@@ -5,28 +5,26 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Purpose: a node of a tree. Tree nodes are a list of their child nodes.
  * <p>
  * Contributors: goastler
  */
 
-public interface TreeNode<A> extends Serializable, Collection<TreeNode<A>> {
+public interface TreeNode<A> extends Serializable, List<TreeNode<A>> {
 
     TreeNode<A> getParent();
 
     void setParent(TreeNode<A> parent);
-
+    
     List<TreeNode<A>> getChildren();
+    
+    void setChildren(List<TreeNode<A>> children);
 
-    default boolean hasChildren() {
-        return getChildren().size() > 0;
-    }
+    A getValue();
 
-    A getElement();
+    void setValue(A element);
 
-    void setElement(A element);
-
-    boolean hasElement();
+    boolean hasValue();
 
     int numChildren();
 
@@ -38,9 +36,15 @@ public interface TreeNode<A> extends Serializable, Collection<TreeNode<A>> {
 
     int getLevel();
 
-    boolean addChild(TreeNode<A> child);
-
-    boolean removeChild(TreeNode<A> child);
-
     boolean isRoot();
+
+    @Override TreeNode<A> get(int i);
+
+    @Override TreeNode<A> set(int i, TreeNode<A> aTreeNode);
+
+    @Override TreeNode<A> remove(int i);
+
+    @Override boolean remove(Object o);
+
+    @Override void clear();
 }
