@@ -16,6 +16,7 @@ package tsml.classifiers.hybrids;
 
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.LibLinearClassifier;
+import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
@@ -42,7 +43,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
     private int numKernels = 10000;
     private boolean normalise = true;
-    private Classifier cls = new LibLinearClassifier();
+    private Classifier cls = new RidgeClassifierCV();
 
     private ROCKET rocket;
     private Instances header;
