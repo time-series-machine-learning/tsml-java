@@ -109,7 +109,7 @@ public class StopWatch extends Stated {
     }
 
     public void add(StopWatch stopWatch) {
-        add(stopWatch.elapsed);
+        add(stopWatch.getElapsedTimeStopped());
     }
 
     @Override public String toString() {
