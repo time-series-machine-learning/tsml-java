@@ -219,17 +219,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // there is enough time for another split to be built
                 insideTrainTimeLimit( trainTimer.lap() +
                                      longestTimePerInstanceDuringNodeBuild *
-                                     nodeBuildQueue.peekFirst().getElement().getData().size())
+                                     nodeBuildQueue.peekFirst().getValue().getData().size())
         ) {
             // time how long it takes to build the node
             trainStageTimer.resetAndStart();
             // get the next node to be built
             final TreeNode<Split> node = nodeBuildQueue.removeFirst();
             // partition the data at the node
-            Split split = node.getElement();
+            Split split = node.getValue();
             // find the best of R partitioning attempts
             split = buildSplit(split);
-            node.setElement(split);
+            node.setValue(split);
             // for each partition of data build a child node
             final List<TreeNode<Split>> children = setupChildNodes(node);
             // add the child nodes to the build queue
@@ -257,7 +257,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
      * @return
      */
     private List<TreeNode<Split>> setupChildNodes(TreeNode<Split> parent) {
-        final List<Instances> partitions = parent.getElement().getPartitionedData();
+        final List<Instances> partitions = parent.getValue().getPartitionedData();
         List<TreeNode<Split>> children = new ArrayList<>(partitions.size());
         // for each child
         for(Instances partition : partitions) {
@@ -285,7 +285,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 node = nodes.get(nodes.size() - i - 1);
             }
             // check the data at the node is not pure
-            if(!Utilities.isHomogeneous(node.getElement().getData())) {
+            if(!Utilities.isHomogeneous(node.getValue().getData())) {
                 // if not hit the stopping condition then add node to the build queue
                 if(breadthFirst) {
                     nodeBuildQueue.addLast(node);
@@ -298,7 +298,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private long findNodeBuildTime(TreeNode<Split> node, long time) {
         // assume that the time taken to build a node is proportional to the amount of instances at the node
-        final Instances data = node.getElement().getData();
+        final Instances data = node.getValue().getData();
         final long timePerInstance = time / data.size();
         return Math.max(longestTimePerInstanceDuringNodeBuild, timePerInstance + 1); // add 1 to account for precision
         // error in div operation
@@ -311,13 +311,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         long longestPredictTime = 0;
         // start at the tree node
         TreeNode<Split> node = tree.getRoot();
-        if(!node.hasChildren()) {
+        if(node.isEmpty()) {
             // root node has not been built, just return random guess
             return ArrayUtilities.uniformDistribution(getNumClasses());
         }
         int index = -1;
         int i = 0;
-        Split split = node.getElement();
+        Split split = node.getValue();
         final StopWatch testStageTimer = new StopWatch();
         // traverse the tree downwards from root
         while(
@@ -327,19 +327,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         ) {
             testStageTimer.resetAndStart();
             // get the split at that node
-            split = node.getElement();
+            split = node.getValue();
             // work out which branch to go to next
             index = split.findPartitionIndexFor(instance);
-            final List<TreeNode<Split>> children = node.getChildren();
             // make this the next node to visit
-            node = children.get(index);
+            node = node.get(index);
             testStageTimer.stop();
             longestPredictTime = testStageTimer.getElapsedTimeStopped();
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
         node = node.getParent();
-        split = node.getElement();
+        split = node.getValue();
         // use the partition index to get the partition and then the distribution for instance for that partition
         double[] distribution = split.getPartitions().get(index).distributionForInstance(instance);
         // disable the resource monitors
