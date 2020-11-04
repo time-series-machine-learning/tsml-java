@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.utils.system.logging;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -98,7 +99,16 @@ public class LogUtils {
         soh.setLevel(Level.ALL); //Default StdOut Setting
         return soh;
     }
-
+    
+    public static long logTimeContract(long timeNanos, long limitNanos, Logger logger, String name, long lastCallTimeStamp) {
+        if(System.nanoTime() - lastCallTimeStamp > TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS)) {
+            logTimeContract(timeNanos, limitNanos, logger, name);
+            return System.nanoTime();
+        } else {
+            return lastCallTimeStamp;
+        }
+    }
+    
     public static void logTimeContract(long timeNanos, long limitNanos, Logger logger, String name) {
         if(limitNanos > 0) {
             logger.fine(() -> {

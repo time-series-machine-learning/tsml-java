@@ -9,8 +9,17 @@ import java.io.Serializable;
  */
 public class Stated implements Serializable {
 
-    private transient boolean started = false;
+    private boolean started = false;
 
+    public Stated() {}
+    
+    public Stated(boolean start) {
+        reset();
+        if(start) {
+            start();
+        }
+    }
+    
     public boolean isStarted() {
         return started;
     }
@@ -64,12 +73,7 @@ public class Stated implements Serializable {
     }
 
     public void reset() {
-        final boolean wasStarted = started;
-        stop(false);
         onReset();
-        if(wasStarted) {
-            start();
-        }
     }
 
     public void resetAndStart() {
@@ -78,8 +82,8 @@ public class Stated implements Serializable {
     }
 
     public void resetAndStop() {
-        reset();
         stop(false);
+        reset();
     }
 
     protected void onReset() {

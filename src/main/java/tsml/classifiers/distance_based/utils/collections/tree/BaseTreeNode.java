@@ -7,12 +7,13 @@ import java.util.*;
  *
  * Contributors: goastler
  */
-public class BaseTreeNode<A> implements TreeNode<A> {
+public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNode<A> {
 
     private final List<TreeNode<A>> children = new ArrayList<>();
     private A element;
     private TreeNode<A> parent;
-
+    private boolean skip;
+    
     public BaseTreeNode() {}
 
     public BaseTreeNode(A element) {
@@ -24,17 +25,30 @@ public class BaseTreeNode<A> implements TreeNode<A> {
         setParent(parent);
     }
 
+    @Override public boolean equals(final Object o) {
+        return this == o;
+    }
+
     @Override
     public TreeNode<A> getParent() {
         return parent;
     }
 
     @Override
-    public void setParent(TreeNode<A> parent) {
-        if(parent != null && (this.parent == null || !this.parent.equals(parent))) {
-            parent.getChildren().add(this);
+    public void setParent(TreeNode<A> nextParent) {
+        if(parent == nextParent) {
+            // do nothing
+            return;
         }
-        this.parent = parent;
+        if(parent != null && !skip) {
+            // remove this child from the parent
+            parent.remove(this);
+        }
+        if(nextParent != null) {
+            // add this child to the new parent
+            nextParent.add(this);
+        }
+        this.parent = nextParent;
     }
 
     @Override
@@ -47,121 +61,82 @@ public class BaseTreeNode<A> implements TreeNode<A> {
         this.element = element;
     }
 
-    @Override
-    public boolean hasValue() {
-        return element != null;
-    }
-
-    @Override
-    public boolean isRoot() {
-        return parent == null;
-    }
-
-    /**
-     * the number of children branching from this node
-     * @return
-     */
-    @Override
-    public int numChildren() {
-        return children.size();
-    }
-
     /**
      * total number of nodes in the tree, including this one
      * @return
      */
     @Override
     public int size() {
-        LinkedList<TreeNode<?>> backlog = new LinkedList<>();
-        int count = 0;
-        backlog.add(this);
-        while(!backlog.isEmpty()) {
-            TreeNode<?> node = backlog.pollFirst();
-            count++;
-            backlog.addAll(node.getChildren());
+        return children.size();
+    }
+
+    @Override public void add(final int i, final TreeNode<A> node) {
+        if(skip) return;
+        if(node.getParent() == this) {
+            throw new IllegalArgumentException("already a child");
         }
-        return count;
+        // node is not a child yet
+        // add the node to the children
+        children.add(i, node);
+        // set this node as the parent
+        skip = true;
+        node.setParent(this);
+        skip = false;
     }
 
-    @Override
-    public boolean isLeaf() {
-        return children.isEmpty();
+    @Override public boolean add(final TreeNode<A> node) {
+        int size = children.size();
+        add(children.size(), node);
+        return size != children.size();
     }
 
-    /**
-     * the height downwards from this node
-     * @return
-     */
-    @Override
-    public int height() { // todo test this out as first version so may contain bugs
-        int height = 1; // start at 1 because this node is 1 level itself
-        int maxHeight = 1;
-        LinkedList<TreeNode<?>> nodeStack = new LinkedList<>();
-        LinkedList<Iterator<? extends TreeNode<?>>> childrenIteratorStack = new LinkedList<>();
-        nodeStack.add(this);
-        childrenIteratorStack.add(this.getChildren().iterator());
-        while (!nodeStack.isEmpty()) {
-            TreeNode<?> node = nodeStack.peekLast();
-            Iterator<? extends TreeNode<?>> iterator = childrenIteratorStack.peekLast();
-            if(iterator.hasNext()) {
-                // descend down to next child
-                height++;
-                node = iterator.next();
-                iterator = node.getChildren().iterator();
-                nodeStack.add(node);
-                childrenIteratorStack.add(iterator);
-            } else {
-                // ascend up to parent
-                maxHeight = Math.max(height, maxHeight);
-                height--;
-                nodeStack.pollLast();
-                childrenIteratorStack.pollLast();
-            }
+    @Override public TreeNode<A> get(final int i) {
+        return children.get(i);
+    }
+
+    @Override public TreeNode<A> set(final int i, final TreeNode<A> child) {
+        if(skip) return null;
+        if(child.getParent() == this) {
+            // already a child - cannot house multiple children
+            throw new IllegalArgumentException("already a child: " + child);
         }
-        return maxHeight;
-    }
-
-    @Override
-    public int getLevel() {
-        TreeNode<A> parent = this.parent;
-        int level = 0;
-        while(parent != null) {
-            parent = parent.getParent();
-            level++;
-        }
-        return level;
-    }
-
-    @Override
-    public boolean addChild(TreeNode<A> child) {
+        // get the previous
+        TreeNode<A> previous = children.get(i);
+        // overwrite the previous
+        children.set(i, child);
+        skip = true;
+        // remove this as the parent of the overwritten
+        previous.removeParent();
+        // setup the new node as a child
         child.setParent(this);
-        return true;
+        skip = false;
+        return previous;
     }
 
-    @Override
-    public boolean removeChild(TreeNode<A> child) {
-        boolean result = children.remove(child);
-        if(result) {
-            if(child.getParent().equals(this)) {
-                child.setParent(null);
-            }
-        }
-        return result;
+    @Override public TreeNode<A> remove(final int i) {
+        if(skip) return null;
+        // remove the child
+        TreeNode<A> child = children.remove(i);
+        // discard the parent
+        skip = true;
+        child.removeParent();
+        skip = false;
+        return child;
     }
 
     @Override public String toString() {
         return "BaseTreeNode{" +
                        "location=" + getLocation() +
-                       "element=" + element +
-                       "children=" + children +
+                       ", element=" + element +
+                       ", children=" + children +
                        '}';
     }
 
-    /**
-     * Get the location of the node within the tree. This is separated by dots on each level
-     * @return
-     */
-    public String getLocation() {
-        
+    @Override public void clear() {
+        // remove all the children
+        for(int i = children.size() - 1; i >= 0; i--) {
+            final TreeNode<A> child = children.get(i);
+            child.removeParent();
+        }
     }
 }
