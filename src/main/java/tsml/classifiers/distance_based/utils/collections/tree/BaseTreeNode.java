@@ -12,6 +12,7 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
     private final List<TreeNode<A>> children = new ArrayList<>();
     private A element;
     private TreeNode<A> parent;
+    private boolean skip;
     
     public BaseTreeNode() {}
 
@@ -39,15 +40,13 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
             // do nothing
             return;
         }
-        if(parent != null) {
+        if(parent != null && !skip) {
             // remove this child from the parent
             parent.remove(this);
         }
         if(nextParent != null) {
-            if(!nextParent.contains(this)) {
-                // add this child to the new parent
-                nextParent.add(this);
-            }
+            // add this child to the new parent
+            nextParent.add(this);
         }
         this.parent = nextParent;
     }
@@ -72,6 +71,7 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
     }
 
     @Override public void add(final int i, final TreeNode<A> node) {
+        if(skip) return;
         if(node.getParent() == this) {
             throw new IllegalArgumentException("already a child");
         }
@@ -79,7 +79,9 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
         // add the node to the children
         children.add(i, node);
         // set this node as the parent
+        skip = true;
         node.setParent(this);
+        skip = false;
     }
 
     @Override public boolean add(final TreeNode<A> node) {
@@ -93,6 +95,7 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
     }
 
     @Override public TreeNode<A> set(final int i, final TreeNode<A> child) {
+        if(skip) return null;
         if(child.getParent() == this) {
             // already a child - cannot house multiple children
             throw new IllegalArgumentException("already a child: " + child);
@@ -101,18 +104,23 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
         TreeNode<A> previous = children.get(i);
         // overwrite the previous
         children.set(i, child);
+        skip = true;
         // remove this as the parent of the overwritten
         previous.removeParent();
         // setup the new node as a child
         child.setParent(this);
+        skip = false;
         return previous;
     }
 
     @Override public TreeNode<A> remove(final int i) {
+        if(skip) return null;
         // remove the child
         TreeNode<A> child = children.remove(i);
         // discard the parent
+        skip = true;
         child.removeParent();
+        skip = false;
         return child;
     }
 
