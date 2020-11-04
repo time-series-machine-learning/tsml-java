@@ -32,13 +32,16 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class Utilities {
-
-    public static <A, B> ArrayList<B> apply(Collection<A> collection, Function<A, B> func) {
-        final ArrayList<B> list = new ArrayList<>(collection.size());
-        for(A item : collection) {
-            list.add(func.apply(item));
+    
+    public static <A, B, C extends Collection<B>> C apply(Collection<A> src, Function<A, B> func, C dest) {
+        for(A item : src) {
+            dest.add(func.apply(item));
         }
-        return list;
+        return dest;
+    }
+
+    public static <A, B> ArrayList<B> apply(Collection<A> src, Function<A, B> func) {
+        return apply(src, func, new ArrayList<>(src.size()));
     }
     
     public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
