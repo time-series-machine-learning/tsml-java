@@ -12,7 +12,4 @@ public interface RandomIterator<A> extends DefaultListIterator<A>, Serializable 
 
     Random getRandom();
     
-    boolean isOrderedIndices();
-    
-    void setOrderedIndices(boolean orderedIndices);
 }

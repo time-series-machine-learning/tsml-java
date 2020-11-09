@@ -46,6 +46,14 @@ public class CollectionUtils {
         return list.remove(indexToRemove);
     }
     
+    public static <A> A removeUnordered(List<A> list, int index) {
+        return remove(list, index, true);
+    }
+    
+    public static <A> A removeOrdered(List<A> list, int index) {
+        return remove(list, index, false);
+    }
+    
     public static <A> ArrayList<A> removeAll(List<A> list, List<Integer> indices, boolean allowReordering) {
         indices = unique(indices);
         final ArrayList<A> removedList = new ArrayList<>(indices.size());

@@ -16,13 +16,11 @@ import static utilities.ArrayUtilities.sequence;
 public class BaseRandomIterator<A> extends AbstractListIterator<A> implements RandomIterator<A> {
 
     private boolean withReplacement;
-    private boolean orderedIndices;
     private List<Integer> indices;
     private int indexOfIndex = -1;
     private Random random;
     
     public BaseRandomIterator() {
-        setOrderedIndices(false);
         setWithReplacement(false);
     }
 
@@ -66,7 +64,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     }
 
     private void removeIndex() {
-        CollectionUtils.remove(indices, indexOfIndex, orderedIndices);
+        CollectionUtils.removeUnordered(indices, indexOfIndex);
     }
     
     @Override public void remove() {
@@ -85,11 +83,4 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
         return random;
     }
 
-    public boolean isOrderedIndices() {
-        return orderedIndices;
-    }
-
-    public void setOrderedIndices(final boolean orderedIndices) {
-        this.orderedIndices = orderedIndices;
-    }
 }
