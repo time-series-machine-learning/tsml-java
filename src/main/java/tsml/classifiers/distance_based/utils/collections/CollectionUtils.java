@@ -56,6 +56,14 @@ public class CollectionUtils {
         }
         return removedList;
     }
+    
+    public static <A> ArrayList<A> removeAllUnordered(List<A> list, List<Integer> indices) {
+        return removeAll(list, indices, true);
+    }
+
+    public static <A> ArrayList<A> removeAllOrdered(List<A> list, List<Integer> indices) {
+        return removeAll(list, indices, false);
+    }
 
     public static <A> ArrayList<A> newArrayList(A... elements) {
         final ArrayList<A> list = new ArrayList<>(elements.length);

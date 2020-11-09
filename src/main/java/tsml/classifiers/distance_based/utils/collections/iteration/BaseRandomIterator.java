@@ -2,7 +2,6 @@ package tsml.classifiers.distance_based.utils.collections.iteration;
 
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -16,12 +15,16 @@ import static utilities.ArrayUtilities.sequence;
  */
 public class BaseRandomIterator<A> extends AbstractListIterator<A> implements RandomIterator<A> {
 
-    private boolean withReplacement = false;
-    private boolean skipSingleOption = true;
-    private boolean allowReordering = true;
+    private boolean withReplacement;
+    private boolean orderedIndices;
     private List<Integer> indices;
     private int indexOfIndex = -1;
     private Random random;
+    
+    public BaseRandomIterator() {
+        setOrderedIndices(false);
+        setWithReplacement(false);
+    }
 
     @Override public void add(final A a) {
         indices.add(getList().size());
@@ -44,11 +47,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
 
     @Override protected int findNextIndex() {
         final int size = indices.size();
-        if(skipSingleOption && size == 1) {
-            indexOfIndex = 0;
-        } else {
-            indexOfIndex = random.nextInt(size);
-        }
+        indexOfIndex = random.nextInt(size);
         return indices.get(indexOfIndex);
     }
 
@@ -67,7 +66,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     }
 
     private void removeIndex() {
-        CollectionUtils.remove(indices, indexOfIndex, allowReordering);
+        CollectionUtils.remove(indices, indexOfIndex, orderedIndices);
     }
     
     @Override public void remove() {
@@ -86,19 +85,11 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
         return random;
     }
 
-    @Override public boolean isSkipSingleOption() {
-        return skipSingleOption;
+    public boolean isOrderedIndices() {
+        return orderedIndices;
     }
 
-    @Override public void setSkipSingleOption(final boolean skipSingleOption) {
-        this.skipSingleOption = skipSingleOption;
-    }
-
-    public boolean isAllowReordering() {
-        return allowReordering;
-    }
-
-    public void setAllowReordering(final boolean allowReordering) {
-        this.allowReordering = allowReordering;
+    public void setOrderedIndices(final boolean orderedIndices) {
+        this.orderedIndices = orderedIndices;
     }
 }

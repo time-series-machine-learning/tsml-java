@@ -27,20 +27,12 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     private final RandomIterator<ParamSet> randomIterator = new BaseRandomIterator<>();
     private boolean discrete;
 
-    @Override public boolean isAllowReordering() {
-        return randomIterator.isAllowReordering();
+    @Override public boolean isOrderedIndices() {
+        return randomIterator.isOrderedIndices();
     }
 
-    @Override public void setAllowReordering(final boolean allowReordering) {
-        randomIterator.setAllowReordering(allowReordering);
-    }
-
-    @Override public void setSkipSingleOption(final boolean skipSingleOption) {
-        randomIterator.setSkipSingleOption(skipSingleOption);
-    }
-
-    @Override public boolean isSkipSingleOption() {
-        return randomIterator.isSkipSingleOption();
+    @Override public void setOrderedIndices(final boolean orderedIndices) {
+        randomIterator.setOrderedIndices(orderedIndices);
     }
 
     @Override public void setRandom(final Random random) {
@@ -145,6 +137,7 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
         final RandomSearch iterator = new RandomSearch();
         iterator.setRandom(random);
         iterator.buildSearch(paramSpace);
+        iterator.setOrderedIndices(false);
         iterator.setIterationLimit(numChoices);
         return RandomUtils.choice(iterator, numChoices);
     }

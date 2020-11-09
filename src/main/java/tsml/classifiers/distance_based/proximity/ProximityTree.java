@@ -195,7 +195,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // if checkpoint exists then skip initialisation
         if(!loadCheckpoint()) {
             // no checkpoint exists so check whether rebuilding is enabled
-            super.buildClassifier(trainData);
+            super.buildClassifier(trainDataArg);
             // if rebuilding (i.e. building from scratch) initialise the classifier
             if(isRebuild()) {
                 // reset resources
@@ -515,7 +515,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // get the indices of all instances with the specified class
                 final List<Integer> sameClassInstanceIndices = instancesByClass.get(classLabel);
                 // random pick exemplars from this 
-                final List<Integer> exemplarIndices = RandomUtils.choiceWithNoSkip(sameClassInstanceIndices, rand, 1);
+                final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstanceIndices, rand, 1);
                 // generate the partition with empty data and the chosen exemplar instances
                 final Partition partition = new Partition(data);
                 for(Integer exemplarIndexInSplitData : exemplarIndices) {
@@ -587,7 +587,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // find the list of corresponding partitions which the instance could belong to
             final List<Integer> partitionIndices = distanceToPartitionMap.get(smallestDistance);
             // random pick the best partition for the instance
-            return RandomUtils.choiceWithNoSkip(partitionIndices, rand);
+            return RandomUtils.choice(partitionIndices, rand);
         }
 
         public Partition findPartitionFor(Instance instance) {
