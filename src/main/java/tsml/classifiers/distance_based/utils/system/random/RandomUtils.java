@@ -48,7 +48,7 @@ public class RandomUtils {
             throw new IllegalArgumentException("cannot choose " + numChoices + " from 0.." + size + " without replacement");
         }
         final List<Integer> indices = ArrayUtilities.sequence(size);
-        final BaseRandomIterator<Integer>
+        final RandomIterator<Integer>
                 iterator = new BaseRandomIterator<>();
         iterator.setWithReplacement(withReplacement);
         iterator.setRandom(random);
