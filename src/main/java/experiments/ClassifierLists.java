@@ -31,6 +31,7 @@ import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
@@ -367,7 +368,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -392,11 +393,9 @@ public class ClassifierLists {
                 break;
             case "catch22":
                 c = new Catch22Classifier();
-                ((Catch22Classifier) c).setSeed(fold);
-                RandomForest r = new RandomForest();
-                r.setSeed(fold);
-                r.setNumTrees(500);
-                ((Catch22Classifier) c).setClassifier(r);
+                break;
+            case "ROCKET":
+                c = new ROCKETClassifier();
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
