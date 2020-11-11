@@ -46,8 +46,9 @@ public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable
         if(!hasNext) {
             throw new IllegalStateException("hasNext false");
         }
+        final ParamSet paramSet = nextParamSet();
         iterationCount++;
-        return nextParamSet();
+        return paramSet;
     }
 
     public int getIterationCount() {

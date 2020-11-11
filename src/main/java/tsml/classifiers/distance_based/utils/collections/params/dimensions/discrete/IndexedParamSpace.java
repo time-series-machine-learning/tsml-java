@@ -10,10 +10,7 @@ import tsml.classifiers.distance_based.utils.collections.params.iteration.Permut
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +18,7 @@ import java.util.stream.Collectors;
  * <p>
  * Contributors: goastler
  */
-public class IndexedParamSpace implements DefaultList<ParamSet> {
+public class IndexedParamSpace extends AbstractList<ParamSet> {
 
     private ParamSpace paramSpace;
     private int size = -1;
