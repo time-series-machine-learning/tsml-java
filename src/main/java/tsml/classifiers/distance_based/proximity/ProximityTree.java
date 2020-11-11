@@ -611,7 +611,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         public String toString() {
             return getClass().getSimpleName() + "{" + "score=" + score +
                                       ", df=" + (distanceFunction == null ? "null" : distanceFunction.toString()) +
-                                      ", data=" + data +
+                                      ", dataIndices=" + dataIndices +
                                       ", partitions=" + partitions +
                                       "}";
         }
