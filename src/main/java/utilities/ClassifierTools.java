@@ -505,7 +505,7 @@ public class ClassifierTools {
                 ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
-                System.out.println(trainResults.writeSummaryResultsToString());
+                System.out.println(trainResults.writeFullResultsToString());
                 System.out.println("train acc: " + trainResults.getAcc());
                 System.out.println();
             }
@@ -522,7 +522,7 @@ public class ClassifierTools {
         System.out.println("test time: " + timer.getElapsedTimeStopped());
         System.out.println("test mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println("test results:");
-        System.out.println(testResults.writeSummaryResultsToString());
+        System.out.println(testResults.writeFullResultsToString());
         System.out.println("test acc: " + testResults.getAcc());
         overallMemoryWatcher.stop();
         overallTimer.stop();
