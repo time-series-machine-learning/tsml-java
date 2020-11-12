@@ -16,6 +16,7 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -34,19 +35,19 @@ import static utilities.Utilities.argMax;
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable, Checkpointed {
 
     public static void main(String[] args) throws Exception {
-        Thread.sleep(10000);
+//        Thread.sleep(10000);
         for(int i = 1; i < 2; i++) {
             int seed = i;
             ProximityForest classifier = Config.PF_R5.build();
             classifier.setEstimateOwnPerformance(true);
             classifier.setEstimatorMethod("oob");
             classifier.setSeed(seed);
-//            classifier.setNumTreeLimit(2);
+            classifier.setNumTreeLimit(14);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ItalyPowerDemand", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ProximalPhalanxTW", seed), seed);
         }
         //        Thread.sleep(10000);
 
@@ -167,8 +168,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private int numTreeLimit;
     // the train time limit / contract
     private long trainTimeLimit;
-    // restrict frequency of printing
-    private long lastContractPrintTimeStamp;
     // the test time limit / contract
     private long testTimeLimit;
     // how long this took to build. THIS INCLUDES THE TRAIN ESTIMATE!
@@ -329,7 +328,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 }
             }
         }
-        lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
+        LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train");
         // whether work has been done in this call to buildClassifier
         boolean rebuildTrainEstimate = false;
         // maintain a timer for how long trees take to build
@@ -368,7 +367,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainResults = cv.evaluate(pf, trainData);
             // stop timer and set meta info in results
             trainEstimateTimer.stop();
-            lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
+            LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train");
         }
         while(
                 // there's remaining trees to be built
@@ -433,7 +432,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             saveCheckpoint();
             checkpointTimer.stop();
             // update train timer
-            lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
+            LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train");
         }
         // if work has been done towards estimating the train error via OOB
         if(estimateOwnPerformance && rebuildTrainEstimate && estimator.equals(EstimatorMethod.OOB)) {
@@ -442,6 +441,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             getLog().info("finalising train estimate");
             // add the final predictions into the results
             for(int i = 0; i < trainData.size(); i++) {
+                final long timeStamp = System.nanoTime();
                 double[] distribution = trainEstimateDistributions[i];
                 // i.e. [71, 29] --> [0.71, 0.29]
                 // copies as to not alter the original distribution. This is helpful if more trees are added in the future to avoid having to denormalise
@@ -450,10 +450,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 // get the prediction, rand tie breaking if necessary
                 final double prediction = argMax(distribution, rand);
                 final double classValue = trainData.get(i).classValue();
-                trainResults.addPrediction(classValue, distribution, prediction, trainEstimatePredictionTimes[i], null);
+                trainResults.addPrediction(classValue, distribution, prediction, trainEstimatePredictionTimes[i] + (System.nanoTime() - timeStamp), null);
             }
             trainEstimateTimer.stop();
         }
+        LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train");
         // sanity check that all timers have been stopped
         trainEstimateTimer.checkStopped();
         testTimer.checkStopped();
@@ -462,6 +463,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         // update the results info
         ResultUtils.setInfo(trainResults, this, trainData);
         forceSaveCheckpoint();
+        // print the trees
+//        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
     }
 
     @Override
