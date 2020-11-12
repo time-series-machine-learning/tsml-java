@@ -18,6 +18,10 @@ import java.util.Arrays;
  */
 public interface Copier extends Serializable {
 
+    default Object clone() {
+        return deepCopy();
+    }
+    
     /**
      * shallow copy an object, creating a new instance
      * @return
