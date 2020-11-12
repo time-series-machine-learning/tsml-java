@@ -166,14 +166,16 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private int numTreeLimit;
     // the train time limit / contract
     private long trainTimeLimit;
+    // restrict frequency of printing
+    private long lastContractPrintTimeStamp;
     // the test time limit / contract
     private long testTimeLimit;
     // how long this took to build. THIS INCLUDES THE TRAIN ESTIMATE!
-    private final StopWatch trainTimer = new StopWatch();
+    private StopWatch buildTimer = new StopWatch();
     // how long the train estimate took
-    private final StopWatch trainEstimateTimer = new StopWatch();
+    private StopWatch trainEstimateTimer = new StopWatch();
     // how long testing took
-    private final StopWatch testTimer = new StopWatch();
+    private StopWatch testTimer = new StopWatch();
     // the longest tree build time for predicting train time requirements
     private long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
@@ -184,6 +186,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
     private boolean checkpointLoadingEnabled = true;
     private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
+    private boolean checkpointLoaded = false;
+    private StopWatch checkpointTimer = new StopWatch();
 
     private static class Constituent implements Serializable {
         private ProximityTree proximityTree;
@@ -214,37 +218,110 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             this.evaluationResults = evaluationResults;
         }
     }
-    
+
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+        // keep a ref to each of the current timers
+        final StopWatch origBuildTimer = this.buildTimer;
+        final StopWatch origTrainEstimateTimer = this.trainEstimateTimer;
+        final StopWatch origCheckpointTimer = this.checkpointTimer;
+        final StopWatch origTestTimer = this.testTimer;
+        // copy from another obj
+        Checkpointed.super.copyFromSerObject(obj);
+        // update the new timers with the originals. I.e. the buildTimer would be replaced with the one from the obj which, say, has a timing of 12s already. Suppose the orig build timer has a timing of 5s. This 5s would be discarded if left to just shallow copy. Instead, must shallow copy to obtain the timer with 12s and add on the current timer containing the 5s to finish with a timer containing 17s, i.e. adding the build time from the checkpoint onto the current build time, consolidating into one timer
+        // note that the timer may not change if copying from a partial or the same object, therefore need to check for the change on each timer
+        if(origBuildTimer != buildTimer) {
+            // add the current time onto the new timer
+            buildTimer.add(origBuildTimer);
+            // reset the new timer to time from here onwards
+            buildTimer.resetClock();
+        }
+        if(origTrainEstimateTimer != trainEstimateTimer) {
+            // add the current time onto the new timer
+            trainEstimateTimer.add(origTrainEstimateTimer);
+            // reset the new timer to time from here onwards
+            trainEstimateTimer.resetClock();
+        }
+        if(origCheckpointTimer != checkpointTimer) {
+            // add the current time onto the new timer
+            checkpointTimer.add(origCheckpointTimer);
+            // reset the new timer to time from here onwards
+            checkpointTimer.resetClock();
+        }
+        if(origTestTimer != testTimer) {
+            // add the current time onto the new timer
+            testTimer.add(origTestTimer);
+            // reset the new timer to time from here onwards
+            testTimer.resetClock();
+        }
+    }
+
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        // kick off resource monitors
-//        // track the time from start to after loading the checkpoint. Loading checkpoints overwrites the trainTimer, not recording any time taken to load the checkpoint / do things before loading the checkpoint. This timer records that.
-//        final StopWatch loadCheckpointTimer = new StopWatch(true);
-        trainTimer.start();
+        // various timers:
+            // build timer tracks the entire run time, irrelevant of what's done during that time
+            // checkpoint timer tracks the time spent loading / saving / handling checkpoints
+            // train estimate timer tracks the time spent conducting evaluation to produce an estimate of train data error
+        // these produce various times:
+            // train time - the amount of time spent training the classifier. This excludes non-train related operations, i.e. checkpointing efforts. This is calculated from buildTime minus everything non train related
+            // train estimate time - the amount of time spent evaluating the classifier to obtain a train data error
+            // checkpoint time - the amount of time spent checkpointing
+            // build time - the total time taken to build the classifier. This includes absolutely everything.
+        
+        // start the build timer to record the entire time spent building, irrelevant of whatever that may be
+        buildTimer.start();
+        // check the other timers are disabled
+        checkpointTimer.checkStopped();
         trainEstimateTimer.checkStopped();
-        // IDE may say this var is redundant - it isn't because may be overwritten in load checkpoint
-        final StopWatch trainTimerBeforeLoadCheckpoint = trainTimer;
-        // load from checkpoint
-        // if checkpoint exists then skip initialisation
-        if(loadCheckpoint()) {
-            getLog().info("loaded from checkpoint");
-            // train timer has been replaced with one from checkpoint. Need to add on any time spent between the start of this func and here
-            trainTimer.add(trainTimerBeforeLoadCheckpoint);
+        testTimer.checkStopped();
+        // attempt to load a checkpoint
+            // 4 scenarios:
+                // 1) loads from checkpoint AND rebuild off
+                    // this should just load from the checkpoint and carry on where left off
+                // 2) does not load from checkpoint AND rebuild off
+                    // this should not load from a checkpoint but still carry on from where left off
+                // 3) loads from checkpoint AND rebuild on
+                    // same as (1)
+                // 4) does not load from checkpoint AND rebuild on
+                    // this should just rebuild and begin build from scratch
+        
+        // load from a checkpoint
+        checkpointTimer.start();
+        checkpointLoaded = loadCheckpoint();
+        checkpointTimer.stop();
+        // if there was a checkpoint and it was loaded        
+        if(checkpointLoaded) {
+            // (3) and (1) land here
+            // just carry on with build as loaded from a checkpoint
+            getLog().info("checkpoint loaded");
+            // sanity check timer states
+            buildTimer.checkStarted();
+            checkpointTimer.checkStopped();
+            trainEstimateTimer.checkStopped();
+            testTimer.checkStopped();
         } else {
-            // no checkpoint exists
+            // (2) and (4) land here
+            // let super build anything necessary (will handle isRebuild accordingly in super class)
             super.buildClassifier(trainData);
-            // if rebuilding (i.e. building from scratch) initialise the classifier
+            // if rebuilding
             if(isRebuild()) {
-                // reset resources
-                trainTimer.resetElapsedTime();
-                trainEstimateTimer.resetElapsedTime();
+                // then init vars
+                // build timer is already started so just clear any time already accrued from previous builds. I.e. keep the time stamp of when the timer was started, but clear any record of accumulated time
+                buildTimer.resetElapsedTime();
+                // clear other timers entirely
+                testTimer.resetAndStop();
+                trainEstimateTimer.resetAndStop();
+                // checkpoint time is equal to the time spent attempting to load a checkpoint during this buildClassifier call
+                final long singleCheckpointTime = checkpointTimer.getSplitTime();
+                checkpointTimer.resetAndStop();
+                // add the time taken attempting to load a checkpoint during this build classifier call
+                checkpointTimer.add(singleCheckpointTime);
                 // no constituents to start with
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
                 longestTrainStageTimeNanos = 0;
             }
         }
-        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+        lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
         // whether work has been done in this call to buildClassifier
         boolean rebuildTrainEstimate = false;
         // maintain a timer for how long trees take to build
@@ -254,44 +331,48 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // if there's a train contract then need to spend half the time CV'ing
             trainEstimateTimer.start();
             getLog().info("cross validating");
-            ProximityForest pf = new ProximityForest();
+            final ProximityForest pf = new ProximityForest();
             // copy over the same configuration as this instance
             pf.deepCopyFrom(this);
+            // turn off train estimation otherwise infinite recursion!
+            pf.setEstimateOwnPerformance(false);
+            // reset the state of pf to build from scratch
+            pf.setRebuild(true);
+            // reset the timers (as these are copies of our currently running timers)
+            pf.buildTimer.resetAndStop();
+            pf.trainEstimateTimer.resetAndStop();
+            pf.checkpointTimer.resetAndStop();
+            pf.testTimer.resetAndStop();
+            // disable checkpointing on pf
+            pf.setCheckpointPath(null);
             // evaluate pf using cross validation
-            CrossValidationEvaluator cv = new CrossValidationEvaluator();
-            int numFolds = 10;
+            final CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            final int numFolds = 10;
             cv.setNumFolds(numFolds);
             cv.setCloneData(false);
             cv.setSeed(getSeed());
             cv.setSetClassMissing(false);
             if(hasTrainTimeLimit()) {
                 // must set PF train contract. The total CV time should be half of the train contract. This must be divided by numFolds+1 for a per-fold train contract. Note the +1 is to account for testing, as numFold test batches will be used which is the same size as the data, i.e. equivalent to another fold. Adds a single nano on in case the contract divides up to zero time.
-                pf.setTrainTimeLimit(findRemainingTrainTime(trainTimer.lap()) / 2 / (numFolds + 1) + 1);
+                pf.setTrainTimeLimit(findRemainingTrainTime(buildTimer.lap()) / 2 / (numFolds + 1) + 1);
             }
-            // turn off train estimation otherwise infinite recursion!
-            pf.setEstimateOwnPerformance(false);
-            // reset the state of pf to build from scratch
-            pf.setRebuild(true);
-            // reset the timers (as these are copies of our currently running timers)
-            pf.trainTimer.resetAndStop();
-            pf.trainEstimateTimer.resetAndStop();
-            // disable checkpointing on pf
-            pf.setCheckpointPath(null);
             // evaluate
             trainResults = cv.evaluate(pf, trainData);
             // stop timer and set meta info in results
             trainEstimateTimer.stop();
-            LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+            lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
         }
         while(
+                // there's remaining trees to be built
                 insideNumTreeLimit()
                 &&
-                insideTrainTimeLimit(trainTimer.lap() + longestTrainStageTimeNanos)
+                // and there's remaining time left to build more trees
+                insideTrainTimeLimit(buildTimer.lap() + longestTrainStageTimeNanos)
         ) {
             // reset the tree build timer
             trainStageTimer.resetAndStart();
-            final int treeIndex = constituents.size();
             // setup a new tree
+            final int treeIndex = constituents.size();
             final ProximityTree tree = proximityTreeFactory.build();
             final int constituentSeed = rand.nextInt();
             tree.setSeed(constituentSeed);
@@ -302,7 +383,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // estimate the performance of the tree
             if(estimator.equals(EstimatorMethod.OOB)) {
                 // the timer for contracting the estimate of train error
-                final StopWatch trainEstimateTimer = new StopWatch();
                 trainEstimateTimer.start();
                 // build train estimate based on method
                 final OutOfBagEvaluator oobe = new OutOfBagEvaluator();
@@ -327,9 +407,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // update longest tree build time
             longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getElapsedTimeStopped());
             // optional checkpoint
+            checkpointTimer.start();
             saveCheckpoint();
+            checkpointTimer.stop();
             // update train timer
-            LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+            lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
         }
         // if work has been done towards estimating the train error via OOB
         if(estimateOwnPerformance && rebuildTrainEstimate && estimator.equals(EstimatorMethod.OOB)) {
@@ -389,8 +471,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
             trainEstimateTimer.stop();
         }
-        trainTimer.stop();
         trainEstimateTimer.checkStopped();
+        testTimer.checkStopped();
+        checkpointTimer.checkStopped();
+        buildTimer.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
         forceSaveCheckpoint();
     }
@@ -398,6 +482,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         testTimer.resetAndStart();
+        buildTimer.checkStopped();
+        trainEstimateTimer.checkStopped();
+        checkpointTimer.checkStopped();
         long longestTestStageTimeNanos = 0;
         final StopWatch testStageTimer = new StopWatch();
         final double[] finalDistribution = new double[getNumClasses()];
@@ -413,6 +500,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getElapsedTimeStopped());
         }
         normalise(finalDistribution);
+        buildTimer.checkStopped();
+        trainEstimateTimer.checkStopped();
+        checkpointTimer.checkStopped();
         testTimer.stop();
         return finalDistribution;
     }
@@ -475,7 +565,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override public long getTrainTime() {
         // train time is the overall build time minus any time spent estimating the train error
-        return trainTimer.getElapsedTimeStopped() - getTrainEstimateTime();
+        return buildTimer.getElapsedTimeStopped() - getTrainEstimateTime();
     }
 
     @Override public long getTrainEstimateTime() {
