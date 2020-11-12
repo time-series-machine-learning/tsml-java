@@ -20,6 +20,7 @@ import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
+import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
