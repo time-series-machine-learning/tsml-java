@@ -15,7 +15,6 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -172,8 +171,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private long testTimeLimit;
     // how long this took to build. THIS INCLUDES THE TRAIN ESTIMATE!
     private StopWatch buildTimer = new StopWatch();
-    // how long the train estimate took
-    private StopWatch trainEstimateTimer = new StopWatch();
     // how long testing took
     private StopWatch testTimer = new StopWatch();
     // the longest tree build time for predicting train time requirements
@@ -188,6 +185,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
     private boolean checkpointLoaded = false;
     private StopWatch checkpointTimer = new StopWatch();
+    // train estimate variables
+    private double[][] trainEstimateDistributions;
+    private StopWatch trainEstimateTimer = new StopWatch();
+    private long[] trainEstimatePredictionTimes;
 
     private static class Constituent implements Serializable {
         private ProximityTree proximityTree;
@@ -319,6 +320,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
                 longestTrainStageTimeNanos = 0;
+                // init the running train estimate variables if using OOB
+                if(estimateOwnPerformance && estimator.equals(EstimatorMethod.OOB)) {
+                    trainEstimatePredictionTimes = new long[trainData.size()];
+                    trainEstimateDistributions = new double[trainData.size()][trainData.numClasses()];
+                }
             }
         }
         lastContractPrintTimeStamp = LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train", lastContractPrintTimeStamp);
@@ -391,11 +397,25 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 constituent.setEvaluator(oobe);
                 getLog().info(() -> "oob evaluating tree " + treeIndex);
                 // evaluate the tree
-                final ClassifierResults results = oobe.evaluate(tree, trainData);
-                constituent.setEvaluationResults(results);
+                final ClassifierResults treeEvaluationResults = oobe.evaluate(tree, trainData);
+                constituent.setEvaluationResults(treeEvaluationResults);
+                // for each index in the test data of the oobe
+                final List<Integer> outOfBagTestDataIndices = oobe.getOutOfBagTestDataIndices();
+                // for each instance in the oobe test data, add the distribution and prediction time to the corresponding instance predictions in the train estimate results
+                for(int oobeIndex = 0; oobeIndex < outOfBagTestDataIndices.size(); oobeIndex++) {
+                    final int trainDataIndex = outOfBagTestDataIndices.get(oobeIndex);
+                    // get the corresponding distribution from the oobe results
+                    double[] distribution = treeEvaluationResults.getProbabilityDistribution(oobeIndex);
+                    distribution = vote(treeIndex, distribution);
+                    // get the corresponding distribution from the train estimate distribution
+                    // add tree's distribution for this instance onto the overall train estimate distribution for this instance
+                    add(trainEstimateDistributions[trainDataIndex], distribution);
+                    // add the prediction time from the oobe to the time for this instance in the train estimate
+                    trainEstimatePredictionTimes[trainDataIndex] += treeEvaluationResults.getPredictionTime(oobeIndex);
+                }
                 // rebuild the train results as the train estimate has been changed
                 rebuildTrainEstimate = true;
-                results.setErrorEstimateMethod(getEstimatorMethod());
+                treeEvaluationResults.setErrorEstimateMethod(getEstimatorMethod());
                 trainEstimateTimer.stop();
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
@@ -418,102 +438,75 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // must format the OOB errors into classifier results
             trainEstimateTimer.start();
             getLog().info("finalising train estimate");
-            // init final distributions for each train instance
-            final double[][] finalDistributions = new double[trainData.size()][getNumClasses()];
-            // time for each train instance prediction
-            final long[] times = new long[trainData.size()];
-            // go through every constituent
-            for(int j = 0; j < constituents.size(); j++) {
-                // add the output of that constituent to the train estimate
-                final Constituent constituent = constituents.get(j);
-                final Evaluator evaluator = constituent.getEvaluator();
-                final ProximityTree tree = constituent.getProximityTree();
-                // the indices of dataInTrainEstimate to trainData. I.e. the 0th instance in dataInTrainEstimate is the trainDataIndices.get(0) 'th instance in the train data.
-                final List<Integer> trainDataIndices;
-                final Instances dataInTrainEstimate;
-                // the train estimate data may be different depending on the evaluation method
-                if(estimator.equals(EstimatorMethod.OOB)) {
-                    dataInTrainEstimate = ((OutOfBagEvaluator) evaluator).getOutOfBagTestData();
-                    trainDataIndices = ((OutOfBagEvaluator) evaluator).getOutOfBagTestDataIndices();
-                } else if(estimator.equals(EstimatorMethod.CV)) {
-                    dataInTrainEstimate = trainData;
-                    trainDataIndices = ArrayUtilities.sequence(trainData.size());
-                } else {
-                    throw new UnsupportedOperationException("cannot get train data from evaluator: " + evaluator);
-                }
-                final ClassifierResults constituentEvaluationResults = constituent.getEvaluationResults();
-                // add each prediction to the results weighted by the evaluation of the constituent
-                for(int i = 0; i < dataInTrainEstimate.size(); i++) {
-                    long time = System.nanoTime();
-                    final Instance instance = dataInTrainEstimate.get(i);
-                    final int instanceIndexInTrainData = trainDataIndices.get(i);
-                    double[] distribution = constituentEvaluationResults.getProbabilityDistribution(i);
-                    // weight the vote of this constituent
-                    distribution = vote(constituent, instance, distribution);
-                    add(finalDistributions[instanceIndexInTrainData], distribution);
-                    // add onto the prediction time for this instance
-                    time = System.nanoTime() - time;
-                    time += constituentEvaluationResults.getPredictionTime(i);
-                    times[instanceIndexInTrainData] = time;
-                }
-            }
             // add the final predictions into the results
             for(int i = 0; i < trainData.size(); i++) {
-                long time = System.nanoTime();
-                double[] distribution = finalDistributions[i];
-                // normalise the distribution as sum of votes has likely pushed sum of distribution >1
-                normalise(distribution, true);
-                double prediction = argMax(distribution, rand);
-                double classValue = trainData.get(i).classValue();
-                time = System.nanoTime() - time;
-                times[i] += time;
-                trainResults.addPrediction(classValue, distribution, prediction, times[i], null);
+                double[] distribution = trainEstimateDistributions[i];
+                // i.e. [71, 29] --> [0.71, 0.29]
+                // copies as to not alter the original distribution. This is helpful if more trees are added in the future to avoid having to denormalise
+                // set ignoreZeroSum to true to produce a uniform distribution if there is no evaluation of the instance (i.e. it never ended up in an out-of-bag test data set because too few trees were built, say)
+                distribution = normalise(copy(distribution), true);
+                // get the prediction, rand tie breaking if necessary
+                final double prediction = argMax(distribution, rand);
+                final double classValue = trainData.get(i).classValue();
+                trainResults.addPrediction(classValue, distribution, prediction, trainEstimatePredictionTimes[i], null);
             }
             trainEstimateTimer.stop();
         }
+        // sanity check that all timers have been stopped
         trainEstimateTimer.checkStopped();
         testTimer.checkStopped();
         checkpointTimer.checkStopped();
         buildTimer.stop();
+        // update the results info
         ResultUtils.setInfo(trainResults, this, trainData);
         forceSaveCheckpoint();
     }
 
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
+        // start timer
         testTimer.resetAndStart();
+        // sanity check the other timers are stopped
         buildTimer.checkStopped();
         trainEstimateTimer.checkStopped();
         checkpointTimer.checkStopped();
         long longestTestStageTimeNanos = 0;
+        // time each stage of the prediction
         final StopWatch testStageTimer = new StopWatch();
         final double[] finalDistribution = new double[getNumClasses()];
+        // while there's remaining constituents to be examined and remaining test time
         for(int i = 0;
             i < constituents.size()
             &&
             (testTimeLimit <= 0 || testTimer.lap() + longestTestStageTimeNanos < testTimeLimit)
                 ; i++) {
             testStageTimer.resetAndStart();
-            final double[] distribution = vote(constituents.get(i), instance);
+            // let the constituent vote
+            final double[] distribution = vote(i, instance);
+            // add the vote to the total votes
             add(finalDistribution, distribution);
+            // update timings
             testStageTimer.stop();
             longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getElapsedTimeStopped());
         }
+        // normalise the final vote, i.e. [71,29] --> [.71,.29]
         normalise(finalDistribution);
+        // sanity check the other timers are stopped
         buildTimer.checkStopped();
         trainEstimateTimer.checkStopped();
         checkpointTimer.checkStopped();
+        // finished prediction so stop timer
         testTimer.stop();
         return finalDistribution;
     }
     
-    private double[] vote(Constituent constituent, Instance instance) throws Exception {
-        ProximityTree tree = constituent.getProximityTree();
+    private double[] vote(int constituentIndex, Instance instance) throws Exception {
+        ProximityTree tree = constituents.get(constituentIndex).getProximityTree();
         double[] distribution = tree.distributionForInstance(instance);
-        return vote(constituent, instance, distribution);
+        return vote(constituentIndex, distribution);
     }
     
-    private double[] vote(Constituent constituent, Instance instance, double[] distribution) {
+    private double[] vote(int constituentIndex, double[] distribution) {
         // vote for the highest probability class
         final int index = argMax(distribution, getRandom());
         return oneHot(distribution.length, index);
