@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package tsml.classifiers.distance_based;
+package tsml.classifiers.distance_based.proximity;
 
 import core.AppContext;
 import core.contracts.Dataset;
