@@ -9,9 +9,11 @@ import java.io.Serializable;
  */
 public class Stated implements Serializable {
 
-    private boolean started = false;
+    private boolean started;
 
-    public Stated() {}
+    public Stated() {
+        this(false);
+    }
     
     public Stated(boolean start) {
         reset();
@@ -30,20 +32,10 @@ public class Stated implements Serializable {
 
     public void start(boolean check) {
         if(!started) {
-            beforeStart();
             started = true;
-            afterStart();
         } else if(check) {
             throw new IllegalStateException("already started");
         }
-    }
-
-    protected void beforeStart() {
-
-    }
-
-    protected void afterStart() {
-
     }
 
     public void start() {
@@ -52,20 +44,10 @@ public class Stated implements Serializable {
 
     public void stop(boolean check) {
         if(started) {
-            beforeStop();
             started = false;
-            afterStop();
         } else if(check) {
             throw new IllegalStateException("already stopped");
         }
-    }
-
-    protected void beforeStop() {
-
-    }
-
-    protected void afterStop() {
-
     }
 
     public void stop() {
@@ -73,21 +55,19 @@ public class Stated implements Serializable {
     }
 
     public void reset() {
-        onReset();
+        
     }
 
     public void resetAndStart() {
         reset();
         start(false);
-    }
-
-    public void resetAndStop() {
-        stop(false);
         reset();
     }
 
-    protected void onReset() {
-
+    public void resetAndStop() {
+        reset();
+        stop(false);
+        reset();
     }
 
     public void checkStopped() {

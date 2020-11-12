@@ -17,7 +17,7 @@ public class StopWatchTest {
     public void testGetStartTimeWhenStopped() {
         stopWatch.stop(false);
         Assert.assertFalse(stopWatch.isStarted());
-        stopWatch.getStartTime();
+        stopWatch.getPreviousElapsedTime();
     }
 
     @Test
@@ -25,7 +25,7 @@ public class StopWatchTest {
         long timeStamp = System.nanoTime();
         stopWatch.start();
         Assert.assertTrue(stopWatch.isStarted());
-        long startTime = stopWatch.getStartTime();
+        long startTime = stopWatch.getPreviousElapsedTime();
         Assert.assertTrue(startTime > timeStamp);
         Assert.assertTrue(startTime < timeStamp + TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS));
     }
@@ -36,6 +36,7 @@ public class StopWatchTest {
         stopWatch.stop();
         stopWatch.reset();
         Assert.assertEquals(stopWatch.getElapsedTimeStopped(), 0);
+        Assert.assertEquals(stopWatch.getSplitTimeStopped(), 0);
     }
 
     @Test
@@ -60,7 +61,7 @@ public class StopWatchTest {
         stopWatch.start();
         long startTime = stopWatch.lap();
         stopWatch.resetElapsedTime();
-        Assert.assertTrue(stopWatch.getStartTime() > startTime);
+        Assert.assertTrue(stopWatch.getPreviousElapsedTime() > startTime);
     }
 
     @Test
@@ -83,7 +84,7 @@ public class StopWatchTest {
     @Test
     public void testStop() {
         stopWatch.start();
-        long startTime = stopWatch.getStartTime();
+        long startTime = stopWatch.getPreviousElapsedTime();
         Assert.assertTrue(stopWatch.isStarted());
         stopWatch.stop();
         long stopTime = stopWatch.getElapsedTimeStopped();
@@ -134,6 +135,32 @@ public class StopWatchTest {
         long prevTime = stopWatch.getElapsedTimeStopped();
         stopWatch.add(stopWatch);
         Assert.assertEquals(prevTime * 2, stopWatch.getElapsedTimeStopped());
+    }
+
+    @Test
+    public void testSplit() {
+        stopWatch.start();
+        try {
+            Thread.sleep(100);
+        } catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+        long split1 = stopWatch.split();
+        Assert.assertEquals(stopWatch.getElapsedTime(), split1);
+        try {
+            Thread.sleep(100);
+        } catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+        long split2 = stopWatch.split();
+        Assert.assertEquals(stopWatch.getElapsedTime(), split1 + split2);
+        try {
+            Thread.sleep(100);
+        } catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+        long split3 = stopWatch.split();
+        Assert.assertEquals(stopWatch.getElapsedTime(), split1 + split2 + split3);
     }
 
     @Test(expected = IllegalStateException.class)
