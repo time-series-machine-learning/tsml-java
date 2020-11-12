@@ -126,6 +126,11 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
     }
 
     @Override public String toString() {
+        if(children.isEmpty()) {
+            return "BaseTreeNode{" +
+                           "location=" + getLocation() +
+                           ", element=" + element + "}";
+        }
         return "BaseTreeNode{" +
                        "location=" + getLocation() +
                        ", element=" + element +

@@ -609,11 +609,19 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" + "score=" + score +
-                                      ", df=" + (distanceFunction == null ? "null" : distanceFunction.toString()) +
-                                      ", dataIndices=" + dataIndices +
-                                      ", partitions=" + partitions +
-                                      "}";
+            final StringBuilder sb = new StringBuilder();
+            sb.append(getClass().getSimpleName()).append("{");
+            sb.append("dataIndices=").append(dataIndices);
+            if(partitions != null) {
+                sb.append(", score=").append(score);
+                sb.append(", partitions=").append(partitions);
+            }
+            if(distanceFunction != null) {
+                sb.append(", df=").append(distanceFunction);
+            }
+            sb.append("}");
+                    
+            return sb.toString();
         }
 
         public List<Partition> getPartitions() {
