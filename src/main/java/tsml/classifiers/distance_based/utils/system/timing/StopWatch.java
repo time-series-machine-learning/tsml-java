@@ -59,11 +59,11 @@ public class StopWatch extends Stated {
     }
 
     @Override public void stop() {
-        super.stop();
         // force the timer to update
         if(isStarted()) {
             lap();
         }
+        super.stop();
     }
 
     /**
@@ -159,10 +159,8 @@ public class StopWatch extends Stated {
         diff = 0;
     }
 
-    /**
-     * reset entirely
-     */
-    public void onReset() {
+    @Override public void reset() {
+        super.reset();
         resetElapsedTime();
         resetSplitTime();
         resetClock();
