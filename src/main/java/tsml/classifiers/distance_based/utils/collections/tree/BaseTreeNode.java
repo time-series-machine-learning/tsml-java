@@ -12,6 +12,7 @@ public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNo
     private final List<TreeNode<A>> children = new ArrayList<>();
     private A element;
     private TreeNode<A> parent;
+    // skip is a utility to skip calling recursive calls when handling the parent/child relationship of nodes
     private boolean skip;
     
     public BaseTreeNode() {}
