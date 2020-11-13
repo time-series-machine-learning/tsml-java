@@ -79,7 +79,7 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
     }
 
     public PrunedMultimap(Comparator<? super K> comparator) {
-        this(comparator, (Serializable & Supplier<? extends List<V>>) ArrayList::new);
+        this(comparator, ArrayList::new);
     }
 
     public boolean hasSoftLimit() {
