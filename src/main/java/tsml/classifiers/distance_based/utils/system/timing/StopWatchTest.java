@@ -5,6 +5,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static utilities.Utilities.sleep;
+
 public class StopWatchTest {
 
     private StopWatch stopWatch;
@@ -13,6 +15,17 @@ public class StopWatchTest {
         stopWatch = new StopWatch();
     }
 
+    @Test
+    public void testGetPreviousElapsedTime() {
+        final long time = System.nanoTime();
+        stopWatch.start();
+        sleep(100);
+        // lap / split not called yet so elapsed time should be 0
+        Assert.assertEquals(time, stopWatch.getElapsedTime(), 0);
+        stopWatch.stop();
+        Assert.assertEquals(time, stopWatch.getElapsedTime(), 1000);
+    }
+    
     @Test(expected = IllegalStateException.class)
     public void testGetStartTimeWhenStopped() {
         stopWatch.stop(false);

@@ -30,28 +30,32 @@ public class Stated implements Serializable {
         return !started;
     }
 
-    public void start(boolean check) {
+    public void start() {
         if(!started) {
             started = true;
-        } else if(check) {
+        } else {
             throw new IllegalStateException("already started");
         }
     }
-
-    public void start() {
-        start(true);
-    }
-
-    public void stop(boolean check) {
-        if(started) {
-            started = false;
-        } else if(check) {
-            throw new IllegalStateException("already stopped");
+    
+    public void optionalStart() {
+        if(!isStarted()) {
+            start();
         }
     }
-
+    
+    public void optionalStop() {
+        if(!isStopped()) {
+            stop();
+        }
+    }
+    
     public void stop() {
-        stop(true);
+        if(started) {
+            started = false;
+        } else {
+            throw new IllegalStateException("already stopped");
+        }
     }
 
     public void reset() {
@@ -60,13 +64,13 @@ public class Stated implements Serializable {
 
     public void resetAndStart() {
         reset();
-        start(false);
+        optionalStart();
         reset();
     }
 
     public void resetAndStop() {
         reset();
-        stop(false);
+        optionalStop();
         reset();
     }
 

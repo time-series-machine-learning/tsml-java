@@ -10,9 +10,11 @@ import java.io.ObjectOutputStream;
  * Contributors: goastler
  */
 public class StopWatch extends Stated {
-    private transient long timeStamp;
-    private long elapsed;
-    private long diff;
+    private transient long startTimeStamp;
+    // total time excluding the current lap
+    private long elapsedTime;
+    private long startLapTimeStamp;
+    private long lapTime;
 
     public StopWatch() {
         super();
@@ -21,6 +23,64 @@ public class StopWatch extends Stated {
     public StopWatch(boolean start) {
         super(start);
     }
+    
+    /**
+     * The elapsed time since the stopwatch was last reset.
+     * @return
+     */
+    public long elapsedTime() {
+        return elapsedTimeBeforeLap() + lapTime();
+    }
+
+    /**
+     * The elapsed time when lap was last called.
+     * @return
+     */
+    public long elapsedTimeBeforeLap() {
+        return elapsedTime;
+    }
+
+    /**
+     * Gets the lap time for the current lap. This is the time since start() or lap() was last called
+     * @return
+     */
+    public long lapTime() {
+        // if started
+        if(isStarted()) {
+            // then add on the difference since the lap started
+            
+            lapTime = System.nanoTime() - startLapTimeStamp;
+        }
+        return lapTime;
+    }
+    
+    /**
+     * Perform a lap operation. This provides the time since the last lap call or the elapsed time so far if lap has not been called yet. (Think F1 track recording car passing start line every lap, this reports the time taken to do 1 lap of the track)
+     * @return the lap time
+     */
+    public long lap() {
+        // track the time stamp of the current lap
+        long previousStartLapTimeStamp = startLapTimeStamp;
+        // build a new start time stamp for the new lap
+        startLapTimeStamp = System.nanoTime();
+        // the difference between the time stamps is the lap time
+        final long lapTime = startLapTimeStamp - previousStartLapTimeStamp;
+        // add the lap time onto the total elapsed time
+        elapsedTime += lapTime;
+        return lapTime;
+    }
+
+    /**
+     * The timeStamp of when the current lap began.
+     * @return
+     */
+    public long lapTimeStamp() {
+        if(firstLap) {
+            throw new IllegalStateException("lap has not been called");
+        }
+        return startLapTimeStamp;
+    }
+    
 
     private void writeObject(ObjectOutputStream stream)
             throws IOException {
@@ -41,17 +101,6 @@ public class StopWatch extends Stated {
         resetClock();
     }
 
-    /**
-     * Get the previous elapsed time, i.e. the time stamp of the second most recent lap() or split() call.
-     * @return
-     */
-    public long getPreviousElapsedTime() {
-        if(!isStarted()) {
-            throw new IllegalStateException("not started");
-        }
-        return timeStamp;
-    }
-
     @Override public void start() {
         super.start();
         // update the clock to current time
@@ -59,110 +108,60 @@ public class StopWatch extends Stated {
     }
 
     @Override public void stop() {
-        // force the timer to update
-        if(isStarted()) {
-            lap();
-        }
         super.stop();
-    }
-
-    /**
-     * Perform a lap operation. This returns the total elapsed time at the time of lapping (think F1 track recording car passing start line every lap)
-     * @return total elapsed time in nanos
-     */
-    public long lap() {
-        split();
-        return getElapsedTime();
-    }
-
-    /**
-     * Perform a split operation. This returns the elapsed time since the last lap or split operation, i.e. the diff.
-     * @return DIFFERENCE in time in nanos since last split / lap call
-     */
-    public long split() {
-        checkStarted();
-        long nextTimeStamp = System.nanoTime();
-        diff = nextTimeStamp - this.timeStamp;
-        elapsed += diff;
-        this.timeStamp = nextTimeStamp;
-        return getSplitTime();
-    }
-
-    public long splitAndStop() {
-        stop();
-        return getElapsedTimeStopped();
+        // force the timer to update
+        lap();
     }
     
     public long lapAndStop() {
         stop();
-        return getSplitTimeStopped();
+        return lapTime;
     }
     
-    public long lapIfStarted() {
+    public long optionalLap() {
         if(isStarted()) {
             lap();
         }
-        return getElapsedTime();
+        return lapTime;
     }
     
-    public long splitIfStarted() {
-        if(isStarted()) {
-            split();
-        }
-        return getSplitTime();
-    }
-    
-    public long getElapsedTimeStopped() {
+    public long elapsedStopped() {
         checkStopped();
-        return getElapsedTime();
-    }
-
-    /**
-     * NOTE this does not update the time! Get the elapsed time as calculated in the last split or lap call. This will be exactly the same value as returned by the most recent lap call.
-     * @return
-     */
-    public long getElapsedTime() {
-        return elapsed;
+        return elapsedTime();
     }
     
-    public long getSplitTimeStopped() {
-        checkStopped();
-        return getSplitTime();
-    }
-    
-    /**
-     * NOTE this does not update the time! Get the split time as calculated in the last split or lap call. This will be exactly the same value as returned by the most recent split call.
-     * @return
-     */
-    public long getSplitTime() {
-        return diff;
+    public long elapsedStarted() {
+        checkStarted();
+        return elapsedTime();
     }
 
     /**
      * reset the clock, useful post serialisation
      */
     public void resetClock() {
-        timeStamp = System.nanoTime();
+        startTimeStamp = System.nanoTime();
+        startLapTimeStamp = startTimeStamp;
     }
 
     /**
      * reset time count
      */
     public void resetElapsedTime() {
-        elapsed = 0;
+        elapsedTime = 0;
     }
 
     /**
      * reset time count
      */
-    public void resetSplitTime() {
-        diff = 0;
+    public void resetLapTime() {
+        lapTime = -1;
+        startLapTimeStamp = -1;
     }
 
     @Override public void reset() {
         super.reset();
         resetElapsedTime();
-        resetSplitTime();
+        resetLapTime();
         resetClock();
     }
 
@@ -171,18 +170,18 @@ public class StopWatch extends Stated {
      * @param nanos
      */
     public void add(long nanos) {
-        elapsed += nanos;
+        elapsedTime += nanos;
     }
 
     public void add(StopWatch stopWatch) {
-        add(stopWatch.lapIfStarted());
+        add(stopWatch.elapsedTime());
     }
 
     @Override public String toString() {
         return "StopWatch{" +
-            "time=" + elapsed +
+            "time=" + elapsedTime +
             ", " + super.toString() +
-            ", timeStamp=" + timeStamp +
+            ", timeStamp=" + startTimeStamp +
             '}';
     }
 }

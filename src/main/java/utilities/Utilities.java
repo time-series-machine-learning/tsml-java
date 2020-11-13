@@ -32,6 +32,14 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class Utilities {
+
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch(InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
+    }
     
     public static <A, B, C extends Collection<B>> C apply(Collection<A> src, Function<A, B> func, C dest) {
         for(A item : src) {
