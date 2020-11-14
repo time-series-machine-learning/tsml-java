@@ -160,11 +160,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.getElapsedTimeStopped();
+        return trainTimer.elapsedTimeStopped();
     }
 
     @Override public long getTestTime() {
-        return testTimer.getElapsedTimeStopped();
+        return testTimer.elapsedTimeStopped();
     }
 
     @Override
@@ -242,7 +242,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // done building this node
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
-            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.getElapsedTimeStopped());
+            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.elapsedTimeStopped());
             // checkpoint if necessary
             saveCheckpoint();
             // update the train timer
@@ -340,7 +340,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // make this the next node to visit
             node = node.get(index);
             testStageTimer.stop();
-            longestPredictTime = testStageTimer.getElapsedTimeStopped();
+            longestPredictTime = testStageTimer.elapsedTimeStopped();
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution

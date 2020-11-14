@@ -5,7 +5,6 @@ import org.junit.Assert;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
-import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
@@ -112,8 +111,8 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
             // if rebuilding (i.e. building from scratch) initialise the classifier
             if(isRebuild()) {
                 // reset resources
-                trainTimer.resetElapsedTime();
-                trainEstimateTimer.resetElapsedTime();
+                trainTimer.resetElapsed();
+                trainEstimateTimer.resetElapsed();
                 // zero tree build time so the first tree build will always set the bar
                 longestComparisonTime = 0;
                 this.trainData = trainData; 
@@ -297,15 +296,15 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.getElapsedTimeStopped() - getTrainEstimateTime();
+        return trainTimer.elapsedTimeStopped() - getTrainEstimateTime();
     }
 
     @Override public long getTrainEstimateTime() {
-        return trainEstimateTimer.getElapsedTimeStopped();
+        return trainEstimateTimer.elapsedTimeStopped();
     }
 
     @Override public long getTestTime() {
-        return testTimer.getElapsedTimeStopped();
+        return testTimer.elapsedTimeStopped();
     }
 
     public int getNeighbourLimit() {

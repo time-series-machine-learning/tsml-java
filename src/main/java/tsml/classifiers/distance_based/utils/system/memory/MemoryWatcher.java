@@ -74,12 +74,32 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         super.checkStarted();
     }
 
-    public synchronized void start(boolean check) {
-        super.start(check);
+    @Override public synchronized void start() {
+        super.start();
     }
 
-    public synchronized void stop(boolean check) {
-        super.stop(check);
+    @Override public synchronized boolean isStopped() {
+        return super.isStopped();
+    }
+
+    @Override public synchronized void stop() {
+        super.stop();
+    }
+
+    @Override public synchronized void resetAndStart() {
+        super.resetAndStart();
+    }
+
+    @Override public synchronized void resetAndStop() {
+        super.resetAndStop();
+    }
+
+    @Override public synchronized void optionalStart() {
+        super.optionalStart();
+    }
+
+    @Override public synchronized void optionalStop() {
+        super.optionalStop();
     }
 
     public synchronized boolean isStarted() {

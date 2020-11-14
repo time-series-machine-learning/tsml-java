@@ -10,10 +10,10 @@ import java.io.ObjectOutputStream;
  * Contributors: goastler
  */
 public class StopWatch extends Stated {
-    private transient long startTimeStamp;
+    private transient long timeStamp;
     // total time excluding the current lap
     private long elapsedTime;
-    private long startLapTimeStamp;
+    private long lapTimeStamp;
     private long lapTime;
 
     public StopWatch() {
@@ -29,7 +29,7 @@ public class StopWatch extends Stated {
      * @return
      */
     public long elapsedTime() {
-        return elapsedTimeBeforeLap() + lapTime();
+        return elapsedTime + lapTime();
     }
 
     /**
@@ -49,7 +49,7 @@ public class StopWatch extends Stated {
         if(isStarted()) {
             // then add on the difference since the lap started
             
-            lapTime = System.nanoTime() - startLapTimeStamp;
+            lapTime = System.nanoTime() - lapTimeStamp;
         }
         return lapTime;
     }
@@ -59,14 +59,16 @@ public class StopWatch extends Stated {
      * @return the lap time
      */
     public long lap() {
-        // track the time stamp of the current lap
-        long previousStartLapTimeStamp = startLapTimeStamp;
-        // build a new start time stamp for the new lap
-        startLapTimeStamp = System.nanoTime();
-        // the difference between the time stamps is the lap time
-        final long lapTime = startLapTimeStamp - previousStartLapTimeStamp;
-        // add the lap time onto the total elapsed time
-        elapsedTime += lapTime;
+        if(isStarted()) {
+            // track the time stamp of the current lap
+            long previousStartLapTimeStamp = lapTimeStamp;
+            // build a new start time stamp for the new lap
+            lapTimeStamp = System.nanoTime();
+            // the difference between the time stamps is the lap time
+            lapTime = lapTimeStamp - previousStartLapTimeStamp;
+            // add the lap time onto the total elapsed time
+            elapsedTime += lapTime;
+        }
         return lapTime;
     }
 
@@ -75,10 +77,15 @@ public class StopWatch extends Stated {
      * @return
      */
     public long lapTimeStamp() {
-        if(firstLap) {
-            throw new IllegalStateException("lap has not been called");
-        }
-        return startLapTimeStamp;
+        return lapTimeStamp;
+    }
+
+    /**
+     * Timestamp of when the stopwatch began / was started.
+     * @return
+     */
+    public long timeStamp() {
+        return timeStamp;
     }
     
 
@@ -108,9 +115,9 @@ public class StopWatch extends Stated {
     }
 
     @Override public void stop() {
-        super.stop();
         // force the timer to update
         lap();
+        super.stop();
     }
     
     public long lapAndStop() {
@@ -125,12 +132,12 @@ public class StopWatch extends Stated {
         return lapTime;
     }
     
-    public long elapsedStopped() {
+    public long elapsedTimeStopped() {
         checkStopped();
         return elapsedTime();
     }
     
-    public long elapsedStarted() {
+    public long elapsedTimeStarted() {
         checkStarted();
         return elapsedTime();
     }
@@ -139,29 +146,21 @@ public class StopWatch extends Stated {
      * reset the clock, useful post serialisation
      */
     public void resetClock() {
-        startTimeStamp = System.nanoTime();
-        startLapTimeStamp = startTimeStamp;
+        timeStamp = System.nanoTime();
+        lapTimeStamp = timeStamp;
     }
 
     /**
      * reset time count
      */
-    public void resetElapsedTime() {
+    public void resetElapsed() {
         elapsedTime = 0;
-    }
-
-    /**
-     * reset time count
-     */
-    public void resetLapTime() {
-        lapTime = -1;
-        startLapTimeStamp = -1;
+        lapTime = 0;
     }
 
     @Override public void reset() {
         super.reset();
-        resetElapsedTime();
-        resetLapTime();
+        resetElapsed();
         resetClock();
     }
 
@@ -181,7 +180,7 @@ public class StopWatch extends Stated {
         return "StopWatch{" +
             "time=" + elapsedTime +
             ", " + super.toString() +
-            ", timeStamp=" + startTimeStamp +
+            ", timeStamp=" + timeStamp +
             '}';
     }
 }

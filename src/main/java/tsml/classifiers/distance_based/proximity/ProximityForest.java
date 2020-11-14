@@ -16,13 +16,11 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import utilities.ClassifierTools;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static utilities.ArrayUtilities.*;
 import static utilities.Utilities.argMax;
@@ -308,12 +306,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             if(isRebuild()) {
                 // then init vars
                 // build timer is already started so just clear any time already accrued from previous builds. I.e. keep the time stamp of when the timer was started, but clear any record of accumulated time
-                buildTimer.resetElapsedTime();
+                buildTimer.resetElapsed();
                 // clear other timers entirely
                 testTimer.resetAndStop();
                 trainEstimateTimer.resetAndStop();
                 // checkpoint time is equal to the time spent attempting to load a checkpoint during this buildClassifier call
-                final long singleCheckpointTime = checkpointTimer.getSplitTime();
+                final long singleCheckpointTime = checkpointTimer.lapTime();
                 checkpointTimer.resetAndStop();
                 // add the time taken attempting to load a checkpoint during this build classifier call
                 checkpointTimer.add(singleCheckpointTime);
@@ -426,7 +424,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // tree fully built
             trainStageTimer.stop();
             // update longest tree build time
-            longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.getElapsedTimeStopped());
+            longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.elapsedTimeStopped());
             // optional checkpoint
             checkpointTimer.start();
             saveCheckpoint();
@@ -492,7 +490,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             add(finalDistribution, distribution);
             // update timings
             testStageTimer.stop();
-            longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.getElapsedTimeStopped());
+            longestTestStageTimeNanos = Math.max(longestTestStageTimeNanos, testStageTimer.elapsedTimeStopped());
         }
         // normalise the final vote, i.e. [71,29] --> [.71,.29]
         normalise(finalDistribution);
@@ -563,15 +561,15 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override public long getTrainTime() {
         // train time is the overall build time minus any time spent estimating the train error
-        return buildTimer.getElapsedTimeStopped() - getTrainEstimateTime();
+        return buildTimer.elapsedTimeStopped() - getTrainEstimateTime();
     }
 
     @Override public long getTrainEstimateTime() {
-        return trainEstimateTimer.getElapsedTimeStopped();
+        return trainEstimateTimer.elapsedTimeStopped();
     }
 
     @Override public long getTestTime() {
-        return testTimer.getElapsedTimeStopped();
+        return testTimer.elapsedTimeStopped();
     }
 
     @Override public long getLastCheckpointTimeStamp() {

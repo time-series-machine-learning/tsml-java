@@ -496,7 +496,7 @@ public class ClassifierTools {
         timer.stop();
         memoryWatcher.stop();
         System.out.println();
-        System.out.println("train time: " + timer.getElapsedTimeStopped());
+        System.out.println("train time: " + timer.elapsedTimeStopped());
         System.out.println("train mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println();
 //        GcFinalization.awaitFullGc();
@@ -519,7 +519,7 @@ public class ClassifierTools {
         memoryWatcher.stop();
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
-        System.out.println("test time: " + timer.getElapsedTimeStopped());
+        System.out.println("test time: " + timer.elapsedTimeStopped());
         System.out.println("test mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println("test results:");
         System.out.println(testResults.writeFullResultsToString());
@@ -527,7 +527,7 @@ public class ClassifierTools {
         overallMemoryWatcher.stop();
         overallTimer.stop();
         System.out.println();
-        System.out.println("overall time: " + overallTimer.getElapsedTimeStopped());
+        System.out.println("overall time: " + overallTimer.elapsedTimeStopped());
         System.out.println("overall mem: " + overallMemoryWatcher.getMaxMemoryUsage());
     }
 
