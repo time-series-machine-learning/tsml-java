@@ -180,11 +180,11 @@ public class CopierUtils {
         }
     }
 
-    public static Object deserialise(byte[] bytes) {
+    public static <A> A deserialise(byte[] bytes) {
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bais);
-            return ois.readObject();
+            return (A) ois.readObject();
         } catch(IOException | ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -203,10 +203,10 @@ public class CopierUtils {
         return shallowCopyViaDefaultConstructor(src);
     }
 
-    public static Object newInstanceFromClassName(String className) {
+    public static <A> A newInstanceFromClassName(String className) {
         try {
             return newInstance(Class.forName(className));
-        } catch(ClassNotFoundException e) {
+        } catch(ClassCastException | ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -215,10 +215,10 @@ public class CopierUtils {
         if(object == null) {
             return null;
         }
-        return (A) newInstance(object.getClass());
+        return newInstance(object.getClass());
     }
 
-    public static Object newInstance(Class<?> clazz) {
+    public static <A> A newInstance(Class<?> clazz) {
         try {
             // get the default constructor
             final Constructor<?> noArgsConstructor = clazz.getDeclaredConstructor();
@@ -230,8 +230,8 @@ public class CopierUtils {
             final Object inst = noArgsConstructor.newInstance();
             // set the constructor's accessibility back to what it was
             noArgsConstructor.setAccessible(origAccessible);
-            return inst;
-        } catch(InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+            return (A) inst;
+        } catch(ClassCastException | InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -260,7 +260,7 @@ public class CopierUtils {
             return src;
         }
         // deep copy the source
-        src = (A) deserialise(serialise(src));
+        src = deserialise(serialise(src));
         try {
             // then attempt to invoke the default constructor to make a new instance and copy the deeply copied src into the new instance
             // this is necessary so a new instance is created and the default constructor is run, initialising any transient variables not copied during the serialisation copy
