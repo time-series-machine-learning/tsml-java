@@ -7,7 +7,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.Factory;
+import tsml.classifiers.distance_based.utils.classifiers.Builder;
 import tsml.classifiers.distance_based.utils.classifiers.ClassifierFromEnum;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
@@ -175,7 +175,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the longest tree build time for predicting train time requirements
     private long longestTrainStageTimeNanos;
     // the method of setting the config of the trees
-    private Factory<ProximityTree> proximityTreeFactory;
+    private Builder<ProximityTree> proximityTreeBuilder;
     // checkpoint config
     private long lastCheckpointTimeStamp = -1;
     private String checkpointPath;
@@ -378,7 +378,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainStageTimer.resetAndStart();
             // setup a new tree
             final int treeIndex = constituents.size();
-            final ProximityTree tree = proximityTreeFactory.build();
+            final ProximityTree tree = proximityTreeBuilder.build();
             final int constituentSeed = rand.nextInt();
             tree.setSeed(constituentSeed);
             // setup the constituent
@@ -453,16 +453,20 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             trainEstimateTimer.stop();
         }
         LogUtils.logTimeContract(buildTimer.lap(), trainTimeLimit, getLog(), "train");
+        // save the final checkpoint
+        checkpointTimer.start();
+        forceSaveCheckpoint();
+        checkpointTimer.stop();
         // sanity check that all timers have been stopped
         trainEstimateTimer.checkStopped();
         testTimer.checkStopped();
         checkpointTimer.checkStopped();
+        // print the trees
+        //        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
+        // build finished so stop the timer
         buildTimer.stop();
         // update the results info
         ResultUtils.setInfo(trainResults, this, trainData);
-        forceSaveCheckpoint();
-        // print the trees
-//        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
     }
 
     @Override
@@ -531,12 +535,12 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         this.numTreeLimit = numTreeLimit;
     }
 
-    public Factory<ProximityTree> getProximityTreeFactory() {
-        return proximityTreeFactory;
+    public Builder<ProximityTree> getProximityTreeFactory() {
+        return proximityTreeBuilder;
     }
 
-    public void setProximityTreeFactory(final Factory<ProximityTree> proximityTreeFactory) {
-        this.proximityTreeFactory = Objects.requireNonNull(proximityTreeFactory);
+    public void setProximityTreeFactory(final Builder<ProximityTree> proximityTreeBuilder) {
+        this.proximityTreeBuilder = Objects.requireNonNull(proximityTreeBuilder);
     }
 
     @Override
