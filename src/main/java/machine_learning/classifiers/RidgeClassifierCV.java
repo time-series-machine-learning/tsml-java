@@ -1,3 +1,17 @@
+/*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package machine_learning.classifiers;
 
 import experiments.data.DatasetLoading;
@@ -15,8 +29,17 @@ import java.util.Arrays;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 
+/**
+ * Ridge classification with cross-validation to select the alpha value.
+ *
+ * Based on RidgeClassifierCV from sklearn.
+ * https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifierCV.html
+ *
+ * @author Matthew Middlehurst
+ */
 public class RidgeClassifierCV extends AbstractClassifier {
 
+    //alphas used in sktime ROCKET
     private final double[] alphas = {1.00000000e-03, 4.64158883e-03, 2.15443469e-02, 1.00000000e-01,
             4.64158883e-01, 2.15443469e+00, 1.00000000e+01, 4.64158883e+01, 2.15443469e+02, 1.00000000e+03};
 
@@ -68,6 +91,7 @@ public class RidgeClassifierCV extends AbstractClassifier {
         double[] xScale = new double[data[0].length];
         preprocessData(data, labels, xOffset, yOffset, xScale);
 
+        //original uses SVD when no. instances > no. attributes
         Nd4j.setNumThreads(1);
         INDArray matrix = Nd4j.create(data);
         INDArray q = matrix.mmul(matrix.transpose());
@@ -89,7 +113,6 @@ public class RidgeClassifierCV extends AbstractClassifier {
             double[] k = sw.mmul(q).toDoubleVector();
             for (int i = 0 ; i < k.length; i++) k[i] = Math.abs(k[i]);
             int idx = argmax(k);
-            if (idx != 0) System.out.println("not 0, this is actually doing stuff");
             w[idx] = 0;
 
             double[][] d = new double[w.length][(int)qt_y.size(1)];
