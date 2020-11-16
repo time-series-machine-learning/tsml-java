@@ -612,4 +612,15 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     @Override public void setCheckpointInterval(final long checkpointInterval) {
         this.checkpointInterval = checkpointInterval;
     }
+
+    @Override public String getParameters() {
+        return CHECKPOINT_TIME_ID + "," + checkpointTimer.elapsedTime()
+                + BUILD_TIME_FLAG_ID + "," + buildTimer.elapsedTime()
+                + TRAIN_ESTIMATE_TIME_ID + "," + trainEstimateTimer.elapsedTime()
+                + "," + super.getParameters();
+    }
+    
+    public static final String CHECKPOINT_TIME_ID = "checkpointTime";
+    public static final String BUILD_TIME_FLAG_ID = "buildTime";
+    public static final String TRAIN_ESTIMATE_TIME_ID = "trainEstimateTime";
 }
