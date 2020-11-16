@@ -162,6 +162,11 @@ public class StopWatch extends Stated {
         timeStamp = System.nanoTime();
         lapTimeStamp = timeStamp;
     }
+    
+    public void resetClockAndStop() {
+        resetClock();
+        super.stop();
+    }
 
     /**
      * reset time count
