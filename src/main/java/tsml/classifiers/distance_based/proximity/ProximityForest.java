@@ -223,42 +223,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         }
     }
 
-    @Override public void copyFromSerObject(final Object obj) throws Exception {
-        // keep a ref to each of the current timers
-        final StopWatch origBuildTimer = this.buildTimer;
-        final StopWatch origTrainEstimateTimer = this.trainEstimateTimer;
-        final StopWatch origCheckpointTimer = this.checkpointTimer;
-        final StopWatch origTestTimer = this.testTimer;
-        // copy from another obj
-        Checkpointed.super.copyFromSerObject(obj);
-        // update the new timers with the originals. I.e. the buildTimer would be replaced with the one from the obj which, say, has a timing of 12s already. Suppose the orig build timer has a timing of 5s. This 5s would be discarded if left to just shallow copy. Instead, must shallow copy to obtain the timer with 12s and add on the current timer containing the 5s to finish with a timer containing 17s, i.e. adding the build time from the checkpoint onto the current build time, consolidating into one timer
-        // note that the timer may not change if copying from a partial or the same object, therefore need to check for the change on each timer
-        if(origBuildTimer != buildTimer) {
-            // add the current time onto the new timer
-            buildTimer.add(origBuildTimer);
-            // reset the new timer to time from here onwards
-            buildTimer.resetClock();
-        }
-        if(origTrainEstimateTimer != trainEstimateTimer) {
-            // add the current time onto the new timer
-            trainEstimateTimer.add(origTrainEstimateTimer);
-            // reset the new timer to time from here onwards
-            trainEstimateTimer.resetClock();
-        }
-        if(origCheckpointTimer != checkpointTimer) {
-            // add the current time onto the new timer
-            checkpointTimer.add(origCheckpointTimer);
-            // reset the new timer to time from here onwards
-            checkpointTimer.resetClock();
-        }
-        if(origTestTimer != testTimer) {
-            // add the current time onto the new timer
-            testTimer.add(origTestTimer);
-            // reset the new timer to time from here onwards
-            testTimer.resetClock();
-        }
-    }
-
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
         // various timers:
@@ -297,7 +261,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // (3) and (1) land here
             // just carry on with build as loaded from a checkpoint
             getLog().info("checkpoint loaded");
-            // sanity check timer states
+            // sanity check timer states. Build timer should already be running from a past checkpoint during buildClassifier.
             buildTimer.checkStarted();
             checkpointTimer.checkStopped();
             trainEstimateTimer.checkStopped();
@@ -347,7 +311,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             pf.setEstimateOwnPerformance(false);
             // reset the state of pf to build from scratch
             pf.setRebuild(true);
-            // reset the timers (as these are copies of our currently running timers)
+            // reset the timers (as these are copies of our currently running timers in this obj)
             pf.buildTimer.resetAndStop();
             pf.trainEstimateTimer.resetAndStop();
             pf.checkpointTimer.resetAndStop();
