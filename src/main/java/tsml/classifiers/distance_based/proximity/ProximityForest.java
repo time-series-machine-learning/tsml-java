@@ -560,16 +560,16 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override public long getTrainTime() {
-        // train time is the overall build time minus any time spent estimating the train error
-        return buildTimer.elapsedTimeStopped() - getTrainEstimateTime();
+        // train time is the overall build time minus any time spent estimating the train error and minus any time spent checkpointing
+        return buildTimer.elapsedTime() - getTrainEstimateTime() - checkpointTimer.elapsedTime();
     }
 
     @Override public long getTrainEstimateTime() {
-        return trainEstimateTimer.elapsedTimeStopped();
+        return trainEstimateTimer.elapsedTime();
     }
 
     @Override public long getTestTime() {
-        return testTimer.elapsedTimeStopped();
+        return testTimer.elapsedTime();
     }
 
     @Override public long getLastCheckpointTimeStamp() {
