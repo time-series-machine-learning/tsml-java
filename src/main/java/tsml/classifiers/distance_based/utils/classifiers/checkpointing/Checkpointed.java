@@ -9,6 +9,14 @@ public interface Checkpointed extends Checkpointable, Copier {
 
     String DEFAULT_CHECKPOINT_FILENAME = "checkpoint.gz.ser";
     long DEFAULT_CHECKPOINT_INTERVAL = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+
+    /**
+     * Get the time spent checkpointing. Classifiers which grow to occupy large amount of mem take a lot of time to save to disk. Therefore it is helpful to record this for consideration in timing conclusions.
+     * @return <0 for time not recorded, >=0 for the time taken checkpointing so far.
+     */
+    default long getCheckpointTime() {
+        return -1;
+    }
     
     long getCheckpointInterval();
     void setCheckpointInterval(long nanos);

@@ -617,6 +617,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         this.checkpointInterval = checkpointInterval;
     }
 
+    @Override public long getCheckpointTime() {
+        return checkpointTimer.elapsedTime();
+    }
+
     @Override public String getParameters() {
         return CHECKPOINT_TIME_ID + "," + checkpointTimer.elapsedTime()
                 + BUILD_TIME_FLAG_ID + "," + buildTimer.elapsedTime()
