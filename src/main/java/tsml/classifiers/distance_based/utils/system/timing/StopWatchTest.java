@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 
 import static utilities.Utilities.sleep;
 
@@ -14,7 +15,77 @@ public class StopWatchTest {
     @Before public void before() {
         stopWatch = new StopWatch();
     }
+    
+    @Test
+    public void testElapsedTime() {
+        stopWatch.start();
+        long delay = 1000;
+        sleep(delay);
+        stopWatch.stop();
+        final long l = stopWatch.elapsedTimeStopped();
+        Assert.assertEquals(TimeUnit.NANOSECONDS.convert(delay, TimeUnit.MILLISECONDS), l, tolerance);
+    }
 
+    @Test
+    public void testLapTime() {
+        stopWatch.start();
+        long delay = 100;
+        final long delayNanos = TimeUnit.NANOSECONDS.convert(delay, TimeUnit.MILLISECONDS);
+        System.out.println(stopWatch.lapTimeStamp());
+        sleep(delay);
+        Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
+        stopWatch.lap();
+        Assert.assertEquals(delayNanos, stopWatch.elapsedTimeStarted(), tolerance);
+        
+        sleep(delay);
+        Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
+        stopWatch.lap();
+        Assert.assertEquals(2 * delayNanos, stopWatch.elapsedTimeStarted(), tolerance);
+        
+        sleep(delay);
+        Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
+        stopWatch.lapAndStop();
+        Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
+        Assert.assertEquals(delayNanos * 3, stopWatch.elapsedTimeStopped(), tolerance);
+        Assert.assertTrue(stopWatch.isStopped());
+        long timeStamp = System.nanoTime();
+        
+        stopWatch.resetClock();
+        Assert.assertEquals(timeStamp, stopWatch.timeStamp(), tolerance);
+        Assert.assertEquals(delayNanos * 3, stopWatch.elapsedTime(), tolerance);
+        Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
+
+        timeStamp = System.nanoTime();
+        stopWatch.reset();
+        Assert.assertEquals(timeStamp, stopWatch.timeStamp(), 10000);
+        Assert.assertEquals(0, stopWatch.elapsedTime(), 10000);
+        Assert.assertEquals(0, stopWatch.lapTime(), 10000);
+        
+    }
+    
+    @Test
+    public void testSerialisationStarted() {
+        stopWatch.start();
+        final long timeStamp = stopWatch.timeStamp();
+        final StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
+        Assert.assertTrue(other.isStarted());
+        // make sure the clock / timeStamp gets reset post ser
+        Assert.assertTrue(other.timeStamp() > timeStamp);
+        Assert.assertTrue(other.elapsedTime() > 0);
+    }
+
+    @Test
+    public void testSerialisationStopped() {
+        stopWatch.start();
+        stopWatch.stop();
+        final long timeStamp = stopWatch.timeStamp();
+        final StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
+        Assert.assertTrue(other.isStopped());
+        // make sure the clock / timeStamp gets reset post ser
+        Assert.assertEquals(other.timeStamp(), timeStamp, 10000);
+        Assert.assertTrue(other.elapsedTime() > 0);
+    }
+    
     @Test
     public void testGetPreviousElapsedTime() {
         final long time = System.nanoTime();
@@ -72,26 +143,21 @@ public class StopWatchTest {
     @Test
     public void testResetClock() {
         stopWatch.start();
-        long startTime = stopWatch.lap();
+        long startTime = stopWatch.timeStamp();
         stopWatch.resetClock();
-        Assert.assertTrue(stopWatch.elapsedTime() > startTime);
-        Assert.assertTrue(stopWatch.lapTime() >= startTime);
+        Assert.assertTrue(stopWatch.timeStamp() > startTime);
         Assert.assertEquals(stopWatch.lapTimeStamp(), stopWatch.timeStamp());
     }
 
     @Test
-    public void testLap() throws InterruptedException {
+    public void testLap() {
         long sleepTime = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
-        long tolerance = TimeUnit.NANOSECONDS.convert(500, TimeUnit.MILLISECONDS);
-//        System.out.println("t: " + tolerance);
-//        System.out.println("s: " + sleepTime);
         stopWatch.start();
         for(int i = 1; i <= 5; i++) {
             long sleep = TimeUnit.MILLISECONDS.convert(sleepTime, TimeUnit.NANOSECONDS);
-            Thread.sleep(sleep);
+            sleep(sleep);
             long elapsed = stopWatch.elapsedTime();
             long lap = stopWatch.lap();
-            System.out.println(sleepTime + " " + lap + " " + elapsed);
             Assert.assertTrue(elapsed > sleepTime * i );
             Assert.assertTrue(elapsed < (sleepTime + tolerance) * i);
             Assert.assertTrue(lap > sleepTime );
@@ -155,33 +221,22 @@ public class StopWatchTest {
         stopWatch.add(stopWatch);
         Assert.assertEquals(prevTime * 2, stopWatch.elapsedTimeStopped());
     }
-
+    
+    private final long tolerance = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS);
+    
     @Test
     public void testSplit() {
         int delay = 100;
         long target = TimeUnit.NANOSECONDS.convert(delay, TimeUnit.MILLISECONDS);
-        long tolerance = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS);
         stopWatch.start();
-        try {
-            Thread.sleep(delay);
-        } catch(InterruptedException e) {
-            e.printStackTrace();
-        }
+sleep(delay);
         long split1 = stopWatch.lap();
         long a = stopWatch.elapsedTime();
         Assert.assertEquals(a, split1, tolerance);
-        try {
-            Thread.sleep(delay);
-        } catch(InterruptedException e) {
-            e.printStackTrace();
-        }
+sleep(delay);
         long split2 = stopWatch.lap();
         Assert.assertEquals(stopWatch.elapsedTime(), split1 + split2, tolerance);
-        try {
-            Thread.sleep(delay);
-        } catch(InterruptedException e) {
-            e.printStackTrace();
-        }
+sleep(delay);
         long split3 = stopWatch.lap();
         Assert.assertEquals(stopWatch.elapsedTime(), split1 + split2 + split3, tolerance);
     }
