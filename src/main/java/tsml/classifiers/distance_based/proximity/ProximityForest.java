@@ -152,6 +152,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
         },
         ;
+
+        @Override public ProximityForest newInstance() {
+            return new ProximityForest();
+        }
     }
 
     public ProximityForest() {

@@ -104,6 +104,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         },
         ;
+
+        @Override public ProximityTree newInstance() {
+            return new ProximityTree();
+        }
     }
 
     public ProximityTree() {
