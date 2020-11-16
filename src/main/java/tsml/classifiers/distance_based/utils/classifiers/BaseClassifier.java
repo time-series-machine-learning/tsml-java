@@ -102,7 +102,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public String getParameters() {
-        return super.getParameters() + "," + getParams().toString();
+        return super.getParameters() + ",params" + getParams().toString();
     }
 
     public boolean isRebuild() {
