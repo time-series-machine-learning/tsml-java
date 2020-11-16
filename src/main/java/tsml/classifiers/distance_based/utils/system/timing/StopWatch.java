@@ -74,7 +74,7 @@ public class StopWatch extends Stated {
     }
 
     /**
-     * Timestamp of when the stopwatch began / was started.
+     * Timestamp of when the elapsed time was last updated. This is usually when the stopwatch was started, but this may change if the stopwatch is serialised, etc, and the elapsed time is toted up during that operation.
      * @return
      */
     public long timeStamp() {
@@ -86,7 +86,7 @@ public class StopWatch extends Stated {
             throws IOException {
         // record the current elapsed time, i.e. if state is currently started this laps the stopwatch
         if(isStarted()) {
-            lap();
+            updateElapsedTime();
         }
         // then write the object
         stream.defaultWriteObject();
@@ -107,11 +107,19 @@ public class StopWatch extends Stated {
         resetClock();
     }
 
-    @Override public void stop() {
+    /**
+     * Updates the elapsed time and moves the timeStamp of when the stopwatch was started
+     */
+    private void updateElapsedTime() {
         // force the timer to update
         lap();
         // add on the diff between when the stopwatch was started and the timestamp given from the new lap, i.e. the stop timestamp
         elapsedTime += lapTimeStamp - timeStamp;
+        timeStamp = lapTimeStamp;
+    }
+    
+    @Override public void stop() {
+        updateElapsedTime();
         super.stop();
     }
     

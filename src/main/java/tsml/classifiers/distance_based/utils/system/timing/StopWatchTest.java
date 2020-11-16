@@ -31,7 +31,6 @@ public class StopWatchTest {
         stopWatch.start();
         long delay = 100;
         final long delayNanos = TimeUnit.NANOSECONDS.convert(delay, TimeUnit.MILLISECONDS);
-        System.out.println(stopWatch.lapTimeStamp());
         sleep(delay);
         Assert.assertEquals(delayNanos, stopWatch.lapTime(), tolerance);
         stopWatch.lap();
@@ -64,28 +63,27 @@ public class StopWatchTest {
     }
     
     @Test
-    public void testSerialisationStarted() {
+    public void testSerialisation() {
         stopWatch.start();
-        final long timeStamp = stopWatch.timeStamp();
-        final StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
+        long timeStamp = stopWatch.timeStamp();
+        StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
         Assert.assertTrue(other.isStarted());
         // make sure the clock / timeStamp gets reset post ser
         Assert.assertTrue(other.timeStamp() > timeStamp);
         Assert.assertTrue(other.elapsedTime() > 0);
-    }
 
-    @Test
-    public void testSerialisationStopped() {
-        stopWatch.start();
+
+        stopWatch.resetAndStart();
+        sleep(delay);
         stopWatch.stop();
-        final long timeStamp = stopWatch.timeStamp();
-        final StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
+        timeStamp = stopWatch.timeStamp();
+        other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
         Assert.assertTrue(other.isStopped());
         // make sure the clock / timeStamp gets reset post ser
-        Assert.assertEquals(other.timeStamp(), timeStamp, 10000);
-        Assert.assertTrue(other.elapsedTime() > 0);
+        Assert.assertEquals(other.timeStamp(), timeStamp, tolerance);
+        Assert.assertEquals(other.elapsedTime(), stopWatch.elapsedTime());
     }
-    
+
     @Test
     public void testGetPreviousElapsedTime() {
         final long time = System.nanoTime();
