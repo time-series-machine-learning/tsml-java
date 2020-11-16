@@ -21,7 +21,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     // https://mvnrepository.com/artifact/commons-io/commons-io
-    compile group: 'org.apache.commons', name: 'commons-io', version: '2.6'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
     // https://mvnrepository.com/artifact/com.carrotsearch/hppc
     // WEASEL WEASEL_MUSE IndividualTDE MultivariateIndividualTDE
     compile group: 'com.carrotsearch', name: 'hppc', version: '0.8.2'
