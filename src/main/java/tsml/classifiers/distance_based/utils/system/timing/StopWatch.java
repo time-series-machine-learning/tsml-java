@@ -122,6 +122,13 @@ public class StopWatch extends Stated {
     public void add(long nanos) {
         elapsedTime += nanos;
     }
+    
+    public void add(long startTimeStamp, long stopTimeStamp) {
+        if(stopTimeStamp < startTimeStamp) {
+            throw new IllegalArgumentException("start before stop");
+        }
+        add(stopTimeStamp - startTimeStamp);
+    }
 
     @Override public String toString() {
         return "StopWatch{" +

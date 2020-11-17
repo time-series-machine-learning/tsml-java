@@ -104,15 +104,15 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
         if(loadCheckpoint()) {
             getLog().info("loaded from checkpoint");
             // train timer has been replaced with one from checkpoint. Need to add on any time spent between the start of this func and here
-            trainTimer.add(trainTimerBeforeLoadCheckpoint.lap());
+            trainTimer.add(trainTimerBeforeLoadCheckpoint.elapsedTime());
         } else {
             // no checkpoint exists
             super.buildClassifier(trainData);
             // if rebuilding (i.e. building from scratch) initialise the classifier
             if(isRebuild()) {
                 // reset resources
-                trainTimer.resetElapsed();
-                trainEstimateTimer.resetElapsed();
+                trainTimer.resetElapsedTime();
+                trainEstimateTimer.resetElapsedTime();
                 // zero tree build time so the first tree build will always set the bar
                 longestComparisonTime = 0;
                 this.trainData = trainData; 
@@ -131,10 +131,10 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
                 }
             }
         }
-        trainContractLogTimeStamp = LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train", trainContractLogTimeStamp);
+        trainContractLogTimeStamp = LogUtils.logTimeContract(trainTimer.elapsedTime(), trainTimeLimit, getLog(), "train", trainContractLogTimeStamp);
         if(estimateOwnPerformance) {
             rebuildTrainEstimateResults = false;
-            while(insideTrainTimeLimit(trainTimer.lap() + longestComparisonTime * trainData.size()) && !missingNeighbourIndices.isEmpty()) {
+            while(insideTrainTimeLimit(trainTimer.elapsedTime() + longestComparisonTime * trainData.size()) && !missingNeighbourIndices.isEmpty()) {
                 // pick the next neighbour
                 final Integer candidateNeighbourIndex = RandomUtils.pick(missingNeighbourIndices, getRandom());
                 neighbourIndices.add(candidateNeighbourIndex);
@@ -146,7 +146,7 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
                 }
                 rebuildTrainEstimateResults = true;
                 saveCheckpoint();
-                trainContractLogTimeStamp = LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train", trainContractLogTimeStamp);
+                trainContractLogTimeStamp = LogUtils.logTimeContract(trainTimer.elapsedTime(), trainTimeLimit, getLog(), "train", trainContractLogTimeStamp);
             }
             if(rebuildTrainEstimateResults) {
                 for(int i = 0; i < trainData.size(); i++) {
@@ -198,7 +198,7 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
             // and vice versa, add the target to the candidate's neighbourhood
             candidateNeighbourhood.add(distance, target);
         }
-        final long comparisonTime = comparisonTimer.lap();
+        final long comparisonTime = comparisonTimer.elapsedTime();
         // add the comparison time to the corresponding neighbourhoods, sharing equally only if symmetric
         if(distanceMeasure.isSymmetric()) {
             targetNeighbourhood.incrementTime(comparisonTime / 2);
@@ -221,7 +221,7 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
         // assume the comparison time will be similar to during training
         long longestTestComparisonTime = longestComparisonTime;
         // while there's remaining neighbours and inside the test contract
-        while(iterator.hasNext() && insideTestTimeLimit(testTimer.lap() + longestTestComparisonTime)) {
+        while(iterator.hasNext() && insideTestTimeLimit(testTimer.elapsedTime() + longestTestComparisonTime)) {
             final long timeStamp = System.nanoTime();
             // compute the distance to the neighbour
             final Instance neighbour = iterator.next();
@@ -296,15 +296,15 @@ public class K extends BaseClassifier implements ContractedTrain, ContractedTest
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.elapsedTimeStopped() - getTrainEstimateTime();
+        return trainTimer.elapsedTime() - getTrainEstimateTime();
     }
 
     @Override public long getTrainEstimateTime() {
-        return trainEstimateTimer.elapsedTimeStopped();
+        return trainEstimateTimer.elapsedTime();
     }
 
     @Override public long getTestTime() {
-        return testTimer.elapsedTimeStopped();
+        return testTimer.elapsedTime();
     }
 
     public int getNeighbourLimit() {

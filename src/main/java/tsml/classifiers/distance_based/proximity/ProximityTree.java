@@ -164,11 +164,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.elapsedTimeStopped();
+        return trainTimer.elapsedTime();
     }
 
     @Override public long getTestTime() {
-        return testTimer.elapsedTimeStopped();
+        return testTimer.elapsedTime();
     }
 
     @Override
@@ -219,14 +219,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         }
         // update the timings
-        LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+        LogUtils.logTimeContract(trainTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         final StopWatch trainStageTimer = new StopWatch();
         while(
                 // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
-                insideTrainTimeLimit( trainTimer.lap() +
+                insideTrainTimeLimit( trainTimer.elapsedTime() +
                                      longestTimePerInstanceDuringNodeBuild *
                                      nodeBuildQueue.peekFirst().getValue().getData().size())
         ) {
@@ -246,11 +246,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // done building this node
             trainStageTimer.stop();
             // calculate the longest time taken to build a node given
-            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.elapsedTimeStopped());
+            longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.elapsedTime());
             // checkpoint if necessary
             saveCheckpoint();
             // update the train timer
-            LogUtils.logTimeContract(trainTimer.lap(), trainTimeLimit, getLog(), "train");
+            LogUtils.logTimeContract(trainTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         }
         // stop resource monitoring
         trainTimer.stop();
@@ -334,7 +334,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         while(
                 !node.isLeaf()
                 &&
-                insideTestTimeLimit(testTimer.lap() + longestPredictTime)
+                insideTestTimeLimit(testTimer.elapsedTime() + longestPredictTime)
         ) {
             testStageTimer.resetAndStart();
             // get the split at that node
@@ -344,7 +344,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // make this the next node to visit
             node = node.get(index);
             testStageTimer.stop();
-            longestPredictTime = testStageTimer.elapsedTimeStopped();
+            longestPredictTime = testStageTimer.elapsedTime();
         }
         // hit a leaf node
         // get the parent of the leaf node to work out distribution
