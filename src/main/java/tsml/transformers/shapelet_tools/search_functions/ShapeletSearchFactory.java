@@ -35,8 +35,10 @@ public class ShapeletSearchFactory {
                 return new ShapeletSearch(options);
             case RANDOM:
                 return new RandomSearch(options);
+            case IMPROVED_RANDOM:
+                return new ImprovedRandomSearch(options);
             default:
-                throw new UnsupportedOperationException(" Currently only FULL and RANDOM shapelet search are allowed" +
+                throw new UnsupportedOperationException(" Currently only FULL, RANDOM and IMPROVED_RANDOM shapelet search are allowed" +
                         "you passed" + options.getSearchType()+" the others are in package aaron_search and are not debugged");
         }
     }

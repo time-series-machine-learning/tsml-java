@@ -117,6 +117,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.DIMENSION)
                                             .useBinaryClassValue()
@@ -165,6 +167,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.INDEPENDENT)
                                             .useBinaryClassValue()
@@ -181,6 +185,8 @@ public class DefaultShapeletOptions {
         ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
         searchBuilder.setMin(3);
         searchBuilder.setMax(m);
+
+        System.out.println(m);
 
         //clamp K to 2000.
         int K = n > 2000 ? 2000 : n;   
@@ -213,6 +219,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.DEPENDENT)
                                             .useBinaryClassValue()
@@ -302,6 +310,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
@@ -349,6 +359,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()
@@ -396,6 +408,8 @@ public class DefaultShapeletOptions {
         
         ShapeletTransformFactoryOptions options = new ShapeletTransformFactoryOptions.ShapeletTransformOptions()
                                             .setKShapelets(K)
+                                            .setMaxLength(m)
+                                            .setMinLength(3)
                                             .setSearchOptions(searchBuilder.build())
                                             .setDistanceType(ShapeletDistance.DistanceType.CACHED)
                                             .useBinaryClassValue()

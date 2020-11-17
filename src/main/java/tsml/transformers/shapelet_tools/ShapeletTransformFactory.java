@@ -116,7 +116,6 @@ public class ShapeletTransformFactory {
         st.setRoundRobin(options.useRoundRobin());
         st.setCandidatePruning(options.useCandidatePruning());
         st.setNumberOfShapelets(options.getkShapelets());
-        st.setShapeletMinAndMax(options.getMinLength(),options.getMaxLength());
         //st.supressOutput();
         return st;
     }
