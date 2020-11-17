@@ -46,6 +46,8 @@ public class RidgeClassifierCV extends AbstractClassifier {
     INDArray coefficients;
     double[] intercept;
 
+    public double bestScore = -999999;
+
     @Override
     public void buildClassifier(Instances instances) throws Exception {
         if (instances.classIndex() != instances.numAttributes() - 1)
@@ -100,7 +102,6 @@ public class RidgeClassifierCV extends AbstractClassifier {
         qt_y = qt_y.mmul(Nd4j.create(labels));
 
         INDArray bestCoef = null;
-        double bestScore = -999999;
         for (double alpha : alphas){
             double[] w = new double[(int)eigvals.size(0)];
             for (int i = 0; i < w.length; i++){
@@ -138,9 +139,10 @@ public class RidgeClassifierCV extends AbstractClassifier {
                 }
             }
             e /= sums.length * coefs.size(1);
+            e = 1 - e;
 
-            if (-e > bestScore){
-                bestScore = -e;
+            if (e > bestScore){
+                bestScore = e;
                 bestCoef = coefs;
             }
         }
@@ -241,11 +243,11 @@ public class RidgeClassifierCV extends AbstractClassifier {
         int fold = 0;
 
         //Minimum working example
-        String dataset = "GunPoint";
-        Instances train = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\"
-                + dataset + "\\" + dataset + "_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\"
-                + dataset + "\\" + dataset + "_TEST.arff");
+        String dataset = "ItalyPowerDemand";
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                + "\\" + dataset + "_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                + "\\" + dataset + "_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];

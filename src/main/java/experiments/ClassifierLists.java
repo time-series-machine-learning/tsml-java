@@ -368,7 +368,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET","ROCKET50k","ROCKET1","ROCKET2","ROCKET3","ROCKET4","ROCKET5","ROCKET6","ROCKET7","ROCKET8","ROCKET9"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -396,6 +396,55 @@ public class ClassifierLists {
                 break;
             case "ROCKET":
                 c = new ROCKETClassifier();
+                break;
+            case "ROCKET50k":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).numKernels = 50000;
+                break;
+            case "ROCKET1":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 25;
+                ((ROCKETClassifier)c).numKernels = 10000;
+                break;
+            case "ROCKET2":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 50;
+                ((ROCKETClassifier)c).numKernels = 10000;
+                break;
+            case "ROCKET3":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 100;
+                ((ROCKETClassifier)c).numKernels = 10000;
+                break;
+            case "ROCKET4":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 25;
+                ((ROCKETClassifier)c).numKernels = 25000;
+                break;
+            case "ROCKET5":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 50;
+                ((ROCKETClassifier)c).numKernels = 25000;
+                break;
+            case "ROCKET6":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 100;
+                ((ROCKETClassifier)c).numKernels = 25000;
+                break;
+            case "ROCKET7":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 25;
+                ((ROCKETClassifier)c).numKernels = 50000;
+                break;
+            case "ROCKET8":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 50;
+                ((ROCKETClassifier)c).numKernels = 50000;
+                break;
+            case "ROCKET9":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 100;
+                ((ROCKETClassifier)c).numKernels = 50000;
                 break;
             default:
                 System.out.println("Unknown hybrid based classifier, should not be able to get here ");
@@ -633,7 +682,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HIVE-COTE1.0","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
+    public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE 2.0 RE","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -647,7 +696,7 @@ public class ClassifierLists {
             dataset=exp.datasetName;
         }
         switch(classifier) {
-            case "HIVE-COTE1.0":
+            case "HIVE-COTE 1.0":
                 if(canLoadFromFile){
                     String[] cls={"TSF","RISE","STC","cBOSS"};//RotF for ST
                     c=new HIVE_COTE();
@@ -661,9 +710,23 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
-            case "HIVE-COTEV2":
+            case "HIVE-COTE 2.0":
                 if(canLoadFromFile){
-                    String[] cls={"CIF","TED","RISE","STC","PF"};//RotF for ST
+                    String[] cls={"CIF","TDE","ROCKET","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HIVE-COTE 2.0 RE":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","TDE","ROCKET7","STC","PF"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
@@ -678,6 +741,20 @@ public class ClassifierLists {
             case "HC-TDE":
                 if(canLoadFromFile){
                     String[] cls={"TSF","TDE","RISE","STC"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC-CIF":
+                if(canLoadFromFile){
+                    String[] cls={"CIF","cBOSS","RISE","STC"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
