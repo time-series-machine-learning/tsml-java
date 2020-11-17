@@ -10,197 +10,131 @@ import java.io.ObjectOutputStream;
  * Contributors: goastler
  */
 public class StopWatch extends Stated {
-    private transient long timeStamp;
-    // total time excluding the current lap
+    // track the last time the elapsedTime was updated
+    private long lastUpdateTimeStamp;
+    // the cumulative elapsed time
     private long elapsedTime;
-    private long lapTimeStamp;
-    private long lapTime;
 
     public StopWatch() {
-        super();
+        super(false);
     }
     
     public StopWatch(boolean start) {
         super(start);
     }
     
+    public StopWatch(long startTimeStamp) {
+        super(false);
+        start(startTimeStamp);
+    }
+
     /**
-     * The elapsed time since the stopwatch was last reset.
+     * Get the elapsed time. If the StopWatch is started, this will update the elapsedTime with the difference since start() or this method were last called.
      * @return
      */
     public long elapsedTime() {
-        long result = elapsedTime;
-        if(isStarted()) {
-            result += System.nanoTime() - timeStamp;
-        }
-        return result;
+        return elapsedTime(System.nanoTime());
     }
 
     /**
-     * Gets the lap time for the current lap. This is the time since start() or lap() was last called
+     * Update and get the elapsed time. If the stopwatch is started, this will update the elapsed time with the difference between the given time stamp and the last recorded timestamp (either the start time stamp or the time stamp from the most recent call to this method).
+     * @param timeStamp
      * @return
      */
-    public long lapTime() {
-        // if started
+    public long elapsedTime(long timeStamp) {
         if(isStarted()) {
-            // then add on the difference since the lap started
-            lapTime = System.nanoTime() - lapTimeStamp;
+            if(lastUpdateTimeStamp > timeStamp) {
+                throw new IllegalStateException("last update time stamp is from the future: " + lastUpdateTimeStamp + " > " + timeStamp);
+            }
+            final long diff = timeStamp - lastUpdateTimeStamp;
+            elapsedTime += diff;
+            lastUpdateTimeStamp = timeStamp;
         }
-        return lapTime;
-    }
-    
-    /**
-     * Perform a lap operation. This provides the time since the last lap call or the elapsed time so far if lap has not been called yet. (Think F1 track recording car passing start line every lap, this reports the time taken to do 1 lap of the track)
-     * @return the lap time
-     */
-    public long lap() {
-        if(isStarted()) {
-            // track the time stamp of the current lap
-            long previousStartLapTimeStamp = lapTimeStamp;
-            // build a new start time stamp for the new lap
-            lapTimeStamp = System.nanoTime();
-            // the difference between the time stamps is the lap time
-            lapTime = lapTimeStamp - previousStartLapTimeStamp;
-        }
-        return lapTime;
+        return elapsedTime;
     }
 
     /**
-     * The timeStamp of when the current lap began.
-     * @return
+     * Start the StopWatch at the current time.
      */
-    public long lapTimeStamp() {
-        return lapTimeStamp;
+    public void start() {
+        start(System.nanoTime());
     }
 
     /**
-     * Timestamp of when the elapsed time was last updated. This is usually when the stopwatch was started, but this may change if the stopwatch is serialised, etc, and the elapsed time is toted up during that operation.
-     * @return
+     * Start the StopWatch from the given time.
+     * @param startTimeStamp
      */
-    public long timeStamp() {
-        return timeStamp;
-    }
-    
-
-    private void writeObject(ObjectOutputStream stream)
-            throws IOException {
-        // record the current elapsed time, i.e. if state is currently started this laps the stopwatch
-        if(isStarted()) {
-            updateElapsedTime();
-        }
-        // then write the object
-        stream.defaultWriteObject();
-        // NOTE does not change the state of this stopwatch so will keep running if started!
-    }
-    
-    private void readObject(ObjectInputStream serialized) throws ClassNotFoundException, IOException
-    {
-        // read in the object
-        serialized.defaultReadObject();
-        // then reset the clock to current time so if the state is started the clock is resuming from now
-        resetClock();
-    }
-
-    @Override public void start() {
+    public void start(long startTimeStamp) {
         super.start();
-        // update the clock to current time
-        resetClock();
+        setStartTimeStamp(startTimeStamp);
+    }
+    
+    public void stop(long timeStamp) {
+        super.stop();
+        elapsedTime(timeStamp);
+    }
+    
+    public void stop() {
+        stop(System.nanoTime());
     }
 
     /**
-     * Updates the elapsed time and moves the timeStamp of when the stopwatch was started
+     * Set the start time irrelevant of current state.
+     * @param startTimeStamp
      */
-    private void updateElapsedTime() {
-        // force the timer to update
-        lap();
-        // add on the diff between when the stopwatch was started and the timestamp given from the new lap, i.e. the stop timestamp
-        elapsedTime += lapTimeStamp - timeStamp;
-        timeStamp = lapTimeStamp;
-    }
-    
-    @Override public void stop() {
-        updateElapsedTime();
-        super.stop();
-    }
-    
-    public long lapAndStop() {
-        stop();
-        return lapTime;
-    }
-    
-    public long optionalLap() {
-        if(isStarted()) {
-            lap();
+    public void setStartTimeStamp(long startTimeStamp) {
+        if(startTimeStamp > System.nanoTime()) {
+            throw new IllegalArgumentException("cannot set start time in the future");
         }
-        return lapTime;
-    }
-    
-    public long elapsedTimeStopped() {
-        checkStopped();
-        return elapsedTime();
-    }
-    
-    public long elapsedTimeStarted() {
-        checkStarted();
-        return elapsedTime();
-    }
-    
-    public long lapTimeStarted() {
-        checkStarted();
-        return lapTime();
-    }
-    
-    public long lapTimeStopped() {
-        checkStopped();
-        return lapTime();
+        lastUpdateTimeStamp = startTimeStamp;
     }
 
     /**
-     * reset the clock, useful post serialisation
+     * Set the elapsed time.
+     * @param elapsedTime
      */
-    public void resetClock() {
-        timeStamp = System.nanoTime();
-        lapTimeStamp = timeStamp;
+    public void setElapsedTime(long elapsedTime) {
+        if(elapsedTime < 0) {
+            throw new IllegalArgumentException("elapsed time cannot be less than 0");
+        }
+        this.elapsedTime = elapsedTime;
+    }
+
+    public void resetElapsedTime() {
+        setElapsedTime(0);
     }
     
-    public void resetClockAndStop() {
-        resetClock();
-        super.stop();
-    }
-
     /**
-     * reset time count
+     * Reset the elapsed time to zero and invalidate the start time.
      */
-    public void resetElapsed() {
-        elapsedTime = 0;
-        lapTime = 0;
-    }
-
-    @Override public void reset() {
-        super.reset();
-        resetElapsed();
-        resetClock();
-    }
-
+    public void reset() {
+        stop();
+        resetElapsedTime();
+        // deliberately setting to max value to ensure the time stamp must be updated before subsequent calls to elapsedTime() when the stopwatch state is "started". 
+        // tldr; validity check
+        lastUpdateTimeStamp = Long.MAX_VALUE;
+    }    
+    
     /**
-     * add time from another source
+     * add time to the elapsed time
      * @param nanos
      */
     public void add(long nanos) {
         elapsedTime += nanos;
     }
 
-    public void add(StopWatch stopWatch) {
-        add(stopWatch.elapsedTime());
-    }
-
     @Override public String toString() {
         return "StopWatch{" +
             "elapsedTime=" + elapsedTime() +
-            ", lapTime=" + lapTime() +
             ", " + super.toString() +
-            ", timeStamp=" + timeStamp() +
-            ", lapTimeStamp=" + lapTimeStamp() +
             '}';
+    }
+
+    /**
+     * Get the time stamp when the elapsed time was last updated.
+     * @return
+     */
+    public long timeStamp() {
+        return lastUpdateTimeStamp;
     }
 }
