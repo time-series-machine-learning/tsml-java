@@ -15,13 +15,13 @@
 package tsml.classifiers.hybrids;
 
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.LibLinearClassifier;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 
@@ -41,7 +41,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMul
  */
 public class ROCKETClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable, MultiThreadable {
 
-    private int numKernels = 10000;
+    public int numKernels = 10000;
     private boolean normalise = true;
     private Classifier cls = new RidgeClassifierCV();
 
@@ -54,6 +54,11 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
     private boolean multithreading = false;
     private int threads;
+
+    boolean ensemble = true;
+    public int ensembleSize = 25;
+    Classifier[] eCls;
+    ROCKET[] eROCKET;
 
     public ROCKETClassifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
@@ -110,67 +115,129 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         trainResults.setBuildTime(System.nanoTime());
         getCapabilities().testWithFail(data);
 
-        if (trainTimeContract){
-            ArrayList<Instances> fragmentedTransformedData = new ArrayList<>();
-            rocket = new ROCKET();
-            rocket.setNumKernels(0);
-            rocket.setNormalise(normalise);
-            rocket.setSeed(seed);
+        if (trainTimeContract) {
+            if (ensemble) {
+                ArrayList<Classifier> tempCls = new ArrayList<>();
+                ArrayList<ROCKET> tempROCKET = new ArrayList<>();
+                int i = 0;
+                while (withinTrainContract(trainResults.getBuildTime())) {
+                    ROCKET r = new ROCKET();
+                    r.setNumKernels(numKernels);
+                    r.setNormalise(normalise);
+                    r.setSeed(seed+i*47);
 
-            int l = 0;
-            while (withinTrainContract(trainResults.getBuildTime())) {
-                ROCKET tempRocket = new ROCKET();
-                tempRocket.setNumKernels(numKernelsStep);
-                tempRocket.setNormalise(normalise);
-                tempRocket.setSeed(seed + l * numKernelsStep);
-
-                if (multithreading) {
-                    tempRocket.enableMultiThreading(threads);
-                }
-
-                fragmentedTransformedData.add(tempRocket.fitTransform(data));
-                rocket.addKernels(tempRocket);
-
-                l++;
-            }
-
-            Instances transformedData = rocket.determineOutputFormat(data);
-            header = new Instances(transformedData, 0);
-
-            for (int i = 0; i < data.numInstances(); i++){
-                double[] arr = new double[transformedData.numAttributes()];
-                int a1 = 0;
-                for (Instances insts : fragmentedTransformedData) {
-                    Instance inst = insts.get(i);
-                    for (int j = 0; j < numKernelsStep*2; j++) {
-                        arr[a1 + j] = inst.value(j);
+                    if (multithreading) {
+                        r.enableMultiThreading(threads);
                     }
-                    a1 += numKernelsStep*2;
-                }
-                arr[arr.length-1] = data.get(i).classValue();
-                transformedData.add(new DenseInstance(1, arr));
-            }
 
-            cls.buildClassifier(transformedData); //not currently included in contract
+                    Instances transformedData = r.fitTransform(data);
+                    if (header == null) header = new Instances(transformedData, 0);
+
+                    Classifier c = AbstractClassifier.makeCopy(cls);
+
+                    if (c instanceof Randomizable) {
+                        ((Randomizable) c).setSeed(seed+i*47);
+                    }
+
+                    c.buildClassifier(transformedData);
+
+                    tempCls.add(c);
+                    tempROCKET.add(r);
+                    i++;
+                }
+
+                eCls = tempCls.toArray(eCls);
+                eROCKET = tempROCKET.toArray(eROCKET);
+            }
+            else {
+                ArrayList<Instances> fragmentedTransformedData = new ArrayList<>();
+                rocket = new ROCKET();
+                rocket.setNumKernels(0);
+                rocket.setNormalise(normalise);
+                rocket.setSeed(seed);
+
+                int l = 0;
+                while (withinTrainContract(trainResults.getBuildTime())) {
+                    ROCKET tempRocket = new ROCKET();
+                    tempRocket.setNumKernels(numKernelsStep);
+                    tempRocket.setNormalise(normalise);
+                    tempRocket.setSeed(seed + l * numKernelsStep);
+
+                    if (multithreading) {
+                        tempRocket.enableMultiThreading(threads);
+                    }
+
+                    fragmentedTransformedData.add(tempRocket.fitTransform(data));
+                    rocket.addKernels(tempRocket);
+
+                    l++;
+                }
+
+                Instances transformedData = rocket.determineOutputFormat(data);
+                header = new Instances(transformedData, 0);
+
+                for (int i = 0; i < data.numInstances(); i++) {
+                    double[] arr = new double[transformedData.numAttributes()];
+                    int a1 = 0;
+                    for (Instances insts : fragmentedTransformedData) {
+                        Instance inst = insts.get(i);
+                        for (int j = 0; j < numKernelsStep * 2; j++) {
+                            arr[a1 + j] = inst.value(j);
+                        }
+                        a1 += numKernelsStep * 2;
+                    }
+                    arr[arr.length - 1] = data.get(i).classValue();
+                    transformedData.add(new DenseInstance(1, arr));
+                }
+
+                cls.buildClassifier(transformedData);
+            }
         }
         else {
-            rocket = new ROCKET();
-            rocket.setNumKernels(numKernels);
-            rocket.setNormalise(normalise);
-            rocket.setSeed(seed);
+            if (ensemble){
+                eCls = new Classifier[ensembleSize];
+                eROCKET = new ROCKET[ensembleSize];
+                for (int i = 0; i < ensembleSize; i++){
+                    eROCKET[i] = new ROCKET();
+                    eROCKET[i].setNumKernels(numKernels);
+                    eROCKET[i].setNormalise(normalise);
+                    eROCKET[i].setSeed(seed+i*47);
 
-            if (multithreading) {
-                rocket.enableMultiThreading(threads);
+                    if (multithreading) {
+                        eROCKET[i].enableMultiThreading(threads);
+                    }
+
+                    Instances transformedData = eROCKET[i].fitTransform(data);
+                    if (header == null) header = new Instances(transformedData, 0);
+
+                    eCls[i] = AbstractClassifier.makeCopy(cls);
+
+                    if (eCls[i] instanceof Randomizable) {
+                        ((Randomizable) eCls[i]).setSeed(seed+i*47);
+                    }
+
+                    eCls[i].buildClassifier(transformedData);
+                }
             }
+            else {
+                rocket = new ROCKET();
+                rocket.setNumKernels(numKernels);
+                rocket.setNormalise(normalise);
+                rocket.setSeed(seed);
 
-            Instances transformedData = rocket.fitTransform(data);
-            header = new Instances(transformedData, 0);
+                if (multithreading) {
+                    rocket.enableMultiThreading(threads);
+                }
 
-            if (cls instanceof Randomizable) {
-                ((Randomizable) cls).setSeed(seed);
+                Instances transformedData = rocket.fitTransform(data);
+                header = new Instances(transformedData, 0);
+
+                if (cls instanceof Randomizable) {
+                    ((Randomizable) cls).setSeed(seed);
+                }
+
+                cls.buildClassifier(transformedData);
             }
-
-            cls.buildClassifier(transformedData);
         }
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
@@ -179,18 +246,31 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
     @Override
     public double classifyInstance(Instance instance) throws Exception {
-        return cls.classifyInstance(predictionTransform(instance));
+        double[] probs = distributionForInstance(instance);
+        return findIndexOfMax(probs, rand);
     }
 
     public double[] distributionForInstance(Instance instance) throws Exception {
-        return cls.distributionForInstance(predictionTransform(instance));
-    }
+        if (ensemble){
+            double[] probs = new double[header.numClasses()];
+            double sum = 0;
+            for (int i = 0; i < eCls.length; i++){
+                Instance transformedInst = eROCKET[i].transform(instance);
+                transformedInst.setDataset(header);
+                double pls = eCls[i].classifyInstance(transformedInst);
+                double s = cls instanceof RidgeClassifierCV ? Math.pow(((RidgeClassifierCV)eCls[i]).bestScore, 4) : 1;
+                probs[(int)pls] += s;
+                sum += s;
+            }
 
-    public Instance predictionTransform(Instance instance){
-        Instance transformedInst = rocket.transform(instance);
-        transformedInst.setDataset(header);
-
-        return transformedInst;
+            for (int i = 0; i < probs.length; i++) probs[i] /= sum;
+            return probs;
+        }
+        else {
+            Instance transformedInst = rocket.transform(instance);
+            transformedInst.setDataset(header);
+            return cls.distributionForInstance(transformedInst);
+        }
     }
 
     public static void main(String[] args) throws Exception {

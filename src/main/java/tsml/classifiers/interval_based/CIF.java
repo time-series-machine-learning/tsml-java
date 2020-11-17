@@ -460,7 +460,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished TSF Build with " + trees.size() + " Trees built in " +
+        printLineDebug("*************** Finished CIF Build with " + trees.size() + " Trees built in " +
                 trainResults.getBuildTime()/1000000000 + " Seconds  ***************");
     }
 
@@ -1232,7 +1232,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
 
         //get information gain from all tree node splits for each attribute/time point
-        double[][] curves = new double[startNumAttributes][seriesLength];
+        double[][][] curves = new double[startNumAttributes][numDimensions][seriesLength];
         for (int i = 0; i < trees.size(); i++){
             TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
             ArrayList<Double>[] sg = tree.getTreeSplitsGain();
@@ -1241,38 +1241,41 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 double split = sg[0].get(n);
                 double gain = sg[1].get(n);
                 int interval = (int)(split/numAttributes);
-                int att = (int)(split%numAttributes);
-                att = subsampleAtts.get(i).get(att);
+                int att = subsampleAtts.get(i).get((int)(split%numAttributes));
+                int dim = intervalDimensions.get(i).get(interval);
 
                 for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
-                    curves[att][j] += gain;
+                    curves[att][dim][j] += gain;
                 }
             }
         }
 
         OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-        for (int i = 0 ; i < startNumAttributes; i++){
-            switch(i){
-                case 22:
-                    of.writeLine("Mean");
-                    break;
-                case 23:
-                    of.writeLine("Standard Deviation");
-                    break;
-                case 24:
-                    of.writeLine("Slope");
-                    break;
-                default:
-                    of.writeLine(Catch22.getSummaryStatNameByIndex(i));
+        for (int i = 0; i < numDimensions; i++) {
+            for (int n = 0; n < startNumAttributes; n++) {
+                switch (n) {
+                    case 22:
+                        of.writeLine("Mean");
+                        break;
+                    case 23:
+                        of.writeLine("Standard Deviation");
+                        break;
+                    case 24:
+                        of.writeLine("Slope");
+                        break;
+                    default:
+                        of.writeLine(Catch22.getSummaryStatNameByIndex(n));
+                }
+                of.writeLine(Integer.toString(i));
+                of.writeLine(Arrays.toString(curves[n][i]));
             }
-            of.writeLine(Arrays.toString(curves[i]));
         }
         of.closeFile();
 
         //run python file to output temporal importance curves graph
         Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
-                + " " + visNumTopAtts);
+                + " " + numAttributes + " " + visNumTopAtts);
 
         if (debug) {
             System.out.println("CIF vis python output:");
