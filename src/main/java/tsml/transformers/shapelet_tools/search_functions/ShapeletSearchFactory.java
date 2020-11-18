@@ -14,6 +14,7 @@
  */
 package tsml.transformers.shapelet_tools.search_functions;
 
+import tsml.transformers.shapelet_tools.search_functions.aaron_search.ImprovedRandomSearch;
 
 /**
  * 

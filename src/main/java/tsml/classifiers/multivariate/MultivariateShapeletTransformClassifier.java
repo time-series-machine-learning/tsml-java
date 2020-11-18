@@ -43,6 +43,9 @@ import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 
 /**
  *
@@ -295,20 +298,30 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     
      @Override
     public double classifyInstance(Instance ins) throws Exception{
-        format.add(ins);
+        //format.add(ins);
+
+        TimeSeriesInstance a = Converter.fromArff(ins);
+        TimeSeriesInstances ts_format = new TimeSeriesInstances();
+        ts_format.add(a);
+        format = Converter.toArff(ts_format);
 
         Instances temp  = doTransform ? transform.process(format) : format;
-//Delete redundant
+ //Delete redundant
         for(int del:redundantFeatures)
             temp.deleteAttributeAt(del);
         
         Instance test  = temp.get(0);
-        format.remove(0);
+        //format.remove(0);
         return ensemble.classifyInstance(test);
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
-        format.add(ins);
+        //format.add(ins);
+
+        TimeSeriesInstance a = Converter.fromArff(ins);
+        TimeSeriesInstances ts_format = new TimeSeriesInstances();
+        ts_format.add(a);
+        format = Converter.toArff(ts_format);
         
         Instances temp  = doTransform ? transform.process(format) : format;
 //Delete redundant
@@ -316,7 +329,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
             temp.deleteAttributeAt(del);
         
         Instance test  = temp.get(0);
-        format.remove(0);
+        //format.remove(0);
         return ensemble.distributionForInstance(test);
     }
     
