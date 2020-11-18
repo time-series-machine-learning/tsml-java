@@ -120,7 +120,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // store the train data
     private Instances trainData;
     // train timer
-    private final StopWatch trainTimer = new StopWatch();
+    private final StopWatch runTimer = new StopWatch();
     // test / predict timer
     private final StopWatch testTimer = new StopWatch();
     // the tree of splits
@@ -170,7 +170,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override public long getTrainTime() {
-        return trainTimer.elapsedTime();
+        return getRunTime() - getCheckpointTime();
+    }
+
+    @Override public long getRunTime() {
+        return runTimer.elapsedTime();
     }
 
     @Override public long getTestTime() {
@@ -259,16 +263,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // add the root node to the build queue
                 nodeBuildQueue.add(root);
             }
-        }
-        // update the timings
-        LogUtils.logTimeContract(trainTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
+        } // else case (2)
+        LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         final StopWatch trainStageTimer = new StopWatch();
         while(
                 // there's remaining nodes to be built
                 !nodeBuildQueue.isEmpty()
                 &&
                 // there is enough time for another split to be built
-                insideTrainTimeLimit( trainTimer.elapsedTime() +
+                insideTrainTimeLimit( runTimer.elapsedTime() +
                                      longestTimePerInstanceDuringNodeBuild *
                                      nodeBuildQueue.peekFirst().getValue().getData().size())
         ) {

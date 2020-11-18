@@ -5,6 +5,8 @@ import tsml.classifiers.TrainTimeable;
 
 public interface ContractedTrain extends TrainTimeContractable, TrainTimeable {
 
+    long getRunTime();
+    
     long getTrainTimeLimit();
 
     default boolean hasTrainTimeLimit() {
@@ -24,6 +26,6 @@ public interface ContractedTrain extends TrainTimeContractable, TrainTimeable {
     }
     
     default long findRemainingTrainTime() {
-        return findRemainingTrainTime(getTrainTime());
+        return findRemainingTrainTime(getRunTime());
     }
 }

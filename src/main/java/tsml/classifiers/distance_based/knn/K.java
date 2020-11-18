@@ -33,6 +33,10 @@ import static utilities.ArrayUtilities.uniformDistribution;
 
 public class K extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable, Checkpointed {
 
+    @Override public long getRunTime() {
+        throw new UnsupportedOperationException();
+    }
+
     public static void main(String[] args) throws Exception {
         for(int i = 1; i < 2; i++) {
             int seed = i;
