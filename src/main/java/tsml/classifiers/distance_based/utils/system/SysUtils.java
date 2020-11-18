@@ -13,6 +13,18 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
  * Contributors: goastler
  */
 public class SysUtils {
+    
+    public static String hostname() {
+        if(!getOS().equals(OS.WINDOWS)) {
+            try {
+                return StrUtils.join("\n", exec("hostname"));
+            } catch(IOException | InterruptedException ignored) {
+                
+            }
+        } 
+        return "unknown"; // todo windows version
+    }
+    
     public static List<String> exec(String command) throws
                                              IOException,
                                              InterruptedException {
