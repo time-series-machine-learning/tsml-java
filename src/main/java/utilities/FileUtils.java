@@ -6,6 +6,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileUtils {
 
+    public static boolean isEmptyDir(String path) {
+        final File file = new File(path);
+        if(file.exists() && file.isDirectory()) {
+            final File[] files = file.listFiles();
+            return files != null && files.length > 0;
+        }
+        return false;
+    }
 
     public static void writeToFile(String str, String path) throws
                                                             IOException {
