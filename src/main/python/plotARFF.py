@@ -23,7 +23,7 @@ while line.lower() != "@data":
 	if line != '':
 		num_atts += 1
 	line = f.readline().strip()
-	
+
 instances = []
 classes = []
 line = f.readline().strip()
@@ -32,7 +32,7 @@ while line != '':
 	instances.append(sp[:-1])
 	classes.append(sp[-1])
 	line = f.readline().strip()
-	
+
 class_set = list(set(classes))
 x = range(num_atts-1)
 for i in range(len(class_set)):
@@ -42,7 +42,7 @@ for i in range(len(class_set)):
 			plt.plot(x, [float(g) for g in l[n]], 'C'+str(i), label=str(class_set[i]))
 		else:
 			plt.plot(x, [float(g) for g in l[n]], 'C'+str(i))
-	
-plt.legend()	
+
+plt.legend()
 
 plt.show()

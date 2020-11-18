@@ -14,17 +14,17 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.knn.strategies.RLTunedKNNSetup;
 import tsml.classifiers.distance_based.tuned.RLTunedClassifier;
-import tsml.classifiers.distance_based.utils.MemoryWatchable;
-import tsml.classifiers.distance_based.utils.checkpointing.CheckpointUtils;
-import tsml.classifiers.distance_based.utils.classifier_mixins.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifier_mixins.TrainEstimateable;
-import tsml.classifiers.distance_based.utils.memory.GcMemoryWatchable;
-import tsml.classifiers.distance_based.utils.memory.MemoryWatcher;
-import tsml.classifiers.distance_based.utils.stopwatch.Stated;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatch;
-import tsml.classifiers.distance_based.utils.stopwatch.StopWatchTrainTimeable;
-import tsml.classifiers.distance_based.utils.StrUtils;
-import tsml.classifiers.distance_based.utils.classifier_building.CompileTimeClassifierBuilderFactory;
+import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.system.timing.TimedTrain;
+import tsml.classifiers.distance_based.utils.system.timing.TimedTrainEstimate;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
+import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.TrainEstimateable;
+import tsml.classifiers.distance_based.utils.system.memory.WatchedMemory;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.classifiers.CompileTimeClassifierBuilderFactory;
 import utilities.*;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -37,22 +37,7 @@ import java.util.logging.Logger;
 // todo this has likeness to RLTuner, perhaps need to unify somewhere / make this a RLTuner?
 
 public class ElasticEnsemble extends BaseClassifier implements TrainTimeContractable, Checkpointable,
-    GcMemoryWatchable, StopWatchTrainTimeable {
-
-    public static void main(String[] args) throws Exception {
-        int seed = 0;
-        Instances[] data = DatasetLoading.sampleGunPoint(seed);
-        ElasticEnsemble classifier = FACTORY.EE_V2.build();
-        classifier.setEstimateOwnPerformance(true);
-        classifier.setSeed(0);
-        classifier.getLogger().setLevel(Level.ALL);
-        ClassifierResults results = ClassifierTools.trainAndTest(data, classifier);
-        results.setDetails(classifier, data[1]);
-        ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-        trainResults.setDetails(classifier, data[0]);
-        System.out.println(trainResults.writeSummaryResultsToString());
-        System.out.println(results.writeSummaryResultsToString());
-    }
+    WatchedMemory, TimedTrain, TimedTrainEstimate {
 
     public static final Factory FACTORY = new Factory();
 
@@ -60,18 +45,17 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
      * get whether the train estimate will be regenerated
      * @return
      */
-    public boolean isRegenerateTrainEstimate() {
+    public boolean isRebuildTrainEstimateResults() {
         return regenerateTrainEstimate;
     }
 
     /**
      * set whether the train estimate will be regenerated
-     * @param regenerateTrainEstimate
+     * @param rebuildTrainEstimateResults
      * @return
      */
-    protected ElasticEnsemble setRegenerateTrainEstimate(boolean regenerateTrainEstimate) {
-        this.regenerateTrainEstimate = regenerateTrainEstimate;
-        return this;
+    public void setRebuildTrainEstimateResults(boolean rebuildTrainEstimateResults) {
+        this.regenerateTrainEstimate = rebuildTrainEstimateResults;
     }
 
     public static class Factory extends CompileTimeClassifierBuilderFactory<ElasticEnsemble> {
@@ -245,7 +229,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     private static final long serialVersionUID = 0;
     // minimum checkpoint interval
-    private transient long minCheckpointIntervalNanos = Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
+    private transient long minCheckpointIntervalNanos = 0;//Checkpointable.DEFAULT_MIN_CHECKPOINT_INTERVAL;
     // timestamp of last checkpoint
     private transient long lastCheckpointTimeStamp = 0;
     // save path for checkpoints
@@ -255,17 +239,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
     // whether to skip the final checkpoint
     private transient boolean skipFinalCheckpoint = false;
 
-    @Override
     public boolean isSkipFinalCheckpoint() {
         return skipFinalCheckpoint;
     }
 
-    @Override
     public void setSkipFinalCheckpoint(boolean skipFinalCheckpoint) {
         this.skipFinalCheckpoint = skipFinalCheckpoint;
     }
 
-    @Override
     public String getSavePath() {
         return savePath;
     }
@@ -281,18 +262,23 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return result;
     }
 
-    @Override public String getLoadPath() {
+    @Override public void copyFromSerObject(final Object obj) throws Exception {
+
+    }
+
+    public String getLoadPath() {
         return loadPath;
     }
 
-    @Override public boolean setLoadPath(final String path) {
-        boolean result = Checkpointable.super.setLoadPath(path);
-        if(result) {
-            loadPath = StrUtils.asDirPath(path);
-        } else {
-            loadPath = null;
-        }
-        return result;
+    public boolean setLoadPath(final String path) {
+//        boolean result = Checkpointable.super.setLoadPath(path);
+//        if(result) {
+//            loadPath = StrUtils.asDirPath(path);
+//        } else {
+//            loadPath = null;
+//        }
+//        return result;
+        return true;
     }
 
     public StopWatch getTrainTimer() {
@@ -307,27 +293,30 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return lastCheckpointTimeStamp;
     }
 
-    public boolean saveToCheckpoint() throws Exception {
-        trainTimer.suspend();
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() && !skipFinalCheckpoint);
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
-        return result;
+    public boolean checkpointIfIntervalExpired() throws Exception {
+//        trainTimer.stop();
+//        trainEstimateTimer.stop();
+//        memoryWatcher.stop();
+////        boolean result = CheckpointUtils.saveToSingleCheckpoint(this, getLogger(), isBuilt() &&
+//        //        !skipFinalCheckpoint); // todo fix
+//        memoryWatcher.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        trainTimer.unsuspend();
+//        return result;
+        return false;
     }
 
-    public boolean loadFromCheckpoint() {
-        trainTimer.suspend(); // todo better way of handling this
-        trainEstimateTimer.suspend();
-        memoryWatcher.suspend();
-        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
-        lastCheckpointTimeStamp = System.nanoTime();
-        memoryWatcher.unsuspend();
-        trainEstimateTimer.unsuspend();
-        trainTimer.unsuspend();
-        return result;
+    public boolean loadCheckpoint() {
+//        trainTimer.stop(); // todo fix
+//        trainEstimateTimer.stop();
+//        memoryWatcher.stop();
+//        boolean result = CheckpointUtils.loadFromSingleCheckpoint(this, getLogger());
+//        lastCheckpointTimeStamp = System.nanoTime();
+//        memoryWatcher.unsuspend();
+//        trainEstimateTimer.unsuspend();
+//        trainTimer.unsuspend();
+//        return result;
+        return false;
     }
 
     public void setMinCheckpointIntervalNanos(final long nanos) {
@@ -345,7 +334,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         return memoryWatcher;
     }
 
-    @Override public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
+    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
         this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
     }
 
@@ -358,7 +347,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         trainTimeLimitNanos = nanos;
     }
 
-    @Override public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
+    public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
         long result = 0;
         // if we've got no more constituents to look at then we're done
         if(!nextConstituentsBatch.isEmpty()) {
@@ -366,42 +355,42 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             EnhancedAbstractClassifier classifier = nextConstituentsBatch.get(0);
             // if it's able to predict its next amount of time then use that
             if(classifier instanceof TrainTimeContractable) {
-                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
+//                result = ((TrainTimeContractable) classifier).predictNextTrainTimeNanos();
             }
         }
         return result;
     }
 
-    @Override public long getTrainContractTimeNanos() {
+    public long getTrainContractTimeNanos() {
         return trainContractTimeNanos;
     }
 
     private void setRemainingTrainTimeNanosPerConstituent() {
         // if we've got no train time limit then the constituents can take as long as they like
         // if we've got no constituents in the batch then there's no remaining time
-        if(!hasTrainTimeLimit() || constituentsBatch.isEmpty()) {
-            remainingTrainTimeNanosPerConstituent = -1;
-        } else {
-            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / constituentsBatch.size();
-        }
+//        if(!hasTrainTimeLimit() || constituentsBatch.isEmpty()) {
+//            remainingTrainTimeNanosPerConstituent = -1;
+//        } else {
+//            remainingTrainTimeNanosPerConstituent = getRemainingTrainTimeNanos() / constituentsBatch.size();
+//        }
     }
 
     @Override public void buildClassifier(final Instances trainData) throws Exception {
         // first lets load from a checkpoint if there is one
-        loadFromCheckpoint();
+        loadCheckpoint();
         // enable the resource trackers
-        trainTimer.enable();
-        memoryWatcher.enable();
-        trainEstimateTimer.checkDisabled();
+        trainTimer.start();
+        memoryWatcher.start();
+        trainEstimateTimer.checkStopped();
         final Logger logger = getLogger();
         // find whether we're rebuilding
         final boolean rebuild = isRebuild();
         // if we're rebuilding
         if(rebuild) {
             // reset the resource trackers
-            trainTimer.resetAndEnable();
-            memoryWatcher.resetAndEnable();
-            trainEstimateTimer.resetAndDisable();
+            trainTimer.resetAndStart();
+            memoryWatcher.resetAndStart();
+            trainEstimateTimer.resetAndStop();
         }
         // let super build
         super.buildClassifier(trainData);
@@ -426,14 +415,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                 // if the constituent can do checkpointing
                 if(constituent instanceof Checkpointable) {
                     // setup all the checkpointing details
-                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
-                        ((Checkpointable) constituent).setLoadPath(loadPath);
-                    }
-                    if(isCheckpointSavingEnabled()) {
-                        ((Checkpointable) constituent).setCheckpointPath(savePath);
-                    }
-                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
-                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
+//                    if(isCheckpointLoadingEnabled()) { // todo paths need to be appended with constituent name
+//                        ((Checkpointable) constituent).setLoadPath(loadPath);
+//                    }
+//                    if(isCheckpointSavingEnabled()) {
+//                        ((Checkpointable) constituent).setCheckpointPath(savePath);
+//                    }
+//                    ((Checkpointable) constituent).setMinCheckpointIntervalNanos(minCheckpointIntervalNanos);
+//                    ((Checkpointable) constituent).setSkipFinalCheckpoint(skipFinalCheckpoint);
                 }
             }
             nextConstituentsBatch = new ArrayList<>();
@@ -442,14 +431,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             setRemainingTrainTimeNanosPerConstituent();
         }
         // switch resource monitors if not already
-        trainTimer.enableAnyway();
-        trainEstimateTimer.disableAnyway();
+        trainTimer.start(false);
+        trainEstimateTimer.stop(false);
         // while there's constituents to process and time left
         while(hasNextBuildTick()) {
             // process another constituent
             nextBuildTick();
             // save this to checkpoint
-            saveToCheckpoint();
+            checkpointIfIntervalExpired();
         }
         // if we're estimating our train
         if(regenerateTrainEstimate) {
@@ -471,28 +460,29 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             trainResults = new ClassifierResults();
             // vote constituents
             for(i = 0; i < trainData.size(); i++) {
-                StopWatch predictionTimer = new StopWatch(Stated.State.ENABLED);
+                StopWatch predictionTimer = new StopWatch();
+                predictionTimer.start();
                 double[] distribution = votingScheme.distributionForTrainInstance(modules, i);
-                int prediction = ArrayUtilities.argMax(distribution);
-                predictionTimer.disable();
+                int prediction = Utilities.argMax(distribution, rand);
+                predictionTimer.stop();
                 double trueClassValue = trainData.get(i).classValue();
-                trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTimeNanos(), null);
+                trainResults.addPrediction(trueClassValue, distribution, prediction, predictionTimer.getTime(), null);
             }
         }
         // have regenerated train estimate so disable
         regenerateTrainEstimate = false;
         // disable resource monitors
-        memoryWatcher.disableAnyway();
-        trainEstimateTimer.disableAnyway();
-        trainTimer.disableAnyway();
+        memoryWatcher.stop(false);
+        trainEstimateTimer.stop(false);
+        trainTimer.stop(false);
         // set train results details
-        trainResults.setDetails(this, trainData);
+//        trainResults.setDetails(this, trainData);
         // free up train data
         this.trainData = null;
         // we're built by here
-        setBuilt(true);
+//        setBuilt(true);
         logger.info("build finished");
-        saveToCheckpoint();
+        checkpointIfIntervalExpired();
     }
 
     private boolean hasTimeRemainingPerConstituent() {
@@ -520,25 +510,25 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // set the train time limit if possible
         if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()) {
-            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
+//            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
         }
         // track the train time of the constituent
         StopWatch constituentTrainTimer = new StopWatch();
         // disable our train timer as the constituent train timer will take it from here
-        trainTimer.disable();
+        trainTimer.stop();
         if(constituent instanceof TrainTimeable) {
-            constituentTrainTimer.disableAnyway();
+            constituentTrainTimer.stop(false);
         } else {
-            constituentTrainTimer.enableAnyway();
+            constituentTrainTimer.start(false);
         }
         // track the memory of the constituent
         MemoryWatcher constituentMemoryWatcher = new MemoryWatcher();
         // disable our memory watcher as the constituent memory watcher will take it from here
-        memoryWatcher.disable();
+        memoryWatcher.stop();
         if(constituent instanceof MemoryWatchable) {
-            constituentMemoryWatcher.disableAnyway();
+            constituentMemoryWatcher.stop(false);
         } else {
-            constituentMemoryWatcher.enableAnyway();
+            constituentMemoryWatcher.start(false);
         }
         logger.fine(() -> "running constituent {id: "+
                    (constituents.size() - constituentsBatch.size())+
@@ -554,23 +544,23 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
                    constituent.getClassifierName()+
                    " }");
         // disable resource monitors for the constituent and re-enable ours
-        constituentTrainTimer.disableAnyway();
-        constituentMemoryWatcher.disableAnyway();
-        memoryWatcher.enable();
-        trainTimer.enable();
+        constituentTrainTimer.stop(false);
+        constituentMemoryWatcher.stop(false);
+        memoryWatcher.start();
+        trainTimer.start();
         // sanity check the train estimate timer is disabled
-        trainEstimateTimer.checkDisabled();
+        trainEstimateTimer.checkStopped();
         // add the constituent's train time onto ours
         if(constituent instanceof TrainTimeable) { // todo these can probs be a util method as similar elsewhere
             // (RLTune)
-            trainTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            trainTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             trainTimer.add(constituentTrainTimer);
         }
         // add the constituent's train estimate time onto ours
         if(constituent instanceof TrainEstimateTimeable) {
             // the classifier tracked its time internally
-            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTimeNanos());
+            this.trainEstimateTimer.add(((TrainTimeable) constituent).getTrainTime());
         } else {
             // we already tracked this as part of the train time
         }
@@ -582,8 +572,10 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         }
         // if the constituent is contracting train time AND there's time remaining for each constituent AND the
         // constituent has remaining work to do
-        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent() &&
-                ((TrainTimeContractable) constituent).hasRemainingTraining()) {
+        if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()
+//                   &&
+//                ((TrainTimeContractable) constituent).hasRemainingTraining()
+        ) {
             // add it to the next batch of constituents
             nextConstituentsBatch.add(constituent);
         }
@@ -599,7 +591,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
             setRemainingTrainTimeNanosPerConstituent();
         }
         // we've adjusted one of the constituents therefore we need to regenerate the train estimate
-        setRegenerateTrainEstimate(true);
+        setRebuildTrainEstimateResults(true);
     }
 
     /**
@@ -611,15 +603,13 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // must do a first pass of all constituents, therefore if the first batch hasn't been completed this should
         // always return true
         // otherwise, it's dependent on whether there's further training remaining
-        return !firstBatchDone || (hasRemainingTrainTime() && !constituentsBatch.isEmpty());
+        return !firstBatchDone || (
+//                hasRemainingTrainTime() &&
+                        !constituentsBatch.isEmpty());
     }
 
     @Override public double[] distributionForInstance(final Instance instance) throws Exception {
         return votingScheme.distributionForInstance(modules, instance);
-    }
-
-    @Override public double classifyInstance(final Instance instance) throws Exception {
-        return Utilities.argMax(distributionForInstance(instance), getRandom());
     }
 
     public ModuleVotingScheme getVotingScheme() {

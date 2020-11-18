@@ -14,6 +14,8 @@
  */
 package tsml.transformers;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
 /* Performs a FFT of the data set. NOTE:
  * 1. If algorithm type is set to DFT, then this will only perform a FFT if the series is length power of 2.
  * otherwise it will perform the order m^2 DFT.
@@ -26,8 +28,11 @@ package tsml.transformers;
  * Note that the series does store the first fourier term (series mean) and the
  * imaginary part will always be zero
  */
-import weka.core.*;
-import weka.filters.SimpleBatchFilter;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
 
 public class FFT implements Transformer {
 	/**
@@ -36,10 +41,10 @@ public class FFT implements Transformer {
 	public enum AlgorithmType {
 		DFT, FFT
 	} // If set to DFT, this will only perform a FFT if the series is length power of
-		// 2, otherwise resorts to DFT
+	// 2, otherwise resorts to DFT
 
 	AlgorithmType algo = AlgorithmType.DFT; // If set to FFT, this will pad (or truncate) series to the nearest power of
-											// 2
+	// 2
 	private static final long serialVersionUID = 1L;
 	private boolean pad = true;
 	private static final double TWOPI = (Math.PI * 2);
@@ -59,7 +64,7 @@ public class FFT implements Transformer {
 	}
 
 	@Override
-	public  Instances determineOutputFormat(Instances inputFormat){
+	public Instances determineOutputFormat(Instances inputFormat) {
 
 		/**
 		 * This method determines whether padding is required. The If the DFT is being
@@ -185,14 +190,14 @@ public class FFT implements Transformer {
 	 *                   below.
 	 */
 
-
-	public Instances transform(Instances data){
-		//if we're attached to a dataset then do it normally, and if we haven't been calculated before.
-		if(fullLength <= 0)
+	public Instances transform(Instances data) {
+		// if we're attached to a dataset then do it normally, and if we haven't been
+		// calculated before.
+		if (fullLength <= 0)
 			fullLength = findLength(data);
 
 		Instances output = determineOutputFormat(data);
-		for(Instance inst : data){
+		for (Instance inst : data) {
 			output.add(transform(inst));
 
 		}
@@ -208,8 +213,9 @@ public class FFT implements Transformer {
 			originalLength--;
 		}
 
-		//if we haven't been calculated before. if we're attached to a dataset then do it normally else do it from the single series. 
-		if(fullLength <= 0)
+		// if we haven't been calculated before. if we're attached to a dataset then do
+		// it normally else do it from the single series.
+		if (fullLength <= 0)
 			fullLength = inst.dataset() != null ? findLength(inst.dataset()) : findLength(inst);
 
 		// 1. Get original series stored in a complex array. This may be padded or
@@ -247,6 +253,65 @@ public class FFT implements Transformer {
 			out.setValue(c.length, inst.classValue());
 
 		return out;
+	}
+
+
+	@Override
+	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+		double[][] out = new double[inst.getNumDimensions()][];
+
+		if(fullLength <=0){
+			if (algo == AlgorithmType.FFT){
+				int oldLength = inst.getMinLength();
+				int length = 0;
+				if (!MathsPower2.isPow2(oldLength)) {
+					length = (int) MathsPower2.roundPow2((float) oldLength);
+					if (pad) {
+						if (length < oldLength)
+							length *= 2;
+					} else {
+
+						if (length > oldLength)
+							length /= 2;
+					}
+				} else
+					length = oldLength;
+				fullLength = length;
+			}
+			else
+				fullLength = inst.getMinLength();
+		}
+
+		int i = 0;
+		for (TimeSeries ts : inst) {
+			Complex[] c = new Complex[fullLength];
+			int count = 0;
+			double seriesTotal = 0;
+			for (int j = 0; j < ts.getSeriesLength() && count < c.length; j++) { // May cut off the trailing values
+				c[count] = new Complex(ts.getValue(j), 0.0);
+				seriesTotal += ts.getValue(j);
+				count++;
+			}
+			// Add any Padding required
+			double mean = seriesTotal / count;
+			while (count < c.length)
+				c[count++] = new Complex(mean, 0);
+			// 2. Find FFT/DFT of series.
+			if (algo == AlgorithmType.FFT)
+				fft(c, c.length);
+			else
+				c = dft(c);
+			// Extract out the terms and set the attributes.
+
+			//construct the sequence of real/imaginary alternating values.
+			out[i] = new double[c.length];
+			for (int j = 0; j < c.length / 2; j++) {
+				out[i][2 * j] = c[j].real;
+				out[i][2 * j + 1] = c[j].imag;
+			}
+		}
+
+		return new TimeSeriesInstance(out, inst.getLabelIndex());
 	}
 
 	/**
@@ -602,7 +667,7 @@ public class FFT implements Transformer {
 	/**
 	 * Remove all attributes unless the target class I'm not sure if the indexing
 	 * changes
-	 * 
+	 *
 	 * @param n
 	 */
 	public void truncate(Instances d, int n) {
@@ -971,7 +1036,7 @@ public class FFT implements Transformer {
 		 * -5.8284273 32 -2 34.071068 0.17157269 34 0 34.071068 -0.17157269 32 2
 		 * 19.928932 5.8284273
 		 *
-		 * 
+		 *
 		 */
 		// Test FFT with truncation
 		System.out.println("Basic test of FFT");
@@ -1049,8 +1114,8 @@ public class FFT implements Transformer {
 		 * fft.padSeries(false); t2=fft.process(test2);
 		 * System.out.println(" FFT with truncation="+t2); fft=new FFT(); fft.useDFT();
 		 * t2=fft.process(test2); System.out.println(" DFT ="+t2);
-		 * 
-		 * 
+		 *
+		 *
 		 * }catch(Exception e){ System.out.println(" Errrrrrr = "+e);
 		 * e.printStackTrace(); System.exit(0); }
 		 */
@@ -1061,5 +1126,6 @@ public class FFT implements Transformer {
 		// Not a power of 2: use DFT
 
 	}
+
 
 }

@@ -63,6 +63,8 @@ public class ClusteringUtilities {
         double meanSum = 0;
         int length = inst.numAttributes();
 
+        if (length < 2) return;
+
         for (int i = 0; i < length; i++){
             meanSum += inst.value(i);
         }
@@ -159,8 +161,8 @@ public class ClusteringUtilities {
         double[][] distMatrix = new double[data.numInstances()][];
         distFunc.setInstances(data);
 
-        for (int i = 1; i < data.numInstances(); i++){
-            distMatrix[i] = new double[i];
+        for (int i = 0; i < data.numInstances(); i++){
+            distMatrix[i] = new double[i+1];
             Instance first = data.get(i);
 
             for (int n = 0; n < i; n++){

@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import statistics.tests.OneSampleTests;
 import statistics.tests.OneSampleTests;
@@ -355,97 +358,197 @@ public class MultipleClassifiersPairwiseTest {
     
     public static String printCliques() {
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("cliques = [");
         boolean[][] cliques = findCliques(noDifference);
         for (int i = 0; i < cliques.length; i++) {
-            for (int j = 0; j < cliques[i].length; j++) 
+            for (int j = 0; j < cliques[i].length; j++)
                 sb.append(cliques[i][j] ? "1" : 0).append(" ");
             sb.append("\n");
         }
         sb.append("]\n");
-        
+
         return sb.toString();
     }
-    
+
     public static boolean[][] findCliques(boolean[][] same) {
-        boolean[][] cliques = new boolean[same.length][];
+        //want to find the largest non-contained 'blocks' in the matrix where all values are true, i.e. all classifiers
+        //are similar to all over classifiers within the block.
+        //
+        //if 1 = true, 0 = false, for input data
+        // 1 1 1 0 0
+        // 1 1 1 1 0
+        // 1 1 1 1 0
+        // 0 1 1 1 1
+        // 0 0 0 1 1
+        //
+        //the resulting cliques would be
+        // 1 1 1 0 0
+        // 0 1 1 1 0
+        // 0 0 0 1 1
+
+        //starting each search on the diagonal (where similar always = true), shall try to grow a square down and to
+        //the right where all elements are true. stop when a false would be included in the square. if the square is
+        //at least size 2 already, this is a clique.
+
+        List<List<Integer>> cliques = new ArrayList<>();
+        int prevEndOfClique = 0;
         for (int i = 0; i < same.length; i++) {
-            
-            boolean[] clique = new boolean[same.length];
-            boolean inClique = false;
-            
-            for (int j = i+1; j < same[i].length; j++) {
-                //all before i assumed false, wrong side of the diagonal
-                //i,j assumed true, no sig diff with self
-                //however only set later, to take advantaged of a binary flag
-                //for the existance of a clique for this classifier
-                inClique = inClique || same[i][j];
-                clique[j] = same[i][j];
+            List<Integer> clique = new ArrayList<>(Arrays.asList(i));
+            growClique(same, clique);
+
+            if (clique.size() > 1) {
+                //potential new clique, check it's not contained within the previous, i.e. a new classifier has been
+                //included at the end of the clique
+                int endOfClique = clique.get(clique.size()-1);
+                if (endOfClique > prevEndOfClique) {
+                    cliques.add(clique);
+                    prevEndOfClique = endOfClique;
+                }
+                //else is just a subclique of the previous
             }
-            clique[i] = true; //self similarity always true
-           
-            if (inClique) //if similarity with at least one other
-                if (!isSubClique(cliques, clique)) //if similarity not already represented within a previously found clique
-                    addClique(cliques, clique);
+
         }
-        
-        int numNull = 0;
-        for (int i = cliques.length-1; i >= 0; i--) {
-            if (cliques[i] == null)
-                numNull++;
-            else 
-                break;
+
+        boolean[][] finalCliques = new boolean[cliques.size()][same.length];
+        for (int i = 0; i < cliques.size(); ++i) {
+            for (int j = 0; j < cliques.get(i).size(); ++j) {
+                finalCliques[i][cliques.get(i).get(j)] = true;
+            }
         }
-        
-        //shittiest way to avoid arraylists
-        boolean[][] finalCliques = new boolean[cliques.length-numNull][];
-        System.arraycopy(cliques, 0, finalCliques, 0, finalCliques.length);
-        
         return finalCliques;
     }
-    
-    public static void addClique(boolean[][] cliques, boolean[] newClique) {
-        for (int i = 0; i < cliques.length; i++) {
-            if (cliques[i] == null) {
-                cliques[i] = newClique;
-                break;
+
+    private static void growClique(boolean[][] same, List<Integer> clique) {
+        int prevVal = clique.get(clique.size()-1);
+        if (prevVal == same.length-1)
+            return; // reached the end of the classifiers, no more room to grow
+
+
+        int cliqueStart = clique.get(0);
+        int nextVal = prevVal+1;
+
+        // suppose size of clique is already 2, we'll need to check that all of the 1's are to true to grow the clique
+        // 0 0 1
+        // 0 0 1
+        // 1 1 1
+        // but actually, it should be mirrored about the diagonal, and the diagonal itself is always true, so really only need to check
+        // 0 0 0      0 0 1
+        // 0 0 0  or  0 0 1
+        // 1 1 0      0 0 0
+
+        for (int col = cliqueStart; col < nextVal; col++) {
+            if (!same[nextVal][col]) {
+                //found that growing the clique would include a false, quit now
+                return;
             }
         }
+
+        //all checks passed, add on this index and try to grow again
+        clique.add(nextVal);
+        growClique(same, clique);
     }
-    
-    public static boolean isSubClique(boolean[][] cliques, boolean[] newClique) {
-        for (int i = 0; i < cliques.length && cliques[i]!=null; i++) {
-            boolean subOfThisClique = true;
-            for (int j = 0; j < cliques[i].length; j++) {
-                if (newClique[j] && !cliques[i][j]) //if j is similar in new, but is not similar in old, found a difference and therefore new is not sub of this one
-                    subOfThisClique = false;                    
-            }
-            if (subOfThisClique)
-                return true;
-        }
-        return false;
+
+    private static void testNewCliques() {
+        boolean[][] same = { //dtw example from teams
+                { true,  true,  true,  false, false, false, },
+                { true,  true,  true,  true,  false, false, },
+                { true,  true,  true,  false, true,  true, },
+                { false, true,  false, true,  true,  true, },
+                { false, false, true,  true,  true,  true, },
+                { false, false, true,  true,  true,  true, },
+        };
+
+        noDifference = same;
+
+        System.out.println(printCliques());
     }
+
+
+
+    //jamesl note: old clique forming used from roughly late 2017 to august2020 produced contained cliques/edge cases
+    //in certain situations that were fixed by hand. now taking the clique forming approach of strictly all self similar
+    //within blocks. see new findCliques()
+//    public static boolean[][] findCliques(boolean[][] same) {
+//        boolean[][] cliques = new boolean[same.length][];
+//        for (int i = 0; i < same.length; i++) {
+//
+//            boolean[] clique = new boolean[same.length];
+//            boolean inClique = false;
+//
+//            for (int j = i+1; j < same[i].length; j++) {
+//                //all before i assumed false, wrong side of the diagonal
+//                //i,j assumed true, no sig diff with self
+//                //however only set later, to take advantaged of a binary flag
+//                //for the existance of a clique for this classifier
+//                inClique = inClique || same[i][j];
+//                clique[j] = same[i][j];
+//            }
+//            clique[i] = true; //self similarity always true
+//
+//            if (inClique) //if similarity with at least one other
+//                if (!isSubClique(cliques, clique)) //if similarity not already represented within a previously found clique
+//                    addClique(cliques, clique);
+//        }
+//
+//        int numNull = 0;
+//        for (int i = cliques.length-1; i >= 0; i--) {
+//            if (cliques[i] == null)
+//                numNull++;
+//            else
+//                break;
+//        }
+//
+//        //shittiest way to avoid arraylists
+//        boolean[][] finalCliques = new boolean[cliques.length-numNull][];
+//        System.arraycopy(cliques, 0, finalCliques, 0, finalCliques.length);
+//
+//        return finalCliques;
+//    }
+//
+//    public static void addClique(boolean[][] cliques, boolean[] newClique) {
+//        for (int i = 0; i < cliques.length; i++) {
+//            if (cliques[i] == null) {
+//                cliques[i] = newClique;
+//                break;
+//            }
+//        }
+//    }
+//
+//    public static boolean isSubClique(boolean[][] cliques, boolean[] newClique) {
+//        for (int i = 0; i < cliques.length && cliques[i]!=null; i++) {
+//            boolean subOfThisClique = true;
+//            for (int j = 0; j < cliques[i].length; j++) {
+//                if (newClique[j] && !cliques[i][j]) //if j is similar in new, but is not similar in old, found a difference and therefore new is not sub of this one
+//                    subOfThisClique = false;
+//            }
+//            if (subOfThisClique)
+//                return true;
+//        }
+//        return false;
+//    }
     
     public static void main(String[] args) {
-//ASSUME INPUT IN RANK ORDER, WITH TOP RANKED CLASSIFIER FIRST, WORST LAST        
-//        String input="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
-//        String output="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
-//        String[] allSimulators={"WholeSeriesElastic","Interval","Shapelet","Dictionary","ARMA","All"};
-//        for(String s:allSimulators)
-        String input="C:\\Users\\ajb\\Dropbox\\For Eamonn\\MPvsBenchmark.csv";
-        
-        input="C:\\Users\\ajb\\Dropbox\\Working docs\\Research\\RotF Paper\\Results Standard RotF\\Shapelet Results\\Results.csv";
-//        String input="C:\\Research\\Results\\RepoResults\\HIVE Results";
-////
-//        input="C:\\Research\\Papers\\2017\\PKDD BOP to BOSS\\Results\\vsCNN";
-//        input="C:\\Users\\ajb\\Dropbox\\Temp\\test";
-//        String s= "All";
-//            runTests(input+s+"CombinedResults.csv",input+s+"Tests.csv");
-//            runTests(input+".csv",input+"Tests.csv");
-            System.out.println(runTests(input).toString());
-            System.out.println("\n\n" + printCliques());
-//findMeanDifferences(input+" MeanDiffs.csv");            
+        testNewCliques();
+
+////ASSUME INPUT IN RANK ORDER, WITH TOP RANKED CLASSIFIER FIRST, WORST LAST
+////        String input="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
+////        String output="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
+////        String[] allSimulators={"WholeSeriesElastic","Interval","Shapelet","Dictionary","ARMA","All"};
+////        for(String s:allSimulators)
+//        String input="C:\\Users\\ajb\\Dropbox\\For Eamonn\\MPvsBenchmark.csv";
+//
+//        input="C:\\Users\\ajb\\Dropbox\\Working docs\\Research\\RotF Paper\\Results Standard RotF\\Shapelet Results\\Results.csv";
+////        String input="C:\\Research\\Results\\RepoResults\\HIVE Results";
+//////
+////        input="C:\\Research\\Papers\\2017\\PKDD BOP to BOSS\\Results\\vsCNN";
+////        input="C:\\Users\\ajb\\Dropbox\\Temp\\test";
+////        String s= "All";
+////            runTests(input+s+"CombinedResults.csv",input+s+"Tests.csv");
+////            runTests(input+".csv",input+"Tests.csv");
+//            System.out.println(runTests(input).toString());
+//            System.out.println("\n\n" + printCliques());
+////findMeanDifferences(input+" MeanDiffs.csv");
     }
     
     

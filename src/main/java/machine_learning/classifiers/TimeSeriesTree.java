@@ -33,8 +33,8 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
 
     private static double log2 = Math.log(2);
 
+    private boolean useMargin = true;
     private boolean norm = true;
-    private boolean useEntrance = true;
     private int k = 20;
 
     private int seed = 0;
@@ -73,6 +73,10 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
 
     public void setNormalise(boolean b){
         this.norm = b;
+    }
+
+    public void setUseMargin(boolean b){
+        this.useMargin = b;
     }
 
     public void setK(int i){
@@ -154,7 +158,7 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
         double[] probs = distributionForInstance(instance);
 
         int maxClass = 0;
-        for (int n = 1; n < probs.length; ++n) {
+        for (int n = 1; n < probs.length; n++) {
             if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }
@@ -293,14 +297,15 @@ public class TimeSeriesTree extends AbstractClassifier implements Randomizable, 
                     //gain stored in [0][0]
                     double[][] entropies = entropyGain(data, i, thresholds[i][n], entropy);
 
-                    if (entropies[0][0] > bestGain){
+                    if (entropies[0][0] > bestGain ||
+                            (!useMargin && entropies[0][0] == bestGain && entropies[0][0] > 0 && rand.nextBoolean())){
                         bestSplit = i;
                         bestThreshold = thresholds[i][n];
                         bestGain = entropies[0][0];
                         bestMargin = Double.MIN_VALUE;
                         bestEntropies = entropies;
                     }
-                    else if (entropies[0][0] == bestGain && entropies[0][0] > 0){
+                    else if (useMargin && entropies[0][0] == bestGain && entropies[0][0] > 0){
                         double margin = findMargin(data, i, thresholds[i][n]);
                         if (bestMargin == Double.MIN_VALUE) bestMargin = findMargin(data, bestSplit, bestThreshold);
 

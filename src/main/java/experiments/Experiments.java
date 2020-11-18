@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.distance_based.utils.StrUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -138,43 +138,54 @@ public class Experiments  {
         if (args.length > 0) {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             setupAndRunExperiment(expSettings);
-        }else{
+        }
+        else {//Manually set args
             int folds=1;
             String[] settings=new String[9];
-            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
- //           String classifier=classifiers[2];
-            String classifier="STC";
 
-//
-            settings[0]="-dp=E:\\Data Working Area\\DomenicHeartbeat";//Where to get data
-            settings[1]="-rp=E:\\Temp\\";//Where to write results
+            /*
+             * Change these settings for your experiment:
+             */
+//            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
+//            String classifier=classifiers[2];
+            String classifier="STC";//Classifier name: See ClassifierLists for valid options
+
+            settings[0]="-dp=C:\\Data Working Area\\Datasets"; //Where to get datasets
+            settings[1]="-rp=C:\\Experiments\\Results\\"; //Where to write results
             settings[2]="-gtf=false"; //Whether to generate train files or not
             settings[3]="-cn="+classifier; //Classifier name
-            settings[4]="-dn="; //Problem file
-            settings[5]="-f=1";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[6]="-ctr=600s";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[7]="-d=true";//Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[8]="--force=true";
+            settings[4]="-dn="; //Problem name, don't change here as it is overwritten by probFiles
+            settings[5]="-f=1"; //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            settings[6]="-ctr=600s"; //Time contract
+            settings[7]="-d=true"; //Debugging
+            settings[8]="--force=true"; //Overwrites existing results if true, otherwise set to false
 
-            String[] probFiles= {"HB"};
+            String[] probFiles= {"ItalyPowerDemand"}; //Problem name(s)
 //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            /*
+             * END OF SETTINGS
+             */
+
             System.out.println("Manually set args:");
             for (String str : settings)
                 System.out.println("\t"+str);
             System.out.println("");
-            boolean threaded=false;
-            if(threaded){
+
+            boolean threaded=true;
+            if (threaded) {
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
-//                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
+//              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
                 setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
-            }else{//Local run without args, mainly for debugging
-                for(String prob:probFiles){
+            }
+            else {//Local run without args, mainly for debugging
+                for (String prob:probFiles) {
                     settings[4]="-dn="+prob;
-                    for(int i=1;i<=folds;i++){
+
+                    for(int i=1;i<=folds;i++) {
                         settings[5]="-f="+i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-//                        System.out.println("Sequential experiment with "+expSettings);
+//                      System.out.println("Sequential experiment with "+expSettings);
                         setupAndRunExperiment(expSettings);
                     }
                 }
@@ -957,7 +968,7 @@ public class Experiments  {
         @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
 
-        @Parameter(names={"-tem --trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
+        @Parameter(names={"-tem", "--trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
         public String trainEstimateMethod = "cv_10";
 

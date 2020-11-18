@@ -17,6 +17,8 @@ package machine_learning.classifiers.ensembles.weightedvoters;
 import experiments.data.DatasetLists;
 import fileIO.OutFile;
 import java.io.FileNotFoundException;
+import java.util.concurrent.TimeUnit;
+
 import machine_learning.classifiers.ensembles.voting.BestIndividualTrain;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
@@ -63,7 +65,7 @@ public class CAWPE_TunedAlpha extends CAWPE {
                 writeResultsFilesDirectory = readResultsFilesDirectories[0];
         }
         
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         
         //transform data if specified
         if(this.transform==null){
@@ -102,7 +104,8 @@ public class CAWPE_TunedAlpha extends CAWPE {
         initCombinationSchemes(alpha);
         trainResults = alphaResults[maxAccInd];
         
-        long buildTime = System.currentTimeMillis() - startTime; 
+        long buildTime = System.nanoTime() - startTime;
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(buildTime);
                     
         this.testInstCounter = 0; //prep for start of testing

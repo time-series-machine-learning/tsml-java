@@ -58,7 +58,7 @@ top = sorted(range(len(max)), key=lambda i: max[i], reverse=True)[:3]
 
 top_curves = [count[i] for i in top]
 top_names = [names[i] for i in top]
-top_times = [np.random.choice(np.flatnonzero(count[i] == count[i].max())) for i in top] 
+top_times = [np.random.choice(np.flatnonzero(count[i] == count[i].max())) for i in top]
 
 fig, axs = plt.subplots(3)
 colours = ['orange','green','red']
@@ -76,21 +76,21 @@ for i in range(0,3):
 			occurances += 1
 	start /= occurances
 	finish /= occurances
-			
+
 	# find the closest node to the average start and end point
 	closest = sys.maxsize
 	for node in nodes:
 		if float(node[0]) == top[i]:
 			dist = abs(float(node[1]) - start) + abs(float(node[2]) - finish)
-			
+
 			if dist < closest or (dist == closest and float(node[2]) - float(node[1]) < float(closestNode[2]) - float(closestNode[1])):
 				closest = dist
-				closestNode = node	
+				closestNode = node
 
     # get interval for node
 	interval = np.full(int(sys.argv[5]), np.nan)
 	for n in range(int(float(closestNode[1])), int(float(closestNode[2]))):
-		interval[n] = series[n]				
+		interval[n] = series[n]
 
 	# get threshold for node
 	threshold = float(closestNode[3])
@@ -105,7 +105,7 @@ for i in range(0,3):
 	axs[i].set_yticks([])
 	if i != 2:
 		axs[i].set_xticks([])
-	
+
 	l = axs[i].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
 plt.savefig(sys.argv[1] + 'pred' + sys.argv[2] + '-' + sys.argv[3], bbox_inches='tight')

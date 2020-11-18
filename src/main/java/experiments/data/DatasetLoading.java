@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -110,8 +111,20 @@ public class DatasetLoading {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
 
+    public static Instances loadItalyPowerDemand() throws Exception {
+        final Instances[] instances = sampleItalyPowerDemand(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
+    }
+
     public static Instances[] sampleGunPoint(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "GunPoint", seed);
+    }
+
+    public static Instances loadGunPoint() throws Exception {
+        final Instances[] instances = sampleGunPoint(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
     }
 
     /**
@@ -129,6 +142,12 @@ public class DatasetLoading {
      */
     public static Instances[] sampleBeef(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "Beef", seed);
+    }
+
+    public static Instances loadBeef() throws Exception {
+        final Instances[] instances = sampleBeef(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
     }
 
     /**
@@ -209,6 +228,7 @@ public class DatasetLoading {
      * @return new Instances[] { trainSet, testSet };
      */
     public static Instances[] sampleDataset(String parentFolder, String problem, int fold) throws Exception {
+        parentFolder = StrUtils.asDirPath(parentFolder);
         Instances[] data = new Instances[2];
         File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");
         File testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.arff");
@@ -230,7 +250,8 @@ public class DatasetLoading {
 //                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
 //                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
                 if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
-                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+//                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(data[0], data[1], fold);
 
                 } else {
                     data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
