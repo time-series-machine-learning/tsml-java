@@ -24,7 +24,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
-import weka.filters.SimpleBatchFilter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -260,7 +259,7 @@ public class SAX implements Transformer, TechnicalInformationHandler {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            double[] o = ts.toArray();
+            double[] o = ts.toValueArray();
             convertSequence(o);
             out[i++] = o;
         }

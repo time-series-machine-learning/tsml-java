@@ -163,36 +163,36 @@ public class TSCapabilities {
     protected static final class EqualLength extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.isEqualLength;
+            return data.isEqualLength();
         }
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.isEqualLength;
+            return inst.isEqualLength();
         }
     }
     
     protected static final class Multivariate extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.isMultivariate;
+            return data.isMultivariate();
         }
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.isMultivariate;
+            return inst.isMultivariate();
         }
     }
 
     protected static final class MissingValues extends TSCapability{
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.hasMissing;
+            return data.hasMissing();
         }
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.hasMissing;
+            return inst.hasMissing();
         }
     }
 
@@ -206,12 +206,12 @@ public class TSCapabilities {
 
         @Override
         public boolean test(TimeSeriesInstances data) {
-            return data.minLength >= minL;
+            return data.getMinLength() >= minL;
         }
 
         @Override
         public boolean test(TimeSeriesInstance inst) {
-            return inst.minLength >= minL;
+            return inst.getMinLength() >= minL;
         }
     }
     

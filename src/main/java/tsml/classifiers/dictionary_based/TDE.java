@@ -39,8 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.Utilities.argMax;
-import static utilities.Utilities.extractTimeSeries;
-import static utilities.Utilities.extractTimeSeries;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
@@ -53,6 +51,8 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.*;
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *
  * Implementation based on the algorithm described in getTechnicalInformation()
+ *
+ * @author Matthew Middlehurst
  */
 public class TDE extends EnhancedAbstractClassifier implements TrainTimeContractable,
         Checkpointable, TechnicalInformationHandler, MultiThreadable, Visualisable, Interpretable {
@@ -145,7 +145,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private double[] interpSeries;
     private int interpPred;
 
-    protected static final long serialVersionUID = 2L;
+    protected static final long serialVersionUID = 1L;
 
     /**
      * Default constructor for TDE. Can estimate own performance.
@@ -927,7 +927,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of a training instance using the trained model, removing said instance if present.
      *
-     * @param ins train instance index
+     * @param test train instance index
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -972,7 +972,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -982,6 +982,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         //get sum of all channels, votes from each are weighted the same.
         double sum = 0;
+
+        if (interpSavePath != null){
+            interpData = new ArrayList<>();
+            interpPreds = new ArrayList<>();
+        }
 
         if (multiThread){
             ArrayList<Future<Double>> futures = new ArrayList<>(classifiers.size());
@@ -1003,11 +1008,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
         else {
-            if (interpSavePath != null){
-                interpData = new ArrayList<>();
-                interpPreds = new ArrayList<>();
-            }
-
             for (IndividualTDE classifier : classifiers) {
                 double classification = classifier.classifyInstance(instance);
                 classHist[(int) classification] += classifier.getWeight();
@@ -1042,7 +1042,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1054,7 +1054,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1067,7 +1067,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1224,6 +1224,166 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     @Override
+    public boolean setInterpretabilitySavePath(String path) {
+        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
+        if(validPath){
+            interpSavePath = path;
+        }
+        return validPath;
+    }
+
+    @Override
+    public boolean lastClassifiedInterpretability() throws Exception {
+        if (interpSavePath == null){
+            System.err.println("TDE interpretability output save path not set.");
+            return false;
+        }
+
+        if (train.isMultivariate()){
+            System.err.println("TDE interpretability only available for univariate series.");
+            return false;
+        }
+
+        TreeMap<Integer, Double> topNeighbours = new TreeMap<>(Collections.reverseOrder());
+        for (int i = 0; i < interpData.size(); i++){
+            if (train.get(interpData.get(i)).getLabelIndex() == interpPred) {
+                Double val = topNeighbours.get(interpData.get(i));
+                if (val == null) val = 0.0;
+                topNeighbours.put(interpData.get(i), val + classifiers.get(i).getWeight());
+            }
+        }
+
+        int topNeighbour = 0;
+        double topInstanceWeight = Double.MIN_VALUE;
+        for (Map.Entry<Integer, Double> entry: topNeighbours.entrySet()){
+            if (entry.getValue() > topInstanceWeight){
+                topNeighbour = entry.getKey();
+                topInstanceWeight = entry.getValue();
+            }
+        }
+
+        int topClassifier = 0;
+        double topClassifierWeight = Double.MIN_VALUE;
+        for (int i = 0; i < interpData.size(); i++){
+            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight){
+                topClassifier = i;
+                topClassifierWeight = classifiers.get(i).getWeight();
+            }
+        }
+
+        IndividualTDE tde = classifiers.get(topClassifier);
+        double[] nearestSeries = train.get(topNeighbour).toValueArray()[0];
+
+        IndividualTDE.Bag histogram = tde.getLastNNBag();
+        IndividualTDE.Bag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
+
+        TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
+            int c1 = obj1.var1 - obj2.var1;
+            if (c1 != 0) {
+                return c1;
+            }
+            else {
+                int c2 = obj1.var2.length() - obj2.var2.length();
+                if (c2 != 0) {
+                    return c2;
+                }
+                else {
+                    return obj1.var2.compareTo(obj2.var2);
+                }
+            }
+        });
+
+        HashMap<SerialisableComparablePair<Byte, String>, Integer> histWords = new HashMap<>();
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: histogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
+
+            keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
+            histWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
+        }
+
+        HashMap<SerialisableComparablePair<Byte, String>, Integer> nearestWords = new HashMap<>();
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: nearestHistogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
+            keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
+            nearestWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
+        }
+
+        int numLevels = 1;
+        for (int i = 0; i < tde.getLevels(); i++){
+            numLevels += Math.pow(2,i);
+        }
+
+        ArrayList<Integer>[][] counts = new ArrayList[numLevels][2];
+        ArrayList<String>[] words = new ArrayList[numLevels];
+        for (int i = 0; i < numLevels; i++){
+            words[i] = new ArrayList<>();
+            for (int n = 0; n < 2; n++){
+                counts[i][n] = new ArrayList<>();
+            }
+        }
+
+        for (SerialisableComparablePair<Byte, String> key: keys){
+            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
+
+            words[idx].add(key.var2);
+
+            Integer val = histWords.get(key);
+            if (val == null) val = 0;
+            counts[idx][0].add(val);
+
+            Integer val2 = nearestWords.get(key);
+            if (val2 == null) val2 = 0;
+            counts[idx][1].add(val2);
+        }
+
+        OutFile of = new OutFile(interpSavePath + "/pred" + seed + "-" + interpCount
+                + ".txt");
+        of.writeLine(Arrays.toString(interpSeries));
+        for (int i = 0; i < numLevels; i++) {
+            of.writeLine(words[i].toString());
+            of.writeLine(counts[i][0].toString());
+        }
+        of.writeLine(Arrays.toString(nearestSeries));
+        for (int i = 0; i < numLevels; i++) {
+            of.writeLine(words[i].toString());
+            of.writeLine(counts[i][1].toString());
+        }
+
+        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityTDE.py \"" +
+                interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
+                + " " + tde.getLevels() + " " +  interpPred + " " + train.get(topNeighbour).getLabelIndex());
+
+        interpCount++;
+
+        if (debug) {
+            System.out.println("TDE interp python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public int getPredID(){
+        return interpCount;
+    }
+
+    @Override
     public boolean setVisualisationSavePath(String path) {
         boolean validPath = Visualisable.super.createVisualisationDirectories(path);
         if(validPath){
@@ -1241,7 +1401,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             return false;
         }
 
-        if (classifiers.get(0) instanceof MultivariateIndividualTDE){
+        if (train.isMultivariate()){
             System.err.println("TDE visualisation only available for univariate series.");
             return false;
         }
@@ -1420,7 +1580,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("python src/main/python/visTDE.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visTDE.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + getNumClasses());
 
         if (debug) {
@@ -1444,170 +1604,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         return true;
     }
 
-    @Override
-    public boolean setInterpretabilitySavePath(String path) {
-        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
-        if(validPath){
-            interpSavePath = path;
-        }
-        return validPath;
-    }
-
-    @Override
-    public boolean lastClassifiedInterpretability() throws Exception {
-        if (interpSavePath == null){
-            System.err.println("TDE interpretability output save path not set.");
-            return false;
-        }
-
-        if (classifiers.get(0) instanceof MultivariateIndividualTDE){
-            System.err.println("TDE interpretability only available for univariate series.");
-            return false;
-        }
-
-        TreeMap<Integer, Double> topNeighbours = new TreeMap<>(Collections.reverseOrder());
-        for (int i = 0; i < interpData.size(); i++){
-            if (train.get(interpData.get(i)).getLabelIndex() == interpPred) {
-                Double val = topNeighbours.get(interpData.get(i));
-                if (val == null) val = 0.0;
-                topNeighbours.put(interpData.get(i), val + classifiers.get(i).getWeight());
-            }
-        }
-
-        int topNeighbour = 0;
-        double topInstanceWeight = Double.MIN_VALUE;
-        for (Map.Entry<Integer, Double> entry: topNeighbours.entrySet()){
-            if (entry.getValue() > topInstanceWeight){
-                topNeighbour = entry.getKey();
-                topInstanceWeight = entry.getValue();
-            }
-        }
-
-        int topClassifier = 0;
-        double topClassifierWeight = Double.MIN_VALUE;
-        for (int i = 0; i < interpData.size(); i++){
-            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight){
-                topClassifier = i;
-                topClassifierWeight = classifiers.get(i).getWeight();
-            }
-        }
-
-        IndividualTDE tde = classifiers.get(topClassifier);
-        double[] nearestSeries = train.get(topNeighbour).toValueArray()[0];
-
-        IndividualTDE.Bag histogram = tde.getLastNNBag();
-        IndividualTDE.Bag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
-
-        TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
-            int c1 = obj1.var1 - obj2.var1;
-            if (c1 != 0) {
-                return c1;
-            }
-            else {
-                int c2 = obj1.var2.length() - obj2.var2.length();
-                if (c2 != 0) {
-                    return c2;
-                }
-                else {
-                    return obj1.var2.compareTo(obj2.var2);
-                }
-            }
-        });
-
-        HashMap<SerialisableComparablePair<Byte, String>, Integer> histWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: histogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
-                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
-
-            keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
-            histWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
-        }
-
-        HashMap<SerialisableComparablePair<Byte, String>, Integer> nearestWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: nearestHistogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
-                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
-            keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
-            nearestWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
-        }
-
-        int numLevels = 1;
-        for (int i = 0; i < tde.getLevels(); i++){
-            numLevels += Math.pow(2,i);
-        }
-
-        ArrayList<Integer>[][] counts = new ArrayList[numLevels][2];
-        ArrayList<String>[] words = new ArrayList[numLevels];
-        for (int i = 0; i < numLevels; i++){
-            words[i] = new ArrayList<>();
-            for (int n = 0; n < 2; n++){
-                counts[i][n] = new ArrayList<>();
-            }
-        }
-
-        for (SerialisableComparablePair<Byte, String> key: keys){
-            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
-
-            words[idx].add(key.var2);
-
-            Integer val = histWords.get(key);
-            if (val == null) val = 0;
-            counts[idx][0].add(val);
-
-            Integer val2 = nearestWords.get(key);
-            if (val2 == null) val2 = 0;
-            counts[idx][1].add(val2);
-        }
-
-        OutFile of = new OutFile(interpSavePath + "/pred" + seed + "-" + interpCount
-                + ".txt");
-        of.writeLine(Arrays.toString(interpSeries));
-        for (int i = 0; i < numLevels; i++) {
-            of.writeLine(words[i].toString());
-            of.writeLine(counts[i][0].toString());
-        }
-        of.writeLine(Arrays.toString(nearestSeries));
-        for (int i = 0; i < numLevels; i++) {
-            of.writeLine(words[i].toString());
-            of.writeLine(counts[i][1].toString());
-        }
-
-        Process p = Runtime.getRuntime().exec("python src/main/python/interpretabilityTDE.py \"" +
-                interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
-                + " " + tde.getLevels() + " " +  interpPred + " " + train.get(topNeighbour).getLabelIndex());
-
-        interpCount++;
-
-        if (debug) {
-            System.out.println("TDE interp python output:");
-            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            System.out.println("output : ");
-            String outLine = out.readLine();
-            while (outLine != null) {
-                System.out.println(outLine);
-                outLine = out.readLine();
-            }
-            System.out.println("error : ");
-            String errLine = err.readLine();
-            while (errLine != null) {
-                System.out.println(errLine);
-                errLine = err.readLine();
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public int getPredID(){
-        return interpCount;
-    }
-
     /**
      * Development tests for the TDE classifier.
      *
-     * @param arg arguments, unused
+     * @param args arguments, unused
      * @throws Exception if tests fail
      */
     public static void main(String[] args) throws Exception{

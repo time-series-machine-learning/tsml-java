@@ -245,6 +245,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Set the number of attributes to show when creating visualisations.
+     *
+     * @param i number of attributes
+     */
+    public void setVisNumTopAtts(int i){
+        visNumTopAtts = i;
+    }
+
+    /**
      * Outputs CIF parameters information as a String.
      *
      * @return String written to results files
@@ -460,7 +469,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished TSF Build with " + trees.size() + " Trees built in " +
+        printLineDebug("*************** Finished CIF Build with " + trees.size() + " Trees built in " +
                 trainResults.getBuildTime()/1000000000 + " Seconds  ***************");
     }
 
@@ -713,7 +722,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      *     do the transfrorms
      *     build the classifier
      *
-     * @param dimensions TimeSeriesInstances data
+     * @param data TimeSeriesInstances data
      * @param result Instances object formatted for transformed data
      * @throws Exception unable to build CIF
      */
@@ -1232,7 +1241,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
 
         //get information gain from all tree node splits for each attribute/time point
-        double[][] curves = new double[startNumAttributes][seriesLength];
+        double[][][] curves = new double[startNumAttributes][numDimensions][seriesLength];
         for (int i = 0; i < trees.size(); i++){
             TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
             ArrayList<Double>[] sg = tree.getTreeSplitsGain();
@@ -1241,38 +1250,41 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 double split = sg[0].get(n);
                 double gain = sg[1].get(n);
                 int interval = (int)(split/numAttributes);
-                int att = (int)(split%numAttributes);
-                att = subsampleAtts.get(i).get(att);
+                int att = subsampleAtts.get(i).get((int)(split%numAttributes));
+                int dim = intervalDimensions.get(i).get(interval);
 
                 for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
-                    curves[att][j] += gain;
+                    curves[att][dim][j] += gain;
                 }
             }
         }
 
         OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-        for (int i = 0 ; i < startNumAttributes; i++){
-            switch(i){
-                case 22:
-                    of.writeLine("Mean");
-                    break;
-                case 23:
-                    of.writeLine("Standard Deviation");
-                    break;
-                case 24:
-                    of.writeLine("Slope");
-                    break;
-                default:
-                    of.writeLine(Catch22.getSummaryStatNameByIndex(i));
+        for (int i = 0; i < numDimensions; i++) {
+            for (int n = 0; n < startNumAttributes; n++) {
+                switch (n) {
+                    case 22:
+                        of.writeLine("Mean");
+                        break;
+                    case 23:
+                        of.writeLine("Standard Deviation");
+                        break;
+                    case 24:
+                        of.writeLine("Slope");
+                        break;
+                    default:
+                        of.writeLine(Catch22.getSummaryStatNameByIndex(n));
+                }
+                of.writeLine(Integer.toString(i));
+                of.writeLine(Arrays.toString(curves[n][i]));
             }
-            of.writeLine(Arrays.toString(curves[i]));
         }
         of.closeFile();
 
         //run python file to output temporal importance curves graph
-        Process p = Runtime.getRuntime().exec("python src/main/python/visCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
-                + " " + visNumTopAtts);
+                + " " + numDimensions + " " + visNumTopAtts);
 
         if (debug) {
             System.out.println("CIF vis python output:");
@@ -1369,7 +1381,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         of.closeFile();
 
         //run python file to output graph displaying important attributes and intervals for test series
-        Process p = Runtime.getRuntime().exec("python src/main/python/interpretabilityCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityCIF.py \"" +
                 interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
                 + " " + trees.size() + " " + seriesLength + " " + startNumAttributes + " " + interpPred);
 
@@ -1492,7 +1504,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         @Override
         public MultiThreadBuildHolder call() throws Exception{
             MultiThreadBuildHolder h = new MultiThreadBuildHolder();
-            Random rand = new Random(seed + i);
+            Random rand = new Random(seed + i * numClassifiers);
 
             //1. Select random intervals for tree i
 

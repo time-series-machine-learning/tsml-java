@@ -341,4 +341,11 @@ public class StatisticalUtilities {
             sum += inst1[i] * inst2[i];
         return sum;
     }
+
+    public static int dot(int[] inst1, int[] inst2){
+        int sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
+    }
 }

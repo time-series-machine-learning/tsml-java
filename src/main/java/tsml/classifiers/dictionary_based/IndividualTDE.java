@@ -85,6 +85,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected int numThreads = 1;
     protected ExecutorService ex;
 
+    private boolean savePredInfo = false;
     private int lastNNIdx;
     private Bag lastNNBag;
 
@@ -680,6 +681,23 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     /**
+     * @return data of passed instance in a double array with the class value removed if present
+     */
+    protected static double[] toArrayNoClass(Instance inst) {
+        int length = inst.numAttributes();
+        if (inst.classIndex() >= 0)
+            --length;
+
+        double[] data = new double[length];
+
+        for (int i=0, j=0; i < inst.numAttributes(); ++i)
+            if (inst.classIndex() != i)
+                data[j++] = inst.value(i);
+
+        return data;
+    }
+
+    /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
     private Bag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
@@ -951,8 +969,11 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             }
         }
 
-        lastNNIdx = subsampleIndices.get(nn);
-        lastNNBag = testBag;
+        if (savePredInfo) {
+            lastNNIdx = subsampleIndices.get(nn);
+            lastNNBag = testBag;
+        }
+
         return bags.get(nn).getClassVal();
     }
 
