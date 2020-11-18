@@ -188,7 +188,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     private String checkpointFileName = Checkpointed.DEFAULT_CHECKPOINT_FILENAME;
     private boolean checkpointLoadingEnabled = true;
     private long checkpointInterval = Checkpointed.DEFAULT_CHECKPOINT_INTERVAL;
-    private boolean checkpointLoaded = false;
     private StopWatch checkpointTimer = new StopWatch();
     // train estimate variables
     private double[][] trainEstimateDistributions;
@@ -238,49 +237,45 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         // check the other timers are disabled
         checkpointTimer.checkStopped();
         evaluationTimer.checkStopped();
-        // attempt to load a checkpoint
-            // 4 scenarios:
-                // 1) loads from checkpoint AND rebuild off
-                    // this should just load from the checkpoint and carry on where left off
-                // 2) does not load from checkpoint AND rebuild off
-                    // this should not load from a checkpoint but still carry on from where left off
-                // 3) loads from checkpoint AND rebuild on
-                    // same as (1)
-                // 4) does not load from checkpoint AND rebuild on
-                    // this should just rebuild and begin build from scratch
-        // load from a checkpoint
-        // use a separate timer to handle this as the instance-based timer variables get overwritten with the ones from the checkpoint
-        StopWatch loadCheckpointTimer = new StopWatch(true);
-        checkpointLoaded = loadCheckpoint();
-        // if there was a checkpoint and it was loaded        
-        if(checkpointLoaded) {
-            // update the run timer with the start time of this session
-            runTimer.start(startTimeStamp);
-            // (3) and (1) land here
-            // just carry on with build as loaded from a checkpoint
-            getLog().info("checkpoint loaded");
-            // sanity check timer states
-            runTimer.checkStarted();
-            checkpointTimer.checkStopped();
-            evaluationTimer.checkStopped();
+        // several scenarios for entering this method:
+            // 1) from scratch: isRebuild() is true
+                // 1a) checkpoint found and loaded, resume from wherever left off
+                // 1b) checkpoint not found, therefore initialise classifier and build from scratch
+            // 2) rebuild off, i.e. buildClassifier has been called before and already handled 1a or 1b. We can safely continue building from current state. This is often the case if a smaller contract has been executed (e.g. 1h), then the contract is extended (e.g. to 2h) and we enter into this method again. There is no need to reinitialise / discard current progress - simply continue on under new constraints.
+        if(isRebuild()) {
+            // case (1)
+            // load from a checkpoint
+            // use a separate timer to handle this as the instance-based timer variables get overwritten with the ones from the checkpoint
+            StopWatch loadCheckpointTimer = new StopWatch(true);
+            boolean checkpointLoaded = loadCheckpoint();
             // finished loading the checkpoint
             loadCheckpointTimer.stop();
-            // add the time to load the checkpoint onto
+            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
             checkpointTimer.add(loadCheckpointTimer.elapsedTime());
-        } else {
-            // finished unsuccessfully loading the checkpoint
-            loadCheckpointTimer.stop();
-            // (2) and (4) land here
-            // let super build anything necessary (will handle isRebuild accordingly in super class)
-            super.buildClassifier(trainData);
-            // if rebuilding
-            if(isRebuild()) {
+            // if there was a checkpoint and it was loaded        
+            if(checkpointLoaded) {
+                // case (1a)
+                // update the run timer with the start time of this session
+                runTimer.start(startTimeStamp);
+                // just carry on with build as loaded from a checkpoint
+                getLog().info("checkpoint loaded");
+                // sanity check timer states
+                runTimer.checkStarted();
+                checkpointTimer.checkStopped();
+                evaluationTimer.checkStopped();
+            } else {
+                // case (1b)
+                // let super build anything necessary (will handle isRebuild accordingly in super class)
+                super.buildClassifier(trainData);
+                // if rebuilding
                 // then init vars
                 // build timer is already started so just clear any time already accrued from previous builds. I.e. keep the time stamp of when the timer was started, but clear any record of accumulated time
                 runTimer.resetElapsedTime();
                 // clear other timers entirely
                 evaluationTimer.stopAndReset();
                 checkpointTimer.stopAndReset();
+                // add back the time attempting to load a checkpoint from a moment ago
+                checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // no constituents to start with
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
@@ -290,10 +285,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     trainEstimatePredictionTimes = new long[trainData.size()];
                     trainEstimateDistributions = new double[trainData.size()][trainData.numClasses()];
                 }
-            }
-            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
-            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
-        }
+            }   
+        } // else case (2)
         LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         // whether work has been done in this call to buildClassifier
         boolean rebuildTrainEstimate = false;
@@ -433,10 +426,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         //        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
         // build finished so stop the timer
         runTimer.stop();
-        if(estimateOwnPerformance && rebuildTrainEstimate) {
-            // update the results info
-            ResultUtils.setInfo(trainResults, this, trainData);
-        }
+        ResultUtils.setInfo(trainResults, this, trainData);
     }
 
     @Override
