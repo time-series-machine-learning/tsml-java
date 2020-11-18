@@ -1242,9 +1242,9 @@ public class Catch22 implements Transformer {
             hExt[i] = breaksExt[i + 1] - breaksExt[i];
         }
 
-        double[][] coefs = new double[32][4];
+        double[][] coeffs = new double[32][4];
         for (int i = 0; i < 32; i += 4) {
-            coefs[i][0] = 1;
+            coeffs[i][0] = 1;
         }
 
         int[][] ii = new int[4][8];
@@ -1263,14 +1263,14 @@ public class Catch22 implements Transformer {
         for (int k = 1; k < 4; k++) {
             for (int j = 0; j < k; j++) {
                 for (int l = 0; l < 32; l++) {
-                    coefs[l][j] *= H[l] / (k - j);
+                    coeffs[l][j] *= H[l] / (k - j);
                 }
             }
 
             double[][] Q = new double[4][8];
             for (int l = 0; l < 32; l++) {
                 for (int m = 0; m < 4; m++) {
-                    Q[l % 4][l / 4] += coefs[l][m];
+                    Q[l % 4][l / 4] += coeffs[l][m];
                 }
             }
 
@@ -1282,7 +1282,7 @@ public class Catch22 implements Transformer {
 
             for (int l = 0; l < 32; l++) {
                 if (l % 4 > 0) {
-                    coefs[l][k] = Q[l % 4 - 1][l / 4];
+                    coeffs[l][k] = Q[l % 4 - 1][l / 4];
                 }
             }
 
@@ -1295,17 +1295,17 @@ public class Catch22 implements Transformer {
 
             for (int j = 0; j < k + 1; j++) {
                 for (int l = 0; l < 32; l++) {
-                    coefs[l][j] /= fmax[l];
+                    coeffs[l][j] /= fmax[l];
                 }
             }
 
             for (int i = 0; i < 29; i++) {
                 for (int j = 0; j < k + 1; j++) {
-                    coefs[i][j] -= coefs[3 + i][j];
+                    coeffs[i][j] -= coeffs[3 + i][j];
                 }
             }
             for (int i = 0; i < 32; i += 4) {
-                coefs[i][k] = 0;
+                coeffs[i][k] = 0;
             }
         }
 
@@ -1318,7 +1318,7 @@ public class Catch22 implements Transformer {
                 scale[i] /= H[i];
             }
             for (int i = 0; i < (32); i++) {
-                coefs[i][(3) - (k + 1)] *= scale[i];
+                coeffs[i][(3) - (k + 1)] *= scale[i];
             }
         }
 
@@ -1338,11 +1338,11 @@ public class Catch22 implements Transformer {
             }
         }
 
-        double[][] coefsOut = new double[8][4];
+        double[][] coeffsOut = new double[8][4];
         for (int i = 0; i < 8; i++) {
             int jj_flat = jj[i % 4][i / 4] - 1;
             for (int j = 0; j < 4; j++) {
-                coefsOut[i][j] = coefs[jj_flat][j];
+                coeffsOut[i][j] = coeffs[jj_flat][j];
             }
         }
 
@@ -1361,12 +1361,12 @@ public class Catch22 implements Transformer {
 
         double[] vB = new double[xsB.length];
         for (int i = 0; i < xsB.length; i++) {
-            vB[i] = coefsOut[indexB[i]][0];
+            vB[i] = coeffsOut[indexB[i]][0];
         }
 
         for (int i = 1; i < 4; i++) {
             for (int j = 0; j < xsB.length; j++) {
-                vB[j] = vB[j] * xsB[j] + coefsOut[indexB[j]][i];
+                vB[j] = vB[j] * xsB[j] + coeffsOut[indexB[j]][i];
             }
         }
 
@@ -1461,29 +1461,29 @@ public class Catch22 implements Transformer {
             int coefRow = i % (8);
             int coefCol = i / (8);
 
-            C[CRow][CCol] = coefsOut[coefRow][coefCol];
+            C[CRow][CCol] = coeffsOut[coefRow][coefCol];
         }
 
-        double[][] coefsSpline = new double[2][4];
+        double[][] coeffsSpline = new double[2][4];
         for (int j = 0; j < 8; j++) {
             int coefCol = j / 2;
             int coefRow = j % 2;
 
             for (int i = 0; i < 5; i++) {
-                coefsSpline[coefRow][coefCol] += C[i][j] * x[i];
+                coeffsSpline[coefRow][coefCol] += C[i][j] * x[i];
             }
         }
 
         double[] yOut = new double[arr.length];
         for (int i = 0; i < arr.length; i++) {
             int secondHalf = i < breaks[1] ? 0 : 1;
-            yOut[i] = coefsSpline[secondHalf][0];
+            yOut[i] = coeffsSpline[secondHalf][0];
         }
 
         for (int i = 1; i < 4; i++) {
             for (int j = 0; j < arr.length; j++) {
                 int secondHalf = j < breaks[1] ? 0 : 1;
-                yOut[j] = yOut[j] * (j - breaks[1] * secondHalf) + coefsSpline[secondHalf][i];
+                yOut[j] = yOut[j] * (j - breaks[1] * secondHalf) + coeffsSpline[secondHalf][i];
             }
         }
 
