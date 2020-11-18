@@ -315,7 +315,7 @@ public class Experiment {
             log.info("experiment mem: " + experimentMemoryWatcher.getMaxMemoryUsage());
         }
         // unlock the lock file
-        lock.unlock();
+        if(lock != null) lock.unlock();
     }
     
     private void copyOverMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
