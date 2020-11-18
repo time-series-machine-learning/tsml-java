@@ -14,7 +14,6 @@ import tsml.classifiers.distance_based.utils.classifiers.Builder;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 import tsml.classifiers.distance_based.utils.classifiers.TrainEstimateable;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
-import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
@@ -33,13 +32,20 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.SystemUtils.getHostName;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static weka.core.Debug.OFF;
 
 public class Experiment {
-
+    
+    public Experiment() {
+        addConfigs(ProximityForest.Config.values());
+        addConfigs(ProximityTree.Config.values());
+        addConfig("PF_WRAPPER", ProximityForestWrapper::new);
+    }
+    
     @Parameter(names = {"-c", "--classifier"}, description = "The classifier to use.")
     private String classifierName;
 
@@ -55,15 +61,15 @@ public class Experiment {
     @Parameter(names = {"-p", "--problem"}, description = "The problem name. E.g. GunPoint.")
     private String problemName;
 
-    @Parameter(names = {"--checkpoint"}, description = "Periodically save the classifier to disk. Default: off")
+    @Parameter(names = {"--cp", "--checkpoint"}, description = "Periodically save the classifier to disk. Default: off")
     private boolean checkpoint = false;
 
-    @Parameter(names = {"--trainTimeContract"}, arity = 2, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'")
-    private List<String> trainTimeContractStrs;
-    private List<TimeAmount> trainTimeContracts;
+    @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'")
+    private List<String> trainTimeLimitStrs = new ArrayList<>();
+    private List<Time> trainTimeLimits = new ArrayList<>();
 
-    @Parameter(names = {"-e", "--estimateTrain"}, description = "Estimate the train error. Default: false")
-    private boolean estimateTrain = false;
+    @Parameter(names = {"-e", "--evaluate"}, description = "Estimate the train error. Default: false")
+    private boolean evaluateClassifier = false;
 
     @Parameter(names = {"-t", "--threads"}, description = "The number of threads to use. Set to 0 or less for all available processors at runtime. Default: 1")
     private int numThreads = 1;
@@ -85,12 +91,6 @@ public class Experiment {
     private Level logLevel = Level.OFF;
 
     private final Logger log = LogUtils.buildLogger(this);
-    
-    public Experiment() {
-        addConfigs(ProximityForest.Config.values());
-        addConfigs(ProximityTree.Config.values());
-        addConfig("PF_WRAPPER", ProximityForestWrapper::new);
-    }
     
     private void addConfig(String key, Builder<? extends Classifier> value) {
         classifierLookup.put(key, value);
@@ -153,12 +153,16 @@ public class Experiment {
         if(dataDirPath == null) throw new IllegalStateException("data dir path not set");
         if(resultsDirPath == null) throw new IllegalStateException("results dir path not set");
         // default to no train time contracts
-        if(trainTimeContractStrs == null) {
-            trainTimeContracts = newArrayList(null);
+        trainTimeLimits = new ArrayList<>();
+        for(String trainTimeLimitStr : trainTimeLimitStrs) {
+            trainTimeLimits.add(new Time(trainTimeLimitStr));
+        }
+        if(trainTimeLimits.isEmpty()) {
+            // add a null limit to indicate there is no limit
+            trainTimeLimits.add(null);
         } else {
-            trainTimeContracts = CollectionUtils.convertPairs(trainTimeContractStrs, TimeAmount::parse);
             // sort the train contracts in asc order
-            trainTimeContracts.sort(Comparator.naturalOrder());
+            trainTimeLimits = trainTimeLimits.stream().distinct().sorted().collect(Collectors.toList());
         }
         // default to all cpus
         if(numThreads < 1) {
@@ -186,7 +190,7 @@ public class Experiment {
     private final StopWatch experimentTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private final MemoryWatcher experimentMemoryWatcher = new MemoryWatcher();
-    private TimeAmount trainTimeContract;
+    private Time trainTimeLimit;
     private long benchmarkScore;
     
     private String getExperimentResultsDirPath() {
@@ -194,7 +198,7 @@ public class Experiment {
     }
     
     private String getClassifierNameWithTrainTimeContract() {
-        return classifierName + "_" + trainTimeContract.toString().replaceAll(" ", "_");
+        return classifierName + "_" + trainTimeLimit.toString().replaceAll(" ", "_");
     }
     
     private String getLockFilePath() {
@@ -222,11 +226,11 @@ public class Experiment {
         FileUtils.FileLock lock = null;
         // run the experiment
         // for each train time contract
-        Assert.assertFalse(trainTimeContracts.isEmpty());
+        Assert.assertFalse(trainTimeLimits.isEmpty());
         // reset the memory watchers
         experimentMemoryWatcher.resetAndStart();
-        for(TimeAmount trainTimeContract : trainTimeContracts) {
-            this.trainTimeContract = trainTimeContract;
+        for(Time trainTimeLimit : trainTimeLimits) {
+            this.trainTimeLimit = trainTimeLimit;
             copyOverMostRecentCheckpoint();
             if(lock != null) {
                 // unlock the previous lock
@@ -236,7 +240,7 @@ public class Experiment {
             setTrainTimeContract();
             // setup the results paths
             // if running multiple contracts OR no train contract set
-            if(trainTimeContract != null) {
+            if(trainTimeLimit != null) {
                 // add the train time contract to the output dir
                 classifierNameInResults = getClassifierNameWithTrainTimeContract();
             } else {
@@ -262,7 +266,7 @@ public class Experiment {
             log.info("train time: " + timer.elapsedTime());
             log.info("train mem: " + memoryWatcher.getMaxMemoryUsage());
             // if estimating the train error then write out train results
-            if(estimateTrain) {
+            if(evaluateClassifier) {
                 final ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
                 ResultUtils.setInfo(trainResults, classifier, split.getTrainDataArff()); // todo change to ts
                 setResultInfo(trainResults);
@@ -300,10 +304,10 @@ public class Experiment {
             log.info("test results: ");
             log.info(testResults.writeSummaryResultsToString());
             writeResults("test", testResults, StrUtils.joinPath(experimentResultsDirPath, "testFold" + seed + ".csv"));
-            if(trainTimeContract == null) {
+            if(trainTimeLimit == null) {
                 log.info("experiment complete");
             } else {
-                log.info("train time contract " + trainTimeContract + " experiment complete");
+                log.info("train time contract " + trainTimeLimit + " experiment complete");
             }
             experimentTimer.stop();
             experimentMemoryWatcher.stop();
@@ -317,25 +321,25 @@ public class Experiment {
     private void copyOverMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
         // check the state of all train time contracts so far to copy over old checkpoints
         if(checkpoint) {
-            TimeAmount target = trainTimeContract;
-            TimeAmount mostRecentTrainTimeContract = null;
-            for(TimeAmount trainTimeContract : trainTimeContracts) {
+            Time target = trainTimeLimit;
+            Time mostRecentTrainTimeContract = null;
+            for(Time trainTimeLimit : trainTimeLimits) {
                 // if there's no train time contracts then there's no prior work to begin from
-                if(trainTimeContract == null) {
+                if(trainTimeLimit == null) {
                     break;
                 }
                 // if the contract is larger than the target then can't use the progress (as spend more time than the contract)
-                if(trainTimeContract.compareTo(target) > 0) {
+                if(trainTimeLimit.compareTo(target) > 0) {
                     break;
                 }
                 // check the state of the current contract
-                classifierNameInResults = classifierName + trainTimeContract.toString().replaceAll(" ", "_");
+                classifierNameInResults = classifierName + "_" + trainTimeLimit.toString();
                 // lock
                 experimentResultsDirPath = getExperimentResultsDirPath();
                 final FileUtils.FileLock lock = new FileUtils.FileLock(getLockFilePath());
                 checkpointDirPath = getCheckpointDirPath();
                 if(!FileUtils.isEmptyDir(checkpointDirPath)) {
-                    mostRecentTrainTimeContract = trainTimeContract;
+                    mostRecentTrainTimeContract = trainTimeLimit;
                 }
                 lock.unlock();
             }
@@ -349,7 +353,7 @@ public class Experiment {
             }
             // copy over the checkpoint from the most recent train time contract
             String srcCheckppintDirPath = checkpointDirPath;
-            trainTimeContract = target;
+            trainTimeLimit = target;
             classifierNameInResults = getClassifierNameWithTrainTimeContract();
             checkpointDirPath = getCheckpointDirPath();
             Files.copy(new File(srcCheckppintDirPath).toPath(), new File(checkpointDirPath).toPath());
@@ -395,11 +399,11 @@ public class Experiment {
     }
 
     private void setTrainTimeContract() {
-        if(trainTimeContract != null) {
+        if(trainTimeLimit != null) {
             // there is a contract
             if(classifier instanceof TrainTimeContractable) {
-                log.info("setting classifier train contract to " + trainTimeContract);
-                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainTimeContract.getAmount(), trainTimeContract.getUnit());
+                log.info("setting classifier train contract to " + trainTimeLimit);
+                ((TrainTimeContractable) classifier).setTrainTimeLimit(trainTimeLimit.inNanos());
             } else {
                 throw new IllegalStateException("classifier cannot handle train time contract");
             }
@@ -408,7 +412,7 @@ public class Experiment {
 
     private void configureClassifier() {
         // set estimate train error
-        if(estimateTrain) {
+        if(evaluateClassifier) {
             if(classifier instanceof TrainEstimateable) {
                 log.info("setting classifier to estimate train error");
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);

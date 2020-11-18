@@ -4,14 +4,16 @@ public class ExperimentRunner {
     public static void main(String[] args) throws Exception {
         Experiment.main(
                 "-r", "results"
-                , "-d", "/bench/data"
-                , "-p", "ElectricDevices"
-                , "-c", "KNN_LOOCV_R"
+                , "-d", "/bench/phd/data/all"
+                , "-p", "GunPoint"
+                , "-c", "PF_R5"
                 , "-s", "0"
                 , "-l", "all"
-                , "--trainTimeContract", "10", "s"
-                , "--trainTimeContract", "20", "s"
-                , "--trainTimeContract", "30", "s"
+                , "--ttl", "1h30m"
+                , "--ttl", "2m10s"
+                , "--ttl", "90m"
+                , "--ttl", "130s"
+                , "--ttl", "1m70s"
         );
     }
 }
