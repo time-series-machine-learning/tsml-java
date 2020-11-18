@@ -143,10 +143,16 @@ public class StopWatch extends Stated {
         return lastUpdateTimeStamp;
     }
 
-    private void readObject(ObjectInputStream aInputStream) throws ClassNotFoundException, IOException {
-        aInputStream.defaultReadObject();
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ois.defaultReadObject();
         // any stopwatch read from file should begin in a stopped state
         super.optionalStop();
+    }
+    
+    private void writeObject(ObjectOutputStream oos) throws ClassNotFoundException, IOException {
+        // update the elapsed time
+        elapsedTime();
+        oos.defaultWriteObject();
     }
 
 }
