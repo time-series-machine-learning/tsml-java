@@ -25,6 +25,7 @@ public class TrainAccByClass extends ModuleWeightingScheme {
     
     public TrainAccByClass() {
         uniformWeighting = false;
+        needTrainPreds = true;
     }
 
     @Override
