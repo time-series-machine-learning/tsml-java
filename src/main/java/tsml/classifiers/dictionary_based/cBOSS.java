@@ -120,11 +120,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     private boolean fullTrainCVEstimate = false;
     private double[][] trainDistributions;
-    private int[] idxSubsampleCount;
+    private double[] idxSubsampleCount;
     private ArrayList<Integer> latestTrainPreds;
     private ArrayList<Integer> latestTrainIdx;
-    private ArrayList<ArrayList>[] filterTrainPreds;
-    private ArrayList<ArrayList>[] filterTrainIdx;
+    private ArrayList<ArrayList<Integer>>[] filterTrainPreds;
+    private ArrayList<ArrayList<Integer>>[] filterTrainIdx;
     private Instances seriesHeader;
 
     private transient Instances train;
@@ -524,6 +524,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     }
                 }
             }
+
+            if (getEstimateOwnPerformance()){
+                trainDistributions = new double[data.numInstances()][data.numClasses()];
+                idxSubsampleCount = new double[data.numInstances()];
+            }
         }
 
 /*        if (memoryContract) {
@@ -536,11 +541,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
 */
         train = data;
-
-        if (getEstimateOwnPerformance()){
-            trainDistributions = new double[data.numInstances()][data.numClasses()];
-            idxSubsampleCount = new int[data.numInstances()];
-        }
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
@@ -728,7 +728,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     for (int n = 0; n < trainDistributions[i].length; n++) {
                         trainDistributions[i][n] /= idxSubsampleCount[i];
                     }
-                    //System.out.println(Arrays.toString(trainDistributions[i]));
                 }
             }
         }
@@ -1171,7 +1170,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         trainResults.setSplit("train");
         trainResults.setParas(getParameters());
 
-        if (idxSubsampleCount == null) idxSubsampleCount = new int[train.numInstances()];
+        if (idxSubsampleCount == null) idxSubsampleCount = new double[train.numInstances()];
 
         for (int i = 0; i < data.numInstances(); ++i) {
             double[] probs;
@@ -1479,24 +1478,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
 
-//        c = new cBOSS(false);
-//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-//        c.setSeed(fold);
-//        c.setEstimateOwnPerformance(true);
-//        c.buildClassifier(train);
-//        accuracy = ClassifierTools.accuracy(test, c);
-//
-//        System.out.println("Contract 500MB BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-//
-//        c = new cBOSS(false);
-//        c.setMemoryLimit(DataUnit.MEGABYTE, 500);
-//        c.setSeed(fold);
-//        c.setEstimateOwnPerformance(true);
-//        c.buildClassifier(train2);
-//        accuracy = ClassifierTools.accuracy(test2, c);
-
-        System.out.println("Contract 500MB BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers));
-
         //Output 19/11/19
         /*
         JAVAGENT: call premain instrumentation for class SizeOf
@@ -1510,8 +1491,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8481481481481481 numClassifiers = [25, 25, 25, 25]
         Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80] in 2.2928520000000003 seconds
         Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190] in 27.359452200000003 seconds
-        Contract 500MB BOSS accuracy on ItalyPowerDemand fold 0 = 0.7094266277939747 numClassifiers = [50]
-        Contract 500MB BOSS accuracy on ERing fold 0 = 0.4777777777777778 numClassifiers = [13, 13, 12, 12]
         */
     }
 }
