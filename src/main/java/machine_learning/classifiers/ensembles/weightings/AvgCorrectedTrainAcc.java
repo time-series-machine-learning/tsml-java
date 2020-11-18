@@ -27,7 +27,7 @@ public class AvgCorrectedTrainAcc extends ModuleWeightingScheme {
 
     public AvgCorrectedTrainAcc() {
         uniformWeighting = true;
-        needTrainPreds = false;
+        needTrainPreds = true;
     }
     
     @Override
