@@ -245,6 +245,15 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     /**
+     * Set the number of attributes to show when creating visualisations.
+     *
+     * @param i number of attributes
+     */
+    public void setVisNumTopAtts(int i){
+        visNumTopAtts = i;
+    }
+
+    /**
      * Outputs CIF parameters information as a String.
      *
      * @return String written to results files
@@ -713,7 +722,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
      *     do the transfrorms
      *     build the classifier
      *
-     * @param dimensions TimeSeriesInstances data
+     * @param data TimeSeriesInstances data
      * @param result Instances object formatted for transformed data
      * @throws Exception unable to build CIF
      */
@@ -1275,7 +1284,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         //run python file to output temporal importance curves graph
         Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
-                + " " + numAttributes + " " + visNumTopAtts);
+                + " " + numDimensions + " " + visNumTopAtts);
 
         if (debug) {
             System.out.println("CIF vis python output:");

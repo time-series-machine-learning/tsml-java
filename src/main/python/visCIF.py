@@ -11,7 +11,8 @@
 
 import sys
 import numpy as np
-from utilities import *
+
+from utilities import array_string_to_list_float
 from matplotlib import pyplot as plt
 
 plt.rcParams["font.family"] = "Calibri"
@@ -25,9 +26,9 @@ num_dims = int(sys.argv[4])
 curves = []
 dimensions = []
 names = []
-for i in range(start_ats * num_dims):
+for i in range(start_atts * num_dims):
 	names.append(f.readline().strip())
-	dimensions.append(int(f.readline()))
+	dimensions.append(f.readline().strip())
 	curves.append(array_string_to_list_float(f.readline()))
 
 f.close()
@@ -45,9 +46,10 @@ top_names = [names[i] for i in top]
 for i in range(0, num_atts):
 	plt.plot(top_curves[i], label=top_names[i] if num_dims == 1 else top_names[i]+' '+top_dims[i])
 if num_dims == 1:
-    plt.plot(list(np.mean(curves, axis=0)), '--', linewidth=3, label='Mean Information Gain')
+	plt.plot(list(np.mean(curves, axis=0)), '--', linewidth=3, label='Mean Information Gain')
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode='expand', borderaxespad=0.)
 plt.xlabel('Time Point')
 plt.ylabel('Information Gain')
 
-plt.savefig(sys.argv[1] + 'vis' + sys.argv[2])
+plt.show()
+#plt.savefig(sys.argv[1] + 'vis' + sys.argv[2])
