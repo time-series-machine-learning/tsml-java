@@ -16,12 +16,17 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import tsml.classifiers.*;
+import tsml.classifiers.dictionary_based.bitword.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
+import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
+import utilities.generic_storage.SerialisableComparablePair;
 import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 
@@ -33,6 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
@@ -921,7 +927,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of a training instance using the trained model, removing said instance if present.
      *
-     * @param ins train instance index
+     * @param test train instance index
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -966,7 +972,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1026,7 +1032,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         if (interpSavePath != null) {
-            interpSeries = extractTimeSeries(series[0]);
+            interpSeries = instance.toValueArray()[0];
             interpPred = argMax(distributions,rand);
         }
 
@@ -1036,7 +1042,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1048,7 +1054,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1061,7 +1067,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1233,17 +1239,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             return false;
         }
 
-        if (classifiers.length > 1){
+        if (train.isMultivariate()){
             System.err.println("TDE interpretability only available for univariate series.");
             return false;
         }
 
         TreeMap<Integer, Double> topNeighbours = new TreeMap<>(Collections.reverseOrder());
         for (int i = 0; i < interpData.size(); i++){
-            if (train.get(interpData.get(i)).classValue() == interpPred) {
+            if (train.get(interpData.get(i)).getLabelIndex() == interpPred) {
                 Double val = topNeighbours.get(interpData.get(i));
                 if (val == null) val = 0.0;
-                topNeighbours.put(interpData.get(i), val + classifiers[0].get(i).getWeight());
+                topNeighbours.put(interpData.get(i), val + classifiers.get(i).getWeight());
             }
         }
 
@@ -1259,17 +1265,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         int topClassifier = 0;
         double topClassifierWeight = Double.MIN_VALUE;
         for (int i = 0; i < interpData.size(); i++){
-            if (interpData.get(i) == topNeighbour && classifiers[0].get(i).getWeight() > topClassifierWeight){
+            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight){
                 topClassifier = i;
-                topClassifierWeight = classifiers[0].get(i).getWeight();
+                topClassifierWeight = classifiers.get(i).getWeight();
             }
         }
 
-        IndividualTDE tde = classifiers[0].get(topClassifier);
-        double[] nearestSeries = extractTimeSeries(train.get(topNeighbour));
+        IndividualTDE tde = classifiers.get(topClassifier);
+        double[] nearestSeries = train.get(topNeighbour).toValueArray()[0];
 
-        IndividualTDE.SPBag histogram = tde.getLastNNBag();
-        IndividualTDE.SPBag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
+        IndividualTDE.Bag histogram = tde.getLastNNBag();
+        IndividualTDE.Bag nearestHistogram = tde.getBags().get(tde.getSubsampleIndices().indexOf(topNeighbour));
 
         TreeSet<SerialisableComparablePair<Byte, String>> keys = new TreeSet<>((obj1, obj2) -> {
             int c1 = obj1.var1 - obj2.var1;
@@ -1347,7 +1353,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityTDE.py \"" +
                 interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
-                + " " + tde.getLevels() + " " +  interpPred + " " + (int)train.get(topNeighbour).classValue());
+                + " " + tde.getLevels() + " " +  interpPred + " " + train.get(topNeighbour).getLabelIndex());
 
         interpCount++;
 
@@ -1395,7 +1401,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             return false;
         }
 
-        if (classifiers.length > 1){
+        if (train.isMultivariate()){
             System.err.println("TDE visualisation only available for univariate series.");
             return false;
         }
@@ -1404,10 +1410,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         HashMap<Boolean, Double> normCounts = new HashMap<>(normOptions.length);
         HashMap<Integer, Double> levelsCounts = new HashMap<>(levels.length);
         HashMap<Boolean, Double> IGBCounts = new HashMap<>(useIGB.length);
-        ArrayList<Integer> windowLengths = new ArrayList<>(classifiers[0].size());
+        ArrayList<Integer> windowLengths = new ArrayList<>(classifiers.size());
         double weightSum = 0;
-        for (int i = 0; i < classifiers[0].size(); i++){
-            IndividualTDE cls = classifiers[0].get(i);
+        for (int i = 0; i < classifiers.size(); i++){
+            IndividualTDE cls = classifiers.get(i);
 
             Double val = wordLengthCounts.get(cls.getWordLength());
             if (val == null) val = 0.0;
@@ -1456,7 +1462,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             medianWindowLength = (windowLengths.get(windowLengths.size()/2 - 1) +
                     windowLengths.get(windowLengths.size()/2)) / 2;
 
-        ArrayList<IndividualTDE> sortedClassifiers = new ArrayList<>(classifiers[0]);
+        ArrayList<IndividualTDE> sortedClassifiers = new ArrayList<>(classifiers);
         Collections.sort(sortedClassifiers,Collections.reverseOrder());
         IndividualTDE tde = null;
         int rank = 1;
@@ -1481,8 +1487,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         int[] classCount = new int[getNumClasses()];
-        for (IndividualTDE.SPBag bag: tde.getBags()){
-            int cls = (int)bag.classVal;
+        for (IndividualTDE.Bag bag: tde.getBags()){
+            int cls = bag.getClassVal();
             if (classCount[cls] >= 1) continue;
             classCount[cls]++;
 
@@ -1543,13 +1549,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         }
 
-        Instance example = train.get(tde.getSubsampleIndices().get(0));
+        TimeSeriesInstance example = train.get(tde.getSubsampleIndices().get(0));
         BitWordInt word = new BitWordInt();
         double[] dft = tde.firstWordVis(example, word);
 
         OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
         of.writeLine(Double.toString(tde.getWeight()));
-        of.writeLine(rank + " " + classifiers[0].size());
+        of.writeLine(rank + " " + classifiers.size());
         of.writeLine(tde.getWordLength() + " " + wordLengthCounts.get(tde.getWordLength()));
         of.writeLine(tde.getNorm() + " " + normCounts.get(tde.getNorm()));
         of.writeLine(tde.getLevels() + " " + levelsCounts.get(tde.getLevels()));
@@ -1557,7 +1563,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         of.writeLine(tde.getWindowSize() + " " + medianWindowLength);
         of.writeLine(Double.toString(weightSum));
         of.writeLine(Arrays.toString(classCount));
-        of.writeLine(Arrays.toString(example.toDoubleArray()));
+        of.writeLine(Arrays.toString(example.toValueArray()[0]));
         of.writeLine(Arrays.toString(dft));
         of.writeLine(word.toStringUnigram());
         double[][] breakpoints = tde.getBreakpoints();
@@ -1601,7 +1607,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Development tests for the TDE classifier.
      *
-     * @param arg arguments, unused
+     * @param args arguments, unused
      * @throws Exception if tests fail
      */
     public static void main(String[] args) throws Exception{
