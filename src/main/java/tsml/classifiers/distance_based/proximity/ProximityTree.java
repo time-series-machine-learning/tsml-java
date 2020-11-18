@@ -202,7 +202,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override
-    public void buildClassifier(Instances trainDataArg) throws Exception {
+    public void buildClassifier(Instances trainData) throws Exception {
         // timings:
             // train time tracks the time spent processing the algorithm. This should not be used for contracting.
             // run time tracks the entire time spent processing, whether this is work towards the algorithm or otherwise (e.g. saving checkpoints to disk). This should be used for contracting.
@@ -251,7 +251,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // add back the time attempting to load a checkpoint from a moment ago
                 checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // store the train data
-                this.trainData = trainDataArg;
+                this.trainData = trainData;
                 // setup the tree vars
                 tree = new BaseTree<>();
                 nodeBuildQueue = new LinkedList<>();
