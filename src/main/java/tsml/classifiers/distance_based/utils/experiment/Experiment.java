@@ -8,6 +8,7 @@ import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
+import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
 import tsml.classifiers.distance_based.proximity.ProximityTree;
 import tsml.classifiers.distance_based.utils.classifiers.Builder;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
@@ -88,6 +89,11 @@ public class Experiment {
     public Experiment() {
         addConfigs(ProximityForest.Config.values());
         addConfigs(ProximityTree.Config.values());
+        addConfig("PF_WRAPPER", ProximityForestWrapper::new);
+    }
+    
+    private void addConfig(String key, Builder<? extends Classifier> value) {
+        classifierLookup.put(key, value);
     }
     
     private <A> void addConfigs(Iterable<A> entries) {
@@ -102,7 +108,7 @@ public class Experiment {
             } catch(ClassCastException e) {
                 throw new IllegalArgumentException("not an instance of Configurer which accepts a Classifier instance");
             }
-            classifierLookup.put(key, value);
+            addConfig(key, value);
         }
     }
     
@@ -166,7 +172,7 @@ public class Experiment {
         experiment.run();
     }
 
-    private Classifier buildClassifier() throws InstantiationException, IllegalAccessException {
+    private Classifier newClassifier() throws InstantiationException, IllegalAccessException {
         return classifierLookup.get(classifierName).build();
     }
     
@@ -188,7 +194,7 @@ public class Experiment {
     }
     
     private String getClassifierNameWithTrainTimeContract() {
-        return classifierName + trainTimeContract.toString().replaceAll(" ", "_");
+        return classifierName + "_" + trainTimeContract.toString().replaceAll(" ", "_");
     }
     
     private String getLockFilePath() {
@@ -203,12 +209,15 @@ public class Experiment {
      * Runs the experiment. Make sure all fields have been set prior to this call otherwise Exceptions will be thrown accordingly.
      */
     public void run() throws Exception {
-        // load the data
-        split = new DatasetSplit(DatasetLoading.sampleDataset(dataDirPath, problemName, seed));
         // build the classifier
-        classifier = buildClassifier();
+        classifier = newClassifier();
         // configure the classifier with experiment settings as necessary
         configureClassifier();
+        // load the data
+        log.info("loading " + problemName);
+        split = new DatasetSplit(DatasetLoading.sampleDataset(dataDirPath, problemName, seed));
+        log.info("benchmarking hardware");
+        benchmark();
         // make a lock to deny multiple processes from writing to the same results
         FileUtils.FileLock lock = null;
         // run the experiment
@@ -239,8 +248,6 @@ public class Experiment {
                 checkpointDirPath = getCheckpointDirPath();
                 ((Checkpointable) classifier).setCheckpointPath(checkpointDirPath);
             }
-            log.info("benchmarking hardware");
-            benchmark();
             // build the classifier
             log.info("training classifier");
             timer.resetAndStart();
@@ -274,6 +281,7 @@ public class Experiment {
             // test the classifier
             log.info("testing classifier");
             timer.resetAndStart();
+            memoryWatcher.resetAndStart();
             final ClassifierResults testResults = new ClassifierResults();
             // todo change to ts
 //            if(classifier instanceof TSClassifier) {
