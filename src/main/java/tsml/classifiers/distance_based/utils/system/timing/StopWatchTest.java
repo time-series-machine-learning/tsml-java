@@ -19,7 +19,6 @@ public class StopWatchTest {
     @Test
     public void testElapsedTime() {
         stopWatch.start();
-        long delay = 1000;
         sleep(delay);
         stopWatch.stop();
         final long l = stopWatch.elapsedTime();
@@ -43,7 +42,7 @@ public class StopWatchTest {
         Assert.assertTrue(stopWatch.isStopped());
         long timeStamp = System.nanoTime();
         
-        stopWatch.setStartTimeStamp(-1);
+//        stopWatch.setStartTimeStamp(-1);
         Assert.assertEquals(delayNanos * 3, stopWatch.elapsedTime(), tolerance);
 
         timeStamp = System.nanoTime();
@@ -58,7 +57,7 @@ public class StopWatchTest {
         stopWatch.start();
         long timeStamp = stopWatch.timeStamp();
         StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
-        Assert.assertTrue(other.isStarted());
+        Assert.assertTrue(other.isStopped());
         // make sure the clock / timeStamp gets reset post ser
         Assert.assertTrue(other.timeStamp() > timeStamp);
         Assert.assertTrue(other.elapsedTime() > 0);
@@ -110,7 +109,7 @@ public class StopWatchTest {
         stopWatch.reset();
         long timeStamp = System.nanoTime();
         Assert.assertEquals(stopWatch.elapsedTime(), 0);
-        Assert.assertEquals(stopWatch.timeStamp(), timeStamp, 100);
+        Assert.assertEquals(stopWatch.timeStamp(), timeStamp, tolerance);
     }
 
     @Test
@@ -156,7 +155,7 @@ public class StopWatchTest {
         Assert.assertTrue(stopTime > 0);
         Assert.assertFalse(stopWatch.isStarted());
         Assert.assertTrue(stopWatch.isStopped());
-        stopWatch.resetAndStop();
+        stopWatch.stopAndReset();
         Assert.assertFalse(stopWatch.isStarted());
         Assert.assertTrue(stopWatch.isStopped());
         Assert.assertEquals(0, stopWatch.elapsedTime());
@@ -215,15 +214,11 @@ public class StopWatchTest {
     public void testSplit() {
         long target = TimeUnit.NANOSECONDS.convert(delay, TimeUnit.MILLISECONDS);
         stopWatch.start();
-sleep(delay);
-        long split1 = stopWatch.elapsedTime();
-        long a = stopWatch.elapsedTime();
-        Assert.assertEquals(a, split1, tolerance);
-sleep(delay);
-        long split2 = stopWatch.elapsedTime();
-        Assert.assertEquals(stopWatch.elapsedTime(), split1 + split2, tolerance);
-sleep(delay);
-        long split3 = stopWatch.elapsedTime();
-        Assert.assertEquals(stopWatch.elapsedTime(), split1 + split2 + split3, tolerance);
+        sleep(delay);
+        Assert.assertEquals(target, stopWatch.elapsedTime(), tolerance);
+        sleep(delay);
+        Assert.assertEquals(stopWatch.elapsedTime(), target * 2, tolerance);
+        sleep(delay);
+        Assert.assertEquals(stopWatch.elapsedTime(), target * 3, tolerance);
     }
 }

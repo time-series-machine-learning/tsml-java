@@ -40,12 +40,14 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             classifier.setEstimateOwnPerformance(true);
             classifier.setEstimatorMethod("oob");
             classifier.setSeed(seed);
-            classifier.setNumTreeLimit(14);
+            classifier.setNumTreeLimit(3);
+            classifier.setCheckpointPath("checkpoints");
+//            classifier.setNumTreeLimit(14);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ProximalPhalanxTW", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "GunPoint", seed), seed);
         }
         //        Thread.sleep(10000);
 
@@ -277,8 +279,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 // build timer is already started so just clear any time already accrued from previous builds. I.e. keep the time stamp of when the timer was started, but clear any record of accumulated time
                 runTimer.resetElapsedTime();
                 // clear other timers entirely
-                evaluationTimer.resetAndStop();
-                checkpointTimer.resetAndStop();
+                evaluationTimer.stopAndReset();
+                checkpointTimer.stopAndReset();
                 // no constituents to start with
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
@@ -310,10 +312,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // reset the state of pf to build from scratch
             pf.setRebuild(true);
             // reset the timers (as these are copies of our currently running timers in this obj)
-            pf.runTimer.resetAndStop();
-            pf.evaluationTimer.resetAndStop();
-            pf.checkpointTimer.resetAndStop();
-            pf.testTimer.resetAndStop();
+            pf.runTimer.stopAndReset();
+            pf.evaluationTimer.stopAndReset();
+            pf.checkpointTimer.stopAndReset();
+            pf.testTimer.stopAndReset();
             // disable checkpointing on pf
             pf.setCheckpointPath(null);
             // evaluate pf using cross validation
@@ -431,8 +433,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         //        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
         // build finished so stop the timer
         runTimer.stop();
-        // update the results info
-        ResultUtils.setInfo(trainResults, this, trainData);
+        if(estimateOwnPerformance && rebuildTrainEstimate) {
+            // update the results info
+            ResultUtils.setInfo(trainResults, this, trainData);
+        }
     }
 
     @Override
@@ -582,12 +586,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override public String getParameters() {
         return CHECKPOINT_TIME_ID + "," + checkpointTimer.elapsedTime()
-                + BUILD_TIME_FLAG_ID + "," + runTimer.elapsedTime()
-                + TRAIN_ESTIMATE_TIME_ID + "," + evaluationTimer.elapsedTime()
                 + "," + super.getParameters();
     }
     
     public static final String CHECKPOINT_TIME_ID = "checkpointTime";
-    public static final String BUILD_TIME_FLAG_ID = "buildTime";
-    public static final String TRAIN_ESTIMATE_TIME_ID = "trainEstimateTime";
 }

@@ -36,6 +36,7 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -403,7 +404,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return Objects.requireNonNull(bestSplit);
     }
 
-    private static class Partition {
+    private static class Partition implements Serializable {
 
         private Partition(final Instances dataFormat) {
             dataIndices = new ArrayList<>();
@@ -473,7 +474,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
     }
 
-    private class Split {
+    private class Split implements Serializable {
 
         public Split() {}
 

@@ -65,11 +65,9 @@ public class Stated implements Serializable {
     public void resetAndStart() {
         reset();
         optionalStart();
-        reset();
     }
 
-    public void resetAndStop() {
-        reset();
+    public void stopAndReset() {
         optionalStop();
         reset();
     }

@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import utilities.FileUtils;
 
 import java.util.concurrent.TimeUnit;
 
@@ -88,12 +89,13 @@ public interface Checkpointed extends Checkpointable, Copier {
         return getCheckpointPath() != null;
     }
     
-    @Override default void loadFromFile(String filename) throws Exception {
-        Checkpointable.super.loadFromFile(filename);
+    @Override default void loadFromFile(String path) throws Exception {
+        Checkpointable.super.loadFromFile(path);
     }
 
-    @Override default void saveToFile(String filename) throws Exception {
-        Checkpointable.super.saveToFile(filename);
+    @Override default void saveToFile(String path) throws Exception {
+        FileUtils.makeParentDir(path);
+        Checkpointable.super.saveToFile(path);
     }
 
     @Override default void copyFromSerObject(Object obj) throws Exception {

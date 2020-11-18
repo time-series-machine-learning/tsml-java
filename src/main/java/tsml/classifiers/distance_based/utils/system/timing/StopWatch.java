@@ -70,8 +70,8 @@ public class StopWatch extends Stated {
     }
     
     public void stop(long timeStamp) {
-        super.stop();
         elapsedTime(timeStamp);
+        super.stop();
     }
     
     public void stop() {
@@ -82,7 +82,7 @@ public class StopWatch extends Stated {
      * Set the start time irrelevant of current state.
      * @param startTimeStamp
      */
-    public void setStartTimeStamp(long startTimeStamp) {
+    private void setStartTimeStamp(long startTimeStamp) {
         if(startTimeStamp > System.nanoTime()) {
             throw new IllegalArgumentException("cannot set start time in the future");
         }
@@ -108,11 +108,9 @@ public class StopWatch extends Stated {
      * Reset the elapsed time to zero and invalidate the start time.
      */
     public void reset() {
-        stop();
+        optionalStop();
         resetElapsedTime();
-        // deliberately setting to max value to ensure the time stamp must be updated before subsequent calls to elapsedTime() when the stopwatch state is "started". 
-        // tldr; validity check
-        lastUpdateTimeStamp = Long.MAX_VALUE;
+        setStartTimeStamp(System.nanoTime());
     }    
     
     /**
@@ -144,4 +142,11 @@ public class StopWatch extends Stated {
     public long timeStamp() {
         return lastUpdateTimeStamp;
     }
+
+    private void readObject(ObjectInputStream aInputStream) throws ClassNotFoundException, IOException {
+        aInputStream.defaultReadObject();
+        // any stopwatch read from file should begin in a stopped state
+        super.optionalStop();
+    }
+
 }

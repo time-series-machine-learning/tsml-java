@@ -5,15 +5,10 @@ import com.sun.management.GarbageCollectionNotificationInfo;
 
 import javax.management.Notification;
 import javax.management.NotificationEmitter;
-import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
-import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
 
@@ -90,8 +85,8 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         super.resetAndStart();
     }
 
-    @Override public synchronized void resetAndStop() {
-        super.resetAndStop();
+    @Override public synchronized void stopAndReset() {
+        super.stopAndReset();
     }
 
     @Override public synchronized void optionalStart() {
