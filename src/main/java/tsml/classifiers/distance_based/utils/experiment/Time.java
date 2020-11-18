@@ -2,15 +2,14 @@ package tsml.classifiers.distance_based.utils.experiment;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class Time {
+public class Time implements Comparable<Time> {
     
     public Time(final String inputLabel) {
         // convert the label to nanos
         nanos = strToNanos(inputLabel);
-        // the input label may be in an odd format, i.e. 90m. Therefore, convert the nanos back to a label which will output in maximised units, i.e. 1h30m.
-        label = nanosToStr(nanos);
     }
     
     public static String nanosToStr(long nanos) {
@@ -109,10 +108,41 @@ public class Time {
         }
     }
 
-    private final String label;
+    private String label;
     private final long nanos;
 
     public long inNanos() {
         return nanos;
+    }
+    
+    public String label() {
+        if(label == null) {
+            // the input label may be in an odd format, i.e. 90m. Therefore, convert the nanos back to a label which will output in maximised units, i.e. 1h30m. Use the nanos representation to do this.
+            label = nanosToStr(nanos);
+        }
+        return label;
+    }
+
+    @Override public String toString() {
+        return label();
+    }
+
+    @Override public int compareTo(final Time time) {
+        return Long.compare(nanos, time.nanos);
+    }
+
+    @Override public boolean equals(final Object o) {
+        if(this == o) {
+            return true;
+        }
+        if(!(o instanceof Time)) {
+            return false;
+        }
+        final Time time = (Time) o;
+        return nanos == time.nanos;
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(nanos);
     }
 }

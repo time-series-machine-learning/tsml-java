@@ -4,7 +4,39 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TimeTest {
+    
+    @Test
+    public void testStrToNanos1m70s() {
+        Assert.assertEquals(130000000000L, Time.strToNanos("1m70s"));
+    }
+    
+    @Test
+    public void testNanosToStr1m70s() {
+        Assert.assertEquals("2m10s", Time.nanosToStr(130000000000L));
+    }
 
+    @Test
+    public void testStrToNanos130s() {
+        Assert.assertEquals(130000000000L, Time.strToNanos("130s"));
+    }
+
+    @Test
+    public void testNanosToStr130s() {
+        Assert.assertEquals("2m10s", Time.nanosToStr(130000000000L));
+    }
+    
+    @Test
+    public void testEquals() {
+        Assert.assertEquals(Time.nanosToStr(130000000000L), Time.nanosToStr(130000000000L));
+        Assert.assertNotEquals(Time.nanosToStr(130000000000L), Time.nanosToStr(130000000001L));
+        Assert.assertEquals(Time.strToNanos("1h30m"), Time.strToNanos("90m"));
+        Assert.assertEquals(Time.strToNanos("2m10s"), Time.strToNanos("130s"));
+        Assert.assertEquals(Time.strToNanos("2m10s"), Time.strToNanos("1m70s"));
+        Assert.assertEquals(Time.strToNanos("130s"), Time.strToNanos("1m70s"));
+        Assert.assertNotEquals(Time.strToNanos("131s"), Time.strToNanos("1m70s"));
+        Assert.assertEquals(Time.strToNanos("130s"), Time.strToNanos(Time.nanosToStr(Time.strToNanos("1m70s"))));
+    }
+    
     @Test
     public void testNanosToStr1h() {
         Assert.assertEquals("1h", Time.nanosToStr(3600000000000L));
