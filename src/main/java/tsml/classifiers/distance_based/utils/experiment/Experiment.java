@@ -41,6 +41,7 @@ import static weka.core.Debug.OFF;
 public class Experiment {
     
     public Experiment() {
+        setExperimentLogLevel(Level.ALL);
         addConfigs(ProximityForest.Config.values());
         addConfigs(ProximityTree.Config.values());
         addConfig("PF_WRAPPER", ProximityForestWrapper::new);
@@ -79,6 +80,14 @@ public class Experiment {
 
     @Parameter(names = {"-o", "--overwrite"}, description = "Overwrite previous results.")
     private boolean overwriteResults = false;
+
+    public Level getExperimentLogLevel() {
+        return log.getLevel();
+    }
+
+    public void setExperimentLogLevel(final Level level) {
+        log.setLevel(level);
+    }
 
     private static class LogLevelConverter implements IStringConverter<Level> {
 
