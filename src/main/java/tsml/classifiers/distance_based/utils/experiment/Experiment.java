@@ -249,6 +249,7 @@ public class Experiment {
             experimentResultsDirPath = getExperimentResultsDirPath();
             lock = new FileUtils.FileLock(getLockFilePath());
             if(checkpoint) {
+                copyOverMostRecentCheckpoint();
                 checkpointDirPath = getCheckpointDirPath();
                 ((Checkpointable) classifier).setCheckpointPath(checkpointDirPath);
             }
@@ -256,11 +257,15 @@ public class Experiment {
             log.info("training classifier");
             timer.resetAndStart();
             memoryWatcher.start();
+            // prompt garbage collection to provide a clean slate before building
+            System.gc();
             if(classifier instanceof TSClassifier) {
                 ((TSClassifier) classifier).buildClassifier(split.getTrainDataTS());
             } else {
                 classifier.buildClassifier(split.getTrainDataArff());
             }
+            // prompt garbage collection to obtain at least one memory usage reading during training
+            System.gc();
             timer.stop();
             memoryWatcher.stop();
             log.info("train time: " + timer.elapsedTime());
