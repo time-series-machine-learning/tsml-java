@@ -4,6 +4,7 @@ import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import evaluation.storage.ClassifierResults;
+import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.*;
@@ -12,6 +13,7 @@ import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
 import tsml.classifiers.distance_based.proximity.ProximityTree;
 import tsml.classifiers.distance_based.utils.classifiers.Builder;
 import tsml.classifiers.distance_based.utils.classifiers.Configurer;
+import tsml.classifiers.distance_based.utils.classifiers.Rebuildable;
 import tsml.classifiers.distance_based.utils.classifiers.TrainEstimateable;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
@@ -19,7 +21,6 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import tsml.classifiers.distance_based.utils.system.timing.TimeAmount;
 import utilities.ClassifierTools;
 import utilities.FileUtils;
 import weka.classifiers.Classifier;
@@ -30,12 +31,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.apache.commons.lang3.SystemUtils.getHostName;
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
+import static tsml.classifiers.distance_based.utils.system.SysUtils.hostName;
 import static weka.core.Debug.OFF;
 
 public class Experiment {
@@ -44,7 +45,23 @@ public class Experiment {
         setExperimentLogLevel(Level.ALL);
         addConfigs(ProximityForest.Config.values());
         addConfigs(ProximityTree.Config.values());
-        addConfig("PF_WRAPPER", ProximityForestWrapper::new);
+        Builder<ProximityForestWrapper> pfwR5 = () -> {
+            ProximityForestWrapper pfw = new ProximityForestWrapper();
+            pfw.setR(5);
+            return pfw;
+        };
+        addConfig("PF_WRAPPER", pfwR5);
+        addConfig("PF_WRAPPER_R5", pfwR5);
+        addConfig("PF_WRAPPER_R1",  () -> {
+            ProximityForestWrapper pfw = new ProximityForestWrapper();
+            pfw.setR(1);
+            return pfw;
+        });
+        addConfig("PF_WRAPPER_R10",  () -> {
+            ProximityForestWrapper pfw = new ProximityForestWrapper();
+            pfw.setR(10);
+            return pfw;
+        });
     }
     
     @Parameter(names = {"-c", "--classifier"}, description = "The classifier to use.")

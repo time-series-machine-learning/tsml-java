@@ -6,14 +6,14 @@ public class ExperimentRunner {
                 "-r", "results"
                 , "-d", "/bench/phd/data/all"
                 , "-p", "GunPoint"
-                , "-c", "PF_R5"
+                , "-c", "PF_WRAPPER"
+//                , "-c", "PF_R5"
                 , "-s", "0"
                 , "-l", "all"
-                , "--ttl", "1h30m"
-                , "--ttl", "2m10s"
-                , "--ttl", "90m"
-                , "--ttl", "130s"
-                , "--ttl", "1m70s"
+                , "-o"
+//                , "--ttl", "10s"
+//                , "--ttl", "20s"
+//                , "--ttl", "30s"
         );
     }
 }
