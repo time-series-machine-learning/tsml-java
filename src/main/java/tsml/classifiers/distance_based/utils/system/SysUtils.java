@@ -14,7 +14,7 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
  */
 public class SysUtils {
     
-    public static String hostname() {
+    public static String hostName() {
         if(!getOS().equals(OS.WINDOWS)) {
             try {
                 return StrUtils.join("\n", exec("hostname"));
