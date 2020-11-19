@@ -335,7 +335,17 @@ public class StatisticalUtilities {
         return x1;
     }
 
-    public static void main(String[] args) {
-        System.out.println(sqrt(BigDecimal.valueOf(12345)));
+    public static double dot(double[] inst1, double[] inst2){
+        double sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
+    }
+
+    public static int dot(int[] inst1, int[] inst2){
+        int sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
     }
 }
