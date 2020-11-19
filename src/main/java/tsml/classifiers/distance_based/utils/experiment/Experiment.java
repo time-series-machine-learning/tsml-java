@@ -26,6 +26,8 @@ import weka.core.Randomizable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -229,19 +231,15 @@ public class Experiment implements Copier {
     private long benchmarkScore;
     
     private String getExperimentResultsDirPath() {
-        return StrUtils.joinPath( resultsDirPath, classifierNameInResults, "Predictions", problemName);
-    }
-    
-    private String getClassifierNameWithTrainTimeContract() {
-        return classifierName + "_" + trainTimeLimit;
+        return StrUtils.joinPath( getResultsDirPath(), getClassifierNameInResults(), "Predictions", getProblemName());
     }
     
     private String getLockFilePath() {
-        return StrUtils.joinPath(experimentResultsDirPath, "fold" + seed + ".lock");
+        return StrUtils.joinPath(getExperimentResultsDirPath(), "fold" + getSeed() + ".lock");
     }
     
     private String getCheckpointDirPath() {
-        return StrUtils.joinPath( resultsDirPath, classifierNameInResults, "Predictions", problemName, "fold" + seed);
+        return StrUtils.joinPath( getResultsDirPath(), getClassifierNameInResults(), "Predictions", getProblemName(), "fold" + getSeed());
     }
     
     /**
@@ -253,7 +251,7 @@ public class Experiment implements Copier {
         // configure the classifier with experiment settings as necessary
         configureClassifier();
         // load the data
-        log.info("loading " + problemName);
+        log.info("loading " + getProblemName());
         split = new DatasetSplit(DatasetLoading.sampleDataset(dataDirPath, problemName, seed));
         log.info("benchmarking hardware");
         benchmark();
@@ -271,88 +269,24 @@ public class Experiment implements Copier {
                 // unlock the previous lock
                 lock.unlock();
             }
-            // setup the contract
-            setTrainTimeContract();
-            // setup the results paths
-            // if running multiple contracts OR no train contract set
-            if(trainTimeLimit != null) {
-                // add the train time contract to the output dir
-                classifierNameInResults = getClassifierNameWithTrainTimeContract();
-            } else {
-                classifierNameInResults = classifierName;
-            }
-            // work out the results path for this run of the classifier
-            experimentResultsDirPath = getExperimentResultsDirPath();
             // lock the output file to ensure only this experiment is writing results
             lock = new FileUtils.FileLock(getLockFilePath());
+            // setup the contract
+            setTrainTimeContract();
             // if checkpointing
             if(checkpoint) {
                 // the copy over the most suitable checkpoint from another run if exists
                 copyOverMostRecentCheckpoint();
-                checkpointDirPath = getCheckpointDirPath();
-                ((Checkpointable) classifier).setCheckpointPath(checkpointDirPath);
+                ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
+                // if removing checkpoints then we can remove the most recent checkpoint as it has been copied over to the next contract
+                if(removeCheckpoint) {
+                    Files.delete(Paths.get(getCheckpointDirPath()));
+                }
             }
-            // build the classifier
-            log.info("training classifier");
-            timer.resetAndStart();
-            memoryWatcher.start();
-            // prompt garbage collection to provide a clean slate before building
-            System.gc();
-            if(classifier instanceof TSClassifier) {
-                ((TSClassifier) classifier).buildClassifier(split.getTrainDataTS());
-            } else {
-                classifier.buildClassifier(split.getTrainDataArff());
-            }
-            // prompt garbage collection to obtain at least one memory usage reading during training
-            System.gc();
-            timer.stop();
-            memoryWatcher.stop();
-            log.info("train time: " + timer.elapsedTime());
-            log.info("train mem: " + memoryWatcher.getMaxMemoryUsage());
-            // if estimating the train error then write out train results
-            if(evaluateClassifier) {
-                final ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-                ResultUtils.setInfo(trainResults, classifier, split.getTrainDataArff()); // todo change to ts
-                setResultInfo(trainResults);
-                setTrainTime(trainResults, timer);
-                setMemory(trainResults, memoryWatcher);
-                trainResults.findAllStatsOnce();
-                log.info("train results: ");
-                log.info(trainResults.writeSummaryResultsToString());
-                writeResults("train", trainResults, StrUtils.joinPath(experimentResultsDirPath, "trainFold" + seed + ".csv"));
-            }
-            // if only training then skip the test phase
-            if(trainOnly) {
-                log.info("skipping testing classifier");
-                continue;
-            }
+            // train the classifier
+            train();
             // test the classifier
-            log.info("testing classifier");
-            timer.resetAndStart();
-            memoryWatcher.resetAndStart();
-            final ClassifierResults testResults = new ClassifierResults();
-            // todo change to ts
-//            if(classifier instanceof TSClassifier) {
-//                ClassifierTools.addPredictions((TSClassifier) classifier, split.getTestDataTS(), testResults, new Random(seed));
-//            } else {
-                ClassifierTools.addPredictions(classifier, split.getTestDataArff(), testResults, new Random(seed));
-//            }
-            timer.stop();
-            memoryWatcher.stop();
-            log.info("test time: " + timer.elapsedTime());
-            log.info("test mem: " + memoryWatcher.getMaxMemoryUsage());
-            ResultUtils.setInfo(testResults, classifier, split.getTrainDataArff()); // todo ts version
-            setResultInfo(testResults);
-            setTrainTime(testResults, timer);
-            setMemory(testResults, memoryWatcher);
-            log.info("test results: ");
-            log.info(testResults.writeSummaryResultsToString());
-            writeResults("test", testResults, StrUtils.joinPath(experimentResultsDirPath, "testFold" + seed + ".csv"));
-            if(trainTimeLimit == null) {
-                log.info("experiment complete");
-            } else {
-                log.info("train time contract " + trainTimeLimit + " experiment complete");
-            }
+            test();
             // stop the classifier from rebuilding on next buildClassifier call
             if(classifier instanceof Rebuildable) {
                 ((Rebuildable) classifier).setRebuild(false);
@@ -398,9 +332,6 @@ public class Experiment implements Copier {
             for(TimeSpan timeSpan : timeSpans) {
                 // set the dummy experiment's ttl
                 experiment.trainTimeLimit = trainTimeLimit;
-                // get the location for the checkpoints for the given contract
-                final String classifierNameInResults = experiment.getClassifierNameWithTrainTimeContract();
-                final String experimentResultsDirPath = experiment.getExperimentResultsDirPath();
                 // lock the checkpoints to ensure we're the only user
                 try(FileUtils.FileLock lock = new FileUtils.FileLock(experiment.getLockFilePath())) {
                     // if the checkpoint dir is empty then there's no usable checkpoints
@@ -519,6 +450,108 @@ public class Experiment implements Copier {
         // set threads
         if(classifier instanceof MultiThreadable) {
             ((MultiThreadable) classifier).enableMultiThreading(numThreads);
+        }
+    }
+
+
+    public String getResultsDirPath() {
+        return resultsDirPath;
+    }
+
+    public String getClassifierNameInResults() {
+        if(classifierNameInResults == null) {
+            classifierNameInResults = classifierName;
+            if(trainTimeLimit != null) {
+                classifierNameInResults += "_" + trainTimeLimit;
+            }
+        }
+        return classifierNameInResults;
+    }
+
+    public String getProblemName() {
+        return problemName;
+    }
+
+    public Integer getSeed() {
+        return seed;
+    }
+
+    public String getDataDirPath() {
+        return dataDirPath;
+    }
+    
+    public String getTestFilePath() {
+        return StrUtils.joinPath(getExperimentResultsDirPath(), "testFold" + seed + ".csv");
+    }
+
+    public String getTrainFilePath() {
+        return StrUtils.joinPath(getExperimentResultsDirPath(), "trainFold" + seed + ".csv");
+    }
+    
+    private void train() throws Exception {
+        // build the classifier
+        log.info("training classifier");
+        timer.start();
+        memoryWatcher.start();
+        // prompt garbage collection to provide a clean slate before building
+        System.gc();
+        if(classifier instanceof TSClassifier) {
+            ((TSClassifier) classifier).buildClassifier(split.getTrainDataTS());
+        } else {
+            classifier.buildClassifier(split.getTrainDataArff());
+        }
+        // prompt garbage collection to obtain at least one memory usage reading during training
+        System.gc();
+        timer.stop();
+        memoryWatcher.stop();
+        log.info("train time: " + timer.elapsedTime());
+        log.info("train mem: " + memoryWatcher.getMaxMemoryUsage());
+        // if estimating the train error then write out train results
+        if(evaluateClassifier) {
+            final ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
+            ResultUtils.setInfo(trainResults, classifier, split.getTrainDataArff()); // todo change to ts
+            setResultInfo(trainResults);
+            setTrainTime(trainResults, timer);
+            setMemory(trainResults, memoryWatcher);
+            trainResults.findAllStatsOnce();
+            log.info("train results: ");
+            log.info(trainResults.writeSummaryResultsToString());
+            writeResults("train", trainResults, getTrainFilePath());
+        }
+    }
+    
+    private void test() throws Exception {
+        // if only training then skip the test phase
+        if(trainOnly) {
+            log.info("skipping testing classifier");
+            return;
+        }
+        // test the classifier
+        log.info("testing classifier");
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
+        final ClassifierResults testResults = new ClassifierResults();
+        // todo change to ts
+        //            if(classifier instanceof TSClassifier) {
+        //                ClassifierTools.addPredictions((TSClassifier) classifier, split.getTestDataTS(), testResults, new Random(seed));
+        //            } else {
+        ClassifierTools.addPredictions(classifier, split.getTestDataArff(), testResults, new Random(seed));
+        //            }
+        timer.stop();
+        memoryWatcher.stop();
+        log.info("test time: " + timer.elapsedTime());
+        log.info("test mem: " + memoryWatcher.getMaxMemoryUsage());
+        ResultUtils.setInfo(testResults, classifier, split.getTrainDataArff()); // todo ts version
+        setResultInfo(testResults);
+        setTrainTime(testResults, timer);
+        setMemory(testResults, memoryWatcher);
+        log.info("test results: ");
+        log.info(testResults.writeSummaryResultsToString());
+        writeResults("test", testResults, getTestFilePath());
+        if(trainTimeLimit == null) {
+            log.info("experiment complete");
+        } else {
+            log.info("train time contract " + trainTimeLimit + " experiment complete");
         }
     }
 }
