@@ -136,18 +136,22 @@ public class Experiment {
     }
     
     private void benchmark() {
-        long sum = 0;
-        int repeats = 30;
-        long startTime = System.nanoTime();
-        for(int i = 0; i < repeats; i++) {
-            Random random = new Random(i);
-            final double[] array = new double[1000000];
-            for(int j = 0; j < array.length; j++) {
-                array[j] = random.nextDouble();
-            }
-            Arrays.sort(array);
-        }
-        benchmarkScore = (System.nanoTime() - startTime) / repeats;
+        // delegate to the benchmarking system from main experiments code. This maintains consistency across benchmarks, but it substantially quicker and therefore less reliable of a benchmark. todo talks to james about merging these
+        Experiments.ExperimentalArguments args = new Experiments.ExperimentalArguments();
+        args.performTimingBenchmark = true;
+        benchmarkScore = Experiments.findBenchmarkTime(args);
+//        long sum = 0;
+//        int repeats = 30;
+//        long startTime = System.nanoTime();
+//        for(int i = 0; i < repeats; i++) {
+//            Random random = new Random(i);
+//            final double[] array = new double[1000000];
+//            for(int j = 0; j < array.length; j++) {
+//                array[j] = random.nextDouble();
+//            }
+//            Arrays.sort(array);
+//        }
+//        benchmarkScore = (System.nanoTime() - startTime) / repeats;
     }
 
     private void setup(String[] args) {
