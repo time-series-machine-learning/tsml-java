@@ -26,7 +26,6 @@ import weka.core.Randomizable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -214,15 +213,13 @@ public class Experiment implements Copier {
     }
 
     private Classifier newClassifier() throws InstantiationException, IllegalAccessException {
-        return classifierLookup.get(classifierName).build();
+        log.info("creating new instance of " + getClassifierName());
+        return classifierLookup.get(getClassifierName()).build();
     }
     
     private final Map<String, Builder<? extends Classifier>> classifierLookup = new HashMap<>();
     private DatasetSplit split;
     private Classifier classifier;
-    private String classifierNameInResults;
-    private String experimentResultsDirPath;
-    private String checkpointDirPath;
     private final StopWatch timer = new StopWatch();
     private final StopWatch experimentTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
@@ -251,7 +248,7 @@ public class Experiment implements Copier {
         // configure the classifier with experiment settings as necessary
         configureClassifier();
         // load the data
-        log.info("loading " + getProblemName());
+        log.info("loading dataset " + getProblemName());
         split = new DatasetSplit(DatasetLoading.sampleDataset(dataDirPath, problemName, seed));
         log.info("benchmarking hardware");
         benchmark();
@@ -272,17 +269,9 @@ public class Experiment implements Copier {
             // lock the output file to ensure only this experiment is writing results
             lock = new FileUtils.FileLock(getLockFilePath());
             // setup the contract
-            setTrainTimeContract();
-            // if checkpointing
-            if(checkpoint) {
-                // the copy over the most suitable checkpoint from another run if exists
-                copyOverMostRecentCheckpoint();
-                ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
-                // if removing checkpoints then we can remove the most recent checkpoint as it has been copied over to the next contract
-                if(removeCheckpoint) {
-                    Files.delete(Paths.get(getCheckpointDirPath()));
-                }
-            }
+            setupTrainTimeContract();
+            // setup checkpointing config
+            setupCheckpointing();
             // train the classifier
             train();
             // test the classifier
@@ -291,7 +280,7 @@ public class Experiment implements Copier {
             if(classifier instanceof Rebuildable) {
                 ((Rebuildable) classifier).setRebuild(false);
             } else if(trainTimeLimits.size() > 1) {
-                log.warning("cannot disable rebuild on " + classifierNameInResults + ", therefore it will be rebuilt entirely for every train time contract");
+                log.warning("cannot disable rebuild on " + getClassifierNameInResults() + ", therefore it will be rebuilt entirely for every train time contract");
             }
         }
         experimentTimer.stop();
@@ -310,13 +299,9 @@ public class Experiment implements Copier {
     private void copyOverMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
         // check the state of all train time contracts so far to copy over old checkpoints
         if(checkpoint) {
-            // if there's no limit
-            if(trainTimeLimit == null) {
-                // then there's no checkpoints to work off
-                return;
-            }
             // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
             if(!FileUtils.isEmptyDir(getCheckpointDirPath())) {
+                log.info("checkpoint found in workspace");
                 return;
             }
             // the target train time limit we'll be running next
@@ -346,10 +331,15 @@ public class Experiment implements Copier {
             }
             // if a previous checkpoint has been located, copy the contents into the checkpoint dir for this contract time run
             if(mostRecentTrainTimeContract != null) {
-                final String src = experiment.checkpointDirPath;
+                log.info("checkpoint found in " + experiment.getClassifierNameInResults() + " workspace");
+                final String src = experiment.getCheckpointDirPath();
                 final String dest = getCheckpointDirPath();
                 log.info("coping checkpoint contents from " + src + " to " + dest);
                 Files.copy(new File(src).toPath(), new File(dest).toPath());
+                // optionally remove the checkpoint now it's copied to a new location
+                experiment.optionalRemoveCheckpoint();
+            } else {
+                log.info("no checkpoints found");
             }
         }
     }
@@ -396,7 +386,7 @@ public class Experiment implements Copier {
         }
     }
 
-    private void setTrainTimeContract() {
+    private void setupTrainTimeContract() {
         if(trainTimeLimit != null) {
             // there is a contract
             if(classifier instanceof TrainTimeContractable) {
@@ -409,47 +399,51 @@ public class Experiment implements Copier {
     }
 
     private void configureClassifier() {
+        log.info("configuring " + getClassifierName());
         // set estimate train error
         if(evaluateClassifier) {
             if(classifier instanceof TrainEstimateable) {
                 log.info("setting classifier to estimate train error");
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
             } else {
-                throw new IllegalStateException("classifier cannot estimate the train error");
+                throw new IllegalStateException("classifier cannot evaluate the train error");
             }
         }
         // set checkpointing
-        if(checkpointDirPath != null) {
+        if(checkpoint) {
             if(classifier instanceof Checkpointable) {
-                log.info("setting classifier to checkpoint to " + checkpointDirPath);
-                ((Checkpointable) classifier).setCheckpointPath(checkpointDirPath);
+                log.info("setting classifier to checkpoint to " + getCheckpointDirPath());
+                ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
             } else {
                 throw new IllegalStateException("classifier cannot checkpoint");
             }
         }
         // set log level
         if(classifier instanceof Loggable) {
-            log.info("setting classifier log level to " + logLevel);
-            ((Loggable) classifier).setLogLevel(logLevel);
+            log.info("setting classifier log level to " + getLogLevel());
+            ((Loggable) classifier).setLogLevel(getLogLevel());
         } else if(classifier instanceof EnhancedAbstractClassifier) {
-            boolean debug = !logLevel.equals(OFF);
+            boolean debug = !getLogLevel().equals(OFF);
             log.info("setting classifier debug to " + debug);
             ((EnhancedAbstractClassifier) classifier).setDebug(debug);
         } else {
-            if(!logLevel.equals(Level.OFF)) {
+            if(!getLogLevel().equals(Level.OFF)) {
                 log.info("classifier does not support logging");
             }
         }
         // set seed
         if(classifier instanceof Randomizable) {
-            log.info("setting classifier seed to " + seed);
-            ((Randomizable) classifier).setSeed(seed);
+            log.info("setting classifier seed to " + getSeed());
+            ((Randomizable) classifier).setSeed(getSeed());
         } else {
             log.info("classifier does not accept a seed");
         }
         // set threads
         if(classifier instanceof MultiThreadable) {
-            ((MultiThreadable) classifier).enableMultiThreading(numThreads);
+            log.info("setting classifier to use " + getNumThreads() + " threads");
+            ((MultiThreadable) classifier).enableMultiThreading(getNumThreads());
+        } else if(getNumThreads() != 1) {
+            log.info("classifier cannot use multiple threads");
         }
     }
 
@@ -459,11 +453,9 @@ public class Experiment implements Copier {
     }
 
     public String getClassifierNameInResults() {
-        if(classifierNameInResults == null) {
-            classifierNameInResults = classifierName;
-            if(trainTimeLimit != null) {
-                classifierNameInResults += "_" + trainTimeLimit;
-            }
+        String classifierNameInResults = classifierName;
+        if(trainTimeLimit != null) {
+            classifierNameInResults += "_" + trainTimeLimit;
         }
         return classifierNameInResults;
     }
@@ -552,6 +544,44 @@ public class Experiment implements Copier {
             log.info("experiment complete");
         } else {
             log.info("train time contract " + trainTimeLimit + " experiment complete");
+        }
+    }
+
+    public String getClassifierName() {
+        return classifierName;
+    }
+
+    public Level getLogLevel() {
+        return logLevel;
+    }
+
+    public int getNumThreads() {
+        return numThreads;
+    }
+    
+    private void setupCheckpointing() throws FileUtils.FileLock.LockException, IOException {
+        if(checkpoint) {
+            if(classifier instanceof Checkpointable) {
+                // the copy over the most suitable checkpoint from another run if exists
+                copyOverMostRecentCheckpoint();
+                log.info("setting checkpoint path for " + getClassifierName() + " to " + getCheckpointDirPath());
+                ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
+            } else {
+                log.info(getClassifierName() + " cannot produce checkpoints");
+            }
+        }
+    }
+    
+    private void optionalRemoveCheckpoint() {
+        // if removing checkpoints then we can remove the most recent checkpoint as it has been copied over to the next contract
+        if(removeCheckpoint) {
+            log.info("removing previous checkpoint: " + getCheckpointDirPath());
+            try {
+                Files.delete(Paths.get(getCheckpointDirPath()));
+            } catch(IOException e) {
+                System.err.println("failed to remove checkpoint at " + getCheckpointDirPath());
+                System.err.println(e);
+            }
         }
     }
 }
