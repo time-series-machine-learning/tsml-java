@@ -81,6 +81,12 @@ public class Experiment implements Copier {
     @Parameter(names = {"--rcp", "--removeCheckpoint"}, description = "Remove any checkpoints upon completion of a train time contract. The assumption here is that once the classifier has built in the given time limit, no further work will be done and the checkpoint can be safely removed. In other words, the assumption is that the checkpoint is only useful if the classifier gets stoppped mid-build and must be restarted. When the classifier finishes building, the checkpoint files are redundant, therefore. Note this does not affect multiple contracts as the checkpoint files are copied before removal. I.e. a contract of 1h completes and leaves behind some checkpoint files. These are copied over to the subsequent 2h contract before removal from the 1h contract working area. Default: off")
     private boolean removeCheckpoint = false;
 
+    @Parameter(names = {"--cpi", "--checkpointInterval"}, description = "The minimum interval between checkpoints. Classifiers may not produce checkpoints within the checkpoint interval time from the last checkpoint. Therefore, classifiers may produce checkpoints with (much) larger intervals inbetween, depending on their checkpoint frequency. Default: 1h")
+    private String checkpointInterval = "1h";
+
+    @Parameter(names = {"--scp", "--snapshotCheckpoints"}, description = "Keep every checkpoint as a snapshot of the classifier model at that point in time. When disabled, classifiers overwrite their last checkpoint. When enabled, classifiers will write checkpoints with a time stamp rather than overwriting previous checkpoints. Default: off")
+    private boolean snapshotCheckpoints = false;
+
     @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'")
     private List<String> trainTimeLimitStrs = new ArrayList<>();
     private List<TimeSpan> trainTimeLimits = new ArrayList<>();
@@ -375,6 +381,10 @@ public class Experiment implements Copier {
                 // then there's no checkpoints to work off
                 return;
             }
+            // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
+            if(!FileUtils.isEmptyDir(getCheckpointDirPath())) {
+                return;
+            }
             // the target train time limit we'll be running next
             TimeSpan target = trainTimeLimit;
             // the nearest traim time limit WITH a checkpoint
@@ -393,9 +403,8 @@ public class Experiment implements Copier {
                 final String experimentResultsDirPath = experiment.getExperimentResultsDirPath();
                 // lock the checkpoints to ensure we're the only user
                 try(FileUtils.FileLock lock = new FileUtils.FileLock(experiment.getLockFilePath())) {
-                    checkpointDirPath = getCheckpointDirPath();
                     // if the checkpoint dir is empty then there's no usable checkpoints
-                    if(!FileUtils.isEmptyDir(checkpointDirPath)) {
+                    if(!FileUtils.isEmptyDir(experiment.getCheckpointDirPath())) {
                         // otherwise this is the most recent usable checkpoint, no need to keep searching
                         mostRecentTrainTimeContract = trainTimeLimit;
                         break;
