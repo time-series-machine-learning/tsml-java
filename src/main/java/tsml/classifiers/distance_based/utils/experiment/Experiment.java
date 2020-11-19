@@ -237,10 +237,10 @@ public class Experiment {
         // for each train time contract
         Assert.assertFalse(trainTimeLimits.isEmpty());
         // reset the memory watchers
+        experimentTimer.resetAndStart();
         experimentMemoryWatcher.resetAndStart();
         for(Time trainTimeLimit : trainTimeLimits) {
             this.trainTimeLimit = trainTimeLimit;
-            copyOverMostRecentCheckpoint();
             if(lock != null) {
                 // unlock the previous lock
                 lock.unlock();
@@ -323,11 +323,17 @@ public class Experiment {
             } else {
                 log.info("train time contract " + trainTimeLimit + " experiment complete");
             }
-            experimentTimer.stop();
-            experimentMemoryWatcher.stop();
-            log.info("experiment time: " + experimentTimer.elapsedTime());
-            log.info("experiment mem: " + experimentMemoryWatcher.getMaxMemoryUsage());
+            // stop the classifier from rebuilding on next buildClassifier call
+            if(classifier instanceof Rebuildable) {
+                ((Rebuildable) classifier).setRebuild(false);
+            } else if(trainTimeLimits.size() > 1) {
+                log.warning("cannot disable rebuild on " + classifierNameInResults + ", therefore it will be rebuilt entirely for every train time contract");
+            }
         }
+        experimentTimer.stop();
+        experimentMemoryWatcher.stop();
+        log.info("experiment time: " + experimentTimer.elapsedTime());
+        log.info("experiment mem: " + experimentMemoryWatcher.getMaxMemoryUsage());
         // unlock the lock file
         if(lock != null) lock.unlock();
     }
