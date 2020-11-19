@@ -61,6 +61,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     // the various configs for this classifier
     public enum Config implements ClassifierFromEnum<ProximityTree> {
+        PT() {
+            @Override public <B extends ProximityTree> B configure(final B classifier) {
+                return PT_R5.configure(classifier);
+            }
+        },
         PT_R1() {
             @Override
             public <B extends ProximityTree> B configure(B proximityTree) {

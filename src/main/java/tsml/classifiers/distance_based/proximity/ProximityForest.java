@@ -69,6 +69,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     public enum Config implements ClassifierFromEnum<ProximityForest> {
+        PF() {
+            @Override public <B extends ProximityForest> B configure(final B classifier) {
+                return PF_R5.configure(classifier);
+            }
+        },
         PF_R1() {
             @Override
             public <B extends ProximityForest> B configure(B proximityForest) {
