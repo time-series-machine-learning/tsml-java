@@ -5,11 +5,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class Time implements Comparable<Time> {
+public class TimeSpan implements Comparable<TimeSpan> {
     
-    public Time(final String inputLabel) {
-        // convert the label to nanos
-        nanos = strToNanos(inputLabel);
+    public static final String NONE = "none";
+    
+    public TimeSpan(final String inputLabel) {
+        if(inputLabel.equalsIgnoreCase(NONE)) {
+            nanos = -1;
+            isNone = true;
+        } else {
+            // convert the label to nanos
+            nanos = strToNanos(inputLabel);
+            isNone = false;
+        }
     }
     
     public static String nanosToStr(long nanos) {
@@ -110,9 +118,14 @@ public class Time implements Comparable<Time> {
 
     private String label;
     private final long nanos;
+    private boolean isNone;
 
     public long inNanos() {
         return nanos;
+    }
+    
+    public boolean isNone() {
+        return isNone;
     }
     
     public String label() {
@@ -127,19 +140,29 @@ public class Time implements Comparable<Time> {
         return label();
     }
 
-    @Override public int compareTo(final Time time) {
-        return Long.compare(nanos, time.nanos);
+    @Override public int compareTo(final TimeSpan other) {
+        final boolean otherNone = other.isNone();
+        final boolean none = isNone();
+        if(otherNone && none) {
+            return 0;
+        } else if(otherNone) {
+            return 1;
+        } else if(none) {
+            return -1;
+        } else {
+            return Long.compare(inNanos(), other.inNanos());
+        }
     }
 
     @Override public boolean equals(final Object o) {
         if(this == o) {
             return true;
         }
-        if(!(o instanceof Time)) {
+        if(!(o instanceof TimeSpan)) {
             return false;
         }
-        final Time time = (Time) o;
-        return nanos == time.nanos;
+        final TimeSpan timeSpan = (TimeSpan) o;
+        return nanos == timeSpan.nanos;
     }
 
     @Override public int hashCode() {

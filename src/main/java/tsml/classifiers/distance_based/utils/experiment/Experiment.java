@@ -11,10 +11,7 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
 import tsml.classifiers.distance_based.proximity.ProximityTree;
-import tsml.classifiers.distance_based.utils.classifiers.Builder;
-import tsml.classifiers.distance_based.utils.classifiers.Configurer;
-import tsml.classifiers.distance_based.utils.classifiers.Rebuildable;
-import tsml.classifiers.distance_based.utils.classifiers.TrainEstimateable;
+import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
@@ -31,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -39,7 +35,7 @@ import java.util.stream.Collectors;
 import static tsml.classifiers.distance_based.utils.system.SysUtils.hostName;
 import static weka.core.Debug.OFF;
 
-public class Experiment {
+public class Experiment implements Copier {
     
     public Experiment() {
         setExperimentLogLevel(Level.ALL);
@@ -87,7 +83,7 @@ public class Experiment {
 
     @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'")
     private List<String> trainTimeLimitStrs = new ArrayList<>();
-    private List<Time> trainTimeLimits = new ArrayList<>();
+    private List<TimeSpan> trainTimeLimits = new ArrayList<>();
 
     @Parameter(names = {"-e", "--evaluate"}, description = "Estimate the train error. Default: false")
     private boolean evaluateClassifier = false;
@@ -188,7 +184,7 @@ public class Experiment {
         // default to no train time contracts
         trainTimeLimits = new ArrayList<>();
         for(String trainTimeLimitStr : trainTimeLimitStrs) {
-            trainTimeLimits.add(new Time(trainTimeLimitStr));
+            trainTimeLimits.add(new TimeSpan(trainTimeLimitStr));
         }
         if(trainTimeLimits.isEmpty()) {
             // add a null limit to indicate there is no limit
@@ -223,7 +219,7 @@ public class Experiment {
     private final StopWatch experimentTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private final MemoryWatcher experimentMemoryWatcher = new MemoryWatcher();
-    private Time trainTimeLimit;
+    private TimeSpan trainTimeLimit;
     private long benchmarkScore;
     
     private String getExperimentResultsDirPath() {
@@ -231,7 +227,7 @@ public class Experiment {
     }
     
     private String getClassifierNameWithTrainTimeContract() {
-        return classifierName + "_" + trainTimeLimit.toString().replaceAll(" ", "_");
+        return classifierName + "_" + trainTimeLimit;
     }
     
     private String getLockFilePath() {
@@ -263,7 +259,7 @@ public class Experiment {
         // reset the memory watchers
         experimentTimer.resetAndStart();
         experimentMemoryWatcher.resetAndStart();
-        for(Time trainTimeLimit : trainTimeLimits) {
+        for(TimeSpan trainTimeLimit : trainTimeLimits) {
             this.trainTimeLimit = trainTimeLimit;
             if(lock != null) {
                 // unlock the previous lock
@@ -279,9 +275,13 @@ public class Experiment {
             } else {
                 classifierNameInResults = classifierName;
             }
+            // work out the results path for this run of the classifier
             experimentResultsDirPath = getExperimentResultsDirPath();
+            // lock the output file to ensure only this experiment is writing results
             lock = new FileUtils.FileLock(getLockFilePath());
+            // if checkpointing
             if(checkpoint) {
+                // the copy over the most suitable checkpoint from another run if exists
                 copyOverMostRecentCheckpoint();
                 checkpointDirPath = getCheckpointDirPath();
                 ((Checkpointable) classifier).setCheckpointPath(checkpointDirPath);
@@ -361,47 +361,56 @@ public class Experiment {
         // unlock the lock file
         if(lock != null) lock.unlock();
     }
-    
+
+    /**
+     * I.e. if we're currently preparing to run a 3h contract and previously a 1h and 2h have been run, we should check the 1h and 2h workspace for checkpoint files. If there are no checkpoint files for 2h but there are for 1h, copy them into the checkpoint dir folder to resume from the 1h contract end point.
+     * @throws FileUtils.FileLock.LockException
+     * @throws IOException
+     */
     private void copyOverMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
         // check the state of all train time contracts so far to copy over old checkpoints
         if(checkpoint) {
-            Time target = trainTimeLimit;
-            Time mostRecentTrainTimeContract = null;
-            for(Time trainTimeLimit : trainTimeLimits) {
-                // if there's no train time contracts then there's no prior work to begin from
-                if(trainTimeLimit == null) {
-                    break;
-                }
-                // if the contract is larger than the target then can't use the progress (as spend more time than the contract)
-                if(trainTimeLimit.compareTo(target) > 0) {
-                    break;
-                }
-                // check the state of the current contract
-                classifierNameInResults = classifierName + "_" + trainTimeLimit.toString();
-                // lock
-                experimentResultsDirPath = getExperimentResultsDirPath();
-                final FileUtils.FileLock lock = new FileUtils.FileLock(getLockFilePath());
-                checkpointDirPath = getCheckpointDirPath();
-                if(!FileUtils.isEmptyDir(checkpointDirPath)) {
-                    mostRecentTrainTimeContract = trainTimeLimit;
-                }
-                lock.unlock();
-            }
-            // if no most recent train time contract exists then bail
-            if(mostRecentTrainTimeContract == null) {
+            // if there's no limit
+            if(trainTimeLimit == null) {
+                // then there's no checkpoints to work off
                 return;
             }
-            // if the most recent checkpoint is for the current contract then no copying is necessary
-            if(mostRecentTrainTimeContract.equals(target)) {
-                return;
+            // the target train time limit we'll be running next
+            TimeSpan target = trainTimeLimit;
+            // the nearest traim time limit WITH a checkpoint
+            TimeSpan mostRecentTrainTimeContract = null;
+            // copy this experiment to reconfigure for other contracts
+            final Experiment experiment = shallowCopy();
+            // for every train time limit which is less than the target
+            final List<TimeSpan>
+                    timeSpans = trainTimeLimits.stream().filter(timeSpan -> target.compareTo(timeSpan) <= 0).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            // examine the times in descending order, attempting to locate the most recent checkpoint
+            for(TimeSpan timeSpan : timeSpans) {
+                // set the dummy experiment's ttl
+                experiment.trainTimeLimit = trainTimeLimit;
+                // get the location for the checkpoints for the given contract
+                final String classifierNameInResults = experiment.getClassifierNameWithTrainTimeContract();
+                final String experimentResultsDirPath = experiment.getExperimentResultsDirPath();
+                // lock the checkpoints to ensure we're the only user
+                try(FileUtils.FileLock lock = new FileUtils.FileLock(experiment.getLockFilePath())) {
+                    checkpointDirPath = getCheckpointDirPath();
+                    // if the checkpoint dir is empty then there's no usable checkpoints
+                    if(!FileUtils.isEmptyDir(checkpointDirPath)) {
+                        // otherwise this is the most recent usable checkpoint, no need to keep searching
+                        mostRecentTrainTimeContract = trainTimeLimit;
+                        break;
+                    }
+                } catch(Exception e) {
+                    // failed to lock the checkpoint dir, in use by another process.Continue looking for other checkpoints
+                }
             }
-            // copy over the checkpoint from the most recent train time contract
-            String srcCheckppintDirPath = checkpointDirPath;
-            trainTimeLimit = target;
-            classifierNameInResults = getClassifierNameWithTrainTimeContract();
-            checkpointDirPath = getCheckpointDirPath();
-            log.info("coping checkpoint from previous contract: " + mostRecentTrainTimeContract);
-            Files.copy(new File(srcCheckppintDirPath).toPath(), new File(checkpointDirPath).toPath());
+            // if a previous checkpoint has been located, copy the contents into the checkpoint dir for this contract time run
+            if(mostRecentTrainTimeContract != null) {
+                final String src = experiment.checkpointDirPath;
+                final String dest = getCheckpointDirPath();
+                log.info("coping checkpoint contents from " + src + " to " + dest);
+                Files.copy(new File(src).toPath(), new File(dest).toPath());
+            }
         }
     }
     
