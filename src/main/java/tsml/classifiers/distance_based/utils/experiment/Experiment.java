@@ -370,14 +370,19 @@ public class Experiment {
             trainTimeLimit = target;
             classifierNameInResults = getClassifierNameWithTrainTimeContract();
             checkpointDirPath = getCheckpointDirPath();
+            log.info("coping checkpoint from previous contract: " + mostRecentTrainTimeContract);
             Files.copy(new File(srcCheckppintDirPath).toPath(), new File(checkpointDirPath).toPath());
-            log.info("copied checkpoint from previous contract: " + mostRecentTrainTimeContract);
         }
     }
     
     private void setResultInfo(ClassifierResults results) throws IOException {
         results.setFoldID(seed);
-        results.setParas(results.getParas() + ",hostName," + getHostName());
+        String paras = results.getParas();
+        if(!paras.isEmpty()) {
+            paras += ",";
+        }
+        paras += "hostName," + hostName();
+        results.setParas(paras);
         results.setBenchmarkTime(benchmarkScore);
     }
     
