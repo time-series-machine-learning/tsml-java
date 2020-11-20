@@ -1,8 +1,11 @@
 package tsml.classifiers.distance_based.utils.system.timing;
 
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.Duration;
 
 /**
  * Purpose: track time, ability to pause and add on time from another stop watch
@@ -154,5 +157,9 @@ public class StopWatch extends Stated {
         elapsedTime();
         oos.defaultWriteObject();
     }
-
+    
+    public Duration toDuration() {
+        
+        return Duration.ofNanos(elapsedTime());
+    }
 }
