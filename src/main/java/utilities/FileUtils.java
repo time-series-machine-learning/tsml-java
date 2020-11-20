@@ -12,7 +12,7 @@ public class FileUtils {
             final File[] files = file.listFiles();
             return files != null && files.length > 0;
         }
-        return false;
+        return true;
     }
 
     public static void writeToFile(String str, String path) throws
