@@ -232,11 +232,11 @@ public class Experiment implements Copier {
     }
     
     private String getLockFilePath() {
-        return StrUtils.joinPath(getExperimentResultsDirPath(), "fold" + getSeed() + ".lock");
+        return StrUtils.joinPath(getExperimentResultsDirPath(), "fold" + getSeed());
     }
     
     private String getCheckpointDirPath() {
-        return StrUtils.joinPath( getResultsDirPath(), getClassifierNameInResults(), "Predictions", getProblemName(), "fold" + getSeed());
+        return StrUtils.joinPath( getResultsDirPath(), getClassifierNameInResults(), "Workspace", getProblemName(), "fold" + getSeed());
     }
     
     /**
@@ -248,7 +248,7 @@ public class Experiment implements Copier {
         // configure the classifier with experiment settings as necessary
         configureClassifier();
         // load the data
-        log.info("loading dataset " + getProblemName());
+        log.info("loading " + getProblemName() + " dataset ");
         split = new DatasetSplit(DatasetLoading.sampleDataset(dataDirPath, problemName, seed));
         log.info("benchmarking hardware");
         benchmark();
@@ -260,13 +260,16 @@ public class Experiment implements Copier {
         // reset the memory watchers
         experimentTimer.resetAndStart();
         experimentMemoryWatcher.resetAndStart();
+        Experiment previousExperiment;
         for(TimeSpan trainTimeLimit : trainTimeLimits) {
             this.trainTimeLimit = trainTimeLimit;
             if(lock != null) {
                 // unlock the previous lock
+                log.info("unlocking " + getLockFilePath());
                 lock.unlock();
             }
             // lock the output file to ensure only this experiment is writing results
+            log.info("locking " + getLockFilePath());
             lock = new FileUtils.FileLock(getLockFilePath());
             // setup the contract
             setupTrainTimeContract();
@@ -288,7 +291,10 @@ public class Experiment implements Copier {
         log.info("experiment time: " + experimentTimer.elapsedTime());
         log.info("experiment mem: " + experimentMemoryWatcher.getMaxMemoryUsage());
         // unlock the lock file
-        if(lock != null) lock.unlock();
+        if(lock != null) {
+            log.info("unlocking " + getLockFilePath());
+            lock.unlock();
+        }
     }
 
     /**
@@ -296,7 +302,7 @@ public class Experiment implements Copier {
      * @throws FileUtils.FileLock.LockException
      * @throws IOException
      */
-    private void copyOverMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
+    private void copyMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
         // check the state of all train time contracts so far to copy over old checkpoints
         if(checkpoint) {
             // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
@@ -312,7 +318,7 @@ public class Experiment implements Copier {
             final Experiment experiment = shallowCopy();
             // for every train time limit which is less than the target
             final List<TimeSpan>
-                    timeSpans = trainTimeLimits.stream().filter(timeSpan -> target.compareTo(timeSpan) <= 0).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+                    timeSpans = trainTimeLimits.stream().filter(timeSpan -> target.compareTo(timeSpan) > 0).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
             // examine the times in descending order, attempting to locate the most recent checkpoint
             for(TimeSpan timeSpan : timeSpans) {
                 // set the dummy experiment's ttl
@@ -339,7 +345,7 @@ public class Experiment implements Copier {
                 // optionally remove the checkpoint now it's copied to a new location
                 experiment.optionalRemoveCheckpoint();
             } else {
-                log.info("no checkpoints found");
+                log.info("no checkpoints found from previous contracts");
             }
         }
     }
@@ -390,7 +396,7 @@ public class Experiment implements Copier {
         if(trainTimeLimit != null) {
             // there is a contract
             if(classifier instanceof TrainTimeContractable) {
-                log.info("setting classifier train contract to " + trainTimeLimit);
+                log.info("setting " + getClassifierName() + " train contract to " + trainTimeLimit + " : " + getClassifierNameInResults());
                 ((TrainTimeContractable) classifier).setTrainTimeLimit(trainTimeLimit.inNanos());
             } else {
                 throw new IllegalStateException("classifier cannot handle train time contract");
@@ -399,32 +405,22 @@ public class Experiment implements Copier {
     }
 
     private void configureClassifier() {
-        log.info("configuring " + getClassifierName());
         // set estimate train error
         if(evaluateClassifier) {
             if(classifier instanceof TrainEstimateable) {
-                log.info("setting classifier to estimate train error");
+                log.info("setting " + getClassifierName() + " to estimate train error");
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
             } else {
                 throw new IllegalStateException("classifier cannot evaluate the train error");
             }
         }
-        // set checkpointing
-        if(checkpoint) {
-            if(classifier instanceof Checkpointable) {
-                log.info("setting classifier to checkpoint to " + getCheckpointDirPath());
-                ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
-            } else {
-                throw new IllegalStateException("classifier cannot checkpoint");
-            }
-        }
         // set log level
         if(classifier instanceof Loggable) {
-            log.info("setting classifier log level to " + getLogLevel());
+            log.info("setting " + getClassifierName() + " log level to " + getLogLevel());
             ((Loggable) classifier).setLogLevel(getLogLevel());
         } else if(classifier instanceof EnhancedAbstractClassifier) {
             boolean debug = !getLogLevel().equals(OFF);
-            log.info("setting classifier debug to " + debug);
+            log.info("setting " + getClassifierName() + " debug to " + debug);
             ((EnhancedAbstractClassifier) classifier).setDebug(debug);
         } else {
             if(!getLogLevel().equals(Level.OFF)) {
@@ -433,14 +429,14 @@ public class Experiment implements Copier {
         }
         // set seed
         if(classifier instanceof Randomizable) {
-            log.info("setting classifier seed to " + getSeed());
+            log.info("setting " + getClassifierName() + " seed to " + getSeed());
             ((Randomizable) classifier).setSeed(getSeed());
         } else {
             log.info("classifier does not accept a seed");
         }
         // set threads
         if(classifier instanceof MultiThreadable) {
-            log.info("setting classifier to use " + getNumThreads() + " threads");
+            log.info("setting " + getClassifierName() + " to use " + getNumThreads() + " threads");
             ((MultiThreadable) classifier).enableMultiThreading(getNumThreads());
         } else if(getNumThreads() != 1) {
             log.info("classifier cannot use multiple threads");
@@ -482,7 +478,7 @@ public class Experiment implements Copier {
     
     private void train() throws Exception {
         // build the classifier
-        log.info("training classifier");
+        log.info("training " + getClassifierNameInResults());
         timer.start();
         memoryWatcher.start();
         // prompt garbage collection to provide a clean slate before building
@@ -519,7 +515,7 @@ public class Experiment implements Copier {
             return;
         }
         // test the classifier
-        log.info("testing classifier");
+        log.info("testing " + getClassifierNameInResults());
         timer.resetAndStart();
         memoryWatcher.resetAndStart();
         final ClassifierResults testResults = new ClassifierResults();
@@ -563,7 +559,7 @@ public class Experiment implements Copier {
         if(checkpoint) {
             if(classifier instanceof Checkpointable) {
                 // the copy over the most suitable checkpoint from another run if exists
-                copyOverMostRecentCheckpoint();
+                copyMostRecentCheckpoint();
                 log.info("setting checkpoint path for " + getClassifierName() + " to " + getCheckpointDirPath());
                 ((Checkpointable) classifier).setCheckpointPath(getCheckpointDirPath());
             } else {

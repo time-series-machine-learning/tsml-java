@@ -14,9 +14,9 @@ public class ExperimentRunner {
                 , "--cp"
                 , "--cpi", "30s"
                 , "--rcp"
-                , "--ttl", "1m"
-                , "--ttl", "2m"
-                , "--ttl", "3m"
+                , "--ttl", "10s"
+                , "--ttl", "20s"
+                , "--ttl", "30s"
         );
     }
 }
