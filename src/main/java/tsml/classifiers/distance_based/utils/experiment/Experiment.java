@@ -148,40 +148,30 @@ public class Experiment implements Copier {
         split = new DatasetSplit(DatasetLoading.sampleDataset(config.getDataDirPath(), config.getProblemName(), config.getSeed()));
         log.info("benchmarking hardware");
         benchmark();
-        // make a lock to deny multiple processes from writing to the same results
-        FileUtils.FileLock lock = null;
         // reset the memory watchers
         experimentTimer.resetAndStart();
         experimentMemoryWatcher.resetAndStart();
         for(TimeSpan trainTimeLimit : config.getTrainTimeLimits()) {
             config.setTrainTimeLimit(trainTimeLimit);
-            if(lock != null) {
-                // unlock the previous lock
-                log.info("unlocking " + config.getLockFilePath());
-                lock.unlock();
-            }
-            // lock the output file to ensure only this experiment is writing results
             log.info("locking " + config.getLockFilePath());
-            lock = new FileUtils.FileLock(config.getLockFilePath());
-            // setup the contract
-            setupTrainTimeContract();
-            // setup checkpointing config
-            setupCheckpointing();
-            // train the classifier
-            train();
-            // test the classifier
-            test();
-            // stop the classifier from rebuilding on next buildClassifier call
-            if(classifier instanceof Rebuildable) {
-                ((Rebuildable) classifier).setRebuild(false);
-            } else if(config.getTrainTimeLimits().size() > 1) {
-                log.warning("cannot disable rebuild on " + config.getClassifierNameInResults() + ", therefore it will be rebuilt entirely for every train time contract");
+            try(FileUtils.FileLock lock = new FileUtils.FileLock(config.getLockFilePath())) {
+                // setup the contract
+                setupTrainTimeContract();
+                // setup checkpointing config
+                setupCheckpointing();
+                // train the classifier
+                train();
+                // test the classifier
+                test();
+                // stop the classifier from rebuilding on next buildClassifier call
+                if(classifier instanceof Rebuildable) {
+                    ((Rebuildable) classifier).setRebuild(false);
+                } else if(config.getTrainTimeLimits().size() > 1) {
+                    log.warning("cannot disable rebuild on " + config.getClassifierNameInResults() + ", therefore it will be rebuilt entirely for every train time contract");
+                }
+            } catch(FileUtils.FileLock.LockException e) {
+                log.severe("failed to lock " + config.getLockFilePath() + ", skipping " + config.getClassifierNameInResults());
             }
-        }
-        // unlock the lock file
-        if(lock != null) {
-            log.info("unlocking " + config.getLockFilePath());
-            lock.unlock();
         }
         // optionally remove the checkpoint now it's copied to a new location
         optionallyRemoveCheckpoint(config);
