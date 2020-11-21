@@ -76,6 +76,9 @@ public class FileUtils {
     }
 
     public static void delete(Path src) throws IOException {
+        if(!Files.exists(src)) {
+            return;
+        }
         List<Path> paths = Files.walk(src).collect(Collectors.toList());
         Collections.reverse(paths);
         try (Stream<Path> stream = paths.stream()) {
