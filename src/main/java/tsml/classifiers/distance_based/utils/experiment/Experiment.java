@@ -308,6 +308,13 @@ public class Experiment implements Copier {
             if(classifier instanceof TrainEstimateable) {
                 log.info("setting " + config.getClassifierName() + " to estimate train error");
                 ((TrainEstimateable) classifier).setEstimateOwnPerformance(true);
+                if(classifier instanceof EnhancedAbstractClassifier) {
+                    EnhancedAbstractClassifier eac = (EnhancedAbstractClassifier) classifier;
+                    // default to a cv if not set when building the classifier
+                    if(eac.getEstimatorMethod().equalsIgnoreCase("none")) {
+                        eac.setEstimatorMethod("cv");
+                    }
+                }
             } else {
                 throw new IllegalStateException("classifier cannot evaluate the train error");
             }
