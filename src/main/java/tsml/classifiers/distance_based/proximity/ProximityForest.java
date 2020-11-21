@@ -255,8 +255,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             boolean checkpointLoaded = loadCheckpoint();
             // finished loading the checkpoint
             loadCheckpointTimer.stop();
-            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
-            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
             // if there was a checkpoint and it was loaded        
             if(checkpointLoaded) {
                 // case (1a)
@@ -279,8 +277,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 // clear other timers entirely
                 evaluationTimer.stopAndReset();
                 checkpointTimer.stopAndReset();
-                // add back the time attempting to load a checkpoint from a moment ago
-                checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // no constituents to start with
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
@@ -290,7 +286,9 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     trainEstimatePredictionTimes = new long[trainData.size()];
                     trainEstimateDistributions = new double[trainData.size()][trainData.numClasses()];
                 }
-            }   
+            }
+            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
+            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
         } // else case (2)
         LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         // whether work has been done in this call to buildClassifier

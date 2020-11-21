@@ -231,8 +231,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             boolean checkpointLoaded = loadCheckpoint();
             // finished loading the checkpoint
             loadCheckpointTimer.stop();
-            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
-            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
             // if there was a checkpoint and it was loaded        
             if(checkpointLoaded) {
                 // case (1a)
@@ -253,8 +251,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 runTimer.resetElapsedTime();
                 // clear other timers entirely
                 checkpointTimer.stopAndReset();
-                // add back the time attempting to load a checkpoint from a moment ago
-                checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // store the train data
                 this.trainData = trainData;
                 // setup the tree vars
