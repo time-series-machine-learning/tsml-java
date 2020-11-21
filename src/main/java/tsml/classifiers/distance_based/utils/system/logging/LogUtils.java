@@ -119,7 +119,7 @@ public class LogUtils {
                 return time.asTimeStamp() + " elapsed of " + limit.asTimeStamp() +
                                " " + name + " "
                                + "time "
-                               + "limit, " + diff.asTimeStamp() + " train time remaining";
+                               + "limit, " + diff.asTimeStamp() + " remaining";
             });
         }
     }
