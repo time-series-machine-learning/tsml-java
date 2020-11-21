@@ -33,6 +33,10 @@ import static utilities.ArrayUtilities.uniformDistribution;
 
 public class K extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable, Checkpointed {
 
+    @Override public boolean isModelFullyBuilt() {
+        throw new UnsupportedOperationException();
+    }
+
     @Override public long getRunTime() {
         throw new UnsupportedOperationException();
     }

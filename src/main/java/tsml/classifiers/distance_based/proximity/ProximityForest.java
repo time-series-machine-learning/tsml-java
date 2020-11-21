@@ -474,6 +474,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         return oneHot(distribution.length, index);
     }
 
+    @Override public boolean isModelFullyBuilt() {
+        return constituents != null && constituents.size() == numTreeLimit;
+    }
+
     public boolean insideNumTreeLimit() {
         return !hasNumTreeLimit() || constituents.size() < numTreeLimit;
     }

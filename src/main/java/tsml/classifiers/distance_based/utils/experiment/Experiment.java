@@ -8,6 +8,7 @@ import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
 import tsml.classifiers.distance_based.proximity.ProximityTree;
 import tsml.classifiers.distance_based.utils.classifiers.*;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
@@ -28,7 +29,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static tsml.classifiers.distance_based.utils.system.SysUtils.hostName;
 import static weka.core.Debug.OFF;
 
@@ -134,6 +134,7 @@ public class Experiment implements Copier {
     private long benchmarkScore;
     private final Logger log = LogUtils.buildLogger(this);
     private ExperimentConfig config;
+    private ExperimentConfig previousConfig;
     
     /**
      * Runs the experiment. Make sure all fields have been set prior to this call otherwise Exceptions will be thrown accordingly.
@@ -159,6 +160,8 @@ public class Experiment implements Copier {
                 setupTrainTimeContract();
                 // setup checkpointing config
                 setupCheckpointing();
+                // optionally remove the checkpoint now it's copied to a new location
+                optionallyRemoveCheckpoint(previousConfig);
                 // train the classifier
                 train();
                 // test the classifier
@@ -169,6 +172,8 @@ public class Experiment implements Copier {
                 } else if(config.getTrainTimeLimits().size() > 1) {
                     log.warning("cannot disable rebuild on " + config.getClassifierNameInResults() + ", therefore it will be rebuilt entirely for every train time contract");
                 }
+                // update the most recent experiment config
+                previousConfig = config.deepCopy();
             } catch(FileUtils.FileLock.LockException e) {
                 log.severe("failed to lock " + config.getLockFilePath() + ", skipping " + config.getClassifierNameInResults());
             }
@@ -187,6 +192,10 @@ public class Experiment implements Copier {
      * @throws IOException
      */
     private void copyMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
+        if(isModelFullyBuiltFromPreviousRun()) {
+            log.info("skipping setup recent checkpoints for " + config.getClassifierNameInResults() + " as model fully built");
+            return;
+        }
         // check the state of all train time contracts so far to copy over old checkpoints
         if(config.isCheckpoint()) {
             // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
@@ -278,6 +287,10 @@ public class Experiment implements Copier {
     }
 
     private void setupTrainTimeContract() {
+        if(isModelFullyBuiltFromPreviousRun()) {
+            log.info("skipping setup contract for " + config.getClassifierNameInResults() + " as model fully built");
+            return;
+        }
         if(config.getTrainTimeLimit() != null) {
             // there is a contract
             if(classifier instanceof TrainTimeContractable) {
@@ -328,7 +341,22 @@ public class Experiment implements Copier {
         }
     }
     
+    private boolean isModelFullyBuiltFromPreviousRun() {
+        // skip if the model is fully built from a previous contract
+        return previousConfig != null && classifier instanceof ContractedTrain && ((ContractedTrain) classifier).isModelFullyBuilt();
+    }
+    
     private void train() throws Exception {
+        if(isModelFullyBuiltFromPreviousRun()) {
+            log.info("skipping training " + config.getClassifierNameInResults() + " as model fully built");
+            String src = previousConfig.getTrainFilePath();
+            String dest = config.getTrainFilePath();
+            if(Files.exists(Paths.get(src))) {
+                log.info("copying " + src + " to " + dest);
+                FileUtils.copy(src, dest);
+            }
+            return;
+        }
         // build the classifier
         log.info("training " + config.getClassifierNameInResults());
         timer.start();
@@ -364,6 +392,14 @@ public class Experiment implements Copier {
         // if only training then skip the test phase
         if(config.isTrainOnly()) {
             log.info("skipping testing classifier");
+            return;
+        }
+        if(isModelFullyBuiltFromPreviousRun()) {
+            log.info("skipping testing " + config.getClassifierNameInResults() + " as model fully built");
+            String src = previousConfig.getTestFilePath();
+            String dest = config.getTestFilePath();
+            log.info("copying " + src + " to " + dest);
+            FileUtils.copy(src, dest);
             return;
         }
         // test the classifier
@@ -421,11 +457,18 @@ public class Experiment implements Copier {
     }
     
     private void optionallyRemoveCheckpoint(ExperimentConfig config) throws IOException {
+        if(config == null) {
+            return;
+        }
         if(config.isCheckpoint()) {
             // optionally remove the checkpoint
             if(config.isRemoveCheckpoint()) {
-                log.info("deleting checkpoint at " + config.getCheckpointDirPath());
-                FileUtils.delete(config.getCheckpointDirPath());
+                try(FileUtils.FileLock lock = new FileUtils.FileLock(config.getLockFilePath())) {
+                    log.info("deleting checkpoint at " + config.getCheckpointDirPath());
+                    FileUtils.delete(config.getCheckpointDirPath());
+                } catch(Exception e) {
+                    throw new IllegalStateException(e);
+                }
             }
         }
     }

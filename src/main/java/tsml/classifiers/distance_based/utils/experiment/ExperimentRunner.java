@@ -13,10 +13,14 @@ public class ExperimentRunner {
                 , "-o"
                 , "--cp"
                 , "--cpi", "30s"
-//                , "--rcp"
-                , "--ttl", "10s"
+                , "--rcp"
+//                , "--ttl", "10s"
 //                , "--ttl", "20s"
 //                , "--ttl", "30s"
+                , "--ttl", "1m"
+                , "--ttl", "2m"
+                , "--ttl", "3m"
+                , "--ttl", "4m"
         );
     }
 }

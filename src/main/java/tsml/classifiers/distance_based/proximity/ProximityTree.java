@@ -158,6 +158,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return checkpointTimer.elapsedTime();
     }
 
+    @Override public boolean isModelFullyBuilt() {
+        return nodeBuildQueue != null && nodeBuildQueue.isEmpty() && tree != null && tree.getRoot() != null;
+    }
+
     public boolean isBreadthFirst() {
         return breadthFirst;
     }

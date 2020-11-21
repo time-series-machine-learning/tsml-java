@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.experiment;
 
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.*;
 
-public class TimeSpan implements Comparable<TimeSpan> {
+public class TimeSpan implements Comparable<TimeSpan>, Serializable {
     
     public TimeSpan(TimeSpan other) {
         this(other.inNanos());
