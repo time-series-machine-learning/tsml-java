@@ -45,8 +45,16 @@ public class ExperimentConfig implements Copier {
     @Parameter(names = {"--scp", "--snapshotCheckpoints"}, description = "Keep every checkpoint as a snapshot of the classifier model at that point in time. When disabled, classifiers overwrite their last checkpoint. When enabled, classifiers will write checkpoints with a time stamp rather than overwriting previous checkpoints. Default: off")
     private boolean snapshotCheckpoints = false;
 
-    @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'")
-    private List<String> trainTimeLimitStrs = new ArrayList<>();
+
+    private static class TimeSpanConverter implements IStringConverter<TimeSpan> {
+
+        @Override public TimeSpan convert(final String s) {
+            return new TimeSpan(s);
+        }
+    }
+    
+    @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'", converter = TimeSpanConverter.class)
+//    private List<String> trainTimeLimitStrs = new ArrayList<>();
     private List<TimeSpan> trainTimeLimits = new ArrayList<>();
 
     @Parameter(names = {"-e", "--evaluate"}, description = "Estimate the train error. Default: false")
@@ -92,11 +100,6 @@ public class ExperimentConfig implements Copier {
         if(problemName == null) throw new IllegalStateException("problem name not set");
         if(dataDirPath == null) throw new IllegalStateException("data dir path not set");
         if(resultsDirPath == null) throw new IllegalStateException("results dir path not set");
-        // default to no train time contracts
-        trainTimeLimits = new ArrayList<>();
-        for(String trainTimeLimitStr : trainTimeLimitStrs) {
-            trainTimeLimits.add(new TimeSpan(trainTimeLimitStr));
-        }
         if(trainTimeLimits.isEmpty()) {
             // add a null limit to indicate there is no limit
             trainTimeLimits.add(null);
@@ -145,10 +148,6 @@ public class ExperimentConfig implements Copier {
 
     public boolean isSnapshotCheckpoints() {
         return snapshotCheckpoints;
-    }
-
-    public List<String> getTrainTimeLimitStrs() {
-        return trainTimeLimitStrs;
     }
 
     public List<TimeSpan> getTrainTimeLimits() {
@@ -211,10 +210,6 @@ public class ExperimentConfig implements Copier {
         this.snapshotCheckpoints = snapshotCheckpoints;
     }
 
-    public void setTrainTimeLimitStrs(final List<String> trainTimeLimitStrs) {
-        this.trainTimeLimitStrs = Objects.requireNonNull(trainTimeLimitStrs);
-    }
-
     public void setTrainTimeLimits(final List<TimeSpan> trainTimeLimits) {
         this.trainTimeLimits = trainTimeLimits;
     }
@@ -251,7 +246,7 @@ public class ExperimentConfig implements Copier {
     public String getClassifierNameInResults() {
         String classifierNameInResults = classifierName;
         if(trainTimeLimit != null) {
-            classifierNameInResults += "_" + trainTimeLimit;
+            classifierNameInResults += "_" + trainTimeLimit.label();
         }
         return classifierNameInResults;
     }
