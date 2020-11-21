@@ -62,6 +62,9 @@ public class ExperimentConfig implements Copier {
 
     @Parameter(names = {"-t", "--threads"}, description = "The number of threads to use. Set to 0 or less for all available processors at runtime. Default: 1")
     private int numThreads = 1;
+    
+    @Parameter(names = {"-m", "--memory"}, description = "The amount of memory allocated at maximum during the runtime of this program. Default: no limit")
+    private String memory;
 
     @Parameter(names = {"--trainOnly"}, description = "Only train the classifier, do not test.")
     private boolean trainOnly = false;
