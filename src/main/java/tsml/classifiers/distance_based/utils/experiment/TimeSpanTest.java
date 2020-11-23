@@ -21,15 +21,15 @@ public class TimeSpanTest {
         Assert.assertEquals(-130000000000L, new TimeSpan("-130s").inNanos());
         Assert.assertEquals(-130000000000L, new TimeSpan("-1m70s").inNanos());
         Assert.assertEquals(-130000000000L, new TimeSpan("-2m10s").inNanos());
-        Assert.assertEquals("0:00:02:10", new TimeSpan("130s").asTimeStamp());
-        Assert.assertEquals("-0:00:02:10", new TimeSpan("-130s").asTimeStamp());
+        Assert.assertEquals("2:10.000", new TimeSpan("130s").asTimeStamp());
+        Assert.assertEquals("-2:10.000", new TimeSpan("-130s").asTimeStamp());
     }
     
     @Test
     public void testSort() {
         final List<String> output =
                 newArrayList("130s", "2m10s", "71s", "1m000001s").stream().map(TimeSpan::new).sorted()
-                        .map(TimeSpan::toString).collect(Collectors.toList());
+                        .map(TimeSpan::label).collect(Collectors.toList());
         final ArrayList<String> expected = newArrayList("1m1s", "1m11s", "2m10s", "2m10s");
         Assert.assertEquals(expected, output);
     }

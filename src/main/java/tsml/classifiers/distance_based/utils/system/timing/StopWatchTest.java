@@ -59,7 +59,7 @@ public class StopWatchTest {
         StopWatch other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
         Assert.assertTrue(other.isStopped());
         // make sure the clock / timeStamp gets reset post ser
-        Assert.assertTrue(other.timeStamp() > timeStamp);
+        Assert.assertTrue(other.timeStamp() == 0);
         Assert.assertTrue(other.elapsedTime() > 0);
 
 
@@ -70,7 +70,7 @@ public class StopWatchTest {
         other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
         Assert.assertTrue(other.isStopped());
         // make sure the clock / timeStamp gets reset post ser
-        Assert.assertEquals(other.timeStamp(), timeStamp, tolerance);
+        Assert.assertEquals(other.timeStamp(), 0);
         Assert.assertEquals(other.elapsedTime(), stopWatch.elapsedTime());
     }
 

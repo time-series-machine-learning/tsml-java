@@ -150,7 +150,7 @@ public class StopWatch extends Stated {
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
         // any stopwatch read from file should begin in a stopped state
-        setStartTimeStamp(-1);
+        setStartTimeStamp(0);
         if(isStarted()) {
             super.stop();
         }
