@@ -1,11 +1,28 @@
 package utilities;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class FileUtils {
 
+    public static boolean isEmptyDir(String path) {
+        final File file = new File(path);
+        if(file.exists() && file.isDirectory()) {
+            final File[] files = file.listFiles();
+            return files == null || files.length == 0;
+        }
+        return true;
+    }
 
     public static void writeToFile(String str, String path) throws
                                                             IOException {
@@ -36,6 +53,52 @@ public class FileUtils {
     public static String readFromFile(File path) throws
                                                  IOException {
         return readFromFile(path.getPath());
+    }
+
+    public static void copy(String src, String dest) throws IOException {
+        copy(Paths.get(src), Paths.get(dest));
+    }
+    
+    public static void copy(Path src, Path dest) throws IOException {
+        try (Stream<Path> stream = Files.walk(src)) {
+            stream.forEach(source -> {
+                try {
+                    Files.copy(source, dest.resolve(src.relativize(source)), REPLACE_EXISTING);
+                } catch(IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
+    }
+
+    public static void delete(String src) throws IOException {
+        delete(Paths.get(src));
+    }
+
+    public static void delete(Path src) throws IOException {
+        if(!Files.exists(src)) {
+            return;
+        }
+        List<Path> paths = Files.walk(src).collect(Collectors.toList());
+        Collections.reverse(paths);
+        try (Stream<Path> stream = paths.stream()) {
+            stream.forEach(source -> {
+                try {
+                    Files.delete(source);
+                } catch(IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
+    }
+    
+    public static void makeDir(String filePath) {
+        makeParentDir(new File(filePath));
+    }
+    
+    public static void makeDir(File file) {
+        makeParentDir(file);
+        file.mkdirs();
     }
 
     public static void makeParentDir(String filePath) {

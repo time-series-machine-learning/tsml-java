@@ -69,6 +69,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     public enum Config implements ClassifierFromEnum<ProximityForest> {
+        PF() {
+            @Override public <B extends ProximityForest> B configure(final B classifier) {
+                return PF_R5.configure(classifier);
+            }
+        },
         PF_R1() {
             @Override
             public <B extends ProximityForest> B configure(B proximityForest) {
@@ -250,8 +255,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             boolean checkpointLoaded = loadCheckpoint();
             // finished loading the checkpoint
             loadCheckpointTimer.stop();
-            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
-            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
             // if there was a checkpoint and it was loaded        
             if(checkpointLoaded) {
                 // case (1a)
@@ -274,8 +277,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 // clear other timers entirely
                 evaluationTimer.stopAndReset();
                 checkpointTimer.stopAndReset();
-                // add back the time attempting to load a checkpoint from a moment ago
-                checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // no constituents to start with
                 constituents = new ArrayList<>();
                 // zero tree build time so the first tree build will always set the bar
@@ -285,11 +286,13 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     trainEstimatePredictionTimes = new long[trainData.size()];
                     trainEstimateDistributions = new double[trainData.size()][trainData.numClasses()];
                 }
-            }   
+            }
+            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
+            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
         } // else case (2)
         LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         // whether work has been done in this call to buildClassifier
-        boolean rebuildTrainEstimate = false;
+        boolean workDone = false;
         // maintain a timer for how long trees take to build
         final StopWatch trainStageTimer = new StopWatch();
         // while remaining time / more trees need to be built
@@ -373,8 +376,6 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                     // add the prediction time from the oobe to the time for this instance in the train estimate
                     trainEstimatePredictionTimes[trainDataIndex] += treeEvaluationResults.getPredictionTime(oobeIndex);
                 }
-                // rebuild the train results as the train estimate has been changed
-                rebuildTrainEstimate = true;
                 treeEvaluationResults.setErrorEstimateMethod(getEstimatorMethod());
                 evaluationTimer.stop();
             }
@@ -384,17 +385,18 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             tree.buildClassifier(trainData);
             // tree fully built
             trainStageTimer.stop();
+            workDone = true;
             // update longest tree build time
             longestTrainStageTimeNanos = Math.max(longestTrainStageTimeNanos, trainStageTimer.elapsedTime());
             // optional checkpoint
             checkpointTimer.start();
-            saveCheckpoint();
+            if(saveCheckpoint()) getLog().info("saved checkpoint");
             checkpointTimer.stop();
             // update train timer
             LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         }
         // if work has been done towards estimating the train error via OOB
-        if(estimateOwnPerformance && rebuildTrainEstimate && estimator.equals(EstimatorMethod.OOB)) {
+        if(estimateOwnPerformance && workDone && estimator.equals(EstimatorMethod.OOB)) {
             // must format the OOB errors into classifier results
             evaluationTimer.start();
             getLog().info("finalising train estimate");
@@ -413,18 +415,18 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             }
             evaluationTimer.stop();
         }
-        LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         // save the final checkpoint
-        checkpointTimer.start();
-        forceSaveCheckpoint();
-        checkpointTimer.stop();
+        if(workDone) {
+            checkpointTimer.start();
+            if(forceSaveCheckpoint()) getLog().info("saved final checkpoint");
+            checkpointTimer.stop();
+        }
         // sanity check that all timers have been stopped
         evaluationTimer.checkStopped();
         testTimer.checkStopped();
         checkpointTimer.checkStopped();
-        // print the trees
-        //        System.out.println(Utilities.apply(constituents, Constituent::getProximityTree));
-        // build finished so stop the timer
+        // finish up
+        LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         runTimer.stop();
         ResultUtils.setInfo(trainResults, this, trainData);
     }
@@ -470,6 +472,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         // vote for the highest probability class
         final int index = argMax(distribution, getRandom());
         return oneHot(distribution.length, index);
+    }
+
+    @Override public boolean isModelFullyBuilt() {
+        return constituents != null && constituents.size() == numTreeLimit;
     }
 
     public boolean insideNumTreeLimit() {

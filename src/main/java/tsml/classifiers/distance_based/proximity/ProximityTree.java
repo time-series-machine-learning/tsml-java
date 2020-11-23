@@ -61,6 +61,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     // the various configs for this classifier
     public enum Config implements ClassifierFromEnum<ProximityTree> {
+        PT() {
+            @Override public <B extends ProximityTree> B configure(final B classifier) {
+                return PT_R5.configure(classifier);
+            }
+        },
         PT_R1() {
             @Override
             public <B extends ProximityTree> B configure(B proximityTree) {
@@ -153,6 +158,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return checkpointTimer.elapsedTime();
     }
 
+    @Override public boolean isModelFullyBuilt() {
+        return nodeBuildQueue != null && nodeBuildQueue.isEmpty() && tree != null && tree.getRoot() != null;
+    }
+
     public boolean isBreadthFirst() {
         return breadthFirst;
     }
@@ -202,7 +211,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override
-    public void buildClassifier(Instances trainDataArg) throws Exception {
+    public void buildClassifier(Instances trainData) throws Exception {
         // timings:
             // train time tracks the time spent processing the algorithm. This should not be used for contracting.
             // run time tracks the entire time spent processing, whether this is work towards the algorithm or otherwise (e.g. saving checkpoints to disk). This should be used for contracting.
@@ -226,8 +235,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             boolean checkpointLoaded = loadCheckpoint();
             // finished loading the checkpoint
             loadCheckpointTimer.stop();
-            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
-            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
             // if there was a checkpoint and it was loaded        
             if(checkpointLoaded) {
                 // case (1a)
@@ -248,10 +255,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 runTimer.resetElapsedTime();
                 // clear other timers entirely
                 checkpointTimer.stopAndReset();
-                // add back the time attempting to load a checkpoint from a moment ago
-                checkpointTimer.add(loadCheckpointTimer.elapsedTime());
                 // store the train data
-                this.trainData = trainDataArg;
+                this.trainData = trainData;
                 // setup the tree vars
                 tree = new BaseTree<>();
                 nodeBuildQueue = new LinkedList<>();
@@ -263,8 +268,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // add the root node to the build queue
                 nodeBuildQueue.add(root);
             }
+            // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
+            checkpointTimer.add(loadCheckpointTimer.elapsedTime());
         } // else case (2)
         LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
+        boolean workDone = false;
         final StopWatch trainStageTimer = new StopWatch();
         while(
                 // there's remaining nodes to be built
@@ -290,18 +298,22 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             enqueueNodes(children);
             // done building this node
             trainStageTimer.stop();
+            workDone = true;
             // calculate the longest time taken to build a node given
             longestTimePerInstanceDuringNodeBuild = findNodeBuildTime(node, trainStageTimer.elapsedTime());
             // checkpoint if necessary
             checkpointTimer.start();
-            saveCheckpoint();
+            if(saveCheckpoint()) getLog().info("saved checkpoint");
             checkpointTimer.stop();
             // update the train timer
             LogUtils.logTimeContract(runTimer.elapsedTime(), trainTimeLimit, getLog(), "train");
         }
-        checkpointTimer.start();
-        forceSaveCheckpoint();
-        checkpointTimer.stop();
+        // save the final checkpoint
+        if(workDone) {
+            checkpointTimer.start();
+            if(forceSaveCheckpoint()) getLog().info("saved final checkpoint");
+            checkpointTimer.stop();
+        }
         // stop resource monitoring
         runTimer.stop();
         ResultUtils.setInfo(trainResults, this, trainData);

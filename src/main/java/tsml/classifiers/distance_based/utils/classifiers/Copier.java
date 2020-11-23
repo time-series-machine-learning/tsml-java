@@ -23,8 +23,8 @@ public interface Copier extends Serializable {
      * @return
      * @throws Exception
      */
-    default Object shallowCopy() {
-        return CopierUtils.shallowCopy(this);
+    default <A> A shallowCopy() {
+        return (A) CopierUtils.shallowCopy(this);
     }
 
     default void shallowCopyTo(Object dest) {
@@ -51,8 +51,8 @@ public interface Copier extends Serializable {
         CopierUtils.shallowCopy(src, this, fields);
     }
 
-    default Object deepCopy() {
-        return CopierUtils.deepCopy(this);
+    default <A> A deepCopy() {
+        return (A) CopierUtils.deepCopy(this);
     }
 
     default void deepCopyFrom(Object src) {

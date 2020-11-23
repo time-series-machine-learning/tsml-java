@@ -105,6 +105,10 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
     
     public ProximityForestWrapper() {
     }
+    
+    public void setR(int r) {
+        num_candidates_per_split = r;
+    }
 
     public int getNum_trees() {
         return num_trees;

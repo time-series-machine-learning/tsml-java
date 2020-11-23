@@ -63,13 +63,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {
-        log.info(() -> {
-            String msg = "building " + getClassifierName();
-            if(rebuild) {
-                msg += " from scratch";
-            }
-            return msg;
-        });
         if(rebuild) {
             // reset train results
             trainResults = new ClassifierResults();

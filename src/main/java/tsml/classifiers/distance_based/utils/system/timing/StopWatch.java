@@ -1,8 +1,12 @@
 package tsml.classifiers.distance_based.utils.system.timing;
 
+import tsml.classifiers.distance_based.utils.experiment.TimeSpan;
+import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.Duration;
 
 /**
  * Purpose: track time, ability to pause and add on time from another stop watch
@@ -146,7 +150,10 @@ public class StopWatch extends Stated {
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
         // any stopwatch read from file should begin in a stopped state
-        super.optionalStop();
+        setStartTimeStamp(-1);
+        if(isStarted()) {
+            super.stop();
+        }
     }
     
     private void writeObject(ObjectOutputStream oos) throws ClassNotFoundException, IOException {
@@ -154,5 +161,8 @@ public class StopWatch extends Stated {
         elapsedTime();
         oos.defaultWriteObject();
     }
-
+    
+    public TimeSpan toTimeSpan() {
+        return new TimeSpan(elapsedTime());
+    }
 }

@@ -20,6 +20,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.time.temporal.ChronoUnit.*;
+
 public class StrUtils {
 
     public static String joinPath(String... parts) {
@@ -39,11 +41,13 @@ public class StrUtils {
         }
         return builder.toString();
     }
+    
+    public static boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
 
-    public static String durationToHmsString(Duration duration) {
-        return duration.toString().substring(2)
-                       //            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-                       .toLowerCase();
+    public static boolean isDigit(char c) {
+        return (c >= '0' && c <= '9');
     }
 
     public static String[] extractAmountAndUnit(String str) {

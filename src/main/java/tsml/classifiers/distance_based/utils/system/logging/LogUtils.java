@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.experiment.TimeSpan;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 /**
@@ -111,14 +112,14 @@ public class LogUtils {
     
     public static void logTimeContract(long timeNanos, long limitNanos, Logger logger, String name) {
         if(limitNanos > 0) {
-            logger.fine(() -> {
-                Duration limit = Duration.ofNanos(limitNanos);
-                Duration time = Duration.ofNanos(timeNanos);
-                Duration diff = limit.minus(time);
-                return StrUtils.durationToHmsString(time) + " elapsed of " + StrUtils.durationToHmsString(limit) +
+            logger.info(() -> {
+                TimeSpan limit = new TimeSpan(limitNanos);
+                TimeSpan time = new TimeSpan(timeNanos);
+                TimeSpan diff = new TimeSpan(limitNanos - timeNanos);
+                return time.asTimeStamp() + " elapsed of " + limit.asTimeStamp() +
                                " " + name + " "
                                + "time "
-                               + "limit, " + StrUtils.durationToHmsString(diff) + " train time remaining";
+                               + "limit, " + diff.asTimeStamp() + " remaining";
             });
         }
     }

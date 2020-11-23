@@ -5,7 +5,9 @@ import tsml.classifiers.TrainTimeable;
 
 public interface ContractedTrain extends TrainTimeContractable, TrainTimeable {
 
-    long getRunTime();
+    long getRunTime(); // todo own Runtimeable interface
+    
+    boolean isModelFullyBuilt();
     
     long getTrainTimeLimit();
 
