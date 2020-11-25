@@ -136,86 +136,118 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
-    private String[] classLabels;
+    private List<String> classLabels;
 
     private int[] classCounts;
 
-    public TimeSeriesInstances() {
-        seriesCollection = new ArrayList<>();
-    }
-
-    public TimeSeriesInstances(final String[] classLabels) {
-        this();
-        setClassLabels(classLabels);
-    }
-
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData) {
-        this();
-
-        for (final List<List<Double>> series : rawData) {
-            seriesCollection.add(new TimeSeriesInstance(series));
-        }
-
+    /**
+     * Build from instances and known class labels set.
+     * @param instances
+     * @param classLabels
+     */
+    public TimeSeriesInstances(List<TimeSeriesInstance> instances, List<String> classLabels) {
+        this.seriesCollection = new ArrayList<>(instances);
+        this.classLabels = Collections.unmodifiableList(classLabels);
         dataChecks();
     }
 
+    /**
+     * Build from instances and autodetect class labels set.
+     * @param instances
+     */
+    public TimeSeriesInstances(List<TimeSeriesInstance> instances) {
+        this.seriesCollection = new ArrayList<>(instances);
+        Set<String> classLabelSet = new HashSet<>();
+        for(TimeSeriesInstance instance : instances) {
+            classLabelSet.addAll(instance.getClassLabels());
+        }
+        this.classLabels = Collections.unmodifiableList(classLabelSet.stream().sorted().collect(Collectors.toList()));
+        dataChecks();
+    }
     
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes) {
-        this();
-
-        int index = 0;
-        for (final List<List<Double>> series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++)));
+    private void dataChecks() {
+        // check all the class labels line up
+        // for regressed instances, the class labels should be an empty list
+        for(TimeSeriesInstance instance : this) {
+            List<String> classLabelsInInstance = instance.getClassLabels();
+            if(!classLabels.equals(classLabelsInInstance)) {
+                throw new IllegalArgumentException("labels mismatch: " + classLabelsInInstance + " do not match " + firstLabels);
+            }
         }
 
-        dataChecks();
-    }
-
-    public TimeSeriesInstances(final double[][][] rawData) {
-        this();
-
-        for (final double[][] series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series));
-        }
-
-        dataChecks();
-    }
-
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes) {
-        this();
-
-        int index = 0;
-        for (double[][] series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++]));
-        }
-
-        dataChecks();
-    }
-
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
-        this(rawData, labelIndexes);
-        classLabels = labels;
-    }
-
-    public TimeSeriesInstances(List<TimeSeriesInstance> data, String[] labels) {
-        this();
-        
-        for(TimeSeriesInstance d : data)
-            seriesCollection.add(d);
-
-        classLabels = labels;
-
-        dataChecks();
-	}
-
-	private void dataChecks(){
         calculateLengthBounds();
         calculateIfMissing();
         calculateIfMultivariate();
         calculateNumDimensions();
+
+    }
+    
+    public static TimeSeriesInstances fromData(double[][][] data) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.length);
+        for(double[][] instData : data) {
+            TimeSeriesInstance inst = TimeSeriesInstance.fromData(instData);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+
+    public static TimeSeriesInstances fromLabelledData(double[][][] data, int[] labels, List<String> classLabels) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.length);
+        classLabels = Collections.unmodifiableList(classLabels);
+        for(int i = 0; i < data.length; i++) {
+            final double[][] instData = data[i];
+            final int label = labels[i];
+            TimeSeriesInstance inst = TimeSeriesInstance.fromLabelledData(instData, label, classLabels);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+    
+    public static TimeSeriesInstances fromRegressedData(double[][][] data, double[] targetValues) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.length);
+        for(int i = 0; i < data.length; i++) {
+            final double[][] instData = data[i];
+            double targetValue = targetValues[i];
+            TimeSeriesInstance inst = TimeSeriesInstance.fromRegressedData(instData, targetValue);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+    
+    public static TimeSeriesInstances fromData(List<List<List<Double>>> data) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.size());
+        for(List<List<Double>> instData : data) {
+            TimeSeriesInstance inst = TimeSeriesInstance.fromData(instData);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+
+    public static TimeSeriesInstances fromLabelledData(List<List<List<Double>>> data, List<Integer> labels, List<String> classLabels) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.size());
+        classLabels = Collections.unmodifiableList(classLabels);
+        for(int i = 0; i < data.size(); i++) {
+            final List<List<Double>> instData = data.get(i);
+            final int label = labels.get(i);
+            TimeSeriesInstance inst = TimeSeriesInstance.fromLabelledData(instData, label, classLabels);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+
+    public static TimeSeriesInstances fromRegressedData(List<List<List<Double>>> data, List<Double> targetValues) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.size());
+        for(int i = 0; i < data.size(); i++) {
+            final List<List<Double>> instData = data.get(i);
+            final double targetValue = targetValues.get(i);
+            TimeSeriesInstance inst = TimeSeriesInstance.fromRegressedData(instData, targetValue);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+    
+    public TimeSeriesInstances(final List<String> classLabels) {
+        this.classLabels = Collections.unmodifiableList(classLabels);
     }
 
     private void calculateClassCounts() {
