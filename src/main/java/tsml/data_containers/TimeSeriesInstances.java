@@ -298,6 +298,9 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         return classCounts;
     }
 
+    public String[] getClassLabelsArray() {
+        return classLabels.toArray(new String[0]);
+    }
     
     /** 
      * @param newSeries

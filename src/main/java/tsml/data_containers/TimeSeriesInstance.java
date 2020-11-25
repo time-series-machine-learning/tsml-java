@@ -202,7 +202,11 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     public int numClasses() {
         return classLabels.size();
     }
-    
+
+    public String[] getClassLabelsArray() {
+        return classLabels.toArray(new String[0]);
+    }
+
     private void dataChecks(){
 
         // check info is in the expected format
