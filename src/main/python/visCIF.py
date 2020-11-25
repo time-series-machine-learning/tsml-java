@@ -51,5 +51,4 @@ plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode='
 plt.xlabel('Time Point')
 plt.ylabel('Information Gain')
 
-plt.show()
-#plt.savefig(sys.argv[1] + 'vis' + sys.argv[2])
+plt.savefig(sys.argv[1] + 'vis' + sys.argv[2])

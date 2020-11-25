@@ -1240,6 +1240,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             return false;
         }
 
+        boolean isMultivariate = numDimensions > 1;
+        int[] dimCount = null;
+        if (isMultivariate) dimCount = new int[numDimensions];
+
         //get information gain from all tree node splits for each attribute/time point
         double[][][] curves = new double[startNumAttributes][numDimensions][seriesLength];
         for (int i = 0; i < trees.size(); i++){
@@ -1253,10 +1257,18 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 int att = subsampleAtts.get(i).get((int)(split%numAttributes));
                 int dim = intervalDimensions.get(i).get(interval);
 
+                if (isMultivariate) dimCount[dim]++;
+
                 for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
                     curves[att][dim][j] += gain;
                 }
             }
+        }
+
+        if (isMultivariate){
+            OutFile of = new OutFile(visSavePath + "/dims" + seed + ".txt");
+            of.writeLine(Arrays.toString(dimCount));
+            of.closeFile();
         }
 
         OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");

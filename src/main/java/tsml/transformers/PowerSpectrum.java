@@ -111,7 +111,7 @@ public class PowerSpectrum extends FFT {
 
         //Set class value.
         if(inst.classIndex()>=0)
-            out.setValue(out.numAttributes()-1, f.classValue());
+            out.setValue(out.numAttributes()-1, inst.classValue());
 
         return out;
     }
