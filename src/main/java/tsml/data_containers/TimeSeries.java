@@ -14,32 +14,26 @@ import java.util.stream.DoubleStream;
 public class TimeSeries extends AbstractList<Double> {
 
     public final static double DEFAULT_VALUE = Double.NaN;
+    private final static List<Double> EMPTY_LIST = Collections.emptyList();
 
-    private List<Double> series;
-    private List<Double> indices;
+    private final List<Double> series;
+    private final List<Double> indices;
 
 
     public TimeSeries(double[] d){
-        series = new ArrayList<Double>();
-        for(double dd : d)
-            series.add(dd);
+        ArrayList<Double> series = new ArrayList<Double>();
+        for(double dd : d) series.add(dd);
+        this.series = Collections.unmodifiableList(series);
+        indices = EMPTY_LIST;
     }
     
     public TimeSeries(List<Double> d) {
-        series = new ArrayList<>(d);
+        series = Collections.unmodifiableList(new ArrayList<>(d));
+        indices = EMPTY_LIST;
     }
     
     public TimeSeries(TimeSeries other) {
         this(other.series);
-    }    
-    
-    /** 
-     * @param ind
-     */
-    public void setIndices(double[] ind){
-        indices = new ArrayList<Double>();
-        for(double i : ind)
-            indices.add(i);
     }
 
     
