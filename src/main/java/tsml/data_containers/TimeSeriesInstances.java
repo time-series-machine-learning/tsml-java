@@ -203,6 +203,19 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         return new TimeSeriesInstances(insts);
     }
     
+    public static TimeSeriesInstances fromLabelledDataDouble(double[][][] data, double[] labels, List<String> classLabels) {
+        int[] labelIndices = new int[labels.length];
+        for(int j = 0; j < labels.length; j++) {
+            final double d = labels[j];
+            int i = (int) d;
+            if(i != d) {
+                throw new IllegalArgumentException("non-discrete label indices: " + d);
+            }
+            labelIndices[j] = i;
+        }
+        return fromLabelledData(data, labelIndices, classLabels);
+    }
+    
     public static TimeSeriesInstances fromRegressedData(double[][][] data, double[] targetValues) {
         final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.length);
         for(int i = 0; i < data.length; i++) {
@@ -229,6 +242,22 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         for(int i = 0; i < data.size(); i++) {
             final List<List<Double>> instData = data.get(i);
             final int label = labels.get(i);
+            TimeSeriesInstance inst = TimeSeriesInstance.fromLabelledData(instData, label, classLabels);
+            insts.add(inst);
+        }
+        return new TimeSeriesInstances(insts);
+    }
+
+    public static TimeSeriesInstances fromLabelledDataDouble(List<List<List<Double>>> data, List<Double> labels, List<String> classLabels) {
+        final ArrayList<TimeSeriesInstance> insts = new ArrayList<>(data.size());
+        classLabels = Collections.unmodifiableList(classLabels);
+        for(int i = 0; i < data.size(); i++) {
+            final List<List<Double>> instData = data.get(i);
+            Double labelDouble = labels.get(i);
+            final int label = labelDouble.intValue();
+            if(labelDouble != label) {
+                throw new IllegalArgumentException("non-discrete label: " + labelDouble);
+            }
             TimeSeriesInstance inst = TimeSeriesInstance.fromLabelledData(instData, label, classLabels);
             insts.add(inst);
         }

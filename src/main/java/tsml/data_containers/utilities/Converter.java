@@ -55,8 +55,7 @@ public class Converter {
         for(int i=0; i< labels.length; i++)
             labels[i] = data.classAttribute().value(i);
 
-        TimeSeriesInstances output = new TimeSeriesInstances(raw_data, label_indexes);
-        output.setClassLabels(labels);
+        TimeSeriesInstances output = TimeSeriesInstances.fromLabelledDataDouble(raw_data, label_indexes, Arrays.asList(labels));
         output.setProblemName(data.relationName());
 
         return output;
@@ -85,13 +84,17 @@ public class Converter {
             }
         }
 
-        return new TimeSeriesInstance(raw_data, data.classValue());
+        ArrayList<String> classLabels = new ArrayList<>();
+        for(int i = 0; i < data.classAttribute().numValues(); i++) {
+            classLabels.add(data.classAttribute().value(i));
+        }
+        return TimeSeriesInstance.fromLabelledData(raw_data, (int) data.classValue(), classLabels);
     }
 
     public static Instances toArff(TimeSeriesInstances  data){
         double[][][] values = data.toValueArray();
         int[] classIndexes = data.getClassIndexes();
-        String[] classLabels = data.getClassLabels();
+        String[] classLabels = data.getClassLabelsArray();
 
         int numAttributes = data.getMaxLength();
         int numChannels = data.getMaxNumChannels();
