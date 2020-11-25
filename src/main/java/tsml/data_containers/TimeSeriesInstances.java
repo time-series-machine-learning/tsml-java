@@ -96,7 +96,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
      * @return int
      */
     public int numClasses(){
-        return classLabels.length;
+        return classLabels.size();
     }
 
 	
@@ -171,7 +171,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         for(TimeSeriesInstance instance : this) {
             List<String> classLabelsInInstance = instance.getClassLabels();
             if(!classLabels.equals(classLabelsInInstance)) {
-                throw new IllegalArgumentException("labels mismatch: " + classLabelsInInstance + " do not match " + firstLabels);
+                throw new IllegalArgumentException("labels mismatch: " + classLabelsInInstance + " do not match " + classLabels);
             }
         }
 
@@ -245,13 +245,9 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         }
         return new TimeSeriesInstances(insts);
     }
-    
-    public TimeSeriesInstances(final List<String> classLabels) {
-        this.classLabels = Collections.unmodifiableList(classLabels);
-    }
 
     private void calculateClassCounts() {
-        classCounts = new int[classLabels.length];
+        classCounts = new int[classLabels.size()];
         for(TimeSeriesInstance inst : seriesCollection){
             classCounts[inst.getLabelIndex()]++;
         }
@@ -275,22 +271,11 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         // if any of the instance have a missing value then this is true.
         hasMissing = seriesCollection.stream().map(TimeSeriesInstance::hasMissing).anyMatch(Boolean::booleanValue);
     }
-
-    
-    /** 
-     * @param labels
-     */
-    public void setClassLabels(String[] labels) {
-        classLabels = labels;
-
-        calculateClassCounts();
-    }
-
     
     /** 
      * @return String[]
      */
-    public String[] getClassLabels() {
+    public List<String> getClassLabels() {
         return classLabels;
     }
 
@@ -341,12 +326,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         final StringBuilder sb = new StringBuilder();
 
 
-        sb.append("Labels: [").append(classLabels[0]);
-        for (int i = 1; i < classLabels.length; i++) {
-            sb.append(',');
-            sb.append(classLabels[i]);
-        }
-        sb.append(']').append(System.lineSeparator());
+        sb.append("Labels: ").append(classLabels).append(System.lineSeparator());
 
         for (final TimeSeriesInstance series : seriesCollection) {
             sb.append(series.toString());
