@@ -199,6 +199,10 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         return classLabels;
     }
     
+    public int numClasses() {
+        return classLabels.size();
+    }
+    
     private void dataChecks(){
 
         // check info is in the expected format
