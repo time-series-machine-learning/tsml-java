@@ -1,5 +1,7 @@
 package tsml.data_containers;
 
+import org.apache.commons.collections4.list.UnmodifiableList;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,6 +17,9 @@ import java.util.stream.IntStream;
 
 public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
+    // reuse the empty class labels in regressed instances
+    private final static List<String> EMPTY_LIST = Collections.emptyList();
+    
     /* Meta Information */
     private boolean isMultivariate;
     private boolean isEquallySpaced; // todo compute whether timestamps are equally spaced
@@ -62,80 +67,163 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
 
     /* Data */
-    private List<TimeSeries> seriesDimensions;
-    private int labelIndex;
-    private double targetValue;
-
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, Double value) {
-        this(series);
-
-        //could be an index, or it could be regression target
-        labelIndex = value.intValue();
-        targetValue = value;
-    }
-
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, int label) {
-        this(series);
-
-        labelIndex = label;
-    }
-
-    //do the ctor this way round to avoid erasure problems :(
-    public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        seriesDimensions.addAll(series);
-
-        this.labelIndex = labelIndex; 
-        dataChecks();
-    }
-
-    public TimeSeriesInstance(List<List<Double>> series) {
-        // process the input list to produce TimeSeries Objects.
-        // this allows us to pad if need be, or if we want to squarify the data etc.
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        for (List<Double> ts : series) {
-            // convert List<Double> to double[]
-            seriesDimensions.add(new TimeSeries(ts.stream().mapToDouble(Double::doubleValue).toArray()));
+    private final List<TimeSeries> seriesDimensions;
+    private final int labelIndex;
+    private final double targetValue;
+    private final List<String> classLabels;
+    
+    private static ArrayList<TimeSeries> dataToTimeSeries(double[][] data) {
+        ArrayList<TimeSeries> series = new ArrayList<>(data.length);
+        for(double[] row : data) {
+            series.add(new TimeSeries(row));
         }
-
-        dataChecks();
+        return series;
     }
-
-    public TimeSeriesInstance(double[][] data) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        for(double[] in : data){
-            seriesDimensions.add(new TimeSeries(in));
+    
+    private static ArrayList<TimeSeries> dataToTimeSeries(List<? extends List<Double>> data) {
+        ArrayList<TimeSeries> series = new ArrayList<>(data.size());
+        for(List<Double> row : data) {
+            series.add(new TimeSeries(row));
         }
-
-        dataChecks();
-	}
-
-    public TimeSeriesInstance(double[][] data, int labelIndex) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        for(double[] in : data){
-            seriesDimensions.add(new TimeSeries(in));
-        }
-
-        this.labelIndex = labelIndex;
- 
+        return series;
+    }
+    
+    private TimeSeriesInstance(List<TimeSeries> series, TimeSeriesInstance other) {
+        // BEWARE! No copy performed, so modification to the given list will change the TSInst. Keep this private, it's only for internal use!
+        this.seriesDimensions = series;
+        this.targetValue = other.targetValue;
+        this.labelIndex = other.labelIndex;
+        this.classLabels = other.classLabels;
+        
         dataChecks();
     }
     
-    private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
-        this(data);
-        labelIndex = other.labelIndex;
-        targetValue = other.targetValue;
+    public TimeSeriesInstance(List<TimeSeries> series, double targetValue) {
+        if(series instanceof UnmodifiableList) {
+            this.seriesDimensions = series;
+        } else {
+            this.seriesDimensions = Collections.unmodifiableList(new ArrayList<>(series));
+        }
+        this.targetValue = targetValue;
+        this.labelIndex = -1;
+        this.classLabels = EMPTY_LIST;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(TimeSeriesInstance other) {
+        List<TimeSeries> series = other.seriesDimensions;
+        if(series instanceof UnmodifiableList) {
+            this.seriesDimensions = series;
+        } else {
+            this.seriesDimensions = Collections.unmodifiableList(new ArrayList<>(series));
+        }
+        List<String> classLabels = other.classLabels;
+        if(other.classLabels instanceof UnmodifiableList) {
+            this.classLabels = classLabels;
+        } else {
+            this.classLabels = Collections.unmodifiableList(classLabels);
+        }
+        this.targetValue = other.targetValue;
+        this.labelIndex = other.labelIndex;
         
         dataChecks();
     }
 
+    public TimeSeriesInstance(List<TimeSeries> series, int labelIndex, List<String> classLabels) {
+        if(series instanceof UnmodifiableList) {
+            this.seriesDimensions = series;
+        } else {
+            this.seriesDimensions = Collections.unmodifiableList(new ArrayList<>(series));
+        }
+        if(classLabels instanceof UnmodifiableList) {
+            this.classLabels = classLabels;
+        } else {
+            this.classLabels = Collections.unmodifiableList(classLabels);
+        }
+        this.targetValue = labelIndex;
+        this.labelIndex = labelIndex;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(List<TimeSeries> series, String label, List<String> classLabels) {
+        this(series, classLabels.indexOf(label), classLabels);
+    }
+
+    public TimeSeriesInstance(List<TimeSeries> series) {
+        if(series instanceof UnmodifiableList) {
+            this.seriesDimensions = series;
+        } else {
+            this.seriesDimensions = Collections.unmodifiableList(new ArrayList<>(series));
+        }
+        this.targetValue = 0;
+        this.labelIndex = -1;
+        this.classLabels = EMPTY_LIST;
+        
+        dataChecks();
+    }
+    
+    public static TimeSeriesInstance fromLabelledData(double[][] data, int labelIndex, List<String> labels) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), labelIndex, labels);
+    }
+
+    public static TimeSeriesInstance fromLabelledData(double[][] data, String label, List<String> labels) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), label, labels);
+    }
+    
+    public static TimeSeriesInstance fromRegressedData(double[][] data, double targetValue) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), targetValue);
+    }
+    
+    public static TimeSeriesInstance fromData(double[][] data) {
+        return new TimeSeriesInstance(dataToTimeSeries(data));
+    }
+
+    public static TimeSeriesInstance fromLabelledData(List<? extends List<Double>> data, int labelIndex, List<String> labels) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), labelIndex, labels);
+    }
+
+    public static TimeSeriesInstance fromLabelledData(List<? extends List<Double>> data, String label, List<String> labels) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), label, labels);
+    }
+
+    public static TimeSeriesInstance fromRegressedData(List<? extends List<Double>> data, double targetValue) {
+        return new TimeSeriesInstance(dataToTimeSeries(data), targetValue);
+    }
+
+    public static TimeSeriesInstance fromData(List<? extends List<Double>> data) {
+        return new TimeSeriesInstance(dataToTimeSeries(data));
+    }
+    public List<String> getClassLabels() {
+        return classLabels;
+    }
+    
     private void dataChecks(){
+
+        // check info is in the expected format
+        Objects.requireNonNull(seriesDimensions);
+        Objects.requireNonNull(classLabels);
+        if(labelIndex > classLabels.size() - 1) {
+            throw new IndexOutOfBoundsException("label index " + labelIndex + " is out of range of " + classLabels);
+        }
+        if(classLabels.isEmpty()) {
+            if(labelIndex != -1) {
+                throw new IllegalStateException("label index set to " + labelIndex + " but labels is empty");
+            }
+        } else {
+            if(labelIndex < 0) {
+                throw new IndexOutOfBoundsException("label index " + labelIndex + " is less than zero");
+            }
+        }
+        // check immutability
+        if(!(classLabels instanceof UnmodifiableList)) {
+            throw new IllegalStateException("class labels are mutable");
+        }
+        if(!(seriesDimensions instanceof UnmodifiableList)) {
+            throw new IllegalStateException("dimensions are mutable");
+        }
+
         calculateIfMultivariate();
         calculateLengthBounds();
         calculateIfMissing();
@@ -248,7 +336,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     }
     
     public TimeSeriesInstance getVSlice(List<Integer> indexesToKeep) {
-        return new TimeSeriesInstance(getVSliceArray(indexesToKeep), this);
+        return new TimeSeriesInstance(dataToTimeSeries(getVSliceArray(indexesToKeep)), this);
     }
     
     public TimeSeriesInstance getVSlice(int[] indexesToKeep) {
@@ -326,7 +414,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     }
     
     public TimeSeriesInstance getHSlice(List<Integer> dimensionsToKeep) {
-        return new TimeSeriesInstance(getHSliceArray(dimensionsToKeep), this);
+        return new TimeSeriesInstance(dataToTimeSeries(getHSliceArray(dimensionsToKeep)), this);
     }
     
     public TimeSeriesInstance getHSlice(int[] dimensionsToKeep) {
@@ -406,5 +494,4 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     @Override public TimeSeries remove(final int i) {
         throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
     }
-
 }
