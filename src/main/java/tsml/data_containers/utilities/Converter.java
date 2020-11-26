@@ -108,7 +108,7 @@ public class Converter {
             attributes.add(new Attribute("ClassLabel", Arrays.stream(classLabels).collect(Collectors.toList())));
             
             //create output data set.
-            Instances output = new Instances("Converted", attributes, data.numInstances());
+            Instances output = new Instances(data.getProblemName(), attributes, data.numInstances());
 
             for(int i=0; i < data.numInstances(); i++){
                 //create each row.
@@ -147,7 +147,7 @@ public class Converter {
         attributes.add(new Attribute("ClassLabel", Arrays.stream(classLabels).collect(Collectors.toList())));
 
         //TODO: put the dataset name in the TSInstances
-        Instances output = new Instances("Converted", attributes, data.numInstances());
+        Instances output = new Instances(data.getProblemName(), attributes, data.numInstances());
         output.setClassIndex(output.numAttributes() - 1);
 
         //create the Instance.
