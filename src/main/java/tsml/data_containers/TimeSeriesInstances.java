@@ -179,11 +179,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes) {
-        // assume that the unique indices are the class labels
-        this(rawData, labelIndexes, Arrays.stream(labelIndexes).distinct().sorted().mapToObj(String::valueOf).toArray(String[]::new));
-    }
-
     public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
 
         classLabels = labels;
