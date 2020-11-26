@@ -63,9 +63,11 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Data */
     private List<TimeSeries> seriesDimensions;
-    private int labelIndex;
-    private double targetValue;
-
+    private int labelIndex = -1;
+    private double targetValue = 0;
+    private String[] classLabels = EMPTY_CLASS_LABELS;
+    private static final String[] EMPTY_CLASS_LABELS = new String[0];
+    
     // this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double value) {
         this(series);
@@ -73,22 +75,29 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         //could be an index, or it could be regression target
         labelIndex = value.intValue();
         targetValue = value;
+        
+        dataChecks();
     }
 
     // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, int label) {
+    public TimeSeriesInstance(List<List<Double>> series, int label, String[] classLabels) {
         this(series);
 
-        labelIndex = label;
+        targetValue = labelIndex = label;
+        this.classLabels = classLabels;
+        
+        dataChecks();
     }
 
     //do the ctor this way round to avoid erasure problems :(
-    public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
+    public TimeSeriesInstance(int labelIndex, String[] classLabels, List<TimeSeries> series) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
         seriesDimensions.addAll(series);
 
-        this.labelIndex = labelIndex; 
+        targetValue = this.labelIndex = labelIndex; 
+        this.classLabels = classLabels;
+        
         dataChecks();
     }
 
@@ -101,7 +110,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
             // convert List<Double> to double[]
             seriesDimensions.add(new TimeSeries(ts.stream().mapToDouble(Double::doubleValue).toArray()));
         }
-
+        
         dataChecks();
     }
 
@@ -115,15 +124,16 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         dataChecks();
 	}
 
-    public TimeSeriesInstance(double[][] data, int labelIndex) {
+    public TimeSeriesInstance(double[][] data, int labelIndex, String[] classLabels) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for(double[] in : data){
             seriesDimensions.add(new TimeSeries(in));
         }
 
-        this.labelIndex = labelIndex;
- 
+        targetValue = this.labelIndex = labelIndex;
+        this.classLabels = classLabels;
+        
         dataChecks();
     }
     
@@ -131,11 +141,32 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         this(data);
         labelIndex = other.labelIndex;
         targetValue = other.targetValue;
+        classLabels = other.classLabels;
         
         dataChecks();
     }
 
     private void dataChecks(){
+        
+        // check class labels have been set correctly
+        if(classLabels == null) {
+            // class labels should always be set, even to an empty array if you're using regression instances
+            throw new NullPointerException("no class labels");
+        }
+        // if there are no class labels
+        if(Arrays.equals(classLabels, EMPTY_CLASS_LABELS)) {
+            // then the class label index should be -1
+            if(labelIndex != -1) {
+                throw new IllegalStateException("no class labels but label index not -1: " + labelIndex);
+            }
+        } else {
+            // there are class labels
+            // therefore this is a classification instance, so the regression target should be the same as the class label index
+            if(labelIndex != targetValue) {
+                throw new IllegalStateException("label index (" + labelIndex + ") and target value (" + targetValue + ") mismatch");
+            }
+        }
+        
         calculateIfMultivariate();
         calculateLengthBounds();
         calculateIfMissing();
@@ -407,4 +438,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
     }
 
+    public String[] getClassLabels() {
+        return classLabels;
+    }
 }
