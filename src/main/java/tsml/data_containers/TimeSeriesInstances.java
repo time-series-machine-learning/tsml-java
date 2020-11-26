@@ -142,10 +142,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     private int[] classCounts;
 
-    public TimeSeriesInstances() {
-        dataChecks();
-    }
-
     public TimeSeriesInstances(final String[] classLabels) {      
         this.classLabels = classLabels;
         
