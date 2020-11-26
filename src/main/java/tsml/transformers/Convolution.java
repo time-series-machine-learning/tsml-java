@@ -76,7 +76,7 @@ public class Convolution implements Transformer {
             out = convolution2D(inst.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     public double[] convolution1D(double[] data) {

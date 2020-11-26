@@ -48,7 +48,7 @@ public class AudioFeatures implements Transformer {
         }
 
         // create a new output instance with the ACF data.
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     private double[] audioTransform(double[] series, double classVal) {

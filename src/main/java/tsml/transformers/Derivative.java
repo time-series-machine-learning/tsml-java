@@ -97,7 +97,7 @@ public class Derivative implements Transformer, Serializable {
             out[i++] = getDerivative(ts.toValueArray(), false);
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
 

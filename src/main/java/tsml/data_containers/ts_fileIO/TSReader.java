@@ -68,8 +68,7 @@ public class TSReader {
         }
 
         // create timeseries instances object.
-        m_data = new TimeSeriesInstances(raw_data, raw_labels);
-        m_data.setClassLabels(classLabels.toArray(new String[classLabels.size()]));
+        m_data = new TimeSeriesInstances(raw_data, raw_labels, classLabels.toArray(new String[classLabels.size()]));
         m_data.setProblemName(problemName);
 //        m_data.setHasTimeStamps(timeStamps); // todo this has been temp removed, should be computed from the data
         m_data.setDescription(description);

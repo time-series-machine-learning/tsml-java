@@ -294,7 +294,7 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
             out[0][i] = shapeletDistance.calculate(inst, 0);
         }
     
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override
@@ -445,7 +445,7 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
             }
         }
 
-        return new TimeSeriesInstances(out, data.getClassIndexes());
+        return new TimeSeriesInstances(out, data.getClassIndexes(), data.getClassLabels());
     }
 
     // given a set of instances transform it by the internal shapelets.
