@@ -158,12 +158,14 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
     }
 
     
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes) {
+    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes, String[] classLabels) {
+        
+        this.classLabels = classLabels;
         
         int index = 0;
         for (final List<List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++)));
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
         }
 
         dataChecks();
