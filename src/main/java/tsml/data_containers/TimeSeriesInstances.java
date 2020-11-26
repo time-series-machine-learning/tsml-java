@@ -151,18 +151,8 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         dataChecks();
     }
 
-    /**
-     * Build from instances and autodetect class labels set.
-     * @param instances
-     */
-    public TimeSeriesInstances(List<TimeSeriesInstance> instances) {
-        this.seriesCollection = new ArrayList<>(instances);
-        Set<String> classLabelSet = new HashSet<>();
-        for(TimeSeriesInstance instance : instances) {
-            classLabelSet.addAll(instance.getClassLabels());
-        }
-        this.classLabels = Collections.unmodifiableList(classLabelSet.stream().sorted().collect(Collectors.toList()));
-        dataChecks();
+    public TimeSeriesInstances(List<String> classLabels) {
+        this(new ArrayList<>(), classLabels);
     }
     
     private void dataChecks() {
