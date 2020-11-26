@@ -75,7 +75,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param classLabels
      */
     public TimeSeriesInstance(List<? extends List<Double>> series, double labelIndex, String[] classLabels) {
-        this(series, discretiseLabel(labelIndex), classLabels);
+        this(series, discretiseLabelIndex(labelIndex), classLabels);
     }
 
     /**
@@ -164,7 +164,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         dataChecks();
     }
     
-    public static int discretiseLabel(double labelIndex) {
+    public static int discretiseLabelIndex(double labelIndex) {
         int i = (int) labelIndex;
         if(labelIndex != i) {
             throw new IllegalArgumentException("cannot discretise " + labelIndex + " to an int: " + i);
@@ -179,7 +179,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param classLabels
      */
     public TimeSeriesInstance(double[][] data, double labelIndex, String[] classLabels) {
-        this(data, discretiseLabel(labelIndex), classLabels);
+        this(data, discretiseLabelIndex(labelIndex), classLabels);
     }
 
     /**
