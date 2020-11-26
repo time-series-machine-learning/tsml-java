@@ -195,6 +195,22 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         
         dataChecks();
     }
+    
+    public TimeSeriesInstance(TimeSeries[] data) {
+        this(Arrays.asList(data));
+    }
+    
+    public TimeSeriesInstance(TimeSeries[] data, double targetValue) {
+        this(Arrays.asList(data), targetValue);
+    }
+    
+    public TimeSeriesInstance(TimeSeries[] data, int labelIndex, String[] classLabels) {
+        this(Arrays.asList(data), labelIndex, classLabels);
+    }
+    
+    public TimeSeriesInstance(TimeSeries[] data, double labelIndex, String[] classLabels) {
+        this(Arrays.asList(data), discretiseLabelIndex(labelIndex), classLabels);
+    }
 
     private void dataChecks(){
         
