@@ -2,6 +2,7 @@ package tsml.data_containers;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
 import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
 
@@ -142,45 +143,92 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     private int[] classCounts;
 
-    public TimeSeriesInstances(final String[] classLabels) {      
-        this.classLabels = classLabels;
-        
-        dataChecks();
+    public TimeSeriesInstances(final String[] classLabels) {        this(new ArrayList<>(), classLabels);
     }
 
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData) {
-        
-        for (final List<List<Double>> series : rawData) {
-            seriesCollection.add(new TimeSeriesInstance(series));
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData) {
+        for (final List<? extends List<Double>> series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
+            if(series instanceof TimeSeriesInstance) {
+                seriesCollection.add((TimeSeriesInstance) series);
+            } else {
+                seriesCollection.add(new TimeSeriesInstance(series));
+            }
         }
 
         dataChecks();
     }
 
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, List<Double> targetValues) {
+
+        int index = 0;
+        for (final List<? extends List<Double>> series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
+            if(series instanceof TimeSeriesInstance) {
+                seriesCollection.add((TimeSeriesInstance) series);
+            } else {
+                seriesCollection.add(new TimeSeriesInstance(series, targetValues.get(index++)));
+            }
+        }
+
+        dataChecks();
+    }
     
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes, String[] classLabels) {
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, String[] classLabels, final List<Double> labelIndices) {
+        this(rawData, labelIndices.stream().map(TimeSeriesInstance::discretiseLabelIndex).collect(Collectors.toList()), classLabels);
+    }
+    
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, final List<Integer> labelIndexes, String[] classLabels) {
         
         this.classLabels = classLabels;
         
         int index = 0;
-        for (final List<List<Double>> series : rawData) {
+        for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
+            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
+            if(series instanceof TimeSeriesInstance) {
+                seriesCollection.add((TimeSeriesInstance) series);
+            } else {
+                seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
+            }
         }
 
         dataChecks();
     }
 
+    /**
+     * Construct instances from raw data.
+     * @param rawData
+     */
     public TimeSeriesInstances(final double[][][] rawData) {
-
-        for (final double[][] series : rawData) {
+        int index = 0;
+        for (double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
             seriesCollection.add(new TimeSeriesInstance(series));
         }
-
-        dataChecks();
     }
 
+    /**
+     * 
+     * @param rawData
+     * @param labelIndices
+     * @param labels
+     */
+    public TimeSeriesInstances(double[][][] rawData, double[] labelIndices, String[] labels) {
+        this(rawData, Arrays.stream(labelIndices).mapToInt(TimeSeriesInstance::discretiseLabelIndex).toArray(), labels);
+    }
+    
+    public TimeSeriesInstances(double[][][] rawData, double[] targetValues) {
+
+        int index = 0;
+        for (double[][] series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            seriesCollection.add(new TimeSeriesInstance(series, targetValues[index++]));
+        }
+    }
+    
     public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
 
         classLabels = labels;
@@ -194,7 +242,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         dataChecks();
     }
 
-    public TimeSeriesInstances(List<TimeSeriesInstance> data, String[] labels) {
+    public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] labels) {
         
         classLabels = labels;
 
@@ -202,6 +250,14 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         
         dataChecks();
 	}
+
+    public TimeSeriesInstances(TimeSeriesInstance[] data, String[] labels) {
+        this(Arrays.asList(data), labels);
+    }
+    
+    public TimeSeriesInstances(TimeSeriesInstance[] data) {
+        this(Arrays.asList(data));
+    }
 
 	private void dataChecks(){
         
