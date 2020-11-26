@@ -66,7 +66,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     private int labelIndex = -1;
     private double targetValue = 0;
     private String[] classLabels = EMPTY_CLASS_LABELS;
-    private static final String[] EMPTY_CLASS_LABELS = new String[0];
+    public static final String[] EMPTY_CLASS_LABELS = new String[0];
     
     // this ctor can be made way more sophisticated.
     public TimeSeriesInstance(List<List<Double>> series, Double value) {
@@ -148,6 +148,9 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     private void dataChecks(){
         
+        if(seriesDimensions == null) {
+            throw new NullPointerException("no series dimensions");
+        }
         // check class labels have been set correctly
         if(classLabels == null) {
             // class labels should always be set, even to an empty array if you're using regression instances

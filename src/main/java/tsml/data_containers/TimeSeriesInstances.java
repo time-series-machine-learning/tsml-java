@@ -3,6 +3,8 @@ package tsml.data_containers;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
+
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
@@ -132,26 +134,26 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     /* End Meta Information */
 
-    private List<TimeSeriesInstance> seriesCollection;
+    private List<TimeSeriesInstance> seriesCollection = new ArrayList<>();
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
-    private String[] classLabels;
+    private String[] classLabels = EMPTY_CLASS_LABELS;
 
     private int[] classCounts;
 
     public TimeSeriesInstances() {
-        seriesCollection = new ArrayList<>();
+        dataChecks();
     }
 
-    public TimeSeriesInstances(final String[] classLabels) {
-        this();
-        setClassLabels(classLabels);
+    public TimeSeriesInstances(final String[] classLabels) {      
+        this.classLabels = classLabels;
+        
+        dataChecks();
     }
 
     public TimeSeriesInstances(final List<List<List<Double>>> rawData) {
-        this();
-
+        
         for (final List<List<Double>> series : rawData) {
             seriesCollection.add(new TimeSeriesInstance(series));
         }
@@ -161,8 +163,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     
     public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes) {
-        this();
-
+        
         int index = 0;
         for (final List<List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
@@ -173,7 +174,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
     }
 
     public TimeSeriesInstances(final double[][][] rawData) {
-        this();
 
         for (final double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
@@ -184,34 +184,41 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
     }
 
     public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes) {
-        this();
+        // assume that the unique indices are the class labels
+        this(rawData, labelIndexes, Arrays.stream(labelIndexes).distinct().sorted().mapToObj(String::valueOf).toArray(String[]::new));
+    }
+
+    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
+
+        classLabels = labels;
 
         int index = 0;
         for (double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++]));
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++], classLabels));
         }
 
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
-        this(rawData, labelIndexes);
-        classLabels = labels;
-    }
-
     public TimeSeriesInstances(List<TimeSeriesInstance> data, String[] labels) {
-        this();
         
-        for(TimeSeriesInstance d : data)
-            seriesCollection.add(d);
-
         classLabels = labels;
 
+        seriesCollection.addAll(data);
+        
         dataChecks();
 	}
 
 	private void dataChecks(){
+        
+        if(seriesCollection == null) {
+            throw new NullPointerException("no series collection");
+        }
+        if(classLabels == null) {
+            throw new NullPointerException("no class labels");
+        }
+        
         calculateLengthBounds();
         calculateIfMissing();
         calculateIfMultivariate();
@@ -246,16 +253,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     
     /** 
-     * @param labels
-     */
-    public void setClassLabels(String[] labels) {
-        classLabels = labels;
-
-        calculateClassCounts();
-    }
-
-    
-    /** 
      * @return String[]
      */
     public String[] getClassLabels() {
@@ -278,6 +275,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
      * @return int[]
      */
     public int[] getClassCounts(){
+        calculateClassCounts();
         return classCounts;
     }
 
@@ -286,6 +284,12 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
      * @param newSeries
      */
     public void add(int i, final TimeSeriesInstance newSeries) {
+        // check that the class labels match
+        if(!Arrays.equals(classLabels, newSeries.getClassLabels())) {
+            throw new IllegalArgumentException("class labels " + Arrays.toString(classLabels) + " to not match class labels in instance to be added " +
+                                                       Arrays.toString(newSeries.getClassLabels()));
+        }
+
         seriesCollection.add(i, newSeries);
 
         //guard for if we're going to force update classCounts after.
