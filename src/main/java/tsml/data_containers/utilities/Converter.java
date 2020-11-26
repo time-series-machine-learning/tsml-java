@@ -55,7 +55,7 @@ public class Converter {
         for(int i=0; i< labels.length; i++)
             labels[i] = data.classAttribute().value(i);
 
-        TimeSeriesInstances output = new TimeSeriesInstances(raw_data, label_indexes, labels);
+        TimeSeriesInstances output = new TimeSeriesInstances(raw_data, labels, label_indexes);
         output.setProblemName(data.relationName());
 
         return output;

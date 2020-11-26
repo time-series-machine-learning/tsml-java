@@ -266,7 +266,7 @@ public class RowNormalizer implements Transformer {
 			out.add(standardNorm(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	public static TimeSeriesInstance standard(TimeSeriesInstance inst) {
@@ -275,7 +275,7 @@ public class RowNormalizer implements Transformer {
 			out.add(standard(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	public static TimeSeriesInstance intervalNorm(TimeSeriesInstance inst) {
@@ -284,7 +284,7 @@ public class RowNormalizer implements Transformer {
 			out.add(intervalNorm(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	public static TimeSeries standardNorm(TimeSeries ts) {
