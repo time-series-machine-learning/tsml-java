@@ -61,31 +61,31 @@ public class Converter {
         return output;
     }
 
-    //assumes last index is class variable
-    public static TimeSeriesInstance fromArff(Instance data){
-        List<List<Double>> raw_data = new ArrayList<>();
-
-        //we multivariate
-        if(data.attribute(0).isRelationValued()){
-            Instances timeseries = data.relationalValue(data.attribute(0));
-            //number of channels is numInstances
-            for(int j=0; j<timeseries.numInstances(); j++){
-                raw_data.add(new ArrayList<>(timeseries.numAttributes()));
-                for(int k=0; k< timeseries.get(j).numAttributes(); k++){
-                    raw_data.get(j).add(timeseries.get(j).value(k));
-                }
-            }
-        }
-        else{
-            //add dimension 0
-            raw_data.add(new ArrayList<>(data.numAttributes()-1));
-            for(int j=0; j< data.numAttributes()-1; j++){
-                raw_data.get(0).add(data.value(j));
-            }
-        }
-
-        return new TimeSeriesInstance(raw_data, data.classValue());
-    }
+//    //assumes last index is class variable
+//    public static TimeSeriesInstance fromArff(Instance data){
+//        List<List<Double>> raw_data = new ArrayList<>();
+//
+//        //we multivariate
+//        if(data.attribute(0).isRelationValued()){
+//            Instances timeseries = data.relationalValue(data.attribute(0));
+//            //number of channels is numInstances
+//            for(int j=0; j<timeseries.numInstances(); j++){
+//                raw_data.add(new ArrayList<>(timeseries.numAttributes()));
+//                for(int k=0; k< timeseries.get(j).numAttributes(); k++){
+//                    raw_data.get(j).add(timeseries.get(j).value(k));
+//                }
+//            }
+//        }
+//        else{
+//            //add dimension 0
+//            raw_data.add(new ArrayList<>(data.numAttributes()-1));
+//            for(int j=0; j< data.numAttributes()-1; j++){
+//                raw_data.get(0).add(data.value(j));
+//            }
+//        }
+//
+//        return new TimeSeriesInstance(raw_data, data.classValue());
+//    }
 
     public static Instances toArff(TimeSeriesInstances  data){
         double[][][] values = data.toValueArray();
@@ -166,43 +166,94 @@ public class Converter {
 
     }
 
-    public static Instance toArff(TimeSeriesInstance data){
-        int numChannels = data.getNumDimensions();
-        if(numChannels == 1)
-            return new DenseInstance(1.0, ArrayUtils.add(data.toValueArray()[0], data.getLabelIndex()));
-
-
-        int numAttributes = data.getMaxLength();
-        ArrayList<Attribute> relational_atts = createAttributes(numAttributes);
-        Instances relationalHeader =  new Instances("", relational_atts, numChannels);
-        relationalHeader.setRelationName("relationalAtt");
-
-        Instance output = new DenseInstance(2);
-                                
-        //set relation for the dataset/
-        Instances relational = new Instances(relationalHeader, numChannels);
-
-        double[][] values = data.toValueArray();
-        int classIndex = data.getLabelIndex();
-
-        //each dense instance is row/ which is actually a channel.
-        for(int j=0; j< numChannels; j++){
-            double[] vals = new double[numAttributes];
-            System.arraycopy(values[j], 0, vals, 0, values[j].length);
-            for(int k=values[j].length; k<numAttributes; k++)
-                vals[k] =  Double.NaN; //all missing values are NaN.
-            relational.add(new DenseInstance(1.0, vals));
-        }       
-                        
-        int index = output.attribute(0).addRelation(relational);
+//    public static Instance toArff(TimeSeriesInstance data){
+//        int numChannels = data.getNumDimensions();
+//
+//        final Instance output;
+//
+//        if(numChannels == 1) {
+//            // univariate
+//            output = new DenseInstance(1.0, ArrayUtils.add(data.toValueArray()[0], data.getLabelIndex()));
+//        } else {
+//            // multivariate
+//
+//            int numAttributes = data.getMaxLength();
+//            ArrayList<Attribute> relational_atts = createAttributes(numAttributes);
+//            Instances relationalHeader =  new Instances("", relational_atts, numChannels);
+//            relationalHeader.setRelationName("relationalAtt");
+//
+//            output = new DenseInstance(2);
+//
+//            //set relation for the dataset/
+//            Instances relational = new Instances(relationalHeader, numChannels);
+//
+//            double[][] values = data.toValueArray();
+//            int classIndex = data.getLabelIndex();
+//
+//            //each dense instance is row/ which is actually a channel.
+//            for(int j=0; j< numChannels; j++){
+//                double[] vals = new double[numAttributes];
+//                System.arraycopy(values[j], 0, vals, 0, values[j].length);
+//                for(int k=values[j].length; k<numAttributes; k++)
+//                    vals[k] =  Double.NaN; //all missing values are NaN.
+//                relational.add(new DenseInstance(1.0, vals));
+//            }
+//
+//            int index = output.attribute(0).addRelation(relational);
+//
+//            //set the relational attribute.
+//            output.setValue(0, index);
+//
+//            //set class value.
+//            output.setValue(1, (double)classIndex);
+//        }
+//
+//        return output;
+//    }
+    
+    public static TimeSeriesInstance fromArff(Instance inst) {
+        List<List<Double>> raw_data = new ArrayList<>();
+        Double label_indexes;
         
-        //set the relational attribute.
-        output.setValue(0, index);           
-        
-        //set class value.
-        output.setValue(1, (double)classIndex);
+        //we multivariate
+        if(inst.attribute(0).isRelationValued()){
+            Instances timeseries = inst.relationalValue(inst.attribute(0));
+            //number of channels is numInstances
+            raw_data.add(new ArrayList<>(timeseries.numInstances()));
+            for(int k=0; k< timeseries.get(j).numAttributes(); k++){
+                raw_data.get(i).get(j).add(timeseries.get(j).value(k));
+            }
+
+            label_indexes = inst.value(1);
+        }
+        else{
+            //add dimension 0
+            raw_data.add(new ArrayList<>(1));
+            raw_data.get(i).add(new ArrayList<>(inst.numAttributes()-1)); //remove class attribute.
+            for(int j=0; j< inst.numAttributes(); j++){
+                //skip class index.
+                if(inst.classIndex() == j)
+                    label_indexes.add(inst.value(j));
+                else
+                    raw_data.get(i).get(0).add(inst.value(j));
+            }
+        }
+
+        String[] labels = new String[inst.classAttribute().numValues()];
+        for(int i=0; i< labels.length; i++)
+            labels[i] = inst.classAttribute().value(i);
+
+        TimeSeriesInstances output = new TimeSeriesInstances(raw_data, labels, label_indexes);
+        output.setProblemName(inst.dataset().relationName());
 
         return output;
+    }
+    
+    public static Instance toArff(TimeSeriesInstance tsinst) {
+        final TimeSeriesInstances tsinsts =
+                new TimeSeriesInstances(new TimeSeriesInstance[]{tsinst}, tsinst.getClassLabels());
+        final Instances insts = toArff(tsinsts);
+        return insts.get(0);
     }
 
     private static ArrayList<Attribute> createAttributes(int numAttributes) {
