@@ -64,23 +64,27 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     /* Data */
     private List<TimeSeries> seriesDimensions;
     private int labelIndex = -1;
-    private double targetValue = 0;
+    private double targetValue = Double.NaN;
     private String[] classLabels = EMPTY_CLASS_LABELS;
     public static final String[] EMPTY_CLASS_LABELS = new String[0];
-    
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, Double value) {
-        this(series);
 
-        //could be an index, or it could be regression target
-        labelIndex = value.intValue();
-        targetValue = value;
-        
-        dataChecks();
+    /**
+     * Construct a labelled instance from raw data.
+     * @param series
+     * @param labelIndex cast to an int internally
+     * @param classLabels
+     */
+    public TimeSeriesInstance(List<? extends List<Double>> series, double labelIndex, String[] classLabels) {
+        this(series, discretiseLabel(labelIndex), classLabels);
     }
 
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, int label, String[] classLabels) {
+    /**
+     * Construct a labelled instance from raw data.
+     * @param series
+     * @param label
+     * @param classLabels
+     */
+    public TimeSeriesInstance(List<? extends List<Double>> series, int label, String[] classLabels) {
         this(series);
 
         targetValue = labelIndex = label;
@@ -89,41 +93,64 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         dataChecks();
     }
 
-    //do the ctor this way round to avoid erasure problems :(
-    public TimeSeriesInstance(int labelIndex, String[] classLabels, List<TimeSeries> series) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        seriesDimensions.addAll(series);
-
-        targetValue = this.labelIndex = labelIndex; 
-        this.classLabels = classLabels;
-        
-        dataChecks();
+    /**
+     * Construct an unlabelled / non-regressed instance from time series.
+     * @param series
+     */
+    public TimeSeriesInstance(List<? extends List<Double>> series) {
+        this(series, Double.NaN);
     }
-
-    public TimeSeriesInstance(List<List<Double>> series) {
+    
+    public TimeSeriesInstance(List<? extends List<Double>> series, double targetValue) {
         // process the input list to produce TimeSeries Objects.
         // this allows us to pad if need be, or if we want to squarify the data etc.
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for (List<Double> ts : series) {
-            // convert List<Double> to double[]
-            seriesDimensions.add(new TimeSeries(ts.stream().mapToDouble(Double::doubleValue).toArray()));
+            // the list *could* be a TimeSeries already (as TimeSeries is a List<Double>). No need to copy if so.
+            if(ts instanceof TimeSeries) {
+                seriesDimensions.add((TimeSeries) ts);
+            } else {
+                seriesDimensions.add(new TimeSeries(ts));
+            }
         }
         
+        this.targetValue = targetValue;
+
         dataChecks();
     }
 
+    /**
+     * Construct an unlabelled / non-regressed instance from raw data.
+     * @param data
+     */
     public TimeSeriesInstance(double[][] data) {
+        this(data, Double.NaN);
+	}
+
+    /**
+     * Construct an regressed instance from raw data.
+     * @param data
+     * @param targetValue
+     */
+	public TimeSeriesInstance(double[][] data, double targetValue) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for(double[] in : data){
             seriesDimensions.add(new TimeSeries(in));
         }
+        
+        this.targetValue = targetValue;
 
         dataChecks();
-	}
+    }
 
+    /**
+     * Construct an labelled instance from raw data.
+     * @param data
+     * @param labelIndex
+     * @param classLabels
+     */
     public TimeSeriesInstance(double[][] data, int labelIndex, String[] classLabels) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
@@ -137,6 +164,29 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         dataChecks();
     }
     
+    public static int discretiseLabel(double labelIndex) {
+        int i = (int) labelIndex;
+        if(labelIndex != i) {
+            throw new IllegalArgumentException("cannot discretise " + labelIndex + " to an int: " + i);
+        }
+        return i;
+    }
+
+    /**
+     * Construct a labelled instance from raw data with label in double form (but should be an integer value).
+     * @param data
+     * @param labelIndex
+     * @param classLabels
+     */
+    public TimeSeriesInstance(double[][] data, double labelIndex, String[] classLabels) {
+        this(data, discretiseLabel(labelIndex), classLabels);
+    }
+
+    /**
+     * Construct an instance from raw data. Copies over regression target / labelling variables. This is only intended for internal use in avoiding copying the data again after a vslice / hslice.
+     * @param data
+     * @param other
+     */
     private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
         this(data);
         labelIndex = other.labelIndex;
@@ -205,6 +255,13 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      */
     public int getLabelIndex(){
         return labelIndex;
+    }
+    
+    public String getClassLabel() {
+        if(labelIndex < 0 || classLabels == null) {
+            return null;
+        }
+        return classLabels[labelIndex];
     }
     
     /** 
