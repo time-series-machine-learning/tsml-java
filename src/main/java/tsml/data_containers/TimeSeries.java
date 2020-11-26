@@ -16,8 +16,8 @@ public class TimeSeries extends AbstractList<Double> {
     public final static double DEFAULT_VALUE = Double.NaN;
     private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 
 
-    private final List<Double> series;
-    private final List<Double> indices = EMPTY_INDICES;
+    private List<Double> series;
+    private List<Double> indices = EMPTY_INDICES;
 
 
     public TimeSeries(double[] d){
