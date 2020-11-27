@@ -3,6 +3,7 @@ package tsml.data_containers;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * Class to store a time series. The series can have different indices (time stamps) and store missing values (NaN).
@@ -87,7 +88,10 @@ public class TimeSeries implements Iterable<Double> {
     public DoubleStream streamValues(){
         return series.stream().mapToDouble(Double::doubleValue);
     }
-
+    
+    public Stream<Double> stream() {
+        return series.stream();
+    }
     
     /** 
      * @param start
