@@ -292,16 +292,6 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         di = new Differences();
         di.setSubtractFormerValue(true);
         representations[2] = di.transform(representations[0]);
-//        h = new Hilbert();
-//        representations[3] = h.transform(representations[0]);
-//        ar = new ARMA();
-//        ar.setMaxLag(Math.max((data.numAttributes() - 1) / 4, 10));
-//        representations[4] = ar.transform(representations[0]);
-//        acf = new ACF();
-//        acf.setMaxLag(Math.max((data.numAttributes() - 1) / 4, 10));
-//        representations[5] = acf.transform(representations[0]);
-//        mp = new MatrixProfile(Math.max((data.numAttributes() - 1) / 4, 10));
-//        representations[6] = mp.transform(representations[0]);
 
         Instances[] instToAdd = new Instances[representations.length];
         for (int r = 0; r < representations.length; r++) {
@@ -323,10 +313,26 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             if (classifiersBuilt % 100 == 0)
                 printLineDebug("\t\t\t\t\tBuilding STSF tree " + classifiersBuilt + " time taken = " + (System.nanoTime() - startTime) + " contract =" + finalBuildtrainContractTimeNanos + " nanos");
 
+            int[] instInclusions = null;
+            if (bagging) {
+                instInclusions = new int[data.numInstances()];
+
+                for (int n = 0; n < data.numInstances(); n++) {
+                    instInclusions[rand.nextInt(data.numInstances())]++;
+                }
+            }
+
             Instances[] newData = new Instances[representations.length];
             for (int r = 0; r < representations.length; r++) {
                 if (bagging) {
-                    newData[r] = new Instances(representations[r]);
+                    newData[r] = new Instances(representations[r], 0);
+
+                    for (int i = 0; i < data.numInstances(); i++){
+                        for (int n = 0; n < instInclusions[i]; n++){
+                            newData[r].add(representations[r].get(i));
+                        }
+                    }
+
                     newData[r].addAll(instToAdd[r]);
                 } else {
                     newData[r] = representations[r];
@@ -397,8 +403,8 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             for (int n = 0; n < newData[0].numInstances(); n++) {
                 DenseInstance in = new DenseInstance(result.numAttributes());
                 in.setValue(result.numAttributes() - 1, newData[0].instance(n).classValue());
-                int p = 0;
 
+                int p = 0;
                 for (int r = 0; r < representations.length; r++) {
                     for (int a = 0; a < FeatureSet.numFeatures; a++) {
                         for (int j = 0; j < intervals.get(classifiersBuilt)[r][a].size(); j++) {

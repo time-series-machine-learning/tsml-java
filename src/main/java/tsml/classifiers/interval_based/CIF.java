@@ -525,7 +525,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             }
 
             //If bagging find instances with replacement
-
             int[] instInclusions = null;
             boolean[] inBag = null;
             if (bagging) {
@@ -628,10 +627,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                         }
                     }
                 }
-            }
-
-            if (bagging) {
-                result.randomize(rand);
             }
 
             //3. Create and build tree using all the features. Feature selection
@@ -1650,10 +1645,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                         }
                     }
                 }
-            }
-
-            if (bagging) {
-                result.randomize(rand);
             }
 
             //3. Create and build tree using all the features. Feature selection

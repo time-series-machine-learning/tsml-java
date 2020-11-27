@@ -310,54 +310,83 @@ public class Catch22 implements Transformer {
                 break;
         }
 
+        double feature;
         switch (summaryStatIndex) {
             case 0:
-                return histMode5DN(idxSeries, idxMin, idxMax);
+                feature = histMode5DN(idxSeries, idxMin, idxMax);
+                break;
             case 1:
-                return histMode10DN(idxSeries, idxMin, idxMax);
+                feature = histMode10DN(idxSeries, idxMin, idxMax);
+                break;
             case 2:
-                return binaryStatsMeanLongstretch1SB(idxSeries, idxMean);
+                feature = binaryStatsMeanLongstretch1SB(idxSeries, idxMean);
+                break;
             case 3:
-                return outlierIncludeP001mdrmdDN(idxOutlierSeries);
+                feature = outlierIncludeP001mdrmdDN(idxOutlierSeries);
+                break;
             case 4:
-                return outlierIncludeN001mdrmdDN(idxOutlierSeries);
+                feature = outlierIncludeN001mdrmdDN(idxOutlierSeries);
+                break;
             case 5:
-                return f1ecacCO(idxAC);
+                feature = f1ecacCO(idxAC);
+                break;
             case 6:
-                return firstMinacCO(idxAC);
+                feature = firstMinacCO(idxAC);
+                break;
             case 7:
-                return summariesWelchRectArea51SP(idxSeries, idxFFT);
+                feature = summariesWelchRectArea51SP(idxSeries, idxFFT);
+                break;
             case 8:
-                return summariesWelchRectCentroidSP(idxSeries, idxFFT);
+                feature = summariesWelchRectCentroidSP(idxSeries, idxFFT);
+                break;
             case 9:
-                return localSimpleMean3StderrFC(idxSeries);
+                feature = localSimpleMean3StderrFC(idxSeries);
+                break;
             case 10:
-                return trev1NumCO(idxSeries);
+                feature = trev1NumCO(idxSeries);
+                break;
             case 11:
-                return histogramAMIeven25CO(idxSeries, idxMin, idxMax);
+                feature = histogramAMIeven25CO(idxSeries, idxMin, idxMax);
+                break;
             case 12:
-                return autoMutualInfoStats40GaussianFmmiIN(idxAC);
+                feature = autoMutualInfoStats40GaussianFmmiIN(idxAC);
+                break;
             case 13:
-                return hrvClassicPnn40MD(idxSeries);
+                feature = hrvClassicPnn40MD(idxSeries);
+                break;
             case 14:
-                return binaryStatsDiffLongstretch0SB(idxSeries);
+                feature = binaryStatsDiffLongstretch0SB(idxSeries);
+                break;
             case 15:
-                return motifThreeQuantileHhSB(idxSeries);
+                feature = motifThreeQuantileHhSB(idxSeries);
+                break;
             case 16:
-                return localSimpleMean1TauresratFC(idxSeries, idxAC);
+                feature = localSimpleMean1TauresratFC(idxSeries, idxAC);
+                break;
             case 17:
-                return embed2DistTauDExpfitMeandiffCO(idxSeries, idxAC);
+                feature = embed2DistTauDExpfitMeandiffCO(idxSeries, idxAC);
+                break;
             case 18:
-                return fluctAnal2Dfa5012LogiPropR1SC(idxSeries);
+                feature = fluctAnal2Dfa5012LogiPropR1SC(idxSeries);
+                break;
             case 19:
-                return fluctAnal2Rsrangefit501LogiPropR1SC(idxSeries);
+                feature = fluctAnal2Rsrangefit501LogiPropR1SC(idxSeries);
+                break;
             case 20:
-                return transitionMatrix3acSumdiagcovSB(idxSeries, idxAC);
+                feature = transitionMatrix3acSumdiagcovSB(idxSeries, idxAC);
+                break;
             case 21:
-                return periodicityWangTh001PD(idxSeries);
+                feature = periodicityWangTh001PD(idxSeries);
+                break;
             default:
                 throw new Exception("Invalid Catch22 summary stat index.");
         }
+
+        if (Double.isNaN(feature) || Double.isInfinite(feature)){
+            feature = 0;
+        }
+
+        return feature;
     }
 
     public static String getSummaryStatNameByIndex(int summaryStatIndex) throws Exception {

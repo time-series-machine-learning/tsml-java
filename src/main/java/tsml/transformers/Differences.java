@@ -140,7 +140,8 @@ public class Differences implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            if (subtractFormerValue) calculateDifferences2(ts.toValueArray(), ts.getSeriesLength() - order);
+            if (subtractFormerValue) out[i++] = calculateDifferences2(ts.toValueArray(),
+					ts.getSeriesLength() - order);
         	else out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
         }
 
