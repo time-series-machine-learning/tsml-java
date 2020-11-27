@@ -11,7 +11,7 @@ import java.util.stream.DoubleStream;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries extends AbstractList<Double> {
+public class TimeSeries implements Iterable<Double> {
 
     public final static double DEFAULT_VALUE = Double.NaN;
     private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 
@@ -134,31 +134,6 @@ public class TimeSeries extends AbstractList<Double> {
         return sb.toString();
     }
 
-
-    /**
-     * Get the length of the series.
-     * @return
-     */
-    @Override public int size() {
-        return getSeriesLength();
-    }
-
-    @Override public void add(final int i, final Double aDouble) {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public Double set(final int i, final Double aDouble) {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public void clear() {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public Double remove(final int i) {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
     /** 
      * @return double[]
      */
@@ -211,7 +186,7 @@ public class TimeSeries extends AbstractList<Double> {
     }
 
     public List<Double> getVSliceComponentList(int index) {
-        return getVSlice(new int[] {index});
+        return getVSliceComplementList(new int[] {index});
     }
     
     /** 
@@ -287,4 +262,7 @@ public class TimeSeries extends AbstractList<Double> {
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }
 
+    @Override public Iterator<Double> iterator() {
+        return series.iterator();
+    }
 }
