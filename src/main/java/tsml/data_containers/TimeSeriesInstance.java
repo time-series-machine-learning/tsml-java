@@ -1,8 +1,12 @@
 package tsml.data_containers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Data structure able to store a time series instance. it can be standard
@@ -13,7 +17,7 @@ import java.util.stream.IntStream;
  * creation, mutability can break this
  */
 
-public class TimeSeriesInstance extends AbstractList<TimeSeries> {
+public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     /* Meta Information */
     private boolean isMultivariate;
@@ -67,6 +71,25 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
     private double targetValue = Double.NaN;
     private String[] classLabels = EMPTY_CLASS_LABELS;
     public static final String[] EMPTY_CLASS_LABELS = new String[0];
+    
+    public TimeSeriesInstance(double targetValue, List<? extends TimeSeries> series) {
+        this.seriesDimensions = new ArrayList<>(series);
+        this.targetValue = targetValue;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(int labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
+        this.seriesDimensions = new ArrayList<>(series);
+        this.classLabels = classLabels;
+        this.labelIndex = labelIndex;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(double labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
+        this(discretiseLabelIndex(labelIndex), classLabels, series);
+    }
 
     /**
      * Construct a labelled instance from raw data.
@@ -85,20 +108,12 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param classLabels
      */
     public TimeSeriesInstance(List<? extends List<Double>> series, int label, String[] classLabels) {
-        this(series);
+        this(series, Double.NaN);
 
         targetValue = labelIndex = label;
         this.classLabels = classLabels;
         
         dataChecks();
-    }
-
-    /**
-     * Construct an unlabelled / non-regressed instance from time series.
-     * @param series
-     */
-    public TimeSeriesInstance(List<? extends List<Double>> series) {
-        this(series, Double.NaN);
     }
     
     public TimeSeriesInstance(List<? extends List<Double>> series, double targetValue) {
@@ -107,26 +122,13 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for (List<Double> ts : series) {
-            // the list *could* be a TimeSeries already (as TimeSeries is a List<Double>). No need to copy if so.
-            if(ts instanceof TimeSeries) {
-                seriesDimensions.add((TimeSeries) ts);
-            } else {
-                seriesDimensions.add(new TimeSeries(ts));
-            }
+            seriesDimensions.add(new TimeSeries(ts));
         }
         
         this.targetValue = targetValue;
 
         dataChecks();
     }
-
-    /**
-     * Construct an unlabelled / non-regressed instance from raw data.
-     * @param data
-     */
-    public TimeSeriesInstance(double[][] data) {
-        this(data, Double.NaN);
-	}
 
     /**
      * Construct an regressed instance from raw data.
@@ -188,7 +190,7 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      * @param other
      */
     private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
-        this(data);
+        this(data, Double.NaN);
         labelIndex = other.labelIndex;
         targetValue = other.targetValue;
         classLabels = other.classLabels;
@@ -196,20 +198,16 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         dataChecks();
     }
     
-    public TimeSeriesInstance(TimeSeries[] data) {
-        this(Arrays.asList(data));
+    public TimeSeriesInstance(double targetValue, TimeSeries[] data) {
+        this(targetValue, Arrays.asList(data));
     }
     
-    public TimeSeriesInstance(TimeSeries[] data, double targetValue) {
-        this(Arrays.asList(data), targetValue);
+    public TimeSeriesInstance(int labelIndex, String[] classLabels, TimeSeries[] data) {
+        this(labelIndex, classLabels, Arrays.asList(data));
     }
     
-    public TimeSeriesInstance(TimeSeries[] data, int labelIndex, String[] classLabels) {
-        this(Arrays.asList(data), labelIndex, classLabels);
-    }
-    
-    public TimeSeriesInstance(TimeSeries[] data, double labelIndex, String[] classLabels) {
-        this(Arrays.asList(data), discretiseLabelIndex(labelIndex), classLabels);
+    public TimeSeriesInstance(double labelIndex, String[] classLabels, TimeSeries[] data) {
+        this(discretiseLabelIndex(labelIndex), classLabels, Arrays.asList(data));
     }
 
     private void dataChecks(){
@@ -489,32 +487,19 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         return this.seriesDimensions.get(i);
 	}
 	
-
     public double getTargetValue() {
         return targetValue;
     }
 
-    @Override public int size() {
-        return getNumDimensions();
-    }
-
-    @Override public void add(final int i, final TimeSeries doubles) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
-    }
-
-    @Override public TimeSeries set(final int i, final TimeSeries doubles) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
-    }
-
-    @Override public void clear() {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
-    }
-
-    @Override public TimeSeries remove(final int i) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
-    }
-
     public String[] getClassLabels() {
         return classLabels;
+    }
+
+    @Override public Iterator<TimeSeries> iterator() {
+        return seriesDimensions.iterator();
+    }
+    
+    public Stream<TimeSeries> stream() {
+        return seriesDimensions.stream();
     }
 }

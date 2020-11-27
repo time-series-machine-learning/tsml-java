@@ -3,6 +3,7 @@ package tsml.data_containers;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
 
@@ -10,7 +11,7 @@ import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
  */
-public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
+public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
     private String description;
@@ -143,20 +144,9 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     private int[] classCounts;
 
-    public TimeSeriesInstances(final String[] classLabels) {        this(new ArrayList<>(), classLabels);
-    }
-
-    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData) {
-        for (final List<? extends List<Double>> series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
-            if(series instanceof TimeSeriesInstance) {
-                seriesCollection.add((TimeSeriesInstance) series);
-            } else {
-                seriesCollection.add(new TimeSeriesInstance(series));
-            }
-        }
-
+    public TimeSeriesInstances(final String[] classLabels) {        
+        this.classLabels = classLabels;
+        
         dataChecks();
     }
 
@@ -165,12 +155,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         int index = 0;
         for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
-            if(series instanceof TimeSeriesInstance) {
-                seriesCollection.add((TimeSeriesInstance) series);
-            } else {
-                seriesCollection.add(new TimeSeriesInstance(series, targetValues.get(index++)));
-            }
+            seriesCollection.add(new TimeSeriesInstance(series, targetValues.get(index++)));
         }
 
         dataChecks();
@@ -187,27 +172,10 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         int index = 0;
         for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            // the series may be a TimeSeriesInstance already, as TimeSeriesInstance's are List<List<Double>> themselves
-            if(series instanceof TimeSeriesInstance) {
-                seriesCollection.add((TimeSeriesInstance) series);
-            } else {
-                seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
-            }
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
         }
 
         dataChecks();
-    }
-
-    /**
-     * Construct instances from raw data.
-     * @param rawData
-     */
-    public TimeSeriesInstances(final double[][][] rawData) {
-        int index = 0;
-        for (double[][] series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series));
-        }
     }
 
     /**
@@ -241,18 +209,14 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
         dataChecks();
     }
+	
+	public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
 
-    public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] labels) {
-        
-        classLabels = labels;
+        classLabels = data.isEmpty() ? EMPTY_CLASS_LABELS : data.get(0).getClassLabels();
 
         seriesCollection.addAll(data);
-        
-        dataChecks();
-	}
 
-    public TimeSeriesInstances(TimeSeriesInstance[] data, String[] labels) {
-        this(Arrays.asList(data), labels);
+        dataChecks();
     }
     
     public TimeSeriesInstances(TimeSeriesInstance[] data) {
@@ -566,19 +530,11 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         return out;
     }
 
-    @Override public TimeSeriesInstance set(final int i, final TimeSeriesInstance instance) {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    @Override public Iterator<TimeSeriesInstance> iterator() {
+        return seriesCollection.iterator();
     }
 
-    @Override public TimeSeriesInstance remove(final int i) {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
-    }
-
-    @Override public void clear() {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
-    }
-
-    @Override public int size() {
-        return numInstances();
+    public Stream<TimeSeriesInstance> stream() {
+        return seriesCollection.stream();
     }
 }
