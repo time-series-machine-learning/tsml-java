@@ -56,6 +56,11 @@ import static utilities.Utilities.argMax;
 public class SCIF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
         Checkpointable, Tuneable, MultiThreadable, Visualisable, Interpretable {
 
+
+    public boolean supervisedIntervals = true;
+    public boolean extraDims = true;
+    public boolean classBalancing = true;
+
     /**
      * Paper defining CIF.
      *
@@ -104,7 +109,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     private ArrayList<Instances> testHolders;
 
     /** Flags and data required if Bagging **/
-    private boolean bagging = true;
+    public boolean bagging = true;
     private int[] oobCounts;
     private double[][] trainDistributions;
 
@@ -353,9 +358,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
         c22 = new Catch22();
         c22.setOutlierNormalise(outlierNorm);
 
-        TimeSeriesInstances[] representations = new TimeSeriesInstances[3];
-        representations[0] = data;
-
         ArrayList<Integer>[] idxByClass = new ArrayList[data.numClasses()];
         for (int i = 0; i < idxByClass.length; i++){
             idxByClass[i] = new ArrayList<>();
@@ -368,7 +370,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
         int[] instToAdd = new int[numInstances];
         int[] classCounts = new int[data.numClasses()];
         for (int i = 0; i < idxByClass.length; i++) {
-            if (bagging && idxByClass[i].size() < average) {
+            if (classBalancing && idxByClass[i].size() < average) {
                 int n = idxByClass[i].size();
                 while (n < average) {
                     instToAdd[idxByClass[i].get(rand.nextInt(idxByClass[i].size()))]++;
@@ -381,14 +383,23 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             }
         }
 
-        if (bagging) newNumInstances = numInstances + sum(instToAdd);
+        if (classBalancing) newNumInstances = numInstances + sum(instToAdd);
         else newNumInstances = numInstances;
 
-        ps = new PowerSpectrum();
-        representations[1] = ps.transform(representations[0]);
-        di = new Differences();
-        di.setSubtractFormerValue(true);
-        representations[2] = di.transform(representations[0]);
+        TimeSeriesInstances[] representations;
+        if (extraDims) {
+            representations = new TimeSeriesInstances[3];
+            representations[0] = data;
+            ps = new PowerSpectrum();
+            representations[1] = ps.transform(representations[0]);
+            di = new Differences();
+            di.setSubtractFormerValue(true);
+            representations[2] = di.transform(representations[0]);
+        }
+        else{
+            representations = new TimeSeriesInstances[1];
+            representations[0] = data;
+        }
 
 //        h = new Hilbert();
 //        representations[3] = h.transform(representations[0]);
@@ -462,13 +473,13 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             int[] instInclusions = null;
             boolean[] inBag = null;
             int[] baggingClassCounts = classCounts;
-            if (bagging) {
+            if (bagging || classBalancing) {
                 inBag = new boolean[numInstances];
                 instInclusions = new int[numInstances];
 
                 for (int n = 0; n < numInstances; n++) {
                     instInclusions[rand.nextInt(numInstances)]++;
-                    instInclusions[n] += instToAdd[n];
+                    if (classBalancing) instInclusions[n] += instToAdd[n];
                 }
 
                 baggingClassCounts = new int[numClasses];
@@ -491,53 +502,56 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             }
 
             //1. Select random intervals for tree i
-            intervals.add(new ArrayList[3][]);
             int totalAtts = 0;
-            for (int r = 0; r < representations.length; r++) {
-                intervals.get(i)[r] = findCandidateDiscriminatoryIntervals(representations[r], instInclusions,
-                        baggingClassCounts, subsampleAtts.get(i));
+            if (supervisedIntervals) {
+                intervals.add(new ArrayList[3][]);
+                for (int r = 0; r < representations.length; r++) {
+                    intervals.get(i)[r] = findCandidateDiscriminatoryIntervals(representations[r], instInclusions,
+                            baggingClassCounts, subsampleAtts.get(i));
 
-                for (int a = 0; a < intervals.get(i)[r].length; a++) {
-                    totalAtts += intervals.get(i)[r][a].size();
+                    for (int a = 0; a < intervals.get(i)[r].length; a++) {
+                        totalAtts += intervals.get(i)[r][a].size();
+                    }
                 }
             }
+            else {
+                intervals.add(new ArrayList[representations.length][]);
+                int minIntervalLength = 3;
+                int numIntervals = 4;
+                for (int r = 0; r < representations.length; r++) {
+                    ArrayList<int[]> intervals2 = new ArrayList<>();  //Start and end
 
-//            intervals.add(new ArrayList[representations.length][]);
-//            int minIntervalLength = 3;
-//            int numIntervals = 4;
-//            for (int r = 0; r < representations.length; r++) {
-//                ArrayList<int[]> intervals2 = new ArrayList<>();  //Start and end
-//
-//                for (int j = 0; j < numIntervals; j++) {
-//                    int[] interval = new int[2];
-//                    if (rand.nextBoolean()) {
-//                        interval[0] = rand.nextInt(representations[r].getMaxLength() - minIntervalLength); //Start point
-//
-//                        int range = Math.min(representations[r].getMaxLength() - interval[0], representations[r].getMaxLength());
-//                        int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                        interval[1] = interval[0] + length;
-//                    } else {
-//                        interval[1] = rand.nextInt(representations[r].getMaxLength() - minIntervalLength)
-//                                + minIntervalLength; //Start point
-//
-//                        int range = Math.min(interval[1], representations[r].getMaxLength());
-//                        int length;
-//                        if (range - minIntervalLength == 0) length = minIntervalLength;
-//                        else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                        interval[0] = interval[1] - length;
-//                    }
-//                    intervals2.add(interval);
-//                }
-//
-//                ArrayList<int[]>[] intervals3 = new ArrayList[numAttributes];
-//                for (int n = 0; n < numAttributes; n++){
-//                    intervals3[n] = intervals2;
-//                }
-//                intervals.get(i)[r] = intervals3;
-//            }
-//            int totalAtts = numIntervals*representations.length*numAttributes;
+                    for (int j = 0; j < numIntervals; j++) {
+                        int[] interval = new int[2];
+                        if (rand.nextBoolean()) {
+                            interval[0] = rand.nextInt(representations[r].getMaxLength() - minIntervalLength); //Start point
 
-//            //find dimensions for each interval
+                            int range = Math.min(representations[r].getMaxLength() - interval[0], representations[r].getMaxLength());
+                            int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                            interval[1] = interval[0] + length;
+                        } else {
+                            interval[1] = rand.nextInt(representations[r].getMaxLength() - minIntervalLength)
+                                    + minIntervalLength; //Start point
+
+                            int range = Math.min(interval[1], representations[r].getMaxLength());
+                            int length;
+                            if (range - minIntervalLength == 0) length = minIntervalLength;
+                            else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                            interval[0] = interval[1] - length;
+                        }
+                        intervals2.add(interval);
+                    }
+
+                    ArrayList<int[]>[] intervals3 = new ArrayList[numAttributes];
+                    for (int n = 0; n < numAttributes; n++) {
+                        intervals3[n] = intervals2;
+                    }
+                    intervals.get(i)[r] = intervals3;
+                }
+                totalAtts = numIntervals * representations.length * numAttributes;
+            }
+
+            //find dimensions for each interval
 //            intervalDimensions.add(new ArrayList<>());
 //            for (int n = 0; n < numIntervals; n++) {
 //                intervalDimensions.get(i).add(rand.nextInt(numDimensions));
@@ -568,7 +582,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             //2. Generate and store attributes
             for (int k = 0; k < newNumInstances; k++) {
                 //For each instance
-                if (bagging) {
+                if (bagging || classBalancing) {
                     boolean sameInst = false;
 
                     while (true) {
@@ -790,9 +804,10 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
         int e2 = start + halfSeriesLength + 1;
         int instIdx = 0;
         int lastIdx = -1;
-        int[] instInclusionsCopy = Arrays.copyOf(instInclusions, instInclusions.length);
+        int[] instInclusionsCopy = null;
+        if (bagging || classBalancing) instInclusionsCopy = Arrays.copyOf(instInclusions, instInclusions.length);
         for (int i = 0; i < newNumInstances; i++){
-            if (bagging) {
+            if (bagging || classBalancing) {
                 boolean sameInst = false;
 
                 while (true) {
@@ -976,10 +991,17 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             interpTreePreds = new ArrayList<>();
         }
 
-        double[][] representations = new double[3][]; //todo mv
-        representations[0] = ins.getHSliceArray(0);
-        representations[1] = ps.transform(ins).getHSliceArray(0);
-        representations[2] = di.transform(ins).getHSliceArray(0);
+        double[][] representations;
+        if (extraDims){
+            representations = new double[3][]; //todo mv
+            representations[0] = ins.getHSliceArray(0);
+            representations[1] = ps.transform(ins).getHSliceArray(0);
+            representations[2] = di.transform(ins).getHSliceArray(0);
+        }
+        else{
+            representations = new double[1][]; //todo mv
+            representations[0] = ins.getHSliceArray(0);
+        }
 
         if (multiThread){
 //            ArrayList<Future<MultiThreadPredictionHolder>> futures = new ArrayList<>(trees.size());
@@ -1996,6 +2018,10 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
         Instances test= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         SCIF c = new SCIF();
         c.setSeed(0);
+        c.bagging = true;
+        c.classBalancing = false;
+        c.extraDims = false;
+        c.supervisedIntervals = false;
         //c.estimateOwnPerformance = true;
         //c.estimator = EstimatorMethod.OOB;
         double a;
