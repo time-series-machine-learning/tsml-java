@@ -64,7 +64,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         setLogLevel(getLogLevel());
     }
 
-    @Override public final void buildClassifier(final TimeSeriesInstances trainData) throws Exception {
+    @Override public void buildClassifier(final TimeSeriesInstances trainData) throws Exception {
         if(rebuild) {
             // reset train results
             trainResults = new ClassifierResults();
@@ -78,7 +78,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public void buildClassifier(Instances trainData) throws Exception {
+    public final void buildClassifier(Instances trainData) throws Exception {
         buildClassifier(Converter.fromArff(trainData));
     }
 

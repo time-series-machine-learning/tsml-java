@@ -15,6 +15,9 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -230,7 +233,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override
-    public void buildClassifier(Instances trainData) throws Exception {
+    public void buildClassifier(TimeSeriesInstances trainData) throws Exception {
         // timings:
             // train time tracks the time spent processing the algorithm. This should not be used for contracting.
             // run time tracks the entire time spent processing, whether this is work towards the algorithm or otherwise (e.g. saving checkpoints to disk). This should be used for contracting.
@@ -283,8 +286,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 longestTrainStageTimeNanos = 0;
                 // init the running train estimate variables if using OOB
                 if(estimateOwnPerformance && estimator.equals(EstimatorMethod.OOB)) {
-                    trainEstimatePredictionTimes = new long[trainData.size()];
-                    trainEstimateDistributions = new double[trainData.size()][trainData.numClasses()];
+                    trainEstimatePredictionTimes = new long[trainData.numInstances()];
+                    trainEstimateDistributions = new double[trainData.numInstances()][trainData.numClasses()];
                 }
             }
             // add the time to load the checkpoint onto the checkpoint timer (irrelevant of whether rebuilding or not)
@@ -401,7 +404,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             evaluationTimer.start();
             getLog().info("finalising train estimate");
             // add the final predictions into the results
-            for(int i = 0; i < trainData.size(); i++) {
+            for(int i = 0; i < trainData.numInstances(); i++) {
                 final long timeStamp = System.nanoTime();
                 double[] distribution = trainEstimateDistributions[i];
                 // i.e. [71, 29] --> [0.71, 0.29]
@@ -410,7 +413,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 distribution = normalise(copy(distribution), true);
                 // get the prediction, rand tie breaking if necessary
                 final double prediction = argMax(distribution, rand);
-                final double classValue = trainData.get(i).classValue();
+                final double classValue = trainData.get(i).getLabelIndex();
                 trainResults.addPrediction(classValue, distribution, prediction, trainEstimatePredictionTimes[i] + (System.nanoTime() - timeStamp), null);
             }
             evaluationTimer.stop();
@@ -432,7 +435,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override
-    public double[] distributionForInstance(final Instance instance) throws Exception {
+    public double[] distributionForInstance(final TimeSeriesInstance instance) throws Exception {
         // start timer
         testTimer.resetAndStart();
         // track how long every stage (i.e. every tree prediction) takes, recording the longest
@@ -462,7 +465,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         return finalDistribution;
     }
     
-    private double[] vote(int constituentIndex, Instance instance) throws Exception {
+    private double[] vote(int constituentIndex, TimeSeriesInstance instance) throws Exception {
         ProximityTree tree = constituents.get(constituentIndex).getProximityTree();
         double[] distribution = tree.distributionForInstance(instance);
         return vote(constituentIndex, distribution);

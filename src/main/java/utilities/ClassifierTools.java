@@ -545,6 +545,13 @@ public class ClassifierTools {
             addPrediction(classifier, test, results, random);
         }
     }
+    
+    public static void addPredictions(TSClassifier classifier, TimeSeriesInstances testData, ClassifierResults results, Random random)
+            throws Exception {
+        for(TimeSeriesInstance test : testData) {
+            addPrediction(classifier, test, results, random);
+        }
+    }
 
     /**
      * Add a prediction of a single test case to a results obj.
@@ -568,6 +575,18 @@ public class ClassifierTools {
         test.setClassValue(classValue);
     }
 
+    public static void addPrediction(TSClassifier classifier, TimeSeriesInstance test, ClassifierResults results, Random random)
+            throws Exception {
+        final double classValue = test.getLabelIndex();
+        long timestamp = System.nanoTime();
+        final double[] distribution = classifier.distributionForInstance(new TimeSeriesInstance(test.getVSliceList(0, test.getNumDimensions()), -1, test.getClassLabels()));
+        long testTime = System.nanoTime() - timestamp;
+        if(classifier instanceof TestTimeable) {
+            testTime = ((TestTimeable) classifier).getTestTime();
+        }
+        final double prediction = Utilities.argMax(distribution, random);
+        results.addPrediction(classValue, distribution, prediction, testTime, null);
+    }
 
     public static class ResultsStats{
         public double accuracy;

@@ -29,16 +29,18 @@ import tsml.classifiers.distance_based.utils.stats.scoring.*;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 import utilities.Utilities;
 import weka.core.DistanceFunction;
-import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Proximity tree
@@ -70,7 +72,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             @Override
             public <B extends ProximityTree> B configure(B proximityTree) {
                 proximityTree.setClassifierName(name());
-                proximityTree.setDistanceFunctionSpaceBuilders(Lists.newArrayList(
+                proximityTree.setDistanceMeasureSpaceBuilders(Lists.newArrayList(
                         new EDistanceConfigs.EDSpaceBuilder(),
                         new DTWDistanceConfigs.FullWindowDTWSpaceBuilder(),
                         new DTWDistanceConfigs.RestrictedContinuousDTWSpaceBuilder(),
@@ -123,7 +125,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private static final long serialVersionUID = 1;
     // store the train data
-    private Instances trainData;
+    private TimeSeriesInstances trainData;
     // train timer
     private final StopWatch runTimer = new StopWatch();
     // test / predict timer
@@ -139,7 +141,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the queue of nodes left to build
     private Deque<TreeNode<Split>> nodeBuildQueue;
     // the list of distance function space builders to produce distance functions in splits
-    private List<ParamSpaceBuilder> distanceFunctionSpaceBuilders;
+    private List<ParamSpaceBuilder> distanceMeasureSpaceBuilders;
     // the number of splits to consider for this split
     private int r;
     // a method of scoring the split of data into partitions
@@ -170,12 +172,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.breadthFirst = breadthFirst;
     }
 
-    public List<ParamSpaceBuilder> getDistanceFunctionSpaceBuilders() {
-        return distanceFunctionSpaceBuilders;
+    public List<ParamSpaceBuilder> getDistanceMeasureSpaceBuilders() {
+        return distanceMeasureSpaceBuilders;
     }
 
-    public void setDistanceFunctionSpaceBuilders(final List<ParamSpaceBuilder> distanceFunctionSpaceBuilders) {
-        this.distanceFunctionSpaceBuilders = distanceFunctionSpaceBuilders;
+    public void setDistanceMeasureSpaceBuilders(final List<ParamSpaceBuilder> distanceMeasureSpaceBuilders) {
+        this.distanceMeasureSpaceBuilders = distanceMeasureSpaceBuilders;
     }
 
     @Override public long getTrainTime() {
@@ -211,7 +213,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override
-    public void buildClassifier(Instances trainData) throws Exception {
+    public void buildClassifier(TimeSeriesInstances trainData) throws Exception {
         // timings:
             // train time tracks the time spent processing the algorithm. This should not be used for contracting.
             // run time tracks the entire time spent processing, whether this is work towards the algorithm or otherwise (e.g. saving checkpoints to disk). This should be used for contracting.
@@ -262,7 +264,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 nodeBuildQueue = new LinkedList<>();
                 longestTimePerInstanceDuringNodeBuild = 0;
                 // setup the root node
-                final TreeNode<Split> root = new BaseTreeNode<>(new Split(trainData, ArrayUtilities.sequence(trainData.size())), null);
+                final TreeNode<Split> root = new BaseTreeNode<>(new Split(trainData, ArrayUtilities.sequence(trainData.numInstances())), null);
                 // add the root node to the tree
                 tree.setRoot(root);
                 // add the root node to the build queue
@@ -281,7 +283,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // there is enough time for another split to be built
                 insideTrainTimeLimit( runTimer.elapsedTime() +
                                      longestTimePerInstanceDuringNodeBuild *
-                                     nodeBuildQueue.peekFirst().getValue().getData().size())
+                                     nodeBuildQueue.peekFirst().getValue().getData().numInstances())
         ) {
             // time how long it takes to build the node
             trainStageTimer.resetAndStart();
@@ -357,7 +359,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 node = nodes.get(nodes.size() - i - 1);
             }
             // check the data at the node is not pure
-            if(!Utilities.isHomogeneous(node.getValue().getData())) {
+            final List<Integer> uniqueClassLabelIndices =
+                    node.getValue().getData().stream().map(TimeSeriesInstance::getLabelIndex).distinct()
+                            .collect(Collectors.toList());
+            if(uniqueClassLabelIndices.size() > 1) {
                 // if not hit the stopping condition then add node to the build queue
                 if(breadthFirst) {
                     nodeBuildQueue.addLast(node);
@@ -370,14 +375,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private long findNodeBuildTime(TreeNode<Split> node, long time) {
         // assume that the time taken to build a node is proportional to the amount of instances at the node
-        final Instances data = node.getValue().getData();
-        final long timePerInstance = time / data.size();
+        final TimeSeriesInstances data = node.getValue().getData();
+        final long timePerInstance = time / data.numInstances();
         return Math.max(longestTimePerInstanceDuringNodeBuild, timePerInstance + 1); // add 1 to account for precision
         // error in div operation
     }
 
     @Override
-    public double[] distributionForInstance(final Instance instance) throws Exception {
+    public double[] distributionForInstance(final TimeSeriesInstance instance) throws Exception {
         // enable resource monitors
         testTimer.resetAndStart();
         long longestPredictTime = 0;
@@ -466,26 +471,26 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private static class Partition implements Serializable {
 
-        private Partition(final Instances dataFormat) {
+        private Partition(final String[] classLabels) {
             dataIndices = new ArrayList<>();
-            this.data = new Instances(dataFormat, 0);
-            exemplars = new Instances(dataFormat, 0);
+            this.data = new TimeSeriesInstances(classLabels);
+            exemplars = new TimeSeriesInstances(classLabels);
             exemplarIndices = new ArrayList<>();
         }
 
         // data in this partition / indices of that data in the train data
         private final List<Integer> dataIndices;
-        private final Instances data;
+        private final TimeSeriesInstances data;
         // exemplar instances representing this partition / indices of those exemplars in the train data
-        private final Instances exemplars;
+        private final TimeSeriesInstances exemplars;
         private final List<Integer> exemplarIndices;
         
-        public void addData(Instance instance, int i) {
+        public void addData(TimeSeriesInstance instance, int i) {
             data.add(Objects.requireNonNull(instance));
             dataIndices.add(i);
         }
         
-        public void addExemplar(Instance instance, int i) {
+        public void addExemplar(TimeSeriesInstance instance, int i) {
             exemplars.add(Objects.requireNonNull(instance));
             exemplarIndices.add(i);
         }
@@ -496,21 +501,21 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * @param instance the instance
          * @return the distribution
          */
-        public double[] distributionForInstance(final Instance instance) {
+        public double[] distributionForInstance(final TimeSeriesInstance instance) {
             // this is a simple majority vote over all the exemplars in the exemplars group at the given partition
             // get the corresponding closest exemplars
             final double[] distribution = new double[instance.numClasses()];
             // for each exemplar
-            for(Instance exemplar : exemplars) {
+            for(TimeSeriesInstance exemplar : exemplars) {
                 // vote for the exemplar's class
-                double classValue = exemplar.classValue();
-                distribution[(int) classValue]++;
+                int classValue = exemplar.getLabelIndex();
+                distribution[classValue]++;
             }
             ArrayUtilities.normalise(distribution);
             return distribution;
         }
 
-        public List<Instance> getExemplars() {
+        public TimeSeriesInstances getExemplars() {
             return exemplars;
         }
 
@@ -518,7 +523,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return dataIndices;
         }
         
-        public Instances getData() {
+        public TimeSeriesInstances getData() {
             return data;
         }
         
@@ -538,16 +543,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
         public Split() {}
 
-        public Split(Instances data, List<Integer> dataIndices) {
+        public Split(TimeSeriesInstances data, List<Integer> dataIndices) {
             setData(data, dataIndices);
         }
         
         // the distance function for comparing instances to exemplars
-        private DistanceFunction distanceFunction;
+        private DistanceMeasure distanceMeasure;
         // the score of this split
         private double score = -1;
         // the data at this split (i.e. before being partitioned)
-        private Instances data;
+        private TimeSeriesInstances data;
         private List<Integer> dataIndices;
         // the partitions of the data, each containing data for the partition and exemplars representing the partition
         private List<Partition> partitions;
@@ -558,13 +563,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
         private void setupDistanceFunction() {
             // pick a random space
-            ParamSpaceBuilder distanceFunctionSpaceBuilder = RandomUtils.choice(distanceFunctionSpaceBuilders, rand);
+            ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, rand);
             // built that space
-            ParamSpace distanceFunctionSpace = distanceFunctionSpaceBuilder.build(data);
+            ParamSpace distanceMeasureSpace = distanceMeasureSpaceBuilder.build(data);
             // randomly pick the distance function / parameters from that space
-            final ParamSet paramSet = RandomSearch.choice(distanceFunctionSpace, getRandom());
+            final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
-            distanceFunction = Objects.requireNonNull((DistanceFunction) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
+            distanceMeasure = Objects.requireNonNull((DistanceMeasure) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
         }
 
         /**
@@ -572,27 +577,31 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          */
         private void setupExemplarsAndPartitions() {
             // change the view of the data into per class
-            final Map<Double, List<Integer>> instancesByClass = Utilities.instancesByClass(this.data);
+            final List<List<Integer>> instIndicesByClass = data.indicesByClass();
+            if(instIndicesByClass.size() != data.numClasses()) {
+                // may happen if any insts exist that are unclassified
+                throw new IllegalStateException("incorrect number of subsets whilst dividing data by class");
+            }
             // pick exemplars per class
-            partitions = new ArrayList<>(instancesByClass.size());
+            partitions = new ArrayList<>(instIndicesByClass.size());
             // generate a partition per class
-            for(Double classLabel : instancesByClass.keySet()) {
+            for(final List<Integer> sameClassInstIndices : instIndicesByClass) {
                 // get the indices of all instances with the specified class
-                final List<Integer> sameClassInstanceIndices = instancesByClass.get(classLabel);
                 // random pick exemplars from this 
-                final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstanceIndices, rand, 1);
+                final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstIndices, rand, 1);
                 // generate the partition with empty data and the chosen exemplar instances
-                final Partition partition = new Partition(data);
+                final Partition partition = new Partition(data.getClassLabels());
                 for(Integer exemplarIndexInSplitData : exemplarIndices) {
-                    // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance in the data but the 5th instance may have index 33 in the train data)
-                    final Instance exemplar = data.get(exemplarIndexInSplitData);
+                    // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance 
+                    // in the data but the 5th instance may have index 33 in the train data)
+                    final TimeSeriesInstance exemplar = data.get(exemplarIndexInSplitData);
                     final Integer exemplarIndexInTrainData = dataIndices.get(exemplarIndexInSplitData);
                     partition.addExemplar(exemplar, exemplarIndexInTrainData);
                 }
                 partitions.add(partition);
             }
             // sanity checks
-            Assert.assertEquals(instancesByClass.size(), partitions.size());
+            Assert.assertEquals(instIndicesByClass.size(), partitions.size());
         }
 
         /**
@@ -604,11 +613,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // pick the exemplars
             setupExemplarsAndPartitions();
             // setup the distance function
-            distanceFunction.setInstances(data);
+            distanceMeasure.setInstances(data);
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
-            for(int i = 0; i < data.size(); i++) {
-                final Instance instance = data.get(i);
+            for(int i = 0; i < data.numInstances(); i++) {
+                final TimeSeriesInstance instance = data.get(i);
                 final Partition closestPartition = findPartitionFor(instance);
                 // add the instance to the partition
                 closestPartition.addData(data.get(i), dataIndices.get(i));
@@ -617,8 +626,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             score = partitionScorer.findScore(data, getPartitionedData());
         }
 
-        public DistanceFunction getDistanceFunction() {
-            return distanceFunction;
+        public DistanceFunction getDistanceMeasure() {
+            return distanceMeasure;
         }
 
         /**
@@ -627,7 +636,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * @param instance
          * @return
          */
-        public int findPartitionIndexFor(final Instance instance) {
+        public int findPartitionIndexFor(final TimeSeriesInstance instance) {
             // a map to maintain the closest partition indices
             PrunedMultimap<Double, Integer> distanceToPartitionMap = PrunedMultimap.asc();
             // let the map keep all ties and randomly choose at the end
@@ -635,14 +644,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // loop through exemplars
             for(int i = 0; i < partitions.size(); i++) {
                 final Partition partition = partitions.get(i);
-                for(Instance exemplar : partition.getExemplars()) {
+                for(TimeSeriesInstance exemplar : partition.getExemplars()) {
                     // for each exemplar
                     // check the instance isn't an exemplar
                     if(instance == exemplar) {
                         return i;
                     }
                     // find the distance
-                    final double distance = distanceFunction.distance(instance, exemplar);
+                    final double distance = distanceMeasure.distance(instance, exemplar);
                     // add the distance and partition to the map
                     distanceToPartitionMap.put(distance, i);
                 }
@@ -655,15 +664,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return RandomUtils.choice(partitionIndices, rand);
         }
 
-        public Partition findPartitionFor(Instance instance) {
+        public Partition findPartitionFor(TimeSeriesInstance instance) {
             return partitions.get(findPartitionIndexFor(instance));
         }
 
-        public Instances getData() {
-            return Utilities.apply(dataIndices, trainData::get, new Instances(trainData, 0));
+        public TimeSeriesInstances getData() {
+            return data;
         }
 
-        public void setData(Instances data, List<Integer> dataIndices) {
+        public void setData(TimeSeriesInstances data, List<Integer> dataIndices) {
             this.dataIndices = dataIndices;
             this.data = Objects.requireNonNull(data);
         }
@@ -681,8 +690,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 sb.append(", score=").append(score);
                 sb.append(", partitions=").append(partitions);
             }
-            if(distanceFunction != null) {
-                sb.append(", df=").append(distanceFunction);
+            if(distanceMeasure != null) {
+                sb.append(", df=").append(distanceMeasure);
             }
             sb.append("}");
                     
@@ -693,11 +702,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return partitions;
         }
 
-        public List<Instances> getPartitionedData() {
+        public List<TimeSeriesInstances> getPartitionedData() {
             if(partitions == null) {
                 return null;
             }
-            List<Instances> partitionDatas = new ArrayList<>(partitions.size());
+            List<TimeSeriesInstances> partitionDatas = new ArrayList<>(partitions.size());
             for(Partition partition : partitions) {
                 partitionDatas.add(partition.getData());
             };

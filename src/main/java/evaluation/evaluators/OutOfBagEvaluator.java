@@ -2,9 +2,12 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import org.junit.Assert;
+import tsml.classifiers.TSClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -12,15 +15,16 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class OutOfBagEvaluator extends Evaluator {
+public class OutOfBagEvaluator extends Evaluator implements Loggable {
 
     private static final Logger DEFAULT_LOGGER = LogUtils.buildLogger(OutOfBagEvaluator.class);
-    private transient Logger logger = DEFAULT_LOGGER;
-    private Instances inBagTrainData;
+    private transient Logger log = DEFAULT_LOGGER;
+    private TimeSeriesInstances inBagTrainData;
     private List<Integer> inBagTrainDataIndices;
-    private Instances outOfBagTestData;
+    private TimeSeriesInstances outOfBagTestData;
     private List<Integer> outOfBagTestDataIndices;
     private boolean cloneClassifier = false;
 
@@ -28,38 +32,38 @@ public class OutOfBagEvaluator extends Evaluator {
         super(-1, false, false);
     }
 
-    @Override public ClassifierResults evaluate(Classifier classifier, Instances data) throws Exception {
+    @Override public ClassifierResults evaluate(TSClassifier classifier, TimeSeriesInstances data) throws Exception {
         final Random random = new Random(seed);
         // build a new oob train / test data
-        inBagTrainDataIndices = new ArrayList<>(data.size());
-        final Set<Integer> oobTestSetIndices = new HashSet<>(data.size());
-        oobTestSetIndices.addAll(ArrayUtilities.sequence(data.size()));
+        inBagTrainDataIndices = new ArrayList<>(data.numInstances());
+        final Set<Integer> oobTestSetIndices = new HashSet<>(data.numInstances());
+        oobTestSetIndices.addAll(ArrayUtilities.sequence(data.numInstances()));
         // pick n instances from train data, where n is the size of train data
-        for(int i = 0; i < data.size(); i++) {
-            int index = random.nextInt(data.size());
-            Instance instance = data.get(index);
+        for(int i = 0; i < data.numInstances(); i++) {
+            int index = random.nextInt(data.numInstances());
+            TimeSeriesInstance instance = data.get(index);
             inBagTrainDataIndices.add(index);
             // remove the train instance from the test bag (if not already)
             oobTestSetIndices.remove(index);
         }
         // populate in-bag train data
-        inBagTrainData = new Instances(data, inBagTrainDataIndices.size());
+        inBagTrainData = new TimeSeriesInstances(data.getClassLabels());
         for(Integer i : inBagTrainDataIndices) {
             // quick check that oob test / train are independent
             Assert.assertFalse(oobTestSetIndices.contains(i));
-            Instance instance = data.get(i);
+            TimeSeriesInstance instance = data.get(i);
             inBagTrainData.add(instance);
         }
         // populate out-of-bag test data
-        outOfBagTestData = new Instances(data, oobTestSetIndices.size());
+        outOfBagTestData = new TimeSeriesInstances(data.getClassLabels());
         outOfBagTestDataIndices = new ArrayList<>(oobTestSetIndices);
         for(Integer i : outOfBagTestDataIndices) {
-            Instance instance = data.get(i);
+            TimeSeriesInstance instance = data.get(i);
             outOfBagTestData.add(instance);
         }
         // build the tree on the oob train
         if(cloneClassifier) {
-            classifier = (Classifier) CopierUtils.deepCopy(classifier);
+            classifier = CopierUtils.deepCopy(classifier);
         }
         classifier.buildClassifier(inBagTrainData);
         // test tree on the oob test
@@ -68,11 +72,11 @@ public class OutOfBagEvaluator extends Evaluator {
         return results;
     }
 
-    public Instances getInBagTrainData() {
+    public TimeSeriesInstances getInBagTrainData() {
         return inBagTrainData;
     }
 
-    public Instances getOutOfBagTestData() {
+    public TimeSeriesInstances getOutOfBagTestData() {
         return outOfBagTestData;
     }
 
@@ -90,5 +94,13 @@ public class OutOfBagEvaluator extends Evaluator {
 
     public List<Integer> getOutOfBagTestDataIndices() {
         return outOfBagTestDataIndices;
+    }
+
+    @Override public Level getLogLevel() {
+        return log.getLevel();
+    }
+
+    @Override public void setLogLevel(final Level level) {
+        log = LogUtils.updateLogLevel(this, log, level);
     }
 }

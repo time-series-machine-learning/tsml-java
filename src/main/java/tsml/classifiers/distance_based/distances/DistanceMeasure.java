@@ -2,6 +2,9 @@ package tsml.classifiers.distance_based.distances;
 
 import java.io.Serializable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -25,6 +28,14 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHa
     double distance(final Instance a, final Instance b, final PerformanceStats stats)
         throws Exception;
 
+    default double distance(final TimeSeriesInstance a, final TimeSeriesInstance b) {
+        return distance(a, b, Double.POSITIVE_INFINITY);
+    }
+    
+    default double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
+        return distance(Converter.toArff(a), Converter.toArff(b), limit);
+    }
+    
     String getName();
 
     void setName(String name);
@@ -32,6 +43,9 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHa
     // the fit function
     void setInstances(Instances data);
 
+    default void setInstances(TimeSeriesInstances data) {
+        setInstances(Converter.toArff(data));
+    }
 
     static String getName(DistanceFunction df) {
         if(df instanceof DistanceMeasure) {

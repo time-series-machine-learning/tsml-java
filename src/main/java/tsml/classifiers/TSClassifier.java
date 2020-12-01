@@ -42,4 +42,12 @@ public interface TSClassifier{
             out[i++] = getClassifier().classifyInstance(inst);
         return out;
     }
+    
+    static TSClassifier wrapClassifier(Classifier classifier) {
+        return () -> classifier;
+    }
+    
+    static TSClassifier wrapClassifier(TSClassifier classifier) {
+        return classifier;
+    }
 }
