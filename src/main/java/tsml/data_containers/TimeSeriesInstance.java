@@ -164,9 +164,15 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
     
     public static int discretiseLabelIndex(double labelIndex) {
-        int i = (int) labelIndex;
-        if(labelIndex != i) {
-            throw new IllegalArgumentException("cannot discretise " + labelIndex + " to an int: " + i);
+        final int i;
+        if(Double.isNaN(labelIndex)) {
+            i = -1;
+        } else {
+            i = (int) labelIndex;
+            // check the given double is an integer, i.e. 3.0 == 3. Protects against abuse through implicit label indexing integer casting, i.e. 3.3 --> 3. The user should do this themselves, otherwise it's safest to assume a non-integer value (e.g. 7.4) is an error and raise exception.
+            if(labelIndex != i) {
+                throw new IllegalArgumentException("cannot discretise " + labelIndex + " to an int: " + i);
+            }
         }
         return i;
     }
