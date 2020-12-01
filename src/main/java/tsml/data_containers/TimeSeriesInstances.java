@@ -211,12 +211,20 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 	
 	public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
+        this(data, data.isEmpty() ? EMPTY_CLASS_LABELS : data.get(0).getClassLabels());
+    }
+    
+    public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] classLabels) {
 
-        classLabels = data.isEmpty() ? EMPTY_CLASS_LABELS : data.get(0).getClassLabels();
+        this.classLabels = classLabels;
 
         seriesCollection.addAll(data);
 
         dataChecks();
+    }
+    
+    public TimeSeriesInstances(TimeSeriesInstance[] data, String[] classLabels) {
+        this(Arrays.asList(data), classLabels);
     }
     
     public TimeSeriesInstances(TimeSeriesInstance[] data) {

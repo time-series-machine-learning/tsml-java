@@ -198,6 +198,14 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         dataChecks();
     }
     
+    public TimeSeriesInstance(double[][] data) {
+        this(data, Double.NaN);
+    }
+    
+    public TimeSeriesInstance(List<? extends List<Double>> data) {
+        this(data, Double.NaN);
+    }
+    
     private TimeSeriesInstance() {}
     
     private TimeSeriesInstance copy() {
