@@ -575,4 +575,25 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         tsi.dataChecks();
         return tsi;
     }
+
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeriesInstances)) {
+            return false;
+        }
+        final TimeSeriesInstances that = (TimeSeriesInstances) o;
+        return Objects.equals(seriesCollection, that.seriesCollection) && Arrays.equals(classLabels, that.classLabels);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(seriesCollection, classLabels);
+    }
+
+    public boolean isClassificationProblem() {
+        // if a set of class labels are set then it's a classification problem
+        return classLabels.length >= 0;
+    }
+
+    public boolean isRegressionProblem() {
+        return !isClassificationProblem();
+    }
 }

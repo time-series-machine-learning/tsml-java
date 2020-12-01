@@ -49,7 +49,6 @@ public class TimeSeriesInstanceTest {
     @Test
     public void testCtorArray() {
         instB = new TimeSeriesInstance(arrayB);
-        assertEquals(listB, instB);
         assertArrayEquals(EMPTY_CLASS_LABELS, instB.getClassLabels());
         assertEquals(-1, instB.getLabelIndex());
         assertEquals(null, instB.getClassLabel());
@@ -65,7 +64,6 @@ public class TimeSeriesInstanceTest {
         assertEquals(classLabelB, instB.getClassLabel());
         assertEquals(classLabelBIndex, instB.getTargetValue(), 0d);
         assert2DArrayEquals(arrayB, instB.toValueArray());
-        assertEquals(listB, instB);
     }
     
     @Test
@@ -111,7 +109,6 @@ public class TimeSeriesInstanceTest {
         assertEquals(-1, instB.getLabelIndex());
         assertEquals(null, instB.getClassLabel());
         assertEquals(Double.NaN, instB.getTargetValue(), 0d);
-        assertEquals(listB, instB);
         assert2DArrayEquals(arrayB, instB.toValueArray());
     }
     
@@ -122,7 +119,6 @@ public class TimeSeriesInstanceTest {
         assertEquals(classLabelBIndex, instB.getLabelIndex());
         assertEquals(classLabelB, instB.getClassLabel());
         assertEquals(classLabelBIndex, instB.getTargetValue(), 0d);
-        assertEquals(listB, instB);
         assert2DArrayEquals(arrayB, instB.toValueArray());
     }
 

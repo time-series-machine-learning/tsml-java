@@ -1,9 +1,6 @@
 package tsml.data_containers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -558,5 +555,39 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         tsi.dataChecks();
         return tsi;
     }
+
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeriesInstance)) {
+            return false;
+        }
+        final TimeSeriesInstance that = (TimeSeriesInstance) o;
+        return labelIndex == that.labelIndex &&
+                       Double.compare(that.targetValue, targetValue) == 0 &&
+                       seriesDimensions.equals(that.seriesDimensions) &&
+                       Arrays.equals(classLabels, that.classLabels);
+    }
+
+    @Override public int hashCode() {
+        
+        return Objects.hash(seriesDimensions, labelIndex, classLabels);
+    }
     
+    public boolean isLabelled() {
+        // is labelled if label index points to a class label
+        return labelIndex >= 0;
+    }
+    
+    public boolean isRegressed() {
+        // is regressed if the target value is set
+        return targetValue != Double.NaN;
+    }
+    
+    public boolean isClassificationProblem() {
+        // if a set of class labels are set then it's a classification problem
+        return classLabels.length >= 0;
+    }
+    
+    public boolean isRegressionProblem() {
+        return !isClassificationProblem();
+    }
 }

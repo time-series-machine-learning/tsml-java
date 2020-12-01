@@ -286,4 +286,16 @@ public class TimeSeries implements Iterable<Double> {
         ts.series = getVSliceList(startInclusive, endExclusive);
         return ts;
     }
+
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeries)) {
+            return false;
+        }
+        final TimeSeries that = (TimeSeries) o;
+        return Objects.equals(series, that.series);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(series);
+    }
 }
