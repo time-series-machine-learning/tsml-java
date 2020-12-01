@@ -50,7 +50,6 @@ public class TimeSeriesTest {
 
     @Test
     public void testSize() {
-        assertEquals(array.length, ts.size());
         assertEquals(array.length, ts.getSeriesLength());
     }
 
@@ -64,7 +63,7 @@ public class TimeSeriesTest {
 
     @Test
     public void testGet() {
-        for(int i = 0; i < ts.size(); i++) {
+        for(int i = 0; i < ts.getSeriesLength(); i++) {
             assertEquals(new Double(array[i]), ts.get(i));
             assertEquals(array[i], ts.getValue(i), 0d);
             if(Double.isNaN(array[i])) {

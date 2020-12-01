@@ -304,14 +304,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     /** 
      * @param newSeries
      */
-    public void add(int i, final TimeSeriesInstance newSeries) {
+    public void add(final TimeSeriesInstance newSeries) {
         // check that the class labels match
         if(!Arrays.equals(classLabels, newSeries.getClassLabels())) {
             throw new IllegalArgumentException("class labels " + Arrays.toString(classLabels) + " to not match class labels in instance to be added " +
                                                        Arrays.toString(newSeries.getClassLabels()));
         }
 
-        seriesCollection.add(i, newSeries);
+        seriesCollection.add(newSeries);
 
         //guard for if we're going to force update classCounts after.
         if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)

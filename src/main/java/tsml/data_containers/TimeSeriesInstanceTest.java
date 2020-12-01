@@ -94,9 +94,7 @@ public class TimeSeriesInstanceTest {
     
     @Test
     public void testNumDimensions() {
-        assertEquals(arrayA.length, instA.size());
         assertEquals(arrayA.length, instA.getNumDimensions());
-        assertEquals(arrayB.length, instB.size());
         assertEquals(arrayB.length, instB.getNumDimensions());
     }
 
