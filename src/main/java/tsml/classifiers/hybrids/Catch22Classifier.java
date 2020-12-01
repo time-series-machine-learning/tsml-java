@@ -19,10 +19,11 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.transformers.Catch22;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.J48;
+import weka.classifiers.trees.RandomForest;
 import weka.core.*;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
@@ -46,13 +47,14 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
     //specifically normalise for the outlier stats, which can take a long time with large positive/negative values
     private boolean outlierNorm = false;
 
-    private Classifier cls = new J48();
+    private Classifier cls = new RandomForest();
     private Catch22 c22;
     private Instances header;
     private int numColumns;
 
     public Catch22Classifier(){
         super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        ((RandomForest)cls).setNumTrees(500);
     }
 
     @Override
@@ -129,6 +131,8 @@ public class Catch22Classifier extends EnhancedAbstractClassifier {
         }
 
         cls.buildClassifier(transformedData);
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
     }
 

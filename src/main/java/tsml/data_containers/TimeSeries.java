@@ -1,11 +1,6 @@
 package tsml.data_containers;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
@@ -17,34 +12,30 @@ import java.util.stream.Stream;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries{
+public class TimeSeries implements Iterable<Double> {
 
-    public static double defaultValue = Double.NaN;
-
-    /*
-    private double[] series;
-    private double[] indices;
-    */
+    public final static double DEFAULT_VALUE = Double.NaN;
+    private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 
 
     private List<Double> series;
-    private List<Double> indices;
-    MetaData md;
+    private List<Double> indices = EMPTY_INDICES;
 
-
+    private TimeSeries() {
+        // just for internal use
+    }
+    
     public TimeSeries(double[] d){
         series = new ArrayList<Double>();
         for(double dd : d)
             series.add(dd);
     }
     
+    public TimeSeries(List<Double> d) {
+        series = new ArrayList<>(d);
+    }
     
-    /** 
-     * @param ind
-     */
-    public void setIndices(double[] ind){
-        indices = new ArrayList<Double>();
-        for(double i : ind)
-            indices.add(i);
+    public TimeSeries(TimeSeries other) {
+        this(other.series);
     }
 
     
@@ -72,27 +63,38 @@ public class TimeSeries{
      * @param i
      * @return double
      */
-    public double get(int i){
+    public double getValue(int i){
         return series.get(i);
     }
 
+    /**
+     * Gets a value at a specific index in the time series. This method conducts unboxing so use getValue if you care about performance.
+     * @param i
+     * @return
+     */
+    public Double get(int i) {
+        return series.get(i);
+    }
     
     /** 
      * @param i
      * @return double
      */
     public double getOrDefault(int i){
-        return hasValidValueAt(i) ? get(i) : defaultValue;
+        return hasValidValueAt(i) ? getValue(i) : DEFAULT_VALUE;
     }
 
     
     /** 
      * @return DoubleStream
      */
-    public DoubleStream stream(){
+    public DoubleStream streamValues(){
         return series.stream().mapToDouble(Double::doubleValue);
     }
-
+    
+    public Stream<Double> stream() {
+        return series.stream();
+    }
     
     /** 
      * @param start
@@ -124,13 +126,6 @@ public class TimeSeries{
      */
     public List<Double> getIndices(){ return indices;}
 
-    private class MetaData{
-        String name;
-        Date startDate;
-        double increment;  //Base unit to be ....... 1 day?
-
-    }
-
     
     /** 
      * @return String
@@ -146,22 +141,43 @@ public class TimeSeries{
         return sb.toString();
     }
 
-    
     /** 
      * @return double[]
      */
-
-	public double[] toArray() {
+	public double[] toValueArray() {
 		return getSeries().stream().mapToDouble(Double::doubleValue).toArray();
     }
 
+    public TimeSeries getVSlice(int[] indices) {
+        return new TimeSeries(getVSliceArray(indices));
+    }
+    
+    public TimeSeries getVSlice(int index) {
+	    return getVSlice(new int[] {index});
+    }
+
+    public TimeSeries getVSlice(List<Integer> indices) {
+	    return getVSlice(indices.stream().mapToInt(Integer::intValue).toArray());
+    }
+
+    public TimeSeries getVSliceComplement(int index) {
+	    return getVSliceComplement(new int[] {index});
+    }
+    
+    public TimeSeries getVSliceComplement(int[] indices) {
+        return new TimeSeries(getVSliceComplementArray(indices));
+    }
+
+    public TimeSeries getVSliceComplement(List<Integer> indices) {
+        return getVSliceComplement(indices.stream().mapToInt(Integer::intValue).toArray());
+    }
     
     /** 
      * this is useful if you want to delete a column/truncate the array, but without modifying the original dataset.
      * @param indexesToRemove
      * @return List<Double>
      */
-public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
+    public List<Double> getVSliceComplementList(List<Integer> indexesToRemove){
         //if the current index isn't in the removal list, then copy across.
         List<Double> out = new ArrayList<>(this.getSeriesLength() - indexesToRemove.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
@@ -171,14 +187,21 @@ public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
 
         return out;
     }
+    
+    public List<Double> getVSliceComplementList(int[] indexesToRemove) {
+        return getVSliceComplementList(Arrays.stream(indexesToRemove).boxed().collect(Collectors.toList()));
+    }
 
+    public List<Double> getVSliceComponentList(int index) {
+        return getVSliceComplementList(new int[] {index});
+    }
     
     /** 
      * @param indexesToKeep
      * @return double[]
      */
-    public double[] toListWithoutIndexes(int[] indexesToKeep){
-        return toArrayWithoutIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public double[] getVSliceComplementArray(int[] indexesToKeep){
+        return getVSliceComplementArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
     
@@ -186,17 +209,20 @@ public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
      * @param indexesToRemove
      * @return double[]
      */
-    public double[] toArrayWithoutIndexes(List<Integer> indexesToRemove){
-        return toListWithoutIndexes(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
+    public double[] getVSliceComplementArray(List<Integer> indexesToRemove){
+        return getVSliceComplementList(indexesToRemove).stream().mapToDouble(Double::doubleValue).toArray();
     }
     
+    public double[] getVSliceComplementArray(int index) {
+        return getVSliceComplementArray(new int[] {index});
+    }
     
     /** 
      * this is useful if you want to slice a column/truncate the array, but without modifying the original dataset.
      * @param indexesToKeep
      * @return List<Double>
      */
-    public List<Double> toListWithIndexes(List<Integer> indexesToKeep){
+    public List<Double> getVSliceList(List<Integer> indexesToKeep){
         //if the current index isn't in the removal list, then copy across.
         List<Double> out = new ArrayList<>(indexesToKeep.size());
         for(int i=0; i<this.getSeriesLength(); ++i){
@@ -206,35 +232,35 @@ public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
 
         return out;
     }
+    
+    public List<Double> getVSliceList(int[] indexesToKeep) {
+        return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
+    
+    public List<Double> getVSliceList(int index) {
+        return getVSliceList(new int[] {index});
+    }
+
+    public double[] getVSliceArray(int index) {
+        return getVSliceArray(new int[] {index});
+    }
+    
+    /** 
+     * @param indexesToKeep
+     * @return double[]
+     */
+    public double[] getVSliceArray(int[] indexesToKeep){
+        return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    }
 
     
     /** 
      * @param indexesToKeep
      * @return double[]
      */
-    public double[] toArrayWithIndexes(int[] indexesToKeep){
-        return toArrayWithIndexes(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public double[] getVSliceArray(List<Integer> indexesToKeep){
+        return getVSliceList(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
     }
-
-    
-    /** 
-     * @param indexesToKeep
-     * @return double[]
-     */
-    public double[] toArrayWithIndexes(List<Integer> indexesToKeep){
-        return toListWithIndexes(indexesToKeep).stream().mapToDouble(Double::doubleValue).toArray();
-    }
-
-    
-    /** 
-     * @return int
-     */
-    @Override
-    public int hashCode(){
-        return this.series.hashCode();
-    }
-
-
     
     /** 
      * @param args
@@ -243,5 +269,33 @@ public List<Double> toListWithoutIndexes(List<Integer> indexesToRemove){
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }
 
+    @Override public Iterator<Double> iterator() {
+        return series.iterator();
+    }
+    
+    public List<Double> getVSliceList(int startInclusive, int endExclusive) {
+        return series.subList(startInclusive, endExclusive);
+    }
+    
+    public double[] getVSliceArray(int startInclusive, int endExclusive) {
+        return getVSliceList(startInclusive, endExclusive).stream().mapToDouble(d -> d).toArray();
+    }
+    
+    public TimeSeries getVSlice(int startInclusive, int endExclusive) {
+        final TimeSeries ts = new TimeSeries();
+        ts.series = getVSliceList(startInclusive, endExclusive);
+        return ts;
+    }
 
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeries)) {
+            return false;
+        }
+        final TimeSeries that = (TimeSeries) o;
+        return Objects.equals(series, that.series);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(series);
+    }
 }

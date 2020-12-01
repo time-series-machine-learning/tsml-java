@@ -102,12 +102,12 @@ public class Hilbert implements Transformer {
 				double fk = 0;
 				for (int i = 0; i < n; i++) {
 					if (i != k)
-						fk += ts.get(i) / (k - i);
+						fk += ts.getValue(i) / (k - i);
 				}
 				out[index][k] = fk;
 			}
 		}
-		return new TimeSeriesInstance(out, inst.getLabelIndex());
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 }

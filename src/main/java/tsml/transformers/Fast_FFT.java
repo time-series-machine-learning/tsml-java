@@ -10,10 +10,8 @@ import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import weka.core.*;
-import weka.filters.SimpleBatchFilter;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
-import static utilities.InstanceTools.fromWekaInstancesArray;
 
 public class Fast_FFT implements Transformer {
     final String className = "sandbox.transforms.FFT";
@@ -127,9 +125,9 @@ public class Fast_FFT implements Transformer {
         int i = 0;
         for (TimeSeries ts : inst) {
             //TODO: make this NaN Safe. Mean is NaN safe but toArray isnt.
-            out[i++] = calculate_FFT(ts.toArray(), TimeSeriesSummaryStatistics.mean(ts));
+            out[i++] = calculate_FFT(ts.toValueArray(), TimeSeriesSummaryStatistics.mean(ts));
         }
-        return new TimeSeriesInstance(out, inst.getLabelIndex()); 
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels()); 
     }
 
     private double[] calculate_FFT(double[] data, double mean) {

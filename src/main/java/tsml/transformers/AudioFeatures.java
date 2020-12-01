@@ -12,7 +12,6 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 
 import java.util.ArrayList;
 
@@ -45,11 +44,11 @@ public class AudioFeatures implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = audioTransform(ts.toArray());
+            out[i++] = audioTransform(ts.toValueArray());
         }
 
         // create a new output instance with the ACF data.
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     private double[] audioTransform(double[] series, double classVal) {

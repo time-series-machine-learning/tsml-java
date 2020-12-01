@@ -14,7 +14,6 @@ import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka.classifiers.meta.RotationForest;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -193,7 +192,7 @@ public class Resizer implements TrainableTransformer {
         int i=0;
         for(TimeSeries ts : inst){
             int diff = resizeLength - ts.getSeriesLength(); 
-            double[] data = ts.toArray();
+            double[] data = ts.toValueArray();
 
             // just need to copy data across, if we're the same or longer. truncate the
             // first values.
@@ -213,7 +212,7 @@ public class Resizer implements TrainableTransformer {
             i++;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override

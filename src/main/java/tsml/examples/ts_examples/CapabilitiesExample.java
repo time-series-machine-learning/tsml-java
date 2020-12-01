@@ -17,8 +17,7 @@ public class CapabilitiesExample {
                         // time-series zero.
                         { 4.0, 3.0, 2.0, 1.0 }, } };
 
-        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 });
-        data1.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 }, new String[] { "A", "B" });
 
 
         TSCapabilities capabilities1 = new TSCapabilities();
@@ -41,8 +40,7 @@ public class CapabilitiesExample {
                         // time-series zero.
                         { 4.0, 3.0, 2.0, 1.0 }, } };
 
-        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 });
-        data1.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 }, new String[] { "A", "B" });
 
 
         TSCapabilities capabilities1 = new TSCapabilities();
@@ -71,8 +69,7 @@ public class CapabilitiesExample {
                 } 
             };
 
-        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 });
-        data1.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 }, new String[] { "A", "B" });
 
 
         TSCapabilities capabilities1 = new TSCapabilities();
@@ -94,8 +91,7 @@ public class CapabilitiesExample {
                     // time-series zero.
                     { 4.0, 3.0, 2.0, 1.0 }, } };
 
-        TimeSeriesInstances data2 = new TimeSeriesInstances(in2, new int[] { 0, 1 });
-        data2.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data2 = new TimeSeriesInstances(in2, new int[] { 0, 1 }, new String[] { "A", "B" });
 
         canHandle = capabilities1.test(data2);
         System.out.println(canHandle);
@@ -117,8 +113,7 @@ public class CapabilitiesExample {
                 } 
             };
 
-        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 });
-        data1.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[] { 0, 1 }, new String[] { "A", "B" });
 
 
         TSCapabilities capabilities1 = new TSCapabilities();

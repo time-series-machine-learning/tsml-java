@@ -70,11 +70,11 @@ public class Clipping implements Transformer {
 		int i = 0;
 		for(TimeSeries ts : inst){
 			double mean = TimeSeriesStatsTools.mean(ts);
-			out[i++] = ts.stream().map(e -> e < mean ? 0.0 : 1.0).toArray();
+			out[i++] = ts.streamValues().map(e -> e < mean ? 0.0 : 1.0).toArray();
 		}
 		
 		//create a new output instance with the ACF data.
-		return new TimeSeriesInstance(out, inst.getLabelIndex());
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	@Override

@@ -20,10 +20,8 @@ import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
-import weka.filters.*;
 
 import weka.core.Attribute;
-import weka.core.Capabilities;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -144,10 +142,10 @@ public class PACF implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            out[i++] = convertInstance(ts.toArray());
+            out[i++] = convertInstance(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override

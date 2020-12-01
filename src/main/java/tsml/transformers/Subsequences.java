@@ -87,14 +87,14 @@ public class Subsequences implements Transformer {
         int i =0;
         for(TimeSeries ts : inst){
             // Extract the subsequences.
-            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toArray());
+            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toValueArray());
             
             //stack subsequences if we're multivariate.
             for(double[] d : subsequences)
                 out[i++] = d;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     /**
