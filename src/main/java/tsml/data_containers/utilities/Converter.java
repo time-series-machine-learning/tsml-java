@@ -86,42 +86,6 @@ public class Converter {
         final TimeSeriesInstances tsInsts = fromArff(data);
         return tsInsts.get(0);
     }
-    
-//    public static TimeSeriesInstance fromArff(Instance instance) {
-//        final ArrayList<Attribute> atts = new ArrayList<>();
-//        if(isMultivariate(instance.dataset())) {
-//            for(int i = 0; i < instance.numAttributes(); i++) {
-//                final Attribute att = instance.attribute(i);
-//                final Attribute attCopy;
-//                if(att.isRelationValued()) {
-//                    final Instances header = att.relation();
-//                    attCopy = new Attribute(att.name(), new Instances(header, 0));
-//                } else if(att.isNumeric()) {
-//                    attCopy = new Attribute(att.name());
-//                } else if(att.isNominal()) {
-//                    List<String> values = new ArrayList<>();
-//                    for(int j = 0; j < att.numValues(); j++) {
-//                        final String value = att.value(j);
-//                        values.add(value);
-//                    }
-//                    attCopy = new Attribute(att.name(), values);
-//                } else {
-//                    // no case for handling date / string atts, out of scope atm
-//                    throw new IllegalArgumentException("cannot handle attribute " + att);
-//                }
-//                atts.add(attCopy);
-//            }
-//        } else {
-//            for(int i = 0; i < instance.numAttributes(); i++) {
-//                atts.add(instance.attribute(i));
-//            }
-//        }
-//        final Instances instances = new Instances(instance.dataset().relationName(), atts, 1);
-//        instances.add(instance);
-//        final TimeSeriesInstances tsInsts = fromArff(instances);
-//        final TimeSeriesInstance tsInst = tsInsts.get(0);
-//        return tsInst;
-//    }
 
     public static Instances toArff(TimeSeriesInstances  data){
         double[][][] values = data.toValueArray();
