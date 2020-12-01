@@ -525,36 +525,36 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return seriesDimensions.stream();
     }
     
-    public TimeSeriesInstance getHSlice(int start, int length) {
+    public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
         final TimeSeriesInstance tsi = copy();
         // trim current data to a subset
-        tsi.seriesDimensions = seriesDimensions.subList(start, length);
+        tsi.seriesDimensions = seriesDimensions.subList(startInclusive, endExclusive);
         tsi.dataChecks();
         return tsi;
     }
     
-    public List<List<Double>> getHSliceList(int start, int length) {
-        return seriesDimensions.subList(start, length).stream().map(TimeSeries::getSeries).collect(Collectors.toList());
+    public List<List<Double>> getHSliceList(int startInclusive, int endExclusive) {
+        return seriesDimensions.subList(startInclusive, endExclusive).stream().map(TimeSeries::getSeries).collect(Collectors.toList());
     }
     
-    public double[][] getHSliceArray(int start, int length) {
-        return getHSliceList(start, length).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    public double[][] getHSliceArray(int startInclusive, int endExclusive) {
+        return getHSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
     }
     
-    public List<List<Double>> getVSliceList(int start, int length) {
-        return seriesDimensions.stream().map(dim -> dim.getVSliceList(start, length)).collect(Collectors.toList());
+    public List<List<Double>> getVSliceList(int startInclusive, int endExclusive) {
+        return seriesDimensions.stream().map(dim -> dim.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
     
-    public double[][] getVSliceArray(int start, int length) {
-        return getVSliceList(start, length).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    public double[][] getVSliceArray(int startInclusive, int endExclusive) {
+        return getVSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
     }
     
-    public TimeSeriesInstance getVSlice(int start, int length) {
+    public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
         final TimeSeriesInstance tsi = copy();
         // trim current data to a subset
-        tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(start, length)).collect(Collectors.toList());
+        tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
         tsi.dataChecks();
         return tsi;
     }

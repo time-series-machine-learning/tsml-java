@@ -546,32 +546,32 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return seriesCollection.stream();
     }
     
-    public List<List<List<Double>>> getVSliceList(int start, int length) {
-        return seriesCollection.stream().map(inst -> inst.getVSliceList(start, length)).collect(Collectors.toList());
+    public List<List<List<Double>>> getVSliceList(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
 
-    public TimeSeriesInstances getVSlice(int start, int length) {
+    public TimeSeriesInstances getVSlice(int startInclusive, int endExclusive) {
         final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
-        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getVSlice(start, length)).collect(Collectors.toList());
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
         tsi.dataChecks();
         return tsi;
     }
     
-    public double[][][] getVSliceArray(int start, int length) {
-        return seriesCollection.stream().map(inst -> inst.getVSliceArray(start, length)).toArray(double[][][]::new);
+    public double[][][] getVSliceArray(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
     
-    public List<List<List<Double>>> getHSliceList(int start, int length) {
-        return seriesCollection.stream().map(inst -> inst.getHSliceList(start, length)).collect(Collectors.toList());
+    public List<List<List<Double>>> getHSliceList(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
     
-    public double[][][] getHSliceArray(int start, int length) {
-        return seriesCollection.stream().map(inst -> inst.getHSliceArray(start, length)).toArray(double[][][]::new);
+    public double[][][] getHSliceArray(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
     
-    public TimeSeriesInstances getHSlice(int start, int length) {
+    public TimeSeriesInstances getHSlice(int startInclusive, int endExclusive) {
         final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
-        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(start, length)).collect(Collectors.toList());
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(startInclusive, endExclusive)).collect(Collectors.toList());
         tsi.dataChecks();
         return tsi;
     }

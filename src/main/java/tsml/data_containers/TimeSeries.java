@@ -273,17 +273,17 @@ public class TimeSeries implements Iterable<Double> {
         return series.iterator();
     }
     
-    public List<Double> getVSliceList(int start, int length) {
-        return series.subList(start, length);
+    public List<Double> getVSliceList(int startInclusive, int endExclusive) {
+        return series.subList(startInclusive, endExclusive);
     }
     
-    public double[] getVSliceArray(int start, int length) {
-        return getVSliceList(start, length).stream().mapToDouble(d -> d).toArray();
+    public double[] getVSliceArray(int startInclusive, int endExclusive) {
+        return getVSliceList(startInclusive, endExclusive).stream().mapToDouble(d -> d).toArray();
     }
     
-    public TimeSeries getVSlice(int start, int length) {
+    public TimeSeries getVSlice(int startInclusive, int endExclusive) {
         final TimeSeries ts = new TimeSeries();
-        ts.series = getVSliceList(start, length);
+        ts.series = getVSliceList(startInclusive, endExclusive);
         return ts;
     }
 }
