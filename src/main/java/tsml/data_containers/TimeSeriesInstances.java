@@ -537,4 +537,34 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public Stream<TimeSeriesInstance> stream() {
         return seriesCollection.stream();
     }
+    
+    public List<List<List<Double>>> getVSliceList(int start, int length) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceList(start, length)).collect(Collectors.toList());
+    }
+
+    public TimeSeriesInstances getVSlice(int start, int length) {
+        final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getVSlice(start, length)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
+    }
+    
+    public double[][][] getVSliceArray(int start, int length) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceArray(start, length)).toArray(double[][][]::new);
+    }
+    
+    public List<List<List<Double>>> getHSliceList(int start, int length) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceList(start, length)).collect(Collectors.toList());
+    }
+    
+    public double[][][] getHSliceArray(int start, int length) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceArray(start, length)).toArray(double[][][]::new);
+    }
+    
+    public TimeSeriesInstances getHSlice(int start, int length) {
+        final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(start, length)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
+    }
 }

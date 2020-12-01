@@ -198,6 +198,20 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         dataChecks();
     }
     
+    private TimeSeriesInstance() {}
+    
+    private TimeSeriesInstance copy() {
+        final TimeSeriesInstance inst = new TimeSeriesInstance();
+        inst.classLabels = classLabels;
+        inst.labelIndex = labelIndex;
+        inst.seriesDimensions = seriesDimensions;
+        inst.targetValue = targetValue;
+        
+        inst.dataChecks();
+        
+        return inst;
+    }
+    
     public TimeSeriesInstance(double targetValue, TimeSeries[] data) {
         this(targetValue, Arrays.asList(data));
     }
@@ -502,4 +516,39 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public Stream<TimeSeries> stream() {
         return seriesDimensions.stream();
     }
+    
+    public TimeSeriesInstance getHSlice(int start, int length) {
+        // copy construct a new inst
+        final TimeSeriesInstance tsi = copy();
+        // trim current data to a subset
+        tsi.seriesDimensions = seriesDimensions.subList(start, length);
+        tsi.dataChecks();
+        return tsi;
+    }
+    
+    public List<List<Double>> getHSliceList(int start, int length) {
+        return seriesDimensions.subList(start, length).stream().map(TimeSeries::getSeries).collect(Collectors.toList());
+    }
+    
+    public double[][] getHSliceArray(int start, int length) {
+        return getHSliceList(start, length).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    }
+    
+    public List<List<Double>> getVSliceList(int start, int length) {
+        return seriesDimensions.stream().map(dim -> dim.getVSliceList(start, length)).collect(Collectors.toList());
+    }
+    
+    public double[][] getVSliceArray(int start, int length) {
+        return getVSliceList(start, length).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    }
+    
+    public TimeSeriesInstance getVSlice(int start, int length) {
+        // copy construct a new inst
+        final TimeSeriesInstance tsi = copy();
+        // trim current data to a subset
+        tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(start, length)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
+    }
+    
 }

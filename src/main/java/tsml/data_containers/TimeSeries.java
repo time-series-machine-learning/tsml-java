@@ -20,7 +20,10 @@ public class TimeSeries implements Iterable<Double> {
     private List<Double> series;
     private List<Double> indices = EMPTY_INDICES;
 
-
+    private TimeSeries() {
+        // just for internal use
+    }
+    
     public TimeSeries(double[] d){
         series = new ArrayList<Double>();
         for(double dd : d)
@@ -268,5 +271,19 @@ public class TimeSeries implements Iterable<Double> {
 
     @Override public Iterator<Double> iterator() {
         return series.iterator();
+    }
+    
+    public List<Double> getVSliceList(int start, int length) {
+        return series.subList(start, length);
+    }
+    
+    public double[] getVSliceArray(int start, int length) {
+        return getVSliceList(start, length).stream().mapToDouble(d -> d).toArray();
+    }
+    
+    public TimeSeries getVSlice(int start, int length) {
+        final TimeSeries ts = new TimeSeries();
+        ts.series = getVSliceList(start, length);
+        return ts;
     }
 }
