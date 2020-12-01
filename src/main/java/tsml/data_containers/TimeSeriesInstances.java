@@ -2,7 +2,6 @@ package tsml.data_containers;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
@@ -595,5 +594,38 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
+    }
+
+    public List<TimeSeriesInstances> byClass() {
+        return indicesByClass().stream()
+                       // map each sub list to a new batch of instances
+                       .map(indices -> indices.stream().map(this::get).collect(Collectors.toList()))
+                       // map that list of instances to a TSInsts obj
+                       .map(insts -> new TimeSeriesInstances(insts, getClassLabels()))
+                       .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get a list of instances indices separated by class
+     * @return
+     */
+    public List<List<Integer>> indicesByClass() {
+        List<List<Integer>> bins = new ArrayList<>(numClasses() + 1); // +1 for insts with class label index <0 (unclassified)
+        final String[] labels = getClassLabels();
+        for(int i = 0; i < numClasses() + 1; i++) {
+            bins.add(new ArrayList<>());
+        }
+        int i = 0;
+        for(TimeSeriesInstance inst : this) {
+            final int labelIndex = inst.getLabelIndex();
+            final List<Integer> bin;
+            if(labelIndex < 0) {
+                bin = bins.get(bins.size() - 1); // the last bin is for class label index <0
+            } else {
+                bin = bins.get(inst.getLabelIndex());
+            }
+            bin.add(i++);
+        }
+        return bins;
     }
 }
