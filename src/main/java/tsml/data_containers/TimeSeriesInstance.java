@@ -596,4 +596,8 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
     }
+    
+    public int numClasses() {
+        return classLabels.length;
+    }
 }
