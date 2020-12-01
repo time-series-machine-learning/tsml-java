@@ -14,6 +14,9 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -61,8 +64,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         setLogLevel(getLogLevel());
     }
 
-    @Override
-    public void buildClassifier(Instances trainData) throws Exception {
+    @Override public final void buildClassifier(final TimeSeriesInstances trainData) throws Exception {
         if(rebuild) {
             // reset train results
             trainResults = new ClassifierResults();
@@ -73,6 +75,11 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(Objects.requireNonNull(trainData));
         }
+    }
+
+    @Override
+    public void buildClassifier(Instances trainData) throws Exception {
+        buildClassifier(Converter.fromArff(trainData));
     }
 
     @Override public Level getLogLevel() {
@@ -113,6 +120,9 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override
-    public abstract double[] distributionForInstance(final Instance instance) throws Exception;
+    public final double[] distributionForInstance(final Instance instance) throws Exception {
+        return distributionForInstance(Converter.fromArff(instance));
+    }
 
+    @Override public abstract double[] distributionForInstance(final TimeSeriesInstance inst) throws Exception;
 }
