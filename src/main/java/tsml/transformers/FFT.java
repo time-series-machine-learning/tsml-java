@@ -311,7 +311,7 @@ public class FFT implements Transformer {
 			}
 		}
 
-		return new TimeSeriesInstance(out, inst.getLabelIndex());
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	/**

@@ -31,8 +31,7 @@ public class SplittingExamples {
             }
         };
 
-        final TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[]{0, 1});
-        data1.setClassLabels(new String[]{"A", "B"});
+        final TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[]{0, 1}, new String[]{"A", "B"});
 
         final List<TimeSeriesInstances> individual_dims = Splitter.splitTimeSeriesInstances(data1);
 
@@ -66,8 +65,7 @@ public class SplittingExamples {
             }
         };
 
-        final TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[]{0, 1});
-        data1.setClassLabels(new String[]{"A", "B"});
+        final TimeSeriesInstances data1 = new TimeSeriesInstances(in, new int[]{0, 1}, new String[] {"A", "B"});
 
         final List<TimeSeriesInstances> individual_dims = Splitter.splitTimeSeriesInstances(data1, new int[][]{{0},{1,2}});
 

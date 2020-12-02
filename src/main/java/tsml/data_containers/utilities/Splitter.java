@@ -36,7 +36,7 @@ public class Splitter{
         List<TimeSeriesInstance> output = new ArrayList<>(slicingIndexes.length);
 
         for(int[] i : slicingIndexes){
-            TimeSeriesInstance temp = new TimeSeriesInstance(inst.getHSliceArray(i), inst.getLabelIndex());
+            TimeSeriesInstance temp = inst.getHSlice(i);
             output.add(temp);
         }
 
@@ -54,8 +54,7 @@ public class Splitter{
         List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumChannels());
 
         for(int[] i : slicingIndexes){
-            TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(i), inst.getClassIndexes());
-            temp.setClassLabels(inst.getClassLabels());
+            TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(i), inst.getClassIndexes(), inst.getClassLabels());
             output.add(temp);
         }
 
@@ -85,12 +84,12 @@ public class Splitter{
             for(double[] o : out)
                 ts_data.add(new TimeSeries(o));
         }   
-        return new TimeSeriesInstance(inst_dims.get(0).getLabelIndex(), ts_data);
+        return new TimeSeriesInstance(inst_dims.get(0).getLabelIndex(), inst_dims.get(0).getClassLabels(), ts_data);
     }
 
      //could merge dimension slices like. {0,1}, {2}, {3,4}
     public static TimeSeriesInstances mergeTimeSeriesInstances(List<TimeSeriesInstances> inst_dims){
-        TimeSeriesInstances out = new TimeSeriesInstances();
+        TimeSeriesInstances out = new TimeSeriesInstances(inst_dims.get(0).getClassLabels());
         for ( int i=0; i<inst_dims.get(0).numInstances(); i++ ){
             List<TimeSeriesInstance> single_instance = new ArrayList<>();
             //each TSInstances is a HSlice of the data.
@@ -101,7 +100,6 @@ public class Splitter{
             out.add(mergeTimeSeriesInstance(single_instance));
         }
 
-        out.setClassLabels(inst_dims.get(0).getClassLabels());
         return out;
     }
 }

@@ -112,7 +112,7 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
             output[0] = transformRocket(inst.toValueArray());
         }
 
-        return new TimeSeriesInstance(output, inst.getLabelIndex());
+        return new TimeSeriesInstance(output, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override

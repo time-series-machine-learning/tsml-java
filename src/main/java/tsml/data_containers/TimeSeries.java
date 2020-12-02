@@ -3,6 +3,7 @@ package tsml.data_containers;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * Class to store a time series. The series can have different indices (time stamps) and store missing values (NaN).
@@ -11,14 +12,18 @@ import java.util.stream.DoubleStream;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries extends AbstractList<Double> {
+public class TimeSeries implements Iterable<Double> {
 
     public final static double DEFAULT_VALUE = Double.NaN;
+    private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 
 
     private List<Double> series;
-    private List<Double> indices;
+    private List<Double> indices = EMPTY_INDICES;
 
-
+    private TimeSeries() {
+        // just for internal use
+    }
+    
     public TimeSeries(double[] d){
         series = new ArrayList<Double>();
         for(double dd : d)
@@ -31,15 +36,6 @@ public class TimeSeries extends AbstractList<Double> {
     
     public TimeSeries(TimeSeries other) {
         this(other.series);
-    }    
-    
-    /** 
-     * @param ind
-     */
-    public void setIndices(double[] ind){
-        indices = new ArrayList<Double>();
-        for(double i : ind)
-            indices.add(i);
     }
 
     
@@ -95,7 +91,10 @@ public class TimeSeries extends AbstractList<Double> {
     public DoubleStream streamValues(){
         return series.stream().mapToDouble(Double::doubleValue);
     }
-
+    
+    public Stream<Double> stream() {
+        return series.stream();
+    }
     
     /** 
      * @param start
@@ -140,31 +139,6 @@ public class TimeSeries extends AbstractList<Double> {
         }
 
         return sb.toString();
-    }
-
-
-    /**
-     * Get the length of the series.
-     * @return
-     */
-    @Override public int size() {
-        return getSeriesLength();
-    }
-
-    @Override public void add(final int i, final Double aDouble) {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public Double set(final int i, final Double aDouble) {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public void clear() {
-        throw new UnsupportedOperationException("time series are not mutable.");
-    }
-
-    @Override public Double remove(final int i) {
-        throw new UnsupportedOperationException("time series are not mutable.");
     }
 
     /** 
@@ -219,7 +193,7 @@ public class TimeSeries extends AbstractList<Double> {
     }
 
     public List<Double> getVSliceComponentList(int index) {
-        return getVSlice(new int[] {index});
+        return getVSliceComplementList(new int[] {index});
     }
     
     /** 
@@ -295,4 +269,33 @@ public class TimeSeries extends AbstractList<Double> {
         TimeSeries ts = new TimeSeries(new double[]{1,2,3,4}) ;
     }
 
+    @Override public Iterator<Double> iterator() {
+        return series.iterator();
+    }
+    
+    public List<Double> getVSliceList(int startInclusive, int endExclusive) {
+        return series.subList(startInclusive, endExclusive);
+    }
+    
+    public double[] getVSliceArray(int startInclusive, int endExclusive) {
+        return getVSliceList(startInclusive, endExclusive).stream().mapToDouble(d -> d).toArray();
+    }
+    
+    public TimeSeries getVSlice(int startInclusive, int endExclusive) {
+        final TimeSeries ts = new TimeSeries();
+        ts.series = getVSliceList(startInclusive, endExclusive);
+        return ts;
+    }
+
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeries)) {
+            return false;
+        }
+        final TimeSeries that = (TimeSeries) o;
+        return Objects.equals(series, that.series);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(series);
+    }
 }
