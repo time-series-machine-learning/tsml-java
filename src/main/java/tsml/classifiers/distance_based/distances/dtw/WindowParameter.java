@@ -1,14 +1,18 @@
-package tsml.classifiers.distance_based.distances;
+package tsml.classifiers.distance_based.distances.dtw;
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 
-public class WarpingParameter implements
-        WarpingDistanceMeasure, ParamHandler {
+public class WindowParameter implements
+        Windowed, ParamHandler {
     private int windowSize = -1;
     private double windowSizePercentage = -1;
     private boolean windowSizeInPercentage = false;
+
+    @Override public WindowParameter getWindowParameter() {
+        return this;
+    }
 
     public int findWindowSize(int aLength) {
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
@@ -61,14 +65,14 @@ public class WarpingParameter implements
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        WarpingDistanceMeasure.super.setParams(param);
+        Windowed.super.setParams(param);
         ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer::valueOf);
         ParamHandlerUtils.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double::valueOf);
     }
 
     @Override
     public ParamSet getParams() {
-        final ParamSet paramSet = WarpingDistanceMeasure.super.getParams();
+        final ParamSet paramSet = Windowed.super.getParams();
         if(windowSizeInPercentage) {
             paramSet.add(WINDOW_SIZE_PERCENTAGE_FLAG, windowSizePercentage);
         } else {
