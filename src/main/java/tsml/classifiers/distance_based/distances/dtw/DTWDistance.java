@@ -2,9 +2,6 @@ package tsml.classifiers.distance_based.distances.dtw;
 
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 
 /**
@@ -18,6 +15,21 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
     @Override public WindowParameter getWindowParameter() {
         return windowParameter;
+    }
+
+
+    public static double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        double[] aSlice = a.getVSliceArray(aIndex);
+        double[] bSlice = b.getVSliceArray(bIndex);
+        if(aSlice.length != bSlice.length) throw new IllegalArgumentException("instances do not have the same number of dimensions");
+        double cost = 0;
+        for(int i = 0; i < aSlice.length; i++) {
+            double aValue = aSlice[i];
+            double bValue = bSlice[i];
+            double subCost = Math.pow(aValue - bValue, 2);
+            cost += subCost;
+        }
+        return cost;
     }
 
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
@@ -37,7 +49,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
         // min can be init'd to the top left cell
-        double min = Math.pow(a.value(0) - b.value(0), 2);
+        double min = cost(a, 0, b, 0);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -51,7 +63,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + Math.pow(a.value(0) - b.value(j), 2);
+            double cost = row[j - 1] + cost(a, 0, b, j);
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -84,7 +96,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a.value(i) - b.value(0), 2);
+                final double cost = prevRow[start] + cost(a, i, b, 0);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
@@ -95,7 +107,7 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
                 final double topLeft = prevRow[j - 1];
                 final double left = row[j - 1];
                 final double top = prevRow[j];
-                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a.value(i) - b.value(j), 2);
+                final double cost = Math.min(top, Math.min(left, topLeft)) + cost(a, i, b, j);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
