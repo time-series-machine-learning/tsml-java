@@ -1,9 +1,11 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.IntMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.distances.dtw.WindowParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
 
 /**
@@ -11,12 +13,9 @@ import weka.core.Instance;
  * <p>
  * Contributors: goastler
  */
-public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
-
-    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
-    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
-
-    private final WarpingParameter warpingParameter = new WarpingParameter();
+public class LCSSDistance extends BaseDistanceMeasure {
+    
+    private final WindowParameter windowParameter = new WindowParameter();
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance
 
@@ -36,8 +35,12 @@ public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
         this.epsilon = epsilon;
     }
 
+    public WindowParameter getWindowParameter() {
+        return windowParameter;
+    }
+
     @Override
-    public double findDistance(final Instance a, final Instance b, double limit) {
+    public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
@@ -153,37 +156,14 @@ public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().addAll(warpingParameter.getParams()).add(EPSILON_FLAG, epsilon);
+        return super.getParams().addAll(windowParameter.getParams()).add(EPSILON_FLAG, epsilon);
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
         ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double::valueOf);
-        warpingParameter.setParams(param);
+        windowParameter.setParams(param);
         super.setParams(param);
     }
 
-    public int findWindowSize(final int aLength) {
-        return warpingParameter.findWindowSize(aLength);
-    }
-
-    public int getWindowSize() {
-        return warpingParameter.getWindowSize();
-    }
-
-    public void setWindowSize(final int windowSize) {
-        warpingParameter.setWindowSize(windowSize);
-    }
-
-    public double getWindowSizePercentage() {
-        return warpingParameter.getWindowSizePercentage();
-    }
-
-    public void setWindowSizePercentage(final double windowSizePercentage) {
-        warpingParameter.setWindowSizePercentage(windowSizePercentage);
-    }
-
-    public boolean isWindowSizeInPercentage() {
-        return warpingParameter.isWindowSizeInPercentage();
-    }
 }

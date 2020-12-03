@@ -7,9 +7,6 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
-
-public interface DTW extends WarpingDistanceMeasure {
+public interface DTW extends Windowed {
 
 }

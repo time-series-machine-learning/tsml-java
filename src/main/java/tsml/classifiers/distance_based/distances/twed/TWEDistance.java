@@ -1,8 +1,10 @@
 package tsml.classifiers.distance_based.distances.twed;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
 
 /**
@@ -11,7 +13,7 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class TWEDistance
-    extends DoubleMatrixBasedDistanceMeasure {
+    extends BaseDistanceMeasure {
 
     private double lambda;
     private double nu;
@@ -20,7 +22,7 @@ public class TWEDistance
     public static final String LAMBDA_FLAG = "l";
 
     @Override
-    public double findDistance(final Instance a, final Instance b, final double limit) {
+    public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
         final int aLength = a.numAttributes() - 1;
         final int bLength = b.numAttributes() - 1;

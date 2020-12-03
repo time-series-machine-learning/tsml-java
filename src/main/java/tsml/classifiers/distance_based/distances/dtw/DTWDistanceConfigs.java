@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -110,7 +109,7 @@ public class DTWDistanceConfigs {
      */
     public static ParamSpace buildDTWParams(Instances instances) {
         return new ParamSpace()
-                       .add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, unique(range(0,
+                       .add(Windowed.WINDOW_SIZE_FLAG, unique(range(0,
                                instances.numAttributes() - 1, 100)));
     }
 
@@ -128,7 +127,7 @@ public class DTWDistanceConfigs {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
+        subSpace.add(Windowed.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
             (data.numAttributes()) / 4 - 1));
         return subSpace;
     }
@@ -141,7 +140,8 @@ public class DTWDistanceConfigs {
     }
     
     public static ParamSpace buildContinuousDTWParams(Instances data) {
-        return new ParamSpace().add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
+        return new ParamSpace().add(
+                Windowed.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
     }
     
     public static ParamSpace buildContinuousDTWSpace(Instances data) {
@@ -186,7 +186,7 @@ public class DTWDistanceConfigs {
      */
     public static ParamSpace buildFullWindowDTWParams() {
         ParamSpace params = new ParamSpace();
-        params.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, newArrayList(-1));
+        params.add(Windowed.WINDOW_SIZE_FLAG, newArrayList(-1));
         return params;
     }
 

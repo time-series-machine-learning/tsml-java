@@ -1,26 +1,29 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Instance;
+import tsml.data_containers.TimeSeriesInstance;
 
 /**
  * DTW distance measure.
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW {
+public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
-    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
-    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
-    private final WarpingParameter warpingParameter = new WarpingParameter();
+    private final WindowParameter windowParameter = new WindowParameter();
 
-    @Override protected double findDistance(final Instance a, final Instance b, final double limit) {
+    @Override public WindowParameter getWindowParameter() {
+        return windowParameter;
+    }
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+    public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
+        
+        int aLength = a.getMaxLength() - 1;
+        int bLength = b.getMaxLength() - 1;
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
@@ -107,35 +110,4 @@ public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW
         return row[bLength - 1];
     }
 
-    @Override public int getWindowSize() {
-        return warpingParameter.getWindowSize();
-    }
-
-    @Override public void setWindowSize(final int windowSize) {
-        warpingParameter.setWindowSize(windowSize);
-    }
-
-    @Override public double getWindowSizePercentage() {
-        return warpingParameter.getWindowSizePercentage();
-    }
-
-    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
-        warpingParameter.setWindowSizePercentage(windowSizePercentage);
-    }
-
-    @Override public boolean isWindowSizeInPercentage() {
-        return warpingParameter.isWindowSizeInPercentage();
-    }
-
-    @Override public void setParams(final ParamSet param) throws Exception {
-        warpingParameter.setParams(param);
-    }
-
-    @Override public ParamSet getParams() {
-        return warpingParameter.getParams();
-    }
-
-    @Override public int findWindowSize(final int length) {
-        return warpingParameter.findWindowSize(length);
-    }
 }

@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
@@ -65,7 +65,7 @@ public class ParamSpaceTest {
     public ParamSpace buildWParams() {
         ParamSpace wParams = new ParamSpace();
         List<Integer> wParamValues = buildWParamValues();
-        wParams.add(WarpingDistanceMeasure.WINDOW_SIZE_FLAG, wParamValues);
+        wParams.add(Windowed.WINDOW_SIZE_FLAG, wParamValues);
         return wParams;
     }
 
@@ -153,7 +153,7 @@ public class ParamSpaceTest {
 
     @Test
     public void testAddAndGetForListOfValues() {
-        List<ParamDimension<?>> valuesOut = wParams.get(WarpingDistanceMeasure.WINDOW_SIZE_FLAG);
+        List<ParamDimension<?>> valuesOut = wParams.get(Windowed.WINDOW_SIZE_FLAG);
         Object value = valuesOut.get(0).getValues();
         Assert.assertEquals(value, wParamValues);
     }

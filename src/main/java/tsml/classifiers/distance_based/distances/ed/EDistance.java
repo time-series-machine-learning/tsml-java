@@ -1,11 +1,12 @@
 package tsml.classifiers.distance_based.distances.ed;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
 
 public class EDistance extends BaseDistanceMeasure {
 
-    public double findDistance(final Instance a, Instance b, final double limit) {
+    public double distance(final TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
         double sum = 0;
 
         int aLength = a.numAttributes() - 1;

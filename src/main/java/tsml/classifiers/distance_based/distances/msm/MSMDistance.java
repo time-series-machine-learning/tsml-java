@@ -1,8 +1,10 @@
 package tsml.classifiers.distance_based.distances.msm;
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
 
 /**
@@ -11,7 +13,7 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class MSMDistance
-    extends DoubleMatrixBasedDistanceMeasure {
+    extends BaseDistanceMeasure {
 
 
     private double c = 1;
@@ -44,7 +46,7 @@ public class MSMDistance
     }
 
     @Override
-    public double findDistance(Instance a, Instance b, final double limit) {
+    public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;

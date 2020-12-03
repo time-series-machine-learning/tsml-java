@@ -10,27 +10,29 @@ Contributors: goastler
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.Fitted;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.TrainableTransformer;
 import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Objects;
+
 public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements TransformDistanceMeasure {
 
-    public BaseTransformDistanceMeasure(String name, Transformer transformer,
+    public BaseTransformDistanceMeasure(Transformer transformer,
                                         DistanceFunction distanceFunction) {
-        setName(name);
         setDistanceFunction(distanceFunction);
         setTransformer(transformer);
     }
 
     public BaseTransformDistanceMeasure() {
-        this("", null, new EDistance());
-        setName(getClass().getSimpleName());
+        this(null, new EDistance());
     }
 
     public static final String TRANSFORMER_FLAG = "t";
@@ -49,9 +51,9 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         }
     }
 
-    @Override
-    public double findDistance(final Instance a, final Instance b, final double limit) {
+    public double distance(final Instance a, final Instance b, final double limit) {
         try {
+            // users must call fit method on transformer if required before calling distance
             final Instance at = transform(transformer, a);
             // need to take the interval here, before the transform
             final Instance bt = transform(transformer, b);
@@ -61,24 +63,12 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         }
     }
 
-    @Override
-    public void setInstances(Instances data) {
-        super.setInstances(data);
-        distanceFunction.setInstances(data);
-        if(transformer != null) {
-            if(transformer instanceof TrainableTransformer) {
-                ((TrainableTransformer) transformer).fit(data);
-            }
-        }
-    }
-
     public DistanceFunction getDistanceFunction() {
         return distanceFunction;
     }
 
     public void setDistanceFunction(DistanceFunction distanceFunction) {
-        Assert.assertNotNull(distanceFunction);
-        this.distanceFunction = distanceFunction;
+        this.distanceFunction = Objects.requireNonNull(distanceFunction);
     }
 
     @Override public ParamSet getParams() {

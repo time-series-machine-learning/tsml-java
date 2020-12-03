@@ -4,7 +4,7 @@ import com.beust.jcommander.internal.Lists;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
+import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
@@ -98,7 +98,7 @@ public class ParamSetTest {
     public void testAddNameAndValueAndParamSet() {
         String aFlag = "a";
         LCSSDistance aValue = new LCSSDistance();
-        String bFlag = WarpingDistanceMeasure.WINDOW_SIZE_FLAG;
+        String bFlag = Windowed.WINDOW_SIZE_FLAG;
         int bValue = 5;
         String cFlag = LCSSDistance.EPSILON_FLAG;
         double cValue = 0.2;
