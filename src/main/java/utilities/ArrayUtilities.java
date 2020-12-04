@@ -1,9 +1,7 @@
 package utilities;
 
-import weka.core.Instance;
-import weka.core.Instances;
-
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ArrayUtilities {
@@ -48,11 +46,54 @@ public class ArrayUtilities {
         }
     }
 
-    public static void subtract(double[] a, double[] b) {
+    public static double[] subtract(double[] a, double[] b) {
         int length = Math.min(a.length, b.length);
         for(int i = 0; i < length; i++) {
             a[i] -= b[i];
         }
+        return a;
+    }
+    
+    public static double[] subtract(double[] a, double amount) {
+        int length = a.length;
+        for(int i = 0; i < length; i++) {
+            a[i] -= amount;
+        }
+        return a;
+    }
+    
+    public static double[] abs(double[] array) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.abs(array[i]);
+        }
+        return array;
+    }
+    
+    public static boolean[] mask(double[] array, Predicate<Double> condition) {
+        final boolean[] result = new boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            if(condition.test(array[i])) {
+                result[i] = true;
+            }
+        }
+        return result;
+    }
+    
+    public static int count(boolean[] array) {
+        int sum = 0;
+        for(final boolean b : array) {
+            if(b) {
+                sum++;
+            }
+        }
+        return sum;
+    }
+    
+    public static double[] pow(double[] array, double degree) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.pow(array[i], degree);
+        }
+        return array;
     }
 
     public static double sum(double[] array) {
