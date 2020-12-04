@@ -49,8 +49,8 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
 
-        int aLength = a.getMaxLength() - 1;
-        int bLength = b.getMaxLength() - 1;
+        int aLength = a.getMaxLength();
+        int bLength = b.getMaxLength();
         int numDimensions = a.getNumDimensions();
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();

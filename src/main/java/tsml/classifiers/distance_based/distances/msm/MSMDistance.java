@@ -96,8 +96,8 @@ public class MSMDistance
     @Override
     public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
-        final int aLength = a.getMaxLength() - 1;
-        final int bLength = b.getMaxLength() - 1;
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;

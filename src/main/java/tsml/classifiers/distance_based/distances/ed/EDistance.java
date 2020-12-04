@@ -10,8 +10,8 @@ public class EDistance extends BaseDistanceMeasure {
     public double distance(final TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
         double sum = 0;
 
-        final int aLength = a.getMaxLength() - 1;
-        final int bLength = b.getMaxLength() - 1;
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
 
         for(int i = 0; i < aLength; i++) {
             sum += DTWDistance.cost(a, i, b, i);

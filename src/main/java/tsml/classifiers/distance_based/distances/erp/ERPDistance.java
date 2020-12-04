@@ -44,8 +44,8 @@ public class ERPDistance extends BaseDistanceMeasure implements Windowed {
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
-        final int aLength = a.getMaxLength() - 1;
-        final int bLength = b.getMaxLength() - 1;
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;

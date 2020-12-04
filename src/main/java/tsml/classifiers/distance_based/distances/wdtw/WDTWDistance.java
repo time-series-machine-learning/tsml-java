@@ -34,8 +34,8 @@ public class WDTWDistance
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
-        final int aLength = a.getMaxLength() - 1;
-        final int bLength = b.getMaxLength() - 1;
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
 
         // generate weights
         if(aLength != weightVector.length) {

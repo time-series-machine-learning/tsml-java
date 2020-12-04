@@ -92,7 +92,9 @@ public class DTWDistanceTest {
                     final DTWDistance df = new DTWDistance();
                     df.setWindowSize(window);
                     df.setGenerateDistanceMatrix(true);
-                    Assert.assertEquals(df.distance(ai, bi, limit), origDtw(ai, bi, limit, window), 0);
+                    double a = df.distance(ai, bi, limit);
+                    double b = origDtw(ai, bi, limit, window);
+                    Assert.assertEquals(a, b, 0);
                 }
             }
         };
