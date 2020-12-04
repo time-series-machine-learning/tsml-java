@@ -2,8 +2,6 @@ package tsml.classifiers.distance_based.utils.strings;
 
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
@@ -12,8 +10,6 @@ import tsml.transformers.Derivative;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.core.Utils;
-
-import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
 
 public class StrUtilsTest {
 
@@ -69,7 +65,7 @@ public class StrUtilsTest {
         lcss.setEpsilon(-1);
         lcss.setWindowSize(-1);
         tdm.setOptions(strs);
-        lcss = (LCSSDistance) tdm.getDistanceFunction();
+        lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
         Assert.assertEquals(7, lcss.getWindowSize());
         final ParamSet paramSet = new ParamSet();
@@ -77,7 +73,7 @@ public class StrUtilsTest {
         lcss.setEpsilon(-1);
         lcss.setWindowSize(-1);
         tdm.setParams(paramSet);
-        lcss = (LCSSDistance) tdm.getDistanceFunction();
+        lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
         Assert.assertEquals(7, lcss.getWindowSize());
         // todo test toOptionsValue and from

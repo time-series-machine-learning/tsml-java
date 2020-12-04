@@ -36,7 +36,7 @@ public class DTWDistanceTest {
     public void before() {
         instances = buildInstances();
         df = new DTWDistance();
-        df.setInstances(instances);
+        df.buildDistanceMeasure(instances);
     }
 
     @Test

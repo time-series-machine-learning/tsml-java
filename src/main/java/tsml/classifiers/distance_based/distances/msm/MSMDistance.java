@@ -1,11 +1,13 @@
 package tsml.classifiers.distance_based.distances.msm;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
+
+import static utilities.ArrayUtilities.*;
 
 /**
  * MSM distance measure.
@@ -32,6 +34,13 @@ public class MSMDistance
         this.c = c;
     }
 
+    /**
+     * Find the cost for doing a move / split / merge for the univariate case.
+     * @param newPoint
+     * @param x
+     * @param y
+     * @return
+     */
     private double findCost(double newPoint, double x, double y) {
         double dist = 0;
 
@@ -45,11 +54,50 @@ public class MSMDistance
         return dist;
     }
 
+    /**
+     * Find the cost for doing a move / split / merge on the multivariate case.
+     * @param a
+     * @param aIndex
+     * @param b
+     * @param bIndex
+     * @param c
+     * @param cIndex
+     * @return
+     */
+    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex, final TimeSeriesInstance c, final int cIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        final double[] bSlice = b.getVSliceArray(bIndex);
+        final double[] cSlice = c.getVSliceArray(cIndex);
+        if(aSlice.length != bSlice.length || aSlice.length != cSlice.length) throw new IllegalStateException("dimension mismatch");
+        double cost = 0;
+        for(int i = 0; i < aSlice.length; i++) {
+            cost += findCost(aSlice[i], bSlice[i], cSlice[i]);
+        }
+        return cost;
+    }
+
+    /**
+     * Find the cost for a individual cell. This is used when there's no alignment change and values are mapping directly to another.
+     * @param a
+     * @param aIndex
+     * @param b
+     * @param bIndex
+     * @return
+     */
+    private double directCost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        final double[] bSlice = b.getVSliceArray(bIndex);
+        if(aSlice.length != bSlice.length) throw new IllegalStateException("dimension mismatch");
+        final double[] result = subtract(aSlice, bSlice);
+        abs(result);
+        return sum(result);
+    }
+
     @Override
     public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+        final int aLength = a.getMaxLength() - 1;
+        final int bLength = b.getMaxLength() - 1;
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
@@ -60,7 +108,7 @@ public class MSMDistance
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
-        double min = Math.abs(a.value(0) - b.value(0));
+        double min = directCost(a, 0, b, 0);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -74,7 +122,7 @@ public class MSMDistance
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + findCost(b.value(j), a.value(0), b.value(j - 1));
+            double cost = row[j - 1] + cost(b, j, a, 0, b, j - 1);
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -106,21 +154,18 @@ public class MSMDistance
                 row[end + 1] = Double.POSITIVE_INFINITY;
             }
             // if assessing the left most column then only top is the option - not left or left-top
-            final double ai = a.value(i);
-            final double aiPrev = a.value(i - 1);
             if(start == 0) {
-                final double cost = prevRow[start] + findCost(ai, aiPrev, b.value(start));
+                final double cost = prevRow[start] + cost(a, i, a, i - 1, b, start);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                final double bj = b.value(j);
                 // compute squared distance of feature vectors
-                final double topLeft = prevRow[j - 1] + Math.abs(ai - bj);
-                final double top = prevRow[j] + findCost(ai, aiPrev, bj);
-                final double left = row[j - 1] + findCost(bj, ai, b.value(j - 1));
+                final double topLeft = prevRow[j - 1] + directCost(a, i, b, j);
+                final double top = prevRow[j] + cost(a, i, a, i - 1, b, j);
+                final double left = row[j - 1] + cost(b, j, a, i, b, j - 1);
                 final double cost = Math.min(top, Math.min(left, topLeft));
 
                 row[j] = cost;

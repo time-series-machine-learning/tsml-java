@@ -1,12 +1,13 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.WindowParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
+
+import static tsml.classifiers.distance_based.distances.dtw.DTWDistance.cost;
 
 /**
  * WDTW distance measure.
@@ -33,8 +34,8 @@ public class WDTWDistance
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+        final int aLength = a.getMaxLength() - 1;
+        final int bLength = b.getMaxLength() - 1;
 
         // generate weights
         if(aLength != weightVector.length) {
@@ -56,7 +57,7 @@ public class WDTWDistance
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // top left cell of matrix will simply be the sq diff
-        double min = weightVector[0] * Math.pow(a.value(0) - b.value(0), 2);
+        double min = weightVector[0] * cost(a, 0, b, 0);
         row[0] = min;
         // start and end of window
         // start at the next cell of the first row
@@ -70,7 +71,7 @@ public class WDTWDistance
         }
         // the first row is populated from the sq diff + the cell before
         for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + weightVector[j] * Math.pow(a.value(0) - b.value(j), 2);
+            double cost = row[j - 1] + weightVector[j] * cost(a, 0, b, j);
             row[j] = cost;
             min = Math.min(min, cost);
         }
@@ -104,7 +105,7 @@ public class WDTWDistance
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
                 final double cost =
-                    prevRow[start] + weightVector[Math.abs(i - start)] * Math.pow(a.value(i) - b.value(start), 2);
+                    prevRow[start] + weightVector[Math.abs(i - start)] * cost(a, i, b, start);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 // shift to next cell
@@ -116,7 +117,7 @@ public class WDTWDistance
                 final double left = row[j - 1];
                 final double top = prevRow[j];
                 final double cost =
-                    Math.min(top, Math.min(left, topLeft)) + weightVector[Math.abs(i - j)] * Math.pow(a.value(i) - b.value(j), 2);
+                    Math.min(top, Math.min(left, topLeft)) + weightVector[Math.abs(i - j)] * cost(a, i, b, j);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }

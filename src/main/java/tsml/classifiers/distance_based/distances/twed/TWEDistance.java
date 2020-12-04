@@ -1,11 +1,13 @@
 package tsml.classifiers.distance_based.distances.twed;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Instance;
+
+import static utilities.ArrayUtilities.*;
 
 /**
  * TWED distance measure.
@@ -21,11 +23,25 @@ public class TWEDistance
     public static final String NU_FLAG = "n";
     public static final String LAMBDA_FLAG = "l";
 
+    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        final double[] bSlice = b.getVSliceArray(bIndex);
+        final double[] result = subtract(aSlice, bSlice);
+        pow(result, 2);
+        return sum(result);
+    }
+    
+    private double cellCost(final TimeSeriesInstance a, final int aIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        pow(aSlice, 2);
+        return sum(aSlice);
+    }
+    
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
-        final int aLength = a.numAttributes() - 1;
-        final int bLength = b.numAttributes() - 1;
+        final int aLength = a.getMaxLength() - 1;
+        final int bLength = b.getMaxLength() - 1;
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
@@ -40,7 +56,7 @@ public class TWEDistance
         // border of the cost matrix initialization
         // top left is already 0 so don't bother checking for early abandon
         row[0] = 0;
-        jCosts[1] = Math.pow(b.value(0), 2);
+        jCosts[1] = cellCost(b, 0);
         row[1] = jCosts[1];
         // start at the next cell
         int start = 2;
@@ -53,7 +69,7 @@ public class TWEDistance
         }
         for(int j = start; j <= end; j++) {
             //CHANGE AJB 8/1/16: Only use power of 2 for speed up,
-            cost = Math.pow(b.value(j - 2) - b.value(j - 1), 2);
+            cost = cost(b, j - 2, b, j - 1);
             jCosts[j] = cost;
             row[j] = row[j - 1] + jCosts[j];
         }
@@ -76,7 +92,7 @@ public class TWEDistance
         if(end + 1 < bLength + 1) {
             row[end + 1] = Double.POSITIVE_INFINITY;
         }
-        iCost = Math.pow(a.value(0), 2);
+        iCost = cellCost(a, 0);
         double min = Double.POSITIVE_INFINITY;
         if(start == 0) {
             row[0] = prevRow[0] + iCost;
@@ -84,7 +100,7 @@ public class TWEDistance
             start++;
         }
         for(int j = start; j <= end; j++) {
-            dist = Math.pow(a.value(0) - b.value(j - 1), 2);
+            dist = cost(a, 0, b, j - 1);
             htrans = Math.abs((1 - j));
             left = prevRow[j - 1] + nu * htrans + dist;
             top = iCost + prevRow[j] + lambda + nu;
@@ -117,7 +133,7 @@ public class TWEDistance
             if(end + 1 < bLength + 1) {
                 row[end + 1] = Double.POSITIVE_INFINITY;
             }
-            iCost = Math.pow(a.value(i - 2) - a.value(i - 1), 2);
+            iCost = cost(a, i - 2, a, i - 1);
             if(start == 0) {
                 cost = prevRow[0] + iCost;
                 row[0] = cost;
@@ -125,7 +141,7 @@ public class TWEDistance
                 start++;
             }
             if(start == 1) {
-                dist = Math.pow(a.value(i - 1) - b.value(0), 2);
+                dist = cost(a, i - 1, b, 0);
                 htrans = i - 1;
                 left = prevRow[0] + nu * htrans + dist;
                 top = iCost + prevRow[1] + lambda + nu;
@@ -136,7 +152,7 @@ public class TWEDistance
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                dist = Math.pow(a.value(i - 1) - b.value(j - 1), 2) + Math.pow(a.value(i - 2) - b.value(j - 2), 2);
+                dist = cost(a, i - 1, b, j - 1) + cost(a, i - 2, b, j - 2);
                 htrans = Math.abs(i - j) * 2;
                 left = prevRow[j - 1] + nu * htrans + dist;
                 top = iCost + prevRow[j] + lambda + nu;

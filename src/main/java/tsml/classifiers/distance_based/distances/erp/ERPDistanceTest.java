@@ -23,7 +23,7 @@ public class ERPDistanceTest {
     public void before() {
         instances = DTWDistanceTest.buildInstances();
         df = new ERPDistance();
-        df.setInstances(instances);
+        df.buildDistanceMeasure(instances);
     }
 
     @Test

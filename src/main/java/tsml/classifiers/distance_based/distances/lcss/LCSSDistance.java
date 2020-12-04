@@ -1,31 +1,28 @@
 package tsml.classifiers.distance_based.distances.lcss;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.IntMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.WindowParameter;
+import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
-import weka.core.Instance;
+
+import static utilities.ArrayUtilities.*;
 
 /**
  * LCSS distance measure.
  * <p>
  * Contributors: goastler
  */
-public class LCSSDistance extends BaseDistanceMeasure {
+public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
     
     private final WindowParameter windowParameter = new WindowParameter();
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance
-
+    
     private double epsilon = 0.01;
 
     public static final String EPSILON_FLAG = "e";
-
-    private static boolean approxEqual(double a, double b, double epsilon) {
-        return Math.abs(a - b) <= epsilon;
-    }
 
     public double getEpsilon() {
         return epsilon;
@@ -39,15 +36,25 @@ public class LCSSDistance extends BaseDistanceMeasure {
         return windowParameter;
     }
 
+    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        final double[] bSlice = b.getVSliceArray(bIndex);
+        if(aSlice.length != bSlice.length) throw new IllegalArgumentException("instances do not have the same number of dimensions");
+        final double[] result = subtract(aSlice, bSlice);
+        abs(result);
+        final boolean[] approxEqual = mask(result, v -> v <= epsilon);
+        return count(approxEqual);
+    }
+    
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
-
+        int aLength = a.getMaxLength() - 1;
+        int bLength = b.getMaxLength() - 1;
+        int numDimensions = a.getNumDimensions();
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final int[][] matrix = generateDistanceMatrix ? new int[aLength][bLength] : null;
+        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
         setDistanceMatrix(matrix);
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
@@ -62,10 +69,10 @@ public class LCSSDistance extends BaseDistanceMeasure {
             // is potentially slightly too low, causing *early* early abandon
         }
 
-        int[] row = new int[bLength];
-        int[] prevRow = new int[bLength];
+        double[] row = new double[bLength];
+        double[] prevRow = new double[bLength];
         // init min to top left cell
-        double min = approxEqual(a.value(0), b.value(0), epsilon) ? 1 : 0;
+        double min = cost(a, 0, b, 0);
         // top left cell of matrix will simply be the sq diff
         row[0] = (int) min;
         // start and end of window
@@ -76,14 +83,12 @@ public class LCSSDistance extends BaseDistanceMeasure {
         // must set the value before and after the window to inf if available as the following row will use these
         // in top / left / top-left comparisons
         if(end + 1 < bLength) {
-            row[end + 1] = Integer.MIN_VALUE;
+            row[end + 1] = Double.NEGATIVE_INFINITY;
         }
         // the first row is populated from the cell before
         for(int j = start; j <= end; j++) {
-            final int cost;
-            if(approxEqual(a.value(0), b.value(j), epsilon)) {
-                cost = 1;
-            } else {
+            double cost = cost(a, 0, b, j);
+            if(cost == 0) {
                 cost = row[j - 1];
             }
             row[j] = cost;
@@ -99,7 +104,7 @@ public class LCSSDistance extends BaseDistanceMeasure {
         for(int i = 1; i < aLength; i++) {
             // Swap current and prevRow arrays. We'll just overwrite the new row.
             {
-                int[] temp = prevRow;
+                double[] temp = prevRow;
                 prevRow = row;
                 row = temp;
             }
@@ -111,17 +116,15 @@ public class LCSSDistance extends BaseDistanceMeasure {
             // must set the value before and after the window to inf if available as the following row will use these
             // in top / left / top-left comparisons
             if(start - 1 >= 0) {
-                row[start - 1] = Integer.MIN_VALUE;
+                row[start - 1] = Double.NEGATIVE_INFINITY;
             }
             if(end + 1 < bLength) {
-                row[end + 1] = Integer.MIN_VALUE;
+                row[end + 1] = Double.NEGATIVE_INFINITY;
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                final int cost;
-                if(approxEqual(a.value(i), b.value(start), epsilon)) {
-                    cost = 1;
-                } else {
+                double cost = cost(a, i, b, start);
+                if(cost == 0) {
                     cost = prevRow[start];
                 }
                 row[start] = cost;
@@ -130,13 +133,13 @@ public class LCSSDistance extends BaseDistanceMeasure {
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                final int cost;
-                final int topLeft = prevRow[j - 1];
-                if(approxEqual(a.value(i), b.value(j), epsilon)) {
-                    cost = topLeft + 1;
+                double cost = cost(a, i, b, j);
+                final double topLeft = prevRow[j - 1];
+                if(cost == 0) {
+                    cost = topLeft + numDimensions;
                 } else {
-                    final int top = prevRow[j];
-                    final int left = row[j - 1];
+                    final double top = prevRow[j];
+                    final double left = row[j - 1];
                     // max of top / left / top left
                     cost = Math.max(top, Math.max(left, topLeft));
                 }

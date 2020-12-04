@@ -1,13 +1,13 @@
 package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.distances.dtw.WindowParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
-import weka.core.Instance;
+
+import static utilities.ArrayUtilities.*;
 
 /**
  * ERP distance measure.
@@ -33,12 +33,19 @@ public class ERPDistance extends BaseDistanceMeasure implements Windowed {
     public void setG(double g) {
         this.g = g;
     }
-
+    
+    public double cost(final TimeSeriesInstance a, final int aIndex) {
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        subtract(aSlice, g);
+        pow(aSlice, 2);
+        return sum(aSlice);
+    }
+    
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+        final int aLength = a.getMaxLength() - 1;
+        final int bLength = b.getMaxLength() - 1;
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
@@ -60,7 +67,7 @@ public class ERPDistance extends BaseDistanceMeasure implements Windowed {
         row[0] = 0; // top left cell of matrix is always 0
         // populate first row
         for(int j = start; j <= end; j++) {
-            final double cost = row[j - 1] + Math.pow(b.value(j) - g, 2);
+            final double cost = row[j - 1] + cost(b, j);
             row[j] = cost;
             // no need to update min as top left cell is already zero, can't get lower
         }
@@ -91,18 +98,18 @@ public class ERPDistance extends BaseDistanceMeasure implements Windowed {
             }
             // when l == 0 neither left nor top left can be picked, therefore it must use top
             if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a.value(i) - g, 2);
+                final double cost = prevRow[start] + cost(a, i);
                 row[start] = cost;
                 min = Math.min(min, cost);
                 start++;
             }
             for(int j = start; j <= end; j++) {
                 // compute squared distance of feature vectors
-                final double v1 = a.value(i);
-                final double v2 = b.value(j);
-                final double leftPenalty = Math.pow(v1 - g, 2);
-                final double topPenalty = Math.pow(v2 - g, 2);
-                final double topLeftPenalty = Math.pow(v1 - v2, 2);
+                final double[] v1 = a.getVSliceArray(i);
+                final double[] v2 = b.getVSliceArray(j);
+                final double leftPenalty = sum(pow(subtract(copy(v1), g), 2));
+                final double topPenalty = sum(pow(subtract(copy(v2), g), 2));
+                final double topLeftPenalty = sum(pow(subtract(v1, v2), 2));
                 final double topLeft = prevRow[j - 1] + topLeftPenalty;
                 final double left = row[j - 1] + topPenalty;
                 final double top = prevRow[j] + leftPenalty;

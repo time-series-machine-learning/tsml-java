@@ -12,8 +12,8 @@ import tsml.transformers.Transformer;
 import weka.core.DistanceFunction;
 
 public interface TransformDistanceMeasure extends DistanceMeasure {
-    DistanceFunction getDistanceFunction();
+    DistanceMeasure getDistanceMeasure();
     Transformer getTransformer();
-    void setDistanceFunction(DistanceFunction distanceFunction);
+    void setDistanceMeasure(DistanceMeasure distanceMeasure);
     void setTransformer(Transformer transformer);
 }

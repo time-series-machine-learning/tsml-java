@@ -1,8 +1,12 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 
+import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.data_containers.TimeSeriesInstance;
+import utilities.ArrayUtilities;
+
+import static utilities.ArrayUtilities.*;
 
 /**
  * DTW distance measure.
@@ -19,23 +23,19 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
 
 
     public static double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
-        double[] aSlice = a.getVSliceArray(aIndex);
-        double[] bSlice = b.getVSliceArray(bIndex);
+        final double[] aSlice = a.getVSliceArray(aIndex);
+        final double[] bSlice = b.getVSliceArray(bIndex);
         if(aSlice.length != bSlice.length) throw new IllegalArgumentException("instances do not have the same number of dimensions");
-        double cost = 0;
-        for(int i = 0; i < aSlice.length; i++) {
-            double aValue = aSlice[i];
-            double bValue = bSlice[i];
-            double subCost = Math.pow(aValue - bValue, 2);
-            cost += subCost;
-        }
-        return cost;
+        final double[] result  = aSlice;
+        subtract(result, bSlice);
+        pow(result, 2);
+        return sum(result);
     }
 
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
         
-        int aLength = a.getMaxLength() - 1;
-        int bLength = b.getMaxLength() - 1;
+        final int aLength = a.getMaxLength() - 1;
+        final int bLength = b.getMaxLength() - 1;
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;

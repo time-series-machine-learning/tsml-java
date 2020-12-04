@@ -14,7 +14,7 @@ public class EDistanceTest {
         DTWDistance dtw = new DTWDistance();
         dtw.setWindowSize(0);
         final Instances instances = buildInstances();
-        dtw.setInstances(instances);
+        dtw.buildDistanceMeasure(instances);
         final double d1 = df.distance(instances.get(0), instances.get(1));
         final double d2 = dtw.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(d1, d2, 0d);
@@ -28,6 +28,6 @@ public class EDistanceTest {
     public void before() {
         instances = buildInstances();
         df = new EDistance();
-        df.setInstances(instances);
+        df.buildDistanceMeasure(instances);
     }
 }
