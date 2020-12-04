@@ -33,9 +33,7 @@ import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
-import utilities.Utilities;
 import weka.core.DistanceFunction;
-import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
@@ -561,7 +559,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return score;
         }
 
-        private void setupDistanceFunction() {
+        /**
+         * Partition the data and derive score for this split.
+         */
+        public void buildSplit() {
+            // pick the distance function
+            
             // pick a random space
             ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, rand);
             // built that space
@@ -570,12 +573,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceMeasure = Objects.requireNonNull((DistanceMeasure) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
-        }
+            // pick the exemplars
 
-        /**
-         * pick exemplars from the given dataset
-         */
-        private void setupExemplarsAndPartitions() {
             // change the view of the data into per class
             final List<List<Integer>> instIndicesByClass = data.indicesByClass();
             if(instIndicesByClass.size() != data.numClasses()) {
@@ -602,18 +601,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
             // sanity checks
             Assert.assertEquals(instIndicesByClass.size(), partitions.size());
-        }
-
-        /**
-         * Partition the data and derive score for this split.
-         */
-        public void buildSplit() {
-            // pick the distance function
-            setupDistanceFunction();
-            // pick the exemplars
-            setupExemplarsAndPartitions();
+            
             // setup the distance function
-            distanceMeasure.setInstances(data);
+            distanceMeasure.buildDistanceMeasure(data);
+            
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
             for(int i = 0; i < data.numInstances(); i++) {
@@ -626,7 +617,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             score = partitionScorer.findScore(data, getPartitionedData());
         }
 
-        public DistanceFunction getDistanceMeasure() {
+        public DistanceMeasure getDistanceMeasure() {
             return distanceMeasure;
         }
 
