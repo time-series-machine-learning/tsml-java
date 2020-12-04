@@ -22,6 +22,9 @@ import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
@@ -341,6 +344,18 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         return result;
   }
 
+    /**
+     * buildClassifier wrapper for TimeSeriesInstances
+     * @param data
+     * @throws Exception
+     */
+  @Override
+  public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        Instances convertedData = Converter.toArff(data);
+        convertedData.setClassIndex(convertedData.numAttributes() - 1);
+        buildClassifier(convertedData);
+  }
+
 
 /**
  * main buildClassifier
@@ -612,11 +627,22 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     public long getTrainContractTimeNanos(){
             return trainContractTimeNanos;
     }
-/**
- * @param ins to classifier
- * @return array of doubles: probability of each class 
- * @throws Exception 
- */   
+
+    /**
+     * @param ins TimeSeriesInstance to classifier
+     * @return array of doubles: probability of each class
+     */
+    @Override
+    public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
+        Instance convertedData = Converter.toArff(ins);
+        return distributionForInstance(convertedData);
+    }
+
+    /**
+     * @param ins Weka Instance to classifier
+     * @return array of doubles: probability of each class
+     * @throws Exception
+     */
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
         double[] d=new double[ins.numClasses()];
@@ -648,8 +674,18 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 d[i]=d[i]/sum;
         return d;
     }
+
+    /**
+     * @param ins TimeSeriesInstance
+     */
+    @Override
+    public double classifyInstance(TimeSeriesInstance ins) throws Exception {
+        Instance convertedData = Converter.toArff(ins);
+        return classifyInstance(convertedData);
+    }
+
 /**
- * @param ins
+ * @param ins Weka Instance
  * @return
  * @throws Exception 
  */
