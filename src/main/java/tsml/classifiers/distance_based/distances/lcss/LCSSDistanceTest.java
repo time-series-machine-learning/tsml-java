@@ -28,13 +28,14 @@ public class LCSSDistanceTest {
                 final RandomSearch iterator = new RandomSearch();
                 iterator.setRandom(random);
                 iterator.buildSearch(space);
-//                int i = 0;
+                int i = 0;
                 while(iterator.hasNext()) {
-//                    System.out.println("i:" + i++);
+                    System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
                     final double epsilon = (double) paramSet.get(LCSSDistance.EPSILON_FLAG).get(0);
                     final int window = (int) paramSet.get(LCSSDistance.WINDOW_SIZE_FLAG).get(0);
                     final LCSSDistance df = new LCSSDistance();
+                    df.setGenerateDistanceMatrix(true);
                     df.setEpsilon(epsilon);
                     df.setWindowSize(window);
                     Assert.assertEquals(df.distance(ai, bi, limit), origLcss(ai, bi, limit, window, epsilon), 0);

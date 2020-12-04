@@ -401,6 +401,24 @@ public class ArrayUtilities {
         return boxed;
     }
 
+    public static String toString(double[][] matrix, String horizontalSeparator, String verticalSeparator) {
+        StringBuilder builder = new StringBuilder();
+        for(int i = 0; i < matrix.length; i++) {
+            for(int j = 0; j < matrix[i].length; j++) {
+                //                builder.append(new BigDecimal(matrix[i][j]).setScale(2, RoundingMode.HALF_UP).doubleValue());
+                builder.append(matrix[i][j]);
+                if(j != matrix[i].length - 1) {
+                    builder.append(horizontalSeparator);
+                }
+            }
+            if(i != matrix.length - 1) {
+                builder.append(verticalSeparator);
+            }
+        }
+        builder.append(System.lineSeparator());
+        return builder.toString();
+    }
+    
     public static String toString(int[][] matrix, String horizontalSeparator, String verticalSeparator) {
         StringBuilder builder = new StringBuilder();
         for(int i = 0; i < matrix.length; i++) {
