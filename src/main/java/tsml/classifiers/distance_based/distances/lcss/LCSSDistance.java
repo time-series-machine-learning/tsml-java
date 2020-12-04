@@ -36,8 +36,13 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         return windowParameter;
     }
 
-    private boolean approxEqual(double a, double b) {
-        return Math.abs(a - b) <= epsilon;
+    private double cost(TimeSeriesInstance a, int aIndex, TimeSeriesInstance b, int bIndex) {
+        double[] aSlice = a.getVSliceArray(aIndex);
+        double[] bSlice = b.getVSliceArray(bIndex);
+        double[] result = subtract(aSlice, bSlice);
+        abs(result);
+        boolean[] approxEqual = mask(result, v -> v <= epsilon);
+        return count(approxEqual);
     }
 
     @Override
@@ -66,7 +71,7 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         double[] row = new double[bLength];
         double[] prevRow = new double[bLength];
         // init min to top left cell
-        double min = approxEqual(a.get(0).get(0), b.get(0).get(0)) ? numDimensions : 0;
+        double min = cost(a, 0, b, 0);
         // top left cell of matrix will simply be the sq diff
         row[0] = (int) min;
         // start and end of window
@@ -81,10 +86,8 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         }
         // the first row is populated from the cell before
         for(int j = start; j <= end; j++) {
-            final double cost;
-            if(approxEqual(a.get(0).get(0), b.get(0).get(j))) {
-                cost = numDimensions;
-            } else {
+            double cost = cost(a, 0, b, j);
+            if(cost == 0) {
                 cost = row[j - 1];
             }
             row[j] = cost;
@@ -119,10 +122,8 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                final double cost;
-                if(approxEqual(a.get(0).get(i), b.get(0).get(start))) {
-                    cost = numDimensions;
-                } else {
+                double cost = cost(a, i, b, start);
+                if(cost == 0) {
                     cost = prevRow[start];
                 }
                 row[start] = cost;
@@ -131,10 +132,10 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                final double cost;
+                double cost = cost(a, i, b, j);
                 final double topLeft = prevRow[j - 1];
-                if(approxEqual(a.get(0).get(i), b.get(0).get(j))) {
-                    cost = topLeft + 1;
+                if(cost > 0) {
+                    cost += topLeft;
                 } else {
                     final double top = prevRow[j];
                     final double left = row[j - 1];
