@@ -36,39 +36,20 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         return windowParameter;
     }
 
-    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
-        final double[] aSlice = a.getVSliceArray(aIndex);
-        final double[] bSlice = b.getVSliceArray(bIndex);
-        
-        int sum = 0;
-        for(int i = 0; i < aSlice.length; i++) {
-            final double aValue = aSlice[i];
-            final double bValue = bSlice[i];
-            if(bValue + epsilon >= aValue && bValue - epsilon <= aValue) {
-                
-            } else {
-                sum++;
-            }
-        }
-        return sum;
-        
-//        if(aSlice.length != bSlice.length) throw new IllegalArgumentException("instances do not have the same number of dimensions");
-//        final double[] result = subtract(aSlice, bSlice);
-//        abs(result);
-//        final boolean[] approxEqual = mask(result, v -> v > epsilon);
-//        return count(approxEqual);
+    private boolean approxEqual(double a, double b) {
+        return Math.abs(a - b) <= epsilon;
     }
-    
+
     @Override
     public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
 
-        int aLength = a.getMaxLength();
-        int bLength = b.getMaxLength();
-        int numDimensions = a.getNumDimensions();
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
+        final int numDimensions = a.getNumDimensions();
 
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
         final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
+//        setDistanceMatrix(matrix);
 
         // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
         // Full DTW
@@ -83,12 +64,9 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         }
 
         double[] row = new double[bLength];
-        double[] prevRow;
+        double[] prevRow = new double[bLength];
         // init min to top left cell
-        double min = cost(a, 0, b, 0);
-        if(min == 0) {
-            min = numDimensions;
-        }
+        double min = approxEqual(a.get(0).get(0), b.get(0).get(0)) ? numDimensions : 0;
         // top left cell of matrix will simply be the sq diff
         row[0] = (int) min;
         // start and end of window
@@ -103,8 +81,10 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         }
         // the first row is populated from the cell before
         for(int j = start; j <= end; j++) {
-            double cost = cost(a, 0, b, j);
-            if(cost == 0) {
+            final double cost;
+            if(approxEqual(a.get(0).get(0), b.get(0).get(j))) {
+                cost = numDimensions;
+            } else {
                 cost = row[j - 1];
             }
             row[j] = cost;
@@ -119,8 +99,11 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
         }
         for(int i = 1; i < aLength; i++) {
             // Swap current and prevRow arrays. We'll just overwrite the new row.
-            prevRow = row;
-            row = new double[bLength];
+            {
+                double[] temp = prevRow;
+                prevRow = row;
+                row = temp;
+            }
             // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
             min = Double.POSITIVE_INFINITY;
             // start and end of window
@@ -136,8 +119,8 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
             }
             // if assessing the left most column then only top is the option - not left or left-top
             if(start == 0) {
-                double cost = cost(a, i, b, start);
-                if(cost == 0) {
+                final double cost;
+                if(approxEqual(a.get(0).get(i), b.get(0).get(start))) {
                     cost = numDimensions;
                 } else {
                     cost = prevRow[start];
@@ -148,10 +131,10 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
                 start++;
             }
             for(int j = start; j <= end; j++) {
-                double cost = cost(a, i, b, j);
+                final double cost;
                 final double topLeft = prevRow[j - 1];
-                if(cost == 0) {
-                    cost = topLeft + numDimensions;
+                if(approxEqual(a.get(0).get(i), b.get(0).get(j))) {
+                    cost = topLeft + 1;
                 } else {
                     final double top = prevRow[j];
                     final double left = row[j - 1];
@@ -169,7 +152,7 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
             }
         }
         //Find the minimum distance at the end points, within the warping window.
-        return 1d - row[bLength - 1] / aLength;
+        return 1d - (double) row[bLength - 1] / aLength;
     }
 
     @Override
