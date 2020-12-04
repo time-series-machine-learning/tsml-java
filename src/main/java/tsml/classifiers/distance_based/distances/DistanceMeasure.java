@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances;
 
 import java.io.Serializable;
+
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -10,7 +11,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
 
-public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHandler {
+public interface DistanceMeasure extends Serializable, ParamHandler {
 
     String DISTANCE_MEASURE_FLAG = "d";
 
@@ -23,14 +24,6 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHa
         return distance(a, b, Double.POSITIVE_INFINITY);
     }
     
-    default double distance(final Instance a, final Instance b, PerformanceStats stats) {
-        return distance(a, b);
-    }
-    
-    default double distance(final Instance a, final Instance b, double limit, PerformanceStats stats) {
-        return distance(a, b, limit);
-    }
-
     /**
      * Override this distance func
      * @param a
@@ -61,39 +54,19 @@ public interface DistanceMeasure extends Serializable, DistanceFunction, ParamHa
         return getClass().getSimpleName();
     }
 
-    default void setInstances(Instances data) {
-        buildDistanceMeasure(Converter.fromArff(data));
-    }
-    
     default void buildDistanceMeasure(TimeSeriesInstances data) {
         
     }
     
-    default Instances getInstances() {
-        return null;
+    default void buildDistanceMeasure(Instances data) {
+        buildDistanceMeasure(Converter.fromArff(data));
     }
-
-    default void setAttributeIndices(String value) {
-        
+    
+    default DistanceFunction asDistanceFunction() {
+        return new DistanceFunctionAdapter(this);
     }
-
-    default String getAttributeIndices() {
-        return null;
-    }
-
-    default void setInvertSelection(boolean value) {
-        
-    }
-
-    default boolean getInvertSelection() {
-        return false;
-    }
-
-    default void postProcessDistances(double[] distances) {
-        
-    }
-
-    default void update(Instance ins) {
-        
+    
+    static DistanceMeasure asDistanceMeasure(DistanceFunction df) {
+        return new DistanceMeasureAdapter(df);
     }
 }

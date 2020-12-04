@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -13,9 +14,9 @@ import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
-import weka.core.DistanceFunction;
 
 import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -36,8 +37,8 @@ public class ParamSpaceTest {
     private ParamSpace lParams;
     private UniformDoubleDistribution eDist;
     private UniformDoubleDistribution dDist;
-    private DiscreteParamDimension<DistanceFunction> wDmParams;
-    private DiscreteParamDimension<DistanceFunction> lDmParams;
+    private DiscreteParamDimension<DistanceMeasure> wDmParams;
+    private DiscreteParamDimension<DistanceMeasure> lDmParams;
     private ParamSpace params;
 
     @Before
@@ -130,15 +131,15 @@ public class ParamSpaceTest {
         return lParams;
     }
 
-    public DiscreteParamDimension<DistanceFunction> buildWDmParams() {
-        DiscreteParamDimension<DistanceFunction> wDmParams = new DiscreteParamDimension<>(
+    public DiscreteParamDimension<DistanceMeasure> buildWDmParams() {
+        DiscreteParamDimension<DistanceMeasure> wDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new DTWDistance(), newDDTWDistance()));
         wDmParams.addSubSpace(buildWParams());
         return wDmParams;
     }
 
-    public DiscreteParamDimension<DistanceFunction> buildLDmParams() {
-        DiscreteParamDimension<DistanceFunction> lDmParams = new DiscreteParamDimension<>(
+    public DiscreteParamDimension<DistanceMeasure> buildLDmParams() {
+        DiscreteParamDimension<DistanceMeasure> lDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new LCSSDistance()));
         lDmParams.addSubSpace(buildLParams());
         return lDmParams;
