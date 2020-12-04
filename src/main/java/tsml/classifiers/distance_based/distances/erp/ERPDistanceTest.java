@@ -84,7 +84,7 @@ public class ERPDistanceTest {
         int instanceCount = 0;
         int attributeCount = 0;
         final long timeStamp = System.nanoTime();
-        final long timeLimit = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
+        final long timeLimit = TimeUnit.NANOSECONDS.convert(10000, TimeUnit.MILLISECONDS);
         for(int i = 0; i < data.size(); i++) {
 //            final Instance a = data.get(i);
             final Instance a = data.get(random.nextInt(data.size()));
