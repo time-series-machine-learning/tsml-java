@@ -163,7 +163,7 @@ public class LCSSDistance extends BaseDistanceMeasure implements Windowed {
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double::valueOf);
+        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon);
         windowParameter.setParams(param);
         super.setParams(param);
     }

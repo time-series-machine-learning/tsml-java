@@ -9,30 +9,15 @@ import java.util.function.Function;
 public class ParamHandlerUtils {
 
     /**
-     * Set a non-primitive parameter. This assumes that the corresponding value in string form. The string must be in the form of "{className} {key-value pairs}". This is handled internally in ParamSet, however. The key gotcha here is this method cannot handle primitives!!!
+     * Set a parameter value specified by the name flag. The parameter value may be parsed from string form into a form accepted by the setter.
      * @param paramSet
      * @param name
      * @param setter
-     * @param <A>
-     * @return
-     */
-    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter) throws Exception {
-        return setParam(paramSet, name, setter, s -> {
-            throw new UnsupportedOperationException("parsing non-primitive type not supported. When setting parameters you must provide a function to parse primitive values otherwise they are interpretted as objects and instantiated by class name. This error occurred whilst trying to instantiate a class called: " + s);
-        });
-    }
-
-    /**
-     * Set a primitive or simply parameter which can be parsed from string form. E.g. the parameter value from the paramSet may be "5.5". The consumer accepts doubles, so the parser must use something similar to Double.parseDouble to convert the string to a double ready to pass to the consumer / setter.
-     * @param paramSet
-     * @param name
-     * @param setter
-     * @param parser
      * @param <A>
      * @return
      * @throws Exception
      */
-    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter, Function<String, A> parser)
+    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter)
             throws Exception {
         // get the parameter in the paramset under "name"
         final List<Object> list = paramSet.get(name);
@@ -45,7 +30,7 @@ public class ParamHandlerUtils {
             // check the value is not in string form
             if(value instanceof String) {
                 // if it is then construct the options string into a valid object
-                value = StrUtils.fromOptionValue((String) value, parser);
+                value = StrUtils.fromOptionValue((String) value);
             }
             // and pass to the setter
             try {

@@ -191,6 +191,6 @@ public class MSMDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, C_FLAG, this::setC, Double::valueOf);
+        ParamHandlerUtils.setParam(param, C_FLAG, this::setC);
     }
 }

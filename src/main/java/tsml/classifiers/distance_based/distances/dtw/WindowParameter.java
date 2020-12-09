@@ -4,6 +4,8 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 
+import java.util.function.Consumer;
+
 public class WindowParameter implements
         Windowed, ParamHandler {
     private int windowSize = -1;
@@ -50,13 +52,13 @@ public class WindowParameter implements
         windowSizeInPercentage = false;
     }
 
-    @Override public double getWindowSizePercentage() {
+    public double getWindowSizePercentage() {
         return windowSizePercentage;
     }
 
-    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
+    @Override public void setWindowSize(final double windowSize) {
         windowSizeInPercentage = true;
-        this.windowSizePercentage = windowSizePercentage;
+        this.windowSizePercentage = windowSize;
     }
 
     @Override public boolean isWindowSizeInPercentage() {
@@ -66,8 +68,7 @@ public class WindowParameter implements
     @Override
     public void setParams(final ParamSet param) throws Exception {
         Windowed.super.setParams(param);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Integer::valueOf);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_PERCENTAGE_FLAG, this::setWindowSizePercentage, Double::valueOf);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, (Consumer<Double>) this::setWindowSize);
     }
 
     @Override

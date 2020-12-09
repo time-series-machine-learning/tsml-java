@@ -6,8 +6,8 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import java.io.Serializable;
 
 public interface Windowed extends ParamHandler, Serializable {
-    String WINDOW_SIZE_FLAG = "ws";
-    String WINDOW_SIZE_PERCENTAGE_FLAG = "wsp";
+    String WINDOW_SIZE_FLAG = "w";
+    String WINDOW_SIZE_PERCENTAGE_FLAG = "ws";
 
     WindowParameter getWindowParameter();
     
@@ -24,11 +24,11 @@ public interface Windowed extends ParamHandler, Serializable {
     }
 
     default double getWindowSizePercentage() {
-        return getWindowParameter().getWindowSizePercentage();
+        return getWindowParameter().getWindowSize();
     }
 
-    default void setWindowSizePercentage(double windowSizePercentage) {
-        getWindowParameter().setWindowSizePercentage(windowSizePercentage);
+    default void setWindowSize(double windowSize) {
+        getWindowParameter().setWindowSize(windowSize);
     }
 
     default boolean isWindowSizeInPercentage() {

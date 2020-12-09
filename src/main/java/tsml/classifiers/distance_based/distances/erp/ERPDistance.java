@@ -147,6 +147,6 @@ public class ERPDistance extends BaseDistanceMeasure implements Windowed {
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
         windowParameter.setParams(param);
-        ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double::valueOf);
+        ParamHandlerUtils.setParam(param, G_FLAG, this::setG);
     }
 }

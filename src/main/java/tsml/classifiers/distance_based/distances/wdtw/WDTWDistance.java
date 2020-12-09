@@ -5,7 +5,6 @@ import tsml.classifiers.distance_based.distances.dtw.WindowParameter;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
-import weka.core.Instance;
 
 import static tsml.classifiers.distance_based.distances.dtw.DTWDistance.cost;
 
@@ -140,7 +139,7 @@ public class WDTWDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG, Double::valueOf);
+        ParamHandlerUtils.setParam(param, WDTW.G_FLAG, this::setG);
     }
 
     public int findWindowSize(final int aLength) {
@@ -156,11 +155,11 @@ public class WDTWDistance
     }
 
     public double getWindowSizePercentage() {
-        return windowParameter.getWindowSizePercentage();
+        return windowParameter.getWindowSize();
     }
 
     public void setWindowSizePercentage(final double windowSizePercentage) {
-        windowParameter.setWindowSizePercentage(windowSizePercentage);
+        windowParameter.setWindowSize(windowSizePercentage);
     }
 
     public boolean isWindowSizeInPercentage() {

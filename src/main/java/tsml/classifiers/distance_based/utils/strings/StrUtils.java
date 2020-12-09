@@ -178,25 +178,15 @@ public class StrUtils {
         return list.toArray(new String[0]);
     }
 
-    public static <A> void setOption(String[] options, String flag, Consumer<A> setter, Function<String, A> fromString) throws
+    public static <A> void setOption(String[] options, String flag, Consumer<A> setter) throws
             Exception {
         flag = unflagify(flag);
         String option = Utils.getOption(flag, options);
         while(option.length() != 0) {
-            A result = fromOptionValue(option, fromString);
+            A result = fromOptionValue(option);
             setter.accept(result);
             option = Utils.getOption(flag, options);
         }
-    }
-
-    /**
-     * May return the option value in string form (i.e. "5.4") or unpacked form (i.e. an object with parameters set)
-     * @param optionsStr
-     * @return
-     * @throws Exception
-     */
-    public static Object fromOptionValue(String optionsStr) throws Exception {
-        return fromOptionValue(optionsStr, String::valueOf);
     }
 
     /**
@@ -206,7 +196,7 @@ public class StrUtils {
      * @return
      * @throws Exception
      */
-    public static <A> A fromOptionValue(String optionsStr, Function<String, A> fromString) throws Exception {
+    public static <A> A fromOptionValue(String optionsStr) throws Exception {
         if(optionsStr.equals("null")) {
             return null;
         }
@@ -221,11 +211,11 @@ public class StrUtils {
             // if string then the str will contain whitespace at the front
             if(str.startsWith("\"") && str.endsWith("\"")) {
                 str = str.substring(1, str.length() - 1); // get rid of the char added during encoding
-                return fromString.apply(str);
+                return (A) str;
             }
             // if the first digit is a digit then dealing with a primitive number. Using the opposing case here, i.e. for it to be a non-primitive the first option is the canonical class name. These cannot begin with numbers or hyphens (for neg numbers) therefore we can assume it's a primitive number by this point
             if(!Character.isAlphabetic(str.charAt(0)) || str.equals("true") || str.equals("false")) {
-                return fromString.apply(str);
+                return (A) strToPrimitive(str);
             }
             // otherwise proceed, the parts[0] string must be a class name and needs instantiation
         }
@@ -240,6 +230,52 @@ public class StrUtils {
                 ((OptionHandler) result).setOptions(parts);
             } else {
                 throw new IllegalArgumentException("cannot set options on " + className);
+            }
+        }
+        return (A) result;
+    }
+    
+    public static <A> A strToPrimitive(String str) {
+        str = str.trim();
+        Object result;
+        if(str.equalsIgnoreCase("true")) {
+            result = true;
+        } else if(str.equalsIgnoreCase("false")) {
+            result = false;
+        } else if(str.contains(".")) {
+            // is a decimal
+            final double value = Double.parseDouble(str);
+            final double valueFloat = (float) value;
+            if(value == valueFloat) {
+                result = valueFloat;
+            } else {
+                result = value;
+            }
+        } else {
+            // is an integer
+            final long value = Long.parseLong(str);
+            if(str.charAt(0) == '-') {
+                // is negative
+                if(value >= Byte.MIN_VALUE) {
+                    result = (byte) value;
+                } else if(value >= Short.MIN_VALUE) {
+                    result = (short) value;
+                } else if(value >= Integer.MIN_VALUE) {
+                    result = (int) value;
+                } else {
+                    result = value;
+                }
+            } else {
+                // is positive
+                if(value <= Byte.MAX_VALUE) {
+                    result = (byte) value;
+                } else if(value <= Short.MAX_VALUE) {
+                    result = (short) value;
+                } else if(value <= Integer.MAX_VALUE) {
+                    result = (int) value;
+                } else {
+                    result = value;
+                }
             }
         }
         return (A) result;

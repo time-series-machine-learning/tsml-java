@@ -117,37 +117,37 @@ public class StrUtilsTest {
 
     @Test
     public void testFromOptionsValueDouble() throws Exception {
-        Assert.assertEquals(new Double(5.786), StrUtils.fromOptionValue("5.786", Double::parseDouble));
+        Assert.assertEquals(new Double(5.786), StrUtils.fromOptionValue("5.786"));
     }
 
     @Test
     public void testFromOptionsValueDoubleNegative() throws Exception {
-        Assert.assertEquals(new Double(-5.786), StrUtils.fromOptionValue("-5.786", Double::parseDouble));
+        Assert.assertEquals(new Double(-5.786), StrUtils.fromOptionValue("-5.786"));
     }
 
     @Test
     public void testFromOptionsValueDoubleNegativeMissingLeadingZero() throws Exception {
-        Assert.assertEquals(new Double(-.786), StrUtils.fromOptionValue("-.786", Double::parseDouble));
+        Assert.assertEquals(new Double(-.786), StrUtils.fromOptionValue("-.786"));
     }
 
     @Test
     public void testFromOptionsValueDoubleMissingLeadingZero() throws Exception {
-        Assert.assertEquals(new Double(.786), StrUtils.fromOptionValue(".786", Double::parseDouble));
+        Assert.assertEquals(new Double(.786), StrUtils.fromOptionValue(".786"));
     }
 
     @Test
     public void testFromOptionsValueInt() throws Exception {
-        Assert.assertEquals(new Integer(5), StrUtils.fromOptionValue("5", Integer::parseInt));
+        Assert.assertEquals(new Integer(5), StrUtils.fromOptionValue("5"));
     }
 
     @Test
     public void testFromOptionsValueBooleanTrue() throws Exception {
-        Assert.assertEquals(new Boolean(true), StrUtils.fromOptionValue("true", Boolean::parseBoolean));
+        Assert.assertEquals(new Boolean(true), StrUtils.fromOptionValue("true"));
     }
 
     @Test
     public void testFromOptionsValueBooleanFalse() throws Exception {
-        Assert.assertEquals(new Boolean(false), StrUtils.fromOptionValue("false", Boolean::parseBoolean));
+        Assert.assertEquals(new Boolean(false), StrUtils.fromOptionValue("false"));
     }
 
     @Test

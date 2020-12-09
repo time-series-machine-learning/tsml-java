@@ -147,9 +147,8 @@ public class ParamSetTest {
         try {
             ParamHandlerUtils.setParam(subParamSetC, cFlag, i -> {
                 // should not clone as it's primitive
-                Assert.assertTrue(i == cValue);
-                Assert.assertEquals(cValue, i, 0d);
-            }, Double::valueOf);
+                Assert.assertEquals(i, cValue);
+            });
         } catch(Exception e) {
             Assert.fail(e.toString());
         }
@@ -158,9 +157,8 @@ public class ParamSetTest {
             // value may be in string form
             ParamHandlerUtils.setParam(new ParamSet().add(cFlag, String.valueOf(cValue)), cFlag, i -> {
                 // should not clone as it's primitive
-                Assert.assertTrue(i == cValue);
-                Assert.assertEquals(cValue, i, 0d);
-            }, Double::valueOf);
+                Assert.assertEquals(i, cValue);
+            });
         } catch(Exception e) {
             Assert.fail(e.toString());
         }
