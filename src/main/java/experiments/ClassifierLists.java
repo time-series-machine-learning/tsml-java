@@ -495,7 +495,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET","ROCKET50k","ROCKET1","ROCKET2","ROCKET3","ROCKET4","ROCKET5","ROCKET6","ROCKET7","ROCKET8","ROCKET9"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET","ROCKET-Ecv","ROCKET-Eoob","ROCKET50k","ROCKET1","ROCKET2","ROCKET3","ROCKET4","ROCKET5","ROCKET6","ROCKET7","ROCKET8","ROCKET9"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -523,6 +523,18 @@ public class ClassifierLists {
                 break;
             case "ROCKET":
                 c = new ROCKETClassifier();
+                break;
+            case "ROCKET-Ecv":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 25;
+                ((ROCKETClassifier)c).numKernels = 2000;
+                ((ROCKETClassifier)c).setEstimatorMethod("cv");
+                break;
+            case "ROCKET-Eoob":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).ensembleSize = 25;
+                ((ROCKETClassifier)c).numKernels = 2000;
+                ((ROCKETClassifier)c).setEstimatorMethod("oob");
                 break;
             case "ROCKET50k":
                 c = new ROCKETClassifier();

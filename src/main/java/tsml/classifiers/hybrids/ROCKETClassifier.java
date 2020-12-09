@@ -14,11 +14,16 @@
  */
 package tsml.classifiers.hybrids;
 
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.OutOfBagEvaluator;
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.interval_based.SCIF;
+import tsml.data_containers.utilities.Converter;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -48,7 +53,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     private ROCKET rocket;
     private Instances header;
 
-    private long trainContractTimeNanos;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private int numKernelsStep = 50;
 
@@ -61,7 +66,19 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     ROCKET[] eROCKET;
 
     public ROCKETClassifier(){
-        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    }
+
+    @Override
+    public String getParameters() {
+        int nc = numKernels;
+        if (rocket != null) nc = rocket.getNumKernels();
+        int es = 0;
+        if (eCls != null) es = eCls.length;
+        String temp=super.getParameters()+",numKernels,"+nc+",normalise,"+normalise+",ensemble,"+ensemble+
+                ",ensembleSize,"+es+ ",trainContract,"+trainTimeContract+",contractTime,"+trainContractTimeNanos+
+                ",numKernelStep,"+ numKernelsStep;
+        return temp;
     }
 
     @Override
@@ -115,10 +132,14 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         trainResults.setBuildTime(System.nanoTime());
         getCapabilities().testWithFail(data);
 
+        Instances trainEstData = null;
+        Instances[] ensembleTrainEstData = null;
+
         if (trainTimeContract) {
             if (ensemble) {
                 ArrayList<Classifier> tempCls = new ArrayList<>();
                 ArrayList<ROCKET> tempROCKET = new ArrayList<>();
+                ArrayList<Instances> transformedDataArr = new ArrayList<>();
                 int i = 0;
                 while (withinTrainContract(trainResults.getBuildTime())) {
                     ROCKET r = new ROCKET();
@@ -143,11 +164,18 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
                     tempCls.add(c);
                     tempROCKET.add(r);
+                    if (getEstimateOwnPerformance()){
+                        transformedDataArr.add(transformedData);
+                    }
                     i++;
                 }
 
                 eCls = tempCls.toArray(eCls);
                 eROCKET = tempROCKET.toArray(eROCKET);
+
+                if (getEstimateOwnPerformance()){
+                    ensembleTrainEstData = transformedDataArr.toArray(ensembleTrainEstData);
+                }
             }
             else {
                 ArrayList<Instances> fragmentedTransformedData = new ArrayList<>();
@@ -191,12 +219,17 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                 }
 
                 cls.buildClassifier(transformedData);
+
+                if (getEstimateOwnPerformance()){
+                    trainEstData = transformedData;
+                }
             }
         }
         else {
             if (ensemble){
                 eCls = new Classifier[ensembleSize];
                 eROCKET = new ROCKET[ensembleSize];
+                ensembleTrainEstData = new Instances[ensembleSize];
                 for (int i = 0; i < ensembleSize; i++){
                     eROCKET[i] = new ROCKET();
                     eROCKET[i].setNumKernels(numKernels);
@@ -217,6 +250,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                     }
 
                     eCls[i].buildClassifier(transformedData);
+
+                    if (getEstimateOwnPerformance()){
+                        ensembleTrainEstData[i] = transformedData;
+                    }
                 }
             }
             else {
@@ -237,11 +274,118 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                 }
 
                 cls.buildClassifier(transformedData);
+
+                if (getEstimateOwnPerformance()){
+                    trainEstData = transformedData;
+                }
             }
         }
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
+
+        if(getEstimateOwnPerformance()){
+            long est1 = System.nanoTime();
+            estimateOwnPerformance(trainEstData, ensembleTrainEstData);
+            long est2 = System.nanoTime();
+            trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
+        }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+        trainResults.setParas(getParameters());
+    }
+
+    private void estimateOwnPerformance(Instances singleData, Instances[] ensembleData) throws Exception {
+        if (ensemble) {
+            if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+                double[] preds=new double[ensembleData[0].numInstances()];
+                double[] actuals=new double[ensembleData[0].numInstances()];
+                double[][] trainDistributions=new double[ensembleData[0].numInstances()][ensembleData[0].numClasses()];
+                long[] predTimes=new long[ensembleData[0].numInstances()];//Dummy variable, need something
+                int numFolds = Math.min(ensembleData[0].numInstances(), 10);
+                for (int r = 0; r < ensembleData.length; r++) {
+                    CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                    if (seedClassifier)
+                        cv.setSeed(seed*5*(r+1));
+                    cv.setNumFolds(numFolds);
+                    Classifier newCls = AbstractClassifier.makeCopy(cls);
+                    if (seedClassifier && cls instanceof Randomizable)
+                        ((Randomizable)newCls).setSeed(seed*100*(r+1));
+                    ClassifierResults results = cv.evaluate(newCls, ensembleData[r]);
+                    for (int i = 0; i < preds.length; i++){
+                        preds[i] += results.getPredClassValue(i);
+                        actuals[i] += results.getTrueClassValue(i);
+                        double[] dist = results.getProbabilityDistribution(i);
+                        for (int n = 0; n < trainDistributions[i].length; n++){
+                            trainDistributions[i][n] += dist[n];
+                        }
+                    }
+                }
+                for (int i = 0; i < preds.length; i++){
+                    preds[i] /= ensembleData.length;
+                    actuals[i] /= ensembleData.length;
+                    for (int n = 0; n < trainDistributions[i].length; n++){
+                        trainDistributions[i][n] /= ensembleData.length;
+                    }
+                }
+                trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
+                trainResults.setDatasetName(ensembleData[0].relationName());
+                trainResults.setSplit("train");
+                trainResults.setFoldID(seed);
+                trainResults.setClassifierName("ROCKET-ECV");
+                trainResults.setErrorEstimateMethod("CV_" + numFolds);
+            } else if (estimator == EstimatorMethod.OOB) {
+                double[] preds=new double[ensembleData[0].numInstances()];
+                double[] actuals=new double[ensembleData[0].numInstances()];
+                double[][] trainDistributions=new double[ensembleData[0].numInstances()][ensembleData[0].numClasses()];
+                long[] predTimes=new long[ensembleData[0].numInstances()];//Dummy variable, need something
+                int numFolds = Math.min(ensembleData[0].numInstances(), 10);
+                for (int r = 0; r < ensembleData.length; r++) {
+                    OutOfBagEvaluator oob = new  OutOfBagEvaluator();
+                    if (seedClassifier)
+                        oob.setSeed(seed*5*(r+1));
+                    Classifier newCls = AbstractClassifier.makeCopy(cls);
+                    if (seedClassifier && cls instanceof Randomizable)
+                        ((Randomizable)newCls).setSeed(seed*100*(r+1));
+                    ClassifierResults results = oob.evaluate(newCls, ensembleData[r]);
+                    for (int i = 0; i < preds.length; i++){
+                        preds[i] += results.getPredClassValue(i);
+                        actuals[i] += results.getTrueClassValue(i);
+                        double[] dist = results.getProbabilityDistribution(i);
+                        for (int n = 0; n < trainDistributions[i].length; n++){
+                            trainDistributions[i][n] += dist[n];
+                        }
+                    }
+                }
+                for (int i = 0; i < preds.length; i++){
+                    preds[i] /= ensembleData.length;
+                    actuals[i] /= ensembleData.length;
+                    for (int n = 0; n < trainDistributions[i].length; n++){
+                        trainDistributions[i][n] /= ensembleData.length;
+                    }
+                }
+                trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
+                trainResults.setDatasetName(ensembleData[0].relationName());
+                trainResults.setSplit("train");
+                trainResults.setFoldID(seed);
+                trainResults.setClassifierName("ROCKET-EOOB");
+                trainResults.setErrorEstimateMethod("OOB");
+            }
+        }
+        else{
+            int numFolds=Math.min(singleData.numInstances(), 10);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            if (seedClassifier)
+                cv.setSeed(seed*5);
+            cv.setNumFolds(numFolds);
+            Classifier newCls = AbstractClassifier.makeCopy(cls);
+            if (seedClassifier && cls instanceof Randomizable)
+                ((Randomizable)newCls).setSeed(seed*100);
+            long tt = trainResults.getBuildTime();
+            trainResults=cv.evaluate(newCls, singleData);
+            trainResults.setBuildTime(tt);
+            trainResults.setClassifierName("ROCKETCV");
+            trainResults.setErrorEstimateMethod("CV_"+numFolds);
+        }
     }
 
     @Override
