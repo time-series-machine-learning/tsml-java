@@ -292,6 +292,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
 
+    //Early classification
+    public double earliness = -1;
+    public double harmonicMean;
 
     /**
      * Used to avoid infinite NLL scores when prob of true class =0 or
@@ -2077,6 +2080,25 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             auroc+=(roc.get(i+1).y-roc.get(i).y)*(roc.get(i+1).x);
         }
         return auroc;
+    }
+
+    //Early classification
+    //Currently assumes each predictions earliness is stored in the prediction description alone.
+    public double findEarliness(){
+        double e = 0;
+        for (String d : predDescriptions){
+            earliness += Double.parseDouble(d);
+        }
+        earliness = e / predDescriptions.size();
+        return earliness;
+    }
+
+    //Early classification
+    public double findHarmonicMean(){
+        if (earliness < 0) earliness = findEarliness();
+        if (acc < 0) calculateAcc();
+        harmonicMean = (2 * acc * (1 - earliness)) / (acc + (1 - earliness));
+        return harmonicMean;
     }
 
     public String allPerformanceMetricsToString() {
