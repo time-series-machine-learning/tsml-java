@@ -27,7 +27,7 @@ public class HashExample {
 
         List<List<Double>> in_list = Arrays.asList(Arrays.asList(0.0, 1.0, 2.0, 4.0, 5.0));
 
-        TimeSeriesInstance data1 = new TimeSeriesInstance(in, 0);
+        TimeSeriesInstance data1 = new TimeSeriesInstance(in, 0, new String[]{"A", "B"});
 
         System.out.println(data1.hashCode() == Arrays.deepHashCode(in));
         System.out.println(data1.hashCode() == in_list.hashCode());
@@ -47,8 +47,7 @@ public class HashExample {
                                                 Arrays.asList(Arrays.asList(4.0, 3.0, 2.0, 1.0))
                                             );
 
-        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[] { 0, 1 });
-        data.setClassLabels(new String[] { "A", "B" });
+        TimeSeriesInstances data = new TimeSeriesInstances(in, new int[] { 0, 1 }, new String[]{"A", "B"});
 
 
         System.out.println(data.hashCode() == Arrays.deepHashCode(in));

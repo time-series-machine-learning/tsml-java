@@ -145,7 +145,7 @@ public class PACF implements Transformer {
             out[i++] = convertInstance(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override
