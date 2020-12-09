@@ -27,7 +27,6 @@ import weka.core.Instances;
 import java.util.*;
 import java.util.function.Function;
 
-//pretty bad, untested -MM
 public class BayesianSearcher extends ParameterSearcher {
 
     private GaussianProcesses gp = new GaussianProcesses();
@@ -39,13 +38,13 @@ public class BayesianSearcher extends ParameterSearcher {
     private List<String>[] values;
     private Instance bestParameters;
 
-    public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction) {
+    public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction) throws Exception {
 
-        System.err.println("BayesianSearcher is not tested properly and most likely broken.");
+        throw new Exception("Currently \"in progress\", most likely broken.");
 
-        this.objectiveFunction = objectiveFunction;
-        gp.setKernel(new RBFKernel());
-        gp.setNoise(2);
+//        this.objectiveFunction = objectiveFunction;
+//        gp.setKernel(new RBFKernel());
+//        gp.setNoise(2);
     }
 
     public ParameterSet getBestParameters(){ return instanceToParameterSet(bestParameters); }
@@ -147,15 +146,6 @@ public class BayesianSearcher extends ParameterSearcher {
                     gp.buildClassifier(pastParameters);
 
                     double maxVal = 0;
-
-//                    for (Instance inst : parameterPool) {
-//                        double pred = gp.classifyInstance(inst);
-//
-//                        if (pred - maxObjVal > maxVal) {
-//                            maxVal = pred - maxObjVal;
-//                            chosenParameters = inst;
-//                        }
-//                    }
 
                     //Expected improvement, probably broken
                     for (Instance inst: parameterPool){
