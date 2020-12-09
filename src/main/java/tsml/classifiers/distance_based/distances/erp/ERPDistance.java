@@ -17,8 +17,6 @@ import static utilities.ArrayUtilities.*;
 public class ERPDistance extends BaseDistanceMeasure implements Windowed {
 
     public static final String G_FLAG = "g";
-    public static final String WINDOW_SIZE_FLAG = WindowParameter.WINDOW_SIZE_FLAG;
-    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WindowParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
     private double g = 0;
     private final WindowParameter windowParameter = new WindowParameter();
 
