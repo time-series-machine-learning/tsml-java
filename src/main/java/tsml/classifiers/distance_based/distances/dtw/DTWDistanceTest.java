@@ -11,6 +11,9 @@ import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTes
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import utilities.ArrayUtilities;
 import utilities.InstanceTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -269,5 +272,30 @@ public class DTWDistanceTest {
 //        }
 //        //Find the minimum distance at the end points, within the warping window.
 //        return matrixD[n-1][m-1];
+    }
+    
+    @Test
+    public void testVariableLengthTimeSeries() {
+        DTWDistance dtw = new DTWDistance();
+        dtw.setGenerateDistanceMatrix(true);
+        dtw.setWindowSizePercentage(0.5);
+        TimeSeriesInstances tsinsts = new TimeSeriesInstances(new double[][][]{
+                {
+                        {7, 6, 1, 7, 7, 7, 3, 3, 5, 6}
+                },
+                {
+                        {5, 3, 2, 7, 4, 2, 1, 8, 8, 7, 4, 4, 2, 1, 3}
+                }
+        }, new double[]{0, 0});
+        double distance = dtw.distance(tsinsts.get(0), tsinsts.get(1));
+        Assert.assertEquals(57, distance, 0d);
+//        System.out.println("[" + ArrayUtilities.toString(dtw.getDistanceMatrix(), ",", "]," + System.lineSeparator() + "[") + "]");
+        double otherDistance = dtw.distance(tsinsts.get(1), tsinsts.get(0));
+        Assert.assertEquals(distance, otherDistance, 0d);
+        double limit = 20;
+        distance = dtw.distance(tsinsts.get(0), tsinsts.get(1), limit);
+        Assert.assertEquals(Double.POSITIVE_INFINITY, distance, 0d);
+        otherDistance = dtw.distance(tsinsts.get(1), tsinsts.get(0), limit);
+        Assert.assertEquals(distance, otherDistance, 0d);
     }
 }
