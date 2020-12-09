@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.data_containers.TimeSeriesInstance;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -46,6 +47,17 @@ public abstract class BaseDistanceMeasure implements DistanceMeasure {
 
     public void setGenerateDistanceMatrix(final boolean generateDistanceMatrix) {
         this.generateDistanceMatrix = generateDistanceMatrix;
+    }
+    
+    protected void checkData(TimeSeriesInstance a, TimeSeriesInstance b, double limit) {
+        Objects.requireNonNull(a);
+        Objects.requireNonNull(b);
+        if(a.getNumDimensions() != b.getNumDimensions()) {
+            throw new IllegalArgumentException("differing number of dimensions in the two instances");
+        }
+        if(limit < 0) {
+            throw new IllegalArgumentException("limit less than zero");
+        }
     }
 
 }

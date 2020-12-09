@@ -7,6 +7,14 @@ import java.util.stream.Collectors;
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static String toString(double[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
+    public static String toString(int[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
     public static double[][] transposeMatrix(double [][] m){
         double[][] temp = new double[m[0].length][m.length];
         for (int i = 0; i < m.length; i++)
@@ -72,9 +80,7 @@ public class ArrayUtilities {
     public static boolean[] mask(double[] array, Predicate<Double> condition) {
         final boolean[] result = new boolean[array.length];
         for(int i = 0; i < array.length; i++) {
-            if(condition.test(array[i])) {
-                result[i] = true;
-            }
+            result[i] = condition.test(array[i]);
         }
         return result;
     }

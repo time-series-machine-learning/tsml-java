@@ -32,6 +32,13 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class Utilities {
+    
+    public static double requirePercentage(double value) {
+        if(value < 0 || value > 1) {
+            throw new IllegalArgumentException(value + " is not a percentage");
+        }
+        return value;
+    }
 
     public static void sleep(long millis) {
         try {
