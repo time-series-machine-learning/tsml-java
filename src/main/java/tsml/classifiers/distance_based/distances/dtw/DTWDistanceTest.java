@@ -11,9 +11,7 @@ import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTes
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
-import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import utilities.ArrayUtilities;
 import utilities.InstanceTools;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -52,7 +50,7 @@ public class DTWDistanceTest {
 
     @Test
     public void testFullWarpPercentage() {
-        df.setWindowSizePercentage(-1);
+        df.setWindowSize(-1);
         Assert.assertTrue(df.isWindowSizeInPercentage());
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 203, 0);
@@ -68,7 +66,7 @@ public class DTWDistanceTest {
 
     @Test
     public void testConstrainedWarpPercentage() {
-        df.setWindowSizePercentage(0.5);
+        df.setWindowSize(0.5);
         Assert.assertTrue(df.isWindowSizeInPercentage());
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 212, 0);
@@ -278,7 +276,7 @@ public class DTWDistanceTest {
     public void testVariableLengthTimeSeries() {
         DTWDistance dtw = new DTWDistance();
         dtw.setGenerateDistanceMatrix(true);
-        dtw.setWindowSizePercentage(0.5);
+        dtw.setWindowSize(0.5);
         TimeSeriesInstances tsinsts = new TimeSeriesInstances(new double[][][]{
                 {
                         {7, 6, 1, 7, 7, 7, 3, 3, 5, 6}

@@ -7,6 +7,10 @@ Contributors: goastler
     
 */
 
-public interface DTW extends Windowed {
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 
+public interface DTW extends ParamHandler, Windowed {
+//    double getWindowSize();
+    
+    void setWindowSize(double windowSize);
 }
