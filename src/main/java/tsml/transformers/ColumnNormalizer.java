@@ -49,7 +49,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 		INTERVAL, STD_NORMAL
 	};
 
-	Instances trainData;
 	double[] min;
 	double[] max;
 	double[] mean;
@@ -62,7 +61,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 	}
 
 	public ColumnNormalizer(Instances data) {
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);
@@ -143,7 +141,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 	}
 
 	public void setTrainData(Instances data) { // Same as the constructor
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);
@@ -252,7 +249,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 
 	@Override
 	public void fit(Instances data) {
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);

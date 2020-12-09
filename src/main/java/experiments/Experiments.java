@@ -302,7 +302,7 @@ public class Experiments  {
         MemoryMonitor memoryMonitor = new MemoryMonitor();
         memoryMonitor.installMonitor();
 
-        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation || expSettings.forceEvaluationTrainFold)) {
             //Tell the classifier to generate train results if it can do it internally,
             //otherwise perform the evaluation externally here (e.g. cross validation on the
             //train data
@@ -332,7 +332,7 @@ public class Experiments  {
         //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
         //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation || expSettings.forceEvaluationTrainFold)) {
             writeResults(expSettings, trainResults, expSettings.trainFoldFileName, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
         }
@@ -400,7 +400,7 @@ public class Experiments  {
             //a) another process may have been doing the same experiment
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
-            if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
+            if (expSettings.forceEvaluation || expSettings.forceEvaluationTestFold || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
                 testResults = evaluateClassifier(expSettings, classifier, testSet);
                 testResults.setParas(trainResults.getParas());
                 testResults.turnOffZeroTimingsErrors();
@@ -447,6 +447,21 @@ public class Experiments  {
         testFoldExists = CollateResults.validateSingleFoldFile(expSettings.testFoldFileName);
         trainFoldExists = CollateResults.validateSingleFoldFile(expSettings.trainFoldFileName);
 
+
+
+        if (trainFoldExists){
+            try {
+                ClassifierResults cr = new ClassifierResults(expSettings.trainFoldFileName);
+                if (!cr.getClassifierName().equals("TDE50M") && !cr.getClassifierName().equals("SCIF")){
+                    System.exit(0);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
         // If needed, build/make the directory to write any supporting files to, e.g. checkpointing files
         // [writeLoc]/[classifier]/Workspace/[dataset]/[fold]/
         // todo foreseeable problems with threaded experiments:
@@ -469,7 +484,7 @@ public class Experiments  {
     public static boolean quitEarlyDueToResultsExistence(ExperimentalArguments expSettings) {
         boolean quit = false;
 
-        if (!expSettings.forceEvaluation &&
+        if (!expSettings.forceEvaluation && !expSettings.forceEvaluationTestFold && !expSettings.forceEvaluationTrainFold &&
                 ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
                         (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + expSettings.testFoldFileName + ", exiting.");
@@ -965,8 +980,14 @@ public class Experiments  {
         @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.")
         public boolean serialiseTrainedClassifier = false;
 
-        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting files already exists. The old files will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
+
+        @Parameter(names={"--forceTest"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting test file already exists. The old test file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluationTestFold = false;
+
+        @Parameter(names={"--forceTrain"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting train file already exists. The old train file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluationTrainFold = false;
 
         @Parameter(names={"-tem", "--trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")

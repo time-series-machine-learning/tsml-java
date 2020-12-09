@@ -32,16 +32,14 @@ import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
 import tsml.classifiers.frequency_based.RISE;
 import tsml.classifiers.hybrids.ROCKETClassifier;
-import tsml.classifiers.interval_based.CIF;
+import tsml.classifiers.interval_based.*;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.hybrids.TSCHIEFWrapper;
-import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
-import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
@@ -234,7 +232,7 @@ public class ClassifierLists {
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
     public static String[] dictionary= {
-        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
+        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE","TDEoob","TDEac"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -271,6 +269,14 @@ public class ClassifierLists {
             case "TDE":
                 c = new TDE();
                 break;
+            case "TDEoob":
+                c = new TDE();
+                ((TDE)c).setEstimatorMethod("oob");
+                break;
+            case "TDEac":
+                c = new TDE();
+                ((TDE)c).allClassifierTrainEstimate = true;
+                break;
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array dictionary and the switch statement ");
@@ -284,7 +290,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","CIF"};
+    public static String[] interval= {"LPS","TSF","CIF","STSF","SCIF","SCIFcv","SCIF-B","SCIF-CB","SCIF-ED","SCIF-SI","SCIF-SIN","SCIF-SIRN","SCIF-EDCI","SCIF-EDCI2","SCIF-REP1","SCIF-REP2","SCIF-REP3","SCIF-REP4","SCIF-REP5","SCIF-REP6"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -300,6 +306,123 @@ public class ClassifierLists {
             case "CIF":
                 c=new CIF();
                 break;
+            case "STSF":
+                c=new STSF();
+                break;
+            case "SCIF":
+                c=new SCIF();
+                break;
+            case "SCIFcv":
+                c=new SCIF();
+                ((SCIF)c).setEstimatorMethod("cv");
+                break;
+//            case "SCIF-B":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = true;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = false;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-CB":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = true;
+//                ((SCIF)c).extraDims = false;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-ED":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-EDCI":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP1":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 1;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP2":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 2;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP3":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 3;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP4":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 4;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP5":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 5;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-REP6":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).extraDimsNo = 6;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-EDCI2":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = true;
+//                ((SCIF)c).supervisedIntervals = false;
+//                break;
+//            case "SCIF-SI":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = false;
+//                ((SCIF)c).supervisedIntervals = true;
+//                break;
+//            case "SCIF-SIN":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = false;
+//                ((SCIF)c).supervisedIntervals = true;
+//                ((SCIF)c).siNorm = false;
+//                break;
+//            case "SCIF-SIRN":
+//                c=new SCIF();
+//                ((SCIF)c).bagging = false;
+//                ((SCIF)c).classBalancing = false;
+//                ((SCIF)c).extraDims = false;
+//                ((SCIF)c).supervisedIntervals = true;
+//                ((SCIF)c).siNorm = false;
+//                ((SCIF)c).siNormRow = true;
+//                break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -336,7 +459,7 @@ public class ClassifierLists {
     /**
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
-    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC"};
+    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC","STC1H"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -351,6 +474,10 @@ public class ClassifierLists {
                 break;
             case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
+                break;
+            case "STC1H":
+                c=new ShapeletTransformClassifier();
+                ((ShapeletTransformClassifier)c).setHourLimit(1);
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();
@@ -682,7 +809,7 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE 2.0 RE","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
+    public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE 2.0 RE","HC 2.0-SCIF","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -713,6 +840,20 @@ public class ClassifierLists {
             case "HIVE-COTE 2.0":
                 if(canLoadFromFile){
                     String[] cls={"CIF","TDE","ROCKET","STC","PF"};//RotF for ST
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC 2.0-SCIF":
+                if(canLoadFromFile){
+                    String[] cls={"SCIF","TDE","ROCKET","STC","PF"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);

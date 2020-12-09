@@ -810,19 +810,22 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             cif.setEstimateOwnPerformance(false);
             long tt = trainResults.getBuildTime();
             trainResults=cv.evaluate(cif,Converter.toArff(data));
+            trainResults.setBuildTime(tt);
             trainResults.setClassifierName("CIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
         else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
             /** Build a single new TSF using Bagging, and extract the estimate from this
              */
-            CIF tsf=new CIF();
-            tsf.copyParameters(this);
-            tsf.setSeed(seed);
-            tsf.setEstimateOwnPerformance(true);
-            tsf.bagging=true;
-            tsf.buildClassifier(data);
-            trainResults=tsf.trainResults;
+            CIF cif=new CIF();
+            cif.copyParameters(this);
+            cif.setSeed(seed);
+            cif.setEstimateOwnPerformance(true);
+            cif.bagging=true;
+            cif.buildClassifier(data);
+            long tt = trainResults.getBuildTime();
+            trainResults=cif.trainResults;
+            trainResults.setBuildTime(tt);
             trainResults.setClassifierName("CIFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }

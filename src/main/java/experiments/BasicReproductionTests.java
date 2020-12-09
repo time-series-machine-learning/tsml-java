@@ -54,7 +54,7 @@ public class BasicReproductionTests {
     public static boolean failTestsOnTimingsDifference = false;
     public static double timingEqualityThreshold = 1.2;
     
-    public static String reproductionDirectory = "src/main/java/experiments/reproductions/";
+    public static String reproductionDirectory = "src/main/java/experiments/reproductions/classifiers/";
     
     static { 
         new File(reproductionDirectory).mkdirs();

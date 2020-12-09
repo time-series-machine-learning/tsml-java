@@ -147,6 +147,15 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     protected static final long serialVersionUID = 1L;
 
+
+
+    public boolean allClassifierTrainEstimate = false;
+    ArrayList<ArrayList<Integer>> acSubsampleIndicies = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> acTrainPreds = new ArrayList<>();
+    ArrayList<Double> acWeights = new ArrayList<>();
+
+
+
     /**
      * Default constructor for TDE. Can estimate own performance.
      */
@@ -521,6 +530,12 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
 
             underContractTime = withinTrainContract(trainResults.getBuildTime());
+
+            if (allClassifierTrainEstimate){
+                acSubsampleIndicies.add(indiv.getSubsampleIndices());
+                acTrainPreds.add(indiv.getTrainPreds());
+                acWeights.add(indiv.getWeight());
+            }
         }
     }
 
@@ -817,7 +832,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
         } else {
             for (int i = 0; i < series.numInstances(); ++i) {
-                if (correct + series.numInstances() - i < requiredCorrect) {
+                if (!allClassifierTrainEstimate && correct + series.numInstances() - i < requiredCorrect) {
                     return -1;
                 }
 
@@ -878,26 +893,50 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             int[] idxSubsampleCount = new int[train.numInstances()];
 
             if (estimator == EstimatorMethod.NONE) {
-                for (int i = 0; i < classifiers.size(); i++) {
-                    ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
-                    ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
-                    double weight = classifiers.get(i).getWeight();
-                    for (int g = 0; g < trainIdx.size(); g++) {
-                        idxSubsampleCount[trainIdx.get(g)] += weight;
-                        trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
-                    }
-                }
-
-                for (int i = 0; i < trainDistributions.length; i++) {
-                    if (idxSubsampleCount[i] > 0) {
-                        for (int n = 0; n < trainDistributions[i].length; n++) {
-                            trainDistributions[i][n] /= idxSubsampleCount[i];
+                if (!allClassifierTrainEstimate) {
+                    for (int i = 0; i < classifiers.size(); i++) {
+                        ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
+                        ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
+                        double weight = classifiers.get(i).getWeight();
+                        for (int g = 0; g < trainIdx.size(); g++) {
+                            idxSubsampleCount[trainIdx.get(g)] += weight;
+                            trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
                         }
                     }
-                }
 
-                trainResults.setClassifierName("TDESubsampleLOO");
-                trainResults.setErrorEstimateMethod("SubsampleLOOCV");
+                    for (int i = 0; i < trainDistributions.length; i++) {
+                        if (idxSubsampleCount[i] > 0) {
+                            for (int n = 0; n < trainDistributions[i].length; n++) {
+                                trainDistributions[i][n] /= idxSubsampleCount[i];
+                            }
+                        }
+                    }
+
+                    trainResults.setClassifierName("TDESubsampleLOO");
+                    trainResults.setErrorEstimateMethod("SubsampleLOOCV");
+                }
+                else{
+                    for (int i = 0; i < acTrainPreds.size(); i++) {
+                        ArrayList<Integer> trainIdx = acSubsampleIndicies.get(i);
+                        ArrayList<Integer> trainPreds = acTrainPreds.get(i);
+                        double weight = acWeights.get(i);
+                        for (int g = 0; g < trainIdx.size(); g++) {
+                            idxSubsampleCount[trainIdx.get(g)] += weight;
+                            trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
+                        }
+                    }
+
+                    for (int i = 0; i < trainDistributions.length; i++) {
+                        if (idxSubsampleCount[i] > 0) {
+                            for (int n = 0; n < trainDistributions[i].length; n++) {
+                                trainDistributions[i][n] /= idxSubsampleCount[i];
+                            }
+                        }
+                    }
+
+                    trainResults.setClassifierName("TDEAllClassifierSubsampleLOO");
+                    trainResults.setErrorEstimateMethod("AllClassifierSubsampleLOOCV");
+                }
             }
             else{
                 trainResults.setClassifierName("TDELOO");

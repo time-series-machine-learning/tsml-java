@@ -21,6 +21,7 @@ import experiments.data.DatasetLoading;
 import machine_learning.classifiers.TimeSeriesTree;
 import scala.reflect.internal.util.TableDef;
 import tsml.classifiers.*;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.ColumnNormalizer;
 import tsml.transformers.Differences;
 import tsml.transformers.PowerSpectrum;
@@ -39,7 +40,9 @@ import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static utilities.ArrayUtilities.sum;
 import static utilities.StatisticalUtilities.median;
+import static utilities.Utilities.extractTimeSeries;
 
 /**
  <!-- globalinfo-start -->
@@ -133,19 +136,14 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
      * probabilities when predicting */
     private boolean voteEnsemble=true;
 
-    /** Flags and data required if Bagging **/
-    private boolean bagging=true; //Use if we want an OOB estimate
-    private ArrayList<boolean[]> inBag;
-    private int[] oobCounts;
-    private double[][] trainDistributions;
+    private int numInstances;
+    private int newNumInstances;
 
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos = 0;
     transient private long finalBuildtrainContractTimeNanos = 0;
 
     protected static final long serialVersionUID = 32554L;
-
-    private int seriesLength;
 
     PowerSpectrum ps = new PowerSpectrum();
     Differences di = new Differences();
@@ -165,9 +163,6 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     public void setBaseClassifier(Classifier c){
         classifier =c;
     }
-    public void setBagging(boolean b){
-        bagging=b;
-    }
 
     /**
      * ok,  two methods are a bit pointless, experimenting with ensemble method
@@ -186,7 +181,9 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
      */
     @Override
     public String getParameters() {
-        String result=super.getParameters()+",numTrees,"+trees.size()+",voting,"+voteEnsemble+",BaseClassifier,"+ classifier.getClass().getSimpleName()+",Bagging,"+bagging;
+        int numTrees = trees == null ? 0 : trees.size();
+        String result=super.getParameters()+",numTrees,"+numTrees+",voting,"+voteEnsemble+",BaseClassifier,"+
+                classifier.getClass().getSimpleName();
 
         if(trainTimeContract)
             result+= ",trainContractTimeNanos," +trainContractTimeNanos;
@@ -207,9 +204,10 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
  /**
   * paper defining STSF
   * @return TechnicalInformation
-  */  
+  */
     @Override
     public TechnicalInformation getTechnicalInformation() {
+        //todo update
 //        TechnicalInformation    result;
 //        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
 //        result.setValue(TechnicalInformation.Field.AUTHOR, "H. Deng, G. Runger, E. Tuv and M. Vladimir");
@@ -222,7 +220,6 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         return null;
     }
 
-
     /**
      * main buildClassifier
      * @param data
@@ -230,31 +227,21 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
      */
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        //require last class idx
+        super.buildClassifier(data);
 
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
 
-        seriesLength = data.numAttributes() - 1;
-        trees = new ArrayList(numClassifiers);
-        // Set up for train estimates
-        if(getEstimateOwnPerformance()) {
-            trainDistributions= new double[data.numInstances()][data.numClasses()];
-        }
-        //Set up for bagging
-        if(bagging){
-            inBag=new ArrayList();
-            oobCounts=new int[data.numInstances()];
-            printLineDebug("TSF is using Bagging");
-        }
-        intervals = new ArrayList();
+        numInstances = data.numInstances();
 
+        trees = new ArrayList(numClassifiers);
+        intervals = new ArrayList();
         testHolders = new ArrayList();
 
         finalBuildtrainContractTimeNanos=trainContractTimeNanos;
         //If contracted and estimating own performance, distribute the contract evenly between estimation and the final build
-        if(trainTimeContract &&  !bagging && getEstimateOwnPerformance()){
+        if(trainTimeContract && getEstimateOwnPerformance()){
             finalBuildtrainContractTimeNanos/=2;
             printLineDebug(" Setting final contract time to "+finalBuildtrainContractTimeNanos+" nanos");
         }
@@ -271,35 +258,24 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         }
 
         double average = (double)data.numInstances()/data.numClasses();
-        ArrayList<Integer> bagIdx = new ArrayList<>();
-        int[] classCounts = new int[data.numClasses()];
+        int[] instToAdd = new int[numInstances];
         for (int i = 0; i < idxByClass.length; i++) {
             if (idxByClass[i].size() < average) {
                 int n = idxByClass[i].size();
                 while (n < average) {
-                    bagIdx.add(idxByClass[i].get(rand.nextInt(idxByClass[i].size())));
+                    instToAdd[idxByClass[i].get(rand.nextInt(idxByClass[i].size()))]++;
                     n++;
                 }
-                classCounts[i] = n;
-            }
-            else{
-                classCounts[i] = idxByClass[i].size();
             }
         }
+
+        newNumInstances = numInstances + sum(instToAdd);
 
         ps = new PowerSpectrum();
         representations[1] = ps.transform(representations[0]);
         di = new Differences();
         di.setSubtractFormerValue(true);
         representations[2] = di.transform(representations[0]);
-
-        Instances[] instToAdd = new Instances[representations.length];
-        for (int r = 0; r < representations.length; r++) {
-            instToAdd[r] = new Instances(representations[r], bagIdx.size());
-            for (Integer idx : bagIdx) {
-                instToAdd[r].add(representations[r].get(idx));
-            }
-        }
 
         int classifiersBuilt = trees.size();
 
@@ -313,29 +289,17 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             if (classifiersBuilt % 100 == 0)
                 printLineDebug("\t\t\t\t\tBuilding STSF tree " + classifiersBuilt + " time taken = " + (System.nanoTime() - startTime) + " contract =" + finalBuildtrainContractTimeNanos + " nanos");
 
-            int[] instInclusions = null;
-            if (bagging) {
-                instInclusions = new int[data.numInstances()];
-
-                for (int n = 0; n < data.numInstances(); n++) {
-                    instInclusions[rand.nextInt(data.numInstances())]++;
-                }
+            //If bagging find instances with replacement
+            int[] instInclusions = new int[numInstances];
+            int[] baggingClassCounts = new int[numClasses];;
+            for (int n = 0; n < numInstances; n++) {
+                instInclusions[rand.nextInt(numInstances)]++;
+                instInclusions[n] += instToAdd[n];
             }
 
-            Instances[] newData = new Instances[representations.length];
-            for (int r = 0; r < representations.length; r++) {
-                if (bagging) {
-                    newData[r] = new Instances(representations[r], 0);
-
-                    for (int i = 0; i < data.numInstances(); i++){
-                        for (int n = 0; n < instInclusions[i]; n++){
-                            newData[r].add(representations[r].get(i));
-                        }
-                    }
-
-                    newData[r].addAll(instToAdd[r]);
-                } else {
-                    newData[r] = representations[r];
+            for (int n = 0; n < numInstances; n++) {
+                if (instInclusions[n] > 0) {
+                    baggingClassCounts[(int)representations[0].get(n).classValue()] += instInclusions[n];
                 }
             }
 
@@ -343,48 +307,13 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             intervals.add(new ArrayList[3][]);
             int totalAtts = 0;
             for (int r = 0; r < representations.length; r++) {
-                intervals.get(classifiersBuilt)[r] = findCandidateDiscriminatoryIntervals(newData[r], classCounts);
+                intervals.get(classifiersBuilt)[r] = findCandidateDiscriminatoryIntervals(representations[r],
+                        instInclusions, baggingClassCounts);
 
                 for (int a = 0; a < intervals.get(classifiersBuilt)[r].length; a++) {
                     totalAtts += intervals.get(classifiersBuilt)[r][a].size();
                 }
             }
-
-//            intervals.add(new ArrayList[representations.length][]);
-//            int minIntervalLength = 3;
-//            int numIntervals = 4;
-//            for (int r = 0; r < representations.length; r++) {
-//                ArrayList<int[]> intervals2 = new ArrayList<>();  //Start and end
-//
-//                for (int j = 0; j < numIntervals; j++) {
-//                    int[] interval = new int[2];
-//                    if (rand.nextBoolean()) {
-//                        interval[0] = rand.nextInt(representations[r].numAttributes()-1 - minIntervalLength); //Start point
-//
-//                        int range = Math.min(representations[r].numAttributes()-1 - interval[0], representations[r].numAttributes()-1);
-//                        int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                        interval[1] = interval[0] + length;
-//                    } else {
-//                        interval[1] = rand.nextInt(representations[r].numAttributes()-1 - minIntervalLength)
-//                                + minIntervalLength; //Start point
-//
-//                        int range = Math.min(interval[1], representations[r].numAttributes()-1);
-//                        int length;
-//                        if (range - minIntervalLength == 0) length = minIntervalLength;
-//                        else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                        interval[0] = interval[1] - length;
-//                    }
-//                    intervals2.add(interval);
-//                }
-//
-//                ArrayList<int[]>[] intervals3 = new ArrayList[FeatureSet.numFeatures];
-//                for (int n = 0; n < FeatureSet.numFeatures; n++){
-//                    intervals3[n] = intervals2;
-//                }
-//                intervals.get(classifiersBuilt)[r] = intervals3;
-//            }
-//            int totalAtts = numIntervals*representations.length*FeatureSet.numFeatures;
-
 
             //2. Generate and store attributes
             ArrayList<Attribute> atts = new ArrayList<>();
@@ -393,23 +322,50 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             }
             atts.add(data.classAttribute());
             //create blank instances with the correct class value
-            Instances result = new Instances("Tree", atts, newData[0].numInstances());
+            Instances result = new Instances("Tree", atts, newNumInstances);
             result.setClassIndex(result.numAttributes() - 1);
 
             Instances testHolder = new Instances(result, 0);
             testHolder.add(new DenseInstance(result.numAttributes()));
             testHolders.add(testHolder);
 
-            for (int n = 0; n < newData[0].numInstances(); n++) {
+            //For bagging
+            int instIdx = 0;
+            int lastIdx = -1;
+
+            for (int n = 0; n < newNumInstances; n++) {
+                boolean sameInst = false;
+
+                while (true) {
+                    if (instInclusions[instIdx] == 0) {
+                        instIdx++;
+                    } else {
+                        instInclusions[instIdx]--;
+
+                        if (instIdx == lastIdx) {
+                            result.add(n, new DenseInstance(result.instance(n - 1)));
+                            sameInst = true;
+                        } else {
+                            lastIdx = instIdx;
+                        }
+
+                        break;
+                    }
+                }
+
+                if (sameInst) continue;
+
                 DenseInstance in = new DenseInstance(result.numAttributes());
-                in.setValue(result.numAttributes() - 1, newData[0].instance(n).classValue());
+                in.setValue(result.numAttributes() - 1, representations[0].instance(instIdx).classValue());
 
                 int p = 0;
                 for (int r = 0; r < representations.length; r++) {
+                    double[] series = extractTimeSeries(representations[r].get(instIdx));
+
                     for (int a = 0; a < FeatureSet.numFeatures; a++) {
                         for (int j = 0; j < intervals.get(classifiersBuilt)[r][a].size(); j++) {
                             int[] interval = intervals.get(classifiersBuilt)[r][a].get(j);
-                            double val = FeatureSet.calcFeatureByIndex(a, interval[0], interval[1], newData[r].get(n).toDoubleArray());
+                            double val = FeatureSet.calcFeatureByIndex(a, interval[0], interval[1], series);
                             in.setValue(p, val);
                             p++;
                         }
@@ -443,19 +399,19 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             long est1=System.nanoTime();
             estimateOwnPerformance(data);
             long est2=System.nanoTime();
-            if(bagging)
-                trainResults.setErrorEstimateTime(est2-est1+trainResults.getErrorEstimateTime());
-            else
-                trainResults.setErrorEstimateTime(est2-est1);
-
+            trainResults.setErrorEstimateTime(est2-est1);
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         }
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished TSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
 
-    private ArrayList<int[]>[] findCandidateDiscriminatoryIntervals(Instances rep, int[] classCounts){
-        int splitPoint = rand.nextInt(rep.numAttributes()-9)+4; //min 4, max series length - 4, - class attribute
+    private ArrayList<int[]>[] findCandidateDiscriminatoryIntervals(Instances rep, int[] instInclusions,
+                                                                    int[] classCounts){
+        int seriesLength = rep.numAttributes()-1;
+        int splitPoint;
+        if (seriesLength-8 <= 0) splitPoint = seriesLength/2;
+        else splitPoint = rand.nextInt(seriesLength-8)+4; //min 4, max serieslength-4
 
         ColumnNormalizer rn = new ColumnNormalizer();
         rn.fit(rep);
@@ -465,27 +421,55 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         ArrayList<int[]>[] newIntervals = new ArrayList[FeatureSet.numFeatures];
         for (int i = 0; i < FeatureSet.numFeatures; i++){
             newIntervals[i] = new ArrayList<>();
-            supervisedIntervalSearch(data, i, newIntervals[i], classCounts, 0, splitPoint);
-            supervisedIntervalSearch(data, i, newIntervals[i], classCounts, splitPoint+1, rep.numAttributes()-2);
+            supervisedIntervalSearch(data, instInclusions, i, newIntervals[i], classCounts, 0, splitPoint);
+            supervisedIntervalSearch(data, instInclusions, i, newIntervals[i], classCounts, splitPoint+1,
+                    rep.numAttributes()-2);
         }
 
         return newIntervals;
     }
 
-    private void supervisedIntervalSearch(Instances data, int featureIdx, ArrayList<int[]> intervals,
-                                          int[] classCount, int start, int end){
+    private void supervisedIntervalSearch(Instances data, int[] instInclusions, int featureIdx,
+                                          ArrayList<int[]> intervals, int[] classCount, int start, int end){
         int seriesLength = end-start;
         if (seriesLength < 4) return;
         int halfSeriesLength = seriesLength/2;
 
-        Double[] x1 = new Double[data.numInstances()];
-        Double[] x2 = new Double[data.numInstances()];
-        double[] y = new double[data.numInstances()];
+        double[] x1 = new double[newNumInstances];
+        double[] x2 = new double[newNumInstances];
+        double[] y = new double[newNumInstances];
 
         int e1 = start + halfSeriesLength;
         int e2 = start + halfSeriesLength + 1;
-        for (int i = 0; i < data.numInstances(); i++){
-            double[] series = data.instance(i).toDoubleArray();
+        int instIdx = 0;
+        int lastIdx = -1;
+        int[] instInclusionsCopy = Arrays.copyOf(instInclusions, instInclusions.length);
+
+        for (int i = 0; i < newNumInstances; i++){
+            boolean sameInst = false;
+
+            while (true) {
+                if (instInclusionsCopy[instIdx] == 0) {
+                    instIdx++;
+                } else {
+                    instInclusionsCopy[instIdx]--;
+
+                    if (instIdx == lastIdx) {
+                        x1[i] = x1[i-1];
+                        x1[i] = x1[i-1];
+                        y[i] = y[i-1];
+                        sameInst = true;
+                    } else {
+                        lastIdx = instIdx;
+                    }
+
+                    break;
+                }
+            }
+
+            if (sameInst) continue;
+
+            double[] series = data.instance(instIdx).toDoubleArray();
             x1[i] = FeatureSet.calcFeatureByIndex(featureIdx, start, e1, series);
             x2[i] = FeatureSet.calcFeatureByIndex(featureIdx, e2, end, series);
             y[i] = series[series.length-1];
@@ -496,15 +480,15 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
         if (s2 < s1){
             intervals.add(new int[]{start, e1});
-            supervisedIntervalSearch(data, featureIdx, intervals, classCount, start, e1);
+            supervisedIntervalSearch(data, instInclusions, featureIdx, intervals, classCount, start, e1);
         }
         else{
             intervals.add(new int[]{e2, end});
-            supervisedIntervalSearch(data, featureIdx, intervals, classCount, e2, end);
+            supervisedIntervalSearch(data, instInclusions, featureIdx, intervals, classCount, e2, end);
         }
     }
 
-    private double fisherScore(Double[] x, double[] y, int[] classCounts){
+    private double fisherScore(double[] x, double[] y, int[] classCounts){
         double a = 0, b = 0;
 
         double xMean = 0;
@@ -817,7 +801,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
     public static void main(String[] arg) throws Exception{
         // Basic correctness tests, including setting paras through
-        String dataLocation="D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\";
+        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
         String problem="ItalyPowerDemand";
         Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
