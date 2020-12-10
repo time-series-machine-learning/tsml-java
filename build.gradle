@@ -20,8 +20,6 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-    // https://mvnrepository.com/artifact/org.apache.commons/logging
-    compile group: 'org.apache.commons', name: 'logging', version: '1.1.1-v201101211721'
     // https://mvnrepository.com/artifact/commons-io/commons-io
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     // https://mvnrepository.com/artifact/com.carrotsearch/hppc
