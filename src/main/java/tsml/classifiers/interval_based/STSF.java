@@ -45,76 +45,13 @@ import static utilities.StatisticalUtilities.median;
 import static utilities.Utilities.extractTimeSeries;
 
 /**
- <!-- globalinfo-start -->
- * Implementation of Time Series Forest
- * This classifier is Tunable, Contractable, Checkpointable and can estimate performance from the train data internally.
+ * Implementation of the Supervised Time Series Forest
+ * This classifier is Contractable, Checkpointable and can estimate performance from the train data internally.
  *
- Time Series Forest (TimeSeriesForest) Deng 2013: 
- * buildClassifier
- * Overview: Input n series length m
- * for each tree
- *      sample sqrt(m) intervals
- *      find three features on each interval: mean, standard deviation and slope
- *      concatenate to new feature set
- *      build tree on new feature set
- * classifyInstance
- *   ensemble the trees with majority vote
-
- * This implementation may deviate from the original, as it is using the same
- * structure as the weka random forest. In the paper the splitting criteria has a
- * tiny refinement. Ties in entropy gain are split with a further stat called margin
- * that measures the distance of the split point to the closest data.
- * So if the split value for feature
- * f=f_1,...f_n is v the margin is defined as
- *   margin= min{ |f_i-v| }
- * for simplicity of implementation, and for the fact when we did try it and it made
- * no difference, we have not used this. Note also, the original R implementation
- * may do some sampling of cases
-
- <!-- globalinfo-end -->
- <!-- technical-bibtex-start -->
- * Bibtex
- * <pre>
- * article{deng13forest,
- * author = {H. Deng and G. Runger and E. Tuv and M. Vladimir},
- * title = {A time series forest for classification and feature extraction},
- * journal = {Information Sciences},
- * volume = {239},
- * year = {2013}
- *}
- </pre>
- <!-- technical-bibtex-end -->
- <!-- options-start -->
- * Valid options are: <p/>
- *
- * <pre> -T
- *  set number of trees in the ensemble.</pre>
- *
- * <pre> -I
- *  set number of intervals to calculate.</pre>
- <!-- options-end -->
-
- * @version1.0 author Tony Bagnall
- * date 7/10/15  Tony Bagnall
- * update 14/2/19 Tony Bagnall
- * A few changes made to enable testing refinements.
- * 1. general baseClassifier rather than a hard coded RandomTree. We tested a few
- *  alternatives, they did not improve things
- * 2. Added setOptions to allow parameter tuning. Tuning on parameters: #trees, #features
- * update2 13/9/19: Adjust to allow three methods for estimating test accuracy Tony Bagnall
- *  @version2.0 13/03/20 Matthew Middlehurst. contractable, checkpointable and tuneable,
- * This classifier is tested and deemed stable on 10/3/2020. It is unlikely to change again
- *  results for this classifier on 112 UCR data sets can be found at
- *  www.timeseriesclassification.com/results/ResultsByClassifier/TSF.csv. The first column of results  are on the default
- *  train/test split. The others are found through stratified resampling of the combined train/test
- *  individual results on each fold are
- *  timeseriesclassification.com/results/ResultsByClassifier/TSF/Predictions
- * update 1/7/2020: Tony Bagnall. Sort out correct recording of timing, and tidy up comments. The storage option for
- * either CV or OOB
+ * @author Matthew Middlehurst
 */
  
-public class STSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
-        TrainTimeContractable, Tuneable {
+public class STSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable {
     //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
 
@@ -143,13 +80,13 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     transient private long trainContractTimeNanos = 0;
     transient private long finalBuildtrainContractTimeNanos = 0;
 
+    private PowerSpectrum ps = new PowerSpectrum();
+    private Differences di = new Differences();
+
     protected static final long serialVersionUID = 32554L;
 
-    PowerSpectrum ps = new PowerSpectrum();
-    Differences di = new Differences();
-
     public STSF(){
-        //TSF Has the capability to form train estimates
+        //STSF Has the capability to form train estimates
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
     public STSF(int s){
@@ -207,17 +144,13 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
   */
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //todo update
-//        TechnicalInformation    result;
-//        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-//        result.setValue(TechnicalInformation.Field.AUTHOR, "H. Deng, G. Runger, E. Tuv and M. Vladimir");
-//        result.setValue(TechnicalInformation.Field.YEAR, "2013");
-//        result.setValue(TechnicalInformation.Field.TITLE, "A time series forest for classification and feature extraction");
-//        result.setValue(TechnicalInformation.Field.JOURNAL, "Information Sciences");
-//        result.setValue(TechnicalInformation.Field.VOLUME, "239");
-//        result.setValue(TechnicalInformation.Field.PAGES, "142-153");
-
-        return null;
+        TechnicalInformation result;
+        result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
+        result.setValue(TechnicalInformation.Field.AUTHOR, "C. Nestor, N. Elham, Q. Jianzhong and K. Lars");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
+        result.setValue(TechnicalInformation.Field.TITLE, "Fast and Accurate Time Series Classification Through Supervised Interval Search");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "IEEE International Conference on Data Mining");
+        return result;
     }
 
     /**
@@ -403,7 +336,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         }
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished TSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
+        printLineDebug("*************** Finished STSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
 
     private ArrayList<int[]>[] findCandidateDiscriminatoryIntervals(Instances rep, int[] instInclusions,
@@ -621,41 +554,10 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         double[] d=distributionForInstance(ins);
         return findIndexOfMax(d, rand);
     }
-  /**
-   * Parses a given list of options to set the parameters of the classifier.
-   * We use this for the tuning mechanism, setting parameters through setOptions 
-   <!-- options-start -->
-   * Valid options are: <p/>
-   * <pre> -T
-   * Number of trees.</pre>
-   * 
-   * <pre> -I
-   * Number of intervals to fit.</pre>
-   * 
-   <!-- options-end -->
-   *
-   * @param options the list of options as an array of strings
-   * @throws Exception if an option is not supported
-   */
-    @Override
-    public void setOptions(String[] options) throws Exception{
-/*        System.out.print("TSF para sets ");
-        for (String str:options)
-            System.out.print(","+str);
-        System.out.print("\n");
-*/
-        String numTreesString=Utils.getOption('T', options);
-
-        if (numTreesString.length() != 0) {
-            numClassifiers = Integer.parseInt(numTreesString);
-        }
-
-        String numFeaturesString=Utils.getOption('I', options);
-    }
 
     @Override//TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" TSF setting contract to "+amount);
+        printLineDebug("STSF setting contract to "+amount);
 
         if(amount>0) {
             trainContractTimeNanos = amount;
@@ -778,25 +680,6 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             }
             return max;
         }
-    }
-
-    /**
-     *TUNED TSF Classifiers. Method for interface Tuneable
-     * Valid options are: <p/>
-     * <pre> -T Number of trees.</pre>
-     * <pre> -I Number of intervals to fit.</pre>
-     *
-     *
-     * @return ParameterSpace object
-     */
-    @Override
-    public ParameterSpace getDefaultParameterSearchSpace(){
-        ParameterSpace ps=new ParameterSpace();
-        String[] numTrees={"100","200","300","400","500","600","700","800","900","1000"};
-        ps.addParameter("T", numTrees);
-        String[] numInterv={"sqrt","log","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9"};
-        ps.addParameter("I", numInterv);
-        return ps;
     }
 
     public static void main(String[] arg) throws Exception{

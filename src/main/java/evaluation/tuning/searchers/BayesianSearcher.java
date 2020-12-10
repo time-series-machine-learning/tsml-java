@@ -39,12 +39,11 @@ public class BayesianSearcher extends ParameterSearcher {
     private Instance bestParameters;
 
     public BayesianSearcher(Function<ParameterSet, Double> objectiveFunction) throws Exception {
+        this.objectiveFunction = objectiveFunction;
+        gp.setKernel(new RBFKernel());
+        gp.setNoise(2);
 
         throw new Exception("Currently \"in progress\", most likely broken.");
-
-//        this.objectiveFunction = objectiveFunction;
-//        gp.setKernel(new RBFKernel());
-//        gp.setNoise(2);
     }
 
     public ParameterSet getBestParameters(){ return instanceToParameterSet(bestParameters); }

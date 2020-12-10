@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.RidgeClassifierCV;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import tsml.classifiers.Tuneable;
 import utilities.InstanceTools;
@@ -151,11 +150,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
 //Data independent config set here, so user can change them after construction
         configureDefaultShapeletTransform();
-//        ContractRotationForest rotf=new ContractRotationForest();
-//        rotf.setMaxNumTrees(200);
-//        classifier=rotf;
+        ContractRotationForest rotf=new ContractRotationForest();
+        rotf.setMaxNumTrees(200);
+        classifier=rotf;
 
-          classifier = new RidgeClassifierCV();
+
     }
 // Not debugged, doesnt currently work
     public void usePCA(){

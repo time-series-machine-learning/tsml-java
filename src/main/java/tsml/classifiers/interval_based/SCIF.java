@@ -38,7 +38,6 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static utilities.StatisticalUtilities.median;
-import static utilities.Utilities.argMax;
 
 /**
  * Implementation of the catch22 Interval Forest algorithm with extra representations and summary stats.
@@ -46,7 +45,7 @@ import static utilities.Utilities.argMax;
  * @author Matthew Middlehurst
  **/
 public class SCIF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
-        Checkpointable, Tuneable, MultiThreadable, Visualisable, Interpretable {
+        Checkpointable, Tuneable {
 
     /**
      * Paper defining SCIF.
@@ -126,21 +125,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     private long contractTime = 0;
     private int maxClassifiers = 500;
 
-    /** Multithreading **/
-    private int numThreads = 1;
-    private boolean multiThread = false;
-    private ExecutorService ex;
-
-    /** Visualisation and interpretability **/
-    private String visSavePath;
-    private int visNumTopAtts = 5;
-    private String interpSavePath;
-    private ArrayList<ArrayList<double[]>> interpData;
-    private ArrayList<Integer> interpTreePreds;
-    private int interpCount = 0;
-    private double[][][] interpSeries;
-    private int interpPred;
-
     /** data information **/
     private int numInstances;
 
@@ -158,7 +142,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     protected static final long serialVersionUID = 1L;
 
     /**
-     * Default constructor for CIF. Can estimate own performance.
+     * Default constructor for SCIF. Can estimate own performance.
      */
     public SCIF(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -246,16 +230,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Set the number of attributes to show when creating visualisations.
-     *
-     * @param i number of attributes
-     */
-    public void setVisNumTopAtts(int i){
-        visNumTopAtts = i;
-    }
-
-    /**
-     * Outputs CIF parameters information as a String.
+     * Outputs SCIF parameters information as a String.
      *
      * @return String written to results files
      */
@@ -272,10 +247,10 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Returns the capabilities for CIF. These are that the
+     * Returns the capabilities for SCIF. These are that the
      * data must be numeric or relational, with no missing and a nominal class
      *
-     * @return the capabilities of CIF
+     * @return the capabilities of SCIF
      */
     @Override //AbstractClassifier
     public Capabilities getCapabilities(){
@@ -295,10 +270,10 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Returns the time series capabilities for CIF. These are that the
+     * Returns the time series capabilities for SCIF. These are that the
      * data must be equal length, with no missing values
      *
-     * @return the time series capabilities of CIF
+     * @return the time series capabilities of SCIF
      */
     public TSCapabilities getTSCapabilities(){
         TSCapabilities capabilities = new TSCapabilities();
@@ -309,7 +284,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Build the CIF classifier.
+     * Build the SCIF classifier.
      *
      * @param data TimeSeriesInstances object
      * @throws Exception unable to train model
@@ -420,11 +395,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             intervalDimensions = new ArrayList<>();
         }
 
-        if (multiThread) {
-            ex = Executors.newFixedThreadPool(numThreads);
-            if (checkpoint) System.out.println("Unable to checkpoint until end of build when multi threading.");
-        }
-
         //Set up instances size and format.
         ArrayList<Attribute> atts=new ArrayList<>();
         String name;
@@ -451,12 +421,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
         in.setValue(testHolder.numAttributes()-1, -1);
         testHolder.add(in);
 
-        if (multiThread){
-            multiThreadBuildCIF(representations, result);
-        }
-        else{
-            buildCIF(representations, result);
-        }
+        buildSCIF(representations, result);
 
         if(trees.size() == 0){//Not enough time to build a single classifier
             throw new Exception((" ERROR in SCIF, no trees built, contract time probably too low. Contract time = "
@@ -484,7 +449,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Build the CIF classifier.
+     * Build the SCIF classifier.
      *
      * @param data weka Instances object
      * @throws Exception unable to train model
@@ -495,7 +460,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Build the CIF classifier
+     * Build the SCIF classifier
      * For each base classifier
      *     generate random intervals
      *     do the transfrorms
@@ -503,7 +468,7 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
      *
      * @throws Exception unable to build SCIF
      */
-    public void buildCIF(TimeSeriesInstances[] representations, Instances result) throws Exception {
+    public void buildSCIF(TimeSeriesInstances[] representations, Instances result) throws Exception {
         double[][][][] dimensions =  new double[representations.length][][][];
         for (int r = 0; r < representations.length; r++){
             dimensions[r] = representations[r].toValueArray();
@@ -707,62 +672,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * Build the SCIF classifier using multiple threads.
-     * Unable to checkpoint until after the build process while using multiple threads.
-     * For each base classifier
-     *     generate random intervals
-     *     do the transfrorms
-     *     build the classifier
-     *
-     * @param data TimeSeriesInstances data
-     * @param result Instances object formatted for transformed data
-     * @throws Exception unable to build SCIF
-     */
-    private void multiThreadBuildCIF(TimeSeriesInstances[] representations, Instances result) throws Exception {
-        double[][][][] dimensions =  new double[representations.length][][][];
-        for (int r = 0; r < representations.length; r++){
-            dimensions[r] = representations[r].toValueArray();
-        }
-
-        int[] classVals = representations[0].getClassIndexes();
-        int buildStep = trainTimeContract ? numThreads : numClassifiers;
-
-        while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
-            ArrayList<Future<MultiThreadBuildHolder>> futures = new ArrayList<>(buildStep);
-
-            int end = trees.size()+buildStep;
-            for (int i = trees.size(); i < end; ++i) {
-                Instances resultCopy = new Instances(result, numInstances);
-                for(int n = 0; n < numInstances; n++){
-                    DenseInstance in = new DenseInstance(result.numAttributes());
-                    in.setValue(result.numAttributes()-1, result.instance(n).classValue());
-                    resultCopy.add(in);
-                }
-
-                futures.add(ex.submit(new TreeBuildThread(i, dimensions, classVals, resultCopy)));
-            }
-
-            for (Future<MultiThreadBuildHolder> f : futures) {
-                MultiThreadBuildHolder h = f.get();
-                trees.add(h.tree);
-                intervals.add(h.interval);
-                subsampleAtts.add(h.subsampleAtts);
-                intervalDimensions.add(h.intervalDimensions);
-                attUsage.add(h.attUsage);
-
-                if (bagging && getEstimateOwnPerformance()){
-                    trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + h.errorTime);
-                    for (int n = 0; n < numInstances; n++) {
-                        oobCounts[n] += h.oobCounts[n];
-                        for (int k = 0; k < numClasses; k++)
-                            trainDistributions[n][k] += h.trainDistribution[n][k];
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Estimate accuracy stage: Three scenarios
      * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB.
      *    If we built on all data (bagging ==false) we estimate either:
@@ -865,39 +774,11 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
         double[] d = new double[numClasses];
 
-        if (interpSavePath != null){
-            interpData = new ArrayList<>();
-            interpTreePreds = new ArrayList<>();
-        }
-
         double[][][] dimensions = new double[3][][];
         dimensions[0] = ins.toValueArray();
         dimensions[1] = ps.transform(ins).toValueArray();
         dimensions[2] = di.transform(ins).toValueArray();
 
-        if (multiThread){
-            ArrayList<Future<MultiThreadPredictionHolder>> futures = new ArrayList<>(trees.size());
-
-            for (int i = 0; i < trees.size(); ++i) {
-                Instances testCopy = new Instances(testHolder, 1);
-                DenseInstance in = new DenseInstance(testHolder.numAttributes());
-                in.setValue(testHolder.numAttributes()-1, -1);
-                testCopy.add(in);
-
-                futures.add(ex.submit(new TreePredictionThread(i, dimensions, trees.get(i), testCopy)));
-            }
-
-            for (Future<MultiThreadPredictionHolder> f : futures) {
-                MultiThreadPredictionHolder h = f.get();
-                d[h.c]++;
-
-                if (interpSavePath != null && base instanceof TimeSeriesTree){
-                    interpData.add(h.al);
-                    interpTreePreds.add(h.c);
-                }
-            }
-        }
-        else {
             //Build transformed instance
             for (int i = 0; i < trees.size(); i++) {
                 Catch22 c22 = new Catch22();
@@ -933,29 +814,15 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
                     }
                 }
 
-                int c;
-                if (interpSavePath != null && base instanceof TimeSeriesTree) {
-                    ArrayList<double[]> al = new ArrayList<>();
-                    c = (int) ((TimeSeriesTree) trees.get(i)).classifyInstance(testHolder.instance(0), al);
-                    interpData.add(al);
-                    interpTreePreds.add(c);
-                } else {
-                    c = (int) trees.get(i).classifyInstance(testHolder.instance(0));
-                }
+                int c = (int) trees.get(i).classifyInstance(testHolder.instance(0));
                 d[c]++;
             }
-        }
 
         double sum = 0;
         for(double x: d)
             sum += x ;
         for(int i = 0; i < d.length; i++)
             d[i] = d[i]/sum;
-
-        if (interpSavePath != null) {
-            interpSeries = dimensions;
-            interpPred = argMax(d,rand);
-        }
 
         return d;
     }
@@ -1109,17 +976,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             trainTimeContract = saved.trainTimeContract;
             if (internalContractCheckpointHandling) contractTime = saved.contractTime;
             maxClassifiers = saved.maxClassifiers;
-            //numThreads = saved.numThreads;
-            //multiThread = saved.multiThread;
-            //ex = saved.ex;
-            visSavePath = saved.visSavePath;
-            visNumTopAtts = saved.visNumTopAtts;
-            interpSavePath = saved.interpSavePath;
-            //interpData = saved.interpData;
-            //interpTreePreds = saved.interpTreePreds;
-            //interpCount = saved.interpCount;
-            //interpSeries = saved.interpSeries;
-            //interpPred = saved.interpPred;
             numInstances = saved.numInstances;
             numDimensions = saved.numDimensions;
             intervalDimensions = saved.intervalDimensions;
@@ -1181,246 +1037,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
             maxIntervalLengthFinder = (numAtts) -> (int)(numAtts*Double.parseDouble(maxIntervalLengthsString));
 
         System.out.println(attSubsampleSize + " " + maxIntervalLengthFinder.apply(100));
-    }
-
-    /**
-     * Enables multi threading with a set number of threads to use.
-     *
-     * @param numThreads number of threads available for multi threading
-     */
-    @Override //MultiThreadable
-    public void enableMultiThreading(int numThreads) {
-        if (numThreads > 1) {
-            this.numThreads = numThreads;
-            multiThread = true;
-        } else {
-            this.numThreads = 1;
-            multiThread = false;
-        }
-    }
-
-    /**
-     * Creates and stores a path to save visualisation files to.
-     *
-     * @param path String directory path
-     * @return true if path is valid, false otherwise.
-     */
-    @Override //Visualisable
-    public boolean setVisualisationSavePath(String path) {
-        boolean validPath = Visualisable.super.createVisualisationDirectories(path);
-        if(validPath){
-            visSavePath = path;
-        }
-        return validPath;
-    }
-
-    /**
-     * Finds the temporal importance curves for model. Outputs a matplotlib figure using the visCIF.py file using the
-     * generated curves.
-     *
-     * @return true if python file to create visualisation ran, false if no path set or invalid classifier
-     * @throws Exception if failure to set path or create visualisation
-     */
-    @Override //Visualisable
-    public boolean createVisualisation() throws Exception {
-//        if (!(base instanceof TimeSeriesTree)) {
-//            System.err.println("CIF temporal importance curve only available for time series tree.");
-//            return false;
-//        }
-//
-//        if (visSavePath == null){
-//            System.err.println("CIF visualisation save path not set.");
-//            return false;
-//        }
-//
-//        boolean isMultivariate = numDimensions > 1;
-//        int[] dimCount = null;
-//        if (isMultivariate) dimCount = new int[numDimensions];
-//
-//        //get information gain from all tree node splits for each attribute/time point
-//        double[][][] curves = new double[startNumAttributes][numDimensions][seriesLength];
-//        for (int i = 0; i < trees.size(); i++){
-//            TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
-//            ArrayList<Double>[] sg = tree.getTreeSplitsGain();
-//
-//            for (int n = 0; n < sg[0].size(); n++){
-//                double split = sg[0].get(n);
-//                double gain = sg[1].get(n);
-//                int interval = (int)(split/numAttributes);
-//                int att = subsampleAtts.get(i).get((int)(split%numAttributes));
-//                int dim = intervalDimensions.get(i).get(interval);
-//
-//                if (isMultivariate) dimCount[dim]++;
-//
-//                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
-//                    curves[att][dim][j] += gain;
-//                }
-//            }
-//        }
-//
-//        if (isMultivariate){
-//            OutFile of = new OutFile(visSavePath + "/dims" + seed + ".txt");
-//            of.writeLine(Arrays.toString(dimCount));
-//            of.closeFile();
-//        }
-//
-//        OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-//        for (int i = 0; i < numDimensions; i++) {
-//            for (int n = 0; n < startNumAttributes; n++) {
-//                switch (n) {
-//                    case 22:
-//                        of.writeLine("Mean");
-//                        break;
-//                    case 23:
-//                        of.writeLine("Standard Deviation");
-//                        break;
-//                    case 24:
-//                        of.writeLine("Slope");
-//                        break;
-//                    default:
-//                        of.writeLine(Catch22.getSummaryStatNameByIndex(n));
-//                }
-//                of.writeLine(Integer.toString(i));
-//                of.writeLine(Arrays.toString(curves[n][i]));
-//            }
-//        }
-//        of.closeFile();
-//
-//        //run python file to output temporal importance curves graph
-//        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
-//                visSavePath.replace("\\", "/")+ "\" " + seed + " " + startNumAttributes
-//                + " " + numDimensions + " " + visNumTopAtts);
-//
-//        if (debug) {
-//            System.out.println("CIF vis python output:");
-//            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-//            System.out.println("output : ");
-//            String outLine = out.readLine();
-//            while (outLine != null) {
-//                System.out.println(outLine);
-//                outLine = out.readLine();
-//            }
-//            System.out.println("error : ");
-//            String errLine = err.readLine();
-//            while (errLine != null) {
-//                System.out.println(errLine);
-//                errLine = err.readLine();
-//            }
-//        }
-
-        return true;
-    }
-
-    /**
-     * Stores a path to save interpretability files to.
-     *
-     * @param path String directory path
-     * @return true if path is valid, false otherwise.
-     */
-    @Override //Interpretable
-    public boolean setInterpretabilitySavePath(String path) {
-        boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
-        if(validPath){
-            interpSavePath = path;
-        }
-        return validPath;
-    }
-
-    /**
-     * Outputs a summary/visualisation of how the last classifier prediction was made to a set path. Runs
-     * interpretabilityCIF.py for visualisations.
-     *
-     * @return true if python file to create visualisation ran, false if no path set or invalid classifier
-     * @throws Exception if failure to set path or output files
-     */
-    @Override //Interpretable
-    public boolean lastClassifiedInterpretability() throws Exception {
-//        if (!(base instanceof TimeSeriesTree)) {
-//            System.err.println("CIF interpretability output only available for time series tree.");
-//            return false;
-//        }
-//
-//        if (interpSavePath == null){
-//            System.err.println("CIF interpretability output save path not set.");
-//            return false;
-//        }
-//
-//        OutFile of = new OutFile(interpSavePath + "pred" + seed + "-" + interpCount
-//                + ".txt");
-//        //output test series
-//        of.writeLine("Series");
-//        of.writeLine(Arrays.toString(interpSeries));
-//        //output the nodes visited for each tree
-//        for (int i = 0; i < interpData.size(); i++){
-//            of.writeLine("Tree " + i + " - " + interpData.get(i).size() + " nodes - pred " + interpTreePreds.get(i));
-//            for (int n = 0; n < interpData.get(i).size(); n++){
-//                if (n == interpData.get(i).size()-1){
-//                    of.writeLine(Arrays.toString(interpData.get(i).get(n)));
-//                }
-//                else {
-//                    TimeSeriesTree tree = (TimeSeriesTree)trees.get(i);
-//                    double[] arr = new double[5];
-//                    double[] nodeData = interpData.get(i).get(n);
-//
-//                    int interval = (int) (nodeData[0] / numAttributes);
-//                    int att = (int) (nodeData[0] % numAttributes);
-//                    att = subsampleAtts.get(i).get(att);
-//
-//                    arr[0] = att;
-//                    arr[1] = intervals.get(i)[interval][0];
-//                    arr[2] = intervals.get(i)[interval][1];
-//                    if (tree.getNormalise()){
-//                        arr[3] = nodeData[1] * tree.getNormStdev((int) nodeData[0])
-//                                + tree.getNormMean((int) nodeData[0]);
-//                    }
-//                    else {
-//                        arr[3] = nodeData[1];
-//                    }
-//                    arr[4] = nodeData[2];
-//
-//                    of.writeLine(Arrays.toString(arr));
-//                }
-//            }
-//        }
-//        of.closeFile();
-//
-//        //run python file to output graph displaying important attributes and intervals for test series
-//        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityCIF.py \"" +
-//                interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
-//                + " " + trees.size() + " " + seriesLength + " " + startNumAttributes + " " + interpPred);
-//
-//        interpCount++;
-//
-//        if (debug) {
-//            System.out.println("CIF interp python output:");
-//            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-//            System.out.println("output : ");
-//            String outLine = out.readLine();
-//            while (outLine != null) {
-//                System.out.println(outLine);
-//                outLine = out.readLine();
-//            }
-//            System.out.println("error : ");
-//            String errLine = err.readLine();
-//            while (errLine != null) {
-//                System.out.println(errLine);
-//                errLine = err.readLine();
-//            }
-//        }
-
-        return true;
-    }
-
-    /**
-     * Get a unique indentifier for the last prediction made, used for filenames etc.
-     *
-     * @return int ID for the last prediction
-     */
-    @Override //Interpretable
-    public int getPredID(){
-        return interpCount;
     }
 
     /**
@@ -1530,355 +1146,6 @@ public class SCIF extends EnhancedAbstractClassifier implements TechnicalInforma
                 if (data[i] > max) max = data[i];
             }
             return max;
-        }
-    }
-
-    /**
-     * Class to hold data about a SCIF tree when multi threading.
-     */
-    private static class MultiThreadBuildHolder {
-        ArrayList<Integer> subsampleAtts;
-        int[][] intervalDimensions;
-        Classifier tree;
-        int[][][] interval;
-        boolean[] attUsage;
-
-        double[][] trainDistribution;
-        int[] oobCounts;
-        long errorTime;
-
-        public MultiThreadBuildHolder() { }
-    }
-
-    /**
-     * Class to build a SCIF tree when multi threading.
-     */
-    private class TreeBuildThread implements Callable<MultiThreadBuildHolder> {
-        int i;
-        double[][][][] dimensions;
-        int[] classVals;
-        Instances result;
-
-        public TreeBuildThread(int i, double[][][][] dimensions, int[] classVals, Instances result){
-            this.i = i;
-            this.dimensions = dimensions;
-            this.classVals = classVals;
-            this.result = result;
-        }
-
-        /**
-         *   generate random intervals
-         *   do the transfrorms
-         *   build the classifier
-         **/
-        @Override
-        public MultiThreadBuildHolder call() throws Exception{
-//            MultiThreadBuildHolder h = new MultiThreadBuildHolder();
-//            Random rand = new Random(seed + i * numClassifiers);
-//
-//            //1. Select random intervals for tree i
-//
-//            int[][] interval = new int[numIntervals][2];  //Start and end
-//
-//            for (int j = 0; j < numIntervals; j++) {
-//                if (rand.nextBoolean()) {
-//                    interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
-//
-//                    int range = Math.min(seriesLength - interval[j][0], maxIntervalLength);
-//                    int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                    interval[j][1] = interval[j][0] + length;
-//                } else {
-//                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
-//                            + minIntervalLength; //Start point
-//
-//                    int range = Math.min(interval[j][1], maxIntervalLength);
-//                    int length;
-//                    if (range - minIntervalLength == 0) length = 3;
-//                    else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
-//                    interval[j][0] = interval[j][1] - length;
-//                }
-//            }
-//
-//            //If bagging find instances with replacement
-//
-//            int[] instInclusions = null;
-//            boolean[] inBag = null;
-//            if (bagging) {
-//                inBag = new boolean[numInstances];
-//                instInclusions = new int[numInstances];
-//
-//                for (int n = 0; n < numInstances; n++) {
-//                    instInclusions[rand.nextInt(numInstances)]++;
-//                }
-//
-//                for (int n = 0; n < numInstances; n++) {
-//                    if (instInclusions[n] > 0) {
-//                        inBag[n] = true;
-//                    }
-//                }
-//            }
-//
-//            //find attributes to subsample
-//            ArrayList<Integer> subsampleAtts = new ArrayList<>();
-//            for (int n = 0; n < startNumAttributes; n++){
-//                subsampleAtts.add(n);
-//            }
-//
-//            while (subsampleAtts.size() > numAttributes){
-//                subsampleAtts.remove(rand.nextInt(subsampleAtts.size()));
-//            }
-//
-//            //find dimensions for each interval
-//            ArrayList<Integer> intervalDimensions = new ArrayList<>();
-//            for (int n = 0; n < numIntervals; n++) {
-//                intervalDimensions.add(rand.nextInt(numDimensions));
-//            }
-//            Collections.sort(intervalDimensions);
-//
-//            h.subsampleAtts = subsampleAtts;
-//            h.intervalDimensions = intervalDimensions;
-//
-//            //For bagging
-//            int instIdx = 0;
-//            int lastIdx = -1;
-//
-//            //2. Generate and store attributes
-//            for (int k = 0; k < numInstances; k++) {
-//                //For each instance
-//
-//                if (bagging) {
-//                    boolean sameInst = false;
-//
-//                    while (true) {
-//                        if (instInclusions[instIdx] == 0) {
-//                            instIdx++;
-//                        } else {
-//                            instInclusions[instIdx]--;
-//
-//                            if (instIdx == lastIdx) {
-//                                result.set(k, new DenseInstance(result.instance(k - 1)));
-//                                sameInst = true;
-//                            } else {
-//                                lastIdx = instIdx;
-//                            }
-//
-//                            break;
-//                        }
-//                    }
-//
-//                    if (sameInst) continue;
-//
-//                    result.instance(k).setValue(result.classIndex(), classVals[instIdx]);
-//                } else {
-//                    instIdx = k;
-//                }
-//
-//                for (int j = 0; j < numIntervals; j++) {
-//                    //extract the interval
-//                    double[] series = dimensions[instIdx][intervalDimensions.get(j)];
-//
-//                    FeatureSet f = new FeatureSet();
-//                    double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
-//
-//                    //process features
-//                    Catch22 c22 = new Catch22();
-//
-//                    for (int g = 0; g < numAttributes; g++) {
-//                        if (subsampleAtts.get(g) < 22) {
-//                            result.instance(k).setValue(j * numAttributes + g,
-//                                    c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
-//                        } else {
-//                            if (!f.calculatedFeatures) {
-//                                f.setFeatures(series, interval[j][0], interval[j][1]);
-//                            }
-//
-//                            switch (subsampleAtts.get(g)) {
-//                                case 22:
-//                                    result.instance(k).setValue(j * numAttributes + g, f.mean);
-//                                    break;
-//                                case 23:
-//                                    result.instance(k).setValue(j * numAttributes + g, f.stDev);
-//                                    break;
-//                                case 24:
-//                                    result.instance(k).setValue(j * numAttributes + g, f.slope);
-//                                    break;
-//                                default:
-//                                    throw new Exception("att subsample basic features broke");
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            if (bagging) {
-//                result.randomize(rand);
-//            }
-//
-//            //3. Create and build tree using all the features. Feature selection
-//            Classifier tree = AbstractClassifier.makeCopy(base);
-//            if (seedClassifier && tree instanceof Randomizable)
-//                ((Randomizable) tree).setSeed(seed * (i + 1));
-//
-//            tree.buildClassifier(result);
-//
-//            boolean[] attUsage;
-//            if (base instanceof TimeSeriesTree) {
-//                attUsage = ((TimeSeriesTree)tree).getAttributesUsed();
-//            }
-//            else{
-//                attUsage = new boolean[numAttributes*numIntervals];
-//                Arrays.fill(attUsage,true);
-//            }
-//
-//            h.attUsage = attUsage;
-//
-//            if (bagging && getEstimateOwnPerformance()) {
-//                long t1 = System.nanoTime();
-//                int[] oobCounts = new int[numInstances];
-//                double[][] trainDistributions = new double[numInstances][numClasses];
-//
-//                for (int n = 0; n < numInstances; n++) {
-//                    if (inBag[n])
-//                        continue;
-//
-//                    for (int j = 0; j < numIntervals; j++) {
-//                        double[] series = dimensions[n][intervalDimensions.get(j)];
-//
-//                        FeatureSet f = new FeatureSet();
-//                        double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
-//
-//                        for (int g = 0; g < numAttributes; g++) {
-//                            if (!attUsage[j * numAttributes + g]) {
-//                                testHolder.instance(0).setValue(j * numAttributes + g, 0);
-//                                continue;
-//                            }
-//
-//                            if (subsampleAtts.get(g) < 22) {
-//                                testHolder.instance(0).setValue(j * numAttributes + g,
-//                                        c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
-//                            } else {
-//                                if (!f.calculatedFeatures) {
-//                                    f.setFeatures(series, interval[j][0], interval[j][1]);
-//                                }
-//                                switch (subsampleAtts.get(g)) {
-//                                    case 22:
-//                                        testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
-//                                        break;
-//                                    case 23:
-//                                        testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
-//                                        break;
-//                                    case 24:
-//                                        testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
-//                                        break;
-//                                    default:
-//                                        throw new Exception("att subsample basic features broke");
-//                                }
-//                            }
-//                        }
-//                    }
-//
-//                    double[] newProbs = tree.distributionForInstance(testHolder.instance(0));
-//                    oobCounts[n]++;
-//                    for (int k = 0; k < newProbs.length; k++)
-//                        trainDistributions[n][k] += newProbs[k];
-//                }
-//
-//                h.oobCounts = oobCounts;
-//                h.trainDistribution = trainDistributions;
-//                h.errorTime = System.nanoTime() - t1;
-//            }
-//
-//            h.tree = tree;
-//            h.interval = interval;
-//
-//            return h;
-            return null;
-        }
-    }
-
-    /**
-     * Class to hold data about a SCIF tree when multi threading.
-     */
-    private static class MultiThreadPredictionHolder {
-        int c;
-
-        ArrayList<double[]> al;
-
-        public MultiThreadPredictionHolder() { }
-    }
-
-    /**
-     * Class to make a class prediction using a SCIF tree when multi threading.
-     */
-    private class TreePredictionThread implements Callable<MultiThreadPredictionHolder> {
-        int i;
-        double[][][] dimensions;
-        Classifier tree;
-        Instances testHolder;
-
-        public TreePredictionThread(int i, double[][][] dimensions, Classifier tree, Instances testHolder){
-            this.i = i;
-            this.dimensions = dimensions;
-            this.tree = tree;
-            this.testHolder = testHolder;
-        }
-
-        @Override
-        public MultiThreadPredictionHolder call() throws Exception{
-//            MultiThreadPredictionHolder h = new MultiThreadPredictionHolder();
-//
-//            //Build transformed instance
-//            Catch22 c22 = new Catch22();
-//            c22.setOutlierNormalise(outlierNorm);
-//            boolean[] usedAtts = attUsage.get(i);
-//
-//            for (int j = 0; j < numIntervals; j++) {
-//                double[] series = dimensions[intervalDimensions.get(i).get(j)];
-//
-//                FeatureSet f = new FeatureSet();
-//                double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[j][0],
-//                        intervals.get(i)[j][1] + 1);
-//
-//                for (int g = 0; g < numAttributes; g++) {
-//                    if (!usedAtts[j * numAttributes + g]) {
-//                        testHolder.instance(0).setValue(j * numAttributes + g, 0);
-//                        continue;
-//                    }
-//
-//                    if (subsampleAtts.get(i).get(g) < 22) {
-//                        testHolder.instance(0).setValue(j * numAttributes + g,
-//                                c22.getSummaryStatByIndex(subsampleAtts.get(i).get(g), j, intervalArray));
-//                    } else {
-//                        if (!f.calculatedFeatures) {
-//                            f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
-//                        }
-//                        switch (subsampleAtts.get(i).get(g)) {
-//                            case 22:
-//                                testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
-//                                break;
-//                            case 23:
-//                                testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
-//                                break;
-//                            case 24:
-//                                testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
-//                                break;
-//                            default:
-//                                throw new Exception("att subsample basic features broke");
-//                        }
-//                    }
-//                }
-//            }
-//
-//            if (interpSavePath != null && base instanceof TimeSeriesTree) {
-//                ArrayList<double[]> al = new ArrayList<>();
-//                h.c = (int) ((TimeSeriesTree) tree).classifyInstance(testHolder.instance(0), al);
-//                h.al = al;
-//            } else {
-//                h.c = (int) tree.classifyInstance(testHolder.instance(0));
-//            }
-//
-//            return h;
-            return null;
         }
     }
 

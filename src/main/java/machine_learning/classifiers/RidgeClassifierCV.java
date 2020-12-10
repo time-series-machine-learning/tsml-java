@@ -43,15 +43,19 @@ public class RidgeClassifierCV extends AbstractClassifier {
     private final double[] alphas = {1.00000000e-03, 4.64158883e-03, 2.15443469e-02, 1.00000000e-01,
             4.64158883e-01, 2.15443469e+00, 1.00000000e+01, 4.64158883e+01, 2.15443469e+02, 1.00000000e+03};
 
-    INDArray coefficients;
-    double[] intercept;
+    private INDArray coefficients;
+    private double[] intercept;
 
-    public double bestScore = -999999;
+    private double bestScore = -999999;
+
+    public double getBestScore() { return bestScore; }
 
     @Override
     public void buildClassifier(Instances instances) throws Exception {
         if (instances.classIndex() != instances.numAttributes() - 1)
             throw new Exception("Class attribute must be the final index.");
+
+        bestScore = -999999;
 
         double[][] data = new double[instances.numInstances()][instances.numAttributes()-1];
         for (int i = 0; i < data.length; i++) {

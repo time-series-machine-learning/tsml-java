@@ -22,8 +22,6 @@ import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
-import tsml.classifiers.interval_based.SCIF;
-import tsml.data_containers.utilities.Converter;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -46,7 +44,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMul
  */
 public class ROCKETClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable, MultiThreadable {
 
-    public int numKernels = 10000;
+    private int numKernels = 10000;
     private boolean normalise = true;
     private Classifier cls = new RidgeClassifierCV();
 
@@ -60,10 +58,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     private boolean multithreading = false;
     private int threads;
 
-    boolean ensemble = true;
-    public int ensembleSize = 25;
-    Classifier[] eCls;
-    ROCKET[] eROCKET;
+    private boolean ensemble = false;
+    private int ensembleSize = 25;
+    private Classifier[] eCls;
+    private ROCKET[] eROCKET;
 
     public ROCKETClassifier(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -107,6 +105,12 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     public void setClassifier(Classifier cls){
         this.cls = cls;
     }
+
+    public void setEnsemble(boolean ensemble) { ensemble = ensemble; }
+
+    public void setEnsembleSize(int size) { ensembleSize = size; }
+
+    public void setNumKernelsStep(int step) { numKernelsStep = step; }
 
     @Override
     public void setTrainTimeLimit(long time) {
@@ -170,10 +174,13 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                     i++;
                 }
 
+                eCls = new Classifier[tempCls.size()];
                 eCls = tempCls.toArray(eCls);
+                eROCKET = new ROCKET[tempROCKET.size()];
                 eROCKET = tempROCKET.toArray(eROCKET);
 
                 if (getEstimateOwnPerformance()){
+                    ensembleTrainEstData = new Instances[transformedDataArr.size()];
                     ensembleTrainEstData = transformedDataArr.toArray(ensembleTrainEstData);
                 }
             }
@@ -402,7 +409,8 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                 Instance transformedInst = eROCKET[i].transform(instance);
                 transformedInst.setDataset(header);
                 double pls = eCls[i].classifyInstance(transformedInst);
-                double s = cls instanceof RidgeClassifierCV ? Math.pow(((RidgeClassifierCV)eCls[i]).bestScore, 4) : 1;
+                double s = cls instanceof RidgeClassifierCV ? Math.pow(((RidgeClassifierCV)eCls[i]).getBestScore(), 4)
+                        : 1;
                 probs[(int)pls] += s;
                 sum += s;
             }
@@ -443,10 +451,12 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
         c = new ROCKETClassifier();
         c.seed = fold;
+        c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
 
         System.out.println("ROCKETClassifier accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
         System.out.println("Build time on " + dataset + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
@@ -477,6 +487,55 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
         System.out.println("ROCKETClassifierContract accuracy on " + dataset + " fold " + fold + " = " + accuracy);
         System.out.println("No Kernels = " + c.rocket.getNumKernels());
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        c.ensemble = true;
+        c.setNumKernels(2000);
+        c.setEstimateOwnPerformance(true);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("ROCKETEnsembleClassifier accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Train accuracy on " + dataset + " fold " + fold + " = " + c.trainResults.getAcc());
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        c.ensemble = true;
+        c.setNumKernels(2000);
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("ROCKETEnsembleClassifier accuracy on " + dataset2 + " fold " + fold + " = " + accuracy);
+        System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        c.ensemble = true;
+        c.setNumKernels(2000);
+        c.enableMultiThreading(4);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("ROCKETEnsembleClassifierMT accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("Build time on " + dataset + " fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+
+        c = new ROCKETClassifier();
+        c.seed = fold;
+        c.ensemble = true;
+        c.setNumKernels(2000);
+        c.setTrainTimeLimit(400, TimeUnit.MILLISECONDS);
+        c.buildClassifier(train);
+        accuracy = ClassifierTools.accuracy(test, c);
+
+        System.out.println("ROCKETEnsembleClassifierContract accuracy on " + dataset + " fold " + fold + " = " + accuracy);
+        System.out.println("No Classifiers = " + c.eCls.length);
         System.out.println("Build time on " + dataset + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
     }

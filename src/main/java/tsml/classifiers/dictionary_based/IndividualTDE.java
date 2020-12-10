@@ -85,10 +85,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     protected int numThreads = 1;
     protected ExecutorService ex;
 
-    private boolean savePredInfo = false;
-    private int lastNNIdx;
-    private Bag lastNNBag;
-
     private static final long serialVersionUID = 2L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
@@ -197,9 +193,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     public double getWeight() { return weight; }
     public ArrayList<Integer> getSubsampleIndices() { return subsampleIndices; }
     public ArrayList<Integer> getTrainPreds() { return trainPreds; }
-    public double[][] getBreakpoints() { return breakpoints; }
-    public int getLastNNIdx() { return lastNNIdx; }
-    public Bag getLastNNBag() { return lastNNBag; }
 
     public void setSeed(int i){ seed = i; }
     public void setCleanAfterBuild(boolean b){ cleanAfterBuild = b; }
@@ -969,11 +962,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
             }
         }
 
-        if (savePredInfo) {
-            lastNNIdx = subsampleIndices.get(nn);
-            lastNNBag = testBag;
-        }
-
         return bags.get(nn).getClassVal();
     }
 
@@ -1026,12 +1014,6 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         }
 
         return bags.get(nn).getClassVal();
-    }
-
-    public double[] firstWordVis(TimeSeriesInstance inst, BitWord word) {
-        double[] dft = performMFT(inst.toValueArray()[0])[0];
-        word.setWord(createWord(dft).getWord());
-        return dft;
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{

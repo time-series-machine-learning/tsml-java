@@ -42,8 +42,6 @@ import utilities.ArrayUtilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.Arrays;
-
 public class ColumnNormalizer implements TrainableTransformer {
 	public enum NormType {
 		INTERVAL, STD_NORMAL
@@ -196,8 +194,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 			for (int j = 0; j < r.getMaxLength(); j++) {
 				out[index][j] = TimeSeriesSummaryStatistics.standardNorm(r.get(i).getVSliceArray(j), mean[j], stdev[j]);
 			}
-			out[index] = ArrayUtilities.transposeMatrix(out[index]);
-			index++;
+			out[index++] = ArrayUtilities.transposeMatrix(out[index]);
 		}
 		return out;
 	}

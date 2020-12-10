@@ -3,7 +3,6 @@ package tsml.classifiers;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import org.apache.commons.lang3.ArrayUtils;
-import org.w3c.dom.Attr;
 import tsml.classifiers.interval_based.CIF;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -30,6 +29,12 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.StatisticalUtilities.dot;
 import static utilities.Utilities.argMax;
 
+/**
+ * Implementation of the LEFTIST interpretability algorithm, producing model agnostic weights for time series interval
+ * importance for new predictions.
+ *
+ * @author Matthew Middlehurst
+ **/
 public class LEFTIST {
 
     private TimeSeriesInstances train;
