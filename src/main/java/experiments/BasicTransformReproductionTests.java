@@ -340,7 +340,7 @@ public class BasicTransformReproductionTests {
 
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
-        generateMissingExpectedResults();
+//        generateMissingExpectedResults();
 
         boolean transformersComplete = confirmAllExpectedResultReproductions();
 
