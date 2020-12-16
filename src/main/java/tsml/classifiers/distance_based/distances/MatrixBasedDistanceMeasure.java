@@ -21,7 +21,7 @@ import java.util.Objects;
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseDistanceMeasure implements DistanceMeasure {
+public abstract class MatrixBasedDistanceMeasure implements DistanceMeasure {
 
     private boolean generateDistanceMatrix = false;
     // the distance matrix produced by the distance function
