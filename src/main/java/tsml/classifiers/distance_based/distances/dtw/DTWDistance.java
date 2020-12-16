@@ -1,13 +1,12 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.Utilities;
 
 import java.util.Arrays;
-import java.util.stream.DoubleStream;
 
 import static utilities.ArrayUtilities.*;
 
@@ -16,7 +15,7 @@ import static utilities.ArrayUtilities.*;
  * <p>
  * Contributors: goastler
  */
-public class DTWDistance extends BaseDistanceMeasure implements DTW {
+public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
 
     public static double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
         final double[] aSlice = a.getVSliceArray(aIndex);
@@ -37,98 +36,84 @@ public class DTWDistance extends BaseDistanceMeasure implements DTW {
     }
 
     public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
-        // check data is in expected format
+        // collect info
         checkData(a, b, limit);
-
         final int aLength = a.getMaxLength();
         final int bLength = b.getMaxLength();
         final double lengthRatio = (double) bLength / aLength;
         final double windowSize = this.windowSize * bLength;
-        
+        // start and end of window
+        int start = 1; // start at 1 because 0th element is filled directly below
+        double mid;
+        int end =  (int) Math.min(bLength - 1, Math.ceil(windowSize));
+        int prevEnd;
+        // setup matrix and rows
         final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
-        
-        // row by row matrix traversal. Use len + 1 as left most column should be pos inf, same with first row. Pos inf's are used to stop the mapping over the top/left edge of the matrix when considering top/left/topleft
-        /* i.e. the distance matrix may end up being
-            2,3,4,5
-            2,4,6,7
-            3,7,5,8
-            4,5,6,6
-            
-           but we're padding with a top row and left column of pos inf
-           
-            0,inf,inf,inf,inf
-            inf,2,3,4,5
-            inf,2,4,6,7
-            inf,3,7,5,8
-            inf,4,5,6,6
-            
-           this means the left and top row can consider left / top / topleft neighbours without having to check for index out of bounds.
-           the [0][0]'th element is set to zero to allow the [1][1]'th to warp.
-           note the distance matrix is NOT populated with the padded top row and left col of infs as it's just a implementation detail.
-        
-         */
-        double[] row = new double[bLength + 1];
-        double[] prevRow = new double[bLength + 1];
+        final double[][] matrix;
+        double[] row;
+        double[] prevRow = null;
         if(generateDistanceMatrix) {
-            // fill in row with infs to fill values outside window if generating distance matrix
-            // deliberately leave first cell as zero to enable warping to top-most left-most cell of the distance measure
-            Arrays.fill(row, 1, row.length, Double.POSITIVE_INFINITY);
-            Arrays.fill(prevRow, 1, prevRow.length, Double.POSITIVE_INFINITY);
+            matrix = new double[aLength][bLength];
+            for(double[] array : matrix) Arrays.fill(array, Double.POSITIVE_INFINITY);
+            row = matrix[0];
+        } else {
+            matrix = null;
+            row = new double[bLength];
+            prevRow = new double[bLength];
         }
-        // track the previous window's start and end points. Used to fill in the gaps between subsequent reuses of rows
-        int prevStart = 0;
-        int prevPrevStart = 0;
-        int prevEnd = 0;
-        // for each row
-        for(int i = 0; i < aLength; i++) {
-            // make a new row (just reuse the previous)
-            {
-                double[] tmp = prevRow;
-                prevRow = row;
-                row = tmp;
+        setDistanceMatrix(matrix);
+        // process top left sqaure of mat
+        double min = cost(a, 0, b, 0);
+        row[0] = min;
+        // compute the first row
+        for(int j = start; j <= end; j++) {
+            double cost = row[j - 1] + cost(a, 0, b, j);
+            row[j] = cost;
+            min = Math.min(min, cost);
+        }
+        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
+        // process remaining rows
+        for(int i = 1; i < aLength; i++) {
+            // reset min for the row
+            min = Double.POSITIVE_INFINITY;
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * lengthRatio;
+            start = (int) Math.max(0, Math.floor(mid - windowSize));
+            end = (int) Math.min(bLength - 1, Math.ceil(mid + windowSize));
+            // change rows
+            if(generateDistanceMatrix) {
+                row = matrix[i];
+                prevRow = matrix[i - 1];
+            } else {
+                // reuse previous row
+                double[] tmp = row;
+                row = prevRow;
+                prevRow = tmp;
+                // set the top values outside of window to inf
+                Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
+                // set the value left of the window to inf
+                if(start > 0) row[start - 1] = Double.POSITIVE_INFINITY;
             }
-            // the min for this row begins with pos inf (i.e. no min seen yet)
-            double min = Double.POSITIVE_INFINITY;
-            // find the start and end of the window for this row
-            final double midPoint = i * lengthRatio;
-            // shift both start and end left by 1 to account for left-most pos inf
-            final int start = (int) Math.max(0, Math.floor(midPoint - windowSize)) + 1;
-            final int end = (int) Math.min(bLength - 1, Math.ceil(midPoint + windowSize)) + 1;
-            // set the left-most value to pos inf
-            row[start - 1] = Double.POSITIVE_INFINITY;
-            // set the top values outside of window to inf
-            Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
-            // for each column
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(start == 0) {
+                final double cost = prevRow[start] + cost(a, i, b, start);
+                row[start++] = cost;
+                min = Math.min(min, cost);
+            }
+            // compute the distance for each cell in the row
             for(int j = start; j <= end; j++) {
-                // compute mapping - all accesses shifted left by one to account for left most column of pos infs
                 final double topLeft = prevRow[j - 1];
                 final double left = row[j - 1];
                 final double top = prevRow[j];
-                final double cellCost = cost(a, i, b, j - 1); // offset by 1 because of left pos inf
-                final double cost = Math.min(top, Math.min(left, topLeft)) + cellCost;
+                final double cost = Math.min(top, Math.min(left, topLeft)) + cost(a, i, b, j);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
-            // save row to matrix
-            if(generateDistanceMatrix) {
-                // fill in the space outside of window with inf
-                Arrays.fill(row, prevPrevStart, start, Double.POSITIVE_INFINITY);
-                // populate current row
-                System.arraycopy(row, 1, matrix[i], 0, bLength);
-            }
-            // update start point history
-            prevEnd = end;
-            prevPrevStart = prevStart;
-            prevStart = start;
-            // check if limit exceeded
-            if(min > limit) {
-                return Double.POSITIVE_INFINITY;
-            }
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
         // last value in the current row is the distance
-        return row[row.length - 1];
+        return row[bLength - 1];
     }
 
     @Override public ParamSet getParams() {

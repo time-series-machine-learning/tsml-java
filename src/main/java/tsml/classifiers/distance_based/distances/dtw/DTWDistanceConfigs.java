@@ -1,14 +1,17 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.MatrixBasedTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.int_based.UniformIntDistribution;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import tsml.transformers.Derivative;
 import weka.core.Instances;
 
+import java.util.stream.IntStream;
+
 import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_MEASURE_FLAG;
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.range;
 import static utilities.ArrayUtilities.unique;
@@ -89,7 +92,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static TransformDistanceMeasure newDDTWDistance() {
-        return new BaseTransformDistanceMeasure("DDTWDistance", new Derivative(), new DTWDistance());
+        return new MatrixBasedTransformDistanceMeasure("DDTWDistance", new Derivative(), new DTWDistance());
     }
 
     /**
@@ -109,8 +112,7 @@ public class DTWDistanceConfigs {
      */
     public static ParamSpace buildDTWParams(Instances instances) {
         return new ParamSpace()
-                       .add(Windowed.WINDOW_SIZE_FLAG, unique(range(0,
-                               instances.numAttributes() - 1, 100)));
+                       .add(WINDOW_SIZE_FLAG, IntStream.range(0, 100).mapToDouble(i -> (double) i / 100d).toArray());
     }
 
     /**
@@ -127,8 +129,10 @@ public class DTWDistanceConfigs {
         final ParamSpace subSpace = new ParamSpace();
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(Windowed.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
-            (data.numAttributes()) / 4 - 1));
+        subSpace.add(WINDOW_SIZE_FLAG, new UniformDoubleDistribution(0d,
+//                ((double) (data.numAttributes()) / 4 - 1) / 100
+                0.25d)
+        );
         return subSpace;
     }
 
@@ -140,8 +144,7 @@ public class DTWDistanceConfigs {
     }
     
     public static ParamSpace buildContinuousDTWParams(Instances data) {
-        return new ParamSpace().add(
-                Windowed.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
+        return new ParamSpace().add(WINDOW_SIZE_FLAG, new UniformDoubleDistribution(0d, 1d));
     }
     
     public static ParamSpace buildContinuousDTWSpace(Instances data) {
@@ -186,7 +189,7 @@ public class DTWDistanceConfigs {
      */
     public static ParamSpace buildFullWindowDTWParams() {
         ParamSpace params = new ParamSpace();
-        params.add(Windowed.WINDOW_SIZE_FLAG, newArrayList(-1));
+        params.add(WINDOW_SIZE_FLAG, newArrayList(1d));
         return params;
     }
 
