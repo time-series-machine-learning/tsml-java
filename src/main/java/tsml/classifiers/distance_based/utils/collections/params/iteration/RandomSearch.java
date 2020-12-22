@@ -27,6 +27,10 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     private final RandomIterator<ParamSet> randomIterator = new BaseRandomIterator<>();
     private boolean discrete;
 
+    public RandomSearch() {
+        setWithReplacement(false);
+    }
+    
     @Override public void setRandom(final Random random) {
         randomIterator.setRandom(random);
     }
@@ -47,8 +51,6 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
             // param space is not discrete. Do not use the random iterator
             discrete = false;
         }
-        // should be able to sample an unlimited amount of paramsets with risk of finding repeats occurring
-        randomIterator.setWithReplacement(true);
     }
 
     public boolean hasIterationLimit() {
