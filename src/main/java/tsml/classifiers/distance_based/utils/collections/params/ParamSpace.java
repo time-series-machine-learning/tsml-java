@@ -6,10 +6,8 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.discr
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
@@ -32,6 +30,18 @@ public class ParamSpace implements Serializable {
         return this;
     }
 
+    public <A> ParamSpace add(String name, double[] values) {
+        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
+    }
+
+    public <A> ParamSpace add(String name, int[] values) {
+        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
+    }
+
+    public <A> ParamSpace add(String name, long[] values) {
+        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
+    }
+    
     public <A> ParamSpace add(String name, List<A> values) {
         final DiscreteParamDimension<A> dimension;
         if(values instanceof DiscreteParamDimension) {

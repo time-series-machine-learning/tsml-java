@@ -8,13 +8,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
@@ -66,7 +66,7 @@ public class ParamSpaceTest {
     public ParamSpace buildWParams() {
         ParamSpace wParams = new ParamSpace();
         List<Integer> wParamValues = buildWParamValues();
-        wParams.add(Windowed.WINDOW_SIZE_FLAG, wParamValues);
+        wParams.add(WINDOW_SIZE_FLAG, wParamValues);
         return wParams;
     }
 
@@ -127,7 +127,7 @@ public class ParamSpaceTest {
     public ParamSpace buildLParams() {
         ParamSpace lParams = new ParamSpace();
         lParams.add(LCSSDistance.EPSILON_FLAG, buildEDist());
-        lParams.add(LCSSDistance.WINDOW_SIZE_FLAG, buildDDist());
+        lParams.add(WINDOW_SIZE_FLAG, buildDDist());
         return lParams;
     }
 
@@ -154,7 +154,7 @@ public class ParamSpaceTest {
 
     @Test
     public void testAddAndGetForListOfValues() {
-        List<ParamDimension<?>> valuesOut = wParams.get(Windowed.WINDOW_SIZE_FLAG);
+        List<ParamDimension<?>> valuesOut = wParams.get(WINDOW_SIZE_FLAG);
         Object value = valuesOut.get(0).getValues();
         Assert.assertEquals(value, wParamValues);
     }
@@ -166,7 +166,7 @@ public class ParamSpaceTest {
             Object values = dimension.getValues();
             Assert.assertEquals(eDist, values);
         }
-        dimensions = lParams.get(LCSSDistance.WINDOW_SIZE_FLAG);
+        dimensions = lParams.get(WINDOW_SIZE_FLAG);
         for(ParamDimension<?> dimension : dimensions) {
             Object values = dimension.getValues();
             Assert.assertEquals(values, dDist);

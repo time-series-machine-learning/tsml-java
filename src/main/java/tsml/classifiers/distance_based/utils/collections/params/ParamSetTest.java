@@ -4,9 +4,10 @@ import com.beust.jcommander.internal.Lists;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.distances.dtw.Windowed;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -98,7 +99,7 @@ public class ParamSetTest {
     public void testAddNameAndValueAndParamSet() {
         String aFlag = "a";
         LCSSDistance aValue = new LCSSDistance();
-        String bFlag = Windowed.WINDOW_SIZE_FLAG;
+        String bFlag = WINDOW_SIZE_FLAG;
         int bValue = 5;
         String cFlag = LCSSDistance.EPSILON_FLAG;
         double cValue = 0.2;

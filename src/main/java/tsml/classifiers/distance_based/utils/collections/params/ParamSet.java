@@ -120,15 +120,16 @@ public class ParamSet implements ParamHandler, Serializable {
      * @param name
      * @return
      */
-    public List<Object> get(String name) {
+    public <A> List<A> get(String name) {
         List<Object> list = paramMap.get(name);
         if(list == null) {
             return null;
         }
         try {
-            List<Object> result = new ArrayList<>(list.size());
+            List<A> result = new ArrayList<>(list.size());
             for(int i = 0; i < list.size(); i++) {
-                result.add(CopierUtils.deepCopy(list.get(i)));
+                final A item = (A) list.get(i);
+                result.add(CopierUtils.deepCopy(item));
             }
             return result;
         } catch(Exception e) {
@@ -136,8 +137,8 @@ public class ParamSet implements ParamHandler, Serializable {
         }
     }
 
-    public Object getSingle(String name) {
-        final List<Object> list = get(name);
+    public <A> A getSingle(String name) {
+        final List<A> list = get(name);
         if(list == null) {
             return null;
         }
