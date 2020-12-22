@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.distances.wdtw;
 
 import com.beust.jcommander.internal.Lists;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.MatrixBasedTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
@@ -72,7 +72,7 @@ public class WDTWDistanceConfigs {
      * @return
      */
     public static TransformDistanceMeasure newWDDTWDistance() {
-        return new BaseTransformDistanceMeasure("WDDTWDistance", new Derivative(), new WDTWDistance());
+        return new MatrixBasedTransformDistanceMeasure("WDDTWDistance", new Derivative(), new WDTWDistance());
     }
 
     public static ParamSpace buildWDDTWSpace() {
