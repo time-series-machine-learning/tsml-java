@@ -103,10 +103,7 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
             }
             // compute the distance for each cell in the row
             for(int j = start; j <= end; j++) {
-                final double topLeft = prevRow[j - 1];
-                final double left = row[j - 1];
-                final double top = prevRow[j];
-                final double cost = Math.min(top, Math.min(left, topLeft)) + cost(a, i, b, j);
+                final double cost = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i, b, j);
                 row[j] = cost;
                 min = Math.min(min, cost);
             }
