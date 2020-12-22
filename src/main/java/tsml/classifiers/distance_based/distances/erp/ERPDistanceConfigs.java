@@ -11,6 +11,7 @@ import weka.core.Instances;
 
 import java.util.List;
 
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.range;
 import static utilities.ArrayUtilities.unique;
@@ -46,12 +47,12 @@ public class ERPDistanceConfigs {
     public static ParamSpace buildERPParams(Instances instances) {
         double std = StatisticalUtilities.pStdDev(instances);
         double stdFloor = std * 0.2;
-        int[] bandSizeValues = range(0, (instances.numAttributes() - 1) / 4, 10);
+        double[] bandSizeValues = range(0d, 0.25, 10);
         double[] penaltyValues = range(stdFloor, std, 10);
         List<Double> penaltyValuesUnique = unique(penaltyValues);
-        List<Integer> bandSizeValuesUnique = unique(bandSizeValues);
+        List<Double> bandSizeValuesUnique = unique(bandSizeValues);
         ParamSpace params = new ParamSpace();
-        params.add(ERPDistance.WINDOW_SIZE_FLAG, bandSizeValuesUnique);
+        params.add(WINDOW_SIZE_FLAG, bandSizeValuesUnique);
         params.add(ERPDistance.G_FLAG, penaltyValuesUnique);
         return params;
     }
@@ -62,8 +63,10 @@ public class ERPDistanceConfigs {
         subSpace.add(ERPDistance.G_FLAG, new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt(len / 4 + 1), so range is from 0 to len / 4 inclusively
         // above doesn't consider class value, so -1 from len
-        subSpace.add(ERPDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
-            (data.numAttributes() - 1) / 4));
+        subSpace.add(WINDOW_SIZE_FLAG, new UniformDoubleDistribution(0d,
+//            (data.numAttributes() - 1) / 4)
+                0.25)
+        );
         return subSpace;
     }
 
@@ -78,7 +81,7 @@ public class ERPDistanceConfigs {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(ERPDistance.G_FLAG, new UniformDoubleDistribution(0.02 * std, std));
-        subSpace.add(ERPDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1)); // todo adjust this to use length instead of max index
+        subSpace.add(WINDOW_SIZE_FLAG, new UniformDoubleDistribution(0d, 1d)); // todo adjust this to use length instead of max index
         return subSpace;
     }
 

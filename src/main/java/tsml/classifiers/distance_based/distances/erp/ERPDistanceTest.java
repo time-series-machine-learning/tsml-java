@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.DistanceMeasureTest;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -28,7 +30,7 @@ public class ERPDistanceTest {
 
     @Test
     public void testFullWarpA() {
-        df.setWindowSize(-1);
+        df.setWindowSize(1);
         df.setG(1.5);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 182, 0);
@@ -36,7 +38,7 @@ public class ERPDistanceTest {
 
     @Test
     public void testFullWarpB() {
-        df.setWindowSize(-1);
+        df.setWindowSize(1);
         df.setG(2);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 175, 0);
@@ -44,7 +46,7 @@ public class ERPDistanceTest {
 
     @Test
     public void testConstrainedWarpA() {
-        df.setWindowSize(1);
+        df.setWindowSize(0.2);
         df.setG(1.5);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 189.5, 0);
@@ -55,7 +57,7 @@ public class ERPDistanceTest {
         df.setWindowSize(1);
         df.setG(2);
         double distance = df.distance(instances.get(0), instances.get(1));
-        Assert.assertEquals(distance, 189, 0);
+        Assert.assertEquals(distance, 175, 0);
     }
 
     public interface DistanceTester {
@@ -93,7 +95,7 @@ public class ERPDistanceTest {
                 attributeCount += Math.pow(data.numAttributes(), 2);
                 //                final Instance b = data.get(j);
                 final Instance b = data.get(random.nextInt(data.size()));
-                double limit = random.nextDouble() * 2 * data.numAttributes() - 1;
+                double limit = random.nextDouble() * 2 * (data.numAttributes() - 1);
                 df.findDistance(random, data, a, b, limit);
                 limit = Double.POSITIVE_INFINITY;
                 df.findDistance(random, data, a, b, limit);
@@ -137,11 +139,22 @@ public class ERPDistanceTest {
 //                    System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
                     final double penalty = (double) paramSet.get(ERPDistance.G_FLAG).get(0);
-                    final int window = (int) paramSet.get(ERPDistance.WINDOW_SIZE_FLAG).get(0);
+                    final double window = (double) paramSet.get(DTW.WINDOW_SIZE_FLAG).get(0);
+                    final int len = ai.numAttributes() - 1;
+                    final int rawWindow = (int) Math.floor(window * len);
+                    final double otherWindow = Math.min(1, Math.max(0, ((double) rawWindow) / len));
+                    //                    System.out.println(window);
+                    //                    System.out.println(rawWindow + " " + (otherWindow * (len - 1)));
                     final ERPDistance df = new ERPDistance();
-                    df.setWindowSize(window);
+                    df.setWindowSize(otherWindow);
                     df.setG(penalty);
-                    Assert.assertEquals(df.distance(ai, bi, limit), origErp(ai, bi, limit, window, penalty), 0);
+                    df.setGenerateDistanceMatrix(false);
+                    final double a = df.distance(ai, bi, limit);
+                    final double b = DistanceMeasureTest.origErp(ai, bi, limit, rawWindow, penalty);
+                    df.setGenerateDistanceMatrix(true);
+                    final double c = df.distance(ai, bi, limit);
+                    Assert.assertEquals(a, b,  0);
+                    Assert.assertEquals(a, c,  0);
                 }
             }
         };
@@ -177,98 +190,4 @@ public class ERPDistanceTest {
         return array;
     }
 
-    private static double origErp(Instance first, Instance second, double limit, int band, double penalty) {
-
-        int aLength = first.numAttributes() - 1;
-        int bLength = second.numAttributes() - 1;
-
-        // Current and previous columns of the matrix
-        double[] curr = new double[bLength];
-        double[] prev = new double[bLength];
-
-        // size of edit distance band
-        // bandsize is the maximum allowed distance to the diagonal
-        //        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
-        if(band < 0) {
-            band = aLength + 1;
-        }
-
-        // g parameters for local usage
-        double gValue = penalty;
-
-        for(int i = 0;
-            i < aLength;
-            i++) {
-            // Swap current and prev arrays. We'll just overwrite the new curr.
-            {
-                double[] temp = prev;
-                prev = curr;
-                curr = temp;
-            }
-            int l = i - (band + 1);
-            if(l < 0) {
-                l = 0;
-            }
-            int r = i + (band + 1);
-            if(r > (bLength - 1)) {
-                r = (bLength - 1);
-            }
-
-            boolean tooBig = true;
-
-            for(int j = l;
-                j <= r;
-                j++) {
-                if(Math.abs(i - j) <= band) {
-                    // compute squared distance of feature vectors
-                    double val1 = first.value(i);
-                    double val2 = gValue;
-                    double diff = (val1 - val2);
-                    final double dist1 = diff * diff;
-
-                    val1 = gValue;
-                    val2 = second.value(j);
-                    diff = (val1 - val2);
-                    final double dist2 = diff * diff;
-
-                    val1 = first.value(i);
-                    val2 = second.value(j);
-                    diff = (val1 - val2);
-                    final double dist12 = diff * diff;
-
-                    final double cost;
-
-                    if((i + j) != 0) {
-                        if((i == 0) || ((j != 0) && (((prev[j - 1] + dist12) > (curr[j - 1] + dist2)) && (
-                            (curr[j - 1] + dist2) < (prev[j] + dist1))))) {
-                            // del
-                            cost = curr[j - 1] + dist2;
-                        } else if((j == 0) || ((i != 0) && (((prev[j - 1] + dist12) > (prev[j] + dist1)) && (
-                            (prev[j] + dist1) < (curr[j - 1] + dist2))))) {
-                            // ins
-                            cost = prev[j] + dist1;
-                        } else {
-                            // match
-                            cost = prev[j - 1] + dist12;
-                        }
-                    } else {
-                        cost = 0;
-                    }
-
-                    curr[j] = cost;
-
-                    if(tooBig && cost < limit) {
-                        tooBig = false;
-                    }
-                } else {
-                    curr[j] = Double.POSITIVE_INFINITY; // outside band
-                }
-            }
-            if(tooBig) {
-                return Double.POSITIVE_INFINITY;
-            }
-        }
-
-        return curr[bLength - 1];
-    }
 }
