@@ -7,28 +7,27 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.Transformer;
-import weka.core.DistanceFunction;
 import weka.core.Instance;
 
 import java.util.Objects;
 
-public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements TransformDistanceMeasure {
+public class MatrixBasedTransformDistanceMeasure extends MatrixBasedDistanceMeasure implements TransformDistanceMeasure {
 
-    public BaseTransformDistanceMeasure(String name, Transformer transformer,
+    public MatrixBasedTransformDistanceMeasure(String name, Transformer transformer,
                                         DistanceMeasure distanceMeasure) {
         setDistanceMeasure(distanceMeasure);
         setTransformer(transformer);
         setName(name);
     }
 
-    public BaseTransformDistanceMeasure() {
+    public MatrixBasedTransformDistanceMeasure() {
         this(null, null, new EDistance());
     }
 
