@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.strings;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.MatrixBasedTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.Derivative;
@@ -46,7 +46,7 @@ public class StrUtilsTest {
     @Test
     public void testToAndFromOptions() throws Exception {
         LCSSDistance lcss = new LCSSDistance();
-        final TransformDistanceMeasure tdm = new BaseTransformDistanceMeasure("", new Derivative(), lcss);
+        final TransformDistanceMeasure tdm = new MatrixBasedTransformDistanceMeasure("", new Derivative(), lcss);
         lcss.setEpsilon(6);
         lcss.setWindowSize(7);
         String[] strs = tdm.getOptions();

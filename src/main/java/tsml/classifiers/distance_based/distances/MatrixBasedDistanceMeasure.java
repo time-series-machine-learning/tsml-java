@@ -53,6 +53,7 @@ public abstract class MatrixBasedDistanceMeasure implements DistanceMeasure {
         Objects.requireNonNull(a);
         Objects.requireNonNull(b);
         if(a.getNumDimensions() != b.getNumDimensions()) {
+            // variable length is not supported atm
             throw new IllegalArgumentException("differing number of dimensions in the two instances");
         }
         if(limit < 0) {
