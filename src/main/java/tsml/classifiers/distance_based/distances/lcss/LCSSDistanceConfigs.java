@@ -10,6 +10,7 @@ import weka.core.Instances;
 
 import java.util.List;
 
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.range;
 import static utilities.ArrayUtilities.unique;
@@ -45,12 +46,12 @@ public class LCSSDistanceConfigs {
         double std = StatisticalUtilities.pStdDev(instances);
         double stdFloor = std * 0.2;
         double[] epsilonValues = range(stdFloor, std, 10);
-        int[] deltaValues = range(0, (instances.numAttributes() - 1) / 4, 10);
+        double[] deltaValues = range(0d, 0.25, 10);
         List<Double> epsilonValuesUnique = unique(epsilonValues);
-        List<Integer> deltaValuesUnique = unique(deltaValues);
+        List<Double> deltaValuesUnique = unique(deltaValues);
         ParamSpace params = new ParamSpace();
         params.add(LCSSDistance.EPSILON_FLAG, epsilonValuesUnique);
-        params.add(LCSSDistance.WINDOW_SIZE_FLAG, deltaValuesUnique);
+        params.add(WINDOW_SIZE_FLAG, deltaValuesUnique);
         return params;
     }
 
@@ -60,8 +61,7 @@ public class LCSSDistanceConfigs {
         subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.2 * std, std));
         // pf implements this as randInt((len + 1) / 4), so range is from 0 to (len + 1) / 4 - 1 inclusively.
         // above doesn't consider class value, so -1 from len
-        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0,
-            data.numAttributes() / 4 - 1));
+        subSpace.add(WINDOW_SIZE_FLAG, new UniformDoubleDistribution(0d, 0.25));
         return subSpace;
     }
 
@@ -76,7 +76,7 @@ public class LCSSDistanceConfigs {
         final double std = StatisticalUtilities.pStdDev(data);
         final ParamSpace subSpace = new ParamSpace();
         subSpace.add(LCSSDistance.EPSILON_FLAG, new UniformDoubleDistribution(0.02 * std, std));
-        subSpace.add(LCSSDistance.WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
+        subSpace.add(WINDOW_SIZE_FLAG, new UniformIntDistribution(0, data.numAttributes() - 1 - 1));
         return subSpace;
     }
 

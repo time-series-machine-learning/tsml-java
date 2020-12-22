@@ -3,6 +3,7 @@ package tsml.classifiers.distance_based.distances.lcss;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
+import tsml.classifiers.distance_based.distances.erp.ERPDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceTest.DistanceTester;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
@@ -10,6 +11,8 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import weka.core.Instance;
 import weka.core.Instances;
+
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
 
 public class LCSSDistanceTest {
 
@@ -33,12 +36,22 @@ public class LCSSDistanceTest {
                     System.out.println("i:" + i++);
                     final ParamSet paramSet = iterator.next();
                     final double epsilon = (double) paramSet.get(LCSSDistance.EPSILON_FLAG).get(0);
-                    final int window = (int) paramSet.get(LCSSDistance.WINDOW_SIZE_FLAG).get(0);
+                    final double window = (double) paramSet.get(WINDOW_SIZE_FLAG).get(0);
+                    final int len = ai.numAttributes() - 1;
+                    final int rawWindow = (int) Math.floor(window * len);
+                    final double otherWindow = Math.min(1, Math.max(0, ((double) rawWindow) / len));
+                    //                    System.out.println(window);
+                    //                    System.out.println(rawWindow + " " + (otherWindow * (len - 1)));
                     final LCSSDistance df = new LCSSDistance();
-                    df.setGenerateDistanceMatrix(true);
                     df.setEpsilon(epsilon);
-                    df.setWindowSize(window);
-                    Assert.assertEquals(df.distance(ai, bi, limit), origLcss(ai, bi, limit, window, epsilon), 0);
+                    df.setWindowSize(otherWindow);
+                    df.setGenerateDistanceMatrix(false);
+                    final double a = df.distance(ai, bi, limit);
+                    df.setGenerateDistanceMatrix(true);
+                    final double b = df.distance(ai, bi, limit);
+                    final double c = origLcss(ai, bi, limit, rawWindow, epsilon);
+                    Assert.assertEquals(a, b, 0);
+                    Assert.assertEquals(a, c, 0);
                 }
             }
         };
@@ -64,7 +77,7 @@ public class LCSSDistanceTest {
         ERPDistanceTest.testDistanceFunctionsOnRandomDataset(buildDistanceFinder());
     }
 
-    private static double origLcss(Instance a, Instance b, double limit, int delta, double epsilon) {
+    public static double origLcss(Instance a, Instance b, double limit, int delta, double epsilon) {
 
         int aLength = a.numAttributes() - 1;
         int bLength = b.numAttributes() - 1;
