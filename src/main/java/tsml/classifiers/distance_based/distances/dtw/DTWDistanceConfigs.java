@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import tsml.classifiers.distance_based.distances.transformed.MatrixBasedTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
@@ -92,7 +92,7 @@ public class DTWDistanceConfigs {
      * @return
      */
     public static TransformDistanceMeasure newDDTWDistance() {
-        return new MatrixBasedTransformDistanceMeasure("DDTWDistance", new Derivative(), new DTWDistance());
+        return new BaseTransformDistanceMeasure("DDTWDistance", new Derivative(), new DTWDistance());
     }
 
     /**

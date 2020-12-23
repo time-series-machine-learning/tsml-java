@@ -18,16 +18,16 @@ import weka.core.Instance;
 
 import java.util.Objects;
 
-public class MatrixBasedTransformDistanceMeasure extends MatrixBasedDistanceMeasure implements TransformDistanceMeasure {
+public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure implements TransformDistanceMeasure {
 
-    public MatrixBasedTransformDistanceMeasure(String name, Transformer transformer,
+    public BaseTransformDistanceMeasure(String name, Transformer transformer,
                                         DistanceMeasure distanceMeasure) {
         setDistanceMeasure(distanceMeasure);
         setTransformer(transformer);
         setName(name);
     }
 
-    public MatrixBasedTransformDistanceMeasure() {
+    public BaseTransformDistanceMeasure() {
         this(null, null, new EDistance());
     }
 
@@ -111,5 +111,4 @@ public class MatrixBasedTransformDistanceMeasure extends MatrixBasedDistanceMeas
     public void setTransformer(Transformer a) {
         transformer = a;
     }
-
 }
