@@ -253,13 +253,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     private void calculateLengthBounds() {
-        minLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMinLength).min().getAsInt();
-        maxLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMaxLength).max().getAsInt();
+        minLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMinLength).min().orElse(-1);
+        maxLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMaxLength).max().orElse(-1);
         isEqualLength = minLength == maxLength;
     }
 
     private void calculateNumDimensions(){
-        maxNumDimensions = seriesCollection.stream().mapToInt(e -> e.getNumDimensions()).max().getAsInt();
+        maxNumDimensions = seriesCollection.stream().mapToInt(e -> e.getNumDimensions()).max().orElse(-1);
     }
     
     private void calculateIfMultivariate(){
@@ -315,7 +315,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         //guard for if we're going to force update classCounts after.
         if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
             classCounts[newSeries.getLabelIndex()]++;
-
+        
+        if(seriesCollection.size() == 1) {
+            // was empty / this is the first inst being added to the list
+            // therefore metadata is set to -1's
+            // need to change minLength to a very large number else the -1 invalid value is always the minimum length
+            minLength = Integer.MAX_VALUE;
+        }
         minLength = Math.min(newSeries.getMinLength(), minLength);
         maxLength = Math.max(newSeries.getMaxLength(), maxLength);
         maxNumDimensions = Math.max(newSeries.getNumDimensions(), maxNumDimensions);
