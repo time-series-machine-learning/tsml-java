@@ -27,6 +27,7 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.*;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
+import tsml.classifiers.distance_based.utils.system.random.DebuggingRandom;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.data_containers.TimeSeriesInstance;
@@ -55,7 +56,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.setLogLevel(Level.ALL);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed), seed);
+            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleItalyPowerDemand(seed), seed);
         }
     }
 
@@ -652,7 +653,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         }
 
         public Partition findPartitionFor(TimeSeriesInstance instance) {
-            return partitions.get(findPartitionIndexFor(instance));
+            final int index = findPartitionIndexFor(instance);
+            return partitions.get(index);
         }
 
         public TimeSeriesInstances getData() {

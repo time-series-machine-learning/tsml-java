@@ -38,8 +38,6 @@ public class RandomUtils {
      * @return
      */
     public static ArrayList<Integer> choiceIndex(int size, Random random, int numChoices, boolean withReplacement) {
-        Assert.assertTrue(size > 0);
-        Assert.assertTrue(numChoices > 0);
         if(numChoices == 1) {
             final int i = random.nextInt(size);
             return newArrayList(i);

@@ -40,17 +40,17 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         for(int i = 1; i < 2; i++) {
             int seed = i;
             ProximityForest classifier = Config.PF_R5.build();
-            classifier.setEstimateOwnPerformance(true);
-            classifier.setEstimatorMethod("oob");
+//            classifier.setEstimateOwnPerformance(true);
+//            classifier.setEstimatorMethod("oob");
             classifier.setSeed(seed);
-            classifier.setNumTreeLimit(3);
-            classifier.setCheckpointPath("checkpoints");
+//            classifier.setNumTreeLimit(3);
+//            classifier.setCheckpointPath("checkpoints");
 //            classifier.setNumTreeLimit(14);
 //            classifier.setCheckpointPath("checkpoints/PF");
 //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "GunPoint", seed), seed);
+                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ItalyPowerDemand", seed), seed);
         }
         //        Thread.sleep(10000);
 
