@@ -616,9 +616,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
      * @return
      */
     public List<List<Integer>> indicesByClass() {
-        List<List<Integer>> bins = new ArrayList<>(numClasses() + 1); // +1 for insts with class label index <0 (unclassified)
+        List<List<Integer>> bins = new ArrayList<>(numClasses());
         final String[] labels = getClassLabels();
-        for(int i = 0; i < numClasses() + 1; i++) {
+        for(int i = 0; i < numClasses(); i++) {
             bins.add(new ArrayList<>());
         }
         int i = 0;
@@ -626,7 +626,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             final int labelIndex = inst.getLabelIndex();
             final List<Integer> bin;
             if(labelIndex < 0) {
-                bin = bins.get(bins.size() - 1); // the last bin is for class label index <0
+                throw new IllegalStateException("unclassified instance cannot be allocated to per class subset");
             } else {
                 bin = bins.get(inst.getLabelIndex());
             }
