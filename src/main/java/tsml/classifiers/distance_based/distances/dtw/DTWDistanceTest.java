@@ -618,7 +618,7 @@ public class DTWDistanceTest {
                 {"Beef"},
         });
         
-        @Parameterized.Parameters(name = "{0}_{1}")
+        @Parameterized.Parameters(name = "{0}")
         public static Collection<Object[]> data() throws Exception {
             return standardDatasets;
         }
@@ -662,6 +662,7 @@ public class DTWDistanceTest {
             randomSearch.buildSearch(paramSpace);
             randomSearch.setIterationLimit(distances.length);
             for(int i = 0; i < distances.length; i++) {
+//                System.out.println(i);
                 final int i1 = random.nextInt(data.numInstances());
                 int i2 = 0;
                 do {

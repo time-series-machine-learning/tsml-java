@@ -34,10 +34,6 @@ public class LCSSDistance extends MatrixBasedDistanceMeasure {
     }
 
     private boolean approxEqual(TimeSeriesInstance a, int aIndex, TimeSeriesInstance b, int bIndex) {
-        double[] aSlice = a.getVSliceArray(aIndex);
-        double[] bSlice = b.getVSliceArray(bIndex);
-        double[] result = subtract(aSlice, bSlice);
-        abs(result);
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final Double aValue = a.get(i).get(aIndex);
             final Double bValue = b.get(i).get(bIndex);
@@ -153,8 +149,8 @@ public class LCSSDistance extends MatrixBasedDistanceMeasure {
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize);
+        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double::parseDouble);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Double::parseDouble);
         super.setParams(param);
     }
 

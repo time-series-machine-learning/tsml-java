@@ -142,8 +142,8 @@ public class ERPDistance extends MatrixBasedDistanceMeasure {
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, G_FLAG, this::setG);
-        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize);
+        ParamHandlerUtils.setParam(param, G_FLAG, this::setG, Double::parseDouble);
+        ParamHandlerUtils.setParam(param, WINDOW_SIZE_FLAG, this::setWindowSize, Double::parseDouble);
     }
 
     public double getWindowSize() {

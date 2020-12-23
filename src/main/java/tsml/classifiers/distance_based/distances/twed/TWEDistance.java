@@ -200,8 +200,8 @@ public class TWEDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, NU_FLAG, this::setNu);
-        ParamHandlerUtils.setParam(param, LAMBDA_FLAG, this::setLambda);
+        ParamHandlerUtils.setParam(param, NU_FLAG, this::setNu, Double::parseDouble);
+        ParamHandlerUtils.setParam(param, LAMBDA_FLAG, this::setLambda, Double::parseDouble);
     }
 
 }

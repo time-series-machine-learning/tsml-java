@@ -67,7 +67,11 @@ public class MSMDistance extends MatrixBasedDistanceMeasure {
         final double[] aSlice = a.getVSliceArray(aIndex);
         final double[] bSlice = b.getVSliceArray(bIndex);
         final double[] cSlice = c.getVSliceArray(cIndex);
-        return IntStream.range(0, aSlice.length).mapToDouble(i -> findCost(aSlice[i], bSlice[i], cSlice[i])).sum();
+        double sum = 0;
+        for(int i = 0; i < aSlice.length; i++) {
+            sum += findCost(aSlice[i], bSlice[i], cSlice[i]);
+        }
+        return sum;
     }
 
     /**
@@ -176,6 +180,6 @@ public class MSMDistance extends MatrixBasedDistanceMeasure {
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, C_FLAG, this::setC);
+        ParamHandlerUtils.setParam(param, C_FLAG, this::setC, Double::parseDouble);
     }
 }

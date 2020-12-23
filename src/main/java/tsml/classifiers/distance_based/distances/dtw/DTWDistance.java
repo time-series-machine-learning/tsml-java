@@ -118,7 +118,7 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
     }
 
     @Override public void setParams(final ParamSet paramSet) throws Exception {
-        ParamHandlerUtils.setParam(paramSet, WINDOW_SIZE_FLAG, this::setWindowSize);
+        ParamHandlerUtils.setParam(paramSet, WINDOW_SIZE_FLAG, this::setWindowSize, Double::parseDouble);
     }
 
 }
