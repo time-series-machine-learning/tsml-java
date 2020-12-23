@@ -8,6 +8,12 @@ import java.util.function.Function;
 
 public class ParamHandlerUtils {
 
+    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter) throws Exception {
+        return setParam(paramSet, name, setter, str -> {
+            throw new IllegalArgumentException("cannot parse " + str + " to primitive");
+        });
+    }
+    
     /**
      * Set a parameter value specified by the name flag. The parameter value may be parsed from string form into a form accepted by the setter.
      * @param paramSet
@@ -17,7 +23,7 @@ public class ParamHandlerUtils {
      * @return
      * @throws Exception
      */
-    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter)
+    public static <A> boolean setParam(ParamSet paramSet, String name, Consumer<A> setter, Function<String, A> parser)
             throws Exception {
         // get the parameter in the paramset under "name"
         final List<Object> list = paramSet.get(name);
@@ -30,7 +36,7 @@ public class ParamHandlerUtils {
             // check the value is not in string form
             if(value instanceof String) {
                 // if it is then construct the options string into a valid object
-                value = StrUtils.fromOptionValue((String) value);
+                value = StrUtils.fromOptionValue((String) value, parser);
             }
             // and pass to the setter
             try {

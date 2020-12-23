@@ -176,38 +176,38 @@ public class ParamSpaceTest {
     @Test
     public void testParamsToString() {
 //        System.out.println(params.toString());
-        Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance -e 0.01 -ws -1], "
+        Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance -e 0.01 -w 1.0], "
             + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}, {values=[DTWDistance -ws -1, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws -1\" -t tsml.transformers.Derivative], "
-            + "subSpaces=[{ws=[{values=[1, 2, 3, 4, 5]}]}]}]}");
+            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}, {values=[DTWDistance -w 1.0, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -w 1.0\" -t tsml.transformers.Derivative], "
+            + "subSpaces=[{w=[{values=[1, 2, 3, 4, 5]}]}]}]}");
     }
 
     @Test
     public void testWParamsToString() {
 //        System.out.println(wParams.toString());
-        Assert.assertEquals(wParams.toString(), "{ws=[{values=[1, 2, 3, 4, 5]}]}");
+        Assert.assertEquals(wParams.toString(), "{w=[{values=[1, 2, 3, 4, 5]}]}");
     }
 
     @Test
     public void testLParamsToString() {
 //        System.out.println(lParams.toString());
         Assert.assertEquals(lParams.toString(), "{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}");
+            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}");
     }
 
     @Test
     public void testWDmParamsToString() {
 //        System.out.println(wDmParams.toString());
-        Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance -ws -1, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -ws -1\" -t tsml.transformers.Derivative], subSpaces=[{ws=[{values=[1, "
+        Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance -w 1.0, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -w 1.0\" -t tsml.transformers.Derivative], subSpaces=[{w=[{values=[1, "
             + "2, 3, 4, 5]}]}]}");
     }
 
     @Test
     public void testLDmParamsToString() {
 //        System.out.println(lDmParams.toString());
-        Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance -e 0.01 -ws -1], "
+        Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance -e 0.01 -w 1.0], "
             + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "ws=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}");
+            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}");
     }
 
     @Test

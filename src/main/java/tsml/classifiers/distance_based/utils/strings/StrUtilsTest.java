@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.strings;
 import org.junit.Assert;
 import org.junit.Test;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
-import tsml.classifiers.distance_based.distances.transformed.MatrixBasedTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
 import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.transformers.Derivative;
@@ -46,12 +46,12 @@ public class StrUtilsTest {
     @Test
     public void testToAndFromOptions() throws Exception {
         LCSSDistance lcss = new LCSSDistance();
-        final TransformDistanceMeasure tdm = new MatrixBasedTransformDistanceMeasure("", new Derivative(), lcss);
+        final TransformDistanceMeasure tdm = new BaseTransformDistanceMeasure("", new Derivative(), lcss);
         lcss.setEpsilon(6);
-        lcss.setWindowSize(7);
+        lcss.setWindowSize(0.7);
         String[] strs = tdm.getOptions();
         Assert.assertEquals("-d", strs[0]);
-        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 6.0 -ws 7", strs[1]);
+        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 6.0 -w 0.7", strs[1]);
         Assert.assertEquals("-t", strs[2]);
         Assert.assertEquals("tsml.transformers.Derivative", strs[3]);
         Assert.assertEquals(4, strs.length);
@@ -59,25 +59,23 @@ public class StrUtilsTest {
         Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance", substrs[0]);
         Assert.assertEquals("-e", substrs[1]);
         Assert.assertEquals("6.0", substrs[2]);
-        Assert.assertEquals("-ws", substrs[3]);
-        Assert.assertEquals("7", substrs[4]);
+        Assert.assertEquals("-w", substrs[3]);
+        Assert.assertEquals("0.7", substrs[4]);
         Assert.assertEquals(5, substrs.length);
         lcss.setEpsilon(-1);
         lcss.setWindowSize(-1);
         tdm.setOptions(strs);
         lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
-        Assert.assertEquals(7, lcss.getWindowSize());
+        Assert.assertEquals(0.7, lcss.getWindowSize(), 0d);
         final ParamSet paramSet = new ParamSet();
         paramSet.setOptions(strs);
         lcss.setEpsilon(-1);
-        lcss.setWindowSize(-1);
+        lcss.setWindowSize(1);
         tdm.setParams(paramSet);
         lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
-        Assert.assertEquals(7, lcss.getWindowSize());
-        // todo test toOptionsValue and from
-        // todo strings in cmdline opts?
+        Assert.assertEquals(0.7, lcss.getWindowSize(), 0d);
     }
 
     @Test
@@ -102,7 +100,7 @@ public class StrUtilsTest {
 
     @Test
     public void testToOptionsValueObject() {
-        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 0.01 -ws -1", StrUtils.toOptionValue(new LCSSDistance()));
+        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 0.01 -w 1.0", StrUtils.toOptionValue(new LCSSDistance()));
     }
 
     @Test
@@ -112,42 +110,42 @@ public class StrUtilsTest {
 
     @Test
     public void testFromOptionsValueNull() throws Exception {
-        Assert.assertEquals(null, StrUtils.fromOptionValue("null"));
+        Assert.assertEquals(null, StrUtils.fromOptionValue("null", null));
     }
 
     @Test
     public void testFromOptionsValueDouble() throws Exception {
-        Assert.assertEquals(new Double(5.786), StrUtils.fromOptionValue("5.786"));
+        Assert.assertEquals(new Double(5.786), StrUtils.fromOptionValue("5.786", Double::parseDouble));
     }
 
     @Test
     public void testFromOptionsValueDoubleNegative() throws Exception {
-        Assert.assertEquals(new Double(-5.786), StrUtils.fromOptionValue("-5.786"));
+        Assert.assertEquals(new Double(-5.786), StrUtils.fromOptionValue("-5.786", Double::parseDouble));
     }
 
     @Test
     public void testFromOptionsValueDoubleNegativeMissingLeadingZero() throws Exception {
-        Assert.assertEquals(new Double(-.786), StrUtils.fromOptionValue("-.786"));
+        Assert.assertEquals(new Double(-.786), StrUtils.fromOptionValue("-.786", Double::parseDouble));
     }
 
     @Test
     public void testFromOptionsValueDoubleMissingLeadingZero() throws Exception {
-        Assert.assertEquals(new Double(.786), StrUtils.fromOptionValue(".786"));
+        Assert.assertEquals(new Double(.786), StrUtils.fromOptionValue(".786", Double::parseDouble));
     }
 
     @Test
     public void testFromOptionsValueInt() throws Exception {
-        Assert.assertEquals(new Integer(5), StrUtils.fromOptionValue("5"));
+        Assert.assertEquals(new Integer(5), StrUtils.fromOptionValue("5", Integer::parseInt));
     }
 
     @Test
     public void testFromOptionsValueBooleanTrue() throws Exception {
-        Assert.assertEquals(new Boolean(true), StrUtils.fromOptionValue("true"));
+        Assert.assertEquals(Boolean.TRUE, StrUtils.fromOptionValue("true", Boolean::parseBoolean));
     }
 
     @Test
     public void testFromOptionsValueBooleanFalse() throws Exception {
-        Assert.assertEquals(new Boolean(false), StrUtils.fromOptionValue("false"));
+        Assert.assertEquals(Boolean.FALSE, StrUtils.fromOptionValue("false", Boolean::parseBoolean));
     }
 
     @Test

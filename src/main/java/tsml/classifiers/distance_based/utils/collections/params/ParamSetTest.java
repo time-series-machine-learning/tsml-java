@@ -100,7 +100,7 @@ public class ParamSetTest {
         String aFlag = "a";
         LCSSDistance aValue = new LCSSDistance();
         String bFlag = WINDOW_SIZE_FLAG;
-        int bValue = 5;
+        double bValue = 0.5;
         String cFlag = LCSSDistance.EPSILON_FLAG;
         double cValue = 0.2;
         ParamSet subParamSetB = new ParamSet(bFlag, bValue);
@@ -110,13 +110,13 @@ public class ParamSetTest {
         aValue.setEpsilon(cValue);
         aValue.setWindowSize(bValue);
         Assert.assertEquals(paramSet.toString(), "-a \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
-            + "-e 0.2 -ws 5\"");
+            + "-e 0.2 -w 0.5\"");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
         List<Object> list = paramSet.get(aFlag);
         Object aValueOut = list.get(0);
         Assert.assertEquals(list.size(), 1);
-        Assert.assertEquals(aValueOut.toString(), aValue.toString());
+        Assert.assertNotSame(aValueOut, aValue);
         list = ((ParamHandler) aValueOut).getParams().get(bFlag);
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0), bValue);
@@ -127,8 +127,7 @@ public class ParamSetTest {
         try {
             ParamHandlerUtils.setParam(paramSet, aFlag, i -> {
                 // should clone so should not be the same instance
-                 Assert.assertFalse(i == aValue);
-                 Assert.assertEquals(aValue.toString(), i.toString());
+                Assert.assertNotSame(i, aValue);
             });
         } catch(Exception e) {
             Assert.fail(e.toString());
@@ -138,8 +137,7 @@ public class ParamSetTest {
             // value may be in string form
             ParamHandlerUtils.setParam(new ParamSet(aFlag, StrUtils.toOptionValue(aValue)), aFlag, i -> {
                 // should clone so should not be the same instance
-                Assert.assertFalse(i == aValue);
-                Assert.assertEquals(aValue.toString(), i.toString());
+                Assert.assertNotSame(i, aValue);
             });
         } catch(Exception e) {
             Assert.fail(e.toString());
@@ -158,8 +156,8 @@ public class ParamSetTest {
             // value may be in string form
             ParamHandlerUtils.setParam(new ParamSet().add(cFlag, String.valueOf(cValue)), cFlag, i -> {
                 // should not clone as it's primitive
-                Assert.assertEquals(i, cValue);
-            });
+                Assert.assertEquals(i, cValue, 0d);
+            }, Double::parseDouble);
         } catch(Exception e) {
             Assert.fail(e.toString());
         }

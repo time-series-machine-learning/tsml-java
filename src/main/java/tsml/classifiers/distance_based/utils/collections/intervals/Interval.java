@@ -100,8 +100,8 @@ public class Interval implements ParamHandler {
 
     @Override public void setParams(final ParamSet paramSet) throws Exception {
         ParamHandler.super.setParams(paramSet);
-        ParamHandlerUtils.setParam(paramSet, START_FLAG, this::setStart);
-        ParamHandlerUtils.setParam(paramSet, LENGTH_FLAG, this::setLength);
+        ParamHandlerUtils.setParam(paramSet, START_FLAG, this::setStart, Integer::parseInt);
+        ParamHandlerUtils.setParam(paramSet, LENGTH_FLAG, this::setLength, Integer::parseInt);
     }
 
     @Override public String toString() {
