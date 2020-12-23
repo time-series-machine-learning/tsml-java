@@ -577,30 +577,26 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
             // change the view of the data into per class
             final List<List<Integer>> instIndicesByClass = data.indicesByClass();
-            if(instIndicesByClass.size() != data.numClasses()) {
-                // may happen if any insts exist that are unclassified
-                throw new IllegalStateException("incorrect number of subsets whilst dividing data by class");
-            }
             // pick exemplars per class
             partitions = new ArrayList<>(instIndicesByClass.size());
             // generate a partition per class
             for(final List<Integer> sameClassInstIndices : instIndicesByClass) {
-                // get the indices of all instances with the specified class
-                // random pick exemplars from this 
-                final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstIndices, rand, 1);
-                // generate the partition with empty data and the chosen exemplar instances
-                final Partition partition = new Partition(data.getClassLabels());
-                for(Integer exemplarIndexInSplitData : exemplarIndices) {
-                    // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance 
-                    // in the data but the 5th instance may have index 33 in the train data)
-                    final TimeSeriesInstance exemplar = data.get(exemplarIndexInSplitData);
-                    final Integer exemplarIndexInTrainData = dataIndices.get(exemplarIndexInSplitData);
-                    partition.addExemplar(exemplar, exemplarIndexInTrainData);
+                if(!sameClassInstIndices.isEmpty()) {
+                    // get the indices of all instances with the specified class
+                    // random pick exemplars from this 
+                    final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstIndices, rand, 1);
+                    // generate the partition with empty data and the chosen exemplar instances
+                    final Partition partition = new Partition(data.getClassLabels());
+                    for(Integer exemplarIndexInSplitData : exemplarIndices) {
+                        // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance 
+                        // in the data but the 5th instance may have index 33 in the train data)
+                        final TimeSeriesInstance exemplar = data.get(exemplarIndexInSplitData);
+                        final Integer exemplarIndexInTrainData = dataIndices.get(exemplarIndexInSplitData);
+                        partition.addExemplar(exemplar, exemplarIndexInTrainData);
+                    }
+                    partitions.add(partition);
                 }
-                partitions.add(partition);
             }
-            // sanity checks
-            Assert.assertEquals(instIndicesByClass.size(), partitions.size());
             
             // setup the distance function
             distanceMeasure.buildDistanceMeasure(data);
