@@ -73,7 +73,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
                 throw new IllegalStateException("seed not set");
             }
             // we're rebuilding so set the seed / params, etc, using super
-            super.buildClassifier(Objects.requireNonNull(trainData));
+            super.buildClassifier(Converter.toArff(Objects.requireNonNull(trainData)));
         }
     }
 
