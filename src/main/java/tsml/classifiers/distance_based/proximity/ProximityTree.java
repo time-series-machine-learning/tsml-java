@@ -13,6 +13,7 @@ import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
+import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
@@ -38,8 +39,10 @@ import weka.core.DistanceFunction;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Proximity tree
@@ -154,6 +157,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     private StopWatch checkpointTimer = new StopWatch();
     // whether to build the tree depth first or breadth first
     private boolean breadthFirst = false;
+    // whether to use early abandon in the distance computations
+    private boolean earlyAbandon = false;
+    // whether to use a quick check for exemplars
+    private boolean quickExemplarCheck = false;
+    // enhanced early abandon distance computation via assumption that distance is most likely to be shortest to majority class seen so far at each split
+    private boolean enhancedEarlyAbandon = false;
 
     @Override public long getCheckpointTime() {
         return checkpointTimer.elapsedTime();
@@ -468,6 +477,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return Objects.requireNonNull(bestSplit);
     }
 
+    public boolean isQuickExemplarCheck() {
+        return quickExemplarCheck;
+    }
+
+    public void setQuickExemplarCheck(final boolean quickExemplarCheck) {
+        this.quickExemplarCheck = quickExemplarCheck;
+    }
+
+    public boolean isEarlyAbandon() {
+        return earlyAbandon;
+    }
+
+    public void setEarlyAbandon(final boolean earlyAbandon) {
+        this.earlyAbandon = earlyAbandon;
+    }
+
+    public boolean isEnhancedEarlyAbandon() {
+        return enhancedEarlyAbandon;
+    }
+
+    public void setEnhancedEarlyAbandon(final boolean enhancedEarlyAbandon) {
+        this.enhancedEarlyAbandon = enhancedEarlyAbandon;
+    }
+
     private static class Partition implements Serializable {
 
         private Partition(final String[] classLabels) {
@@ -560,6 +593,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return score;
         }
 
+        public Iterator<Double> getBuildIterator() {
+            return new Iterator<Double>() {
+                @Override public boolean hasNext() {
+                    
+                }
+
+                @Override public Double next() {
+                    
+                }
+            };
+        }
+        
         /**
          * Partition the data and derive score for this split.
          */
@@ -602,14 +647,57 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // setup the distance function
             distanceMeasure.buildDistanceMeasure(data);
             
+            Map<Integer, Integer> exemplarPartitionIndices = null;
+            if(quickExemplarCheck) {
+                exemplarPartitionIndices = new HashMap<>();
+                // quick exemplar checking resources
+                for(int partitionIndex = 0; partitionIndex < partitions.size(); partitionIndex++) {
+                    final Partition partition = partitions.get(partitionIndex);
+                    for(Integer exemplarIndex : partition.getExemplarIndices()) {
+                        exemplarPartitionIndices.put(exemplarIndex, partitionIndex);
+                    }
+                }
+            }
+            // init constant list of partition indices if not using enhanced early abandon
+            List<Integer> partitionIndices = null;
+            Map<Integer, Integer> descCountToPartitionIndices = new TreeMap<>(((Comparator<Integer>) Integer::compare).reversed());
+            Map<Integer, Integer> partitionIndexToCount = new HashMap<>();
+            if(!enhancedEarlyAbandon) {
+                partitionIndices = ArrayUtilities.sequence(partitions.size());
+            } else {
+                for(int i = 0; i < partitions.size(); i++) {
+                    descCountToPartitionIndices.put(0, i);
+                    partitionIndexToCount.put(i, 0);
+                }
+            }
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
             for(int i = 0; i < data.numInstances(); i++) {
-                final TimeSeriesInstance instance = data.get(i);
-                final Partition closestPartition = findPartitionFor(instance);
+                TimeSeriesInstance instance = data.get(i);
+                Integer closestPartitionIndex = null;
+                Partition closestPartition;
+                if(quickExemplarCheck) {
+                    closestPartitionIndex = exemplarPartitionIndices.get(i);
+                }
+                if(closestPartitionIndex == null) {
+                    if(enhancedEarlyAbandon) {
+                        closestPartitionIndex = findPartitionIndexFor(instance, descCountToPartitionIndices.values());
+                        // another inst is assigned to that partition, so increment the count
+                        // this makes it moves up the list of partitions to look at to *hopefully* hit early abandon earlier given the assumption that most instances will be the majority class, then second most majority and so on.
+                        Integer count = partitionIndexToCount.get(closestPartitionIndex);
+                        descCountToPartitionIndices.remove(count);
+                        count++;
+                        partitionIndexToCount.put(closestPartitionIndex, count);
+                        descCountToPartitionIndices.put(count, closestPartitionIndex);
+                    } else {
+                        closestPartitionIndex = findPartitionIndexFor(instance, partitionIndices);
+                    }
+                }
+                closestPartition = partitions.get(closestPartitionIndex);
                 // add the instance to the partition
                 closestPartition.addData(data.get(i), dataIndices.get(i));
             }
+            
             // find the score of this split attempt, i.e. how good it is
             score = partitionScorer.findScore(data, getPartitionedData());
         }
@@ -624,18 +712,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * @param instance
          * @return
          */
-        public int findPartitionIndexFor(final TimeSeriesInstance instance) {
+        public int findPartitionIndexFor(final TimeSeriesInstance instance, Iterable<Integer> partitionIndices) {
             // a map to maintain the closest partition indices
             PrunedMultimap<Double, Integer> distanceToPartitionMap = PrunedMultimap.asc();
             // let the map keep all ties and randomly choose at the end
             distanceToPartitionMap.setSoftLimit(1);
             // loop through exemplars
-            for(int i = 0; i < partitions.size(); i++) {
+            for(Integer i : partitionIndices) {
                 final Partition partition = partitions.get(i);
                 for(TimeSeriesInstance exemplar : partition.getExemplars()) {
                     // for each exemplar
                     // check the instance isn't an exemplar
-                    if(instance == exemplar) {
+                    if(!quickExemplarCheck && instance == exemplar) {
                         return i;
                     }
                     // find the distance
@@ -647,9 +735,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // get the smallest distance from the map
             final Double smallestDistance = distanceToPartitionMap.firstKey();
             // find the list of corresponding partitions which the instance could belong to
-            final List<Integer> partitionIndices = distanceToPartitionMap.get(smallestDistance);
+            final List<Integer> bestPartitionIndices = distanceToPartitionMap.get(smallestDistance);
             // random pick the best partition for the instance
-            return RandomUtils.choice(partitionIndices, rand);
+            return RandomUtils.choice(bestPartitionIndices, rand);
+        }
+        
+        public int findPartitionIndexFor(final TimeSeriesInstance instance) {
+            return findPartitionIndexFor(instance, ArrayUtilities.sequence(partitions.size()));
         }
 
         public Partition findPartitionFor(TimeSeriesInstance instance) {
