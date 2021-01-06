@@ -13,7 +13,6 @@ import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
-import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
@@ -26,20 +25,19 @@ import tsml.classifiers.distance_based.utils.collections.tree.TreeNode;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
-import tsml.classifiers.distance_based.utils.stats.scoring.*;
+import tsml.classifiers.distance_based.utils.stats.scoring.GiniEntropy;
+import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.system.random.DebuggingRandom;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
-import weka.core.DistanceFunction;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -87,7 +85,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         new TWEDistanceConfigs.TWEDSpaceBuilder(),
                         new MSMDistanceConfigs.MSMSpaceBuilder()
                 ));
-                proximityTree.setPartitionScorer(new GiniEntropy());
+                proximityTree.setSplitScorer(new GiniEntropy());
                 proximityTree.setR(1);
                 proximityTree.setTrainTimeLimit(-1);
                 proximityTree.setTestTimeLimit(-1);
@@ -147,7 +145,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the number of splits to consider for this split
     private int r;
     // a method of scoring the split of data into partitions
-    private PartitionScorer partitionScorer;
+    private PartitionScorer splitScorer;
     // checkpoint config
     private long lastCheckpointTimeStamp = -1;
     private String checkpointPath;
@@ -448,12 +446,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.r = r;
     }
 
-    public PartitionScorer getPartitionScorer() {
-        return partitionScorer;
+    public PartitionScorer getSplitScorer() {
+        return splitScorer;
     }
 
-    public void setPartitionScorer(final PartitionScorer partitionScorer) {
-        this.partitionScorer = partitionScorer;
+    public void setSplitScorer(final PartitionScorer splitScorer) {
+        this.splitScorer = splitScorer;
     }
 
     @Override public String toString() {
@@ -581,36 +579,139 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         
         // the distance function for comparing instances to exemplars
         private DistanceMeasure distanceMeasure;
-        // the score of this split
-        private double score = -1;
         // the data at this split (i.e. before being partitioned)
         private TimeSeriesInstances data;
         private List<Integer> dataIndices;
         // the partitions of the data, each containing data for the partition and exemplars representing the partition
         private List<Partition> partitions;
+        
+        // when not using early abandon, the inst indices will house a list of all insts to look at when partitioning
+        private List<Integer> instIndices = null;
+        // similarly partitionIndices houses all the partitions to look at when partitioning. This obviously stays consistent (i.e. look at all partitions in order) when not using early abandon
+        private List<Integer> partitionIndices = null;
+        
+        // when using early abandon for splitting the order that partitions are examined may be altered. Therefore we maintain two maps which contain partition index to a count of the number of insts in that partition so far and vice versa for the other map. By maintaining ordering of the maps, we can create a desc order partition list of the most popular partition to the least. This then takes benefit of the assumption that most insts are going to go to the majority partition, thus examining in desc popularity order should make best use of early abandon in the distance calculations.
+        // for example, if we had 3 partitions (3 exemplars) and had no yet built the split. We have no idea about the distribution of insts between partitions, but we can be fairly certain there will be a more popular partition as most splits are lop sided (some partitions are bigger than others). Suppose we jump forward in time to half way through our data. part1 has 30% of the data, part2 has 55% and part3 has 15% (of the data seen so far). We can assume for the remaining data, most of it would end up in part2, closely followed by part1 and the rest in part3. Thus when calculating the distances to each exemplar for each partition, we should examine the exemplars / partitions in the order part2, part1, part3. This gives the highest likelihood of getting a low distance for part2 (as majority of data lies here) and therefore provide a lower bound on distance computation against part1 and part3's exemplars.
+        // we can take this further and specialise by class, as a good split will split the data into classes. Therefore, if we can say that the majority of insts with class 2 seems to end up in part3, class1 in part1 and class0 in part2, we can order the partitions ahead of time based on where we believe the inst will be partitioned given its class value. 
+        // obviously the order of partitions is ever evolving as we go through more and more data. Therefore, the early abandon for split building will be an increasing returns as the split is built.
+        private HashMap<Integer, TreeMap<Integer, Integer>> classToDescCountToPartitionIndex = null;
+        private HashMap<Integer, HashMap<Integer, Integer>> classToPartitionIndexToCount = null;
+        
+        // exemplars are normally checked ad-hoc during distance computation. Obviously checking which partition and exemplar belongs to is a waste of computation, as the distance will be zero and trump all other exemplars distances for other partitions. Therefore, it is important to check first. Original pf checked for exemplars as it went along, meaning for partition 5 it would compare exemplar 5 to exemplar 1..4 before realising it's an exemplar. Therefore, we can store the exemplar mapping to partition index and do a quick lookup before calculating distances. This is likely to only save a small amount of time, but increases as the breadth of trees / classes increases. I.e. for a 100 class problem, looking through 99 exemplars before realising we're examining the exemplar for the 100th partition is a large waste.
+        private Map<Integer, Integer> exemplarPartitionIndices = null;
+
+        // cache the scores
+        private boolean findWorstPotentialScore = true;
+        private boolean findBestPotentialScore = true;
+        private boolean findScore = true;
+        // the score of this split
+        private double score = -1;
+        private double bestPotentialScore = -1;
+        private double worstPotentialScore = -1;
+        
+        public double getBestPotentialScore() {
+            if(findBestPotentialScore) {
+                findBestPotentialScore = false;
+//                bestPotentialScore = 
+            }
+            return bestPotentialScore;
+        }
+        
+        public double getWorstPotentialScore() {
+            if(findWorstPotentialScore) {
+                findWorstPotentialScore = false;
+//                worstPotentialScore = 
+            }
+            return worstPotentialScore;
+        }
 
         public double getScore() {
+            if(findScore) {
+                findScore = false;
+//                score = splitScorer.score(new Labels<>(new AbstractList<Integer>() {
+//                    @Override public Integer get(final int i) {
+//                        return data.get(i).getLabelIndex();
+//                    }
+//
+//                    @Override public int size() {
+//                        return data.numInstances();
+//                    }
+//                }), partitions.stream().map(partition -> new Labels<>(new AbstractList<Integer>() {
+//                    @Override public Integer get(final int i) {
+//                        return partition.getData().get(i).getLabelIndex();
+//                    }
+//
+//                    @Override public int size() {
+//                        return partition.getData().numInstances();
+//                    }
+//                })).collect(Collectors.toList()));
+                score = splitScorer.findScore(Converter.toArff(data), getPartitionedData().stream().map(Converter::toArff).collect(
+                        Collectors.toList()));
+            }
             return score;
         }
 
-        public Iterator<Double> getBuildIterator() {
-            return new Iterator<Double>() {
+        public Iterator<Integer> getBuildIterator() {
+            // init build info
+            preBuild();
+            // return iterator to progressively build split
+            // go through every instance and find which partition it should go into. This should be the partition
+            // with the closest exemplar associate
+            return new Iterator<Integer>() {
+                
+                private int i = 0;
+                
                 @Override public boolean hasNext() {
-                    
+                    return i < data.numInstances();
                 }
 
-                @Override public Double next() {
-                    
+                @Override public Integer next() {
+                    // mark that scores need recalculating, as we'd have added a new inst to a partition by the end of this method
+                    findScore = true;
+                    findBestPotentialScore = true;
+                    findWorstPotentialScore = true;
+                    // get the inst to be partitioned
+                    TimeSeriesInstance inst = data.get(i);
+                    Integer closestPartitionIndex = null;
+                    if(quickExemplarCheck) {
+                        // check for exemplars. If the inst is an exemplar, we already know what partition it represents and therefore belongs to
+                        closestPartitionIndex = exemplarPartitionIndices.get(i);
+                    }
+                    // if null then not exemplar / not doing quick exemplar checking
+                    if(closestPartitionIndex == null) {
+                        if(enhancedEarlyAbandon) {
+                            // enhanced early abandon reorders the partitions to attempt to hit the lowest distance first and create largest benefit of early abandon during distance computation
+                            // get the map which contains the ordering of partitions for the inst's class
+                            final TreeMap<Integer, Integer> descCountToPartitionIndex = classToDescCountToPartitionIndex.get(inst.getLabelIndex());
+                            final Collection<Integer> partitionIndices = descCountToPartitionIndex.values();
+                            closestPartitionIndex = findPartitionIndexFor(inst, partitionIndices);
+                            // another inst is assigned to that partition, so increment the count
+                            // this makes it moves up the list of partitions to look at to *hopefully* hit early abandon earlier given the assumption that most instances will be the majority class, then second most majority and so on.
+                            // get the map which contains the counts of partition size for the inst's class
+                            final HashMap<Integer, Integer> partitionIndexToCount = classToPartitionIndexToCount.get(inst.getLabelIndex());
+                            Integer count = partitionIndexToCount.get(closestPartitionIndex);
+                            descCountToPartitionIndex.remove(count);
+                            count++;
+                            partitionIndexToCount.put(closestPartitionIndex, count);
+                            descCountToPartitionIndex.put(count, closestPartitionIndex);
+                        } else {
+                            // otherwise just loop through all partitions in order looking for the closest. Order is static and never changed
+                            closestPartitionIndex = findPartitionIndexFor(inst, partitionIndices);
+                        }
+                    }
+                    Partition closestPartition = partitions.get(closestPartitionIndex);
+                    // add the instance to the partition
+                    closestPartition.addData(data.get(i), dataIndices.get(i));
+                    // shift i along to look at next inst
+                    i++;
+                    return closestPartitionIndex;
                 }
             };
         }
         
-        /**
-         * Partition the data and derive score for this split.
-         */
-        public void buildSplit() {
+        private void preBuild() {
+
             // pick the distance function
-            
             // pick a random space
             ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, rand);
             // built that space
@@ -619,8 +720,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceMeasure = Objects.requireNonNull((DistanceMeasure) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
-            // pick the exemplars
 
+            // pick the exemplars
             // change the view of the data into per class
             final List<List<Integer>> instIndicesByClass = data.indicesByClass();
             // pick exemplars per class
@@ -643,11 +744,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     partitions.add(partition);
                 }
             }
-            
+
             // setup the distance function
             distanceMeasure.buildDistanceMeasure(data);
             
-            Map<Integer, Integer> exemplarPartitionIndices = null;
             if(quickExemplarCheck) {
                 exemplarPartitionIndices = new HashMap<>();
                 // quick exemplar checking resources
@@ -658,48 +758,39 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     }
                 }
             }
-            // init constant list of partition indices if not using enhanced early abandon
-            List<Integer> partitionIndices = null;
-            Map<Integer, Integer> descCountToPartitionIndices = new TreeMap<>(((Comparator<Integer>) Integer::compare).reversed());
-            Map<Integer, Integer> partitionIndexToCount = new HashMap<>();
-            if(!enhancedEarlyAbandon) {
-                partitionIndices = ArrayUtilities.sequence(partitions.size());
-            } else {
-                for(int i = 0; i < partitions.size(); i++) {
-                    descCountToPartitionIndices.put(0, i);
-                    partitionIndexToCount.put(i, 0);
-                }
-            }
-            // go through every instance and find which partition it should go into. This should be the partition
-            // with the closest exemplar associate
-            for(int i = 0; i < data.numInstances(); i++) {
-                TimeSeriesInstance instance = data.get(i);
-                Integer closestPartitionIndex = null;
-                Partition closestPartition;
-                if(quickExemplarCheck) {
-                    closestPartitionIndex = exemplarPartitionIndices.get(i);
-                }
-                if(closestPartitionIndex == null) {
-                    if(enhancedEarlyAbandon) {
-                        closestPartitionIndex = findPartitionIndexFor(instance, descCountToPartitionIndices.values());
-                        // another inst is assigned to that partition, so increment the count
-                        // this makes it moves up the list of partitions to look at to *hopefully* hit early abandon earlier given the assumption that most instances will be the majority class, then second most majority and so on.
-                        Integer count = partitionIndexToCount.get(closestPartitionIndex);
-                        descCountToPartitionIndices.remove(count);
-                        count++;
-                        partitionIndexToCount.put(closestPartitionIndex, count);
-                        descCountToPartitionIndices.put(count, closestPartitionIndex);
-                    } else {
-                        closestPartitionIndex = findPartitionIndexFor(instance, partitionIndices);
+            // init the maps of partition counts / desc order of partitions for each class
+            classToDescCountToPartitionIndex = new HashMap<>();
+            classToPartitionIndexToCount = new HashMap<>();
+            if(enhancedEarlyAbandon) {
+                for(int i = 0; i < data.numClasses(); i++) {
+                    // create a map for this class holding a desc list of partitions
+                    final TreeMap<Integer, Integer> descCountToPartitionIndex = new TreeMap<>(((Comparator<Integer>) Integer::compare).reversed());
+                    // create a map for this class holding the size of each partition
+                    final HashMap<Integer, Integer> partitionIndexToCount = new HashMap<>();
+                    // add both maps to the container maps for each class
+                    classToDescCountToPartitionIndex.put(i, descCountToPartitionIndex);
+                    classToPartitionIndexToCount.put(i, partitionIndexToCount);
+                    // populate the maps
+                    // for each partition
+                    for(int j = 0; j < partitions.size(); j++) {
+                        // set the count for the partition to zero
+                        descCountToPartitionIndex.put(0, j);
+                        partitionIndexToCount.put(j, 0);
                     }
                 }
-                closestPartition = partitions.get(closestPartitionIndex);
-                // add the instance to the partition
-                closestPartition.addData(data.get(i), dataIndices.get(i));
+            } else {
+                partitionIndices = ArrayUtilities.sequence(partitions.size());
             }
-            
-            // find the score of this split attempt, i.e. how good it is
-            score = partitionScorer.findScore(data, getPartitionedData());
+        }
+        
+        /**
+         * Partition the data and derive score for this split.
+         */
+        public void buildSplit() {
+            Iterator<Integer> it = getBuildIterator();
+            while(it.hasNext()) {
+                it.next();
+            }
         }
 
         public DistanceMeasure getDistanceMeasure() {
@@ -717,7 +808,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             PrunedMultimap<Double, Integer> distanceToPartitionMap = PrunedMultimap.asc();
             // let the map keep all ties and randomly choose at the end
             distanceToPartitionMap.setSoftLimit(1);
-            // loop through exemplars
+            // loop through exemplars / partitions
             for(Integer i : partitionIndices) {
                 final Partition partition = partitions.get(i);
                 for(TimeSeriesInstance exemplar : partition.getExemplars()) {
