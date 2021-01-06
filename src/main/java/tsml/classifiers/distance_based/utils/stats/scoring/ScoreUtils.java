@@ -1,16 +1,12 @@
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.lists.RepeatList;
-import tsml.classifiers.distance_based.utils.stats.scoring.tmp.Labels;
 import utilities.ArrayUtilities;
 import utilities.InstanceTools;
 import utilities.Utilities;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import static utilities.ArrayUtilities.*;
 

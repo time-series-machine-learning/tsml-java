@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.stats.scoring.tmp;
+package tsml.classifiers.distance_based.utils.stats.scoring;
 
 import java.util.List;
 

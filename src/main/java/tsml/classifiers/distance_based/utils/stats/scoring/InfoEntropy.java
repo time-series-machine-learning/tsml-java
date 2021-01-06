@@ -1,13 +1,18 @@
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
-import weka.core.Instances;
+import utilities.Utilities;
 
 import java.util.List;
 
-public class InfoEntropy implements PartitionScorer {
+public class InfoEntropy implements SplitScorer {
+    @Override public <A> double score(final Labels<A> parentLabels, final List<Labels<A>> childLabels) {
+        return ScoreUtils.weightedEntropy(parentLabels, childLabels, InfoGain.INSTANCE::inverseEntropy);
+    }
 
-    @Override
-    public double findScore(final Instances parent, final List<Instances> children) {
-        return ScoreUtils.infoScore(children);
+    public static void main(String[] args) {
+        for(int i = 2; i < 10; i++) {
+            double a = -(1d / i * Utilities.log(1d / i,2) * i);
+            System.out.println(a);
+        }
     }
 }
