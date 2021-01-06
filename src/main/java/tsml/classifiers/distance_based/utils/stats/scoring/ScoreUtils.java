@@ -1,12 +1,16 @@
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.lists.RepeatList;
+import tsml.classifiers.distance_based.utils.stats.scoring.tmp.Labels;
 import utilities.ArrayUtilities;
 import utilities.InstanceTools;
 import utilities.Utilities;
 import weka.core.Instances;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static utilities.ArrayUtilities.*;
 
@@ -17,6 +21,29 @@ import static utilities.ArrayUtilities.*;
  */
 public class ScoreUtils {
 
+    public interface EntropyFunc {
+        <A> double entropy(Labels<A> labels);
+    }
+
+    public static <A> double gain(Labels<A> parentLabels, List<Labels<A>> childLabels, EntropyFunc entropyFunction) {
+        double childScoreSum = weightedEntropy(parentLabels, childLabels, entropyFunction);
+        final double parentScore = entropyFunction.entropy(parentLabels);
+        return parentScore - childScoreSum;
+    }
+    
+    public static <A> double weightedEntropy(Labels<A> parentLabels, List<Labels<A>> childLabels, EntropyFunc entropyFunction) {
+        double childScoreSum = 0;
+        for(final Labels<A> labels : childLabels) {
+            labels.setLabelSet(parentLabels.getLabelSet());
+            double score = entropyFunction.entropy(labels);
+            final double proportion = (double) labels.getLabels().size() / parentLabels.getLabels().size();
+            score *= proportion;
+            childScoreSum += score;
+        }
+        return childScoreSum;
+    }
+    
+    
     public static void main(String[] args) {
         int limit = 10;
         for(int i = 0; i <= limit; i++) {

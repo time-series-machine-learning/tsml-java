@@ -168,9 +168,6 @@ public class ArrayUtilities {
 
     public static List<Double> normalise(List<Double> list) {
         double sum = sum(list);
-        if(sum == 0) {
-            throw new IllegalArgumentException("sum zero");
-        }
         return list.stream().map(element -> element / sum).collect(Collectors.toList());
     }
 
