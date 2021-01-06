@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.stats.scoring;
+package tsml.classifiers.distance_based.utils.stats.scoring.v2;
 
 import tsml.classifiers.distance_based.utils.collections.lists.RepeatList;
 

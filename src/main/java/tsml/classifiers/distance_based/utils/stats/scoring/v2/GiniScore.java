@@ -1,8 +1,8 @@
-package tsml.classifiers.distance_based.utils.stats.scoring;
+package tsml.classifiers.distance_based.utils.stats.scoring.v2;
 
 import java.util.List;
 
-import static tsml.classifiers.distance_based.utils.stats.scoring.ScoreUtils.gain;
+import static tsml.classifiers.distance_based.utils.stats.scoring.v2.ScoreUtils.gain;
 
 public class GiniScore implements SplitScorer {
 

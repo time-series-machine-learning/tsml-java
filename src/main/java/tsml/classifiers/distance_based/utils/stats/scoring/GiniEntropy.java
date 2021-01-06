@@ -1,9 +1,13 @@
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
+import weka.core.Instances;
+
 import java.util.List;
 
-public class GiniEntropy implements SplitScorer {
-    @Override public <A> double score(final Labels<A> parentLabels, final List<Labels<A>> childLabels) {
-        return ScoreUtils.weightedEntropy(parentLabels, childLabels, GiniScore.INSTANCE::inverseEntropy);
+public class GiniEntropy implements PartitionScorer {
+
+    @Override
+    public double findScore(final Instances parent, final List<Instances> children) {
+        return ScoreUtils.giniScore(children);
     }
 }

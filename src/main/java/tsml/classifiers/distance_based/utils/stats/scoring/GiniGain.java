@@ -4,10 +4,10 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class InfoEntropy implements PartitionScorer {
+public class GiniGain implements PartitionScorer {
 
     @Override
     public double findScore(final Instances parent, final List<Instances> children) {
-        return ScoreUtils.infoScore(children);
+        return ScoreUtils.giniGain(parent, children);
     }
 }
