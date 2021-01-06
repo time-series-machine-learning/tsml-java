@@ -2,12 +2,16 @@ package tsml.data_containers;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
+
+import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
 
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
  */
-public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
+public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
     private String description;
@@ -132,86 +136,110 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     /* End Meta Information */
 
-    private List<TimeSeriesInstance> seriesCollection;
+    private List<TimeSeriesInstance> seriesCollection = new ArrayList<>();
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
-    private String[] classLabels;
+    private String[] classLabels = EMPTY_CLASS_LABELS;
 
     private int[] classCounts;
 
-    public TimeSeriesInstances() {
-        seriesCollection = new ArrayList<>();
-    }
-
-    public TimeSeriesInstances(final String[] classLabels) {
-        this();
-        setClassLabels(classLabels);
-    }
-
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData) {
-        this();
-
-        for (final List<List<Double>> series : rawData) {
-            seriesCollection.add(new TimeSeriesInstance(series));
-        }
-
+    public TimeSeriesInstances(final String[] classLabels) {        
+        this.classLabels = classLabels;
+        
         dataChecks();
     }
 
-    
-    public TimeSeriesInstances(final List<List<List<Double>>> rawData, final List<Double> labelIndexes) {
-        this();
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, List<Double> targetValues) {
 
         int index = 0;
-        for (final List<List<Double>> series : rawData) {
+        for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++)));
+            seriesCollection.add(new TimeSeriesInstance(series, targetValues.get(index++)));
+        }
+
+        dataChecks();
+    }
+    
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, String[] classLabels, final List<Double> labelIndices) {
+        this(rawData, labelIndices.stream().map(TimeSeriesInstance::discretiseLabelIndex).collect(Collectors.toList()), classLabels);
+    }
+    
+    public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, final List<Integer> labelIndexes, String[] classLabels) {
+        
+        this.classLabels = classLabels;
+        
+        int index = 0;
+        for (final List<? extends List<Double>> series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
         }
 
         dataChecks();
     }
 
-    public TimeSeriesInstances(final double[][][] rawData) {
-        this();
-
-        for (final double[][] series : rawData) {
-            //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series));
-        }
-
-        dataChecks();
+    /**
+     * 
+     * @param rawData
+     * @param labelIndices
+     * @param labels
+     */
+    public TimeSeriesInstances(double[][][] rawData, double[] labelIndices, String[] labels) {
+        this(rawData, Arrays.stream(labelIndices).mapToInt(TimeSeriesInstance::discretiseLabelIndex).toArray(), labels);
     }
-
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes) {
-        this();
+    
+    public TimeSeriesInstances(double[][][] rawData, double[] targetValues) {
 
         int index = 0;
         for (double[][] series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++]));
+            seriesCollection.add(new TimeSeriesInstance(series, targetValues[index++]));
+        }
+    }
+    
+    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
+
+        classLabels = labels;
+
+        int index = 0;
+        for (double[][] series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes[index++], classLabels));
         }
 
         dataChecks();
     }
-
-    public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
-        this(rawData, labelIndexes);
-        classLabels = labels;
+	
+	public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
+        this(data, data.isEmpty() ? EMPTY_CLASS_LABELS : data.get(0).getClassLabels());
     }
+    
+    public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] classLabels) {
 
-    public TimeSeriesInstances(List<TimeSeriesInstance> data, String[] labels) {
-        this();
-        
-        for(TimeSeriesInstance d : data)
-            seriesCollection.add(d);
+        this.classLabels = classLabels;
 
-        classLabels = labels;
+        seriesCollection.addAll(data);
 
         dataChecks();
-	}
+    }
+    
+    public TimeSeriesInstances(TimeSeriesInstance[] data, String[] classLabels) {
+        this(Arrays.asList(data), classLabels);
+    }
+    
+    public TimeSeriesInstances(TimeSeriesInstance[] data) {
+        this(Arrays.asList(data));
+    }
 
 	private void dataChecks(){
+        
+        if(seriesCollection == null) {
+            throw new NullPointerException("no series collection");
+        }
+        if(classLabels == null) {
+            throw new NullPointerException("no class labels");
+        }
+        
         calculateLengthBounds();
         calculateIfMissing();
         calculateIfMultivariate();
@@ -246,16 +274,6 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
 
     
     /** 
-     * @param labels
-     */
-    public void setClassLabels(String[] labels) {
-        classLabels = labels;
-
-        calculateClassCounts();
-    }
-
-    
-    /** 
      * @return String[]
      */
     public String[] getClassLabels() {
@@ -278,6 +296,7 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
      * @return int[]
      */
     public int[] getClassCounts(){
+        calculateClassCounts();
         return classCounts;
     }
 
@@ -285,8 +304,14 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
     /** 
      * @param newSeries
      */
-    public void add(int i, final TimeSeriesInstance newSeries) {
-        seriesCollection.add(i, newSeries);
+    public void add(final TimeSeriesInstance newSeries) {
+        // check that the class labels match
+        if(!Arrays.equals(classLabels, newSeries.getClassLabels())) {
+            throw new IllegalArgumentException("class labels " + Arrays.toString(classLabels) + " to not match class labels in instance to be added " +
+                                                       Arrays.toString(newSeries.getClassLabels()));
+        }
+
+        seriesCollection.add(newSeries);
 
         //guard for if we're going to force update classCounts after.
         if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
@@ -513,19 +538,62 @@ public class TimeSeriesInstances extends AbstractList<TimeSeriesInstance> {
         return out;
     }
 
-    @Override public TimeSeriesInstance set(final int i, final TimeSeriesInstance instance) {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    @Override public Iterator<TimeSeriesInstance> iterator() {
+        return seriesCollection.iterator();
     }
 
-    @Override public TimeSeriesInstance remove(final int i) {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    public Stream<TimeSeriesInstance> stream() {
+        return seriesCollection.stream();
+    }
+    
+    public List<List<List<Double>>> getVSliceList(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
 
-    @Override public void clear() {
-        throw new UnsupportedOperationException("TimeSeriesInstances not mutable");
+    public TimeSeriesInstances getVSlice(int startInclusive, int endExclusive) {
+        final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
+    }
+    
+    public double[][][] getVSliceArray(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getVSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
+    }
+    
+    public List<List<List<Double>>> getHSliceList(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
+    }
+    
+    public double[][][] getHSliceArray(int startInclusive, int endExclusive) {
+        return seriesCollection.stream().map(inst -> inst.getHSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
+    }
+    
+    public TimeSeriesInstances getHSlice(int startInclusive, int endExclusive) {
+        final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
+        tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(startInclusive, endExclusive)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
     }
 
-    @Override public int size() {
-        return numInstances();
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeriesInstances)) {
+            return false;
+        }
+        final TimeSeriesInstances that = (TimeSeriesInstances) o;
+        return Objects.equals(seriesCollection, that.seriesCollection) && Arrays.equals(classLabels, that.classLabels);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(seriesCollection, classLabels);
+    }
+
+    public boolean isClassificationProblem() {
+        // if a set of class labels are set then it's a classification problem
+        return classLabels.length >= 0;
+    }
+
+    public boolean isRegressionProblem() {
+        return !isClassificationProblem();
     }
 }

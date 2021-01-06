@@ -107,7 +107,7 @@ public class Hilbert implements Transformer {
 				out[index][k] = fk;
 			}
 		}
-		return new TimeSeriesInstance(out, inst.getLabelIndex());
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 }

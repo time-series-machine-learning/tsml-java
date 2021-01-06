@@ -143,7 +143,7 @@ public class HOG1D implements Transformer {
             out[i++] = getHOG1Ds(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     /**

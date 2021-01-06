@@ -3,6 +3,7 @@ package tsml.data_containers;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Data structure able to store a time series instance. it can be standard
@@ -13,7 +14,7 @@ import java.util.stream.IntStream;
  * creation, mutability can break this
  */
 
-public class TimeSeriesInstance extends AbstractList<TimeSeries> {
+public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     /* Meta Information */
     private boolean isMultivariate;
@@ -63,79 +64,201 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
 
     /* Data */
     private List<TimeSeries> seriesDimensions;
-    private int labelIndex;
-    private double targetValue;
-
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, Double value) {
-        this(series);
-
-        //could be an index, or it could be regression target
-        labelIndex = value.intValue();
-        targetValue = value;
-    }
-
-    // this ctor can be made way more sophisticated.
-    public TimeSeriesInstance(List<List<Double>> series, int label) {
-        this(series);
-
-        labelIndex = label;
-    }
-
-    //do the ctor this way round to avoid erasure problems :(
-    public TimeSeriesInstance(int labelIndex, List<TimeSeries> series) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        seriesDimensions.addAll(series);
-
-        this.labelIndex = labelIndex; 
+    private int labelIndex = -1;
+    private double targetValue = Double.NaN;
+    private String[] classLabels = EMPTY_CLASS_LABELS;
+    public static final String[] EMPTY_CLASS_LABELS = new String[0];
+    
+    public TimeSeriesInstance(double targetValue, List<? extends TimeSeries> series) {
+        this.seriesDimensions = new ArrayList<>(series);
+        this.targetValue = targetValue;
+        
         dataChecks();
     }
+    
+    public TimeSeriesInstance(int labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
+        this.seriesDimensions = new ArrayList<>(series);
+        this.classLabels = classLabels;
+        this.labelIndex = labelIndex;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(double labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
+        this(discretiseLabelIndex(labelIndex), classLabels, series);
+    }
 
-    public TimeSeriesInstance(List<List<Double>> series) {
+    /**
+     * Construct a labelled instance from raw data.
+     * @param series
+     * @param labelIndex cast to an int internally
+     * @param classLabels
+     */
+    public TimeSeriesInstance(List<? extends List<Double>> series, double labelIndex, String[] classLabels) {
+        this(series, discretiseLabelIndex(labelIndex), classLabels);
+    }
+
+    /**
+     * Construct a labelled instance from raw data.
+     * @param series
+     * @param label
+     * @param classLabels
+     */
+    public TimeSeriesInstance(List<? extends List<Double>> series, int label, String[] classLabels) {
+        this(series, Double.NaN);
+
+        targetValue = labelIndex = label;
+        this.classLabels = classLabels;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(List<? extends List<Double>> series, double targetValue) {
         // process the input list to produce TimeSeries Objects.
         // this allows us to pad if need be, or if we want to squarify the data etc.
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for (List<Double> ts : series) {
-            // convert List<Double> to double[]
-            seriesDimensions.add(new TimeSeries(ts.stream().mapToDouble(Double::doubleValue).toArray()));
+            seriesDimensions.add(new TimeSeries(ts));
         }
+        
+        this.targetValue = targetValue;
 
         dataChecks();
     }
 
-    public TimeSeriesInstance(double[][] data) {
+    /**
+     * Construct an regressed instance from raw data.
+     * @param data
+     * @param targetValue
+     */
+	public TimeSeriesInstance(double[][] data, double targetValue) {
+        seriesDimensions = new ArrayList<TimeSeries>();
+
+        for(double[] in : data){
+            seriesDimensions.add(new TimeSeries(in));
+        }
+        
+        this.targetValue = targetValue;
+
+        dataChecks();
+    }
+
+    /**
+     * Construct an labelled instance from raw data.
+     * @param data
+     * @param labelIndex
+     * @param classLabels
+     */
+    public TimeSeriesInstance(double[][] data, int labelIndex, String[] classLabels) {
         seriesDimensions = new ArrayList<TimeSeries>();
 
         for(double[] in : data){
             seriesDimensions.add(new TimeSeries(in));
         }
 
-        dataChecks();
-	}
-
-    public TimeSeriesInstance(double[][] data, int labelIndex) {
-        seriesDimensions = new ArrayList<TimeSeries>();
-
-        for(double[] in : data){
-            seriesDimensions.add(new TimeSeries(in));
-        }
-
-        this.labelIndex = labelIndex;
- 
-        dataChecks();
-    }
-    
-    private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
-        this(data);
-        labelIndex = other.labelIndex;
-        targetValue = other.targetValue;
+        targetValue = this.labelIndex = labelIndex;
+        this.classLabels = classLabels;
         
         dataChecks();
     }
+    
+    public static int discretiseLabelIndex(double labelIndex) {
+        final int i;
+        if(Double.isNaN(labelIndex)) {
+            i = -1;
+        } else {
+            i = (int) labelIndex;
+            // check the given double is an integer, i.e. 3.0 == 3. Protects against abuse through implicit label indexing integer casting, i.e. 3.3 --> 3. The user should do this themselves, otherwise it's safest to assume a non-integer value (e.g. 7.4) is an error and raise exception.
+            if(labelIndex != i) {
+                throw new IllegalArgumentException("cannot discretise " + labelIndex + " to an int: " + i);
+            }
+        }
+        return i;
+    }
+
+    /**
+     * Construct a labelled instance from raw data with label in double form (but should be an integer value).
+     * @param data
+     * @param labelIndex
+     * @param classLabels
+     */
+    public TimeSeriesInstance(double[][] data, double labelIndex, String[] classLabels) {
+        this(data, discretiseLabelIndex(labelIndex), classLabels);
+    }
+
+    /**
+     * Construct an instance from raw data. Copies over regression target / labelling variables. This is only intended for internal use in avoiding copying the data again after a vslice / hslice.
+     * @param data
+     * @param other
+     */
+    private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
+        this(data, Double.NaN);
+        labelIndex = other.labelIndex;
+        targetValue = other.targetValue;
+        classLabels = other.classLabels;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(double[][] data) {
+        this(data, Double.NaN);
+    }
+    
+    public TimeSeriesInstance(List<? extends List<Double>> data) {
+        this(data, Double.NaN);
+    }
+    
+    private TimeSeriesInstance() {}
+    
+    private TimeSeriesInstance copy() {
+        final TimeSeriesInstance inst = new TimeSeriesInstance();
+        inst.classLabels = classLabels;
+        inst.labelIndex = labelIndex;
+        inst.seriesDimensions = seriesDimensions;
+        inst.targetValue = targetValue;
+        
+        inst.dataChecks();
+        
+        return inst;
+    }
+    
+    public TimeSeriesInstance(double targetValue, TimeSeries[] data) {
+        this(targetValue, Arrays.asList(data));
+    }
+    
+    public TimeSeriesInstance(int labelIndex, String[] classLabels, TimeSeries[] data) {
+        this(labelIndex, classLabels, Arrays.asList(data));
+    }
+    
+    public TimeSeriesInstance(double labelIndex, String[] classLabels, TimeSeries[] data) {
+        this(discretiseLabelIndex(labelIndex), classLabels, Arrays.asList(data));
+    }
 
     private void dataChecks(){
+        
+        if(seriesDimensions == null) {
+            throw new NullPointerException("no series dimensions");
+        }
+        // check class labels have been set correctly
+        if(classLabels == null) {
+            // class labels should always be set, even to an empty array if you're using regression instances
+            throw new NullPointerException("no class labels");
+        }
+        // if there are no class labels
+        if(Arrays.equals(classLabels, EMPTY_CLASS_LABELS)) {
+            // then the class label index should be -1
+            if(labelIndex != -1) {
+                throw new IllegalStateException("no class labels but label index not -1: " + labelIndex);
+            }
+        } else {
+            // there are class labels
+            // therefore this is a classification instance, so the regression target should be the same as the class label index
+            if(labelIndex != targetValue) {
+                throw new IllegalStateException("label index (" + labelIndex + ") and target value (" + targetValue + ") mismatch");
+            }
+        }
+        
         calculateIfMultivariate();
         calculateLengthBounds();
         calculateIfMissing();
@@ -171,6 +294,13 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
      */
     public int getLabelIndex(){
         return labelIndex;
+    }
+    
+    public String getClassLabel() {
+        if(labelIndex < 0 || classLabels == null) {
+            return null;
+        }
+        return classLabels[labelIndex];
     }
     
     /** 
@@ -382,29 +512,88 @@ public class TimeSeriesInstance extends AbstractList<TimeSeries> {
         return this.seriesDimensions.get(i);
 	}
 	
-
     public double getTargetValue() {
         return targetValue;
     }
 
-    @Override public int size() {
-        return getNumDimensions();
+    public String[] getClassLabels() {
+        return classLabels;
     }
 
-    @Override public void add(final int i, final TimeSeries doubles) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    @Override public Iterator<TimeSeries> iterator() {
+        return seriesDimensions.iterator();
+    }
+    
+    public Stream<TimeSeries> stream() {
+        return seriesDimensions.stream();
+    }
+    
+    public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
+        // copy construct a new inst
+        final TimeSeriesInstance tsi = copy();
+        // trim current data to a subset
+        tsi.seriesDimensions = seriesDimensions.subList(startInclusive, endExclusive);
+        tsi.dataChecks();
+        return tsi;
+    }
+    
+    public List<List<Double>> getHSliceList(int startInclusive, int endExclusive) {
+        return seriesDimensions.subList(startInclusive, endExclusive).stream().map(TimeSeries::getSeries).collect(Collectors.toList());
+    }
+    
+    public double[][] getHSliceArray(int startInclusive, int endExclusive) {
+        return getHSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    }
+    
+    public List<List<Double>> getVSliceList(int startInclusive, int endExclusive) {
+        return seriesDimensions.stream().map(dim -> dim.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
+    }
+    
+    public double[][] getVSliceArray(int startInclusive, int endExclusive) {
+        return getVSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
+    }
+    
+    public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
+        // copy construct a new inst
+        final TimeSeriesInstance tsi = copy();
+        // trim current data to a subset
+        tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
+        tsi.dataChecks();
+        return tsi;
     }
 
-    @Override public TimeSeries set(final int i, final TimeSeries doubles) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    @Override public boolean equals(final Object o) {
+        if(!(o instanceof TimeSeriesInstance)) {
+            return false;
+        }
+        final TimeSeriesInstance that = (TimeSeriesInstance) o;
+        return labelIndex == that.labelIndex &&
+                       Double.compare(that.targetValue, targetValue) == 0 &&
+                       seriesDimensions.equals(that.seriesDimensions) &&
+                       Arrays.equals(classLabels, that.classLabels);
     }
 
-    @Override public void clear() {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    @Override public int hashCode() {
+        
+        return Objects.hash(seriesDimensions, labelIndex, classLabels);
     }
-
-    @Override public TimeSeries remove(final int i) {
-        throw new UnsupportedOperationException("TimeSeriesInstance not mutable");
+    
+    public boolean isLabelled() {
+        // is labelled if label index points to a class label
+        return labelIndex >= 0;
     }
-
+    
+    public boolean isRegressed() {
+        // is regressed if the target value is set
+        return targetValue != Double.NaN;
+    }
+    
+    public boolean isClassificationProblem() {
+        // if a set of class labels are set then it's a classification problem
+        return classLabels.length >= 0;
+    }
+    
+    public boolean isRegressionProblem() {
+        return !isClassificationProblem();
+    }
 }
