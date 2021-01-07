@@ -2,11 +2,9 @@ package tsml.classifiers.multivariate;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.cBOSS;
-import tsml.classifiers.frequency_based.RISE;
-import tsml.classifiers.hybrids.HIVE_COTE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import weka.classifiers.Classifier;

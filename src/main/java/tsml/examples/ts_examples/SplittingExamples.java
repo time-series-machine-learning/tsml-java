@@ -3,9 +3,8 @@ package tsml.examples.ts_examples;
 import java.util.ArrayList;
 import java.util.List;
 
-import machine_learning.classifiers.kNN;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Splitter;
