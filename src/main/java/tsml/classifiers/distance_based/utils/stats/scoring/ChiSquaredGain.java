@@ -4,7 +4,7 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class ChiSquaredGain implements PartitionScorer {
+public class ChiSquaredGain implements SplitScorer {
     @Override public double findScore(final Instances parent, final List<Instances> children) {
         return ScoreUtils.chiSquared(parent, children);
     }

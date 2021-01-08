@@ -4,7 +4,7 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class InfoGain implements PartitionScorer {
+public class InfoGain implements SplitScorer {
 
     @Override
     public double findScore(final Instances parent, final List<Instances> children) {

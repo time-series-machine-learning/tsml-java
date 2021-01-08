@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Purpose: score the partitioning of some data into subsets.
  */
-public interface PartitionScorer extends Serializable {
+public interface SplitScorer extends Serializable {
     double findScore(Instances parent, List<Instances> children);
 
 }

@@ -4,7 +4,7 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class GiniEntropy implements PartitionScorer {
+public class GiniEntropy implements SplitScorer {
 
     @Override
     public double findScore(final Instances parent, final List<Instances> children) {
