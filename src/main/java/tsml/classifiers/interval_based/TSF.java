@@ -22,35 +22,31 @@ import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
+import tsml.data_containers.TSCapabilities;
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import weka.classifiers.AbstractClassifier;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.TechnicalInformation;
+import weka.core.*;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import weka.classifiers.Classifier;
-import weka.core.Randomizable;
-import weka.core.TechnicalInformationHandler;
-import weka.core.Utils;
 
-/** 
+/**
   <!-- globalinfo-start -->
 * Implementation of Time Series Forest
  * This classifier is Tunable, Contractable, Checkpointable and can estimate performance from the train data internally.
  *
- Time Series Forest (TimeSeriesForest) Deng 2013: 
+ Time Series Forest (TimeSeriesForest) Deng 2013:
 * buildClassifier
  * Overview: Input n series length m
  * for each tree
@@ -60,16 +56,16 @@ import weka.core.Utils;
  *      build tree on new feature set
 * classifyInstance
 *   ensemble the trees with majority vote
- 
+
 * This implementation may deviate from the original, as it is using the same
-* structure as the weka random forest. In the paper the splitting criteria has a 
-* tiny refinement. Ties in entropy gain are split with a further stat called margin 
-* that measures the distance of the split point to the closest data. 
-* So if the split value for feature 
+* structure as the weka random forest. In the paper the splitting criteria has a
+* tiny refinement. Ties in entropy gain are split with a further stat called margin
+* that measures the distance of the split point to the closest data.
+* So if the split value for feature
 * f=f_1,...f_n is v the margin is defined as
-*   margin= min{ |f_i-v| } 
-* for simplicity of implementation, and for the fact when we did try it and it made 
-* no difference, we have not used this. Note also, the original R implementation 
+*   margin= min{ |f_i-v| }
+* for simplicity of implementation, and for the fact when we did try it and it made
+* no difference, we have not used this. Note also, the original R implementation
 * may do some sampling of cases
 
  <!-- globalinfo-end -->
@@ -87,14 +83,14 @@ import weka.core.Utils;
 <!-- technical-bibtex-end -->
  <!-- options-start -->
  * Valid options are:
- * 
+ *
  * <pre> -T
  *  set number of trees in the ensemble.</pre>
- * 
+ *
  * <pre> -I
  *  set number of intervals to calculate.</pre>
  <!-- options-end -->
- 
+
 *       version1.0 author Tony Bagnall
 * date 7/10/15  Tony Bagnall
 * update 14/2/19 Tony Bagnall
@@ -113,34 +109,30 @@ import weka.core.Utils;
  * update 1/7/2020: Tony Bagnall. Sort out correct recording of timing, and tidy up comments. The storage option for
  * either CV or OOB
 */
- 
+
 public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
         TrainTimeContractable, Checkpointable, Tuneable, Visualisable {
 //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
- 
-    /** Primary parameters potentially tunable*/   
+    /** Primary parameters potentially tunable*/
     private int numClassifiers=DEFAULT_NUM_CLASSIFIERS;
 
     /** numIntervalsFinder sets numIntervals in buildClassifier. */
     private int numIntervals=0;
     private transient Function<Integer,Integer> numIntervalsFinder;
-    /** Secondary parameter, mainly there to avoid single item intervals, 
+    /** Secondary parameter, mainly there to avoid single item intervals,
      which have no slope or std dev*/
     private int minIntervalLength=3;
- 
+
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
     private Classifier classifier = new TimeSeriesTree();
- 
-    /** for each classifier [i]  interval j  starts at intervals[i][j][0] and 
+    /** for each classifier [i]  interval j  starts at intervals[i][j][0] and
      ends  at  intervals[i][j][1] */
     private ArrayList<int[][]> intervals;
 
     /**Holding variable for test classification in order to retain the header info*/
     private Instances testHolder;
- 
- 
 /** voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting */
     private boolean voteEnsemble=true;
@@ -180,20 +172,20 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         setSeed(s);
     }
 /**
- * 
+ *
  * @param c a base classifier constructed elsewhere and cloned into ensemble
- */   
+ */
     public void setBaseClassifier(Classifier c){
         classifier =c;
     }
     public void setBagging(boolean b){
         bagging=b;
     }
- 
+
 /**
  * ok,  two methods are a bit pointless, experimenting with ensemble method
  * @param b boolean to set vote ensemble
- */   
+ */
     public void setVoteEnsemble(boolean b){
         voteEnsemble=b;
     }
@@ -219,13 +211,13 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if(getEstimateOwnPerformance())
             result+=",EstimateMethod,"+estimator;
         return result;
- 
+
     }
     public void setNumTrees(int t){
         numClassifiers=t;
     }
-     
-     
+
+
 //<editor-fold defaultstate="collapsed" desc="results reported in Info Sciences paper (errors)">
     static double[] reportedErrorResults ={
         0.2659,
@@ -274,9 +266,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         0.3793,
         0.1513
     };
-      //</editor-fold>  
-     
-//<editor-fold defaultstate="collapsed" desc="problems used in Info Sciences paper">   
+      //</editor-fold>
+
+//<editor-fold defaultstate="collapsed" desc="problems used in Info Sciences paper">
     static String[] problems={
             "FiftyWords",
             "Adiac",
@@ -324,12 +316,12 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             "WordsSynonyms",
             "Yoga"
         };
-      //</editor-fold>  
-  
+      //</editor-fold>
+
  /**
   * paper defining TSF
   * @return TechnicalInformation
-  */  
+  */
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation    result;
@@ -340,7 +332,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         result.setValue(TechnicalInformation.Field.JOURNAL, "Information Sciences");
         result.setValue(TechnicalInformation.Field.VOLUME, "239");
         result.setValue(TechnicalInformation.Field.PAGES, "142-153");
- 
+
         return result;
   }
 
@@ -349,19 +341,52 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      * @param data
      * @throws Exception
      */
-  @Override
-  public void buildClassifier(TimeSeriesInstances data) throws Exception {
-        Instances convertedData = Converter.toArff(data);
-        convertedData.setClassIndex(convertedData.numAttributes() - 1);
-        buildClassifier(convertedData);
+      @Override
+      public void buildClassifier(TimeSeriesInstances data) throws Exception {
+//          Instances i = Converter.toArff(data);
+//          i.setClassIndex(i.numAttributes() - 1);
+//          buildClassifier(i);
+          // set classifier capabilities
+          TSCapabilities tsCapabilities = new TSCapabilities();
+          tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+                        .enable(TSCapabilities.UNIVARIATE)
+                        .enable(TSCapabilities.NO_MISSING_VALUES);
+
+          // can classifier handle the data?
+          boolean acceptData = tsCapabilities.test(data);
+          if (!acceptData)
+              throw new Exception("TSF cannot handle this type of data");
+
+          long startTime = System.nanoTime();
+          File file = new File(checkpointPath + "TSF" + seed + ".ser");
+
+          // Set up checkpointing (saving to file)/ if checkpoint and serialised file exist, load file
+          if (checkpoint && file.exists()) {
+              // path checkpoint files will be saved to
+              printLineDebug("Loading from checkpoint file");
+              loadFromFile(checkpointPath + "TSF" + seed + ".ser");
+          }
+          else { // otherwise initialise variables
+              seriesLength = data.getMaxLength();
+              if (numIntervalsFinder == null) {
+                  numIntervals = (int) Math.sqrt(seriesLength);
+              }
+              else {
+                  numIntervals = numIntervalsFinder.apply(seriesLength);
+              }
+
+              printDebug(String.format("Building TSF: number of intervals = %d number of trees = %d\n",
+                      numIntervals, numClassifiers));
+              trees = new ArrayList(numClassifiers);
+          }
   }
 
 
 /**
  * main buildClassifier
  * @param data
- * @throws Exception 
- */     
+ * @throws Exception
+ */
     @Override
     public void buildClassifier(Instances data) throws Exception {
         // can classifier handle the data?
@@ -424,7 +449,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             in.setValue(transformedData.numAttributes()-1,data.instance(i).classValue());
             transformedData.add(in);
         }
-         
+
         testHolder =new Instances(transformedData,0);
         DenseInstance in=new DenseInstance(transformedData.numAttributes());
         testHolder.add(in);
@@ -618,7 +643,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setErrorEstimateMethod("OOB");
         }
     }
-     
+
     private void copyParameters(TSF other){
         this.numClassifiers=other.numClassifiers;
         this.numIntervalsFinder=other.numIntervalsFinder;
@@ -634,8 +659,42 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
-        Instance convertedData = Converter.toArff(ins);
-        return distributionForInstance(convertedData);
+        double[] d = new double[ins.getClassLabels().length];
+        List<Double> tempSeries = ins.get(0).getSeries();
+        double[] series = tempSeries.stream().mapToDouble(data -> data).toArray();
+
+        for (int i = 0; i < trees.size(); i++) {
+            for (int j = 0; j < numIntervals; j++) {
+                // extract all intervals
+                FeatureSet f = new FeatureSet();
+                f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                series[j * 3] = f.mean;
+                series[j * 3 + 1] = f.stDev;
+                series[j * 3 + 2] = f.slope;
+            }
+            if (voteEnsemble) {
+                double[][] temp = new double[1][series.length];
+                temp[0] = series;
+                TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
+                int c = (int) trees.get(i).classifyInstance(Converter.toArff(ts));
+                d[c]++;
+            }
+            else {
+                double[][] temp2d = new double[1][series.length];
+                temp2d[0] = series;
+                TimeSeriesInstance ts = new TimeSeriesInstance(temp2d, ins.getLabelIndex());
+                double[] temp = trees.get(i).distributionForInstance(Converter.toArff(ts));
+                for (int j = 0; j < temp.length; j++)
+                    d[j] += temp[j];
+            }
+        }
+        double sum = 0;
+        for (double x : d)
+            sum += x;
+        if (sum > 0)
+            for (int i = 0; i < d.length; i++)
+                d[i] = d[i] / sum;
+        return d;
     }
 
     /**
@@ -677,17 +736,18 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /**
      * @param ins TimeSeriesInstance
+     * @return double
      */
     @Override
     public double classifyInstance(TimeSeriesInstance ins) throws Exception {
-        Instance convertedData = Converter.toArff(ins);
-        return classifyInstance(convertedData);
+        double[] d = distributionForInstance(ins);
+        return findIndexOfMax(d, rand);
     }
 
 /**
  * @param ins Weka Instance
  * @return
- * @throws Exception 
+ * @throws Exception
  */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
@@ -696,15 +756,15 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
   /**
    * Parses a given list of options to set the parameters of the classifier.
-   * We use this for the tuning mechanism, setting parameters through setOptions 
+   * We use this for the tuning mechanism, setting parameters through setOptions
    <!-- options-start -->
    * Valid options are: <p/>
    * <pre> -T
    * Number of trees.</pre>
-   * 
+   *
    * <pre> -I
    * Number of intervals to fit.</pre>
-   * 
+   *
    <!-- options-end -->
    *
    * @param options the list of options as an array of strings
@@ -740,7 +800,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                             numIntervalsFinder = (numAtts) -> (int)(d*numAtts);
                         else
                             numIntervalsFinder = (numAtts) -> (int)(d);
- 
+
                  }
             }catch(Exception e){
                 System.err.print(" Error: invalid parameter passed to TSF setOptions for number of parameters. Setting to default");
@@ -834,7 +894,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         file2.delete();
         file.renameTo(file2);
     }
- 
+
 //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
         public static boolean findSkew=false;
@@ -891,7 +951,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                     skew/=length*stDev*stDev*stDev*stDev;
                 }
             }
-             
+
         }
         public void setFeatures(double[] data){
             setFeatures(data,0,data.length-1);
@@ -974,10 +1034,10 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     }
 
     public static void main(String[] arg) throws Exception{
-        
+
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
-        
+
 // Basic correctness tests, including setting paras through 
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
         String resultsLocation="D:\\temp\\";
