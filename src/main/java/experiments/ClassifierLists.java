@@ -30,7 +30,7 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
@@ -313,7 +313,7 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE"};
+    public static String[] frequency= {"RISE", "RISE_FFT", "RISE_ACF", "RISE_SPEC", "RISE_MFCC", "RISE_AF"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -322,6 +322,26 @@ public class ClassifierLists {
         switch(classifier) {
             case "RISE":
                 c=new RISE();
+                break;
+            case "RISE_FFT":
+                c=new RISE();
+                ((RISE)c).setTransformType(RISE.TransformType.FFT);
+                break;
+            case "RISE_ACF":
+                c=new RISE();
+                ((RISE)c).setTransformType(RISE.TransformType.ACF);
+                break;
+            case "RISE_SPEC":
+                c=new RISE();
+                ((RISE)c).setTransformType(RISE.TransformType.SPEC);
+                break;
+            case "RISE_MFCC":
+                c=new RISE();
+                ((RISE)c).setTransformType(RISE.TransformType.MFCC);
+                break;
+            case "RISE_AF":
+                c=new RISE();
+                ((RISE)c).setTransformType(RISE.TransformType.AF);
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");
