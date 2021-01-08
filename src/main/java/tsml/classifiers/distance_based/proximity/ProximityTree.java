@@ -26,7 +26,7 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.GiniEntropy;
-import tsml.classifiers.distance_based.utils.stats.scoring.PartitionScorer;
+import tsml.classifiers.distance_based.utils.stats.scoring.SplitScorer;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
@@ -40,7 +40,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Proximity tree
@@ -56,6 +55,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             classifier.setSeed(seed);
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.setLogLevel(Level.ALL);
+//            classifier.setEarlyAbandonDistances(true);
+//            classifier.setEarlyExemplarCheck(true);
+//            classifier.setPartitionExaminationReordering(true);
+//            classifier.setEarlyAbandonSplits(true);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
             ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleItalyPowerDemand(seed), seed);
         }
@@ -145,7 +148,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the number of splits to consider for this split
     private int r;
     // a method of scoring the split of data into partitions
-    private PartitionScorer splitScorer;
+    private SplitScorer splitScorer;
     // checkpoint config
     private long lastCheckpointTimeStamp = -1;
     private String checkpointPath;
@@ -156,11 +159,38 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // whether to build the tree depth first or breadth first
     private boolean breadthFirst = false;
     // whether to use early abandon in the distance computations
-    private boolean earlyAbandon = false;
+    private boolean earlyAbandonDistances = false;
     // whether to use a quick check for exemplars
-    private boolean quickExemplarCheck = false;
-    // enhanced early abandon distance computation via assumption that distance is most likely to be shortest to majority class seen so far at each split
-    private boolean enhancedEarlyAbandon = false;
+    private boolean earlyExemplarCheck = false;
+    // enhanced early abandon distance computation via ordering partition examination to hit the most likely closest exemplar sooner
+    private boolean partitionExaminationReordering = false;
+    // concurrent split building allows splits to be abandoned if they're worse than the best split seen so far, reducing build time
+    private boolean earlyAbandonSplits = false;
+    // what strategy to use for handling multivariate data
+    private MultivariateStrategy multivariateStrategy = MultivariateStrategy.RANDOM_SINGLE_DIMENSION;
+
+    public MultivariateStrategy getMultivariateStrategy() {
+        return multivariateStrategy;
+    }
+
+    public void setMultivariateStrategy(
+            final MultivariateStrategy multivariateStrategy) {
+        this.multivariateStrategy = Objects.requireNonNull(multivariateStrategy);
+    }
+
+    public boolean isEarlyAbandonSplits() {
+        return earlyAbandonSplits;
+    }
+
+    public void setEarlyAbandonSplits(final boolean earlyAbandonSplits) {
+        this.earlyAbandonSplits = earlyAbandonSplits;
+    }
+
+    public enum MultivariateStrategy {
+        RANDOM_SINGLE_DIMENSION,
+        RANDOM_MULTIPLE_DIMENSION,
+        ALL_DIMENSIONS;
+    }
 
     @Override public long getCheckpointTime() {
         return checkpointTimer.elapsedTime();
@@ -446,11 +476,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         this.r = r;
     }
 
-    public PartitionScorer getSplitScorer() {
+    public SplitScorer getSplitScorer() {
         return splitScorer;
     }
 
-    public void setSplitScorer(final PartitionScorer splitScorer) {
+    public void setSplitScorer(final SplitScorer splitScorer) {
         this.splitScorer = splitScorer;
     }
 
@@ -459,44 +489,150 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     private Split buildSplit(Split unbuiltSplit) {
-        double bestSplitScore = Double.NEGATIVE_INFINITY;
         Split bestSplit = null;
+        final TimeSeriesInstances data = unbuiltSplit.getData();
+        final List<Integer> dataIndices = unbuiltSplit.getDataIndices();
         // need to find the best of R splits
-        for(int i = 0; i < r; i++) {
-            // construct a new split
-            final Split split = new Split(unbuiltSplit.getData(), unbuiltSplit.getDataIndices());
-            split.buildSplit();
-            final double score = split.getScore();
-            if(score > bestSplitScore) {
-                bestSplit = split;
-                bestSplitScore = score;
+        if(!earlyAbandonSplits) {
+            // linearly go through r splits and select the best
+            for(int i = 0; i < r; i++) {
+                // construct a new split
+                final Split split = new Split(data, dataIndices);
+                split.buildSplit();
+                final double score = split.getScore();
+                if(bestSplit == null || score > bestSplit.getScore()) {
+                    bestSplit = split;
+                }
+            }
+        } else {
+            // build splits concurrently, attempting to eliminate poor splits part way through and save time
+            // container for the split and an iterator for building said split
+            class SplitBuilder {
+                Split split;
+                Iterator<Integer> iterator;
+                double prevBestPotentialScore;
+            }
+            // build the pool of splits
+            final TreeMap<Double, List<SplitBuilder>> splitPoolByBestPotentialScore = new TreeMap<>();
+            // build the pool of fully built splits
+            final List<Split> eliminatedSplits = new LinkedList<>();
+            final List<SplitBuilder> allSplits = new ArrayList<>(r);
+            for(int i = 0; i < r; i++) {
+                // build a new split
+                final SplitBuilder splitBuilder = new SplitBuilder();
+                splitBuilder.split = new Split(data, dataIndices);
+                // build an iterator to iteratively build the split
+                splitBuilder.iterator = splitBuilder.split.getBuildIterator();
+                splitBuilder.prevBestPotentialScore = splitBuilder.split.getBestPotentialScore();
+                allSplits.add(splitBuilder);
+                // add the split to the pool under the best potential scores
+                splitPoolByBestPotentialScore.computeIfAbsent(splitBuilder.split.getBestPotentialScore(), x -> new ArrayList<>(1)).add(splitBuilder);
+            }
+            // while there's remaining splits to be built
+            while(!splitPoolByBestPotentialScore.isEmpty()) {
+                // select the split with the best score
+                final Map.Entry<Double, List<SplitBuilder>> lastEntry = splitPoolByBestPotentialScore.lastEntry();
+                final List<SplitBuilder> splits = lastEntry.getValue();
+                // random tie break draws
+                final SplitBuilder splitBuilder = splits.remove((int) RandomUtils.choiceIndex(splits.size(), getRandom()));
+                // if there's no more splits left at the given score then remove the empty list
+                if(splits.isEmpty()) {
+                    splitPoolByBestPotentialScore.pollLastEntry();
+                }
+                if(!splitBuilder.iterator.hasNext()) {
+                    throw new IllegalStateException("split cannot be built further");
+                }
+                // increment the build
+                splitBuilder.iterator.next();
+                // 3 cases: split got better (1), worse (2) or stayed the same (3)
+                final Split split = splitBuilder.split;
+                // track whether the current split has become so poor it must be eliminated
+                boolean eliminate = false;
+                if(split.getBestPotentialScore() > splitBuilder.prevBestPotentialScore) {
+                    // case (1), got better
+                    // split got better, therefore the worst potential score for the split will have raised. Other splits may now have a best potential score less than this and can be eliminated
+                    final List<Double> toRemove = new ArrayList<>();
+                    for(Map.Entry<Double, List<SplitBuilder>> entry : splitPoolByBestPotentialScore.entrySet()) {
+                        final List<SplitBuilder> list = entry.getValue();
+                        for(int i = list.size() - 1; i >= 0; i--) {
+                            final SplitBuilder other = list.get(i);
+                            if(other.split.getBestPotentialScore() <= split.getWorstPotentialScore()) {
+                                list.remove(i);
+                            }
+                        }
+                        if(list.isEmpty()) {
+                            toRemove.add(entry.getKey());
+                        }
+                    }
+                    for(Double d : toRemove) {
+                        splitPoolByBestPotentialScore.remove(d);
+                    }
+                } else {
+                    // case (2) and (3), got worse or stayed same
+                    // split got worse, therefore the worst potential score for the split may be below that of other splits, thus this split may be eligible for elimination
+                    if(bestSplit != null && bestSplit.getScore() > split.getBestPotentialScore()) {
+                        eliminate = true;
+                    } else {
+                        for(Map.Entry<Double, List<SplitBuilder>> entry : splitPoolByBestPotentialScore.entrySet()) {
+                            for(SplitBuilder other : entry.getValue()) {
+                                if(other.split.getWorstPotentialScore() > split.getBestPotentialScore()) {
+                                    eliminate = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                // by here we know whether the current split should be eliminated and whether it is fully built or not
+                // if eliminated
+                if(!splitBuilder.iterator.hasNext()) {
+                    // split is fully built and hasn't been eliminated through early abandon
+                    // thus it is a contender for being the best split (although the improvement will be very minor if early abandon couldn't weed it out!)
+                    if(bestSplit == null || split.getScore() > bestSplit.getScore()) {
+                        bestSplit = split;
+                    }
+                } else {
+                    // split still has building left to complete later on
+                    // if the split has been eliminated
+                    if(eliminate) {
+                        // don't bother adding the split back to the pool
+                        eliminatedSplits.add(split);
+                    } else {
+                        // otherwise add it back into the pool of splits
+                        // add the current split back into the pool
+                        splitPoolByBestPotentialScore.computeIfAbsent(split.getBestPotentialScore(), d -> new ArrayList<>(1)).add(splitBuilder);
+                    }
+                }
             }
         }
         return Objects.requireNonNull(bestSplit);
     }
 
-    public boolean isQuickExemplarCheck() {
-        return quickExemplarCheck;
+    public boolean isEarlyExemplarCheck() {
+        return earlyExemplarCheck;
     }
 
-    public void setQuickExemplarCheck(final boolean quickExemplarCheck) {
-        this.quickExemplarCheck = quickExemplarCheck;
+    public void setEarlyExemplarCheck(final boolean earlyExemplarCheck) {
+        this.earlyExemplarCheck = earlyExemplarCheck;
     }
 
-    public boolean isEarlyAbandon() {
-        return earlyAbandon;
+    public boolean isEarlyAbandonDistances() {
+        return earlyAbandonDistances;
     }
 
-    public void setEarlyAbandon(final boolean earlyAbandon) {
-        this.earlyAbandon = earlyAbandon;
+    public void setEarlyAbandonDistances(final boolean earlyAbandonDistances) {
+        this.earlyAbandonDistances = earlyAbandonDistances;
     }
 
-    public boolean isEnhancedEarlyAbandon() {
-        return enhancedEarlyAbandon;
+    public boolean isPartitionExaminationReordering() {
+        return partitionExaminationReordering;
     }
 
-    public void setEnhancedEarlyAbandon(final boolean enhancedEarlyAbandon) {
-        this.enhancedEarlyAbandon = enhancedEarlyAbandon;
+    public void setPartitionExaminationReordering(final boolean partitionExaminationReordering) {
+        this.partitionExaminationReordering = partitionExaminationReordering;
+        if(partitionExaminationReordering) {
+            setEarlyAbandonDistances(true);
+        }
     }
 
     private static class Partition implements Serializable {
@@ -505,6 +641,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             dataIndices = new ArrayList<>();
             this.data = new TimeSeriesInstances(classLabels);
             exemplars = new TimeSeriesInstances(classLabels);
+            strippedExemplars = new TimeSeriesInstances(classLabels);
             exemplarIndices = new ArrayList<>();
         }
 
@@ -514,15 +651,22 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // exemplar instances representing this partition / indices of those exemplars in the train data
         private final TimeSeriesInstances exemplars;
         private final List<Integer> exemplarIndices;
+        // exemplar instances need to be stripped to the chosen dimensions every distance computation. This houses the stripped down version to avoid recomputation. I.e. given an exemplar with 7 dimensions, if dim 1,2,4,5 have been chosen (from the multivariate strategy) then the stripped exemplars are the same as the given exemplars but without dim 3,6,7
+        private final TimeSeriesInstances strippedExemplars;
         
         public void addData(TimeSeriesInstance instance, int i) {
             data.add(Objects.requireNonNull(instance));
             dataIndices.add(i);
         }
         
-        public void addExemplar(TimeSeriesInstance instance, int i) {
+        public void addExemplar(TimeSeriesInstance instance, int i, TimeSeriesInstance strippedExemplar) {
             exemplars.add(Objects.requireNonNull(instance));
+            strippedExemplars.add(Objects.requireNonNull(strippedExemplar));
             exemplarIndices.add(i);
+        }
+
+        public TimeSeriesInstances getStrippedExemplars() {
+            return strippedExemplars;
         }
 
         /**
@@ -568,6 +712,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                            '}';
         }
     }
+    
 
     private class Split implements Serializable {
 
@@ -585,8 +730,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // the partitions of the data, each containing data for the partition and exemplars representing the partition
         private List<Partition> partitions;
         
-        // when not using early abandon, the inst indices will house a list of all insts to look at when partitioning
-        private List<Integer> instIndices = null;
         // similarly partitionIndices houses all the partitions to look at when partitioning. This obviously stays consistent (i.e. look at all partitions in order) when not using early abandon
         private List<Integer> partitionIndices = null;
         
@@ -594,8 +737,67 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // for example, if we had 3 partitions (3 exemplars) and had no yet built the split. We have no idea about the distribution of insts between partitions, but we can be fairly certain there will be a more popular partition as most splits are lop sided (some partitions are bigger than others). Suppose we jump forward in time to half way through our data. part1 has 30% of the data, part2 has 55% and part3 has 15% (of the data seen so far). We can assume for the remaining data, most of it would end up in part2, closely followed by part1 and the rest in part3. Thus when calculating the distances to each exemplar for each partition, we should examine the exemplars / partitions in the order part2, part1, part3. This gives the highest likelihood of getting a low distance for part2 (as majority of data lies here) and therefore provide a lower bound on distance computation against part1 and part3's exemplars.
         // we can take this further and specialise by class, as a good split will split the data into classes. Therefore, if we can say that the majority of insts with class 2 seems to end up in part3, class1 in part1 and class0 in part2, we can order the partitions ahead of time based on where we believe the inst will be partitioned given its class value. 
         // obviously the order of partitions is ever evolving as we go through more and more data. Therefore, the early abandon for split building will be an increasing returns as the split is built.
-        private HashMap<Integer, TreeMap<Integer, Integer>> classToDescCountToPartitionIndex = null;
-        private HashMap<Integer, HashMap<Integer, Integer>> classToPartitionIndexToCount = null;
+        private HashMap<Integer, PartitionCounts> classToPartitionCounts = null;
+        
+        private class PartitionCounts {
+            private final TreeMap<Integer, List<Integer>> descCountToPartitionIndex = new TreeMap<>(((Comparator<Integer>) Integer::compare).reversed());
+            private final HashMap<Integer, Integer> partitionIndexToCount = new HashMap<>();
+            
+            public PartitionCounts() {
+                // all partitions begin with a count of zero
+                for(int i = 0; i < partitions.size(); i++) {
+                    partitionIndexToCount.put(i, 0);
+                }
+                // therefore the desc mapping is just zero -> all partitions (ties broken by random choice)
+                descCountToPartitionIndex.put(0, RandomUtils.choiceIndex(partitions.size(), getRandom(), partitions.size()));
+            }
+            
+            public List<Integer> getPartitionIndexByDescCount() {
+                final ArrayList<Integer> indices = new ArrayList<>(partitionIndexToCount.size());
+                descCountToPartitionIndex.values().forEach(indices::addAll);
+                return indices;
+            }
+            
+            public void increment(Integer partitionIndex) {
+                final Integer count = partitionIndexToCount.get(partitionIndex);
+                final Integer newCount = count + 1; // increment the count to reflect a new inst in the given partition
+                // increment the count for the corresponding partition
+                partitionIndexToCount.put(partitionIndex, count + 1);
+                // get the partition indices associated with the orig count
+                List<Integer> partitionIndices = descCountToPartitionIndex.get(count);
+                if(partitionIndices == null) {
+                    throw new IllegalStateException("expected count to have list associated");
+                }
+                final boolean removed = partitionIndices.remove(partitionIndex);
+                if(!removed) {
+                    throw new IllegalStateException("failed to remove partition index where expected");
+                }
+                // if the list is now empty then remove the mapping
+                if(partitionIndices.isEmpty()) {
+                    descCountToPartitionIndex.remove(count);
+                }
+                // add the partition index to the new count
+                partitionIndices = descCountToPartitionIndex.computeIfAbsent(newCount, i -> new ArrayList<>(1));
+                // if the partition indices are empty
+                if(partitionIndices.isEmpty()) {
+                    // just add
+                    partitionIndices.add(partitionIndex);
+                } else {
+                    // otherwise add in a random place
+                    partitionIndices.add(RandomUtils.choiceIndex(partitions.size(), getRandom()), partitionIndex);
+                }
+            }
+
+            @Override public String toString() {
+                final StringBuilder sb = new StringBuilder();
+                for(Integer i : getPartitionIndexByDescCount()) {
+                    final Integer count = partitionIndexToCount.get(i);
+                    sb.append("p").append(i).append("=").append(count);
+                    sb.append(", ");
+                }
+                return sb.toString();
+            }
+        }
         
         // exemplars are normally checked ad-hoc during distance computation. Obviously checking which partition and exemplar belongs to is a waste of computation, as the distance will be zero and trump all other exemplars distances for other partitions. Therefore, it is important to check first. Original pf checked for exemplars as it went along, meaning for partition 5 it would compare exemplar 5 to exemplar 1..4 before realising it's an exemplar. Therefore, we can store the exemplar mapping to partition index and do a quick lookup before calculating distances. This is likely to only save a small amount of time, but increases as the breadth of trees / classes increases. I.e. for a 100 class problem, looking through 99 exemplars before realising we're examining the exemplar for the 100th partition is a large waste.
         private Map<Integer, Integer> exemplarPartitionIndices = null;
@@ -608,6 +810,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private double score = -1;
         private double bestPotentialScore = -1;
         private double worstPotentialScore = -1;
+        
+        // track the stage of building
+        private int instIndex = 0;
+        
+        private void incrementInstIndexToBePartitioned() {
+            instIndex++;
+        }
+        
+        // list of dimensions to use when comparing insts
+        private List<Integer> dimensionIndices;
         
         public double getBestPotentialScore() {
             if(findBestPotentialScore) {
@@ -645,8 +857,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //                        return partition.getData().numInstances();
 //                    }
 //                })).collect(Collectors.toList()));
-                score = splitScorer.findScore(Converter.toArff(data), getPartitionedData().stream().map(Converter::toArff).collect(
-                        Collectors.toList()));
+                score = splitScorer.findScore(Converter.toArff(data), getPartitionedData().stream().map(Converter::toArff).collect(Collectors.toList()));
             }
             return score;
         }
@@ -659,10 +870,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // with the closest exemplar associate
             return new Iterator<Integer>() {
                 
-                private int i = 0;
-                
                 @Override public boolean hasNext() {
-                    return i < data.numInstances();
+                    return instIndex < data.numInstances();
                 }
 
                 @Override public Integer next() {
@@ -671,29 +880,24 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     findBestPotentialScore = true;
                     findWorstPotentialScore = true;
                     // get the inst to be partitioned
-                    TimeSeriesInstance inst = data.get(i);
+                    TimeSeriesInstance inst = data.get(instIndex);
                     Integer closestPartitionIndex = null;
-                    if(quickExemplarCheck) {
+                    if(earlyExemplarCheck) {
                         // check for exemplars. If the inst is an exemplar, we already know what partition it represents and therefore belongs to
-                        closestPartitionIndex = exemplarPartitionIndices.get(i);
+                        closestPartitionIndex = exemplarPartitionIndices.get(instIndex);
                     }
                     // if null then not exemplar / not doing quick exemplar checking
+                    TreeSet<Integer> descSizePartitionIndices = null;
                     if(closestPartitionIndex == null) {
-                        if(enhancedEarlyAbandon) {
+                        if(partitionExaminationReordering) {
                             // enhanced early abandon reorders the partitions to attempt to hit the lowest distance first and create largest benefit of early abandon during distance computation
-                            // get the map which contains the ordering of partitions for the inst's class
-                            final TreeMap<Integer, Integer> descCountToPartitionIndex = classToDescCountToPartitionIndex.get(inst.getLabelIndex());
-                            final Collection<Integer> partitionIndices = descCountToPartitionIndex.values();
-                            closestPartitionIndex = findPartitionIndexFor(inst, partitionIndices);
-                            // another inst is assigned to that partition, so increment the count
-                            // this makes it moves up the list of partitions to look at to *hopefully* hit early abandon earlier given the assumption that most instances will be the majority class, then second most majority and so on.
-                            // get the map which contains the counts of partition size for the inst's class
-                            final HashMap<Integer, Integer> partitionIndexToCount = classToPartitionIndexToCount.get(inst.getLabelIndex());
-                            Integer count = partitionIndexToCount.get(closestPartitionIndex);
-                            descCountToPartitionIndex.remove(count);
-                            count++;
-                            partitionIndexToCount.put(closestPartitionIndex, count);
-                            descCountToPartitionIndex.put(count, closestPartitionIndex);
+                            // get the ordering of partitions for the inst's class
+                            final PartitionCounts partitionCounts = classToPartitionCounts
+                                                                            .computeIfAbsent(inst.getLabelIndex(),
+                                                                                    index -> new PartitionCounts());
+                            closestPartitionIndex = findPartitionIndexFor(inst, partitionCounts.getPartitionIndexByDescCount());
+                            // another inst is assigned to that partition, so adjust the sorted set of partitions indices to maintain desc count
+                            partitionCounts.increment(closestPartitionIndex);
                         } else {
                             // otherwise just loop through all partitions in order looking for the closest. Order is static and never changed
                             closestPartitionIndex = findPartitionIndexFor(inst, partitionIndices);
@@ -701,16 +905,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     }
                     Partition closestPartition = partitions.get(closestPartitionIndex);
                     // add the instance to the partition
-                    closestPartition.addData(data.get(i), dataIndices.get(i));
+                    closestPartition.addData(data.get(instIndex), dataIndices.get(
+                            instIndex));
                     // shift i along to look at next inst
-                    i++;
+                    instIndex++;
                     return closestPartitionIndex;
                 }
             };
         }
         
-        private void preBuild() {
-
+        private void pickDistanceMeasure() {
             // pick the distance function
             // pick a random space
             ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, rand);
@@ -720,7 +924,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceMeasure = Objects.requireNonNull((DistanceMeasure) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
-
+            // setup the distance function
+            distanceMeasure.buildDistanceMeasure(data);
+        }
+        
+        private void pickExemplars() {
             // pick the exemplars
             // change the view of the data into per class
             final List<List<Integer>> instIndicesByClass = data.indicesByClass();
@@ -739,18 +947,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         // in the data but the 5th instance may have index 33 in the train data)
                         final TimeSeriesInstance exemplar = data.get(exemplarIndexInSplitData);
                         final Integer exemplarIndexInTrainData = dataIndices.get(exemplarIndexInSplitData);
-                        partition.addExemplar(exemplar, exemplarIndexInTrainData);
+                        final TimeSeriesInstance strippedExemplar = exemplar.getHSlice(dimensionIndices);
+                        partition.addExemplar(exemplar, exemplarIndexInTrainData, strippedExemplar);
                     }
                     partitions.add(partition);
                 }
             }
-
-            // setup the distance function
-            distanceMeasure.buildDistanceMeasure(data);
-            
-            if(quickExemplarCheck) {
+            if(earlyExemplarCheck) {
                 exemplarPartitionIndices = new HashMap<>();
-                // quick exemplar checking resources
+                // chuck all exemplars in a map to check against before doing distance computation
                 for(int partitionIndex = 0; partitionIndex < partitions.size(); partitionIndex++) {
                     final Partition partition = partitions.get(partitionIndex);
                     for(Integer exemplarIndex : partition.getExemplarIndices()) {
@@ -758,29 +963,38 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     }
                 }
             }
+        }
+        
+        private void setupEarlyAbandon() {
             // init the maps of partition counts / desc order of partitions for each class
-            classToDescCountToPartitionIndex = new HashMap<>();
-            classToPartitionIndexToCount = new HashMap<>();
-            if(enhancedEarlyAbandon) {
-                for(int i = 0; i < data.numClasses(); i++) {
-                    // create a map for this class holding a desc list of partitions
-                    final TreeMap<Integer, Integer> descCountToPartitionIndex = new TreeMap<>(((Comparator<Integer>) Integer::compare).reversed());
-                    // create a map for this class holding the size of each partition
-                    final HashMap<Integer, Integer> partitionIndexToCount = new HashMap<>();
-                    // add both maps to the container maps for each class
-                    classToDescCountToPartitionIndex.put(i, descCountToPartitionIndex);
-                    classToPartitionIndexToCount.put(i, partitionIndexToCount);
-                    // populate the maps
-                    // for each partition
-                    for(int j = 0; j < partitions.size(); j++) {
-                        // set the count for the partition to zero
-                        descCountToPartitionIndex.put(0, j);
-                        partitionIndexToCount.put(j, 0);
-                    }
-                }
-            } else {
+            classToPartitionCounts = new HashMap<>();
+            if(!partitionExaminationReordering) {
                 partitionIndices = ArrayUtilities.sequence(partitions.size());
             }
+        }
+        
+        private void pickDimensions() {
+            // handle multivariate data by applying the corresponding strategy
+            final int numDimensions = data.getMaxNumDimensions();
+            if(multivariateStrategy == MultivariateStrategy.ALL_DIMENSIONS) {
+                dimensionIndices = ArrayUtilities.sequence(numDimensions);
+            } else if(multivariateStrategy == MultivariateStrategy.RANDOM_SINGLE_DIMENSION) {
+                dimensionIndices = Collections.singletonList(RandomUtils.choiceIndex(numDimensions, getRandom()));
+            } else if(multivariateStrategy == MultivariateStrategy.RANDOM_MULTIPLE_DIMENSION) {
+                // pick at least 1 dimension
+                final int numChoices = RandomUtils.choiceIndex(numDimensions, getRandom()) + 1;
+                // randomly select that number of dimensions
+                dimensionIndices = RandomUtils.choiceIndex(numDimensions, getRandom(), numChoices);
+            } else {
+                throw new IllegalStateException("cannot handling multivariate strategy " + multivariateStrategy);
+            }
+        }
+        
+        private void preBuild() {
+            pickDistanceMeasure();
+            pickDimensions();
+            pickExemplars();
+            setupEarlyAbandon();
         }
         
         /**
@@ -797,28 +1011,39 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return distanceMeasure;
         }
 
+        public int findPartitionIndexFor(final TimeSeriesInstance instance, Iterable<Integer> partitionIndices) {
+            return findPartitionIndexFor(instance, partitionIndices.iterator());
+        }
+        
         /**
          * get the partition of the given instance. The returned partition is the set of data the given instance belongs to based on its proximity to the exemplar instances representing the partition.
          *
          * @param instance
          * @return
          */
-        public int findPartitionIndexFor(final TimeSeriesInstance instance, Iterable<Integer> partitionIndices) {
+        public int findPartitionIndexFor(final TimeSeriesInstance instance, Iterator<Integer> partitionIndicesIterator) {
             // a map to maintain the closest partition indices
             PrunedMultimap<Double, Integer> distanceToPartitionMap = PrunedMultimap.asc();
             // let the map keep all ties and randomly choose at the end
             distanceToPartitionMap.setSoftLimit(1);
             // loop through exemplars / partitions
-            for(Integer i : partitionIndices) {
+            while(partitionIndicesIterator.hasNext()) {
+                final int i = partitionIndicesIterator.next();
                 final Partition partition = partitions.get(i);
-                for(TimeSeriesInstance exemplar : partition.getExemplars()) {
+                final TimeSeriesInstances exemplars = partition.getExemplars();
+                final TimeSeriesInstances strippedExemplars = partition.getStrippedExemplars();
+                for(int j = 0; j < exemplars.numInstances(); j++) {
                     // for each exemplar
+                    final TimeSeriesInstance exemplar = exemplars.get(j);
                     // check the instance isn't an exemplar
-                    if(!quickExemplarCheck && instance == exemplar) {
+                    if(!earlyExemplarCheck && instance == exemplar) {
                         return i;
                     }
+                    // get the stripped version of the inst and exemplar. This optionally trims down the dimensions depending on the strategy in the multivariate case
+                    final TimeSeriesInstance strippedExemplar = strippedExemplars.get(j);
+                    final TimeSeriesInstance strippedInstance = instance.getHSlice(dimensionIndices);
                     // find the distance
-                    final double distance = distanceMeasure.distance(instance, exemplar);
+                    final double distance = distanceMeasure.distance(strippedInstance, strippedExemplar);
                     // add the distance and partition to the map
                     distanceToPartitionMap.put(distance, i);
                 }
@@ -884,6 +1109,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             };
             return partitionDatas;
         }
+
+        public List<Integer> getDimensionIndices() {
+            return dimensionIndices;
+        }
+
     }
 
     @Override public long getLastCheckpointTimeStamp() {
