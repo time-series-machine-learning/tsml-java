@@ -266,7 +266,7 @@ public class RowNormalizer implements Transformer {
 			out.add(standardNorm(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
 	}
 
 	public static TimeSeriesInstance standard(TimeSeriesInstance inst) {
@@ -275,7 +275,7 @@ public class RowNormalizer implements Transformer {
 			out.add(standard(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
 	}
 
 	public static TimeSeriesInstance intervalNorm(TimeSeriesInstance inst) {
@@ -284,11 +284,11 @@ public class RowNormalizer implements Transformer {
 			out.add(intervalNorm(ts));
 		}
 		
-		return new TimeSeriesInstance(inst.getLabelIndex(), out);
+		return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
 	}
 
 	public static TimeSeries standardNorm(TimeSeries ts) {
-		double[] out = ts.toArray(); //this is a copy.
+		double[] out = ts.toValueArray(); //this is a copy.
 
 		double mean = TimeSeriesSummaryStatistics.mean(out);
 		double var = TimeSeriesSummaryStatistics.variance(ts, mean);
@@ -312,7 +312,7 @@ public class RowNormalizer implements Transformer {
 
 
 	public static TimeSeries standard(TimeSeries ts){
-		double[] out = ts.toArray(); //this is a copy.
+		double[] out = ts.toValueArray(); //this is a copy.
 
 		double mean = TimeSeriesSummaryStatistics.mean(out);
 
@@ -324,7 +324,7 @@ public class RowNormalizer implements Transformer {
 	}
 
 	public static TimeSeries intervalNorm(TimeSeries ts){
-		double[] out = ts.toArray(); //this is a copy.
+		double[] out = ts.toValueArray(); //this is a copy.
 
 		double max = TimeSeriesSummaryStatistics.max(out);
 		double min =  TimeSeriesSummaryStatistics.min(out);

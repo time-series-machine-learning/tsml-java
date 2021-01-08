@@ -744,6 +744,7 @@ public class InstanceTools {
             data.deleteAttributeAt(clsIndex);
         }
     }
+
     public static List<Instances> instancesByClass(Instances instances) {
         List<Instances> instancesByClass = new ArrayList<>();
         int numClasses = instances.get(0).numClasses();
@@ -900,7 +901,108 @@ public class InstanceTools {
         return newInst;
     }
 
+    public static Instances shortenInstances(Instances data, double proportionRemaining, boolean normalise){
+        if (proportionRemaining > 1 || proportionRemaining <= 0){
+            throw new RuntimeException("Remaining series length propotion must be greater than 0 and less than or equal to 1");
+        }
+        else if (data.classIndex() != data.numAttributes()-1){
+            throw new RuntimeException("Dataset class attribute must be the final attribute");
+        }
 
+        Instances shortenedData = new Instances(data);
+        if (proportionRemaining == 1) return shortenedData;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        if (normalise) {
+            Instances tempData = truncateInstances(data, data.numAttributes()-1, newSize);
+            tempData = zNormaliseWithClass(tempData);
+
+            for (int i = 0; i < data.numInstances(); i++){
+                for (int n = 0; n < tempData.numAttributes()-1; n++){
+                    shortenedData.get(i).setValue(n, tempData.get(i).value(n));
+                }
+            }
+        }
+
+        for (int i = 0; i < data.numInstances(); i++){
+            for (int n = data.numAttributes()-2; n >= newSize; n--){
+                //shortenedData.get(i).setMissing(n);
+                shortenedData.get(i).setValue(n, 0);
+            }
+        }
+
+        return shortenedData;
+    }
+
+    public static Instances truncateInstances(Instances data, int fullLength, int newLength){
+        Instances newData = new Instances(data);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newData.deleteAttributeAt(newLength);
+        }
+        return newData;
+    }
+
+    public static Instances truncateInstances(Instances data, double proportionRemaining){
+        if (proportionRemaining == 1) return data;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        return truncateInstances(data, data.numAttributes()-1, newSize);
+    }
+
+    public static Instance truncateInstance(Instance inst, int fullLength, int newLength){
+        Instance newInst = new DenseInstance(inst);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newInst.deleteAttributeAt(newLength);
+        }
+        return newInst;
+    }
+
+    public static Instances zNormaliseWithClass(Instances data) {
+        Instances newData = new Instances(data, 0);
+
+        for (int i = 0; i < data.numInstances(); i++){
+            newData.add(zNormaliseWithClass(data.get(i)));
+        }
+
+        return newData;
+    }
+
+    public static Instance zNormaliseWithClass(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+        newInst.setDataset(inst.dataset());
+
+        double meanSum = 0;
+        int length = newInst.numAttributes()-1;
+
+        if (length < 2) return newInst;
+
+        for (int i = 0; i < length; i++){
+            meanSum += newInst.value(i);
+        }
+
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < length; i++){
+            double temp = newInst.value(i) - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < length; i++){
+            newInst.setValue(i, (newInst.value(i) - mean) / stdev);
+        }
+
+        return newInst;
+    }
 
     /* Surprised these don't exist */
     public static double sum(Instance inst){
@@ -910,8 +1012,8 @@ public class InstanceTools {
                 double x = inst.value(j);
                 sumSq += x;
             }
-        }    
-        return sumSq;     
+        }
+        return sumSq;
     }
 
     public static double sumSq(Instance inst){
@@ -921,8 +1023,8 @@ public class InstanceTools {
                 double x = inst.value(j);
                 sumSq += x * x;
             }
-        }    
-        return sumSq;         
+        }
+        return sumSq;
     }
 
     public static int argmax(Instance inst){
@@ -954,7 +1056,7 @@ public class InstanceTools {
                     min = x;
                     arg = j;
                 }
-                
+
             }
         }
         return arg;
@@ -970,7 +1072,7 @@ public class InstanceTools {
         double mean = 0;
         int k = 0;
         for (int j = 0; j < inst.numAttributes(); j++) {
-            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal() && !inst.isMissing(j)){// Ignore all nominal atts{
                 double x = inst.value(j);
                 mean +=x;
             }
@@ -1010,10 +1112,10 @@ public class InstanceTools {
         }
 
         kurt /= Math.pow(std, 4);
-        return kurt / (double)(inst.numAttributes() - 1 - k); 
+        return kurt / (double)(inst.numAttributes() - 1 - k);
     }
 
-    
+
     public static double skew(Instance inst, double mean, double std){
         double skew = 0;
         int k = 0;
@@ -1027,7 +1129,7 @@ public class InstanceTools {
         }
 
         skew /= Math.pow(std, 3);
-        return skew / (double)(inst.numAttributes() - 1 - k); 
+        return skew / (double)(inst.numAttributes() - 1 - k);
     }
 
     public static double slope(Instance inst, double sum, double sumXX){
@@ -1066,7 +1168,7 @@ public class InstanceTools {
 			System.arraycopy(d, 0, temp, 0, c);
 			d = temp;
         }
-        
+
         return d;
 
     }

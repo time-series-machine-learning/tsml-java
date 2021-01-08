@@ -27,15 +27,16 @@ public class Subsequences implements Transformer {
 
     private int subsequenceLength;
     private Instances relationalHeader;
-    private boolean normalise = false;
-
-    public Subsequences() {
-        this.subsequenceLength = 30;
-    }
+    private boolean normalise = true;
+    public Subsequences() {this.subsequenceLength = 30;}
 
     public Subsequences(int subsequenceLength) {
         this.subsequenceLength = subsequenceLength;
     }
+
+    public void setNormalise(boolean normalise) {this.normalise = normalise;}
+
+    public boolean getNormalise() {return normalise;}
 
     @Override
     public Instance transform(Instance inst) {
@@ -86,14 +87,14 @@ public class Subsequences implements Transformer {
         int i =0;
         for(TimeSeries ts : inst){
             // Extract the subsequences.
-            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toArray());
+            double[][] subsequences = extractSubsequences(TimeSeriesSummaryStatistics.standardNorm(ts).toValueArray());
             
             //stack subsequences if we're multivariate.
             for(double[] d : subsequences)
                 out[i++] = d;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     /**

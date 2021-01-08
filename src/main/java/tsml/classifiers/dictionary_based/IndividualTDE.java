@@ -15,21 +15,23 @@
 package tsml.classifiers.dictionary_based;
 
 import com.carrotsearch.hppc.*;
-import com.carrotsearch.hppc.cursors.IntCursor;
+import com.carrotsearch.hppc.cursors.*;
+import evaluation.storage.ClassifierResults;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.dictionary_based.bitword.BitWord;
 import tsml.classifiers.dictionary_based.bitword.BitWordInt;
 import tsml.classifiers.dictionary_based.bitword.BitWordLong;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.generic_storage.SerialisableComparablePair;
-import weka.classifiers.AbstractClassifier;
-import weka.core.*;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.UnassignedClassException;
 
-import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Improved BOSS classifier to be used with known parameters, for ensemble use TDE.
@@ -38,51 +40,57 @@ import java.util.concurrent.Future;
  * as defined in the original BOSS paper
  *
  * Params: wordLength, alphabetSize, windowLength, normalise, levels, IGB
+ *
+ * @author Matthew Middlehurst
  */
-public class IndividualTDE extends AbstractClassifier implements Serializable, Comparable<IndividualTDE>,
+public class IndividualTDE extends EnhancedAbstractClassifier implements Comparable<IndividualTDE>,
         MultiThreadable {
 
     //all sfa words found in original buildClassifier(), no numerosity reduction/shortening applied
     private BitWord[/*instance*/][/*windowindex*/] SFAwords;
 
     //histograms of words of the current wordlength with numerosity reduction applied (if selected)
-    private ArrayList<SPBag> bags;
+    private ArrayList<Bag> bags;
 
     //breakpoints to be found by MCB or IGB
     private double[/*letterindex*/][/*breakpointsforletter*/] breakpoints;
 
-    private int windowSize;
-    private int wordLength;
-    private int alphabetSize;
-    private boolean norm;
-    private int levels;
-    private boolean IGB;
+    protected int windowSize;
+    protected int wordLength;
+    protected int alphabetSize;
+    protected boolean norm;
+    protected int levels;
+    protected boolean IGB;
 
-    private boolean histogramIntersection = true;
-    private boolean useBigrams = true;
-    private double levelWeighting = 0.5;
-    private boolean numerosityReduction = true;
-    private double inverseSqrtWindowSize;
-    private boolean cleanAfterBuild = false;
-    private int seriesLength;
+    protected boolean histogramIntersection = true;
+    protected boolean useBigrams = true;
+    protected boolean useFeatureSelection = false;
+    protected double levelWeighting = 0.5;
+    protected boolean numerosityReduction = true;
+    protected double inverseSqrtWindowSize;
+    protected boolean cleanAfterBuild = false;
+    protected int seriesLength;
 
-    private int ensembleID = -1;
-    private double accuracy = -1;
-    private double weight = 1;
-    private ArrayList<Integer> subsampleIndices;
-    private ArrayList<Integer> trainPreds;
+    //feature selection
+    private ObjectHashSet<SerialisableComparablePair<BitWord, Byte>> chiSquare;
+    protected int chiLimit = 2;
 
-    private boolean multiThread = false;
-    private int numThreads = 1;
-    private ExecutorService ex;
+    protected int ensembleID = -1;
+    protected double accuracy = -1;
+    protected double weight = 1;
+    protected ArrayList<Integer> subsampleIndices;
+    protected ArrayList<Integer> trainPreds;
 
-    private int seed = 0;
-    private Random rand;
+    protected boolean multiThread = false;
+    protected int numThreads = 1;
+    protected ExecutorService ex;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB,
                          boolean multiThread, int numThreads, ExecutorService ex) {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
@@ -96,6 +104,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     public IndividualTDE(int wordLength, int alphabetSize, int windowSize, boolean normalise, int levels, boolean IGB) {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+
         this.wordLength = wordLength;
         this.alphabetSize = alphabetSize;
         this.windowSize = windowSize;
@@ -110,6 +120,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      * word length, actual shortening happens separately
      */
     public IndividualTDE(IndividualTDE boss, int wordLength) {
+        super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+
         this.wordLength = wordLength;
 
         this.windowSize = boss.windowSize;
@@ -117,11 +129,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         this.alphabetSize = boss.alphabetSize;
         this.norm = boss.norm;
         this.levels = boss.levels;
+        this.IGB = boss.IGB;
 
         this.histogramIntersection = boss.histogramIntersection;
+        this.useBigrams = boss.useBigrams;
+        this.useFeatureSelection = boss.useFeatureSelection;
         this.levelWeighting = boss.levelWeighting;
         this.numerosityReduction = boss.numerosityReduction;
-        this.inverseSqrtWindowSize = boss.inverseSqrtWindowSize;
         this.cleanAfterBuild = boss.cleanAfterBuild;
         this.seriesLength = boss.seriesLength;
 
@@ -131,10 +145,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         this.seed = boss.seed;
         this.rand = boss.rand;
+        this.numClasses = boss.numClasses;
 
-        this.SFAwords = boss.SFAwords;
-        this.bags = new ArrayList<>(boss.bags.size());
-        this.breakpoints = boss.breakpoints;
+        if (!(boss instanceof MultivariateIndividualTDE)) {
+            this.SFAwords = boss.SFAwords;
+            this.bags = new ArrayList<>(boss.bags.size());
+            this.breakpoints = boss.breakpoints;
+        }
     }
 
     @Override
@@ -148,20 +165,20 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     //map of <word, level> => count
-    public static class SPBag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
-        double classVal;
+    public static class Bag extends HashMap<SerialisableComparablePair<BitWord, Byte>, Integer> {
+        private int classVal;
 
-        public SPBag() {
+        public Bag() {
             super();
         }
 
-        public SPBag(double classValue) {
+        public Bag(int classValue) {
             super();
             classVal = classValue;
         }
 
-        public double getClassVal() { return classVal; }
-        public void setClassVal(double classVal) { this.classVal = classVal; }
+        public int getClassVal() { return classVal; }
+        public void setClassVal(int classVal) { this.classVal = classVal; }
     }
 
     public int getWindowSize() { return windowSize; }
@@ -170,7 +187,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     public boolean getNorm() { return norm; }
     public int getLevels() { return levels; }
     public boolean getIGB() { return IGB; }
-    public ArrayList<SPBag> getBags() { return bags; }
+    public ArrayList<Bag> getBags() { return bags; }
     public int getEnsembleID() { return ensembleID; }
     public double getAccuracy() { return accuracy; }
     public double getWeight() { return weight; }
@@ -186,12 +203,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     public void setTrainPreds(ArrayList<Integer> arr) { trainPreds = arr; }
     public void setHistogramIntersection(boolean b) { histogramIntersection = b; }
     public void setUseBigrams(boolean b) { useBigrams = b; }
+    public void setUseFeatureSelection(boolean b) { useFeatureSelection = b; }
 
     public void clean() {
         SFAwords = null;
     }
 
-    private double[][] performDFT(double[][] windows) {
+    protected double[][] performDFT(double[][] windows) {
         double[][] dfts = new double[windows.length][wordLength];
         for (int i = 0; i < windows.length; ++i) {
             dfts[i] = DFT(windows[i]);
@@ -199,7 +217,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dfts;
     }
 
-    private double stdDev(double[] series) {
+    protected double stdDev(double[] series) {
         double sum = 0.0;
         double squareSum = 0.0;
         for (int i = 0; i < windowSize; i++) {
@@ -212,7 +230,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return variance > 0 ? Math.sqrt(variance) : 1.0;
     }
 
-    private double[] DFT(double[] series) {
+    protected double[] DFT(double[] series) {
         //taken from FFT.java but
         //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
         //instead of Complex[] size n/2
@@ -243,7 +261,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[] DFTunnormed(double[] series) {
+    protected double[] DFTunnormed(double[] series) {
         //taken from FFT.java but
         //return just a double[] size n, { real1, imag1, ... realn/2, imagn/2 }
         //instead of Complex[] size n/2
@@ -270,7 +288,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[] normalizeDFT(double[] dft, double std) {
+    protected double[] normalizeDFT(double[] dft, double std) {
         double normalisingFactor = (std > 0? 1.0 / std : 1.0) * inverseSqrtWindowSize;
         for (int i = 0; i < dft.length; i++)
             dft[i] *= normalisingFactor;
@@ -278,14 +296,14 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dft;
     }
 
-    private double[][] performMFT(double[] series) {
+    protected double[][] performMFT(double[] series) {
         // ignore DC value?
         int startOffset = norm ? 2 : 0;
         int l = wordLength;
         l = l + l % 2; // make it even
         double[] phis = new double[l];
         for (int u = 0; u < phis.length; u += 2) {
-            double uHalve = -(u + startOffset) / 2;
+            double uHalve = -(u + startOffset) / 2; //intentional int
             phis[u] = realephi(uHalve, windowSize);
             phis[u + 1] = complexephi(uHalve, windowSize);
         }
@@ -321,45 +339,36 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return transformed;
     }
 
-    private void calcIncrementalMeanStddev(int windowLength, double[] series, double[] means, double[] stds) {
+    protected void calcIncrementalMeanStddev(int windowLength, double[] series, double[] means, double[] stds) {
         double sum = 0;
         double squareSum = 0;
         // it is faster to multiply than to divide
         double rWindowLength = 1.0 / (double) windowLength;
-        double[] tsData = series;
         for (int ww = 0; ww < windowLength; ww++) {
-            sum += tsData[ww];
-            squareSum += tsData[ww] * tsData[ww];
+            sum += series[ww];
+            squareSum += series[ww] * series[ww];
         }
         means[0] = sum * rWindowLength;
         double buf = squareSum * rWindowLength - means[0] * means[0];
         stds[0] = buf > 0 ? Math.sqrt(buf) : 0;
-        for (int w = 1, end = tsData.length - windowLength + 1; w < end; w++) {
-            sum += tsData[w + windowLength - 1] - tsData[w - 1];
+        for (int w = 1, end = series.length - windowLength + 1; w < end; w++) {
+            sum += series[w + windowLength - 1] - series[w - 1];
             means[w] = sum * rWindowLength;
-            squareSum += tsData[w + windowLength - 1] * tsData[w + windowLength - 1] - tsData[w - 1] * tsData[w - 1];
+            squareSum += series[w + windowLength - 1] * series[w + windowLength - 1] - series[w - 1] * series[w - 1];
             buf = squareSum * rWindowLength - means[w] * means[w];
             stds[w] = buf > 0 ? Math.sqrt(buf) : 0;
         }
     }
 
-    private static double complexMulReal(double r1, double im1, double r2, double im2) {
-        return r1 * r2 - im1 * im2;
-    }
+    protected static double complexMulReal(double r1, double im1, double r2, double im2) { return r1 * r2 - im1 * im2; }
 
-    private static double complexMulImag(double r1, double im1, double r2, double im2) {
-        return r1 * im2 + r2 * im1;
-    }
+    protected static double complexMulImag(double r1, double im1, double r2, double im2) { return r1 * im2 + r2 * im1; }
 
-    private static double realephi(double u, double M) {
-        return Math.cos(2 * Math.PI * u / M);
-    }
+    protected static double realephi(double u, double M) { return Math.cos(2 * Math.PI * u / M); }
 
-    private static double complexephi(double u, double M) {
-        return -Math.sin(2 * Math.PI * u / M);
-    }
+    protected static double complexephi(double u, double M) { return -Math.sin(2 * Math.PI * u / M); }
 
-    private double[][] disjointWindows(double [] data) {
+    protected double[][] disjointWindows(double [] data) {
         int amount = (int)Math.ceil(data.length/(double)windowSize);
         double[][] subSequences = new double[amount][windowSize];
 
@@ -374,41 +383,20 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return subSequences;
     }
 
-    private double[][] MCB(Instances data) {
-        double[][][] dfts = new double[data.numInstances()][][];
-
-        ArrayList<double[]> samples = new ArrayList<>();
-        ArrayList<double[]> transformedSamples = new ArrayList<>();
-        ArrayList<Double> labels = new ArrayList<>();
+    private double[][] MCB(double[][][] data, int d) {
+        double[][][] dfts = new double[data.length][][];
 
         int sample = 0;
-        for (Instance inst : data) {
-            double[][] windows = disjointWindows(toArrayNoClass(inst));
-            dfts[sample] = performDFT(windows); //approximation
-
-            for (int i = 0; i < dfts[sample].length; i++) {
-                samples.add(windows[i]);
-                transformedSamples.add(dfts[sample][i]);
-                labels.add(inst.classValue());
-            }
-
-            sample++;
-        }
-
-        double[][] allSamples = new double[samples.size()][];
-        double[][] allTransformedSamples = new double[transformedSamples.size()][];
-        double[] allLabels = new double[samples.size()];
-        for (int i = 0; i < samples.size(); i++) {
-            allSamples[i] = samples.get(i);
-            allTransformedSamples[i] = transformedSamples.get(i);
-            allLabels[i] = labels.get(i);
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
+            dfts[sample++] = performDFT(windows); //approximation
         }
 
         int numInsts = dfts.length;
         int numWindowsPerInst = dfts[0].length;
         int totalNumWindows = numInsts*numWindowsPerInst;
 
-        breakpoints = new double[wordLength][alphabetSize];
+        double[][] breakpoints = new double[wordLength][alphabetSize];
 
         for (int letter = 0; letter < wordLength; ++letter) { //for each dft coeff
 
@@ -437,44 +425,28 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return breakpoints;
     }
 
-    //IGB code by Patrick Schaefer from the WEASEL class
-    private double[][] IGB(Instances data) {
-        ArrayList<SerialisableComparablePair<Double,Double>>[] orderline = new ArrayList[wordLength];
+    //IGB code by Patrick Schafer from the WEASEL class
+    private double[][] IGB(double[][][] data, int d, int[] labels) {
+        ArrayList<SerialisableComparablePair<Double,Integer>>[] orderline = new ArrayList[wordLength];
         for (int i = 0; i < orderline.length; i++) {
             orderline[i] = new ArrayList<>();
         }
 
-        ArrayList<double[]> samples = new ArrayList<>();
-        ArrayList<double[]> transformedSamples = new ArrayList<>();
-        ArrayList<Double> labels = new ArrayList<>();
-        for (Instance inst : data) {
-            double[][] windows = disjointWindows(toArrayNoClass(inst));
+        for (int i = 0; i < data.length; i++) {
+            double[][] windows = disjointWindows(data[i][d]);
             double[][] dfts = performDFT(windows); //approximation
 
-            for (int i = 0; i < dfts.length; i++) {
-                for (int n = 0; n < dfts[i].length; n++) {
+            for (double[] dft : dfts) {
+                for (int n = 0; n < dft.length; n++) {
                     // round to 2 decimal places to reduce noise
-                    double value = Math.round(dfts[i][n] * 100.0) / 100.0;
+                    double value = Math.round(dft[n] * 100.0) / 100.0;
 
-                    orderline[n].add(new SerialisableComparablePair<>(value, inst.classValue()));
+                    orderline[n].add(new SerialisableComparablePair<>(value, labels[i]));
                 }
-
-                samples.add(windows[i]);
-                transformedSamples.add(dfts[i]);
-                labels.add(inst.classValue());
             }
         }
 
-        double[][] allSamples = new double[samples.size()][];
-        double[][] allTransformedSamples = new double[transformedSamples.size()][];
-        double[] allLabels = new double[samples.size()];
-        for (int i = 0; i < samples.size(); i++) {
-            allSamples[i] = samples.get(i);
-            allTransformedSamples[i] = transformedSamples.get(i);
-            allLabels[i] = labels.get(i);
-        }
-
-        breakpoints = new double[wordLength][alphabetSize];
+        double[][] breakpoints = new double[wordLength][alphabetSize];
 
         for (int i = 0; i < orderline.length; i++) {
             if (!orderline[i].isEmpty()) {
@@ -496,30 +468,30 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return breakpoints;
     }
 
-    private void findBestSplit(List<SerialisableComparablePair<Double,Double>> element, int start, int end, int remainingSymbols,
-                                 List<Integer> splitPoints) {
+    protected void findBestSplit(List<SerialisableComparablePair<Double,Integer>> element, int start, int end,
+                                 int remainingSymbols, List<Integer> splitPoints) {
         double bestGain = -1;
         int bestPos = -1;
 
         // class entropy
         int total = end - start;
-        ObjectIntHashMap<Double> cIn = new ObjectIntHashMap<>();
-        ObjectIntHashMap<Double> cOut = new ObjectIntHashMap<>();
+        IntIntHashMap cIn = new IntIntHashMap();
+        IntIntHashMap cOut = new IntIntHashMap();
         for (int pos = start; pos < end; pos++) {
             cOut.putOrAdd(element.get(pos).var2, 1, 1);
         }
         double class_entropy = entropy(cOut, total);
 
         int i = start;
-        Double lastLabel = element.get(i).var2;
+        int lastLabel = element.get(i).var2;
         i += moveElement(element, cIn, cOut, start);
 
         for (int split = start + 1; split < end - 1; split++) {
-            Double label = element.get(i).var2;
+            int label = element.get(i).var2;
             i += moveElement(element, cIn, cOut, split);
 
             // only inspect changes of the label
-            if (!label.equals(lastLabel)) {
+            if (label != lastLabel) {
                 double gain = calculateInformationGain(cIn, cOut, class_entropy, i, total);
                 gain = Math.round(gain * 1000.0) / 1000.0; // round for 4 decimal places
 
@@ -551,7 +523,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private double entropy(ObjectIntHashMap<Double> frequency, double total) {
+    protected double entropy(IntIntHashMap frequency, double total) {
         double entropy = 0;
         double log2 = 1.0 / Math.log(2.0);
         for (IntCursor element : frequency.values()) {
@@ -563,7 +535,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return entropy;
     }
 
-    private double calculateInformationGain(ObjectIntHashMap<Double> cIn, ObjectIntHashMap<Double> cOut,
+    protected double calculateInformationGain(IntIntHashMap cIn, IntIntHashMap cOut,
                                               double class_entropy, double total_c_in, double total) {
         double total_c_out = (total - total_c_in);
         return class_entropy
@@ -571,11 +543,73 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 - total_c_out / total * entropy(cOut, total_c_out);
     }
 
-    private int moveElement(List<SerialisableComparablePair<Double,Double>> element, ObjectIntHashMap<Double> cIn,
-                              ObjectIntHashMap<Double> cOut, int pos) {
+    protected int moveElement(List<SerialisableComparablePair<Double,Integer>> element, IntIntHashMap cIn,
+                              IntIntHashMap cOut, int pos) {
         cIn.putOrAdd(element.get(pos).var2, 1, 1);
         cOut.putOrAdd(element.get(pos).var2, -1, -1);
         return 1;
+    }
+
+    private void trainChiSquared() {
+        // Chi2 Test
+        ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> featureCount
+                = new ObjectIntHashMap<>(bags.get(0).size());
+        DoubleDoubleHashMap classProb = new DoubleDoubleHashMap(10);
+        DoubleObjectHashMap<ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>>> observed
+                = new DoubleObjectHashMap<>(bags.get(0).size());
+
+        // count number of samples with this word
+        for (Bag bag : bags) {
+            if (!observed.containsKey(bag.classVal)) {
+                observed.put(bag.classVal, new ObjectIntHashMap<>());
+            }
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> word : bag.entrySet()) {
+                if (word.getValue() > 0) {
+                    featureCount.putOrAdd(word.getKey(), 1, 1);
+                    observed.get(bag.classVal).putOrAdd(word.getKey(), 1, 1);
+                }
+            }
+
+            classProb.putOrAdd(bag.classVal, 1, 1);
+        }
+
+        // chi-squared: observed minus expected occurrence
+        chiSquare = new ObjectHashSet<>(featureCount.size());
+        for (DoubleDoubleCursor classLabel : classProb) {
+            classLabel.value /= bags.size();
+            if (observed.get(classLabel.key) != null) {
+                ObjectIntHashMap<SerialisableComparablePair<BitWord, Byte>> observe = observed.get(classLabel.key);
+                for (ObjectIntCursor<SerialisableComparablePair<BitWord, Byte>> feature : featureCount) {
+                    double expected = classLabel.value * feature.value;
+                    double chi = observe.get(feature.key) - expected;
+                    double newChi = chi * chi / expected;
+                    if (newChi >= chiLimit && !chiSquare.contains(feature.key)) {
+                        chiSquare.add(feature.key);
+                    }
+                }
+            }
+        }
+
+        // best elements above limit
+        for (int i = 0; i < bags.size(); i++) {
+            Bag newBag = new Bag(bags.get(i).classVal);
+            for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bags.get(i).entrySet()) {
+                if (chiSquare.contains(cursor.getKey())) {
+                    newBag.put(cursor.getKey(), cursor.getValue());
+                }
+            }
+            bags.set(i, newBag);
+        }
+    }
+
+    private Bag filterChiSquared(Bag bag) {
+        Bag newBag = new Bag(bag.classVal);
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> cursor : bag.entrySet()) {
+            if (chiSquare.contains(cursor.getKey())) {
+                newBag.put(cursor.getKey(), cursor.getValue());
+            }
+        }
+        return newBag;
     }
 
     /**
@@ -584,8 +618,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      *
      * to be used e.g to transform new test instances
      */
-    private SPBag createSPBagSingle(double[][] dfts) {
-        SPBag bag = new SPBag();
+    private Bag createSPBagSingle(double[][] dfts) {
+        Bag bag = new Bag();
         BitWord lastWord = new BitWordInt();
         BitWord[] words = new BitWord[dfts.length];
 
@@ -601,11 +635,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                     BitWord bigram = new BitWordLong(words[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -646,7 +676,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * @return data of passed instance in a double array with the class value removed if present
      */
-    private static double[] toArrayNoClass(Instance inst) {
+    protected static double[] toArrayNoClass(Instance inst) {
         int length = inst.numAttributes();
         if (inst.classIndex() >= 0)
             --length;
@@ -663,13 +693,11 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * @return BOSSSpatialPyramidsTransform-ed bag, built using current parameters
      */
-    public SPBag BOSSSpatialPyramidsTransform(Instance inst) {
-
-        double[][] mfts = performMFT(toArrayNoClass(inst)); //approximation
-        SPBag bag2 = createSPBagSingle(mfts); //discretisation/bagging
-        bag2.setClassVal(inst.classValue());
-
-        return bag2;
+    private Bag BOSSSpatialPyramidsTransform(TimeSeriesInstance inst) {
+        double[][] mfts = performMFT(inst.toValueArray()[0]); //approximation
+        Bag bag = createSPBagSingle(mfts); //discretisation/bagging
+        bag.setClassVal(inst.getLabelIndex());
+        return bag;
     }
 
     /**
@@ -692,8 +720,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         //build hists with new word length from SFA words, and copy over the class values of original insts
         for (int i = 0; i < bags.size(); ++i) {
-            SPBag newSPBag = createSPBagFromWords(newWordLength, SFAwords[i]);
-            newSPBag.setClassVal(bags.get(i).getClassVal());
+            Bag newSPBag = createSPBagFromWords(newWordLength, SFAwords[i]);
+            newSPBag.setClassVal(bags.get(i).classVal);
             newBoss.bags.add(newSPBag);
         }
 
@@ -703,8 +731,8 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     /**
      * Builds a bag from the set of words for a pre-transformed series of a given wordlength.
      */
-    private SPBag createSPBagFromWords(int thisWordLength, BitWord[] words) {
-        SPBag bag = new SPBag();
+    private Bag createSPBagFromWords(int thisWordLength, BitWord[] words) {
+        Bag bag = new Bag();
         BitWord lastWord = new BitWordInt();
         BitWord[] newWords = new BitWord[words.length];
 
@@ -722,11 +750,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                     BitWord bigram = new BitWordLong(newWords[wInd - windowSize], word);
 
                     SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(bigram, (byte) -1);
-                    Integer val = bag.get(key);
-
-                    if (val == null)
-                        val = 0;
-                    bag.put(key, ++val);
+                    bag.merge(key, 1, Integer::sum);
                 }
             }
 
@@ -752,7 +776,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return bag;
     }
 
-    private void changeNumLevels(int newLevels) {
+    public void changeNumLevels(int newLevels) {
         //curently, simply remaking bags from words
         //alternatively: un-weight all bags, add(run through SFAwords again)/remove levels, re-weight all
 
@@ -762,13 +786,13 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         this.levels = newLevels;
 
         for (int inst = 0; inst < bags.size(); ++inst) {
-            SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]); //rebuild bag
+            Bag bag = createSPBagFromWords(wordLength, SFAwords[inst]); //rebuild bag
             bag.setClassVal(bags.get(inst).classVal);
             bags.set(inst, bag); //overwrite old
         }
     }
 
-    private void applyPyramidWeights(SPBag bag) {
+    protected void applyPyramidWeights(Bag bag) {
         for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> ent : bag.entrySet()) {
             //find level that this quadrant is on
             int quadrant = ent.getKey().var2;
@@ -785,7 +809,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private void addWordToPyramid(BitWord word, int wInd, SPBag bag) {
+    private void addWordToPyramid(BitWord word, int wInd, Bag bag) {
         int qStart = 0; //for this level, whats the start index for quadrants
         //e.g level 0 = 0
         //    level 1 = 1
@@ -798,18 +822,14 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             int quadrant = qStart + (pos/quadrantSize);
 
             SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
-            Integer val = bag.get(key);
-
-            if (val == null)
-                val = 0;
-            bag.put(key, ++val);
+            bag.merge(key, 1, Integer::sum);
 
             qStart += numQuadrants;
         }
     }
 
-    private BitWord[] createSFAwords(Instance inst) {
-        double[][] dfts = performMFT(toArrayNoClass(inst)); //approximation
+    private BitWord[] createSFAwords(double[] inst) {
+        double[][] dfts = performMFT(inst); //approximation
         BitWord[] words = new BitWord[dfts.length];
         for (int window = 0; window < dfts.length; ++window) {
             words[window] = createWord(dfts[window]);//discretisation
@@ -819,52 +839,63 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     @Override
-    public void buildClassifier(Instances data) throws Exception {
-        if (data.classIndex() != -1 && data.classIndex() != data.numAttributes()-1)
-            throw new Exception("TDE_BuildClassifier: Class attribute not set as last attribute in dataset");
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        trainResults = new ClassifierResults();
+        rand.setSeed(seed);
+        numClasses = data.numClasses();
+        trainResults.setClassifierName(getClassifierName());
+        trainResults.setParas(getParameters());
+        trainResults.setBuildTime(System.nanoTime());
 
-        if (IGB) breakpoints = IGB(data);
-        else breakpoints = MCB(data); //breakpoints to be used for making sfa words for train AND test data
+        double[][][] split = data.toValueArray();
+
+        if (IGB) breakpoints = IGB(split, 0, data.getClassIndexes());
+        else breakpoints = MCB(split, 0); //breakpoints to be used for making sfa words for train
+                                             //AND test data
 
         SFAwords = new BitWord[data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
-        rand = new Random(seed);
-        seriesLength = data.numAttributes()-1;
+        seriesLength = data.getMaxLength();
 
         if (multiThread){
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
 
-            ArrayList<Future<SPBag>> futures = new ArrayList<>(data.numInstances());
+            ArrayList<Future<Bag>> futures = new ArrayList<>(data.numInstances());
 
             for (int inst = 0; inst < data.numInstances(); ++inst)
                 futures.add(ex.submit(new TransformThread(inst, data.get(inst))));
 
-            for (Future<SPBag> f: futures)
+            for (Future<Bag> f: futures)
                 bags.add(f.get());
         }
         else {
             for (int inst = 0; inst < data.numInstances(); ++inst) {
-                SFAwords[inst] = createSFAwords(data.get(inst));
-
-                SPBag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
-                try {
-                    bag.setClassVal(data.get(inst).classValue());
-                }
-                catch(UnassignedClassException e){
-                    bag.setClassVal(-1);
-                }
+                SFAwords[inst] = createSFAwords(data.get(inst).toValueArray()[0]);
+                Bag bag = createSPBagFromWords(wordLength, SFAwords[inst]);
+                bag.setClassVal(data.get(inst).getLabelIndex());
                 bags.add(bag);
             }
         }
 
+        if (useFeatureSelection) trainChiSquared();
+
         if (cleanAfterBuild) {
             clean();
         }
+
+        //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
+    }
+
+    @Override
+    public void buildClassifier(Instances data) throws Exception {
+        buildClassifier(Converter.fromArff(data));
     }
 
     /**
-     * Computes BOSSSpatialPyramids distance between two bags d(test, train), is NON-SYMETRIC operation,
+     * Computes BOSS distance between two bags d(test, train), is NON-SYMETRIC operation,
      * ie d(a,b) != d(b,a).
      *
      * Quits early if the dist-so-far is greater than bestDist (assumed is in fact the dist still squared),
@@ -872,15 +903,14 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      *
      * @return distance FROM instA TO instB, or Double.MAX_VALUE if it would be greater than bestDist
      */
-    public double BOSSSpatialPyramidsDistance(SPBag instA, SPBag instB, double bestDist) {
+    public double BOSSdistance(Bag instA, Bag instB, double bestDist) {
         double dist = 0.0;
 
         //find dist only from values in instA
         for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : instA.entrySet()) {
             Integer valA = entry.getValue();
             Integer valB = instB.get(entry.getKey());
-            if (valB == null)
-                valB = 0;
+            if (valB == null) valB = 1;
             dist += (valA-valB)*(valA-valB);
 
             if (dist > bestDist)
@@ -890,7 +920,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         return dist;
     }
 
-    public double histogramIntersection(SPBag instA, SPBag instB) {
+    public double histogramIntersection(Bag instA, Bag instB) {
         //min vals of keys that exist in only one of the bags will always be 0
         //therefore want to only bother looking at counts of words in both bags
         //therefore will simply loop over words in a, skipping those that dont appear in b
@@ -911,26 +941,46 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     @Override
-    public double classifyInstance(Instance instance) throws Exception{
-        IndividualTDE.SPBag testBag = BOSSSpatialPyramidsTransform(instance);;
+    public double classifyInstance(TimeSeriesInstance instance) throws Exception{
+        Bag testBag = BOSSSpatialPyramidsTransform(instance);
+
+        if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
         double nn = 0;
 
-        for (int i = 0; i < bags.size(); ++i) {
+        for (Bag bag : bags) {
             double dist;
             if (histogramIntersection)
-                dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+                dist = -histogramIntersection(testBag, bag);
+            else dist = BOSSdistance(testBag, bag, bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = bag.classVal;
             }
         }
 
         return nn;
+    }
+
+    @Override
+    public double classifyInstance(Instance instance) throws Exception{
+        return classifyInstance(Converter.fromArff(instance));
+    }
+
+    @Override
+    public double[] distributionForInstance(TimeSeriesInstance instance) throws Exception{
+        double pred = classifyInstance(instance);
+        double[] probs = new double[numClasses];
+        probs[(int)pred] = 1;
+        return probs;
+    }
+
+    @Override
+    public double[] distributionForInstance(Instance instance) throws Exception{
+        return distributionForInstance(Converter.fromArff(instance));
     }
 
     /**
@@ -942,7 +992,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
      * @return classification
      */
     public double classifyInstance(int testIndex) throws Exception{
-        IndividualTDE.SPBag testBag = bags.get(testIndex);
+        Bag testBag = bags.get(testIndex);
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
@@ -952,15 +1002,14 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
             if (i == testIndex) //skip 'this' one, leave-one-out
                 continue;
 
-
             double dist;
             if (histogramIntersection)
                 dist = -histogramIntersection(testBag, bags.get(i));
-            else dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).getClassVal();
+                nn = bags.get(i).classVal;
             }
         }
 
@@ -968,26 +1017,31 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{
-        Instance inst;
+        TimeSeriesInstance inst;
 
-        public TestNearestNeighbourThread(Instance inst){
+        public TestNearestNeighbourThread(TimeSeriesInstance inst){
             this.inst = inst;
         }
 
         @Override
         public Double call() {
-            IndividualTDE.SPBag testBag = BOSSSpatialPyramidsTransform(inst);
+            Bag testBag = BOSSSpatialPyramidsTransform(inst);
+
+            if (useFeatureSelection) testBag = filterChiSquared(testBag);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
             double nn = 0;
 
-            for (int i = 0; i < bags.size(); ++i) {
-                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+            for (Bag bag : bags) {
+                double dist;
+                if (histogramIntersection)
+                    dist = -histogramIntersection(testBag, bag);
+                else dist = BOSSdistance(testBag, bag, bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
-                    nn = bags.get(i).getClassVal();
+                    nn = bag.classVal;
                 }
             }
 
@@ -1004,7 +1058,7 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
 
         @Override
         public Double call() {
-            IndividualTDE.SPBag testBag = bags.get(testIndex);
+            Bag testBag = bags.get(testIndex);
 
             //1NN distance
             double bestDist = Double.MAX_VALUE;
@@ -1014,11 +1068,14 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
                 if (i == testIndex) //skip 'this' one, leave-one-out
                     continue;
 
-                double dist = BOSSSpatialPyramidsDistance(testBag, bags.get(i), bestDist);
+                double dist;
+                if (histogramIntersection)
+                    dist = -histogramIntersection(testBag, bags.get(i));
+                else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
                 if (dist < bestDist) {
                     bestDist = dist;
-                    nn = bags.get(i).getClassVal();
+                    nn = bags.get(i).classVal;
                 }
             }
 
@@ -1026,22 +1083,22 @@ public class IndividualTDE extends AbstractClassifier implements Serializable, C
         }
     }
 
-    private class TransformThread implements Callable<SPBag>{
+    private class TransformThread implements Callable<Bag>{
         int i;
-        Instance inst;
+        TimeSeriesInstance inst;
 
-        public TransformThread(int i, Instance inst){
+        public TransformThread(int i, TimeSeriesInstance inst){
             this.i = i;
             this.inst = inst;
         }
 
         @Override
-        public SPBag call() {
-            SFAwords[i] = createSFAwords(inst);
+        public Bag call() {
+            SFAwords[i] = createSFAwords(inst.toValueArray()[0]);
 
-            SPBag bag = createSPBagFromWords(wordLength, SFAwords[i]);
+            Bag bag = createSPBagFromWords(wordLength, SFAwords[i]);
             try {
-                bag.setClassVal(inst.classValue());
+                bag.setClassVal(inst.getLabelIndex());
             }
             catch(UnassignedClassException e){
                 bag.setClassVal(-1);

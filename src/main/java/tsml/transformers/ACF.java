@@ -18,21 +18,19 @@ package tsml.transformers;
 import experiments.SimulationExperiments;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
+import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import weka.core.Attribute;
-import weka.core.Capabilities;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
-import weka.filters.*;
 
 /**
  * <!-- globalinfo-start --> Implementation of autocorrelation function as a
@@ -160,18 +158,18 @@ public class ACF implements Transformer {
      * 
      * @return Capabilities object
      */
-    public Capabilities getCapabilities() {
-        Capabilities result = new Capabilities(this);
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // result.enable(Capabilities.Capability.MISSING_VALUES);
+    public TSCapabilities getCapabilities() {
+        TSCapabilities result = new TSCapabilities(this);
+        // result.disableAll();
+        // // attributes must be numeric
+        // // Here add in relational when ready
+        // result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // // result.enable(Capabilities.Capability.MISSING_VALUES);
 
-        // class
-        result.enableAllClasses();
-        result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
-        result.enable(Capabilities.Capability.NO_CLASS);
+        // // class
+        // result.enableAllClasses();
+        // result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
+        // result.enable(Capabilities.Capability.NO_CLASS);
 
         return result;
     }
@@ -182,9 +180,8 @@ public class ACF implements Transformer {
         // 2. Fit Autocorrelations, if not already set externally
         double[] autoCorr = fitAutoCorrelations(d);
 
-        // int length = autoCorr.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts +
-        // PACF atts + optional
-        int length = autoCorr.length + 1; // classvalue.
+         int length = autoCorr.length + (inst.classIndex() >= 0 ? 1 : 0); // ACF atts +
+        // PACF atts + optional classvalue.
 
         // 6. Stuff back into new Instances.
         Instance out = new DenseInstance(length);
@@ -523,10 +520,10 @@ public class ACF implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for(TimeSeries ts : inst){
-            out[i++] = this.fitAutoCorrelations(ts.toArray());
+            out[i++] = this.fitAutoCorrelations(ts.toValueArray());
         }
         
         //create a new output instance with the ACF data.
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 }

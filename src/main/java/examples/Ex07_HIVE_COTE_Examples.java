@@ -4,7 +4,7 @@ import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.dictionary_based.cBOSS;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.interval_based.TSF;
 import weka.core.Instance;

@@ -275,10 +275,7 @@ public class Truncator implements TrainableTransformer{
     
 	@Override
 	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-		return new TimeSeriesInstance(
-                inst.getVSliceList(IntStream.range(0, shortestSeriesLength).toArray()),
-                inst.getLabelIndex()
-            );
+        return inst.getVSlice(IntStream.range(0, shortestSeriesLength).toArray());
     }
     
 	@Override

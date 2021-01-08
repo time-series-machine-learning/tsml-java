@@ -151,16 +151,15 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        //TODO update
         TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
-        result.setValue(TechnicalInformation.Field.AUTHOR, "P. Schafer");
-        result.setValue(TechnicalInformation.Field.TITLE, "The BOSS is concerned with time series classification in the presence of noise");
-        result.setValue(TechnicalInformation.Field.JOURNAL, "Data Mining and Knowledge Discovery");
-        result.setValue(TechnicalInformation.Field.VOLUME, "29");
-        result.setValue(TechnicalInformation.Field.NUMBER,"6");
-        result.setValue(TechnicalInformation.Field.PAGES, "1505-1530");
-        result.setValue(TechnicalInformation.Field.YEAR, "2015");
+        result.setValue(TechnicalInformation.Field.AUTHOR, "M. Middlehurst, W. Vickers and A. Bagnall");
+        result.setValue(TechnicalInformation.Field.TITLE, "Scalable dictionary classifiers for time series " +
+                "classification");
+        result.setValue(TechnicalInformation.Field.JOURNAL, "International Conference on Intelligent Data " +
+                "Engineering and Automated Learning");
+        result.setValue(TechnicalInformation.Field.PAGES, "11-19");
+        result.setValue(TechnicalInformation.Field.YEAR, "2020");
         return result;
     }
 
@@ -583,17 +582,18 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
 
         //end train time in nanoseconds
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
 
         //Estimate train accuracy
-//TO DO: SORT THIS BIT OUT
-
         if (getEstimateOwnPerformance()) {
-//            trainResults.finaliseResults();
+            long start = System.nanoTime();
             ensembleCvAcc = findEnsembleTrainAcc(data);
-//            System.out.println("CV acc =" + ensembleCvAcc);
-//            setEstimateOwnPerformance(false);
+            long end = System.nanoTime();
+            trainResults.setErrorEstimateTime(end - start);
         }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+        trainResults.setParas(getParameters());
 
         //delete any serialised files and holding folder for checkpointing on completion
         if (checkpoint && cleanupCheckpointFiles){
@@ -1167,7 +1167,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         int totalClassifers = sum(numClassifiers);
         double correct = 0;
 
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);

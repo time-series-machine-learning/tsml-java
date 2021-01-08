@@ -16,13 +16,12 @@ package tsml.transformers;
 
 import java.util.ArrayList;
 
+import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import utilities.InstanceTools;
-import weka.filters.*;
 
 import weka.core.Attribute;
-import weka.core.Capabilities;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -89,18 +88,18 @@ public class PACF implements Transformer {
      * @return Capabilities object
      */
     @Override
-    public Capabilities getCapabilities() {
-        Capabilities result = new Capabilities(this);
-        result.disableAll();
-        // attributes must be numeric
-        // Here add in relational when ready
-        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
-        // result.enable(Capabilities.Capability.MISSING_VALUES);
+    public TSCapabilities getTSCapabilities() {
+        TSCapabilities result = new TSCapabilities(this);
+        // result.disableAll();
+        // // attributes must be numeric
+        // // Here add in relational when ready
+        // result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+        // // result.enable(Capabilities.Capability.MISSING_VALUES);
 
-        // class
-        result.enableAllClasses();
-        result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
-        result.enable(Capabilities.Capability.NO_CLASS);
+        // // class
+        // result.enableAllClasses();
+        // result.enable(Capabilities.Capability.MISSING_CLASS_VALUES);
+        // result.enable(Capabilities.Capability.NO_CLASS);
 
         return result;
     }
@@ -143,10 +142,10 @@ public class PACF implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i =0;
         for(TimeSeries ts : inst){
-            out[i++] = convertInstance(ts.toArray());
+            out[i++] = convertInstance(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     @Override
@@ -155,7 +154,7 @@ public class PACF implements Transformer {
 
         double[] pi = convertInstance(d);
 
-        int length = pi.length + inst.classIndex() >= 0 ? 1 : 0; // ACF atts + PACF atts + optional classvalue.
+        int length = pi.length + (inst.classIndex() >= 0 ? 1 : 0); // ACF atts + PACF atts + optional classvalue.
 
         // 6. Stuff back into new Instances.
         Instance out = new DenseInstance(length);

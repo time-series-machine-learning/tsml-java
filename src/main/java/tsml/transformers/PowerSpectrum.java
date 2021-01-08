@@ -93,7 +93,7 @@ public class PowerSpectrum extends FFT {
             length--;
         length /= 2;
 
-        Instance out=new DenseInstance(length + inst.classIndex() >= 0 ? 1 : 0);
+        Instance out=new DenseInstance(length + (inst.classIndex() >= 0 ? 1 : 0));
 
         if(log)
         {
@@ -111,7 +111,7 @@ public class PowerSpectrum extends FFT {
 
         //Set class value.
         if(inst.classIndex()>=0)
-            out.setValue(length, f.classValue());
+            out.setValue(out.numAttributes()-1, f.classValue());
 
         return out;
     }
@@ -129,20 +129,20 @@ public class PowerSpectrum extends FFT {
             if(log){
                 double l1;		
                 for(int j=0;j<length;j++){
-                    l1= Math.sqrt(f.get(j*2)*f.get(j*2)+f.get(j*2+1)*f.get(j*2+1));
+                    l1= Math.sqrt(f.getValue(j*2)*f.getValue(j*2)+f.getValue(j*2+1)*f.getValue(j*2+1));
                     vals.set(j,Math.log(l1));
                 }
             }
             else{
                 for (int j = 0; j < length; j++) {
-                    vals.set(j, Math.sqrt(f.get(j * 2) * f.get(j * 2) + f.get(j * 2 + 1) * f.get(j * 2 + 1)));
+                    vals.set(j, Math.sqrt(f.getValue(j * 2) * f.getValue(j * 2) + f.getValue(j * 2 + 1) * f.getValue(j * 2 + 1)));
                 }
             }
 
             out_data.add(vals);
         }
 
-        return new TimeSeriesInstance(out_data, inst.getLabelIndex());
+        return new TimeSeriesInstance(out_data, inst.getLabelIndex(), inst.getClassLabels());
     }
 
 

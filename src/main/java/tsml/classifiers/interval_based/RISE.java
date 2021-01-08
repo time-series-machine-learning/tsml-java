@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tsml.classifiers.frequency_based;
+package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
@@ -735,12 +735,15 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             timer.saveModelToCSV(trainingData.relationName());
         }
         timer.forestElapsedTime = (System.nanoTime() - timer.forestStartTime);
-        super.trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        super.trainResults.setBuildTime(timer.forestElapsedTime);
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
         if(getEstimateOwnPerformance()){
-            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+            trainResults.setBuildTime(timer.forestElapsedTime - trainResults.getErrorEstimateTime());
         }
+        else{
+            trainResults.setBuildTime(timer.forestElapsedTime);
+        }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         printLineDebug("*************** Finished RISE Build  with "+classifiersBuilt+" Trees built ***************");
 
         /*for (int i = 0; i < this.startEndPoints.size(); i++) {
@@ -851,7 +854,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             trainResults.setClassifierName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if(estimator==EstimatorMethod.CV) {
+        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */

@@ -14,8 +14,6 @@
  */
 package tsml.transformers;
 
-import weka.filters.*;
-
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -100,7 +98,7 @@ public class ARMA implements Transformer {
                 final double[] pi = calculateValues(d);
                 // 6. Stuff back into new Instances.
 
-                int length = pi.length + inst.classIndex() >= 0 ? 1 : 0;
+                int length = pi.length + (inst.classIndex() >= 0 ? 1 : 0);
                 final Instance out = new DenseInstance(length);
                 // Set class value.
                 if (inst.classIndex() >= 0)
@@ -193,11 +191,11 @@ public class ARMA implements Transformer {
                 double[][] out = new double[inst.getNumDimensions()][];
                 int i = 0;
                 for (TimeSeries ts : inst) {
-                        out[i++] = calculateValues(ts.toArray());
+                        out[i++] = calculateValues(ts.toValueArray());
                 }
 
                 // create a new output instance with the ACF data.
-                return new TimeSeriesInstance(out, inst.getLabelIndex());
+                return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
         }
 
         /*

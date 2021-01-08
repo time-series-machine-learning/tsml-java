@@ -62,11 +62,8 @@ public class MatrixProfile implements Transformer {
     @Override
     public Instance transform(Instance inst) {
 
-        int seriesLength = inst.classIndex() >= 0 ? inst.numAttributes() - 1 : inst.numAttributes();
-        int numOutputAtts = seriesLength + 1 - windowSize;
-
         SingleInstanceMatrixProfile mpIns = new SingleInstanceMatrixProfile(inst, this.windowSize, this.stride);
-        Instance out = new DenseInstance(numOutputAtts);
+        Instance out = new DenseInstance(inst.numAttributes() + 1 - windowSize);
 
         for (int i = 0; i < mpIns.distances.length; i++) {
             out.setValue(i, mpIns.distances[i]);
@@ -85,9 +82,9 @@ public class MatrixProfile implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = new SingleInstanceMatrixProfile(ts.toArray(), this.windowSize, this.stride).series;
+            out[i++] = new SingleInstanceMatrixProfile(ts.toValueArray(), this.windowSize, this.stride).series;
         }
-        return new TimeSeriesInstance(out, inst.getLabelIndex()); 
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels()); 
     }
 
 

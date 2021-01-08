@@ -2,12 +2,11 @@ package tsml.transformers;
 
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
-import tsml.transformers.Transformer;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import experiments.data.DatasetLoading;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -77,10 +76,10 @@ public class Slope implements Transformer {
         int i =0;
         for(TimeSeries ts : inst){
             checkParameters(ts.getSeriesLength());
-            out[i++] = getGradients(ts.toArray());
+            out[i++] = getGradients(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
     /**

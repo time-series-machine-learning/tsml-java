@@ -1,10 +1,8 @@
 package tsml.data_containers.utilities;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 
 import tsml.data_containers.TimeSeries;
 
@@ -266,7 +264,7 @@ public class TimeSeriesSummaryStatistics {
      * @return double
      */
     public static double mean(List<Double> data){
-        return min(convert(data));
+        return mean(convert(data));
     }
 
     
@@ -275,7 +273,7 @@ public class TimeSeriesSummaryStatistics {
      * @return double
      */
     public static double mean(TimeSeries ts){
-        return min(ts.getSeries());
+        return mean(ts.getSeries());
     }
 
     
@@ -457,7 +455,7 @@ public class TimeSeriesSummaryStatistics {
      * @return TimeSeries
      */
     public static TimeSeries intervalNorm(TimeSeries ts, double min, double max){
-        return new TimeSeries(intervalNorm(ts.toArray(), min, max));
+        return new TimeSeries(intervalNorm(ts.toValueArray(), min, max));
     }
 
     
@@ -494,7 +492,7 @@ public class TimeSeriesSummaryStatistics {
      * @return TimeSeries
      */
     public static TimeSeries standardNorm(TimeSeries ts, double mean, double std){
-        return new TimeSeries(standardNorm(ts.toArray(), mean, std));
+        return new TimeSeries(standardNorm(ts.toValueArray(), mean, std));
     }
 
     
@@ -505,7 +503,7 @@ public class TimeSeriesSummaryStatistics {
     public static TimeSeries standardNorm(TimeSeries ts){
         double mean = mean(ts);
         double std = Math.sqrt(variance(ts, mean));
-        return new TimeSeries(standardNorm(ts.toArray(), mean, std));
+        return new TimeSeries(standardNorm(ts.toValueArray(), mean, std));
     }
 
     

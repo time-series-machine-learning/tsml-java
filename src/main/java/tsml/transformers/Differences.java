@@ -42,9 +42,10 @@ public class Differences implements Transformer {
 
 	public Instances determineOutputFormat(Instances inputFormat) {
 		// Set up instances size and format.
+		int classIndexMod = (inputFormat.classIndex() >= 0 ? 1 : 0);
 		ArrayList<Attribute> atts = new ArrayList<>();
 		String name;
-		for (int i = 0; i < inputFormat.numAttributes() - order - 1; i++) {
+		for (int i = 0; i < inputFormat.numAttributes() - order - classIndexMod; i++) {
 			name = attName + "Difference" + order + "_" + (i + 1);
 			atts.add(new Attribute(name));
 		}
@@ -78,9 +79,8 @@ public class Differences implements Transformer {
 			d = temp;
 		}
 		// 3. Create Difference series
-		int classIndexMod = (c >= 0 ? -1 : 0);
-		int numAtts = inst.numAttributes() - order - 1 + classIndexMod; // if have a classindex then make it one
-																		// shorter.
+		int classIndexMod = (c >= 0 ? 1 : 0);
+		int numAtts = inst.numAttributes() - order - classIndexMod; //if have a classindex then make it one shorter.
 
 		double[] diffs = calculateDifferences(d, numAtts);
 
@@ -127,10 +127,10 @@ public class Differences implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = calculateDifferences(ts.toArray(), ts.getSeriesLength() - order);
+            out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex());
+        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
     }
 
 }

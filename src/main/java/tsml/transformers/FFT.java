@@ -41,10 +41,10 @@ public class FFT implements Transformer {
 	public enum AlgorithmType {
 		DFT, FFT
 	} // If set to DFT, this will only perform a FFT if the series is length power of
-		// 2, otherwise resorts to DFT
+	// 2, otherwise resorts to DFT
 
 	AlgorithmType algo = AlgorithmType.DFT; // If set to FFT, this will pad (or truncate) series to the nearest power of
-											// 2
+	// 2
 	private static final long serialVersionUID = 1L;
 	private boolean pad = true;
 	private static final double TWOPI = (Math.PI * 2);
@@ -255,21 +255,41 @@ public class FFT implements Transformer {
 		return out;
 	}
 
-	
+
 	@Override
 	public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-
 		double[][] out = new double[inst.getNumDimensions()][];
 
-        int i = 0;
-        for (TimeSeries ts : inst) {
+		if(fullLength <=0){
+			if (algo == AlgorithmType.FFT){
+				int oldLength = inst.getMinLength();
+				int length = 0;
+				if (!MathsPower2.isPow2(oldLength)) {
+					length = (int) MathsPower2.roundPow2((float) oldLength);
+					if (pad) {
+						if (length < oldLength)
+							length *= 2;
+					} else {
 
+						if (length > oldLength)
+							length /= 2;
+					}
+				} else
+					length = oldLength;
+				fullLength = length;
+			}
+			else
+				fullLength = inst.getMinLength();
+		}
+
+		int i = 0;
+		for (TimeSeries ts : inst) {
 			Complex[] c = new Complex[fullLength];
 			int count = 0;
 			double seriesTotal = 0;
 			for (int j = 0; j < ts.getSeriesLength() && count < c.length; j++) { // May cut off the trailing values
-				c[count] = new Complex(ts.get(j), 0.0);
-				seriesTotal += ts.get(j);
+				c[count] = new Complex(ts.getValue(j), 0.0);
+				seriesTotal += ts.getValue(j);
 				count++;
 			}
 			// Add any Padding required
@@ -283,17 +303,15 @@ public class FFT implements Transformer {
 				c = dft(c);
 			// Extract out the terms and set the attributes.
 
-
 			//construct the sequence of real/imaginary alternating values.
 			out[i] = new double[c.length];
 			for (int j = 0; j < c.length / 2; j++) {
 				out[i][2 * j] = c[j].real;
 				out[i][2 * j + 1] = c[j].imag;
 			}
-
 		}
 
-		return new TimeSeriesInstance(out, inst.getLabelIndex());
+		return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
 	}
 
 	/**
@@ -649,7 +667,7 @@ public class FFT implements Transformer {
 	/**
 	 * Remove all attributes unless the target class I'm not sure if the indexing
 	 * changes
-	 * 
+	 *
 	 * @param n
 	 */
 	public void truncate(Instances d, int n) {
@@ -1018,7 +1036,7 @@ public class FFT implements Transformer {
 		 * -5.8284273 32 -2 34.071068 0.17157269 34 0 34.071068 -0.17157269 32 2
 		 * 19.928932 5.8284273
 		 *
-		 * 
+		 *
 		 */
 		// Test FFT with truncation
 		System.out.println("Basic test of FFT");
@@ -1096,8 +1114,8 @@ public class FFT implements Transformer {
 		 * fft.padSeries(false); t2=fft.process(test2);
 		 * System.out.println(" FFT with truncation="+t2); fft=new FFT(); fft.useDFT();
 		 * t2=fft.process(test2); System.out.println(" DFT ="+t2);
-		 * 
-		 * 
+		 *
+		 *
 		 * }catch(Exception e){ System.out.println(" Errrrrrr = "+e);
 		 * e.printStackTrace(); System.exit(0); }
 		 */
