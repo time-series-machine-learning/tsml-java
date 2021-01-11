@@ -1,12 +1,11 @@
-package tsml.classifiers.distance_based.utils.stats.scoring.a;
+package tsml.classifiers.distance_based.utils.stats.scoring;
 
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.utils.stats.scoring.v2.Labels;
 
 import java.util.Arrays;
 
-import static tsml.classifiers.distance_based.utils.stats.scoring.v2.Labels.fromCounts;
+import static tsml.classifiers.distance_based.utils.stats.scoring.Labels.fromCounts;
 
 public class GiniEntropyTest {
     @Test

@@ -168,7 +168,11 @@ public class ArrayUtilities {
 
     public static List<Double> normalise(List<Double> list) {
         double sum = sum(list);
-        return list.stream().map(element -> element / sum).collect(Collectors.toList());
+        if(sum == 0) {
+            sum = 1;
+        }
+        final double finalSum = sum;
+        return list.stream().map(element -> element / finalSum).collect(Collectors.toList());
     }
 
     public static List<Double> normalise(Iterable<Double> iterable) {

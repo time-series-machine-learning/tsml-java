@@ -1,13 +1,10 @@
-package tsml.classifiers.distance_based.utils.stats.scoring.a;
-
-import tsml.classifiers.distance_based.utils.stats.scoring.v2.Labels;
+package tsml.classifiers.distance_based.utils.stats.scoring;
 
 import java.util.List;
 
-import static tsml.classifiers.distance_based.utils.stats.scoring.a.GiniScore.weightedEntropy;
-import static tsml.classifiers.distance_based.utils.stats.scoring.a.GiniScore.weightedInverseEntropy;
+import static tsml.classifiers.distance_based.utils.stats.scoring.GiniGain.weightedInverseEntropy;
 
-public interface Entropy extends Score {
+public interface PartitionEntropy extends SplitScorer {
     
     <A> double entropy(Labels<A> labels);
 
