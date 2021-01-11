@@ -201,6 +201,16 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         dataChecks();
     }
     
+    private TimeSeriesInstance(List<TimeSeries> dimensions, TimeSeriesInstance other) {
+        seriesDimensions = dimensions;
+
+        labelIndex = other.labelIndex;
+        targetValue = other.targetValue;
+        classLabels = other.classLabels;
+
+        dataChecks();
+    }
+    
     public TimeSeriesInstance(double[][] data) {
         this(data, Double.NaN);
     }
@@ -456,7 +466,14 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
     
     public TimeSeriesInstance getHSlice(List<Integer> dimensionsToKeep) {
-        return new TimeSeriesInstance(getHSliceArray(dimensionsToKeep), this);
+        if(seriesDimensions.size() == 1 && dimensionsToKeep.size() == 1 && dimensionsToKeep.get(0) == 0) {
+            return this;
+        }
+        List<TimeSeries> dimensions = new ArrayList<>(dimensionsToKeep.size());
+        for(Integer i : dimensionsToKeep) {
+            dimensions.add(seriesDimensions.get(i));
+        }
+        return new TimeSeriesInstance(dimensions, this);
     }
     
     public TimeSeriesInstance getHSlice(int[] dimensionsToKeep) {
