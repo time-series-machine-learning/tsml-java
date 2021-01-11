@@ -13,6 +13,7 @@ import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
+import tsml.classifiers.distance_based.utils.collections.lists.RepeatList;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
@@ -40,6 +41,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import static tsml.classifiers.distance_based.utils.collections.checks.Checks.assertReal;
+
 /**
  * Proximity tree
  * <p>
@@ -54,6 +57,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             classifier.setSeed(seed);
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.setLogLevel(Level.ALL);
+            classifier.setEarlyAbandonSplits(true);
 //            classifier.setEarlyAbandonDistances(true);
 //            classifier.setEarlyExemplarCheck(true);
 //            classifier.setPartitionExaminationReordering(true);
@@ -188,6 +192,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     public enum MultivariateStrategy {
         RANDOM_SINGLE_DIMENSION,
         RANDOM_MULTIPLE_DIMENSION,
+        CONCAT_TO_UNIVARIATE,
         ALL_DIMENSIONS;
     }
 
@@ -524,8 +529,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 splitBuilder.iterator = splitBuilder.split.getBuildIterator();
                 splitBuilder.prevBestPotentialScore = splitBuilder.split.getBestPotentialScore();
                 allSplits.add(splitBuilder);
-                // add the split to the pool under the best potential scores
-                splitPoolByBestPotentialScore.computeIfAbsent(splitBuilder.split.getBestPotentialScore(), x -> new ArrayList<>(1)).add(splitBuilder);
+                // add the split to the pool under the best potential scores, randomly ordering ties
+                final List<SplitBuilder> list = splitPoolByBestPotentialScore.computeIfAbsent(
+                        splitBuilder.split.getBestPotentialScore(), x -> new ArrayList<>(1));
+                if(list.isEmpty()) {
+                    list.add(splitBuilder);
+                } else {
+                    list.add(RandomUtils.choiceIndex(list.size(), getRandom()), splitBuilder);   
+                }
             }
             // while there's remaining splits to be built
             while(!splitPoolByBestPotentialScore.isEmpty()) {
@@ -547,9 +558,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 final Split split = splitBuilder.split;
                 // track whether the current split has become so poor it must be eliminated
                 boolean eliminate = false;
-                if(split.getBestPotentialScore() > splitBuilder.prevBestPotentialScore) {
-                    // case (1), got better
+                if(split.getBestPotentialScore() >= splitBuilder.prevBestPotentialScore) {
+                    // case (1), got better, or case (3), stayed the same
                     // split got better, therefore the worst potential score for the split will have raised. Other splits may now have a best potential score less than this and can be eliminated
+                    // if split stayed the same, the worst potential score went up thus potentially eliminating other splits
                     final List<Double> toRemove = new ArrayList<>();
                     for(Map.Entry<Double, List<SplitBuilder>> entry : splitPoolByBestPotentialScore.entrySet()) {
                         final List<SplitBuilder> list = entry.getValue();
@@ -566,8 +578,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     for(Double d : toRemove) {
                         splitPoolByBestPotentialScore.remove(d);
                     }
-                } else {
-                    // case (2) and (3), got worse or stayed same
+                } else if(split.getBestPotentialScore() < splitBuilder.prevBestPotentialScore) {
+                    // case (2), got worse
                     // split got worse, therefore the worst potential score for the split may be below that of other splits, thus this split may be eligible for elimination
                     if(bestSplit != null && bestSplit.getScore() > split.getBestPotentialScore()) {
                         eliminate = true;
@@ -601,6 +613,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         // add the current split back into the pool
                         splitPoolByBestPotentialScore.computeIfAbsent(split.getBestPotentialScore(), d -> new ArrayList<>(1)).add(splitBuilder);
                     }
+                    // update the prev score
+                    splitBuilder.prevBestPotentialScore = split.getBestPotentialScore();
                 }
             }
         }
@@ -729,8 +743,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         // the partitions of the data, each containing data for the partition and exemplars representing the partition
         private List<Partition> partitions;
         
-        // similarly partitionIndices houses all the partitions to look at when partitioning. This obviously stays consistent (i.e. look at all partitions in order) when not using early abandon
+        // partitionIndices houses all the partitions to look at when partitioning. This obviously stays consistent (i.e. look at all partitions in order) when not using early abandon
         private List<Integer> partitionIndices = null;
+        
+        // map the exemplar class label index to the partition index. I.e. if we're splitting data containing class 2, 5 and 6 we would have 3 partitions, class2 -> part1, class5 -> part2, class6 -> part3.
+        private Map<Integer, Integer> classToPartitionIndex;
         
         // when using early abandon for splitting the order that partitions are examined may be altered. Therefore we maintain two maps which contain partition index to a count of the number of insts in that partition so far and vice versa for the other map. By maintaining ordering of the maps, we can create a desc order partition list of the most popular partition to the least. This then takes benefit of the assumption that most insts are going to go to the majority partition, thus examining in desc popularity order should make best use of early abandon in the distance calculations.
         // for example, if we had 3 partitions (3 exemplars) and had no yet built the split. We have no idea about the distribution of insts between partitions, but we can be fairly certain there will be a more popular partition as most splits are lop sided (some partitions are bigger than others). Suppose we jump forward in time to half way through our data. part1 has 30% of the data, part2 has 55% and part3 has 15% (of the data seen so far). We can assume for the remaining data, most of it would end up in part2, closely followed by part1 and the rest in part3. Thus when calculating the distances to each exemplar for each partition, we should examine the exemplars / partitions in the order part2, part1, part3. This gives the highest likelihood of getting a low distance for part2 (as majority of data lies here) and therefore provide a lower bound on distance computation against part1 and part3's exemplars.
@@ -811,10 +828,30 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private double worstPotentialScore = -1;
         
         // track the stage of building
-        private int instIndex = 0;
+        private int instIndex = -1;
         
-        private void incrementInstIndexToBePartitioned() {
-            instIndex++;
+        private Labels<Integer> getParentLabels() {
+            return new Labels<>(new AbstractList<Integer>() {
+                @Override public Integer get(final int i) {
+                    return data.get(i).getLabelIndex();
+                }
+
+                @Override public int size() {
+                    return data.numInstances();
+                }
+            }); // todo weights
+        }
+        
+        private List<Labels<Integer>> getChildLabels() {
+            final ArrayList<Labels<Integer>> childLabels = new ArrayList<>();
+            for(Partition partition : partitions) {
+                final Labels<Integer> labels = new Labels<>(
+                        partition.getData().stream().map(TimeSeriesInstance::getLabelIndex)
+                                .collect(Collectors.toList()), partition.getData().stream().map(inst -> 1d).collect(
+                        Collectors.toList()));
+                childLabels.add(labels);
+            }
+            return childLabels;
         }
         
         // list of dimensions to use when comparing insts
@@ -823,7 +860,29 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         public double getBestPotentialScore() {
             if(findBestPotentialScore) {
                 findBestPotentialScore = false;
-//                bestPotentialScore = 
+                // build the parent labels
+                Labels<Integer> parentLabels = getParentLabels();
+                // build the child labels
+                // this consists of the labels for each inst partitioned so far + all remaining insts assuming they were correctly partitioned, thus giving the best possible score
+                List<Labels<Integer>> childLabels = getChildLabels();
+                // for the remaining insts that have not been partitioned
+                for(int i = instIndex + 1; i < data.numInstances(); i++) {
+                    // assume they're correct and allocate to the corresponding partitions' set of labels
+                    final TimeSeriesInstance inst = data.get(i);
+                    final int labelIndex = inst.getLabelIndex();
+                    // get the partition that the inst would be *correctly* partitioned to
+                    final Integer partitionIndex = classToPartitionIndex.get(labelIndex);
+                    if(partitionIndex == null) {
+                        throw new IllegalStateException("no partition associated with label index " + labelIndex);
+                    }
+                    // add the label for this inst to the labels for the corresponding partition
+                    final Labels<Integer> child = childLabels.get(partitionIndex);
+                    child.getLabels().add(labelIndex);
+                    child.getWeights().add(1d); // todo weights
+                }
+                // calculate score from labels
+                bestPotentialScore = splitScorer.score(parentLabels, childLabels);
+                assertReal(bestPotentialScore);
             }
             return bestPotentialScore;
         }
@@ -831,7 +890,51 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         public double getWorstPotentialScore() {
             if(findWorstPotentialScore) {
                 findWorstPotentialScore = false;
-//                worstPotentialScore = 
+                // build the parent labels
+                Labels<Integer> parentLabels = getParentLabels();
+                // build the child labels
+                // this consists of the labels for each inst partitioned so far + all remaining insts assuming they were correctly partitioned, thus giving the best possible score
+                List<Labels<Integer>> childLabels = getChildLabels();
+                // for the remaining insts that have not been partitioned
+                for(int i = instIndex + 1; i < data.numInstances(); i++) {
+                    // assume they're incorrect and allocate to the worst corresponding partitions' set of labels
+                    final TimeSeriesInstance inst = data.get(i);
+                    final int labelIndex = inst.getLabelIndex();
+                    // get the partition that the inst would be *correctly* partitioned to
+                    final Integer partitionIndex = classToPartitionIndex.get(labelIndex);
+                    if(partitionIndex == null) {
+                        throw new IllegalStateException("no partition associated with label index " + labelIndex);
+                    }
+                    // must allocate to something other than partitionIndex
+                    // going to look for the min score from allocating the given inst to a partition. This is only temporary to calculate the worst possible score. The idea is to find the partition which in adding the inst to said partition reduces the score by the largest margin
+                    int worstPartitionIndex = -1;
+                    double maxReduction = Double.NEGATIVE_INFINITY;
+                    // the worst choice should be the partition with the least score increase
+                    for(int j = 0; j < partitions.size(); j++) {
+                        // look at the score given before and after assuming the inst belongs in the given partition
+                        final Labels<Integer> labels = childLabels.get(j);
+                        // obviously taking the score of parent against this specific partition gives a somewhat meaningless score, but we can use it to detect change in the score before / after adding the inst to the partition as all other partitions will be held constant (i.e. their scores / entropy do not change).
+                        final double currentScore = splitScorer.score(parentLabels, Collections.singletonList(labels));
+                        // create a copy of the labels with the inst allocated to this partition, hence added to the labels
+                        final ArrayList<Integer> nextLabels = new ArrayList<>(labels.getLabels());
+                        nextLabels.add(labelIndex);
+                        // work out the score if the inst were allocated to this partition
+                        final double nextScore = splitScorer.score(parentLabels, Collections.singletonList(new Labels<>(nextLabels)));
+                        // update the min score increase
+                        final double reduction = currentScore - nextScore;
+                        if(reduction > maxReduction) {
+                            maxReduction = reduction;
+                            worstPartitionIndex = j;
+                        }
+                    }
+                    // add the label for this inst to the labels for the corresponding worst partition
+                    final Labels<Integer> child = childLabels.get(worstPartitionIndex);
+                    child.getLabels().add(labelIndex);
+                    child.getWeights().add(1d); // todo weights
+                }
+                // calculate score from labels
+                worstPotentialScore = splitScorer.score(parentLabels, childLabels);
+                assertReal(worstPotentialScore);
             }
             return worstPotentialScore;
         }
@@ -839,24 +942,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         public double getScore() {
             if(findScore) {
                 findScore = false;
-//                score = splitScorer.score(new Labels<>(new AbstractList<Integer>() {
-//                    @Override public Integer get(final int i) {
-//                        return data.get(i).getLabelIndex();
-//                    }
-//
-//                    @Override public int size() {
-//                        return data.numInstances();
-//                    }
-//                }), partitions.stream().map(partition -> new Labels<>(new AbstractList<Integer>() {
-//                    @Override public Integer get(final int i) {
-//                        return partition.getData().get(i).getLabelIndex();
-//                    }
-//
-//                    @Override public int size() {
-//                        return partition.getData().numInstances();
-//                    }
-//                })).collect(Collectors.toList()));
-                score = splitScorer.findScore(Converter.toArff(data), getPartitionedData().stream().map(Converter::toArff).collect(Collectors.toList()));
+                score = splitScorer.score(getParentLabels(), partitions.stream().map(partition -> new Labels<>(new AbstractList<Integer>() {
+                    @Override public Integer get(final int i) {
+                        return partition.getData().get(i).getLabelIndex();
+                    }
+
+                    @Override public int size() {
+                        return partition.getData().numInstances();
+                    }
+                })).collect(Collectors.toList()));
+                assertReal(score);
             }
             return score;
         }
@@ -870,10 +965,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return new Iterator<Integer>() {
                 
                 @Override public boolean hasNext() {
-                    return instIndex < data.numInstances();
+                    return instIndex + 1 < data.numInstances();
                 }
 
                 @Override public Integer next() {
+                    // shift i along to look at next inst
+                    instIndex++;
                     // mark that scores need recalculating, as we'd have added a new inst to a partition by the end of this method
                     findScore = true;
                     findBestPotentialScore = true;
@@ -906,8 +1003,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     // add the instance to the partition
                     closestPartition.addData(data.get(instIndex), dataIndices.get(
                             instIndex));
-                    // shift i along to look at next inst
-                    instIndex++;
                     return closestPartitionIndex;
                 }
             };
@@ -933,6 +1028,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final List<List<Integer>> instIndicesByClass = data.indicesByClass();
             // pick exemplars per class
             partitions = new ArrayList<>(instIndicesByClass.size());
+            classToPartitionIndex = new HashMap<>();
             // generate a partition per class
             for(final List<Integer> sameClassInstIndices : instIndicesByClass) {
                 if(!sameClassInstIndices.isEmpty()) {
@@ -949,6 +1045,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         final TimeSeriesInstance strippedExemplar = exemplar.getHSlice(dimensionIndices);
                         partition.addExemplar(exemplar, exemplarIndexInTrainData, strippedExemplar);
                     }
+                    // set the mapping of class index to partition index
+                    classToPartitionIndex.put(partition.getExemplars().get(0).getLabelIndex(), partitions.size());
+                    // add the partition to list of partitions
                     partitions.add(partition);
                 }
             }
