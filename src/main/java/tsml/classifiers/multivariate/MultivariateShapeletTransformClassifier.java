@@ -15,6 +15,9 @@
 package tsml.classifiers.multivariate;
 
 import tsml.classifiers.*;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
 import tsml.filters.shapelet_filters.ShapeletFilter;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
@@ -308,8 +311,18 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
-        format.add(ins);
-        
+        //format.add(ins);
+
+        TimeSeriesInstance a = Converter.fromArff(ins);
+
+
+        String[] labels = new String[ins.numClasses()];
+        for (int i=0;i<labels.length;i++)
+            labels[i] = ins.classAttribute().value(i);
+         TimeSeriesInstances ts_format = new TimeSeriesInstances(labels);
+        ts_format.add(a);
+        format = Converter.toArff(ts_format);
+
         Instances temp  = doTransform ? transform.process(format) : format;
 //Delete redundant
         for(int del:redundantFeatures)
