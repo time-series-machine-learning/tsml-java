@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.IndependentDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
 import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
 import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
@@ -193,6 +194,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         RANDOM_SINGLE_DIMENSION,
         RANDOM_MULTIPLE_DIMENSION,
         CONCAT_TO_UNIVARIATE,
+        INDEPENDENT,
         ALL_DIMENSIONS;
     }
 
@@ -1018,6 +1020,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
             distanceMeasure = Objects.requireNonNull((DistanceMeasure) paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG));
+            // wrap in an independent distance measure if multivariate strategy set
+            if(multivariateStrategy.equals(MultivariateStrategy.INDEPENDENT)) {
+                distanceMeasure = new IndependentDistanceMeasure(distanceMeasure);
+            }
             // setup the distance function
             distanceMeasure.buildDistanceMeasure(data);
         }
