@@ -35,7 +35,6 @@ import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
-import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -388,7 +387,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22","ROCKET"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -406,10 +405,6 @@ public class ClassifierLists {
                 c=new HIVE_COTE();
                 ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((HIVE_COTE)c).setSeed(fold);
-                break;
-            case "TS-CHIEF":
-                c=new TSCHIEFWrapper();
-                ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
             case "catch22":
                 c = new Catch22Classifier();
