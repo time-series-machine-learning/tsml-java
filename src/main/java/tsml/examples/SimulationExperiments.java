@@ -18,7 +18,6 @@ import tsml.classifiers.distance_based.DTWCV;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.FastShapelets;
-import tsml.classifiers.interval_based.TSBF;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.distance_based.DTD_C;
 import tsml.classifiers.dictionary_based.BOSS;
@@ -41,7 +40,6 @@ import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import machine_learning.classifiers.tuned.TunedRandomForest;
 import weka.core.Instances;
 import utilities.ClassifierTools;
 
@@ -90,9 +88,6 @@ public class SimulationExperiments {
             case "HESCA":
                 c=new CAWPE();
                 break;
-            case "RandF":
-                c=new TunedRandomForest();
-                break;
             case "RotF":
                 c=new RotationForest();
                 break;
@@ -110,9 +105,6 @@ public class SimulationExperiments {
                 break;                          
             case "TSF":
                 c=new TSF();
-                break;
-            case "TSBF":
-                c=new TSBF();
                 break;
             case "LPS":
                 c=new LPS();
@@ -340,9 +332,6 @@ public class SimulationExperiments {
                         break;                          
                     case "TSF":
                         c=new TSF();
-                        break;
-                    case "TSBF":
-                        c=new TSBF();
                         break;
                     case "FastShapelets":
                         c=new FastShapelets();

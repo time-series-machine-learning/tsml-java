@@ -21,7 +21,6 @@ import tsml.classifiers.legacy.elastic_ensemble.MSM1NN;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.distance_based.NN_CID;
-import tsml.classifiers.interval_based.TSBF;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.distance_based.DTD_C;
 import tsml.classifiers.dictionary_based.BOSS;
@@ -69,7 +68,7 @@ public class ClassificationExamples {
     static String[] elastic = {"Euclidean_1NN","DTW_R1_1NN","DTW_Rn_1NN","DDTW_R1_1NN","DDTW_Rn_1NN","ERP_1NN","LCSS_1NN","MSM_1NN","TWE_1NN","WDDTW_1NN","WDTW_1NN","DD_DTW","DTD_C","DTW_F"};
     static String[] shapelet={"ST","LS","FS"};
     static String[] dictionary={"BoP","SAXVSM","BOSS"};
-    static String[] interval={"TSF","TSBF","LPS"};
+    static String[] interval={"TSF","LPS"};
     static String[] ensemble={"ACF","PS","EE","COTE"};
     static String[] complexity={"CID_ED","CID_DTW"};
     static String[][] classifiers={standard,elastic,shapelet,dictionary,interval,ensemble,complexity};
@@ -106,10 +105,6 @@ public class ClassificationExamples {
                 break;
             case "MLP":
                 c=new MultilayerPerceptron();
-                break;
-            case "RandF":
-                c= new RandomForest();
-                ((RandomForest)c).setNumTrees(500);
                 break;
             case "RotF":
                 c= new RotationForest();
@@ -163,9 +158,6 @@ public class ClassificationExamples {
                 break;
             case "RISE":
                 c=new RISE();
-                break;
-            case "TSBF":
-                c=new TSBF();
                 break;
             case "BOP": case "BoP": case "BagOfPatterns":
                 c=new BagOfPatternsClassifier();

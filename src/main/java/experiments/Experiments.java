@@ -16,8 +16,6 @@ package experiments;
 
 import com.google.common.testing.GcFinalization;
 import machine_learning.classifiers.SaveEachParameter;
-import machine_learning.classifiers.tuned.TunedRandomForest;
-import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
@@ -588,8 +586,6 @@ public class Experiments  {
             if (expSettings.checkpointing)
                 LOGGER.log(Level.WARNING, "Parameter splitting AND checkpointing requested, but cannot do both. Parameter splitting turned on, checkpointing not.");
 
-            if (classifier instanceof TunedRandomForest)
-                ((TunedRandomForest) classifier).setNumFeaturesInProblem(train.numAttributes() - 1);
 
             expSettings.checkpointing = false;
             ((ParameterSplittable) classifier).setParametersFromIndex(expSettings.singleParameterID);
