@@ -1,15 +1,8 @@
 package tsml.classifiers.distance_based.distances;
 
-import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.data_containers.TimeSeriesInstance;
-import weka.core.DistanceFunction;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.Utils;
-import weka.core.neighboursearch.PerformanceStats;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -26,7 +19,59 @@ public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
     private boolean generateDistanceMatrix = false;
     // the distance matrix produced by the distance function
     private double[][] matrix;
+    private double[] oddRow;
+    private double[] evenRow;
+    private int j;
+    private boolean recycleRows;
 
+    /**
+     * Indicate that a new distance is being computed and a corresponding matrix or pair or rows are required
+     * @param numRows
+     * @param numCols
+     */
+    protected void setup(int numRows, int numCols, boolean recycleRows) {
+        oddRow = null;
+        evenRow = null;
+        matrix = null;
+        this.j = numCols;
+        this.recycleRows = recycleRows;
+        if(generateDistanceMatrix) {
+            matrix = new double[numRows][numCols];
+            for(double[] array : matrix) Arrays.fill(array, Double.POSITIVE_INFINITY);
+        } else {
+            oddRow = new double[numCols];
+            evenRow = new double[numCols];
+        }
+    }
+
+    /**
+     * Indicate that distance has been computed and any resources can be discarded. This preserves the distance matrix if set to do so, and discards all other resources. This is helpful to avoid the DistanceMeasure(s) retaining various rows / matrices post computation, never to be needed again but remaining in use in memory.
+     */
+    protected void teardown() {
+        oddRow = null;
+        evenRow = null;
+        j = -1;
+        recycleRows = false;
+        if(!generateDistanceMatrix) {
+            matrix = null;
+        }
+    }
+
+    /**
+     * Get a specified row. This manages the matrix automatically, returning the corresponding row, or recycles the rows if using a paired rows approach, or allocates a fresh row as required.
+     * @param i
+     * @return
+     */
+    protected double[] getRow(int i) {
+        if(generateDistanceMatrix) {
+            return matrix[i];
+        } else if(recycleRows) {
+            return i % 2 == 0 ? evenRow : oddRow;
+        } else {
+            return new double[j];
+        }
+    }
+    
     public double[][] getDistanceMatrix() {
         return matrix;
     }
@@ -48,17 +93,4 @@ public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
     public void setGenerateDistanceMatrix(final boolean generateDistanceMatrix) {
         this.generateDistanceMatrix = generateDistanceMatrix;
     }
-    
-    protected void checkData(TimeSeriesInstance a, TimeSeriesInstance b, double limit) {
-        Objects.requireNonNull(a);
-        Objects.requireNonNull(b);
-        if(a.getNumDimensions() != b.getNumDimensions()) {
-            // variable length is not supported atm
-            throw new IllegalArgumentException("differing number of dimensions in the two instances");
-        }
-        if(limit < 0) {
-            throw new IllegalArgumentException("limit less than zero");
-        }
-    }
-
 }
