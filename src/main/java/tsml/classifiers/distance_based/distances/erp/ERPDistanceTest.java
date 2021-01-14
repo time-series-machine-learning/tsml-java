@@ -1,23 +1,13 @@
 package tsml.classifiers.distance_based.distances.erp;
 
-import experiments.data.DatasetLoading;
-
 import java.util.Collection;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 import tsml.classifiers.distance_based.distances.DistanceMeasureSpaceBuilder;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
-import utilities.InstanceTools;
-import weka.core.Instance;
 import weka.core.Instances;
 
 public class ERPDistanceTest {
@@ -61,18 +51,6 @@ public class ERPDistanceTest {
         df.setG(2);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 175, 0);
-    }
-    
-    public static class TestOnDatasets extends DTWDistanceTest.TestOnDatasets {
-
-        @Override public DistanceMeasureSpaceBuilder getBuilder() {
-            return DistanceMeasureSpaceBuilder.ERP;
-        }
-
-        @Parameterized.Parameters(name = "{0}")
-        public static Collection<Object[]> data() throws Exception {
-            return standardDatasets;
-        }
     }
 
 }
