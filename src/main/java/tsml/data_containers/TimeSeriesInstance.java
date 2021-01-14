@@ -481,7 +481,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
     
     public TimeSeriesInstance getHSlice(int index) {
-        return getHSlice(new int[] {index});
+        return getHSlice(Collections.singletonList(index));
     }
 
     
