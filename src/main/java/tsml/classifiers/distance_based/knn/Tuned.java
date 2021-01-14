@@ -8,7 +8,7 @@
 //import tsml.classifiers.distance_based.utils.classifiers.Configurer;
 //import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 //import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-//import tsml.classifiers.distance_based.utils.stats.scoring.ResultsScorer;
+//import tsml.classifiers.distance_based.utils.stats.scoring.v2.ResultsScorer;
 //import weka.core.Instance;
 //import weka.core.Instances;
 //
