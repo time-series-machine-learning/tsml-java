@@ -23,7 +23,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     // https://mvnrepository.com/artifact/com.carrotsearch/hppc
-    compile group: 'com.carrotsearch', name: 'hppc', version: '0.8.0'
+    compile group: 'com.carrotsearch', name: 'hppc', version: '0.7.3'
     // https://mvnrepository.com/artifact/com.beust/jcommander
     compile group: 'com.beust', name: 'jcommander', version: '1.78'
     // https://mvnrepository.com/artifact/net.sourceforge.jexcelapi/jxl
