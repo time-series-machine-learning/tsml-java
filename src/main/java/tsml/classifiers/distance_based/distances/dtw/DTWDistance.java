@@ -1,10 +1,13 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
+import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.transformers.Derivative;
 import utilities.Utilities;
 
 import java.util.Arrays;

@@ -34,8 +34,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     private boolean rebuild = true;
     // whether the seed has been set
     private boolean seedSet = false;
-    // whether to (re)generate train estimate. Useful with rebuild to incrementally improve classifier.
-    private boolean rebuildTrainEstimateResults = true;
 
     protected BaseClassifier() {
         this(false);

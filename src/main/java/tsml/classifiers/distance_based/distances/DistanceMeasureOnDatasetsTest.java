@@ -13,6 +13,7 @@ import tsml.classifiers.distance_based.distances.twed.TWEDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.data_containers.TimeSeriesInstance;
@@ -31,6 +32,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static experiments.data.DatasetLoading.*;
+import static tsml.classifiers.distance_based.distances.DistanceMeasure.DISTANCE_MEASURE_FLAG;
 
 @RunWith(Parameterized.class)
 public abstract class DistanceMeasureOnDatasetsTest {
@@ -167,10 +169,6 @@ public abstract class DistanceMeasureOnDatasetsTest {
         //first value
         distances[0][0] = (a.value(0) - b.value(0)) * (a.value(0) - b.value(0)) * weightVector[0];
 
-        //early abandon if first values is larger than cut off
-        if (distances[0][0] > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
 
         //top row
         for (int i = 1; i < bLength; i++) {
@@ -611,18 +609,26 @@ for(i=0; i<=r; i++) {
         return 1 - ((double) max / aLength);
     }
 
-    public abstract DistanceMeasureSpaceBuilder getBuilder();
+    public abstract ParamSpaceBuilder getBuilder();
 
     @Test
     public void testDistances() throws Exception {
+        final boolean generateDistances = false; // change this to true to generate distance csvs
         // conduct several random tests of random distance measure parameters + random insts
         final long time = System.nanoTime();
-        final DistanceMeasureSpaceBuilder builder = getBuilder();
-        final String name = builder.name();
+        final ParamSpaceBuilder builder = getBuilder();
+        final String path = Arrays.asList(BAKED_IN_MTSC_DATASETS).contains(datasetName) ? BAKED_IN_MTSC_DATA_PATH :
+                                    BAKED_IN_TSC_DATA_PATH;
+        final int seed = 0;
+        final Random random = new Random(seed);
+        final Instances[] instances = sampleDataset(path, datasetName, seed);
+        instances[0].addAll(instances[1]);
+        final TimeSeriesInstances data = Converter.fromArff(instances[0]);
+        final ParamSpace paramSpace = builder.build(data);
+        final String name = ((DistanceMeasure) ((List<?>) paramSpace.get("d").get(0).getValues()).get(0)).getName().replace("Distance", "" );
         final String testDistancesFilePath =
                 "src/main/java/" + getClass().getPackage().getName().replaceAll("\\.", "/") + "/test_data/" + name +
                         "_" + datasetName + ".csv";
-        final boolean generateDistances = !new File(testDistancesFilePath).exists();
         final int numDistances;
         final double[] distances;
         if(generateDistances) {
@@ -634,21 +640,12 @@ for(i=0; i<=r; i++) {
             distances = Arrays.stream(parts).mapToDouble(Double::parseDouble).toArray();
             numDistances = distances.length;
         }
-        final String path = Arrays.asList(BAKED_IN_MTSC_DATASETS).contains(datasetName) ? BAKED_IN_MTSC_DATA_PATH :
-                                    BAKED_IN_TSC_DATA_PATH;
-        final int seed = 0;
-        final Random random = new Random(seed);
-        final Instances[] instances = sampleDataset(path, datasetName, seed);
-        instances[0].addAll(instances[1]);
-        final TimeSeriesInstances data = Converter.fromArff(instances[0]);
-        final ParamSpace paramSpace = builder.build(data);
         final RandomSearch randomSearch = new RandomSearch();
         randomSearch.setRandom(random);
         randomSearch.setWithReplacement(true);
         randomSearch.buildSearch(paramSpace);
         randomSearch.setIterationLimit(distances.length);
         for(int i = 0; i < distances.length; i++) {
-            //                System.out.println(i);
             final int i1 = random.nextInt(data.numInstances());
             int i2 = 0;
             do {
@@ -660,7 +657,7 @@ for(i=0; i<=r; i++) {
             final ParamSet paramSet = randomSearch.next();
             final TimeSeriesInstance inst1 = data.get(i1);
             final TimeSeriesInstance inst2 = data.get(i2);
-            final DistanceMeasure distanceMeasure = paramSet.getSingle(DistanceMeasure.DISTANCE_MEASURE_FLAG);
+            final DistanceMeasure distanceMeasure = paramSet.getSingle(DISTANCE_MEASURE_FLAG);
             final double distanceWithoutLimit = distanceMeasure.distance(inst1, inst2);
             if(generateDistances) {
                 distances[i] = distanceWithoutLimit;

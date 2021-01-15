@@ -1,26 +1,15 @@
-package tsml.classifiers.distance_based.distances.ed;
+package tsml.classifiers.distance_based.distances.ed.spaces;
 
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
-import weka.core.Instances;
+import tsml.data_containers.TimeSeriesInstances;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
-public class EDistanceConfigs {
-    /**
-     * param space containing ED
-     *
-     * @return
-     */
-    public static ParamSpace buildEDSpace() {
+public class EDistanceSpace implements ParamSpaceBuilder {
+    @Override public ParamSpace build(final TimeSeriesInstances data) {
         return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new EDistance()));
-    }
-
-    public static class EDSpaceBuilder implements ParamSpaceBuilder {
-
-        @Override public ParamSpace build(final Instances data) {
-            return buildEDSpace();
-        }
     }
 }

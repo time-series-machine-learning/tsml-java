@@ -5,13 +5,14 @@ import experiments.data.DatasetLoading;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.IndependentDistanceMeasure;
-import tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs;
-import tsml.classifiers.distance_based.distances.ed.EDistanceConfigs;
-import tsml.classifiers.distance_based.distances.erp.ERPDistanceConfigs;
-import tsml.classifiers.distance_based.distances.lcss.LCSSDistanceConfigs;
-import tsml.classifiers.distance_based.distances.msm.MSMDistanceConfigs;
-import tsml.classifiers.distance_based.distances.twed.TWEDistanceConfigs;
-import tsml.classifiers.distance_based.distances.wdtw.WDTWDistanceConfigs;
+import tsml.classifiers.distance_based.distances.dtw.spaces.*;
+import tsml.classifiers.distance_based.distances.ed.spaces.EDistanceSpace;
+import tsml.classifiers.distance_based.distances.erp.spaces.ERPDistanceRestrictedContinuousSpace;
+import tsml.classifiers.distance_based.distances.lcss.spaces.LCSSDistanceRestrictedContinuousSpace;
+import tsml.classifiers.distance_based.distances.msm.spaces.MSMDistanceSpace;
+import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceSpace;
+import tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceContinuousSpace;
+import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceContinuousSpace;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.collections.lists.RepeatList;
@@ -80,17 +81,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             public <B extends ProximityTree> B configure(B proximityTree) {
                 proximityTree.setClassifierName(name());
                 proximityTree.setDistanceMeasureSpaceBuilders(Lists.newArrayList(
-                        new EDistanceConfigs.EDSpaceBuilder(),
-                        new DTWDistanceConfigs.FullWindowDTWSpaceBuilder(),
-                        new DTWDistanceConfigs.RestrictedContinuousDTWSpaceBuilder(),
-                        new DTWDistanceConfigs.FullWindowDDTWSpaceBuilder(),
-                        new DTWDistanceConfigs.RestrictedContinuousDDTWSpaceBuilder(),
-                        new WDTWDistanceConfigs.ContinuousWDTWSpaceBuilder(),
-                        new WDTWDistanceConfigs.ContinuousWDDTWSpaceBuilder(),
-                        new LCSSDistanceConfigs.RestrictedContinuousLCSSSpaceBuilder(),
-                        new ERPDistanceConfigs.RestrictedContinuousERPSpaceBuilder(),
-                        new TWEDistanceConfigs.TWEDSpaceBuilder(),
-                        new MSMDistanceConfigs.MSMSpaceBuilder()
+                        new EDistanceSpace(),
+                        new DTWDistanceFullWindowSpace(),
+                        new DTWDistanceRestrictedContinuousSpace(),
+                        new DDTWDistanceFullWindowSpace(),
+                        new DDTWDistanceRestrictedContinuousSpace(),
+                        new WDTWDistanceContinuousSpace(),
+                        new WDDTWDistanceContinuousSpace(),
+                        new LCSSDistanceRestrictedContinuousSpace(),
+                        new ERPDistanceRestrictedContinuousSpace(),
+                        new TWEDistanceSpace(),
+                        new MSMDistanceSpace()
                 ));
                 proximityTree.setSplitScorer(new GiniEntropy());
                 proximityTree.setR(1);
@@ -831,6 +832,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         
         // track the stage of building
         private int instIndex = -1;
+
+        // list of dimensions to use when comparing insts
+        private List<Integer> dimensionIndices;
         
         private Labels<Integer> getParentLabels() {
             return new Labels<>(new AbstractList<Integer>() {
@@ -855,9 +859,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
             return childLabels;
         }
-        
-        // list of dimensions to use when comparing insts
-        private List<Integer> dimensionIndices;
         
         public double getBestPotentialScore() {
             if(findBestPotentialScore) {
@@ -1014,8 +1015,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             // pick the distance function
             // pick a random space
             ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, rand);
+            // if using certain dimensions for multivariate, must strip the dimensions not being examined before building the space
+            final TimeSeriesInstances dataForSpace;
+            if(dimensionIndices != null) {
+                dataForSpace = new TimeSeriesInstances(data.stream().map(i -> i.getHSlice(dimensionIndices)).collect(Collectors.toList()));
+                throw new UnsupportedOperationException();
+            } else {
+                dataForSpace = data;
+            }
             // built that space
-            ParamSpace distanceMeasureSpace = distanceMeasureSpaceBuilder.build(data);
+            ParamSpace distanceMeasureSpace = distanceMeasureSpaceBuilder.build(dataForSpace);
             // randomly pick the distance function / parameters from that space
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned

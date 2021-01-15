@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
-import tsml.classifiers.distance_based.distances.DistanceMeasureSpaceBuilder;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistanceTest;
 import weka.core.Instances;
 

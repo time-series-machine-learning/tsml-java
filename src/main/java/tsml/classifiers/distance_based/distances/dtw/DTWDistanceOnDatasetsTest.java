@@ -2,15 +2,16 @@ package tsml.classifiers.distance_based.distances.dtw;
 
 import org.junit.runners.Parameterized;
 import tsml.classifiers.distance_based.distances.DistanceMeasureOnDatasetsTest;
-import tsml.classifiers.distance_based.distances.DistanceMeasureSpaceBuilder;
+import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 
 import java.util.Collection;
 
 public class DTWDistanceOnDatasetsTest
         extends DistanceMeasureOnDatasetsTest {
 
-    @Override public DistanceMeasureSpaceBuilder getBuilder() {
-        return DistanceMeasureSpaceBuilder.DTW;
+    @Override public ParamSpaceBuilder getBuilder() {
+        return new DTWDistanceSpace();
     }
 
     @Parameterized.Parameters(name = "{0}")

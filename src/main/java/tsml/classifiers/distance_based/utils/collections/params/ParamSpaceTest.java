@@ -15,8 +15,7 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.discr
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 
 import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
-import static tsml.classifiers.distance_based.distances.dtw.DTWDistanceConfigs.newDDTWDistance;
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
+import static tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace.newDDTWDistance;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

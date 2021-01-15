@@ -1,38 +1,16 @@
-package tsml.classifiers.distance_based.distances.msm;
+package tsml.classifiers.distance_based.distances.msm.spaces;
 
-import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.CompositeDistribution;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.DoubleDistribution;
-import weka.core.Instances;
+import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.List;
 
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.unique;
 
-public class MSMDistanceConfigs {
-    public static class MSMSpaceBuilder implements ParamSpaceBuilder {
-
-        @Override public ParamSpace build(final Instances data) {
-            return buildMSMSpace();
-        }
-    }
-
-    public static class ContinuousMSMSpaceBuilder implements ParamSpaceBuilder {
-        @Override public ParamSpace build(final Instances data) {
-            return buildContinuousMSMSpace();
-        }
-    }
-
-    public static ParamSpace buildMSMSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
-                buildMSMParams());
-    }
-
-    public static ParamSpace buildMSMParams() {
+public class MSMDistanceParams implements ParamSpaceBuilder {
+    @Override public ParamSpace build(final TimeSeriesInstances data) {
         double[] costValues = {
                 // <editor-fold defaultstate="collapsed" desc="hidden for space">
                 0.01,
@@ -141,17 +119,4 @@ public class MSMDistanceConfigs {
         params.add(MSMDistance.C_FLAG, costValuesUnique);
         return params;
     }
-
-    public static ParamSpace buildContinuousMSMParams() {
-        Distribution<Double> costParams = CompositeDistribution.newUniformDoubleCompositeFromRange(newArrayList(0.01, 0.1, 1d, 10d, 100d));
-        ParamSpace params = new ParamSpace();
-        params.add(MSMDistance.C_FLAG, costParams);
-        return params;
-    }
-
-    public static ParamSpace buildContinuousMSMSpace() {
-        return new ParamSpace().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new MSMDistance()),
-                buildContinuousMSMParams());
-    }
-
 }
