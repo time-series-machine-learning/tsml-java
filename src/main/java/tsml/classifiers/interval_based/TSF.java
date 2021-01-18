@@ -24,10 +24,7 @@ import evaluation.storage.ClassifierResults;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
-import tsml.data_containers.TSCapabilities;
-import tsml.data_containers.TimeSeries;
-import tsml.data_containers.TimeSeriesInstance;
-import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -348,14 +345,19 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //          Instances i = Converter.toArff(data);
 //          i.setClassIndex(i.numAttributes() - 1);
 //          buildClassifier(i);
+
           // set classifier capabilities
-          TSCapabilities tsCapabilities = new TSCapabilities();
-          tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
-                        .enable(TSCapabilities.UNIVARIATE)
-                        .enable(TSCapabilities.NO_MISSING_VALUES);
+          TSCapabilitiesHandler tsCapabilitiesHandler = () -> {
+              TSCapabilities tsCapabilities = new TSCapabilities();
+              tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+                      .enable(TSCapabilities.UNIVARIATE)
+                      .enable(TSCapabilities.NO_MISSING_VALUES)
+                      .enable(TSCapabilities.MIN_LENGTH(2));
+              return tsCapabilities;
+          };
 
           // can classifier handle the data?
-          boolean acceptData = tsCapabilities.test(data);
+          boolean acceptData = tsCapabilitiesHandler.getTSCapabilities().test(data);
           if (!acceptData)
               throw new Exception("TSF cannot handle this type of data");
 
@@ -379,9 +381,36 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
               printDebug(String.format("Building TSF: number of intervals = %d number of trees = %d\n",
                       numIntervals, numClassifiers));
-              trees = new ArrayList(numClassifiers);
+              trees = new ArrayList<>(numClassifiers);
+
+              // Set up for train estimates
+              if (getEstimateOwnPerformance()) {
+                  trainDistributions = new double[data.numInstances()][data.numClasses()];
+              }
+
+              // Set up for bagging
+              if (bagging) {
+                  inBag = new ArrayList<>();
+                  oobCounts = new int[data.numInstances()];
+                  printLineDebug("TSF is using Bagging");
+              }
+
+              intervals = new ArrayList<>();
+              lastCheckpointTime = startTime;
           }
-  }
+
+          finalBuildtrainContractTimeNanos = trainContractTimeNanos;
+
+          // if Contracted and estimating own performance,
+          // distribute the contract evenly between estimation and final build
+          if (trainTimeContract && !bagging && getEstimateOwnPerformance()) {
+              finalBuildtrainContractTimeNanos /= 2;
+              printLineDebug(String.format(" Setting final contract time to %s nanos",
+                      finalBuildtrainContractTimeNanos));
+          }
+
+          // Figure out how to make Attribute equivalent for TSInstances
+      }
 
 
 /**
