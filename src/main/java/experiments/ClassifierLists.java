@@ -30,12 +30,12 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.frequency_based.RISE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.*;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
-import tsml.classifiers.hybrids.TSCHIEFWrapper;
+import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
@@ -282,7 +282,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","CIF","STSF","SCIF"};
+    public static String[] interval= {"LPS","TSF","CIF","STSF","DrCIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -301,7 +301,7 @@ public class ClassifierLists {
             case "STSF":
                 c=new STSF();
                 break;
-            case "SCIF":
+            case "DrCIF":
                 c=new SCIF();
                 break;
             default:
@@ -372,7 +372,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","TS-CHIEF","HIVE-COTEv1","catch22","ROCKET","ROCKET-E"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22","ROCKET","ARSENAL"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -391,17 +391,13 @@ public class ClassifierLists {
                 ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((HIVE_COTE)c).setSeed(fold);
                 break;
-            case "TS-CHIEF":
-                c=new TSCHIEFWrapper();
-                ((TSCHIEFWrapper)c).setSeed(fold);
-                break;
             case "catch22":
                 c = new Catch22Classifier();
                 break;
             case "ROCKET":
                 c = new ROCKETClassifier();
                 break;
-            case "ROCKET-E":
+            case "ARSENAL":
                 c = new ROCKETClassifier();
                 ((ROCKETClassifier)c).setEnsemble(true);
                 ((ROCKETClassifier)c).setEnsembleSize(25);
@@ -673,7 +669,7 @@ public class ClassifierLists {
                 break;
             case "HIVE-COTE 2.0":
                 if(canLoadFromFile){
-                    String[] cls={"SCIF","TDE","ROCKET-E","STC","PF"};//RotF for ST
+                    String[] cls={"DrCIF","TDE","ARSENAL","STC","PF"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
