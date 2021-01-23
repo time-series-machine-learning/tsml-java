@@ -23,6 +23,7 @@ dependencies {
     // https://mvnrepository.com/artifact/commons-io/commons-io
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     // https://mvnrepository.com/artifact/com.carrotsearch/hppc
+    // WEASEL WEASEL_MUSE IndividualTDE MultivariateIndividualTDE
     compile group: 'com.carrotsearch', name: 'hppc', version: '0.7.3'
     // https://mvnrepository.com/artifact/com.beust/jcommander
     compile group: 'com.beust', name: 'jcommander', version: '1.78'
@@ -49,7 +50,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.github.rwl/jtransforms
     compile group: 'com.github.rwl', name: 'jtransforms', version: '2.4.0'
     // https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
-    compile group: 'org.nd4j', name: 'nd4j-api', version: '1.0.0-beta4'
+    // RidgeClassifierCV
+    compile group: 'org.nd4j', name: 'nd4j-native-platform', version: '1.0.0-beta4'
 }
 
 sourceSets {

@@ -64,35 +64,32 @@ public class BasicReproductionTests {
     private static final String extraClassifiers = "machine_learning.classifiers.";
     
     public static final String[] classifierPaths = {
-        
-        tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
-        tsClassifiers + "dictionary_based.SAXVSM",
-        tsClassifiers + "dictionary_based.WEASEL",
-        tsClassifiers + "dictionary_based.cBOSS",
-        tsClassifiers + "dictionary_based.TDE",
-       
-        tsClassifiers + "distance_based.DTWCV",
-        tsClassifiers + "distance_based.ProximityForestWrapper",
-        tsClassifiers + "distance_based.SlowDTW_1NN",
-        
-        tsClassifiers + "frequency_based.RISE",
+            tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
+            tsClassifiers + "dictionary_based.SAXVSM",
+            tsClassifiers + "dictionary_based.WEASEL",
+            tsClassifiers + "dictionary_based.cBOSS",
+            tsClassifiers + "dictionary_based.TDE",
 
-//        tsClassifiers + "hybrids.HIVE_COTE", //assumed to cover its consituents
-        tsClassifiers + "hybrids.ROCKETClassifier",
+            tsClassifiers + "distance_based.DTWCV",
+            tsClassifiers + "distance_based.ProximityForestWrapper",
+            tsClassifiers + "distance_based.SlowDTW_1NN",
 
-        tsClassifiers + "interval_based.LPS",
-        tsClassifiers + "interval_based.TSF",
-        tsClassifiers + "interval_based.CIF",
-        
-        tsClassifiers + "shapelet_based.FastShapelets",
-        tsClassifiers + "shapelet_based.LearnShapelets",        
-        
-        extraClassifiers + "PLSNominalClassifier",
-        extraClassifiers + "kNN",
-        
-        extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.stackers.SMLR",
-        
+//            tsClassifiers + "hybrids.HIVE_COTE", //assumed to cover its consituents
+            tsClassifiers + "hybrids.ROCKETClassifier",
+
+            tsClassifiers + "interval_based.LPS",
+            tsClassifiers + "interval_based.TSF",
+            tsClassifiers + "interval_based.RISE",
+            tsClassifiers + "interval_based.CIF",
+
+            tsClassifiers + "shapelet_based.FastShapelets",
+            tsClassifiers + "shapelet_based.LearnShapelets",
+
+            extraClassifiers + "PLSNominalClassifier",
+            extraClassifiers + "kNN",
+
+            extraClassifiers + "ensembles.CAWPE",
+            extraClassifiers + "ensembles.stackers.SMLR",
     };
     
     ////////////////////////
