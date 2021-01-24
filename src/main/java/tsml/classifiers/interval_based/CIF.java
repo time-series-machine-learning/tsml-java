@@ -513,11 +513,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
 
                     int range = Math.min(seriesLength - interval[j][0], maxIntervalLength);
-                    int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
+                    int length;
+                    if (range - minIntervalLength == 0) length = minIntervalLength;
+                    else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                     interval[j][1] = interval[j][0] + length;
                 } else {
                     interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
-                            + minIntervalLength; //Start point
+                            + minIntervalLength; //End point
 
                     int range = Math.min(interval[j][1], maxIntervalLength);
                     int length;
@@ -1519,8 +1521,10 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             MultiThreadBuildHolder h = new MultiThreadBuildHolder();
             Random rand = new Random(seed + i * numClassifiers);
 
-            //1. Select random intervals for tree i
+            Catch22 c22 = new Catch22();
+            c22.setOutlierNormalise(outlierNorm);
 
+            //1. Select random intervals for tree i
             int[][] interval = new int[numIntervals][2];  //Start and end
 
             for (int j = 0; j < numIntervals; j++) {
@@ -1623,10 +1627,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     FeatureSet f = new FeatureSet();
                     double[] intervalArray = Arrays.copyOfRange(series, interval[j][0], interval[j][1] + 1);
 
-                    //process features
-                    Catch22 c22 = new Catch22();
-
                     for (int g = 0; g < numAttributes; g++) {
+                        //process features
                         if (subsampleAtts.get(g) < 22) {
                             result.instance(k).setValue(j * numAttributes + g,
                                     c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
@@ -1688,12 +1690,12 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
                         for (int g = 0; g < numAttributes; g++) {
                             if (!attUsage[j * numAttributes + g]) {
-                                testHolder.instance(0).setValue(j * numAttributes + g, 0);
+                                result.instance(0).setValue(j * numAttributes + g, 0);
                                 continue;
                             }
 
                             if (subsampleAtts.get(g) < 22) {
-                                testHolder.instance(0).setValue(j * numAttributes + g,
+                                result.instance(0).setValue(j * numAttributes + g,
                                         c22.getSummaryStatByIndex(subsampleAtts.get(g), j, intervalArray));
                             } else {
                                 if (!f.calculatedFeatures) {
@@ -1701,13 +1703,13 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                                 }
                                 switch (subsampleAtts.get(g)) {
                                     case 22:
-                                        testHolder.instance(0).setValue(j * numAttributes + g, f.mean);
+                                        result.instance(0).setValue(j * numAttributes + g, f.mean);
                                         break;
                                     case 23:
-                                        testHolder.instance(0).setValue(j * numAttributes + g, f.stDev);
+                                        result.instance(0).setValue(j * numAttributes + g, f.stDev);
                                         break;
                                     case 24:
-                                        testHolder.instance(0).setValue(j * numAttributes + g, f.slope);
+                                        result.instance(0).setValue(j * numAttributes + g, f.slope);
                                         break;
                                     default:
                                         throw new Exception("att subsample basic features broke");
@@ -1716,7 +1718,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                         }
                     }
 
-                    double[] newProbs = tree.distributionForInstance(testHolder.instance(0));
+                    double[] newProbs = tree.distributionForInstance(result.instance(0));
                     oobCounts[n]++;
                     for (int k = 0; k < newProbs.length; k++)
                         trainDistributions[n][k] += newProbs[k];
@@ -1729,7 +1731,6 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             h.tree = tree;
             h.interval = interval;
-
             return h;
         }
     }

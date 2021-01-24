@@ -78,7 +78,6 @@ public interface Checkpointable extends Serializable {
     }
 
 
-
     /**
      * Utility function to set the file structure up if required. Call this in setSavePath if you wish
      * */
@@ -93,4 +92,6 @@ public interface Checkpointable extends Serializable {
     //Define how to copy from a loaded object to this object
     void copyFromSerObject(Object obj) throws Exception;
 
+    //delete any checkpoint file if present, not required currently
+    default boolean deleteCheckpoint() { return false; }
 }

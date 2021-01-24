@@ -46,7 +46,7 @@ import static utilities.Utilities.argMax;
 public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
 
     private Classifier classifier;
-    private EarlyDecisionMaker decisionMaker;
+    private EarlyDecisionMaker decisionMaker = new ProbabilityThreshold();
 
     private ShapeletTransform transform;
     private Instances shapeletData;
@@ -116,8 +116,6 @@ public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
         classifier = rotf;
         classifier.buildClassifier(shapeletData);
 
-        ProbabilityThreshold pt = new ProbabilityThreshold();
-        decisionMaker = pt;
         thresholds = decisionMaker.defaultTimeStamps(data.numAttributes()-1);
         decisionMaker.fit(newData, classifier, thresholds);
 
@@ -160,10 +158,10 @@ public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
     public static void main(String[] args) throws Exception{
         int fold = 0;
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+
-                dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+
-                dataset+"_TEST.arff");
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\"
+                + dataset + "_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "\\"
+                + dataset + "_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];

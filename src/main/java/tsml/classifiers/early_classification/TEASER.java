@@ -54,6 +54,8 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
     private int seed;
     private Random rand;
 
+    public TEASER() {}
+
     @Override
     public void setSeed(int s) { seed = s; }
 
@@ -127,6 +129,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
             } else {
                 count++;
                 if (count >= v) {
+                    predCounts.clear();
                     return true;
                 } else {
                     predCounts.put(pred, count);

@@ -30,7 +30,7 @@ import static utilities.Utilities.argMax;
  */
 public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomizable {
 
-    private double threshold = 0.9;
+    private double threshold = 0.85;
 
     private int finalIndex;
 

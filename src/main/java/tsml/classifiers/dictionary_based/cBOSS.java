@@ -342,6 +342,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         ensembleCvPreds = saved.ensembleCvPreds;
         numThreads = saved.numThreads;
         multiThread = saved.multiThread;
+        numClasses = saved.numClasses;
 
         //load in each serisalised classifier
         classifiers = new LinkedList[numSeries];
@@ -481,6 +482,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
             printLineDebug("Building cBOSS  target number of classifiers = " +ensembleSize);
 
+            numClasses = data.numClasses();
+
             //Multivariate
             if (isMultivariate) {
                 numSeries = numDimensions(data);
@@ -505,7 +508,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
 
             if (maxEvalPerClass > 0) {
-                maxEval = data.numClasses() * maxEvalPerClass;
+                maxEval = numClasses * maxEvalPerClass;
             }
 
             rand = new Random(seed);
@@ -529,7 +532,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
 
             if (getEstimateOwnPerformance()){
-                trainDistributions = new double[data.numInstances()][data.numClasses()];
+                trainDistributions = new double[data.numInstances()][numClasses];
                 idxSubsampleCount = new double[data.numInstances()];
             }
         }
@@ -1225,7 +1228,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     //potentially scuffed when train set is subsampled, will have to revisit and discuss if this is a viable option
     //for estimation anyway.
     private double[] distributionForInstance(int test) throws Exception {
-        int numClasses = train.numClasses();
         double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
@@ -1266,7 +1268,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
         else{
             for (int i = 0; i < classHist.length; ++i)
-                distributions[i] += 1 / numClasses;
+                distributions[i] += 1.0 / numClasses;
         }
 
         return distributions;
@@ -1280,7 +1282,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
-        int numClasses = train.numClasses();
         double[] classHist = new double[numClasses];
 
         //get sum of all channels, votes from each are weighted the same.
@@ -1328,7 +1329,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        double[] distributions = new double[instance.numClasses()];
+        double[] distributions = new double[numClasses];
 
         if (sum != 0) {
             for (int i = 0; i < classHist.length; ++i)
@@ -1336,7 +1337,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
         else{
             for (int i = 0; i < classHist.length; ++i)
-                distributions[i] += 1 / numClasses;
+                distributions[i] += 1.0 / numClasses;
         }
 
         return distributions;

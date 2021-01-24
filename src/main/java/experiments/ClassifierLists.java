@@ -23,6 +23,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
+import tsml.classifiers.early_classification.*;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -30,12 +31,10 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.*;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
-import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
@@ -282,7 +281,7 @@ public class ClassifierLists {
     /**
     * INTERVAL BASED: classifiers that form multiple intervals over series and summarise
     */
-    public static String[] interval= {"LPS","TSF","CIF","STSF","DrCIF"};
+    public static String[] interval= {"LPS","TSF","RISE","CIF","STSF","DrCIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -295,6 +294,9 @@ public class ClassifierLists {
             case "TSF":
                 c=new TSF();
                 break;
+            case "RISE":
+                c=new RISE();
+                break;
             case "CIF":
                 c=new CIF();
                 break;
@@ -302,35 +304,12 @@ public class ClassifierLists {
                 c=new STSF();
                 break;
             case "DrCIF":
-                c=new SCIF();
+                c=new DrCIF();
                 break;
             default:
                 System.out.println("Unknown interval based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
                 throw new UnsupportedOperationException("Unknown interval based  classifier "+classifier+" should not be able to get here."
-                        + "There is a mismatch between array interval and the switch statement ");
-
-        }
-        return c;
-    }
-
-    /**
-     * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
-     */
-    public static String[] frequency= {"RISE"};
-    public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
-    private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
-        Classifier c;
-        int fold=exp.foldId;
-        switch(classifier) {
-            case "RISE":
-                c=new RISE();
-                break;
-            default:
-                System.out.println("Unknown interval based classifier, should not be able to get here ");
-                System.out.println("There is a mismatch between array interval and the switch statement ");
-                throw new UnsupportedOperationException("Unknown interval based  classifier, should not be able to get here "
                         + "There is a mismatch between array interval and the switch statement ");
 
         }
@@ -805,6 +784,41 @@ public class ClassifierLists {
     }
 
     /**
+     * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
+     * not encapsulated within a single classifier      */
+    public static String[] earlyClassification= {"TEASER","eSTC"};
+    public static HashSet<String> earlyClassifiers=new HashSet<String>( Arrays.asList(earlyClassification));
+    private static Classifier setEarlyClassifiers(Experiments.ExperimentalArguments exp){
+        String classifier=exp.classifierName,resultsPath="",dataset="";
+        int fold=exp.foldId;
+        Classifier c;
+        boolean canLoadFromFile=true;
+        if(exp.resultsWriteLocation==null || exp.datasetName==null)
+            canLoadFromFile=false;
+        else{
+            resultsPath=exp.resultsWriteLocation;
+            dataset=exp.datasetName;
+        }
+
+        switch(classifier) {
+            case "TEASER":
+                c = new EarlyDecisionMakerClassifier(new WEASEL(), new TEASER());
+                break;
+            case "eSTC":
+                c = new ShapeletTransformEarlyClassifier();
+                break;
+
+            default:
+                System.out.println("Unknown bespoke classifier, should not be able to get here ");
+                System.out.println("There is a mismatch between bespokeClassifiers and the switch statement ");
+                throw new UnsupportedOperationException("Unknown bespoke classifier, should not be able to get here "
+                        + "There is a mismatch between bespokeClassifiers and the switch statement ");
+
+        }
+        return c;
+    }
+
+    /**
      *
      * setClassifier, which takes the experimental
      * arguments themselves and therefore the classifiers can take from them whatever they
@@ -827,8 +841,6 @@ public class ClassifierLists {
             c=setDictionaryBased(exp);
         else if(intervalBased.contains(classifier))
             c=setIntervalBased(exp);
-        else if(frequencyBased.contains(classifier))
-            c=setFrequencyBased(exp);
         else if(shapeletBased.contains(classifier))
             c=setShapeletBased(exp);
         else if(hybridBased.contains(classifier))
@@ -839,6 +851,8 @@ public class ClassifierLists {
             c=setStandardClassifiers(exp);
         else if(bespokeClassifiers.contains(classifier))
             c=setBespokeClassifiers(exp);
+        else if(earlyClassifiers.contains(classifier))
+            c=setEarlyClassifiers(exp);
         else{
             System.out.println("Unknown classifier "+classifier+" it is not in any of the sublists ");
             throw new UnsupportedOperationException("Unknown classifier "+classifier+" it is not in any of the sublists on ClassifierLists ");

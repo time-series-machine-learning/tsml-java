@@ -32,6 +32,8 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
@@ -109,11 +111,11 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         this.cls = cls;
     }
 
-    public void setEnsemble(boolean ensemble) { ensemble = ensemble; }
+    public void setEnsemble(boolean ensemble) { this.ensemble = ensemble; }
 
-    public void setEnsembleSize(int size) { ensembleSize = size; }
+    public void setEnsembleSize(int ensembleSize) { this.ensembleSize = ensembleSize; }
 
-    public void setNumKernelsStep(int step) { numKernelsStep = step; }
+    public void setNumKernelsStep(int numKernelsStep) { this.numKernelsStep = numKernelsStep; }
 
     @Override
     public void setTrainTimeLimit(long time) {
@@ -322,8 +324,6 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                         ((Randomizable)newCls).setSeed(seed*100*(r+1));
                     ClassifierResults results = cv.evaluate(newCls, ensembleData[r]);
                     for (int i = 0; i < preds.length; i++){
-                        preds[i] += results.getPredClassValue(i);
-                        actuals[i] += results.getTrueClassValue(i);
                         double[] dist = results.getProbabilityDistribution(i);
                         for (int n = 0; n < trainDistributions[i].length; n++){
                             trainDistributions[i][n] += dist[n];
@@ -331,8 +331,8 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                     }
                 }
                 for (int i = 0; i < preds.length; i++){
-                    preds[i] /= ensembleData.length;
-                    actuals[i] /= ensembleData.length;
+                    preds[i] = findIndexOfMax(trainDistributions[i], rand);
+                    actuals[i] = ensembleData[0].get(i).classValue();
                     for (int n = 0; n < trainDistributions[i].length; n++){
                         trainDistributions[i][n] /= ensembleData.length;
                     }
@@ -344,34 +344,41 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                 trainResults.setClassifierName("ROCKET-ECV");
                 trainResults.setErrorEstimateMethod("CV_" + numFolds);
             } else if (estimator == EstimatorMethod.OOB) {
+                int[] oobCount = new int[ensembleData[0].numInstances()];
                 double[] preds=new double[ensembleData[0].numInstances()];
                 double[] actuals=new double[ensembleData[0].numInstances()];
                 double[][] trainDistributions=new double[ensembleData[0].numInstances()][ensembleData[0].numClasses()];
                 long[] predTimes=new long[ensembleData[0].numInstances()];//Dummy variable, need something
-                int numFolds = Math.min(ensembleData[0].numInstances(), 10);
                 for (int r = 0; r < ensembleData.length; r++) {
-                    OutOfBagEvaluator oob = new  OutOfBagEvaluator();
-                    if (seedClassifier)
-                        oob.setSeed(seed*5*(r+1));
+                    OutOfBagEvaluator oob = new OutOfBagEvaluator();
+                    oob.setSeed((seed+1)*5*(r+1));
                     Classifier newCls = AbstractClassifier.makeCopy(cls);
                     if (seedClassifier && cls instanceof Randomizable)
-                        ((Randomizable)newCls).setSeed(seed*100*(r+1));
+                        ((Randomizable)newCls).setSeed((seed+1)*100*(r+1));
                     ClassifierResults results = oob.evaluate(newCls, ensembleData[r]);
-                    for (int i = 0; i < preds.length; i++){
-                        preds[i] += results.getPredClassValue(i);
-                        actuals[i] += results.getTrueClassValue(i);
+                    List<Integer> indicies = oob.getOutOfBagTestDataIndices();
+                    for (int i = 0; i < indicies.size(); i++){
+                        int index = indicies.get(i);
+                        oobCount[index]++;
                         double[] dist = results.getProbabilityDistribution(i);
                         for (int n = 0; n < trainDistributions[i].length; n++){
-                            trainDistributions[i][n] += dist[n];
+                            trainDistributions[index][n] += dist[n];
                         }
                     }
                 }
                 for (int i = 0; i < preds.length; i++){
-                    preds[i] /= ensembleData.length;
-                    actuals[i] /= ensembleData.length;
-                    for (int n = 0; n < trainDistributions[i].length; n++){
-                        trainDistributions[i][n] /= ensembleData.length;
+                    if (oobCount[i] > 0) {
+                        preds[i] = findIndexOfMax(trainDistributions[i], rand);
+                        for (int n = 0; n < trainDistributions[i].length; n++) {
+                            trainDistributions[i][n] /= oobCount[i];
+                        }
                     }
+                    else{
+                        Arrays.fill(trainDistributions[i], 1.0/numClasses);
+                    }
+
+                    actuals[i] = ensembleData[0].get(i).classValue();
+                    preds[i] = findIndexOfMax(trainDistributions[i], rand);
                 }
                 trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
                 trainResults.setDatasetName(ensembleData[0].relationName());

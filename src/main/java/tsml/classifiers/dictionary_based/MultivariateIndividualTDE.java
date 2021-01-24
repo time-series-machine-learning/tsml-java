@@ -535,7 +535,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
                         int pos = wInd + (windowSize/2); //use the middle of the window as its position
                         int quadrant = qStart + (pos/quadrantSize);
 
-                        SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word, (byte)quadrant);
+                        SerialisableComparablePair<BitWord, Byte> key = new SerialisableComparablePair<>(word,
+                                (byte)quadrant);
                         bag.merge(key, 1, Integer::sum);
 
                         qStart += numQuadrants;

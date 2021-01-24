@@ -16,29 +16,21 @@
 package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.TimeSeriesTree;
-import scala.reflect.internal.util.TableDef;
 import tsml.classifiers.*;
-import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.ColumnNormalizer;
 import tsml.transformers.Differences;
 import tsml.transformers.PowerSpectrum;
-import tsml.transformers.RowNormalizer;
 import utilities.ClassifierTools;
-import utilities.generic_storage.Pair;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static utilities.ArrayUtilities.sum;
 import static utilities.StatisticalUtilities.median;
@@ -50,7 +42,6 @@ import static utilities.Utilities.extractTimeSeries;
  *
  * @author Matthew Middlehurst
 */
- 
 public class STSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable {
     //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
@@ -343,7 +334,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
                                                                     int[] classCounts){
         int seriesLength = rep.numAttributes()-1;
         int splitPoint;
-        if (seriesLength-8 <= 0) splitPoint = seriesLength/2;
+        if (seriesLength <= 8) splitPoint = seriesLength/2;
         else splitPoint = rand.nextInt(seriesLength-8)+4; //min 4, max serieslength-4
 
         ColumnNormalizer rn = new ColumnNormalizer();

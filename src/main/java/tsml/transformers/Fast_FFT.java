@@ -91,7 +91,7 @@ public class Fast_FFT implements Transformer {
         return instances;
     }
 
-    private void nearestPowerOF2(int x) {
+    public void nearestPowerOF2(int x) {
         float power = (float) (Math.log(x) / Math.log(2));
         int m = (int) Math.ceil(power);
         nfft = (int) Math.pow(2.0, (double) m);

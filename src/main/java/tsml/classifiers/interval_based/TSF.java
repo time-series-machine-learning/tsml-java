@@ -17,7 +17,9 @@
  
 package tsml.classifiers.interval_based;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import evaluation.storage.ClassifierResults;
@@ -362,6 +364,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
         }
         else {//else initialise variables
+            numClasses = data.numClasses();
             seriesLength = data.numAttributes() - 1;
             if (numIntervalsFinder == null){
                 numIntervals = (int)Math.sqrt(seriesLength);
@@ -621,7 +624,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
  */   
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
-        double[] d=new double[ins.numClasses()];
+        double[] d=new double[numClasses];
         //Build transformed instance
         double[] series=ins.toDoubleArray();
         for(int i=0;i<trees.size();i++){
@@ -764,6 +767,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //            trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
 
+            numClasses = saved.numClasses;
             rand = saved.rand;
             seedClassifier = saved.seedClassifier;
             seed = saved.seed;
@@ -929,12 +933,31 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         String[] atts = new String[]{"mean","stdev","slope"};
         for (int i = 0 ; i < 3; i++){
             of.writeLine(atts[i]);
+            of.writeLine("0");
             of.writeLine(Arrays.toString(curves[i]));
         }
         of.closeFile();
 
-        Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " 3 3");
+        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " 3 1 3");
+
+        if (debug) {
+            System.out.println("TSF vis python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
+        }
 
         return true;
     }
