@@ -45,7 +45,7 @@ dependencies {
     // https://mvnrepository.com/artifact/tw.edu.ntu.csie/libsvm
     compile group: 'tw.edu.ntu.csie', name: 'libsvm', version: '3.24'
     // https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
-    compile group: 'org.nd4j', name: 'nd4j-api', version: '1.0.0-beta4'
+    compile group: 'org.nd4j', name: 'nd4j-native-platform', version: '1.0.0-beta4'
 }
 
 sourceSets {
