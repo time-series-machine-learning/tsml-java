@@ -166,9 +166,9 @@ public class STC_D extends EnhancedAbstractClassifier {
 
         int numShapeletsInTransform = Math.min(10 * train.numInstances(), 2000);
 
-        long transformContractTime = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+        long transformContractTime = TimeUnit.NANOSECONDS.convert(4, TimeUnit.HOURS);
 
-        SearchType searchType = SearchType.IMPROVED_RANDOM;
+        SearchType searchType = SearchType.RANDOM;
         long numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m,
                 3, m);
 
