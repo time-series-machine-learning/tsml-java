@@ -53,9 +53,9 @@ public class StatisticalUtilities {
         int n = 0;
         for(int i = 0; i < insts.numInstances(); i++){
             final TimeSeriesInstance inst = insts.get(i);
-            for(int j = 0; j < inst.getMaxLength(); j++){
+            for(int j = 0; j < inst.getNumDimensions(); j++){
                 final TimeSeries dim = inst.get(j);
-                for(int k = 0; k < inst.getNumDimensions(); k++) {
+                for(int k = 0; k < inst.getMaxLength(); k++) {
                     final Double value = dim.get(k);
                     sumx+= value;
                     sumx2+= value * value;
