@@ -602,36 +602,25 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return !isClassificationProblem();
     }
 
-    public List<TimeSeriesInstances> byClass() {
-        return indicesByClass().stream()
-                       // map each sub list to a new batch of instances
-                       .map(indices -> indices.stream().map(this::get).collect(Collectors.toList()))
-                       // map that list of instances to a TSInsts obj
-                       .map(insts -> new TimeSeriesInstances(insts, getClassLabels()))
-                       .collect(Collectors.toList());
-    }
-    
     /**
-     * Get a list of instances indices separated by class
+     * Get inst index binned by class. I.e. class 1 contains {3,5,6} and class 2 contains {1,2,4}
      * @return
      */
-    public List<List<Integer>> indicesByClass() {
-        List<List<Integer>> bins = new ArrayList<>(numClasses());
-        final String[] labels = getClassLabels();
+    public List<List<Integer>> getInstIndicesByClass() {
+        final List<List<Integer>> bins = new ArrayList<>(numClasses());
         for(int i = 0; i < numClasses(); i++) {
             bins.add(new ArrayList<>());
         }
-        int i = 0;
-        for(TimeSeriesInstance inst : this) {
+        for(int i = 0; i < numInstances(); i++) {
+            final TimeSeriesInstance inst = get(i);
             final int labelIndex = inst.getLabelIndex();
-            final List<Integer> bin;
-            if(labelIndex < 0) {
-                throw new IllegalStateException("unclassified instance cannot be allocated to per class subset");
-            } else {
-                bin = bins.get(inst.getLabelIndex());
-            }
-            bin.add(i++);
+            final List<Integer> bin = bins.get(labelIndex);
+            bin.add(i);
         }
         return bins;
+    }
+    
+    public List<TimeSeriesInstances> getInstsByClass() {
+        return getInstIndicesByClass().stream().map(indices -> new TimeSeriesInstances(indices.stream().map(this::get).collect(Collectors.toList()), getClassLabels())).collect(Collectors.toList());
     }
 }
