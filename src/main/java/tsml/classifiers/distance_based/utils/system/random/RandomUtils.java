@@ -1,9 +1,7 @@
 package tsml.classifiers.distance_based.utils.system.random;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
@@ -56,6 +54,30 @@ public class RandomUtils {
 
     // choice elements by index
 
+    /**
+     * Avoids a span of numbers when choosing an index
+     * @param size
+     * @param random
+     * @return
+     */
+    public static Integer choiceIndexExcept(int size, Random random, List<Integer> exceptions) {
+        Integer index = choiceIndex(size - exceptions.size(), random);
+        // if the chosen index lies within the exception zone, then the index needs to be shifted by the zone length to avoid these indices
+        Collections.sort(exceptions);
+        for(Integer exception : exceptions) {
+            if(index >= exception) {
+                index++;
+            } else {
+                break;
+            }
+        }
+        return index;
+    }
+    
+    public static Integer choiceIndexExcept(int size, Random random, int exception) {
+        return choiceIndexExcept(size, random, Collections.singletonList(1));        
+    }
+
     public static Integer choiceIndex(int size, Random random) {
         return choiceIndex(size, random, 1, false).get(0);
     }
@@ -67,9 +89,17 @@ public class RandomUtils {
     public static ArrayList<Integer> choiceIndex(int size, Random random, int numChoices) {
         return choiceIndex(size, random, numChoices, false);
     }
+    
+    public static ArrayList<Integer> shuffleIndices(int size, Random random) {
+        return choiceIndex(size, random, size);
+    }
 
     // choose elements directly
 
+    public static <A> ArrayList<A> shuffle(List<A> list, Random random) {
+        return Utilities.apply(shuffleIndices(list.size(), random), list::get);
+    }
+    
     public static <A> ArrayList<A> choice(List<A> list, Random random, int numChoices, boolean withReplacement) {
         return Utilities.apply( choiceIndex(list.size(), random, numChoices, withReplacement), list::get);
     }
