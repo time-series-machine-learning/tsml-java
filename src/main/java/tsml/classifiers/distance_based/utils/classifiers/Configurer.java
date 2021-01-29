@@ -4,18 +4,9 @@ import weka.classifiers.Classifier;
 
 import java.io.Serializable;
 
+
 public interface Configurer<A> extends Serializable {
 
-    <B extends A> B configure(B classifier);
+    void configure(A obj);
 
-    default Configurer<A> and(Configurer<A> other) {
-        final Configurer<A> current = this;
-        return new Configurer<A>() {
-            @Override public <B extends A> B configure(B classifier) {
-                classifier = other.configure(classifier);
-                classifier = current.configure(classifier);
-                return classifier;
-            }
-        };
-    }
 }

@@ -4,7 +4,7 @@ public class ExperimentRunner {
     public static void main(String[] args) throws Exception {
         Experiment.main(
                 "-r", "results"
-                , "-d", "/bench/phd/data/all"
+                , "-d", "/bench/phd/data/all_2019"
                 , "-p", "GunPoint"
                 , "-c", "PF_R5"
                 , "-s", "0"

@@ -6,7 +6,6 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.distance_based.proximity.ProximityForestWrapper;
-import tsml.classifiers.distance_based.proximity.ProximityTree;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
@@ -25,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -41,59 +41,20 @@ public class Experiment implements Copier {
     public Experiment(ExperimentConfig config) {
         this.config = Objects.requireNonNull(config);
         setExperimentLogLevel(Level.ALL);
-        addClassifierConfigs(ProximityForest.Config.values());
-        addClassifierConfigs(ProximityTree.Config.values());
-        Builder<ProximityForestWrapper> pfwR5 = () -> {
-            ProximityForestWrapper pfw = new ProximityForestWrapper();
-            pfw.setR(5);
-            return pfw;
-        };
-        addClassifierConfig("PF_WRAPPER", pfwR5);
-        addClassifierConfig("PF_WRAPPER_R5", pfwR5);
-        addClassifierConfig("PF_WRAPPER_R1",  () -> {
-            ProximityForestWrapper pfw = new ProximityForestWrapper();
-            pfw.setR(1);
-            return pfw;
-        });
-        addClassifierConfig("PF_WRAPPER_R10",  () -> {
-            ProximityForestWrapper pfw = new ProximityForestWrapper();
-            pfw.setR(10);
-            return pfw;
-        });
+        
+        addClassifierConfigs(ProximityForest.CONFIGS);
+        addClassifierConfigs(ProximityForestWrapper.CONFIGS);
     }
     
-    private void addClassifierConfig(String key, Builder<? extends Classifier> value) {
-        classifierLookup.put(key, value);
-    }
-    
-    private <A> void addClassifierConfigs(Iterable<A> entries) {
-        for(A entry : entries) {
-            if(!(entry instanceof Enum)) {
-                throw new IllegalArgumentException("not an enum entry");
-            }
-            String key = ((Enum) entry).name();
-            Builder<? extends Classifier> value;
-            try {
-                value = (Builder<? extends Classifier>) entry;
-            } catch(ClassCastException e) {
-                throw new IllegalArgumentException("not an instance of Configurer which accepts a Classifier instance");
-            }
-            addClassifierConfig(key, value);
+    private void addClassifierConfig(Config<? extends Classifier> config) {
+        if(classifierLookup.containsKey(config.name())) {
+            throw new IllegalStateException("already contains classifier config for " + config.name());
         }
+        classifierLookup.put(config.name(), config);
     }
     
-    private <A> void addClassifierConfigs(A... entries) {
-        addClassifierConfigs(Arrays.asList(entries));
-    }
-    
-    private static <A, B> Map<String, Configurer<? extends Classifier>> enumToMap(Class clazz) {
-        final EnumMap enumMap = new EnumMap<>(clazz);
-        final Map<String, Configurer<? extends Classifier>> map = new HashMap<>();
-        for(Object obj : enumMap.entrySet()) {
-            Enum entry = (Enum) obj;
-            map.put(entry.name(), (Configurer<? extends Classifier>) entry);
-        }
-        return map;
+    private void addClassifierConfigs(Configs<? extends Classifier> configs) {
+        configs.forEach((Consumer<Config<? extends Classifier>>) this::addClassifierConfig);
     }
     
     private void benchmark() {
@@ -119,12 +80,16 @@ public class Experiment implements Copier {
         new Experiment(args).run();
     }
 
-    private Classifier newClassifier() throws InstantiationException, IllegalAccessException {
+    private Classifier newClassifier() {
         log.info("creating new instance of " + config.getClassifierName());
-        return classifierLookup.get(config.getClassifierName()).build();
+        final Builder<? extends Classifier> builder = classifierLookup.get(config.getClassifierName());
+        if(builder == null) {
+            throw new NoSuchElementException(config.getClassifierName() + " not found");
+        }
+        return builder.build();
     }
     
-    private final Map<String, Builder<? extends Classifier>> classifierLookup = new HashMap<>();
+    private final Map<String, Builder<? extends Classifier>> classifierLookup = new TreeMap<>();
     private DatasetSplit split;
     private Classifier classifier;
     private final StopWatch timer = new StopWatch();
