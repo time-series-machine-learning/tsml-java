@@ -1,14 +1,12 @@
 package tsml.classifiers.distance_based.proximity;
 
+import evaluation.MultipleClassifierEvaluation;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
-import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainEstimateTimeable;
-import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.Builder;
-import tsml.classifiers.distance_based.utils.classifiers.ClassifierFromEnum;
+import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
@@ -17,10 +15,6 @@ import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.utilities.Converter;
-import utilities.ClassifierTools;
-import weka.core.Instance;
-import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.*;
@@ -36,141 +30,71 @@ import static utilities.Utilities.argMax;
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable, Checkpointed {
 
     public static void main(String[] args) throws Exception {
-//        Thread.sleep(10000);
-        for(int i = 1; i < 2; i++) {
-            int seed = i;
-            ProximityForest classifier = Config.PF_R5.build();
-//            classifier.setEstimateOwnPerformance(true);
-//            classifier.setEstimatorMethod("oob");
-            classifier.setSeed(seed);
-//            classifier.setNumTreeLimit(3);
-//            classifier.setCheckpointPath("checkpoints");
-//            classifier.setNumTreeLimit(14);
-//            classifier.setCheckpointPath("checkpoints/PF");
-//            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
-//            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
-            ClassifierTools
-                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ItalyPowerDemand", seed), seed);
-        }
+////        Thread.sleep(10000);
+//        for(int i = 1; i < 2; i++) {
+//            int seed = i;
+//            ProximityForest classifier = Config.PF_R5.build();
+////            classifier.setEstimateOwnPerformance(true);
+////            classifier.setEstimatorMethod("oob");
+//            classifier.setSeed(seed);
+////            classifier.setNumTreeLimit(3);
+////            classifier.setCheckpointPath("checkpoints");
+////            classifier.setNumTreeLimit(14);
+////            classifier.setCheckpointPath("checkpoints/PF");
+////            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
+////            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
+//            ClassifierTools
+//                    .trainTestPrint(classifier, DatasetLoading.sampleDataset("/bench/phd/data/all", "ItalyPowerDemand", seed), seed);
+//        }
         //        Thread.sleep(10000);
 
-//        String root = "/bench/phd/experiments";
-//        String expName = "pf_correctness";
-//        String expDir = root + "/" + expName;
-//        String analysisName = "analysis_v3";
-//        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir + "/", analysisName, 10);
-//        mce.setDatasets("/bench/phd/datasets/lists/2015.txt");
-//        mce.readInClassifier("ORIG_PF", "orig", expDir + "/v1/results/");
-//        mce.readInClassifier("PF_R5", "v3", expDir + "/v3/results/");
-//        mce.readInClassifier("PF_WRAPPED", "wrap", expDir + "/v3/results/");
-//        mce.readInClassifier("PF_R5", "v2", expDir + "/v2/results/");
-//        mce.setTestResultsOnly(true);
-//        mce.setUseAllStatistics();
-//        mce.setIgnoreMissingResults(true);
-//        mce.setBuildMatlabDiagrams(true, true);
-//        mce.runComparison();
+        String root = "/bench/phd/experiments/";
+        String expName = "pf_correctness";
+        String expDir = root + "/" + expName + "/";
+        String analysisName = "analysis_pf_v2_vs_pf_wrapped";
+        
+        
+        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir, analysisName, 30);
+        
+        mce.setDatasets("/bench/phd/data/lists/uni_2015_pigless.txt");
+        mce.readInClassifier("PF_R5", "mine", expDir + "v1/results/");
+        mce.readInClassifier("ORIG_PF", "theirs", expDir + "wrapped/results/");
+        mce.setTestResultsOnly(true);
+        mce.setUseAllStatistics();
+        mce.setIgnoreMissingResults(true);
+        mce.setBuildMatlabDiagrams(true, true);
+        mce.runComparison();
     }
-
-    public enum Config implements ClassifierFromEnum<ProximityForest> {
-        PF() {
-            @Override public <B extends ProximityForest> B configure(final B classifier) {
-                return PF_R5.configure(classifier);
+    
+    public static final Configs<ProximityForest> CONFIGS = buildConfigs().immutable();
+    
+    public static Configs<ProximityForest> buildConfigs() {
+        final Configs<ProximityForest> configs = new Configs<>();
+        
+        configs.add("PF_R1", "PF with 1 split per node", ProximityForest::new,
+            pf -> {
+                pf.setTrainTimeLimit(-1);
+                pf.setTestTimeLimit(-1);
+                pf.setEstimatorMethod("none");
+                pf.setNumTreeLimit(100);
+                pf.setProximityTreeFactory(ProximityTree.CONFIGS.get("PT_R5"));
+        });
+        configs.add("PF_R5", "PF with 5 splits per node", "PF_R1", pf -> pf.setProximityTreeFactory(ProximityTree.CONFIGS.get("PT_R5")));
+        configs.add("PF_R10", "PF with 10 splits per node", "PF_R1", pf -> pf.setProximityTreeFactory(ProximityTree.CONFIGS.get("PT_R10")));
+        
+        for(String method : Arrays.asList("OOB", "CV")) {
+            for(String name : Arrays.asList("PF_R1", "PF_R5", "PF_R10")) {
+                final Config<ProximityForest> conf = configs.get(name);
+                configs.add(name + "_" + method, method, conf, pf -> pf.setEstimatorMethod(method));
             }
-        },
-        PF_R1() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest.setClassifierName(name());
-                proximityForest.setTrainTimeLimit(-1);
-                proximityForest.setTestTimeLimit(-1);
-                proximityForest.setEstimatorMethod("none");
-                proximityForest.setNumTreeLimit(100);
-                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R1);
-                return proximityForest;
-            }
-        },
-        PF_R1_OOB() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R1.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                return proximityForest;
-            }
-        },
-        PF_R1_CV() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R1.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("CV");
-                return proximityForest;
-            }
-        },
-        PF_R5() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R1.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R5);
-                return proximityForest;
-            }
-        },
-        PF_R5_OOB() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                return proximityForest;
-            }
-        },
-        PF_R5_CV() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("CV");
-                return proximityForest;
-            }
-        },
-        PF_R10() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R1.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setProximityTreeFactory(ProximityTree.Config.PT_R10);
-                return proximityForest;
-            }
-        },
-        PF_R10_OOB() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R10.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("OOB");
-                return proximityForest;
-            }
-        },
-        PF_R10_CV() {
-            @Override
-            public <B extends ProximityForest> B configure(B proximityForest) {
-                proximityForest = PF_R10.configure(proximityForest);
-                proximityForest.setClassifierName(name());
-                proximityForest.setEstimatorMethod("CV");
-                return proximityForest;
-            }
-        },
-        ;
-
-        @Override public ProximityForest newInstance() {
-            return new ProximityForest();
         }
+        
+        return configs;
     }
 
     public ProximityForest() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        Config.PF_R1.configure(this);
+        CONFIGS.get("PF_R5").configure(this);
     }
     
     private static final long serialVersionUID = 1;

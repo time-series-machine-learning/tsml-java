@@ -24,6 +24,7 @@ import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
+import tsml.classifiers.distance_based.utils.classifiers.Configs;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -83,6 +84,19 @@ import weka.core.Randomizable;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ProximityForestWrapper extends AbstractClassifier implements Randomizable {
+    
+    public static final Configs<ProximityForestWrapper> CONFIGS = buildConfigs().immutable();
+    
+    public static Configs<ProximityForestWrapper> buildConfigs() {
+        final Configs<ProximityForestWrapper> configs = new Configs<>();
+
+        configs.add("PF_WRAPPER_R1", "", ProximityForestWrapper::new, pfw -> pfw.setR(1));
+        configs.add("PF_WRAPPER_R5", "", ProximityForestWrapper::new, pfw -> pfw.setR(5));
+        configs.add("PF_WRAPPER_R10", "", ProximityForestWrapper::new, pfw -> pfw.setR(10));
+        configs.add("PF_WRAPPER", "PF_WRAPPER_R5");
+        
+        return configs;
+    }
 
     //from paper, pg18-19: 
     /*
