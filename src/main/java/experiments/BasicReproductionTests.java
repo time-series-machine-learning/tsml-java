@@ -22,11 +22,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -362,8 +358,11 @@ public class BasicReproductionTests {
         System.out.println("--confirmAllExpectedResultReproductions()");
 
         File[] expectedResults = FileHandlingTools.listFiles(reproductionDirectory);
-        if (expectedResults == null) 
+        if (expectedResults == null) {
             throw new Exception("No expected results saved to compare to, dir="+reproductionDirectory);
+        }
+
+        Arrays.sort(expectedResults, Comparator.comparingLong(File::lastModified).reversed());
         
         List<String> failedClassifiers = new ArrayList<>();
         
