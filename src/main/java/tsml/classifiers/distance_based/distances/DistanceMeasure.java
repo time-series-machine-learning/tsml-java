@@ -1,6 +1,8 @@
 package tsml.classifiers.distance_based.distances;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.data_containers.TimeSeriesInstance;
@@ -10,6 +12,8 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.neighboursearch.PerformanceStats;
+
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 public interface DistanceMeasure extends Serializable, ParamHandler {
 
@@ -69,4 +73,5 @@ public interface DistanceMeasure extends Serializable, ParamHandler {
     static DistanceMeasure asDistanceMeasure(DistanceFunction df) {
         return new DistanceMeasureAdapter(df);
     }
+    
 }

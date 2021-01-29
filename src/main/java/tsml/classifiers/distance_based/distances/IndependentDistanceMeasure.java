@@ -25,9 +25,18 @@ public class IndependentDistanceMeasure extends BaseDistanceMeasure {
             final double limit) {
         double sum = 0;
         for(int i = 0; i < a.getNumDimensions(); i++) {
+            // extract the single dim from each inst
             final TimeSeriesInstance singleDimA = a.getHSlice(i);
             final TimeSeriesInstance singleDimB = b.getHSlice(i);
-            sum += distanceMeasure.distance(singleDimA, singleDimB);
+            // compute the distance between the single dims
+            // the limit will be the remainder of the limit after subtracting the current sum
+            final double distance = distanceMeasure.distance(singleDimA, singleDimB, limit - sum);
+            // distance will be inf if limit hit, so sum will coalesce to inf as well
+            sum += distance;
+            // if the last distance tipped the sum over the limit (or hit the limit itself and sum is now inf) return inf as over limit
+            if(sum > limit) {
+                return Double.POSITIVE_INFINITY;
+            }
         }
         return sum;
     }
@@ -54,5 +63,9 @@ public class IndependentDistanceMeasure extends BaseDistanceMeasure {
 
     @Override public ParamSet getParams() {
         return new ParamSet().add(DISTANCE_MEASURE_FLAG, distanceMeasure);
+    }
+
+    @Override public String toString() {
+        return getName() + " " + distanceMeasure.getParams();
     }
 }
