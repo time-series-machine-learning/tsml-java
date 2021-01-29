@@ -111,4 +111,8 @@ public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure imp
     public void setTransformer(Transformer a) {
         transformer = a;
     }
+
+    @Override public String toString() {
+        return getName() + " " + distanceMeasure.getParams();
+    }
 }
