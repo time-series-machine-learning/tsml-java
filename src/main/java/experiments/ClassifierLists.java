@@ -111,15 +111,15 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "PF_R1":
-                c = ProximityForest.Config.PF_R1.configure(new ProximityForest());
+                c = ProximityForest.CONFIGS.get("PF_R1").build();
                 break;
             case "PF":
             case "ProximityForest":
             case "PF_R5":
-                c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
+                c = ProximityForest.CONFIGS.get("PF_R5").build();
                 break;
             case "PF_R10":
-                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
+                c = ProximityForest.CONFIGS.get("PF_R10").build();
                 break;
             case "PF_WRAPPER":
                 c = new ProximityForestWrapper();
