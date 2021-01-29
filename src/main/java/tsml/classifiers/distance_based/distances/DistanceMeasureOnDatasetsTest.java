@@ -625,7 +625,7 @@ for(i=0; i<=r; i++) {
         instances[0].addAll(instances[1]);
         final TimeSeriesInstances data = Converter.fromArff(instances[0]);
         final ParamSpace paramSpace = builder.build(data);
-        final String name = ((DistanceMeasure) ((List<?>) paramSpace.get("d").get(0).getValues()).get(0)).getName().replace("Distance", "" );
+        final String name = ((DistanceMeasure) ((List<?>) paramSpace.get("d").get(0).getValues()).get(0)).getName();
         final String testDistancesFilePath =
                 "src/main/java/" + getClass().getPackage().getName().replaceAll("\\.", "/") + "/test_data/" + name +
                         "_" + datasetName + ".csv";
