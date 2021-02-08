@@ -48,7 +48,7 @@ public class Ex05_ThoroughEvaluation {
         expThreaded.dataReadLocation = "src/main/java/experiments/data/tsc/"; 
         expThreaded.resultsWriteLocation = resultsPath;                      
         
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, datasets, 0, numFolds);
+        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
         
         
