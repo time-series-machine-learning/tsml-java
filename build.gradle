@@ -44,12 +44,8 @@ dependencies {
     compile group: 'de.bwaldvogel', name: 'liblinear', version: '2.41'
     // https://mvnrepository.com/artifact/tw.edu.ntu.csie/libsvm
     compile group: 'tw.edu.ntu.csie', name: 'libsvm', version: '3.24'
-    // https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core
-    compile group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '1.0.0-beta4'
     // https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
     compile group: 'org.nd4j', name: 'nd4j-native-platform', version: '1.0.0-beta4'
-    // https://mvnrepository.com/artifact/org.datavec/datavec-api
-    compile group: 'org.datavec', name: 'datavec-api', version: '1.0.0-beta4'
 }
 
 sourceSets {
