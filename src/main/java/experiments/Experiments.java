@@ -224,11 +224,8 @@ public class Experiments  {
         if (expSettings.classifier == null) {
             // if a classifier-generating-function has been given (typically in the case of bespoke classifiers wanted in threaded exps),
             // instantiate the classifier from that
-            if (expSettings.classifierGenerator != null) {
+            if (expSettings.classifierGenerator != null)
                 expSettings.classifier = expSettings.classifierGenerator.get();
-                if (expSettings.classifier instanceof Randomizable)
-                    ((Randomizable)expSettings.classifier).setSeed(expSettings.foldId);
-            }
             else {
                 // else, use the classic setClassifier
 
@@ -599,6 +596,8 @@ public class Experiments  {
     private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
         String parameterFileName = null;
 
+        if (classifier instanceof Randomizable)
+            ((Randomizable)classifier).setSeed(expSettings.foldId);
 
         // Parameter/thread/job splitting and checkpointing are treated as mutually exclusive, thus if/else
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
