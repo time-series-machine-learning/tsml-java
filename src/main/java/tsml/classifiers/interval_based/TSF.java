@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers.interval_based;
 
 import java.io.File;
@@ -337,80 +337,199 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /**
      * buildClassifier wrapper for TimeSeriesInstances
+     *
      * @param data
      * @throws Exception
      */
-      @Override
-      public void buildClassifier(TimeSeriesInstances data) throws Exception {
+    @Override
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
 //          Instances i = Converter.toArff(data);
 //          i.setClassIndex(i.numAttributes() - 1);
 //          buildClassifier(i);
 
-          // set classifier capabilities
-          TSCapabilitiesHandler tsCapabilitiesHandler = () -> {
-              TSCapabilities tsCapabilities = new TSCapabilities();
-              tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
-                      .enable(TSCapabilities.UNIVARIATE)
-                      .enable(TSCapabilities.NO_MISSING_VALUES)
-                      .enable(TSCapabilities.MIN_LENGTH(2));
-              return tsCapabilities;
-          };
+        // set classifier capabilities
+        TSCapabilitiesHandler tsCapabilitiesHandler = () -> {
+            TSCapabilities tsCapabilities = new TSCapabilities();
+            tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+                    .enable(TSCapabilities.UNIVARIATE)
+                    .enable(TSCapabilities.NO_MISSING_VALUES)
+                    .enable(TSCapabilities.MIN_LENGTH(2));
+            return tsCapabilities;
+        };
 
-          // can classifier handle the data?
-          boolean acceptData = tsCapabilitiesHandler.getTSCapabilities().test(data);
-          if (!acceptData)
-              throw new Exception("TSF cannot handle this type of data");
+        // can classifier handle the data?
+        boolean acceptData = tsCapabilitiesHandler.getTSCapabilities().test(data);
+        if (!acceptData)
+            throw new Exception("TSF cannot handle this type of data");
 
-          long startTime = System.nanoTime();
-          File file = new File(checkpointPath + "TSF" + seed + ".ser");
+        long startTime = System.nanoTime();
+        File file = new File(checkpointPath + "TSF" + seed + ".ser");
 
-          // Set up checkpointing (saving to file)/ if checkpoint and serialised file exist, load file
-          if (checkpoint && file.exists()) {
-              // path checkpoint files will be saved to
-              printLineDebug("Loading from checkpoint file");
-              loadFromFile(checkpointPath + "TSF" + seed + ".ser");
-          }
-          else { // otherwise initialise variables
-              seriesLength = data.getMaxLength();
-              if (numIntervalsFinder == null) {
-                  numIntervals = (int) Math.sqrt(seriesLength);
-              }
-              else {
-                  numIntervals = numIntervalsFinder.apply(seriesLength);
-              }
+        // Set up checkpointing (saving to file)
+        // if checkpoint and serialised file exist, load file
+        if (checkpoint && file.exists()) {
+            // path checkpoint files will be saved to
+            printLineDebug("Loading from checkpoint file");
+            loadFromFile(checkpointPath + "TSF" + seed + ".ser");
+        }
+        else { // otherwise initialise variables
+            seriesLength = data.getMaxLength();
+            if (numIntervalsFinder == null) {
+                numIntervals = (int) Math.sqrt(seriesLength);
+            }
+            else {
+                numIntervals = numIntervalsFinder.apply(seriesLength);
+            }
 
-              printDebug(String.format("Building TSF: number of intervals = %d number of trees = %d\n",
-                      numIntervals, numClassifiers));
-              trees = new ArrayList<>(numClassifiers);
+            printDebug(String.format("Building TSF: number of intervals = %d number of trees = %d\n",
+                    numIntervals, numClassifiers));
+            trees = new ArrayList<>(numClassifiers);
 
-              // Set up for train estimates
-              if (getEstimateOwnPerformance()) {
-                  trainDistributions = new double[data.numInstances()][data.numClasses()];
-              }
+            // Set up for train estimates
+            if (getEstimateOwnPerformance()) {
+                trainDistributions = new double[data.numInstances()][data.numClasses()];
+            }
 
-              // Set up for bagging
-              if (bagging) {
-                  inBag = new ArrayList<>();
-                  oobCounts = new int[data.numInstances()];
-                  printLineDebug("TSF is using Bagging");
-              }
+            // Set up for bagging
+            if (bagging) {
+                inBag = new ArrayList<>();
+                oobCounts = new int[data.numInstances()];
+                printLineDebug("TSF is using Bagging");
+            }
 
-              intervals = new ArrayList<>();
-              lastCheckpointTime = startTime;
-          }
+            intervals = new ArrayList<>();
+            lastCheckpointTime = startTime;
+        }
 
-          finalBuildtrainContractTimeNanos = trainContractTimeNanos;
+        finalBuildtrainContractTimeNanos = trainContractTimeNanos;
 
-          // if Contracted and estimating own performance,
-          // distribute the contract evenly between estimation and final build
-          if (trainTimeContract && !bagging && getEstimateOwnPerformance()) {
-              finalBuildtrainContractTimeNanos /= 2;
-              printLineDebug(String.format(" Setting final contract time to %s nanos",
-                      finalBuildtrainContractTimeNanos));
-          }
+        // if Contracted and estimating own performance,
+        // distribute the contract evenly between estimation and final build
+        if (trainTimeContract && !bagging && getEstimateOwnPerformance()) {
+            finalBuildtrainContractTimeNanos /= 2;
+            printLineDebug(String.format(" Setting final contract time to %s nanos",
+                    finalBuildtrainContractTimeNanos));
+        }
 
-          // Figure out how to make Attribute equivalent for TSInstances
-      }
+        double[][] transformedData = new double[data.numInstances()][numIntervals * 3];
+
+        int classifiersBuilt = trees.size();
+
+        /** MAIN BUILD LOOP
+         *  For each base classifier
+         *      generate random intervals
+         *      do the transforms
+         *      build the classifier
+         * */
+        while (withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)) {
+            if (classifiersBuilt % 100 == 0)
+                printLineDebug("\t\t\t\t\tBuilding TSF tree " + classifiersBuilt + " time taken = " + (System.nanoTime() - startTime) + " contract =" + finalBuildtrainContractTimeNanos + " nanos");
+
+            /*
+             * 1. Select random intervals for tree i
+             */
+            int[][] interval = new int[numIntervals][2]; // Start and end
+
+            if (data.numInstances() < minIntervalLength)
+                minIntervalLength = data.numInstances();
+
+            for (int i = 0; i < numIntervals; i++) {
+                // TODO: Replace getMaxLength with something else when doing unequal length
+                interval[i][0] = rand.nextInt(data.getMaxLength() - minIntervalLength); // Start point
+                int length = rand.nextInt(data.getMaxLength() - interval[i][0]); // Min length 3
+
+                if (length < minIntervalLength)
+                    length = minIntervalLength;
+
+                interval[i][1] = interval[i][0] + length;
+            }
+
+            /*
+             * 2. Generate and store attributes
+             */
+            for (int i = 0; i < numIntervals; i++) {
+                for (int j = 0; j < data.numInstances(); j++) {
+                    // extract the interval and work out the features
+                    double[] series = data.get(j).get(0).toValueArray();
+                    FeatureSet f = new FeatureSet();
+                    f.setFeatures(series, interval[i][0], interval[i][1]);
+
+                    // get mean, standard deviation and slope from interval
+                    transformedData[j][i * 3] = f.mean;
+                    transformedData[j][i * 3 + 1] = f.stDev;
+                    transformedData[j][i * 3 + 2] = f.slope;
+                }
+            }
+
+            /*
+             * 3. Create and build tree using all the features
+             */
+            Classifier tree = AbstractClassifier.makeCopy(classifier);
+
+            if (seedClassifier && tree instanceof Randomizable)
+                ((Randomizable) tree).setSeed(seed * (classifiersBuilt + 1));
+
+            if (bagging) {
+                long t1 = System.nanoTime();
+                boolean[] bag = new boolean[data.numInstances()];
+                // TODO: Continue this
+            }
+            else {
+                double[][][] tempSeries = new double[1][data.numInstances()][numIntervals * 3];
+                tempSeries[0] = transformedData;
+                TimeSeriesInstances temp = new TimeSeriesInstances(tempSeries, data.getClassIndexes(), data.getClassLabels());
+                tree.buildClassifier(Converter.toArff(temp));
+            }
+
+            intervals.add(interval);
+            trees.add(tree);
+            classifiersBuilt++;
+
+            if (checkpoint) {
+                if (checkpointTime > 0) { // Timed checkpointing
+                    if (System.nanoTime() - lastCheckpointTime > checkpointTime) {
+                        saveToFile(checkpointPath);
+                        lastCheckpointTime = System.nanoTime();
+                    }
+                }
+                else { // Default checkpoint every 100 trees
+                    if (classifiersBuilt % 100 == 0 && classifiersBuilt > 0)
+                        saveToFile(checkpointPath);
+                }
+            }
+        }
+
+        // Not enough time to build a single classifier
+        if (classifiersBuilt == 0)
+            throw new Exception((" ERROR in TSF, no trees built, contract time probably too low. Contract time =" + trainContractTimeNanos));
+
+        if (checkpoint)
+            saveToFile(checkpointPath);
+
+        long endTime = System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(endTime - startTime - trainResults.getErrorEstimateTime());
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
+
+        /*
+         * Estimate accuracy from Train data, distributions and predictions stored in trainResults
+         */
+        if (getEstimateOwnPerformance()) {
+            long est1 = System.nanoTime();
+            estimateOwnPerformance(Converter.toArff(data)); // TODO: Maybe change this to TSInstances
+            long est2 = System.nanoTime();
+
+            if (bagging)
+                trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
+            else
+                trainResults.setErrorEstimateTime(est2 - est1);
+
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+        }
+
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished TSF Build with " + classifiersBuilt + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+    }
 
 
 /**
