@@ -105,7 +105,7 @@ public class Ex04_ThoroughExperiments {
         // classifier, dataset, fold shall be assigned internally across threads
         
         // will use one thread per core by default
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, datasets, 0, numFolds);
+        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
     }
     
