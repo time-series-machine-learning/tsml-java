@@ -343,10 +343,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
-//          Instances i = Converter.toArff(data);
-//          i.setClassIndex(i.numAttributes() - 1);
-//          buildClassifier(i);
-
         // set classifier capabilities
         TSCapabilitiesHandler tsCapabilitiesHandler = () -> {
             TSCapabilities tsCapabilities = new TSCapabilities();
@@ -365,14 +361,14 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         long startTime = System.nanoTime();
         File file = new File(checkpointPath + "TSF" + seed + ".ser");
 
-        // Set up checkpointing (saving to file)
-        // if checkpoint and serialised file exist, load file
+        // Set up checkpointing (saving to file) / if checkpoint and serialised file exist, load file
         if (checkpoint && file.exists()) {
             // path checkpoint files will be saved to
             printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
         }
-        else { // otherwise initialise variables
+        // otherwise initialise variables
+        else {
             seriesLength = data.getMaxLength();
             if (numIntervalsFinder == null) {
                 numIntervals = (int) Math.sqrt(seriesLength);
@@ -411,6 +407,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                     finalBuildtrainContractTimeNanos));
         }
 
+        // create 2d double array to store mean, standard deviation and slope of each interval
         double[][] transformedData = new double[data.numInstances()][numIntervals * 3];
 
         int classifiersBuilt = trees.size();
@@ -426,7 +423,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 printLineDebug("\t\t\t\t\tBuilding TSF tree " + classifiersBuilt + " time taken = " + (System.nanoTime() - startTime) + " contract =" + finalBuildtrainContractTimeNanos + " nanos");
 
             /*
-             * 1. Select random intervals for tree i
+             * 1. Select random intervals for current tree
              */
             int[][] interval = new int[numIntervals][2]; // Start and end
 
@@ -434,7 +431,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 minIntervalLength = data.numInstances();
 
             for (int i = 0; i < numIntervals; i++) {
-                // TODO: Replace getMaxLength with something else when doing unequal length
                 interval[i][0] = rand.nextInt(data.getMaxLength() - minIntervalLength); // Start point
                 int length = rand.nextInt(data.getMaxLength() - interval[i][0]); // Min length 3
 
@@ -470,9 +466,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 ((Randomizable) tree).setSeed(seed * (classifiersBuilt + 1));
 
             if (bagging) {
-                long t1 = System.nanoTime();
-                boolean[] bag = new boolean[data.numInstances()];
-                // TODO: Continue this
+                // TODO: this
             }
             else {
                 double[][][] tempSeries = new double[1][data.numInstances()][numIntervals * 3];
@@ -486,16 +480,16 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             classifiersBuilt++;
 
             if (checkpoint) {
-                if (checkpointTime > 0) { // Timed checkpointing
+                // Timed checkpointing
+                if (checkpointTime > 0) {
                     if (System.nanoTime() - lastCheckpointTime > checkpointTime) {
                         saveToFile(checkpointPath);
                         lastCheckpointTime = System.nanoTime();
                     }
                 }
-                else { // Default checkpoint every 100 trees
-                    if (classifiersBuilt % 100 == 0 && classifiersBuilt > 0)
-                        saveToFile(checkpointPath);
-                }
+                // Default checkpoint every 100 trees
+                else if (classifiersBuilt % 100 == 0 && classifiersBuilt > 0)
+                    saveToFile(checkpointPath);
             }
         }
 
