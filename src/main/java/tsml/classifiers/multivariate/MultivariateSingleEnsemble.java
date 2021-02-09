@@ -4,7 +4,7 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.cBOSS;
-import tsml.classifiers.interval_based.RISE;
+import tsml.classifiers.interval_based.RISE_KNNProxy;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import weka.classifiers.Classifier;
@@ -56,7 +56,7 @@ public class MultivariateSingleEnsemble extends MultivariateAbstractEnsemble {
     private Classifier getClassifierFromString(){
         switch (this.classifierName){
             case "cBOSS": return new cBOSS();
-            case "RISE": return new RISE();
+            case "RISE": return new RISE_KNNProxy();
             case "STC": return new ShapeletTransformClassifier();
             case "TSF": return new TSF();
             default: return new TSF();

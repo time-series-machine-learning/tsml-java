@@ -30,7 +30,7 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.interval_based.RISE;
+import tsml.classifiers.interval_based.RISE_KNNProxy;
 import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
@@ -321,27 +321,27 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "RISE":
-                c=new RISE();
+                c=new RISE_KNNProxy();
                 break;
             case "RISE_FFT":
-                c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.FFT);
+                c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.FFT);
                 break;
             case "RISE_ACF":
-                c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.ACF);
+                c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.ACF);
                 break;
             case "RISE_SPEC":
-                c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.SPEC);
+                c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.SPEC);
                 break;
             case "RISE_MFCC":
-                c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.MFCC);
+                c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.MFCC);
                 break;
             case "RISE_AF":
-                c=new RISE();
-                ((RISE)c).setTransformType(RISE.TransformType.AF);
+                c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.AF);
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");

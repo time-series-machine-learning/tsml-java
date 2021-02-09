@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.interval_based.RISE;
+import tsml.classifiers.interval_based.RISE_KNNProxy;
 import tsml.classifiers.interval_based.TSF;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Splitter;
@@ -68,7 +68,7 @@ public class SplittingExamples {
 
         final List<TimeSeriesInstances> individual_dims = Splitter.splitTimeSeriesInstances(data1, new int[][]{{0},{1,2}});
 
-        EnhancedAbstractClassifier[] clfs = new EnhancedAbstractClassifier[]{new TSF(), new RISE()};
+        EnhancedAbstractClassifier[] clfs = new EnhancedAbstractClassifier[]{new TSF(), new RISE_KNNProxy()};
         for(int i=0; i<individual_dims.size(); i++){
             clfs[i].buildClassifier(individual_dims.get(i));
         }

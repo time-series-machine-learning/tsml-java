@@ -4,7 +4,7 @@ import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.dictionary_based.cBOSS;
-import tsml.classifiers.interval_based.RISE;
+import tsml.classifiers.interval_based.RISE_KNNProxy;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.interval_based.TSF;
 import weka.core.Instance;
@@ -137,7 +137,7 @@ public class Ex07_HIVE_COTE_Examples {
         System.out.println(" Current default for HC is to use version 1.0: RISE, TSF, cBOSS and STC");
         System.out.printf("Suppose we want different classifiers\n");
         EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[2];
-        c[0]=new RISE();
+        c[0]=new RISE_KNNProxy();
         c[1]=new TSF();
         String[] names={"RISE","TSF"};
         hc.setClassifiers(c,names,null);
@@ -177,7 +177,7 @@ public class Ex07_HIVE_COTE_Examples {
         HIVE_COTE hc = new HIVE_COTE();
         EnhancedAbstractClassifier[] c=new EnhancedAbstractClassifier[3];
         c[0]=new TSF();
-        c[1]=new RISE();
+        c[1]=new RISE_KNNProxy();
         c[2]=new cBOSS();
 //        c[0]=new ShapeletTransformClassifier();
         String[] names={"TSF","RISE","cBOSS"};//"STC"};//
