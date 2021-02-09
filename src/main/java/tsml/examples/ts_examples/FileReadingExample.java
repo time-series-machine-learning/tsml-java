@@ -29,25 +29,24 @@ import java.io.*;
 /**
  * Example to show how to read in .ts and .arff data to the new data model
  * (TimeSeriesInstances, TimeSeriesInstance, TimeSeries)
- * and build a classifier, TSF, using the new data model
  *
  * @author Conor Egan (c-eg)
  */
-public class FileReadingExample
-{
+public class FileReadingExample {
     public static void main(String[] args) throws Exception {
         tsfWithARFF();
         tsfWithTS();
     }
 
     /**
-     * Building a classifier, TSF, with .ts file data
+     * Load data with .ts data files to build TSF classifier
      */
     private static void tsfWithTS() throws Exception {
         // data locations, change this to point to your datasets
         String trainDataTS = "D:\\Documents\\Project stuff\\Datasets\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN.ts";
         String testDataTS = "D:\\Documents\\Project stuff\\Datasets\\ItalyPowerDemand\\ItalyPowerDemand_TEST.ts";
 
+        // load data files
         TimeSeriesInstances train = loadDataTS(trainDataTS);
         TimeSeriesInstances test = loadDataTS(testDataTS);
 
@@ -61,20 +60,22 @@ public class FileReadingExample
     }
 
     /**
-     * Building a classifier, TSF, with .arff file data
+     * Load data with .arff data files and convert to TSInstances to build TSF classifier
      */
     private static void tsfWithARFF() throws Exception {
         // data locations, change this to point to your datasets
         String trainDataARFF = "D:\\Documents\\Project stuff\\Datasets\\ItalyPowerDemand\\ItalyPowerDemand_TRAIN.arff";
         String testDataARFF = "D:\\Documents\\Project stuff\\Datasets\\ItalyPowerDemand\\ItalyPowerDemand_TEST.arff";
 
+        // load data files
         Instances trainARFF = loadDataARFF(trainDataARFF);
         Instances testARFF = loadDataARFF(testDataARFF);
 
-        // this has to be set before converting
+        // set class index
         trainARFF.setClassIndex(trainARFF.numAttributes() - 1);
         testARFF.setClassIndex(testARFF.numAttributes() - 1);
 
+        // convert to TSInstances
         TimeSeriesInstances trainTSI = Converter.fromArff(trainARFF);
         TimeSeriesInstances testTSI = Converter.fromArff(testARFF);
 
@@ -88,19 +89,20 @@ public class FileReadingExample
     }
 
     /**
-     * Example helper function to load in .ts data files
+     * Example helper function to load in .ts data files.
+     *
      * @param dataLocation string location to the .ts data file
      */
     private static TimeSeriesInstances loadDataTS(String dataLocation) {
-        TimeSeriesInstances train;
+        TimeSeriesInstances data;
 
         try {
             File file = new File(dataLocation);
             Reader reader = new FileReader(file); // read data from file
             TSReader tsReader = new TSReader(reader); // read ts data from reader
-            train = tsReader.GetInstances(); // get ts instances
+            data = tsReader.GetInstances(); // get TSInstances
             reader.close();
-            return train;
+            return data;
         }
         catch (Exception e) {
             System.out.println("Exception caught: " + e);
@@ -110,16 +112,17 @@ public class FileReadingExample
     }
 
     /**
-     * Example helper function to load in .arff data files
+     * Example helper function to load in .arff data files.
+     *
      * @param dataLocation string location to the .arff data file
      */
     private static Instances loadDataARFF(String dataLocation) {
-        Instances train;
+        Instances data;
 
         try {
             FileReader reader = new FileReader(dataLocation);
-            train = new Instances(reader);
-            return train;
+            data = new Instances(reader);
+            return data;
         }
         catch (Exception e) {
             System.out.println("Exception caught: " + e);
