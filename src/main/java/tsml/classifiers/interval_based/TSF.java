@@ -110,7 +110,7 @@ import weka.classifiers.Classifier;
 */
 
 public class TSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler,
-        TrainTimeContractable, Checkpointable, Tuneable, Visualisable {
+        TrainTimeContractable, Checkpointable, Tuneable, Visualisable, TSCapabilitiesHandler {
 //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
     /** Primary parameters potentially tunable*/
@@ -343,19 +343,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
-        // set classifier capabilities
-        TSCapabilitiesHandler tsCapabilitiesHandler = () -> {
-            TSCapabilities tsCapabilities = new TSCapabilities();
-            tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
-                    .enable(TSCapabilities.UNIVARIATE)
-                    .enable(TSCapabilities.NO_MISSING_VALUES)
-                    .enable(TSCapabilities.MIN_LENGTH(2));
-            return tsCapabilities;
-        };
-
         // can classifier handle the data?
-        boolean acceptData = tsCapabilitiesHandler.getTSCapabilities().test(data);
-        if (!acceptData)
+        if (getTSCapabilities().test(data))
             throw new Exception("TSF cannot handle this type of data");
 
         long startTime = System.nanoTime();
@@ -1039,7 +1028,18 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         file.renameTo(file2);
     }
 
-//Nested class to store three simple summary features used to construct train data
+    // Capabilities of classifier when using TSInstances
+    @Override
+    public TSCapabilities getTSCapabilities() {
+        TSCapabilities tsCapabilities = new TSCapabilities();
+        tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+                .enable(TSCapabilities.UNIVARIATE)
+                .enable(TSCapabilities.NO_MISSING_VALUES)
+                .enable(TSCapabilities.MIN_LENGTH(2));
+        return tsCapabilities;
+    }
+
+    //Nested class to store three simple summary features used to construct train data
     public static class FeatureSet{
         public static boolean findSkew=false;
         public static boolean findKurtosis=false;
