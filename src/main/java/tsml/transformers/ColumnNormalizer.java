@@ -61,7 +61,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 public class ColumnNormalizer implements TrainableTransformer {
-	enum NormType {
+	public enum NormType {
 		INTERVAL, STD_NORMAL
 	};
 
