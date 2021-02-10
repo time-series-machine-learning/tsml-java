@@ -114,7 +114,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 				sum += x;
 				sumSq += x * x;
 			}
-			stdev[j] = sumSq / r.numInstances() - sum * sum;
+			stdev[j] = (sumSq / r.numInstances()) - ((sum * sum) / (r.numInstances() * r.numInstances()));
 			mean[j] = sum / r.numInstances();
 			stdev[j] = Math.sqrt(stdev[j]);
 		}
