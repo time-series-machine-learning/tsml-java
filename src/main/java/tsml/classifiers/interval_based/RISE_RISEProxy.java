@@ -19,13 +19,13 @@ import evaluation.evaluators.SingleSampleEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.ClassifierLists;
-import experiments.data.DatasetLists;
 import fileIO.FullAccessOutFile;
+import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.transformers.*;
-import tsml.transformers.FFT;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomTree;
@@ -36,8 +36,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.TrainTimeContractable;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
 
@@ -81,7 +79,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
  * updated 10/3/20 to allow for internal CV estimate of train acc, same structure as TSF
  **/
 
-public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
+public class RISE_RISEProxy extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
 
     boolean tune = true;
     TransformType[] transforms = {TransformType.FFT, TransformType.ACF, TransformType.MFCC, TransformType.AF};
@@ -141,14 +139,14 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
      * Constructor
      * @param seed
      */
-    public RISE_KNNProxy(long seed){
+    public RISE_RISEProxy(long seed){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         super.setSeed((int)seed);
         timer = new Timer();
         this.setTransformType(TransformType.ACF_FFT);
     }
 
-    public RISE_KNNProxy(){
+    public RISE_RISEProxy(){
         this(0);
     }
 
@@ -545,9 +543,9 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
         }
     }
 
-    private RISE_KNNProxy readSerialise(long seed){
+    private RISE_RISEProxy readSerialise(long seed){
         ObjectInputStream oi = null;
-        RISE_KNNProxy temp = null;
+        RISE_RISEProxy temp = null;
         try {
             FileInputStream fi = new FileInputStream(new File(
                     checkpointPath
@@ -555,10 +553,10 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
                             + seed
                             + ".txt"));
             oi = new ObjectInputStream(fi);
-            temp = (RISE_KNNProxy)oi.readObject();
+            temp = (RISE_RISEProxy)oi.readObject();
             oi.close();
             fi.close();
-            System.out.println("File load successful: " + ((RISE_KNNProxy)temp).classifiersBuilt + " trees.");
+            System.out.println("File load successful: " + ((RISE_RISEProxy)temp).classifiersBuilt + " trees.");
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println("File load: failed.");
         }
@@ -567,9 +565,9 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
 
     @Override
     public void copyFromSerObject(Object temp){
-        RISE_KNNProxy riseKNNProxy;
+        RISE_RISEProxy riseKNNProxy;
         try{
-            riseKNNProxy =(RISE_KNNProxy)temp;
+            riseKNNProxy =(RISE_RISEProxy)temp;
         }catch(Exception ex){
             throw new RuntimeException(" Trying to load from ser object thar is not a RISE object. QUITING at copyFromSerObject");
         }
@@ -864,7 +862,7 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
             if (seedClassifier)
                 cv.setSeed(seed * 5);
             cv.setNumFolds(numFolds);
-            RISE_KNNProxy riseKNNProxy = new RISE_KNNProxy();
+            RISE_RISEProxy riseKNNProxy = new RISE_RISEProxy();
 //NEED TO SET PARAMETERS
 //            rise.copyParameters(this);
             if (seedClassifier)
@@ -1049,17 +1047,18 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
         double cAcc = 0.0;
         int index = 0;
         int numFolds = 5;
-        RISE_KNNProxy c = new RISE_KNNProxy();
+        RISE_RISEProxy c;
         for (int i = 0; i < transforms.length; i++) {
             System.out.print(transforms[i] + "\t\t\t");
-            Instances temp = ((RISE_KNNProxy)c).transformInstances(trainingData, TransformType.values()[i]);
             for (int j = 0; j < numFolds; j++) {
+                c = new RISE_RISEProxy();
+                c.tune = false;
+                c.setSeed(i);
                 SingleSampleEvaluator sse = new SingleSampleEvaluator(j, false, false);
-                KNN knn = new KNN();
-                knn.setSeed(j);
+                c.setTransformType(transforms[i]);
                 try {
                     sse.setPropInstancesInTrain(0.50);
-                    cr = sse.evaluate(knn, trainingData);
+                    cr = sse.evaluate(c, trainingData);
                     cAcc += cr.getAcc() * (1.0/numFolds);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1449,14 +1448,14 @@ public class RISE_KNNProxy extends EnhancedAbstractClassifier implements TrainTi
         sse.setPropInstancesInTrain(0.5);
         sse.setSeed(1);
 
-        RISE_KNNProxy RISE_KNNProxy = null;
+        RISE_RISEProxy RISE_KNNProxy = null;
         System.out.println("Dataset name: " + data.relationName());
         System.out.println("Numer of cases: " + data.size());
         System.out.println("Number of attributes: " + (data.numAttributes() - 1));
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            RISE_KNNProxy = new RISE_KNNProxy();
+            RISE_KNNProxy = new RISE_RISEProxy();
             RISE_KNNProxy.setTransformType(TransformType.ACF_FFT);
             RISE_KNNProxy.setIntervalMethod(4);
             cr = sse.evaluate(RISE_KNNProxy, data);
