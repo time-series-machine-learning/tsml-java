@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
+import static utilities.StatisticalUtilities.median;
 
 /**
  <!-- globalinfo-start -->
@@ -81,7 +82,7 @@ import static experiments.data.DatasetLoading.loadDataNullable;
 public class RISE_FisherProxy extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
 
     boolean tune = true;
-    TransformType[] transforms = {TransformType.FFT, TransformType.ACF, TransformType.MFCC, TransformType.AF};
+    TransformType[] transforms = {TransformType.FFT, TransformType.ACF};
     //maxIntervalLength is used when contract is set. Via the timer the interval space is constricted to prevent breach
     // on contract.
     private int maxIntervalLength = 0;
@@ -1041,28 +1042,36 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
     private void tuneTransform(Instances trainingData){
         System.out.println("Tuning");
 
-        ClassifierResults cr = new ClassifierResults();
+        int[] classCounts = new int[trainingData.numClasses()];
         double acc = 0.0;
         double cAcc = 0.0;
         int index = 0;
         int numFolds = 5;
+
+        for (int i = 0; i < trainingData.numClasses(); i++) {
+            classCounts[(int)trainingData.get(i).classValue()]++;
+        }
+
         RISE_FisherProxy c;
         for (int i = 0; i < transforms.length; i++) {
             System.out.print(transforms[i] + "\t\t\t");
-            for (int j = 0; j < numFolds; j++) {
-                c = new RISE_FisherProxy();
-                c.tune = false;
-                c.setSeed(i);
-                SingleSampleEvaluator sse = new SingleSampleEvaluator(j, false, false);
-                c.setTransformType(transforms[i]);
-                try {
-                    sse.setPropInstancesInTrain(0.50);
-                    cr = sse.evaluate(c, trainingData);
-                    cAcc += cr.getAcc() * (1.0/numFolds);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            c = new RISE_FisherProxy();
+            Instances transformed = c.transformInstances(trainingData, transforms[i]);
+            ColumnNormalizer rn = new ColumnNormalizer();
+            rn.fit(transformed);
+            rn.setNormMethod(ColumnNormalizer.NormType.STD_NORMAL);
+            Instances data = rn.transform(transformed);
+
+            for (int j = 0; j < FeatureSet.numFeatures; j++) {
+                double[] x = new double[trainingData.size()];
+                double[] y = new double[trainingData.size()];
+                for (int k = 0; k < trainingData.size(); k++) {
+                    x[k] = FeatureSet.calcFeatureByIndex(j, 0, data.get(k).numAttributes() - 1, data.get(k).toDoubleArray());
+                    y[k] = data.get(k).numAttributes() - 1;
                 }
+                cAcc += fisherScore(x, y, classCounts);
             }
+
             System.out.print(cAcc);
             if(cAcc > acc){
                 System.out.print("\tTrue");
@@ -1279,6 +1288,40 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
         }
     }
 
+    private double fisherScore(double[] x, double[] y, int[] classCounts){
+        double a = 0, b = 0;
+
+        double xMean = 0;
+        for (int n = 0; n < x.length; n++){
+            xMean += x[n];
+        }
+        xMean /= x.length;
+
+        for (int i = 0; i < classCounts.length; i++){
+            double xyMean = 0;
+            for (int n = 0; n < x.length; n++){
+                if (i == y[n]) {
+                    xyMean += x[n];
+                }
+            }
+            xyMean /= classCounts[i];
+
+            double squareSum = 0;
+            for (int n = 0; n < x.length; n++){
+                if (i == y[n]) {
+                    double temp = x[n] - xyMean;
+                    squareSum += temp * temp;
+                }
+            }
+            double xyStdev = classCounts[i]-1 == 0 ? 0 : Math.sqrt(squareSum/(classCounts[i]-1));
+
+            a += classCounts[i]*Math.pow(xyMean-xMean, 2);
+            b += classCounts[i]*Math.pow(xyStdev, 2);
+        }
+
+        return b == 0 ? 0 : a/b;
+    }
+
 
     /**
      * Private inner class containing all logic pertaining to timing.
@@ -1435,6 +1478,116 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
         }
     }
 
+    //Nested class to store three simple summary features used to construct train data
+    public static class FeatureSet{
+        static int numFeatures = 7;
+
+        public static double calcFeatureByIndex(int idx, int start, int end, double[] data) {
+            switch (idx){
+                case 0: return calcMean(start, end, data);
+                case 1: return calcMedian(start, end, data);
+                case 2: return calcStandardDeviation(start, end, data);
+                case 3: return calcSlope(start, end, data);
+                case 4: return calcInterquartileRange(start, end, data);
+                case 5: return calcMin(start, end, data);
+                case 6: return calcMax(start, end, data);
+                default: return Double.NaN;
+            }
+        }
+
+        public static double calcMean(int start, int end, double[] data){
+            double sumY = 0;
+            for(int i=start;i<=end;i++) {
+                sumY += data[i];
+            }
+
+            int length = end-start+1;
+            return sumY/length;
+        }
+
+        public static double calcMedian(int start, int end, double[] data){
+            ArrayList<Double> sortedData = new ArrayList<>(end-start+1);
+            for(int i=start;i<=end;i++){
+                sortedData.add(data[i]);
+            }
+
+            return median(sortedData, false); //sorted in function
+        }
+
+        public static double calcStandardDeviation(int start, int end, double[] data){
+            double sumY = 0;
+            double sumYY = 0;
+            for(int i=start;i<=end;i++) {
+                sumY += data[i];
+                sumYY += data[i] * data[i];
+            }
+
+            int length = (end-start)+1;
+            return (sumYY-(sumY*sumY)/length)/(length-1);
+        }
+
+        public static double calcSlope(int start, int end, double[] data){
+            double sumY = 0;
+            double sumX = 0, sumXX = 0, sumXY = 0;
+            for(int i=start;i<=end;i++) {
+                sumY += data[i];
+                sumX+=(i-start);
+                sumXX+=(i-start)*(i-start);
+                sumXY+=data[i]*(i-start);
+            }
+
+            int length = end-start+1;
+            double slope=(sumXY-(sumX*sumY)/length);
+            double denom=sumXX-(sumX*sumX)/length;
+            slope = denom == 0 ? 0 : slope/denom;
+            return slope;
+        }
+
+        public static double calcInterquartileRange(int start, int end, double[] data){
+            ArrayList<Double> sortedData = new ArrayList<>(end-start+1);
+            for(int i=start;i<=end;i++){
+                sortedData.add(data[i]);
+            }
+            Collections.sort(sortedData);
+
+            int length = end-start+1;
+            ArrayList<Double> left = new ArrayList<>(length / 2 + 1);
+            ArrayList<Double> right = new ArrayList<>(length / 2 + 1);
+            if (length % 2 == 1) {
+                for (int i = 0; i <= length / 2; i++){
+                    left.add(sortedData.get(i));
+                }
+            }
+            else {
+                for (int i = 0; i < length / 2; i++){
+                    left.add(sortedData.get(i));
+                }
+
+            }
+            for (int i = length / 2; i < sortedData.size(); i++){
+                right.add(sortedData.get(i));
+            }
+
+            return median(right, false) - median(left, false);
+        }
+
+        public static double calcMin(int start, int end, double[] data){
+            double min = Double.MAX_VALUE;
+            for(int i=start;i<=end;i++){
+                if (data[i] < min) min = data[i];
+            }
+            return min;
+        }
+
+        public static double calcMax(int start, int end, double[] data){
+            double max = -999999999;
+            for(int i=start;i<=end;i++){
+                if (data[i] > max) max = data[i];
+            }
+            return max;
+        }
+    }
+
     public static void main(String[] args) {
 
         final String PATH = "D:\\Organised\\AudioData\\arff";
@@ -1447,18 +1600,18 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
         sse.setPropInstancesInTrain(0.5);
         sse.setSeed(1);
 
-        RISE_FisherProxy RISE_KNNProxy = null;
+        RISE_FisherProxy RISE_FisherProxy = null;
         System.out.println("Dataset name: " + data.relationName());
         System.out.println("Numer of cases: " + data.size());
         System.out.println("Number of attributes: " + (data.numAttributes() - 1));
         System.out.println("Number of classes: " + data.classAttribute().numValues());
         System.out.println("\n");
         try {
-            RISE_KNNProxy = new RISE_FisherProxy();
-            RISE_KNNProxy.setTransformType(TransformType.ACF_FFT);
-            RISE_KNNProxy.setIntervalMethod(4);
-            cr = sse.evaluate(RISE_KNNProxy, data);
-            System.out.println(RISE_KNNProxy.getTransformType().toString());
+            RISE_FisherProxy = new RISE_FisherProxy();
+            RISE_FisherProxy.setTransformType(TransformType.ACF_FFT);
+            RISE_FisherProxy.setIntervalMethod(3);
+            cr = sse.evaluate(RISE_FisherProxy, data);
+            System.out.println(RISE_FisherProxy.getTransformType().toString());
             System.out.println("Accuracy: " + cr.getAcc());
             System.out.println("Build time (ns): " + cr.getBuildTimeInNanos());
         } catch (Exception e) {
