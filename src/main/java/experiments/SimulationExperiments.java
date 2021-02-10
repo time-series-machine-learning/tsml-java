@@ -1,38 +1,44 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package experiments;
 
-import experiments.data.DatasetLists;
-import timeseriesweka.classifiers.hybrids.FlatCote;
-import timeseriesweka.classifiers.shapelet_based.LearnShapelets;
-import timeseriesweka.classifiers.shapelet_based.FastShapelets;
-import timeseriesweka.classifiers.interval_based.TSBF;
-import timeseriesweka.classifiers.interval_based.TSF;
-import timeseriesweka.classifiers.distance_based.DTD_C;
-import timeseriesweka.classifiers.dictionary_based.BOSS;
-import timeseriesweka.classifiers.frequency_based.RISE;
-import timeseriesweka.classifiers.shapelet_based.ShapeletTransformClassifier;
-import timeseriesweka.classifiers.interval_based.LPS;
-import timeseriesweka.classifiers.distance_based.ElasticEnsemble;
-import timeseriesweka.classifiers.distance_based.DD_DTW;
-import timeseriesweka.classifiers.dictionary_based.BagOfPatterns;
-import timeseriesweka.classifiers.hybrids.HiveCote;
+//import com.sun.management.GarbageCollectionNotificationInfo;
+//import com.sun.management.GarbageCollectorMXBean;
+import tsml.classifiers.dictionary_based.*;
+import tsml.classifiers.distance_based.DTWCV;
+import tsml.classifiers.legacy.COTE.FlatCote;
+import tsml.classifiers.shapelet_based.LearnShapelets;
+import tsml.classifiers.shapelet_based.FastShapelets;
+import tsml.classifiers.interval_based.TSBF;
+import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.distance_based.DTD_C;
+import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.interval_based.LPS;
+import tsml.classifiers.distance_based.ElasticEnsemble;
+import tsml.classifiers.distance_based.DD_DTW;
+import tsml.classifiers.legacy.COTE.HiveCote;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,20 +51,22 @@ import statistics.simulators.SimulateShapeletData;
 import statistics.simulators.SimulateWholeSeriesData;
 import statistics.simulators.SimulateElasticData;
 import statistics.simulators.SimulateMatrixProfileData;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import utilities.InstanceTools;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import weka.classifiers.Classifier;
-import timeseriesweka.classifiers.distance_based.FastDTW_1NN;
 import weka.classifiers.meta.RotationForest;
-import weka_extras.classifiers.ensembles.CAWPE;
-import weka_extras.classifiers.ensembles.SaveableEnsemble;
-import timeseriesweka.classifiers.distance_based.elastic_ensemble.DTW1NN;
-import timeseriesweka.filters.MatrixProfile;
+import machine_learning.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
+import tsml.transformers.MatrixProfile;
 import weka.core.Instances;
 import utilities.ClassifierTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Instance;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.transformers.RowNormalizer;
+
+import javax.management.Notification;
+
 /*
 
 Class to run one of various simulations.  
@@ -132,236 +140,239 @@ CHANGE: Ranomise the shape completely!
 
 */
 public class SimulationExperiments {
-    static boolean local=false;
-    static int []casesPerClass={50,50};
-    static int seriesLength=500;
-    static double trainProp=0.5;
-    static boolean normalize=true;
-    static String[] allClassifiers={ //Benchmarks
-        "ED", "RotF","DTW",
-        //Whole series
-//        "DD_DTW","DTD_C",
-        "EE","HESCA",
-        //Interval
-        "TSF",
-//        "TSBF","LPS",
-        //Shapelet
-//        "FastShapelets","LearnShapelets",
-        "ST",
-        //Dictionary        "BOP",
-        "BOSS",
-        //Spectral
-        "RISE",
-        //Combos
-        "FLATCOTE","HIVECOTE"};
-    static String[] allSimulators={"WholeSeriesElastic","Interval","Shapelet","Dictionary","ARMA"};
-    
-    
-    public static Classifier setClassifier(String str) throws RuntimeException{
-        
+    static boolean local = false;
+    static int[] casesPerClass = { 50, 50 };
+    static int seriesLength = 500;
+    static double trainProp = 0.5;
+    static boolean normalize = true;
+    static String[] allClassifiers = { // Benchmarks
+            "ED", "RotF", "DTW",
+            // Whole series
+            // "DD_DTW","DTD_C",
+            "EE", "HESCA",
+            // Interval
+            "TSF",
+            // "TSBF","LPS",
+            // Shapelet
+            // "FastShapelets","LearnShapelets",
+            "ST",
+            // Dictionary "BOP",
+            "BOSS",
+            // Spectral
+            "RISE",
+            // Combos
+            "FLATCOTE", "HIVECOTE" };
+    static String[] allSimulators = { "WholeSeriesElastic", "Interval", "Shapelet", "Dictionary", "ARMA" };
+
+    public static Classifier setClassifier(String str) throws RuntimeException {
+
         Classifier c;
-        switch(str){
-            case "ED": case "MP_ED":
-                c=new kNN(1);
+        switch (str) {
+            case "ED":
+            case "MP_ED":
+                c = new kNN(1);
                 break;
             case "HESCA":
-                c=new CAWPE();
+                c = new CAWPE();
                 break;
             case "RotF":
-                c=new RotationForest();
+                c = new RotationForest();
                 break;
-            case "DTW": case "MP_DTW":
-                c=new DTW1NN();
+            case "DTW":
+            case "MP_DTW":
+                c = new DTW1NN();
                 break;
-             case "DD_DTW":
-                c=new DD_DTW();
-                break;               
-            case "DTD_C":    
-                c=new DTD_C();
-                break;               
-            case "EE":    
-                c=new ElasticEnsemble();
-                break;                          
+            case "DD_DTW":
+                c = new DD_DTW();
+                break;
+            case "DTD_C":
+                c = new DTD_C();
+                break;
+            case "EE":
+                c = new ElasticEnsemble();
+                break;
             case "TSF":
-                c=new TSF();
+                c = new TSF();
                 break;
             case "TSBF":
-                c=new TSBF();
+                c = new TSBF();
                 break;
             case "LPS":
-                c=new LPS();
+                c = new LPS();
                 break;
             case "FastShapelets":
-                c=new FastShapelets();
+                c = new FastShapelets();
                 break;
             case "ST":
-                c=new ShapeletTransformClassifier();
-                if(local)
-                    ((ShapeletTransformClassifier)c).setOneMinuteLimit();
+                c = new ShapeletTransformClassifier();
+                if (local)
+                    ((ShapeletTransformClassifier) c).setOneMinuteLimit();
                 else
-                   ((ShapeletTransformClassifier)c).setOneHourLimit();
-//                ((ShapeletTransformClassifier)c).setOneMinuteLimit();//DEBUG
+                    ((ShapeletTransformClassifier) c).setOneHourLimit();
+                // ((ShapeletTransformClassifier)c).setOneMinuteLimit();//DEBUG
                 break;
             case "BOP":
-                c=new BagOfPatterns();
+                c = new BagOfPatternsClassifier();
                 break;
             case "BOSS":
-                c=new BOSS();
+                c = new BOSS();
                 break;
             case "COTE":
             case "FLATCOTE":
-                c=new FlatCote();
+                c = new FlatCote();
                 break;
             case "HIVECOTE":
-                c=new HiveCote();
-//                ((HiveCote)c).setNosHours(2);
+                c = new HiveCote();
+                // ((HiveCote)c).setNosHours(2);
                 break;
             default:
-                throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
+                throw new RuntimeException(" UNKNOWN CLASSIFIER " + str);
         }
         return c;
     }
-    
-    public static void setStandardGlobalParameters(String str){
-         switch(str){
-            case "ARMA": case "AR": case "Spectral":
-                casesPerClass=new int[]{200,200};
-                seriesLength=200;
-                trainProp=0.1;
+
+    public static void setStandardGlobalParameters(String str) {
+        switch (str) {
+            case "ARMA":
+            case "AR":
+            case "Spectral":
+                casesPerClass = new int[] { 200, 200 };
+                seriesLength = 200;
+                trainProp = 0.1;
                 Model.setDefaultSigma(1);
                 break;
-            case "Shapelet": 
-                casesPerClass=new int[]{250,250};
-                seriesLength=300;
-                trainProp=0.1;
+            case "Shapelet":
+                casesPerClass = new int[] { 250, 250 };
+                seriesLength = 300;
+                trainProp = 0.1;
                 Model.setDefaultSigma(1);
                 break;
             case "Dictionary":
-                casesPerClass=new int[]{200,200};
-                seriesLength=1500;
-                trainProp=0.1;
-                SimulateDictionaryData.setShapeletsPerClass(new int[]{5,10});
+                casesPerClass = new int[] { 200, 200 };
+                seriesLength = 1500;
+                trainProp = 0.1;
+                SimulateDictionaryData.setShapeletsPerClass(new int[] { 5, 10 });
                 SimulateDictionaryData.setShapeletLength(29);
- //               SimulateDictionaryData.checkGlobalSeedForIntervals();
+                // SimulateDictionaryData.checkGlobalSeedForIntervals();
                 Model.setDefaultSigma(1);
-               break; 
+                break;
             case "Interval":
-                seriesLength=1000;
-                trainProp=0.1;
-                casesPerClass=new int[]{200,200};
+                seriesLength = 1000;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 200, 200 };
                 Model.setDefaultSigma(1);
-//                SimulateIntervalData.setAmp(1);
+                // SimulateIntervalData.setAmp(1);
                 SimulateIntervalData.setNosIntervals(3);
                 SimulateIntervalData.setNoiseToSignal(10);
                 break;
-           case "WholeSeriesElastic":
+            case "WholeSeriesElastic":
             case "WholeSeries":
-                seriesLength=100;
-                trainProp=0.1;
-                casesPerClass=new int[]{100,100};
+                seriesLength = 100;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 100, 100 };
                 Model.setDefaultSigma(1);
                 ElasticModel.setBaseAndAmp(-2, 4);
                 ElasticModel.setWarpPercent(0.4);
- //               SimulateWholeSeriesElastic.
+                // SimulateWholeSeriesElastic.
                 break;
             case "MatrixProfile":
-                seriesLength=150;
-                trainProp=0.1;
-                casesPerClass=new int[]{50,50};
+                seriesLength = 150;
+                trainProp = 0.1;
+                casesPerClass = new int[] { 50, 50 };
                 Model.setDefaultSigma(1);
                 break;
-        default:
+            default:
                 throw new RuntimeException(" UNKNOWN SIMULATOR ");
-            
-        }       
+
+        }
     }
-    
-    
-    public static Instances simulateData(String str,int seed) throws RuntimeException{
+
+    public static Instances simulateData(String str, int seed) throws RuntimeException {
         Instances data;
-//        for(int:)
+        // for(int:)
         Model.setGlobalRandomSeed(seed);
-        switch(str){
-            case "ARMA": case "AR": case "SPECTRAL":
-                
-                  data=SimulateSpectralData.generateSpectralEmbeddedData(seriesLength, casesPerClass);
-//                 data=SimulateSpectralData.generateARDataSet(seriesLength, casesPerClass, true);
+        switch (str) {
+            case "ARMA":
+            case "AR":
+            case "SPECTRAL":
+
+                data = SimulateSpectralData.generateSpectralEmbeddedData(seriesLength, casesPerClass);
+                // data=SimulateSpectralData.generateARDataSet(seriesLength, casesPerClass,
+                // true);
                 break;
-            case "Shapelet": 
-                data=SimulateShapeletData.generateShapeletData(seriesLength,casesPerClass);
+            case "Shapelet":
+                data = SimulateShapeletData.generateShapeletData(seriesLength, casesPerClass);
                 break;
             case "Dictionary":
-                data=SimulateDictionaryData.generateDictionaryData(seriesLength,casesPerClass);
-               break; 
-            case "Interval":    
-                data=SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
-                break;        
-                        
-            case "WholeSeries":
-                data=SimulateWholeSeriesData.generateWholeSeriesdData(seriesLength,casesPerClass);
+                data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass);
                 break;
-           case "WholeSeriesElastic":
-                data=SimulateElasticData.generateElasticData(seriesLength,casesPerClass);
-                break;
-           case "MatrixProfile":
-                data=SimulateMatrixProfileData.generateMatrixProfileData(seriesLength,casesPerClass);
+            case "Interval":
+                data = SimulateIntervalData.generateIntervalData(seriesLength, casesPerClass);
                 break;
 
-           
-           default:
-                throw new RuntimeException(" UNKNOWN SIMULATOR "+str);
-            
+            case "WholeSeries":
+                data = SimulateWholeSeriesData.generateWholeSeriesdData(seriesLength, casesPerClass);
+                break;
+            case "WholeSeriesElastic":
+                data = SimulateElasticData.generateElasticData(seriesLength, casesPerClass);
+                break;
+            case "MatrixProfile":
+                data = SimulateMatrixProfileData.generateMatrixProfileData(seriesLength, casesPerClass);
+                break;
+
+            default:
+                throw new RuntimeException(" UNKNOWN SIMULATOR " + str);
+
         }
         return data;
     }
-    
 
-//arg[0]: simulator
-//arg[1]: classifier
-//arg[2]: fold number    
-    public static double runSimulationExperiment(String[] args,boolean useStandard) throws Exception{
-        String simulator=args[0];
-        if(useStandard)
+    // arg[0]: simulator
+    // arg[1]: classifier
+    // arg[2]: fold number
+    public static double runSimulationExperiment(String[] args, boolean useStandard) throws Exception {
+        String simulator = args[0];
+        if (useStandard)
             setStandardGlobalParameters(simulator);
-        String classifier=args[1];
-        Classifier c=setClassifier(classifier);
-        int fold=Integer.parseInt(args[2])-1;
+        String classifier = args[1];
+        Classifier c = setClassifier(classifier);
+        int fold = Integer.parseInt(args[2]) - 1;
+        String resultsPath = args[3];
 
-
-//Set up the train and test files
-        File f=new File(experiments.data.DatasetLists.resultsPath+simulator);
-        if(!f.exists())
+        // Set up the train and test files
+        File f = new File(resultsPath + simulator);
+        if (!f.exists())
+            f.mkdirs();
+        String predictions = resultsPath + simulator + "/" + classifier;
+        f = new File(predictions);
+        if (!f.exists())
             f.mkdir();
-        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"/"+classifier;
-        f=new File(predictions);
-        if(!f.exists())
-            f.mkdir();
-//Check whether fold already exists, if so, dont do it, just quit
-        f=new File(predictions+"/testFold"+fold+".csv");
-        if(!f.exists() || f.length()==0){
-//Do the experiment: find train preds through cross validation
-//Then generate all test predictions            
-            Instances data=simulateData(args[0],fold);
-            Instances[] split=InstanceTools.resampleInstances(data, fold,trainProp);
-            System.out.println(" Train size ="+split[0].numInstances()+" test size ="+split[1].numInstances());
-    //Check if it is MP or not
-            if(classifier.contains("MP_")){
+        // Check whether fold already exists, if so, dont do it, just quit
+        f = new File(predictions + "/testFold" + fold + ".csv");
+        if (!f.exists() || f.length() == 0) {
+            // Do the experiment: find train preds through cross validation
+            // Then generate all test predictions
+            Instances data = simulateData(args[0], fold);
+            Instances[] split = InstanceTools.resampleInstances(data, fold, trainProp);
+            System.out.println(" Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+            // Check if it is MP or not
+            if (classifier.contains("MP_")) {
                 try {
                     System.out.println("MAtrix profile run ....");
-                    MatrixProfile mp=new MatrixProfile(29);
-                    split[0]=mp.process(split[0]);
-                    split[1]=mp.process(split[1]);
+                    MatrixProfile mp = new MatrixProfile(29);
+                    split[0] = mp.transform(split[0]);
+                    split[1] = mp.transform(split[1]);
                 } catch (Exception ex) {
                     Logger.getLogger(SimulationExperiments.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
             }
-            
-            else if(normalize){
-                
-                NormalizeCase nc= new NormalizeCase();
-                split[0]=nc.process(split[0]);
-                split[0]=nc.process(split[1]);
+
+            else if (normalize) {
+
+                RowNormalizer nc = new RowNormalizer();
+                split[0] = nc.transform(split[0]);
+                split[1] = nc.transform(split[1]);
             }
 
             double acc=singleSampleExperiment(split[0],split[1],c,fold,predictions);
@@ -376,9 +387,9 @@ public class SimulationExperiments {
     public static void pairwiseTests(){
     
     }
-    public static void combineTestResults(String classifier, String simulator){
+    public static void combineTestResults(String classifier, String simulator,String resultsPath){
         int folds=200;
-        File f=new File(experiments.data.DatasetLists.resultsPath+"/"+simulator);
+        File f=new File(resultsPath+"/"+simulator);
         if(!f.exists() || !f.isDirectory()){
             f.mkdir();
         }
@@ -386,18 +397,18 @@ public class SimulationExperiments {
             boolean results=false;
             for(int i=0;i<folds && !results;i++){
     //Check fold exists            
-                f= new File(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                f= new File(resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                 if(f.exists())
                     results=true;
             }
 
             if(results){
-                OutFile of=new OutFile(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+".csv");
+                OutFile of=new OutFile(resultsPath+"/"+simulator+"/"+classifier+".csv");
                 for(int i=0;i<folds;i++){
         //Check fold exists            
-                    f= new File(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                    f= new File(resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                     if(f.exists() && f.length()>0){
-                        InFile inf=new InFile(experiments.data.DatasetLists.resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
+                        InFile inf=new InFile(resultsPath+"/"+simulator+"/"+classifier+"/testFold"+i+".csv");
                         inf.readLine();
                         inf.readLine();
                         of.writeLine(i+","+inf.readDouble());
@@ -432,8 +443,8 @@ public class SimulationExperiments {
             acc/=test.numInstances();
             String[] names=preds.split("/");
             p.writeLine(names[names.length-1]+","+c.getClass().getName()+",test");
-            if(c instanceof SaveParameterInfo)
-                p.writeLine(((SaveParameterInfo)c).getParameters());
+            if(c instanceof EnhancedAbstractClassifier)
+                p.writeLine(((EnhancedAbstractClassifier)c).getParameters());
             else if(c instanceof SaveableEnsemble)
                 p.writeLine(((SaveableEnsemble)c).getParameters());
             else
@@ -459,30 +470,30 @@ public class SimulationExperiments {
     }
 
     public static void collateAllResults(){
-        experiments.data.DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
+        String resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
         for(String s:allClassifiers){
             for(String a:allSimulators){
 //            String a="WholeSeriesElastic";
-                combineTestResults(s,a);
+                combineTestResults(s,a,resultsPath);
             }
         }
         int folds=200;
         for(String a:allSimulators){
-            if(new File(experiments.data.DatasetLists.resultsPath+a).exists()){
+            if(new File(resultsPath+a).exists()){
                 System.out.println(" Simulation = "+a);
-                OutFile of=new OutFile(DatasetLists.resultsPath+a+"CombinedResults.csv");
+                OutFile of=new OutFile(resultsPath+a+"CombinedResults.csv");
                 InFile[] ins=new InFile[allClassifiers.length];
                 int count=0;
                 of.writeString(",");
                 for(String s:allClassifiers){
-                    File f=new File(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
+                    File f=new File(resultsPath+a+"\\"+s+".csv");
                     if(f.exists()){
-                        InFile inf=new InFile(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
+                        InFile inf=new InFile(resultsPath+a+"\\"+s+".csv");
                         int lines=inf.countLines();
                         if(lines>=folds){
                             System.out.println(" Doing "+a+" and "+s);
                             of.writeString(s+",");
-                            ins[count++]=new InFile(experiments.data.DatasetLists.resultsPath+a+"\\"+s+".csv");
+                            ins[count++]=new InFile(resultsPath+a+"\\"+s+".csv");
                         }
                     }
                 }
@@ -532,7 +543,7 @@ public class SimulationExperiments {
                         c=new RotationForest();
                         break;
                     case "DTW":
-                        c=new FastDTW_1NN();
+                        c=new DTWCV();
                         break;
                     case "EE":    
                         c=new ElasticEnsemble();
@@ -554,7 +565,7 @@ public class SimulationExperiments {
                         c=new LearnShapelets();
                         break;
                     case "BOP":
-                        c=new BagOfPatterns();
+                        c=new BagOfPatternsClassifier();
                         break;
                     case "BOSS":
                         c=new BOSS();
@@ -582,14 +593,15 @@ public class SimulationExperiments {
         String classifier=args[1];
         int e=Integer.parseInt(args[2])-1;
         int fold=Integer.parseInt(args[3])-1;
+        String resultsPath=args[4];
 //Set up the train and test files
-        File f=new File(experiments.data.DatasetLists.resultsPath+"Error");
+        File f=new File(resultsPath+"Error");
         if(!f.exists())
             f.mkdir();
-        f=new File(experiments.data.DatasetLists.resultsPath+"Error/"+simulator);
+        f=new File(resultsPath+"Error/"+simulator);
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.data.DatasetLists.resultsPath+"Error/"+simulator+"/"+classifier;
+        String predictions= resultsPath+"Error/"+simulator+"/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -618,12 +630,14 @@ public class SimulationExperiments {
         String classifier=args[1];
 //Series length factor
         int l=Integer.parseInt(args[2]);
+        String resultsPath=args[3];
+
         seriesLength=10+(1+l)*50;   //l from 1 to 50
 //Set up the train and test files
-        File f=new File(experiments.data.DatasetLists.resultsPath+simulator+"Length");
+        File f=new File(resultsPath+simulator+"Length");
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"Length/"+classifier;
+        String predictions= resultsPath+simulator+"Length/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -653,12 +667,14 @@ public class SimulationExperiments {
         String classifier=args[1];
 //Series length factor
         int l=Integer.parseInt(args[2]);
+        String resultsPath=args[3];
+        
         trainProp=(double)(l/10.0);   //l from 1 to 9
 //Set up the train and test files
-        File f=new File(experiments.data.DatasetLists.resultsPath+simulator+"Length");
+        File f=new File(resultsPath+simulator+"Length");
         if(!f.exists())
             f.mkdir();
-        String predictions= experiments.data.DatasetLists.resultsPath+simulator+"Length/"+classifier;
+        String predictions= resultsPath+simulator+"Length/"+classifier;
         f=new File(predictions);
         if(!f.exists())
             f.mkdir();
@@ -939,10 +955,16 @@ public class SimulationExperiments {
         }
     }
     public static void main(String[] args) throws Exception{
-smoothingTests();
-System.exit(0);
+        collateSimulatorResults();
+   //     dictionarySimulatorChangingSeriesLength();
+  //    dictionarySimulatorChangingTrainSize();
+        System.exit(0);
+
+        smoothingTests();
+        String resultsPath="C:/Temp/";
+
+        System.exit(0);
         if(args.length>0){
-            experiments.data.DatasetLists.resultsPath= experiments.data.DatasetLists.clusterPath+"Results/SimulationExperiments/";
             if(args.length==3){//Base experiment
                 double b=runSimulationExperiment(args,true);
                 System.out.println(args[0]+","+args[1]+","+","+args[2]+" Acc ="+b);
@@ -955,9 +977,8 @@ System.exit(0);
         else{
 //            DatasetLists.resultsPath="C:\\Users\\ajb\\Dropbox\\Results\\MatrixProfileExperiments\\";
             local=true;
-            experiments.data.DatasetLists.resultsPath="C:\\temp\\";
-                String[] algos={"ED"};//,,"MP_RotF","MP_DTW"};
-                double[] meanAcc=new double[algos.length];
+            String[] algos={"ED"};//,,"MP_RotF","MP_DTW"};
+            double[] meanAcc=new double[algos.length];
                 
             for(int i=1;i<=10;i++){
                 for(int j=0;j<algos.length;j++){
@@ -975,4 +996,492 @@ System.exit(0);
                 System.out.println(algos[j]+" mean acc ="+df.format(meanAcc[j]/10));
         }
     }
+
+    public static void dictionarySimulatorChangingTrainSize() throws Exception {
+        Model.setDefaultSigma(1);
+        boolean overwrite=false;
+        int seriesLength = 1000;
+        int experiments=2;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor2/";
+        for(int trainSize=500;trainSize<=10000;trainSize+=500) {
+            File path = new File(writePath + "DictionaryTrainSize" + trainSize);
+            path.mkdirs();
+            if(!overwrite) {
+                File f1 = new File(writePath + "DictionaryTrainSize" + trainSize + "/testAcc" + trainSize + ".csv");
+                File f2 = new File(writePath + "DictionaryTrainSize" + trainSize + "/trainTime" + trainSize + ".csv");
+                File f3 = new File(writePath + "DictionaryTrainSize" + trainSize + "/testTime" + trainSize + ".csv");
+                File f4 = new File(writePath + "DictionaryTrainSize" + trainSize + "/mem" + trainSize + ".csv");
+                if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
+                    System.out.println("SKIPPING train size = "+trainSize+" as all already present");
+                    continue;
+                }
+
+
+            }
+            OutFile accFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/testAcc" + trainSize + ".csv");
+            OutFile trainTimeFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize +"/trainTime" + trainSize + ".csv");
+            OutFile testTimeFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/testTime" + trainSize + ".csv");
+            OutFile memFile = new OutFile(writePath + "DictionaryTrainSize" + trainSize  + "/mem" + trainSize + ".csv");
+            System.out.println(" Generating simulated data for n ="+trainSize+" Series Length ="+seriesLength+" ....");
+            int[] casesPerClass = new int[2];
+            casesPerClass[0] = casesPerClass[1] = trainSize;
+            int[] shapesPerClass = new int[]{5, 20};
+            long t1, t2;
+            String[] classifierNames = {"cBOSS", "BOSS","WEASEL","S-BOSS"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
+            for (int i = 0; i < experiments; i++) {
+                Instances data = SimulateDictionaryData.generateDictionaryData(500, casesPerClass, shapesPerClass);
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.5);
+                System.out.println("Series Length =" + seriesLength + " Experiment Index: " + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                for (int j = 0; j < classifierNames.length; j++) {
+                    System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
+                    long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                    Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
+                    t1 = System.nanoTime();
+                    c.buildClassifier(split[0]);
+                    trainTime[j] = System.nanoTime() - t1;
+                    t1 = System.nanoTime();
+                    acc[j] = ClassifierTools.accuracy(split[1], c);
+                    testTime[j] = System.nanoTime() - t1;
+                    System.gc();
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
+                    System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
+                }
+                accFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    accFile.writeString("," + acc[j]);
+                accFile.writeString("\n");
+                trainTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    trainTimeFile.writeString("," + trainTime[j]);
+                trainTimeFile.writeString("\n");
+                testTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    testTimeFile.writeString("," + testTime[j]);
+                testTimeFile.writeString("\n");
+                memFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
+                }
+                memFile.writeString("\n");
+            }
+        }
+
+    }
+
+
+    public static void dictionarySimulatorChangingSeriesLength() throws Exception {
+        Model.setDefaultSigma(1);
+        boolean overwrite=true;
+        int experiments=2;
+        int numCases=2000;
+        String writePath="Z:/Results Working Area/DictionaryBased/SimulationExperimentsMemMonitor/";
+        for(int seriesLength=5000;seriesLength<=10000;seriesLength+=5000) {
+            String dir="Cases1000SeriesLength";
+            File path = new File(writePath +dir+ seriesLength);
+            path.mkdirs();
+            if(!overwrite) {
+                File f1 = new File(writePath + dir + seriesLength + "/testAcc" + seriesLength + ".csv");
+                File f2 = new File(writePath + dir + seriesLength + "/trainTime" + seriesLength + ".csv");
+                File f3 = new File(writePath + dir + seriesLength + "/testTime" + seriesLength + ".csv");
+                File f4 = new File(writePath + dir + seriesLength + "/mem" + seriesLength + ".csv");
+                if(f1.exists() && f2.exists() && f3.exists() && f4.exists()){
+                    System.out.println("SKIPPING series length = "+seriesLength+" as all already present");
+                    continue;
+                }
+
+            }
+            OutFile accFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength  + "/testAcc" + seriesLength + ".csv");
+            OutFile trainTimeFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength +"/trainTime" + seriesLength + ".csv");
+            OutFile testTimeFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength  + "/testTime" + seriesLength + ".csv");
+            OutFile memFile = new OutFile(writePath + "DictionarySeriesLength" + seriesLength  + "/mem" + seriesLength + ".csv");
+            System.out.println(" Generating simulated data ....");
+            int[] casesPerClass = new int[2];
+
+            casesPerClass[0] = casesPerClass[1] = numCases/2;
+            int[] shapesPerClass = new int[]{5, 20};
+            long t1, t2;
+            String[] classifierNames = {"cBOSS","S-BOSS","WEASEL","BOSS"};
+            double[] acc = new double[classifierNames.length];
+            long[] trainTime = new long[classifierNames.length];
+            long[] testTime = new long[classifierNames.length];
+            long[] finalMem = new long[classifierNames.length];
+            long[] maxMem = new long[classifierNames.length];
+            for (int i = 0; i < experiments; i++) {
+                Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
+                System.out.println(" series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                for (int j = 0; j < classifierNames.length; j++) {
+                    System.gc();
+                    MemoryMonitor monitor=new MemoryMonitor();
+                    monitor.installMonitor();
+                    long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                    Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
+                    t1 = System.nanoTime();
+                    c.buildClassifier(split[0]);
+                    trainTime[j] = System.nanoTime() - t1;
+                    t1 = System.nanoTime();
+                    acc[j] = ClassifierTools.accuracy(split[1], c);
+                    testTime[j] = System.nanoTime() - t1;
+                    System.gc();
+                    finalMem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+                    maxMem[j]=monitor.getMaxMemoryUsed();
+                    System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
+                            " Test Time = " + testTime[j] + " Final Memory = " + finalMem[j]/1000000+" Max Memory ="+maxMem[j]/1000000);
+                }
+                accFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    accFile.writeString("," + acc[j]);
+                accFile.writeString("\n");
+                trainTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    trainTimeFile.writeString("," + trainTime[j]);
+                trainTimeFile.writeString("\n");
+                testTimeFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++)
+                    testTimeFile.writeString("," + testTime[j]);
+                testTimeFile.writeString("\n");
+                memFile.writeString(i + "");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + finalMem[j]);
+                }
+                memFile.writeString(",");
+                for (int j = 0; j < classifierNames.length; j++) {
+                    memFile.writeString("," + maxMem[j]);
+                }
+                memFile.writeString("\n");
+            }
+        }
+
+    }
+
+
+    public static void collateSimulatorResults(){
+        String type="Dictionary";
+        String path="Z:\\Results Working Area\\"+type+"Based\\\\SimulationExperimentsMemMonitor\\";
+        File f= new File(path+type+"Summary");
+        f.mkdirs();
+        String[] files={"testAcc","testTime","trainTime","mem"};
+        int numClassifiers=4;
+        OutFile[] out=new OutFile[files.length];
+        OutFile[] outDiffs=new OutFile[files.length];
+        for(int i=0;i<files.length;i++){
+            out[i]=new OutFile(path+type+"Summary\\"+files[i]+"Mean.csv");
+            out[i].writeLine("Means,BOSS,cBOSS,S-BOSS,WEASEL,StDevs,BOSS,cBOSS,S-BOSS,WEASEL");
+            outDiffs[i]=new OutFile(path+type+"Summary\\"+files[i]+"MeanDiffs.csv");
+            outDiffs[i].writeLine("MeanDiffsToBOSS,cBOSS,S-BOSS,WEASEL,StDevs,cBOSS,S-BOSS,WEASEL");
+        }
+
+
+        for(int i=0;i<files.length;i++){
+            String s=files[i];
+            ArrayList<double[]> medians=new ArrayList<>();
+            for(int trainSize=50;trainSize<=1000;trainSize+=50) {
+                File test;
+                int lines = 0;
+                String fPath=path + type + "TrainSize" + trainSize + "\\" + s + trainSize + ".csv";
+                f = new File(fPath);
+                if (!f.exists()) {
+                    System.out.println("File " + s + trainSize + " does not exist on" + fPath+"  skipping " + trainSize);
+                    continue;
+
+                }
+
+                //How many have we got?
+                InFile inf = new InFile(fPath);
+                int l = inf.countLines();
+                System.out.println(" File = "+fPath);
+                System.out.println(trainSize + " has " + l + " lines");
+                inf = new InFile(fPath);
+                double[][] vals = new double[l][numClassifiers];
+                double[][] diffs = new double[l][numClassifiers-1];
+                if(files[i].equals("mem"))
+                {
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[6]);
+                        for (int k = 1; k <numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 6]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                else{
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[1]);
+                        for (int k = 1; k < numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 1]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                //Find means
+                double[] means = new double[numClassifiers];
+                double[] meanDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    means[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        means[k] += vals[j][k];
+                    }
+                    means[k] /= l;
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    meanDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        meanDiffs[k] += diffs[j][k];
+                    }
+                    meanDiffs[k] /= l;
+                }
+                double[] confInterval = new double[numClassifiers];
+                double[] confIntervalDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    confInterval[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confInterval[k] += (vals[j][k]-means[k])*(vals[j][k]-means[k]);
+                    }
+                    confInterval[k] /= l-1;
+                    confInterval[k]=Math.sqrt(confInterval[k]);
+                    confInterval[k]/=Math.sqrt(l);
+                    confInterval[k]*=1.96;
+
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    confIntervalDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confIntervalDiffs[k] += (diffs[j][k]- meanDiffs[k])*(diffs[j][k]- meanDiffs[k]);
+                    }
+                    confIntervalDiffs[k] /= (l-1);
+                    confIntervalDiffs[k]=Math.sqrt(confIntervalDiffs[k]);
+                    confIntervalDiffs[k]/=Math.sqrt(l);
+                    confIntervalDiffs[k]*=1.96;
+                }
+
+
+                //Write to file
+                if(!s.equals("testTime"))
+                    out[i].writeString(trainSize + "");
+                else
+                    out[i].writeString((int)(0.9*(trainSize/0.1)) + "");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + means[k]);
+                }
+                out[i].writeString(",");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + confInterval[k]);
+                }
+
+                out[i].writeString("\n");
+                if(!s.equals("testTime"))
+                    outDiffs[i].writeString(trainSize + "");
+                else
+                    outDiffs[i].writeString((int)(0.9*(trainSize/0.1)) + "");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + meanDiffs[k]);
+                }
+                outDiffs[i].writeString(",");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + confIntervalDiffs[k]);
+                }
+                outDiffs[i].writeString("\n");
+            }
+
+            for(int seriesLength=500;seriesLength<=10000;seriesLength+=500) {
+                File test;
+                int lines = 0;
+                String fPath=path + type + "SeriesLength" + seriesLength + "\\" + s + seriesLength + ".csv";
+                f = new File(fPath);
+                if (!f.exists()) {
+                    System.out.println("File " + s + seriesLength + " does not exist on" + fPath+"  skipping " + seriesLength);
+                    continue;
+                }
+                //How many have we got?
+                InFile inf = new InFile(fPath);
+                int l = inf.countLines();
+                System.out.println(seriesLength + " has " + l + " lines");
+                inf = new InFile(fPath);
+                double[][] vals = new double[l][numClassifiers];
+                double[][] diffs = new double[l][numClassifiers-1];
+                if(files[i].equals("mem"))
+                {
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[6]);
+                        for (int k = 1; k <numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 6]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                else{
+                    for (int j = 0; j < l; j++) {
+                        String[] line = inf.readLine().split(",");
+                        vals[j][0] = Double.parseDouble(line[1]);
+                        for (int k = 1; k < numClassifiers; k++) {
+                            vals[j][k] = Double.parseDouble(line[k + 1]);
+                            diffs[j][k - 1] = vals[j][k] - vals[j][0];
+                        }
+                    }
+                }
+                //Find means
+                double[] means = new double[numClassifiers];
+                double[] meanDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    means[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        means[k] += vals[j][k];
+                    }
+                    means[k] /= l;
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    meanDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        meanDiffs[k] += diffs[j][k];
+                    }
+                    meanDiffs[k] /= l;
+                }
+                double[] confInterval = new double[numClassifiers];
+                double[] confIntervalDiffs = new double[numClassifiers];
+                for (int k = 0; k < numClassifiers; k++) {
+                    confInterval[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confInterval[k] += (vals[j][k]-means[k])*(vals[j][k]-means[k]);
+                    }
+                    confInterval[k] /= l-1;
+                    confInterval[k]=Math.sqrt(confInterval[k]);
+                    confInterval[k]/=Math.sqrt(l);
+                    confInterval[k]*=1.96;
+
+                }
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    confIntervalDiffs[k] = 0;
+                    for (int j = 0; j < l; j++) {
+                        confIntervalDiffs[k] += (diffs[j][k]- meanDiffs[k])*(diffs[j][k]- meanDiffs[k]);
+                    }
+                    confIntervalDiffs[k] /= (l-1);
+                    confIntervalDiffs[k]=Math.sqrt(confIntervalDiffs[k]);
+                    confIntervalDiffs[k]/=Math.sqrt(l);
+                    confIntervalDiffs[k]*=1.96;
+                }
+
+
+                //Write to file
+                out[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + means[k]);
+                }
+                out[i].writeString(",");
+                for (int k = 0; k < numClassifiers; k++) {
+                    out[i].writeString("," + confInterval[k]);
+                }
+
+                out[i].writeString("\n");
+                outDiffs[i].writeString(seriesLength + "");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + meanDiffs[k]);
+                }
+                outDiffs[i].writeString(",");
+                for (int k = 0; k < numClassifiers-1; k++) {
+                    outDiffs[i].writeString("," + confIntervalDiffs[k]);
+                }
+                outDiffs[i].writeString("\n");
+            }
+
+
+        }
+    }
+
+
+
+
+
+
+    public static void dictionarySimulatorThreadExperiment() throws Exception {
+        Model.setDefaultSigma(1);
+        boolean overwrite=false;
+        int experiments=1;
+        for(int seriesLength=300;seriesLength<=300;seriesLength+=300) {
+            int[] casesPerClass = new int[2];
+            casesPerClass[0] = casesPerClass[1] = 100;
+            int[] shapesPerClass = new int[]{5, 20};
+            double[] acc = new double[4];
+            long[] trainTime = new long[4];
+            long[] testTime = new long[4];
+            long[] mem = new long[4];
+            long t1, t2;
+            String[] classifierNames = {"BOSS"};//, "cBOSS", "SpatialBOSS", "WEASEL"};
+
+            MemoryMXBean mx= ManagementFactory.getMemoryMXBean();
+            Notification notif;
+/*            GarbageCollectorMXBean gc=mx.
+            // receive the notification emitted by a GarbageCollectorMXBean and set to notif
+            synchronized (mx){
+                mx.wait();
+            }
+            notif=mx.get
+            String notifType = "TESTY"; //notif.getType();
+            if (notifType.equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+                // retrieve the garbage collection notification information
+                CompositeData cd = (CompositeData) notif.getUserData();
+                GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from(cd);
+
+
+            }
+*/
+            for (int i = 0; i < experiments; i++) {
+                Instances data = SimulateDictionaryData.generateDictionaryData(seriesLength, casesPerClass, shapesPerClass);
+                Instances[] split = InstanceTools.resampleInstances(data, i, 0.2);
+                System.out.println(" Testing thread model: series length =" + seriesLength + " Experiment Index" + i + " Train size =" + split[0].numInstances() + " test size =" + split[1].numInstances());
+                for (int j = 0; j < classifierNames.length; j++) {
+                    System.gc();
+                    long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                    Classifier c = ClassifierLists.setClassifierClassic(classifierNames[j], i);
+                    t1 = System.nanoTime();
+                    c.buildClassifier(split[0]);
+                    trainTime[j] = System.nanoTime() - t1;
+                    t1 = System.nanoTime();
+                    acc[j] = ClassifierTools.accuracy(split[1], c);
+                    testTime[j] = System.nanoTime() - t1;
+                    System.gc();
+                    mem[j] = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() - memoryBefore;
+
+                    System.out.println("\t" + classifierNames[j] + " ACC = " + acc[j] + " Train Time =" + trainTime[j] +
+                            " Test Time = " + testTime[j] + " Memory = " + mem[j]);
+                }
+            }
+        }
+
+    }
+
+
+    public static class ThreadExperiment implements Runnable{
+        Classifier c;
+        Instances train;
+       public ThreadExperiment(Classifier c, Instances train){
+           this.c=c;
+           this.train=train;
+       }
+
+        @Override
+        public void run() {
+           try {
+               c.buildClassifier(train);
+           }catch(Exception e){
+               System.out.println("Classifier threw exception in Thread Experiment");
+           }
+        }
+    }
+
 }

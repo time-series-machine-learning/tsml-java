@@ -1,25 +1,27 @@
 /*
  * Copyright (C) 2019 xmw13bzu
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.ExecutorService;
-import timeseriesweka.classifiers.MultiThreadable;
+import tsml.classifiers.MultiThreadable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 
@@ -110,8 +112,8 @@ public abstract class MultiSamplingEvaluator extends SamplingEvaluator implement
     }
     
     public ClassifierResults[] getFoldResults(int classifierIndex) {
-        if (resultsPerFold != null)
-            return resultsPerFold[0];
+        if (resultsPerFold != null && resultsPerFold.length > classifierIndex)
+            return resultsPerFold[classifierIndex];
         else
             return null;
     }

@@ -1,18 +1,20 @@
 /*
  * Copyright (C) 2019 xmw13bzu
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package examples;
@@ -103,7 +105,7 @@ public class Ex04_ThoroughExperiments {
         // classifier, dataset, fold shall be assigned internally across threads
         
         // will use one thread per core by default
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, datasets, 0, numFolds);
+        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
     }
     

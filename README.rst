@@ -18,7 +18,7 @@ Installation
 ------------
 We are looking into deploying this project on Maven or Gradle in the future. For now there are two options:
 
-* download the `jar file <https://github.com/TonyBagnall/uea-tsc/TSC jar 31_5_20.zip>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
+* download the `jar file <http://timeseriesclassification.com/Downloads/tsml11_3_2020.jar>`__ and include as a dependency in your project, or you can run experiments through command line, see the `examples on running experiments <https://github.com/uea-machine-learning/tsml/blob/dev/src/main/java/examples/Ex04_ThoroughExperiments.java>`__
 * fork or download the source files and include in a project in your favourite IDE you can then construct your own experiments (see our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/java/examples>`__) and implement your own classifiers.
 
 Overview
@@ -38,10 +38,10 @@ Our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/ja
 `experiments/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/experiments>`__ 
     contains classes specifying the experimental pipelines we utilise, and lists of classifier and dataset specifications. The 'main' class is `Experiments.java <https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/experiments/Experiments.java>`__, however other experiments classes exist for running on simulation datasets or for generating transforms of time series for later classification, such as with the Shapelet Transform. 
 
-`timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/timeseriesweka>`__ and `multivariate_timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/multivariate_timeseriesweka>`__ 
+`tsml/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/tsml>`__ and `multivariate_timeseriesweka/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/multivariate_timeseriesweka>`__
     contain the TSC algorithms we have implemented, for univariate and multivariate classification respectively. 
 
-`weka_extras/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/weka_extras>`__ 
+`machine_learning/ <https://github.com/uea-machine-learning/tsml/tree/master/src/main/java/machine_learning>`__
     contains extra algorithm implementations that are not specific to TSC, such as generalised ensembles or classifier tuners. 
 
 Implemented Algorithms
@@ -50,19 +50,20 @@ Implemented Algorithms
 Classifiers
 ```````````
 
-The lists of implemented TSC algorithms shall continue to grow over time. These are all in addition to the standard Weka classifiers and non-TSC algorithms defined under the weka_extras package. 
+The lists of implemented TSC algorithms shall continue to grow over time. These are all in addition to the standard Weka classifiers and non-TSC algorithms defined under the machine_learning package.
 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 
 ===============  ================  ==============  =================  ==============  =========
-Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Ensembles         
+Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Hybrids
 ===============  ================  ==============  =================  ==============  =========
-DD_DTW           BOSS              RISE            LearnShapelets     TSF             FlatCote
-DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            HiveCote
+DD_DTW           BOSS              RISE            LearnShapelets     TSF             HIVE-COTE
+DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            TS-CHIEF
 ElasticEnsemble  BOP                               FastShapelets      LPS
-NN_CID           WEASEL        
+NN_CID           WEASEL                                               CIF
 SAX_1NN          SAXVSM
-ProximityForest              
+ProximityForest  SpatialBOSS
+\                TDE
 ===============  ================  ==============  =================  ==============  =========
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
@@ -71,23 +72,24 @@ And we have implemented the following bespoke classifiers for multivariate, equa
 NN_ED_D   MultivariateShapeletTransform
 NN_ED_I   ConcatenateClassifier
 NN_DTW_D  NN_DTW_A
-NN_DTW_I
+NN_DTW_I  WEASEL+MUSE
 ========  =============================
 
 Clusterers
 ``````````
 
-Currently quite limited, aside from those already shipped with Weka. 
+Currently quite limited, aside from those already shipped with Weka.
 
 =====================  =======
 UnsupervisedShapelets
+K-Shape
 =====================  =======
 
-Filters/Transformations
+Filters
 ```````````````````````
 
 SimpleBatchFilters that take an Instances (the set of time series), transforms them
-and returns a new Instances object
+and returns a new Instances object.
 
 ===================  ===================  ===================
 ACF                  ACF_PACF             ARMA
@@ -99,6 +101,14 @@ PAA                  PACF                 PowerCepstrum
 PowerSepstrum        RankOrder            RunLength
 SAX                  Sine                 SummaryStats
 ===================  ===================  ===================
+
+Transformers
+We will be shifting over to a bespoke Transformer interface
+
+=================== =======
+ShapeletTransform
+catch22
+=================== =======
 
 Paper-Supporting Branches
 -------------------------
@@ -119,10 +129,12 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * James Large (@James-Large, `@jammylarge <https://twitter.com/jammylarge>`__, james.large@uea.ac.uk)
 * Jason Lines (@jasonlines), 
 * George Oastler (@goastler), 
-* Matthew Middlehurst (@MatthewMiddlehurst), 
-* Michael Flynn (@Michael Flynn), 
-* Aaron Bostrom (@ABostrom, a.bostrom@nua.ac.uk), 
+* Matthew Middlehurst (@MatthewMiddlehurst, `@M_Middlehurst <https://twitter.com/M_Middlehurst>`__, m.middlehurst@uea.ac.uk),
+* Michael Flynn (GitHub - `@MJFlynn <https://github.com/MJFlynn>`__, Twitter - `@M_J_Flynn <https://twitter.com/M_J_Flynn>`__, Email - Michael.Flynn@uea.ac.uk)
+* Aaron Bostrom (@ABostrom, `@_Groshh_ <https://twitter.com/_Groshh_>`__, a.bostrom@uea.ac.uk), 
 * Patrick Schäfer (@patrickzib)
+* Chang Wei Tan (@ChangWeiTan)
+* Alejandro Pasos Ruiz (a.pasos-ruiz@uea.ac.uk)
 
 We welcome anyone who would like to contribute their algorithms! 
 

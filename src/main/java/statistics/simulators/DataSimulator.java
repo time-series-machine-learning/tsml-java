@@ -1,4 +1,22 @@
 /*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
+
+/*
  Base class for data simulator. Three use cases. 
 
 1. Set up models externally then call generateData
@@ -16,13 +34,11 @@ Instances data=ds.generateData();
 package statistics.simulators;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.transformers.RowNormalizer;
 
 /**
  *
@@ -95,18 +111,18 @@ public class DataSimulator {
             for(int i=0;i<casesPerClass.length;i++)
                 casesPerClass[i]=nosPerClass;
         }
-        FastVector atts=new FastVector();
+        ArrayList<Attribute> atts=new ArrayList<>();
         nosClasses=casesPerClass.length;
         int totalCases=casesPerClass[0];
         for(int i=1;i<casesPerClass.length;i++)
                 totalCases+=casesPerClass[i];
         for(int i=1;i<=seriesLength;i++){
-                atts.addElement(new Attribute(models.get(0).getAttributeName()+i));
+                atts.add(new Attribute(models.get(0).getAttributeName()+i));
         }
-        FastVector fv=new FastVector();
+        ArrayList<String> fv=new ArrayList<>();
         for(int i=0;i<nosClasses;i++)
-                fv.addElement(""+i);
-        atts.addElement(new Attribute("Target",fv));
+                fv.add(""+i);
+        atts.add(new Attribute("Target",fv));
         data = new Instances(models.get(0).getModelType(),atts,totalCases);
 
         double[] d;
@@ -150,9 +166,9 @@ public class DataSimulator {
 //        initialise();//Rest models? depends if the model is deterministic! might cause some problems either way
         data[1]=generateDataSet();
  //Normalise
-        NormalizeCase nc= new NormalizeCase();
-        data[0]=nc.process(data[0]);
-        data[1]=nc.process(data[1]);
+        RowNormalizer nc= new RowNormalizer();
+        data[0]=nc.transform(data[0]);
+        data[1]=nc.transform(data[1]);
             return data;
         
         
@@ -160,9 +176,8 @@ public class DataSimulator {
     
     
     public double[] generate(int length, int modelNos){
-        double[] d=new double[length];
         Model a=models.get(modelNos);
-        d=a.generateSeries(length);
+        double[] d=a.generateSeries(length);
         return d;
     }
 /** 

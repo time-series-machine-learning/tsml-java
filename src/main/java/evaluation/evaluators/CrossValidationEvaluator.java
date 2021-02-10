@@ -1,16 +1,18 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation.evaluators;
 
@@ -53,6 +55,11 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
         this.foldIndexing = null;
         this.numFolds = 10;
     }
+
+    public CrossValidationEvaluator(int numFolds) {
+        this();
+        setNumFolds(numFolds);
+    }
     
     public CrossValidationEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean cloneClassifiers, boolean maintainClassifiers) {
         super(seed,cloneData,setClassMissing, cloneClassifiers, maintainClassifiers);
@@ -79,7 +86,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     @Override
     public synchronized ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
         ClassifierResults res = crossValidateWithStats(classifier, dataset);
-        if (!REGRESSION_HACK) res.findAllStatsOnce();
+        res.findAllStatsOnce();
         return res;
     }
     
@@ -229,10 +236,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
                 //even if the lower-level evaluator resolved ties e.g. naively per fold
                 //todo review
                 double tiesResolvedRandomlyPred;
-                if(REGRESSION_HACK) 
-                    tiesResolvedRandomlyPred = Double.isNaN(dist[0]) ? 0 : dist[(int)indexOfMax(dist)];
-                else 
-                    tiesResolvedRandomlyPred = indexOfMax(dist);
+                tiesResolvedRandomlyPred = indexOfMax(dist);
 
                 preds[originalIndex] = tiesResolvedRandomlyPred;
             }
@@ -321,8 +325,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //                    allFolds_distsForInsts[classifierIndex][instIndex] = dist;
 //                    allFolds_predTimes[classifierIndex][instIndex] = predTime;
 //
-//                    if(REGRESSION_HACK) classifierFoldRes.addPrediction(classVal, dist, Double.isNaN(dist[0]) ? 0 : dist[(int) indexOfMax(dist)], predTime, "");
-//                    else classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
+//                    classifierFoldRes.addPrediction(classVal, dist, indexOfMax(dist), predTime, "");
 //                }    
 //                
 //                long foldEstimateTime = System.nanoTime() - foldEstimateTimeStart;
@@ -330,7 +333,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //                
 //                classifierFoldRes.turnOnZeroTimingsErrors();
 //                classifierFoldRes.finaliseResults();
-//                if(!REGRESSION_HACK) classifierFoldRes.findAllStatsOnce();
+//                classifierFoldRes.findAllStatsOnce();
 //                resultsPerFold[classifierIndex][fold] = classifierFoldRes;
 //                
 //                if (cloneClassifiers && !maintainClassifiers)
@@ -354,8 +357,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
 //            for (int i = 0; i < dataset.numInstances(); i++) {
 //                double tiesResolvedRandomlyPred;
 //
-//                if(REGRESSION_HACK) tiesResolvedRandomlyPred = Double.isNaN(allFolds_distsForInsts[c][i][0]) ? 0 : allFolds_distsForInsts[c][i][(int)indexOfMax(allFolds_distsForInsts[c][i])];
-//                else tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
+//                tiesResolvedRandomlyPred = indexOfMax(allFolds_distsForInsts[c][i]);
 //
 //                results[c].addPrediction(allFolds_distsForInsts[c][i], tiesResolvedRandomlyPred, allFolds_predTimes[c][i], "");
 //            }

@@ -1,28 +1,49 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities;
 /*
  * Created on Dec 4, 2005
 
  */
 
-import evaluation.storage.ClassifierResults;
-import evaluation.evaluators.SingleTestSetEvaluator;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Random;
+
+import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
+import fileIO.OutFile;
+import machine_learning.classifiers.kNN;
+import statistics.distributions.NormalDistribution;
+import tsml.classifiers.TSClassifier;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
+import java.util.logging.Level;
+
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
+import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
 import weka.classifiers.*;
 import weka.classifiers.bayes.*;
 
@@ -30,27 +51,23 @@ import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
-import weka.classifiers.functions.supportVector.RBFKernel;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Randomizable;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 
 import fileIO.OutFile;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import statistics.distributions.NormalDistribution;
-import weka_extras.classifiers.kNN;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.converters.ArffSaver;
+import machine_learning.classifiers.kNN;
 
 /**
  * @author ajb
@@ -78,6 +95,29 @@ public class ClassifierTools {
 			try{
 				predictedClass=c.classifyInstance(d);
 				trueClass=d.classValue();
+				if(trueClass==predictedClass)
+					a++;
+//				System.out.println("True = "+trueClass+" Predicted = "+predictedClass);
+			}catch(Exception e){
+                            System.out.println(" Error with instance "+i+" with Classifier "+c.getClass().getName()+" Exception ="+e);
+                            e.printStackTrace();
+                            System.exit(0);
+                        }
+		}
+		return a/size;
+    }	
+    
+    public static double accuracy(TimeSeriesInstances test, TSClassifier c){
+		double a=0;
+		int size=test.numInstances();
+		TimeSeriesInstance d;
+		double predictedClass,trueClass;
+		for(int i=0;i<size;i++)
+		{
+			d=test.get(i);
+			try{
+				predictedClass=c.classifyInstance(d);
+				trueClass=d.getLabelIndex();
 				if(trueClass==predictedClass)
 					a++;
 //				System.out.println("True = "+trueClass+" Predicted = "+predictedClass);
@@ -245,7 +285,7 @@ public class ClassifierTools {
 
     }
 		
-    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed){
+    public static double stratifiedCrossValidation(Instances data, Classifier c, int folds, int seed) throws Exception{
         Random rand = new Random(seed);   // create seeded number generator
         Instances randData = new Instances(data);   // create copy of original data
         randData.randomize(rand);         // randomize data with number generator
@@ -255,19 +295,14 @@ public class ClassifierTools {
         for (int n = 0; n < folds; n++) {
            Instances train = randData.trainCV(folds, n);
            Instances test = randData.testCV(folds, n);
-           try{
-               c.buildClassifier(train);
-                for(Instance ins:test){
-                    int pred=(int)c.classifyInstance(ins);
-                    if(pred==ins.classValue())
-                        correct++;
-                }
+           c.buildClassifier(train);
+            for(Instance ins:test){
+                int pred=(int)c.classifyInstance(ins);
+                if(pred==ins.classValue())
+                    correct++;
+            }
 //                System.out.println("Finished fold "+n+" acc ="+((double)correct/((n+1)*test.numInstances())));
-           }catch(Exception e){
-               System.err.println("ERROR BUILDING FOLD "+n+" for data set "+data.relationName());
-               e.printStackTrace();
-               System.exit(1);
-           }
+  
         }            
         return ((double)correct)/total;
     }
@@ -446,8 +481,104 @@ public class ClassifierTools {
         //use up to date method in case external usages exist
         return new SingleTestSetEvaluator().evaluate(classifier, test);
     }
-	
-    
+
+    /**
+     * Conducts a full run of a classifier on some train and test data with a set seed, printing off the stats / results. This is intended for reducing boilerplate main method code in each classifier.
+     * @param classifier
+     * @param trainAndTestData
+     * @param seed
+     * @throws Exception
+     */
+    public static void trainTestPrint(Classifier classifier, Instances[] trainAndTestData, int seed) throws Exception {
+        Random random = new Random(seed);
+        MemoryWatcher overallMemoryWatcher = new MemoryWatcher();
+        StopWatch overallTimer = new StopWatch();
+        overallMemoryWatcher.resetAndStart();
+        overallTimer.resetAndStart();
+        MemoryWatcher memoryWatcher = new MemoryWatcher();
+        StopWatch timer = new StopWatch();
+        if(classifier instanceof Loggable) {
+            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
+        }
+        final Instances trainData = trainAndTestData[0];
+        final Instances testData = trainAndTestData[1];
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
+        classifier.buildClassifier(trainData);
+        timer.stop();
+        memoryWatcher.stop();
+        System.out.println();
+        System.out.println("train time: " + timer.getTime());
+        System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println();
+//        GcFinalization.awaitFullGc();
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            if(((EnhancedAbstractClassifier) classifier).getEstimateOwnPerformance()) {
+                ClassifierResults trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
+                ResultUtils.setInfo(trainResults, classifier, trainData);
+                System.out.println("train results:");
+                System.out.println(trainResults.writeFullResultsToString());
+                System.out.println();
+            }
+        }
+        timer.resetAndStart();
+        memoryWatcher.resetAndStart();
+        ClassifierResults testResults = new ClassifierResults();
+        for(Instance instance : testData) {
+            addPrediction(classifier, instance, testResults, random);
+        }
+        memoryWatcher.stop();
+        timer.stop();
+        ResultUtils.setInfo(testResults, classifier, trainData);
+        System.out.println("test time: " + timer.getTime());
+        System.out.println("test mem: " + memoryWatcher.toString());
+        System.out.println("test results:");
+        System.out.println(testResults.writeFullResultsToString());
+        overallMemoryWatcher.stop();
+        overallTimer.stop();
+        System.out.println();
+        System.out.println("overall time: " + overallTimer.getTime());
+        System.out.println("overall mem: " + overallMemoryWatcher.toString());
+    }
+
+    /**
+     * Add the prediction of several test cases to a results object.
+     * @param classifier
+     * @param testData
+     * @param results
+     * @param random
+     * @throws Exception
+     */
+    public static void addPredictions(Classifier classifier, Instances testData, ClassifierResults results, Random random)
+            throws Exception {
+        for(Instance test : testData) {
+            addPrediction(classifier, test, results, random);
+        }
+    }
+
+    /**
+     * Add a prediction of a single test case to a results obj.
+     * @param classifier
+     * @param test
+     * @param results
+     * @param random
+     * @throws Exception
+     */
+    public static void addPrediction(Classifier classifier, Instance test, ClassifierResults results, Random random) throws Exception {
+        final double classValue = test.classValue();
+        test.setClassMissing();
+        long timestamp = System.nanoTime();
+        final double[] distribution = classifier.distributionForInstance(test);
+        long testTime = System.nanoTime() - timestamp;
+        if(classifier instanceof TestTimeable) {
+            testTime = ((TestTimeable) classifier).getTestTime();
+        }
+        final double prediction = Utilities.argMax(distribution, random);
+        results.addPrediction(classValue, distribution, prediction, testTime, null);
+        test.setClassValue(classValue);
+    }
+
+
     public static class ResultsStats{
         public double accuracy;
         public double sd;
@@ -699,4 +830,41 @@ public class ClassifierTools {
         return data;
     }
         
+    
+    /**
+     * Simple utility method to evaluate the given classifier on the ItalyPowerDemand dataset (fold 0)
+     * and return the results. 
+     */
+    public static ClassifierResults testUtils_evalOnIPD(Classifier c) throws Exception { 
+        int seed = 0;
+        
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(seed, true, true);
+        
+        return eval.evaluate(c, data[0], data[1]);
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * in order to get the expected accuracy in the first place. It is up to the human 
+     * that the value returned is in fact 'correct' to the best of their knowledge, 
+     * tests of this nature will only confirm reproducability, but the classifier
+     * could e.g. be consistently WRONG.
+     */
+    public static double testUtils_getIPDAcc(Classifier c) throws Exception { 
+        return testUtils_evalOnIPD(c).getAcc();
+    }
+    
+    /**
+     * Simple utility method to evaluate the classifier on the ItalyPowerDemand dataset (fold 0),
+     * and compare the test accuracy to a given expected value (defined by prior 
+     * experimentation/confirmation by human). 
+     */
+    public static boolean testUtils_confirmIPDReproduction(Classifier c, double expectedTestAccuracy, String dateOfExpectedAcc) throws Exception { 
+        ClassifierResults res = testUtils_evalOnIPD(c);
+        System.out.println("Expected accuracy generated " + dateOfExpectedAcc);
+        System.out.println("Expected accuracy: " + expectedTestAccuracy + " Actual accuracy: " + res.getAcc());
+        return res.getAcc() == expectedTestAccuracy;
+    }
+
 }

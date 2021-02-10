@@ -1,31 +1,37 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
+import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
+import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
+
+import java.io.Serializable;
 
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
  */
-public abstract class Evaluator {
-    
-    //cursed code to allow tuning of regressors, should be removed if we ever delve deeper into regression stuff
-    public static boolean REGRESSION_HACK = false; //@matthew
+public abstract class Evaluator implements Randomizable, ParamHandler, Serializable {
     
     int seed;
     
@@ -54,10 +60,12 @@ public abstract class Evaluator {
         this.setClassMissing = setClassMissing;
     }
     
+    @Override
     public int getSeed() {
         return seed;
     }
     
+    @Override
     public void setSeed(int seed) {
         this.seed = seed;
     }
@@ -110,6 +118,11 @@ public abstract class Evaluator {
     
     public abstract ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception;
     
-    
-    public abstract Evaluator cloneEvaluator();
+    public Evaluator cloneEvaluator() {
+        try {
+            return (Evaluator) CopierUtils.deepCopy(this);
+        } catch(Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }

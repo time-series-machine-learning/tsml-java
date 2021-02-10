@@ -1,28 +1,26 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Formatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  *
@@ -136,5 +134,72 @@ public class GenericTools {
             for (int j = 0; j < in[0].length; j++)
                 out[j][i] = in[i][j];
         return out;
+    }
+
+    public static class SortIndexDescending implements Comparator<Integer> {
+        private double[] values;
+
+        public SortIndexDescending(double[] values){
+            this.values = values;
+        }
+
+        public Integer[] getIndicies(){
+            Integer[] indicies = new Integer[values.length];
+            for (int i = 0; i < values.length; i++) {
+                indicies[i] = i;
+            }
+            return indicies;
+        }
+
+        @Override
+        public int compare(Integer index1, Integer index2) {
+            if (values[index2] < values[index1]){
+                return -1;
+            }
+            else if (values[index2] > values[index1]){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+    }
+
+    public static class SortIndexAscending implements Comparator<Integer>{
+        private double[] values;
+
+        public SortIndexAscending(double[] values){
+            this.values = values;
+        }
+
+        public Integer[] getIndicies(){
+            Integer[] indicies = new Integer[values.length];
+            for (int i = 0; i < values.length; i++) {
+                indicies[i] = i;
+            }
+            return indicies;
+        }
+
+        @Override
+        public int compare(Integer index1, Integer index2) {
+            if (values[index1] < values[index2]){
+                return -1;
+            }
+            else if (values[index1] > values[index2]){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+    }
+
+    public static double[] linSpace(int numValues, double min, double max){
+        double[] d = new double[numValues];
+        double step = (max-min)/(numValues-1);
+        for (int i = 0; i < numValues; i++){
+            d[i] = min + i * step;
+        }
+        return d;
     }
 }

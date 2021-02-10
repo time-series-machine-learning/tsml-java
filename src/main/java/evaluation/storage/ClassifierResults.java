@@ -1,16 +1,18 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation.storage;
 
@@ -26,9 +28,8 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.DebugPrinting;
-import utilities.GenericTools;
-import utilities.InstanceTools;
+
+import utilities.*;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
@@ -55,15 +56,16 @@ import utilities.InstanceTools;
  *  [LINE 2 OF FILE]
  *    - get/setParas(String)
  *  [LINE 3 OF FILE]
- *    - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
- *    - get/setBuildTime(long)
- *    - get/setTestTime(long)
- *    - get/setBenchmarkTime(long)
- *    - get/setMemory(long)
- *    - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
- *    - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
- *    - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
- *    - get/setBuildAndEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *   1 - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
+ *   2 - get/setBuildTime(long)
+ *   3 - get/setTestTime(long)
+ *   4 - get/setBenchmarkTime(long)
+ *   5 - get/setMemory(long)
+ *   6 - (set)numClasses(int) (either set by user or indirectly found through predicted probability distributions)
+ *   7 - get/setErrorEstimateMethod(String) (loosely formed, e.g. cv_10)
+ *   8 - get/setErrorEstimateTime(long) (time to form an estimate from scratch, e.g. time of cv_10)
+ *   9 - get/setBuildPlusEstimateTime(long) (time to train on full data, AND estimate error on it)
+ *
  *  [REMAINING LINES: PREDICTIONS]
  *    - trueClassVal, predClassVal,[empty], dist[0], dist[1] ... dist[c],[empty], predTime, [empty], predDescription
  *
@@ -131,7 +133,7 @@ import utilities.InstanceTools;
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
  */
-public class ClassifierResults implements DebugPrinting, Serializable{
+public class ClassifierResults implements DebugPrinting, Serializable {
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -147,7 +149,6 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private String datasetName = "";
     private int foldID = -1;
     private String split = ""; //e.g train or test
-
 
     private enum FileType {
         /**
@@ -191,10 +192,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     private double acc = -1;
 
     /**
-     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter set builds, etc
+     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter
+     * set builds, etc It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
+     * default milliseconds, nanoseconds recommended. If no benchmark time is supplied, the default value is -1
      *
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
-     * If no benchmark time is supplied, the default value is -1
      */
     private long buildTime = -1;
 
@@ -205,7 +206,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
      * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
      * If no benchmark time is supplied, the default value is -1
      */
-    private long testTime = -1; //total testtime for all predictions
+    private long testTime = -1; //total test time for all predictions
 
     /**
      * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise)
@@ -255,11 +256,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -370,13 +370,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
 
-    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
-        double MAA = 0;
-        for (int i = 0; i < cr.numInstances; i++){
-            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
-        }
-        return -(MAA/cr.numInstances);
-    };
+    public static final Function<ClassifierResults, Double> GETTER_MemoryMB = (ClassifierResults cr) -> { return (double)(cr.memoryUsage/1e+6); };
 
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -391,6 +385,25 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.errorEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime - cr.buildTime, cr.timeUnit);};
+
+    public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
+
+    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_buildTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalTestTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_avgTestPredTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_additionalTimeForEstimateDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
+
+    private static double divideAvoidInfinity(double a, double b) {
+        if(b == 0) {
+            // avoid divide by 0 --> infinity
+            return a;
+        } else {
+            return a / b;
+        }
+    }
+
 
     private static double toDoubleMillis(long time, TimeUnit unit) {
         if (time < 0)
@@ -418,6 +431,9 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         }
     }
 
+    private static double benchmarkMillis(double millisTime, double benchmarkTime) {
+        return millisTime / benchmarkTime;
+    }
 
 
     /*********************************
@@ -775,9 +791,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * @throws Exception if buildTime is less than 1
      */
-    public void setBuildTime(long buildTime) throws Exception {
+    public void setBuildTime(long buildTime) {
         if (errorOnTimingOfZero && buildTime < 1)
-            throw new Exception("Build time passed has invalid value, " + buildTime + ". If greater resolution is needed, "
+            throw new RuntimeException("Build time passed has invalid value, " + buildTime + ". If greater resolution" +
+                                           " is needed, "
                         + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
                     + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
                     + "for this call");
@@ -885,14 +902,15 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
 
 
+
+
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -904,11 +922,10 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     /**
      * This measures the total time to build the classifier on the train data
      * AND to estimate the classifier's error on the same train data. For classifiers
-     * that do not implement TrainAccuracyEstimator, i.e. that do not estimate their
-     * own error in some way during the build process, this will simply be the
-     * buildTime and the errorEstimateTime added together.
+     * that do not estimate their own error in some way during the build process, 
+     * this will simply be the buildTime and the errorEstimateTime added together.
      *
-     * For classifiers that DO implement TrainAccuracyEstimator, buildPlusEstimateTime may
+     * For classifiers that DO estimate their own error, buildPlusEstimateTime may
      * be anywhere between buildTime and buildTime+errorEstimateTime. Some or all of
      * the work needed to form an estimate (which the field errorEstimateTime measures from scratch)
      * may have already been accounted for by the buildTime
@@ -1077,7 +1094,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
         if (predDistributions == null || predClassValues == null ||
                 predDistributions.isEmpty() || predClassValues.isEmpty())
-            throw new Exception("finaliseTestResults(): no test predictions stored for this module");
+            throw new Exception("finaliseTestResults(): no predictions stored for this module");
 
         double correct = .0;
         for (int inst = 0; inst < predClassValues.size(); inst++)
@@ -1600,11 +1617,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
                 buildTimeDuplicateWarningPrinted = true;
             }
-
-            buildTime = Long.parseLong(parts[1]);
+            double x=Double.parseDouble(parts[1]); //todo fix this hack. Why just these two? should doubles be allowed?
+            buildTime = (long)x;
         }
-        if (parts.length > 2)
-            testTime = Long.parseLong(parts[2]);
+        if (parts.length > 2) {
+            double x = Double.parseDouble(parts[1]);
+            testTime  = (long)x;
+        }
         if (parts.length > 3)
             benchmarkTime = Long.parseLong(parts[3]);
         if (parts.length > 4)
@@ -1684,7 +1703,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
                     if (predDistributions == null || predDistributions.isEmpty() || predDistributions.get(0) == null) {
                         if (printDistMissingWarning)
-                            System.out.println("Probabiltiy distributions missing from file: " + path);
+                            System.out.println("Probability distributions missing from file: " + path);
                     }
 
                     break;
@@ -2170,9 +2189,46 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         return concatenatedResults;
     }
 
-
-
-
+    /**
+     * Creates a (shallow) copy of the given results object, and returns one that 
+     * is identical in all ways except for each probability distribution is rounded 
+     * to the number of decimal places it would be written to file with (default 6), 
+     * GenericTools.RESULTS_DECIMAL_FORMAT.format(d)
+     */
+    public static ClassifierResults util_roundAllPredictionDistsToDefaultPlaces(ClassifierResults res) throws Exception {
+        double[][] oldDists = res.getProbabilityDistributionsAsArray();
+        double[][] roundedDists = new double[oldDists.length][oldDists[0].length];
+        
+        for (int i = 0; i < oldDists.length; i++)
+            for (int j = 0; j < oldDists[i].length; j++)
+                //TODO this is horrible. 
+                roundedDists[i][j] = Double.valueOf(GenericTools.RESULTS_DECIMAL_FORMAT.format(oldDists[i][j])); 
+        
+        ClassifierResults newres = new ClassifierResults(res.getTrueClassValsAsArray(), 
+                res.getPredClassValsAsArray(), 
+                roundedDists, 
+                res.getPredictionTimesAsArray(), 
+                res.getPredDescriptionsAsArray());
+        
+        
+        newres.setClassifierName(res.getClassifierName());
+        newres.setDatasetName(res.getDatasetName());
+        newres.setFoldID(res.getFoldID());
+        newres.setTimeUnit(res.getTimeUnit());
+        newres.setDescription(res.getDescription());
+        
+        newres.setParas(res.paras);
+        
+        newres.setBuildTime(res.getBuildTime());
+        newres.setErrorEstimateTime(res.getErrorEstimateTime());
+        newres.setErrorEstimateMethod(res.getErrorEstimateMethod());
+        newres.setBenchmarkTime(res.getBenchmarkTime());
+        newres.setMemory(res.getMemory());
+        
+        newres.findAllStatsOnce();
+        
+        return newres;
+    }
 
 
 
