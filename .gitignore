@@ -38,3 +38,6 @@ build.xml
 nbproject/
 manifest.mf
 defaultShapeletOutput.txt
+
+#Personal packages
+src/main/java/Michael/*
