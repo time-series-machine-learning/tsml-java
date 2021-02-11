@@ -254,7 +254,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 			if (j != classIndex) {
 				for (int i = 0; i < r.numInstances(); i++) {
 					double x = r.instance(i).value(j);
-					r.instance(i).setValue(i, (x - mean[j]) / (stdev[j]));
+					r.instance(i).setValue(j, (x - mean[j]) / (stdev[j]));
 				}
 			}
 		}
