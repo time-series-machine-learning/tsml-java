@@ -82,7 +82,7 @@ import static utilities.StatisticalUtilities.median;
 public class RISE_FisherProxy extends EnhancedAbstractClassifier implements TrainTimeContractable, TechnicalInformationHandler, Checkpointable, Tuneable {
 
     boolean tune = true;
-    TransformType[] transforms = {TransformType.FFT, TransformType.ACF};
+    TransformType[] transforms = {TransformType.FFT, TransformType.AF};
     //maxIntervalLength is used when contract is set. Via the timer the interval space is constricted to prevent breach
     // on contract.
     private int maxIntervalLength = 0;
@@ -1048,7 +1048,7 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
         int index = 0;
         int numFolds = 5;
 
-        for (int i = 0; i < trainingData.numClasses(); i++) {
+        for (int i = 0; i < trainingData.numInstances(); i++) {
             classCounts[(int)trainingData.get(i).classValue()]++;
         }
 
@@ -1057,17 +1057,24 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
             System.out.print(transforms[i] + "\t\t\t");
             c = new RISE_FisherProxy();
             Instances transformed = c.transformInstances(trainingData, transforms[i]);
-            ColumnNormalizer rn = new ColumnNormalizer();
-            rn.fit(transformed);
-            rn.setNormMethod(ColumnNormalizer.NormType.STD_NORMAL);
-            Instances data = rn.transform(transformed);
+            Instances data = null;
+
+            if(transforms[i] != TransformType.AF){
+                ColumnNormalizer rn = new ColumnNormalizer();
+                rn.fit(transformed);
+                rn.setNormMethod(ColumnNormalizer.NormType.STD_NORMAL);
+                data = rn.transform(transformed);
+            }else{
+                data = transformed;
+            }
+
 
             for (int j = 0; j < FeatureSet.numFeatures; j++) {
                 double[] x = new double[trainingData.size()];
                 double[] y = new double[trainingData.size()];
                 for (int k = 0; k < trainingData.size(); k++) {
                     x[k] = FeatureSet.calcFeatureByIndex(j, 0, data.get(k).numAttributes() - 1, data.get(k).toDoubleArray());
-                    y[k] = data.get(k).numAttributes() - 1;
+                    y[k] = data.get(k).classValue();
                 }
                 cAcc += fisherScore(x, y, classCounts);
             }
@@ -1081,7 +1088,7 @@ public class RISE_FisherProxy extends EnhancedAbstractClassifier implements Trai
             System.out.println();
             cAcc = 0;
         }
-        this.setTransformType(TransformType.values()[index]);
+        this.setTransformType(transforms[index]);
     }
 
     /**
