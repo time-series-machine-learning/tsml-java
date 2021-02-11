@@ -30,17 +30,14 @@ import tsml.classifiers.dictionary_based.boss_variants.BOSSC45;
 import tsml.classifiers.dictionary_based.SpatialBOSS;
 import tsml.classifiers.dictionary_based.boss_variants.BoTSWEnsemble;
 import tsml.classifiers.distance_based.*;
-import tsml.classifiers.interval_based.RISE_KNNProxy;
+import tsml.classifiers.interval_based.*;
 import tsml.classifiers.hybrids.ROCKETClassifier;
-import tsml.classifiers.interval_based.CIF;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
-import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
-import tsml.classifiers.interval_based.LPS;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
@@ -312,35 +309,27 @@ public class ClassifierLists {
     /**
      * FREQUENCY BASED: Classifiers that work in the spectral/frequency domain
      */
-    public static String[] frequency= {"RISE", "RISE_FFT", "RISE_ACF", "RISE_SPEC", "RISE_MFCC", "RISE_AF"};
+    public static String[] frequency= {"RISE_KNNProxy", "RISE_RISEProxy", "RISE_FisherProxy"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
     private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
-            case "RISE":
+            case "RISE_KNNProxy":
                 c=new RISE_KNNProxy();
+                ((RISE_KNNProxy)c).setTuneTransform(true);
+                ((RISE_KNNProxy)c).setTransformsToTuneWith(new RISE_KNNProxy.TransformType[]{RISE_KNNProxy.TransformType.FFT, RISE_KNNProxy.TransformType.ACF, RISE_KNNProxy.TransformType.AF, RISE_KNNProxy.TransformType.MFCC});
                 break;
-            case "RISE_FFT":
-                c=new RISE_KNNProxy();
-                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.FFT);
+            case "RISE_RISEProxy":
+                c=new RISE_RISEProxy();
+                ((RISE_RISEProxy)c).setTuneTransform(true);
+                ((RISE_RISEProxy)c).setTransformsToTuneWith(new RISE_RISEProxy.TransformType[]{RISE_RISEProxy.TransformType.FFT, RISE_RISEProxy.TransformType.ACF, RISE_RISEProxy.TransformType.AF, RISE_RISEProxy.TransformType.MFCC});
                 break;
-            case "RISE_ACF":
-                c=new RISE_KNNProxy();
-                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.ACF);
-                break;
-            case "RISE_SPEC":
-                c=new RISE_KNNProxy();
-                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.SPEC);
-                break;
-            case "RISE_MFCC":
-                c=new RISE_KNNProxy();
-                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.MFCC);
-                break;
-            case "RISE_AF":
-                c=new RISE_KNNProxy();
-                ((RISE_KNNProxy)c).setTransformType(RISE_KNNProxy.TransformType.AF);
+            case "RISE_FisherProxy":
+                c=new RISE_FisherProxy();
+                ((RISE_FisherProxy)c).setTuneTransform(true);
+                ((RISE_FisherProxy)c).setTransformsToTuneWith(new RISE_FisherProxy.TransformType[]{RISE_FisherProxy.TransformType.FFT, RISE_FisherProxy.TransformType.ACF, RISE_FisherProxy.TransformType.AF, RISE_FisherProxy.TransformType.MFCC});
                 break;
             default:
                 System.out.println("Unknown interval based classifier, should not be able to get here ");
