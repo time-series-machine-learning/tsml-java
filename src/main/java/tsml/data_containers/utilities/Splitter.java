@@ -101,7 +101,7 @@ public class Splitter{
             for(double[] o : out)
                 ts_data.add(new TimeSeries(o));
         }   
-        return new TimeSeriesInstance(inst_dims.get(0).getLabelIndex(), inst_dims.get(0).getClassLabels(), ts_data);
+        return new TimeSeriesInstance(inst_dims.get(0).getLabelIndex(), ts_data);
     }
 
      //could merge dimension slices like. {0,1}, {2}, {3,4}

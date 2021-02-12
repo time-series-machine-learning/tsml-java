@@ -145,7 +145,7 @@ public class PowerSpectrum extends FFT {
             out_data.add(vals);
         }
 
-        return new TimeSeriesInstance(out_data, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out_data, inst.getLabelIndex());
     }
 
 

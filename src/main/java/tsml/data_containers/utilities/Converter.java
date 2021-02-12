@@ -182,10 +182,9 @@ public class Converter {
             
 
     }
-    
-    public static Instance toArff(TimeSeriesInstance tsinst) {
-        final TimeSeriesInstances tsinsts =
-                new TimeSeriesInstances(new TimeSeriesInstance[]{tsinst}, tsinst.getClassLabels());
+
+    public static Instance toArff(TimeSeriesInstance tsinst, String[] Labels) {
+        final TimeSeriesInstances tsinsts = new TimeSeriesInstances(new TimeSeriesInstance[]{tsinst}, Labels);
         final Instances insts = toArff(tsinsts);
         return insts.get(0);
     }
