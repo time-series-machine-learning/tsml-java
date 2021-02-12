@@ -344,7 +344,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         // can classifier handle the data?
-        if (getTSCapabilities().test(data))
+        boolean canHandle = getTSCapabilities().test(data);
+        if (!canHandle)
             throw new Exception("TSF cannot handle this type of data");
 
         long startTime = System.nanoTime();
@@ -793,28 +794,33 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
         double[] d = new double[ins.getClassLabels().length];
-        List<Double> tempSeries = ins.get(0).getSeries();
-        double[] series = tempSeries.stream().mapToDouble(data -> data).toArray();
+        double[] series = ins.get(0).toValueArray();
+        double[] tempData = new double[numIntervals * 3];
 
         for (int i = 0; i < trees.size(); i++) {
             for (int j = 0; j < numIntervals; j++) {
                 // extract all intervals
                 FeatureSet f = new FeatureSet();
                 f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
-                series[j * 3] = f.mean;
-                series[j * 3 + 1] = f.stDev;
-                series[j * 3 + 2] = f.slope;
+                tempData[j * 3] = f.mean;
+                tempData[j * 3 + 1] = f.stDev;
+                tempData[j * 3 + 2] = f.slope;
             }
             if (voteEnsemble) {
                 double[][] temp = new double[1][series.length];
-                temp[0] = series;
+                temp[0] = tempData;
+
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
-                int c = (int) trees.get(i).classifyInstance(Converter.toArff(ts));
-                d[c]++;
+                Instance tempInstance = Converter.toArff(ts);
+                tempInstance.setClassMissing();
+
+                double tempTEST = trees.get(i).classifyInstance(tempInstance); // TODO: PROBLEM LINE
+                System.out.println("TS: " + tempTEST);
+                d[(int)tempTEST]++;
             }
             else {
                 double[][] temp2d = new double[1][series.length];
-                temp2d[0] = series;
+                temp2d[0] = tempData;
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp2d, ins.getLabelIndex());
                 double[] temp = trees.get(i).distributionForInstance(Converter.toArff(ts));
                 for (int j = 0; j < temp.length; j++)
