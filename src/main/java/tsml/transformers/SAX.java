@@ -267,7 +267,7 @@ public class SAX implements Transformer, TechnicalInformationHandler {
             out[i++] = o;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**

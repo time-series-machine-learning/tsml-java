@@ -111,7 +111,7 @@ public class Subsequences implements Transformer {
                 out[i++] = d;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**

@@ -126,7 +126,7 @@ public class PowerCepstrum extends PowerSpectrum{
                 values[i][j] = complex[j].real*complex[j].real+complex[j].imag*complex[j].imag;
         }
 
-        return new TimeSeriesInstance(values, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(values, inst.getLabelIndex());
     }
     
 
