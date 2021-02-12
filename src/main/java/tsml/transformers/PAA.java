@@ -111,7 +111,7 @@ public class PAA implements Transformer {
             out[i++] = convertInstance(ts.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     private double[] convertInstance(double[] data)

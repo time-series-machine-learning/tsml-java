@@ -229,7 +229,7 @@ public class Resizer implements TrainableTransformer {
             i++;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     @Override

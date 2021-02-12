@@ -200,7 +200,7 @@ public class RunLength implements Transformer {
             out[i++] = create_data(ts.toValueArray(), useGlobalMean ? globalMean : TimeSeriesSummaryStatistics.mean(ts));
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 	
 	
