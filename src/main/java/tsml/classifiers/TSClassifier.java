@@ -27,17 +27,20 @@ public interface TSClassifier{
     
 
     public Classifier getClassifier();
+    public TimeSeriesInstances getTSTrainData();
+    public void setTSTrainData(TimeSeriesInstances train);
 
     public default void buildClassifier(TimeSeriesInstances data) throws Exception{
+        setTSTrainData(data);
         getClassifier().buildClassifier(Converter.toArff(data));
     }
 
     public default double[] distributionForInstance(TimeSeriesInstance inst) throws Exception{
-        return getClassifier().distributionForInstance(Converter.toArff(inst));
+        return getClassifier().distributionForInstance(Converter.toArff(inst, getTSTrainData().getClassLabels()));
     }
 
     public default double classifyInstance(TimeSeriesInstance inst) throws Exception{
-        return getClassifier().classifyInstance(Converter.toArff(inst));
+        return getClassifier().classifyInstance(Converter.toArff(inst, getTSTrainData().getClassLabels()));
     }
 
     public default double[][] distributionForInstances(TimeSeriesInstances data) throws Exception {

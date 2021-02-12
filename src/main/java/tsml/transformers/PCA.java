@@ -176,6 +176,7 @@ public class PCA implements TrainableTransformer {
 
     private PrincipalComponents[] pca_transforms;
     private int[] attributesToKeep_dims;
+    private String[] trainLabels;
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
@@ -185,7 +186,7 @@ public class PCA implements TrainableTransformer {
         for(int i=0; i<pca_transforms.length; i++){
             pca = pca_transforms[i];
             numAttributesToKeep = attributesToKeep_dims[i];
-            out.add(Converter.fromArff(transform(Converter.toArff(split_inst.get(i)))));
+            out.add(Converter.fromArff(transform(Converter.toArff(split_inst.get(i), trainLabels))));
         }
 
         return Splitter.mergeTimeSeriesInstance(out);
@@ -197,6 +198,7 @@ public class PCA implements TrainableTransformer {
         
         pca_transforms = new PrincipalComponents[split.size()];
         attributesToKeep_dims = new int[split.size()];
+        trainLabels = data.getClassLabels();
 
         for(int i=0; i<data.getMaxNumChannels(); i++){
             pca_transforms[i] = new PrincipalComponents();

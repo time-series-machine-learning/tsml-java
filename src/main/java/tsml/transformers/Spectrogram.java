@@ -139,7 +139,7 @@ public class Spectrogram implements Transformer {
                 out.add(new TimeSeries(spec));
             }
         }
-        return new TimeSeriesInstance(inst.getLabelIndex(), inst.getClassLabels(), out);
+        return new TimeSeriesInstance(inst.getLabelIndex(), out);
     }
 
     public int getNumWindows(int signalLength) {
