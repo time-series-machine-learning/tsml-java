@@ -19,6 +19,8 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
@@ -94,8 +96,12 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "1NN-ED","1NN-DTW","1NN-DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","PF","FastElasticEnsemble",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID", "NN_ShapeDTW"
+//Nearest Neighbour with distances
+        "1NN-ED","1NN-DTW","1NN-DTWCV", "DD_DTW","DTD_C","CID_DTW","NN_CID", "NN_ShapeDTW",
+//EE derivatives
+            "ElasticEnsemble","EE","LEE","ApproxElasticEnsemble","FastElasticEnsemble",
+//Tree based
+            "ProximityForest","PF"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -110,6 +116,10 @@ public class ClassifierLists {
                 c = new DTW_kNN();
                 ((DTW_kNN)c).optimiseWindow(false);
                 ((DTW_kNN)c).setMaxR(1.0);
+                break;
+            case "1NN-DTW_New":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new DTWDistance());
                 break;
             case "1NN-DTWCV":
                 c = new DTWCV();
