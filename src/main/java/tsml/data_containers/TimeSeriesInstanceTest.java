@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
 
 public class TimeSeriesInstanceTest {
     
@@ -66,9 +65,7 @@ public class TimeSeriesInstanceTest {
     @Test
     public void testCtorArray() {
         instB = new TimeSeriesInstance(arrayB);
-        assertArrayEquals(EMPTY_CLASS_LABELS, instB.getClassLabels());
         assertEquals(-1, instB.getLabelIndex());
-        assertEquals(null, instB.getClassLabel());
         assertEquals(Double.NaN, instB.getTargetValue(), 0d);
         assert2DArrayEquals(arrayB, instB.toValueArray());
     }
@@ -76,9 +73,7 @@ public class TimeSeriesInstanceTest {
     @Test
     public void testCtorArrayLabelled() {
         instB = new TimeSeriesInstance(arrayB, classLabelBIndex, classLabels);
-        assertArrayEquals(classLabels, instB.getClassLabels());
         assertEquals(classLabelBIndex, instB.getLabelIndex());
-        assertEquals(classLabelB, instB.getClassLabel());
         assertEquals(classLabelBIndex, instB.getTargetValue(), 0d);
         assert2DArrayEquals(arrayB, instB.toValueArray());
     }
@@ -122,20 +117,8 @@ public class TimeSeriesInstanceTest {
     @Test
     public void testCtorList() {
         instB = new TimeSeriesInstance(listB);
-        assertArrayEquals(EMPTY_CLASS_LABELS, instB.getClassLabels());
         assertEquals(-1, instB.getLabelIndex());
-        assertEquals(null, instB.getClassLabel());
         assertEquals(Double.NaN, instB.getTargetValue(), 0d);
-        assert2DArrayEquals(arrayB, instB.toValueArray());
-    }
-    
-    @Test
-    public void testCtorListLabelled() {
-        instB = new TimeSeriesInstance(listB, classLabelBIndex, classLabels);
-        assertArrayEquals(classLabels, instB.getClassLabels());
-        assertEquals(classLabelBIndex, instB.getLabelIndex());
-        assertEquals(classLabelB, instB.getClassLabel());
-        assertEquals(classLabelBIndex, instB.getTargetValue(), 0d);
         assert2DArrayEquals(arrayB, instB.toValueArray());
     }
 
@@ -150,10 +133,6 @@ public class TimeSeriesInstanceTest {
     public void testClassLabel() {
         assertEquals(classLabelAIndex, instA.getLabelIndex());
         assertEquals(classLabelBIndex, instB.getLabelIndex());
-        assertEquals(classLabelA, instA.getClassLabel());
-        assertEquals(classLabelB, instB.getClassLabel());
-        assertArrayEquals(classLabels, instA.getClassLabels());
-        assertArrayEquals(classLabels, instB.getClassLabels());
     }
     
     // todo test target value (do in ctors?)
