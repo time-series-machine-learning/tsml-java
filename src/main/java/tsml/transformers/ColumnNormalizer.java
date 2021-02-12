@@ -61,7 +61,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 public class ColumnNormalizer implements TrainableTransformer {
-	enum NormType {
+	public enum NormType {
 		INTERVAL, STD_NORMAL
 	};
 
@@ -114,7 +114,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 				sum += x;
 				sumSq += x * x;
 			}
-			stdev[j] = sumSq / r.numInstances() - sum * sum;
+			stdev[j] = (sumSq / r.numInstances()) - ((sum * sum) / (r.numInstances() * r.numInstances()));
 			mean[j] = sum / r.numInstances();
 			stdev[j] = Math.sqrt(stdev[j]);
 		}
@@ -254,7 +254,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 			if (j != classIndex) {
 				for (int i = 0; i < r.numInstances(); i++) {
 					double x = r.instance(i).value(j);
-					r.instance(i).setValue(i, (x - mean[j]) / (stdev[j]));
+					r.instance(i).setValue(j, (x - mean[j]) / (stdev[j]));
 				}
 			}
 		}
