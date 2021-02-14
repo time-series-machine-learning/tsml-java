@@ -27,6 +27,11 @@ import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
+ *
+ * @author Aaron Bostrom, 2020
+ *
+ *
+ *
  */
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
