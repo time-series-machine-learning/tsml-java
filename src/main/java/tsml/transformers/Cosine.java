@@ -51,7 +51,7 @@ public class Cosine implements Transformer {
             out[index++] = data;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     @Override

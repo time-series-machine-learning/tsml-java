@@ -73,7 +73,9 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      * @param Instance inst
      * @return transformed Instance
      */
-    Instance transform(Instance inst);
+    default Instance transform(Instance inst){
+        throw new NotImplementedException("Legacy: In general this function should be used or implemented.");
+    }
 
     /**
      * Method that constructs a holding Instances for transformed data, without doing the transform

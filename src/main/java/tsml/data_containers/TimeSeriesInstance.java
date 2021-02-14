@@ -85,8 +85,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     private List<TimeSeries> seriesDimensions;
     private int labelIndex = -1;
     private double targetValue = Double.NaN;
-    private String[] classLabels = EMPTY_CLASS_LABELS;
-    public static final String[] EMPTY_CLASS_LABELS = new String[0];
     
     public TimeSeriesInstance(double targetValue, List<? extends TimeSeries> series) {
         this.seriesDimensions = new ArrayList<>(series);
@@ -95,26 +93,11 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         dataChecks();
     }
     
-    public TimeSeriesInstance(int labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
+    public TimeSeriesInstance(int labelIndex, List<? extends TimeSeries> series) {
         this.seriesDimensions = new ArrayList<>(series);
-        this.classLabels = classLabels;
         this.labelIndex = labelIndex;
         
         dataChecks();
-    }
-    
-    public TimeSeriesInstance(double labelIndex, String[] classLabels, List<? extends TimeSeries> series) {
-        this(discretiseLabelIndex(labelIndex), classLabels, series);
-    }
-
-    /**
-     * Construct a labelled instance from raw data.
-     * @param series
-     * @param labelIndex cast to an int internally
-     * @param classLabels
-     */
-    public TimeSeriesInstance(List<? extends List<Double>> series, double labelIndex, String[] classLabels) {
-        this(series, discretiseLabelIndex(labelIndex), classLabels);
     }
 
     /**
@@ -123,11 +106,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @param label
      * @param classLabels
      */
-    public TimeSeriesInstance(List<? extends List<Double>> series, int label, String[] classLabels) {
+    public TimeSeriesInstance(List<? extends List<Double>> series, int label) {
         this(series, Double.NaN);
 
         targetValue = labelIndex = label;
-        this.classLabels = classLabels;
         
         dataChecks();
     }
@@ -177,8 +159,24 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         }
 
         targetValue = this.labelIndex = labelIndex;
-        this.classLabels = classLabels;
         
+        dataChecks();
+    }
+
+        /**
+     * Construct an regressed instance from raw data.
+     * @param data
+     * @param targetValue
+     */
+	public TimeSeriesInstance(double[][] data, int labelIndex) {
+        seriesDimensions = new ArrayList<TimeSeries>();
+
+        for(double[] in : data){
+            seriesDimensions.add(new TimeSeries(in));
+        }
+        System.out.println(labelIndex);
+        this.labelIndex = labelIndex;
+
         dataChecks();
     }
     
@@ -215,7 +213,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         this(data, Double.NaN);
         labelIndex = other.labelIndex;
         targetValue = other.targetValue;
-        classLabels = other.classLabels;
         
         dataChecks();
     }
@@ -232,7 +229,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     
     private TimeSeriesInstance copy() {
         final TimeSeriesInstance inst = new TimeSeriesInstance();
-        inst.classLabels = classLabels;
         inst.labelIndex = labelIndex;
         inst.seriesDimensions = seriesDimensions;
         inst.targetValue = targetValue;
@@ -246,36 +242,15 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         this(targetValue, Arrays.asList(data));
     }
     
-    public TimeSeriesInstance(int labelIndex, String[] classLabels, TimeSeries[] data) {
-        this(labelIndex, classLabels, Arrays.asList(data));
+    public TimeSeriesInstance(int labelIndex, TimeSeries[] data) {
+        this(labelIndex, Arrays.asList(data));
     }
-    
-    public TimeSeriesInstance(double labelIndex, String[] classLabels, TimeSeries[] data) {
-        this(discretiseLabelIndex(labelIndex), classLabels, Arrays.asList(data));
-    }
+
 
     private void dataChecks(){
         
         if(seriesDimensions == null) {
             throw new NullPointerException("no series dimensions");
-        }
-        // check class labels have been set correctly
-        if(classLabels == null) {
-            // class labels should always be set, even to an empty array if you're using regression instances
-            throw new NullPointerException("no class labels");
-        }
-        // if there are no class labels
-        if(Arrays.equals(classLabels, EMPTY_CLASS_LABELS)) {
-            // then the class label index should be -1
-            if(labelIndex != -1) {
-                throw new IllegalStateException("no class labels but label index not -1: " + labelIndex);
-            }
-        } else {
-            // there are class labels
-            // therefore this is a classification instance, so the regression target should be the same as the class label index
-            if(labelIndex != targetValue) {
-                throw new IllegalStateException("label index (" + labelIndex + ") and target value (" + targetValue + ") mismatch");
-            }
         }
         
         calculateIfMultivariate();
@@ -314,14 +289,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public int getLabelIndex(){
         return labelIndex;
     }
-    
-    public String getClassLabel() {
-        if(labelIndex < 0 || classLabels == null) {
-            return null;
-        }
-        return classLabels[labelIndex];
-    }
-    
     /** 
      * @param index
      * @return List<Double>
@@ -535,10 +502,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return targetValue;
     }
 
-    public String[] getClassLabels() {
-        return classLabels;
-    }
-
     @Override public Iterator<TimeSeries> iterator() {
         return seriesDimensions.iterator();
     }
@@ -588,13 +551,12 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         final TimeSeriesInstance that = (TimeSeriesInstance) o;
         return labelIndex == that.labelIndex &&
                        Double.compare(that.targetValue, targetValue) == 0 &&
-                       seriesDimensions.equals(that.seriesDimensions) &&
-                       Arrays.equals(classLabels, that.classLabels);
+                       seriesDimensions.equals(that.seriesDimensions);
     }
 
     @Override public int hashCode() {
         
-        return Objects.hash(seriesDimensions, labelIndex, classLabels);
+        return Objects.hash(seriesDimensions, labelIndex);
     }
     
     public boolean isLabelled() {
@@ -609,7 +571,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     
     public boolean isClassificationProblem() {
         // if a set of class labels are set then it's a classification problem
-        return classLabels.length >= 0;
+        return labelIndex >= 0;
     }
     
     public boolean isRegressionProblem() {

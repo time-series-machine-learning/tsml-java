@@ -198,7 +198,7 @@ public class ARMA implements Transformer {
                 }
 
                 // create a new output instance with the ACF data.
-                return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+                return new TimeSeriesInstance(out, inst.getLabelIndex());
         }
 
         /*

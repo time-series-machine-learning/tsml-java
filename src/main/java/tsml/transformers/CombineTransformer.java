@@ -88,7 +88,7 @@ public class CombineTransformer implements Transformer {
                     data.get(i).add(d);
         }
 
-        return new TimeSeriesInstance(data, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(data, inst.getLabelIndex());
     }
 
     @Override
