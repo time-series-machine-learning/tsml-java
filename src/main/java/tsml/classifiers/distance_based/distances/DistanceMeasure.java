@@ -16,6 +16,9 @@
  */
  
 package tsml.classifiers.distance_based.distances;
+/**
+ * @author George Oastler
+ */
 
 import java.io.Serializable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;

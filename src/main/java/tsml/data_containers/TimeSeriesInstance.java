@@ -29,6 +29,8 @@ import java.util.stream.Stream;
  *
  * Should Instances be immutable after creation? Meta data is calculated on
  * creation, mutability can break this
+ *
+ @author Aaron Bostrom, 2020
  */
 
 public class TimeSeriesInstance implements Iterable<TimeSeries> {

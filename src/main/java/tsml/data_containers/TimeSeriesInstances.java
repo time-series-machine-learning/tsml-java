@@ -25,6 +25,11 @@ import java.util.stream.Stream;
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
+ *
+ * @author Aaron Bostrom, 2020
+ *
+ *
+ *
  */
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
