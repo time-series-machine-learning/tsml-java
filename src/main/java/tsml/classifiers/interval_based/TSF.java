@@ -813,7 +813,17 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 double[][] temp = new double[1][tempData.length];
                 temp[0] = tempData;
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
-                double tempRESULT = trees.get(i).classifyInstance(Converter.toArff(ts, getTSTrainData().getClassLabels())); // TODO: PROBLEM LINE
+                Instance tsTemp = Converter.toArff(ts, getTSTrainData().getClassLabels());
+                tsTemp.setClassMissing();
+
+                /*
+                 * TODO:
+                 *  - Issue is in TimeSeriesTree.classifyInstance
+                 *  - 'probs' is switched when converting TSInstances to Instances compared to just calling on Instances.
+                 */
+                double tempRESULT = trees.get(i).classifyInstance(tsTemp);
+
+
                 int c = (int) tempRESULT;
                 d[c]++;
             }
