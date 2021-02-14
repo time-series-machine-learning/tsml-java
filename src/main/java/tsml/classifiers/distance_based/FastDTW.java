@@ -33,7 +33,7 @@ import tsml.classifiers.legacy.elastic_ensemble.fast_window_search.windowSearche
 import weka.core.*;
 
 /**
- *
+ * Wrapper for Chan Wei's implementation of DTW
  * @author ajb
  */
 public class FastDTW extends EnhancedAbstractClassifier{
