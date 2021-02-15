@@ -401,7 +401,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
 
         // create 2d double array to store mean, standard deviation and slope of each interval
-        double[][] transformedData = new double[data.numInstances()][numIntervals * 3];
+        double[][][] transformedData = new double[data.numInstances()][1][numIntervals * 3];
 
         int classifiersBuilt = trees.size();
 
@@ -444,9 +444,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                     f.setFeatures(series, interval[i][0], interval[i][1]);
 
                     // get mean, standard deviation and slope from interval
-                    transformedData[j][i * 3] = f.mean;
-                    transformedData[j][i * 3 + 1] = f.stDev;
-                    transformedData[j][i * 3 + 2] = f.slope;
+                    transformedData[j][0][i * 3] = f.mean;
+                    transformedData[j][0][i * 3 + 1] = f.stDev;
+                    transformedData[j][0][i * 3 + 2] = f.slope;
                 }
             }
 
@@ -462,9 +462,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 // TODO: this
             }
             else {
-                double[][][] tempSeries = new double[1][data.numInstances()][numIntervals * 3];
-                tempSeries[0] = transformedData;
-                TimeSeriesInstances temp = new TimeSeriesInstances(tempSeries, data.getClassIndexes(), data.getClassLabels());
+                TimeSeriesInstances temp = new TimeSeriesInstances(transformedData, data.getClassIndexes(), data.getClassLabels());
                 tree.buildClassifier(Converter.toArff(temp));
             }
 
@@ -815,16 +813,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
                 Instance tsTemp = Converter.toArff(ts, getTSTrainData().getClassLabels());
                 tsTemp.setClassMissing();
-
-                /*
-                 * TODO:
-                 *  - Issue is in TimeSeriesTree.classifyInstance
-                 *  - 'probs' is switched when converting TSInstances to Instances compared to just calling on Instances.
-                 */
-                double tempRESULT = trees.get(i).classifyInstance(tsTemp);
-
-
-                int c = (int) tempRESULT;
+                int c = (int) trees.get(i).classifyInstance(tsTemp);
                 d[c]++;
             }
             else {
