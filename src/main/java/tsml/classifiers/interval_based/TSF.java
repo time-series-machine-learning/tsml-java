@@ -462,8 +462,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 // TODO: this
             }
             else {
-                double[][][] tempSeries = new double[1][data.numInstances()][numIntervals * 3];
-                tempSeries[0] = transformedData;
+                double[][][] tempSeries = new double[data.numInstances()][1][numIntervals * 3];
+                int i=0;
+                for(double[] t : transformedData){
+                    tempSeries[i++][0] = t;
+                }
                 TimeSeriesInstances temp = new TimeSeriesInstances(tempSeries, data.getClassIndexes(), data.getClassLabels());
                 tree.buildClassifier(Converter.toArff(temp));
             }
@@ -810,8 +813,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 tempData[j * 3 + 2] = f.slope;
             }
             if (voteEnsemble) {
-                double[][] temp = new double[1][tempData.length];
-                temp[0] = tempData;
+                double[][] temp = new double[][]{tempData};
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
                 Instance tsTemp = Converter.toArff(ts, getTSTrainData().getClassLabels());
                 tsTemp.setClassMissing();
