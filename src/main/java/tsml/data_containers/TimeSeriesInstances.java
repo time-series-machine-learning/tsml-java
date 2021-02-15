@@ -29,8 +29,8 @@ import java.util.stream.Stream;
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
-    private String description;
-    private String problemName;
+    private String description = "";
+    private String problemName = "default";
     private boolean isEquallySpaced = true;
     private boolean hasMissing;
     private boolean isEqualLength;
