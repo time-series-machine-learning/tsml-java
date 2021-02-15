@@ -336,10 +336,10 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
   }
 
     /**
-     * buildClassifier wrapper for TimeSeriesInstances
+     * buildClassifier wrapper for TimeSeriesInstances.
      *
-     * @param data
-     * @throws Exception
+     * @param data TimeSeriesInstances train data.
+     * @author c-eg
      */
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
@@ -796,6 +796,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * @param ins TimeSeriesInstance to classifier
      * @return array of doubles: probability of each class
+     * @author c-eg
      */
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
@@ -879,6 +880,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * @param ins TimeSeriesInstance
      * @return double
+     * @author c-eg
      */
     @Override
     public double classifyInstance(TimeSeriesInstance ins) throws Exception {
@@ -926,8 +928,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
 
         String numFeaturesString=Utils.getOption('I', options);
-//Options here are a double between 0 and 1 (proportion of features), a text 
-//string sqrt or log, or an integer number 
+//Options here are a double between 0 and 1 (proportion of features), a text
+//string sqrt or log, or an integer number
         if (numFeaturesString.length() != 0){
             try{
                 if(numFeaturesString.equals("sqrt"))
