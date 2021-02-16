@@ -45,15 +45,15 @@ import java.util.function.Function;
  * This classifier is Tunable, Contractable, Checkpointable and can estimate performance from the train data internally.
  *
  * Time Series Forest (TimeSeriesForest) Deng 2013:
- * buildClassifier
+ *      buildClassifier
  * Overview: Input n series length m
  * for each tree
- * sample sqrt(m) intervals
- * find three features on each interval: mean, standard deviation and slope
- * concatenate to new feature set
- * build tree on new feature set
+ *      sample sqrt(m) intervals
+ *      find three features on each interval: mean, standard deviation and slope
+ *      concatenate to new feature set
+ *      build tree on new feature set
  * classifyInstance
- * ensemble the trees with majority vote
+ *      ensemble the trees with majority vote
  *
  * This implementation may deviate from the original, as it is using the same
  * structure as the weka random forest. In the paper the splitting criteria has a
@@ -61,7 +61,7 @@ import java.util.function.Function;
  * that measures the distance of the split point to the closest data.
  * So if the split value for feature
  * f=f_1,...f_n is v the margin is defined as
- * margin= min{ |f_i-v| }
+ *      margin= min{ |f_i-v| }
  * for simplicity of implementation, and for the fact when we did try it and it made
  * no difference, we have not used this. Note also, the original R implementation
  * may do some sampling of cases
@@ -269,54 +269,6 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     public TSF(int s) {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setSeed(s);
-    }
-
-    public static void main(String[] arg) throws Exception {
-
-//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
-//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
-
-// Basic correctness tests, including setting paras through
-        String dataLocation = "Z:\\ArchiveData\\Univariate_arff\\";
-        String resultsLocation = "D:\\temp\\";
-        String problem = "ItalyPowerDemand";
-        File f = new File(resultsLocation + problem);
-        if (!f.isDirectory())
-            f.mkdirs();
-        Instances train = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TEST");
-        TSF tsf = new TSF();
-        tsf.setSeed(0);
-        tsf.setTrainTimeLimit((long) 1.5e+10);
-        //tsf.setSavePath("D:\\temp\\");
-        tsf.setEstimateOwnPerformance(true);
-        double a;
-        tsf.buildClassifier(train);
-        ClassifierResults trainres = tsf.getTrainResults();
-        trainres.writeFullResultsToFile(resultsLocation + problem + "trainFold0.csv");
-        System.out.println("build ok: original atts=" + (train.numAttributes() - 1) + " new atts =" + tsf.testHolder.numAttributes() + " num trees = " + tsf.numClassifiers + " num intervals = " + tsf.numIntervals);
-        System.out.println(tsf.trainResults.getBuildTime());
-        a = ClassifierTools.accuracy(test, tsf);
-        System.out.println("Test Accuracy =" + a);
-        System.out.println();
-
-        tsf = new TSF();
-        tsf.setSeed(1);
-        tsf.setTrainTimeLimit((long) 1.5e+10);
-        //tsf.setSavePath("D:\\temp\\");
-        tsf.setEstimateOwnPerformance(true);
-        tsf.setEstimatorMethod("OOB");
-        String[] options = new String[4];
-        options[0] = "-T";
-        options[1] = "10";
-        options[2] = "-I";
-        options[3] = "1";
-        tsf.setOptions(options);
-        tsf.buildClassifier(train);
-        System.out.println("build ok: original atts=" + (train.numAttributes() - 1) + " new atts =" + tsf.testHolder.numAttributes() + " num trees = " + tsf.numClassifiers + " num intervals = " + tsf.numIntervals);
-        System.out.println(tsf.trainResults.getBuildTime());
-        a = ClassifierTools.accuracy(test, tsf);
-        System.out.println("Test Accuracy =" + a);
     }
 
     /**
@@ -770,13 +722,13 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     /**
      * estimating own performance
-     * Three scenarios
-     * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB. Assumes the final
-     * model has already been built
-     * If we built on all data (bagging ==false) we estimate either
-     * 2. with a 10xCV if estimator==EstimatorMethod.CV
-     * 3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
-     * Note that all this needs to come out of any contract time we specify.
+     *  Three scenarios
+     *      1. If we bagged the full build (bagging ==true), we estimate using the full build OOB. Assumes the final
+     *      model has already been built
+     *      If we built on all data (bagging ==false) we estimate either
+     *          2. with a 10xCV if estimator==EstimatorMethod.CV
+     *          3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
+     *  Note that all this needs to come out of any contract time we specify.
      *
      * @param data
      * @throws Exception from distributionForInstance
@@ -1261,6 +1213,54 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         public String toString() {
             return "mean=" + mean + " stdev = " + stDev + " slope =" + slope;
         }
+    }
+
+    public static void main(String[] arg) throws Exception {
+
+//        System.out.println(ClassifierTools.testUtils_getIPDAcc(new TSF(0)));
+//        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
+
+// Basic correctness tests, including setting paras through
+        String dataLocation = "Z:\\ArchiveData\\Univariate_arff\\";
+        String resultsLocation = "D:\\temp\\";
+        String problem = "ItalyPowerDemand";
+        File f = new File(resultsLocation + problem);
+        if (!f.isDirectory())
+            f.mkdirs();
+        Instances train = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TEST");
+        TSF tsf = new TSF();
+        tsf.setSeed(0);
+        tsf.setTrainTimeLimit((long) 1.5e+10);
+        //tsf.setSavePath("D:\\temp\\");
+        tsf.setEstimateOwnPerformance(true);
+        double a;
+        tsf.buildClassifier(train);
+        ClassifierResults trainres = tsf.getTrainResults();
+        trainres.writeFullResultsToFile(resultsLocation + problem + "trainFold0.csv");
+        System.out.println("build ok: original atts=" + (train.numAttributes() - 1) + " new atts =" + tsf.testHolder.numAttributes() + " num trees = " + tsf.numClassifiers + " num intervals = " + tsf.numIntervals);
+        System.out.println(tsf.trainResults.getBuildTime());
+        a = ClassifierTools.accuracy(test, tsf);
+        System.out.println("Test Accuracy =" + a);
+        System.out.println();
+
+        tsf = new TSF();
+        tsf.setSeed(1);
+        tsf.setTrainTimeLimit((long) 1.5e+10);
+        //tsf.setSavePath("D:\\temp\\");
+        tsf.setEstimateOwnPerformance(true);
+        tsf.setEstimatorMethod("OOB");
+        String[] options = new String[4];
+        options[0] = "-T";
+        options[1] = "10";
+        options[2] = "-I";
+        options[3] = "1";
+        tsf.setOptions(options);
+        tsf.buildClassifier(train);
+        System.out.println("build ok: original atts=" + (train.numAttributes() - 1) + " new atts =" + tsf.testHolder.numAttributes() + " num trees = " + tsf.numClassifiers + " num intervals = " + tsf.numIntervals);
+        System.out.println(tsf.trainResults.getBuildTime());
+        a = ClassifierTools.accuracy(test, tsf);
+        System.out.println("Test Accuracy =" + a);
     }
 }
   
