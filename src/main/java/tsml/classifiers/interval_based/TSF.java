@@ -24,11 +24,10 @@ import experiments.data.DatasetLoading;
 import fileIO.OutFile;
 import machine_learning.classifiers.TimeSeriesTree;
 import tsml.classifiers.*;
-import tsml.data_containers.TSCapabilities;
-import tsml.data_containers.TSCapabilitiesHandler;
-import tsml.data_containers.TimeSeriesInstance;
-import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
+import tsml.data_containers.utilities.TimeSeriesStatsTools;
+import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -493,16 +492,25 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
              * 2. Generate and store attributes
              */
             for (int i = 0; i < numIntervals; i++) {
-                for (int j = 0; j < data.numInstances(); j++) {
-                    // extract the interval and work out the features
-                    double[] series = data.get(j).get(0).toValueArray();
-                    FeatureSet f = new FeatureSet();
-                    f.setFeatures(series, interval[i][0], interval[i][1]);
+                // create slice of all series from intervals
+                double[][][] slice = data.getVSliceArray(interval[i][0], interval[i][1]);
 
-                    // get mean, standard deviation and slope from interval
-                    transformedData[j][i * 3] = f.mean;
-                    transformedData[j][i * 3 + 1] = f.stDev;
-                    transformedData[j][i * 3 + 2] = f.slope;
+                for (int j = 0; j < data.numInstances(); j++) {
+                    // get sliced series
+                    double[] slicedSeries = slice[j][0];
+
+                    // get stats about data
+                    double mean = TimeSeriesSummaryStatistics.mean(slicedSeries);
+                    double variance = TimeSeriesSummaryStatistics.variance(slicedSeries, mean);
+                    double std = Math.sqrt(variance);
+                    double sum = TimeSeriesSummaryStatistics.sum(slicedSeries);
+                    double sumSq = TimeSeriesSummaryStatistics.sumSq(slicedSeries);
+                    double slope = TimeSeriesSummaryStatistics.slope(slicedSeries, sum, sumSq, std);
+
+                    // set mean, standard deviation and slope
+                    transformedData[j][i * 3] = mean;
+                    transformedData[j][i * 3 + 1] = std;
+                    transformedData[j][i * 3 + 2] = slope;
                 }
             }
 
@@ -873,17 +881,17 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             if (voteEnsemble) {
                 double[][] temp = new double[][]{tempData};
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
-                Instance tsTemp = Converter.toArff(ts, getTSTrainData().getClassLabels());
-                tsTemp.setClassMissing();
-                int c = (int) trees.get(i).classifyInstance(tsTemp);
+                Instance tsConverted = Converter.toArff(ts, getTSTrainData().getClassLabels());
+                tsConverted.setClassMissing();
+                int c = (int) trees.get(i).classifyInstance(tsConverted);
                 d[c]++;
             }
             else {
                 double[][] temp2d = new double[1][tempData.length];
                 temp2d[0] = tempData;
                 TimeSeriesInstance ts = new TimeSeriesInstance(temp2d, ins.getLabelIndex());
-
-                double[] temp = trees.get(i).distributionForInstance(Converter.toArff(ts, getTSTrainData().getClassLabels()));
+                Instance tsConverted = Converter.toArff(ts, getTSTrainData().getClassLabels());
+                double[] temp = trees.get(i).distributionForInstance(tsConverted);
                 for (int j = 0; j < temp.length; j++)
                     d[j] += temp[j];
             }
