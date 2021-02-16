@@ -350,4 +350,36 @@ public class StrUtils {
         String[] optionsArray = options.split(delimiter);
         optionHandler.setOptions(optionsArray);
     }
+    
+    public static <A> A parse(String str, Class<A> clazz) {
+        final Object output;
+        if(clazz.equals(Integer.class)) {
+            output = Integer.parseInt(str);
+        } else if(clazz.equals(Double.class)) {
+            output = Double.parseDouble(str);
+        } else if(clazz.equals(Long.class)) {
+            output = Long.parseLong(str);
+        } else if(clazz.equals(Float.class)) {
+            output = Float.parseFloat(str);
+        } else if(clazz.equals(String.class)) {
+            output = str;
+        } else if(clazz.equals(Byte.class)) {
+            output = Byte.parseByte(str);
+        } else if(clazz.equals(Boolean.class)) {
+            output = Boolean.parseBoolean(str);
+        } else if(clazz.equals(Short.class)) {
+            output = Short.parseShort(str);
+        } else {
+            try {
+                output = fromOptionValue(str);
+            } catch(Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        if(clazz.isInstance(output)) {
+            return (A) output;
+        } else {
+            throw new ClassCastException("cannot cast " + output.getClass() + " to " + clazz);
+        }
+    }
 }
