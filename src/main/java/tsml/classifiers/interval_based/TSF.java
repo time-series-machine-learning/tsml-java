@@ -817,44 +817,50 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
-        double[] d = new double[getTSTrainData().getClassLabels().length]; // length of class variables
-        double[] series = ins.get(0).toValueArray();
-        double[] tempData = new double[numIntervals * 3];
+        double[] classProbability = new double[getTSTrainData().getClassLabels().length]; // length of class variables
+        double[] statsData = new double[numIntervals * 3];
 
         for (int i = 0; i < trees.size(); i++) {
             for (int j = 0; j < numIntervals; j++) {
-                // extract all intervals
-                FeatureSet f = new FeatureSet();
-                f.setFeatures(series, intervals.get(i)[j][0], intervals.get(i)[j][1]);
-                tempData[j * 3] = f.mean;
-                tempData[j * 3 + 1] = f.stDev;
-                tempData[j * 3 + 2] = f.slope;
+                // get sliced series
+                TimeSeries tsAtInterval = ins.get(0).getVSlice(intervals.get(i)[j][0], intervals.get(i)[j][1]);
+
+                // get stats about data
+                double mean = TimeSeriesSummaryStatistics.mean(tsAtInterval);
+                double variance = TimeSeriesSummaryStatistics.variance(tsAtInterval, mean);
+                double std = Math.sqrt(variance);
+                double sum = TimeSeriesSummaryStatistics.sum(tsAtInterval);
+                double sumSq = TimeSeriesSummaryStatistics.sumSq(tsAtInterval);
+                double slope = TimeSeriesSummaryStatistics.slope(tsAtInterval, sum, sumSq, std);
+
+                // set mean, standard deviation and slope
+                statsData[j * 3] = mean;
+                statsData[j * 3 + 1] = std;
+                statsData[j * 3 + 2] = slope;
             }
+
+            // convert statistics data from series into a TimeSeriesInstance
+            double[][] statsSeries = new double[][]{statsData};
+            TimeSeriesInstance ts = new TimeSeriesInstance(statsSeries, ins.getLabelIndex());
+            Instance tsConverted = Converter.toArff(ts, getTSTrainData().getClassLabels()); // convert to Instance for Weka
+
             if (voteEnsemble) {
-                double[][] temp = new double[][]{tempData};
-                TimeSeriesInstance ts = new TimeSeriesInstance(temp, ins.getLabelIndex());
-                Instance tsConverted = Converter.toArff(ts, getTSTrainData().getClassLabels());
-                tsConverted.setClassMissing();
                 int c = (int) trees.get(i).classifyInstance(tsConverted);
-                d[c]++;
+                classProbability[c]++;
             }
             else {
-                double[][] temp2d = new double[1][tempData.length];
-                temp2d[0] = tempData;
-                TimeSeriesInstance ts = new TimeSeriesInstance(temp2d, ins.getLabelIndex());
-                Instance tsConverted = Converter.toArff(ts, getTSTrainData().getClassLabels());
                 double[] temp = trees.get(i).distributionForInstance(tsConverted);
                 for (int j = 0; j < temp.length; j++)
-                    d[j] += temp[j];
+                    classProbability[j] += temp[j];
             }
         }
         double sum = 0;
-        for (double x : d)
+        for (double x : classProbability)
             sum += x;
         if (sum > 0)
-            for (int i = 0; i < d.length; i++)
-                d[i] = d[i] / sum;
-        return d;
+            for (int i = 0; i < classProbability.length; i++)
+                classProbability[i] = classProbability[i] / sum;
+        return classProbability;
     }
 
     /**
