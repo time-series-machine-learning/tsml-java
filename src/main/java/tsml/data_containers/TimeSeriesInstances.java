@@ -623,4 +623,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public List<TimeSeriesInstances> getInstsByClass() {
         return getInstIndicesByClass().stream().map(indices -> new TimeSeriesInstances(indices.stream().map(this::get).collect(Collectors.toList()), getClassLabels())).collect(Collectors.toList());
     }
+    
+    public void addAll(Iterable<TimeSeriesInstance> insts) {
+        for(TimeSeriesInstance inst : insts) {
+            add(inst);
+        }
+    }
 }
