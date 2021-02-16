@@ -110,7 +110,7 @@ public class StrUtilsTest {
 
     @Test
     public void testFromOptionsValueNull() throws Exception {
-        Assert.assertEquals(null, StrUtils.fromOptionValue("null", null));
+        Assert.assertNull(StrUtils.fromOptionValue("null", null));
     }
 
     @Test

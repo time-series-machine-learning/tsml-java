@@ -239,7 +239,7 @@ public class StrUtils {
         return (A) result;
     }
 
-    public static String toOptionValue(Object value) {
+    public static String toOptionValue(Object value, boolean withSubOptions) {
         String str;
         if(value == null) {
             str = "null";
@@ -263,7 +263,7 @@ public class StrUtils {
                 classValue = value.getClass();
             }
             str = classValue.getName();
-            if(value instanceof OptionHandler) {
+            if(value instanceof OptionHandler && withSubOptions) {
                 String options = Utils.joinOptions(((OptionHandler) value).getOptions());
                 if(!options.isEmpty()) {
                     str =  str + " " + options;
@@ -271,6 +271,10 @@ public class StrUtils {
             }
         }
         return str;
+    }
+    
+    public static String toOptionValue(Object value) {
+        return toOptionValue(value, true);
     }
 
     public static void addOption(final String flag, final Collection<String> options, final Object value) {
