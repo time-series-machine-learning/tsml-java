@@ -46,27 +46,27 @@ public class RandomUtilsTest {
     public void testRandomPickSingle() {
         int choice = RandomUtils.pick(list, random);
         Assert.assertEquals(1, choice);
-        Assert.assertFalse(list.contains(1));
+        Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(9, list.size());
 
         choice = RandomUtils.pick(list, random);
-        Assert.assertEquals(8, choice);
-        Assert.assertFalse(list.contains(8));
+        Assert.assertEquals(9, choice);
+        Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(8, list.size());
 
         choice = RandomUtils.pick(list, random);
-        Assert.assertEquals(2, choice);
-        Assert.assertFalse(list.contains(2));
+        Assert.assertEquals(3, choice);
+        Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(7, list.size());
 
         choice = RandomUtils.pick(list, random);
-        Assert.assertEquals(3, choice);
-        Assert.assertFalse(list.contains(3));
+        Assert.assertEquals(5, choice);
+        Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(6, list.size());
 
         choice = RandomUtils.pick(list, random);
-        Assert.assertEquals(6, choice);
-        Assert.assertFalse(list.contains(6));
+        Assert.assertEquals(10, choice);
+        Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(5, list.size());
     }
 

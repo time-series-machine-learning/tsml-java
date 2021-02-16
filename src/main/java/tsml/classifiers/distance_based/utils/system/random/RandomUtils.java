@@ -1,10 +1,12 @@
 package tsml.classifiers.distance_based.utils.system.random;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
+import tsml.classifiers.distance_based.utils.collections.lists.IndexList;
 import utilities.ArrayUtilities;
 import utilities.Utilities;
 
@@ -17,8 +19,7 @@ import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.
  */
 public class RandomUtils {
 
-    public static <A> ArrayList<A> choice(
-            RandomIterator<A> iterator, int numChoices) {
+    public static <A> ArrayList<A> choice(RandomIterator<A> iterator, int numChoices) {
         final ArrayList<A> choices = new ArrayList<>(numChoices);
         for(int i = 0; i < numChoices; i++) {
             if(!iterator.hasNext()) throw new IllegalStateException("iterator has no items remaining at iteration step " + i);
@@ -27,6 +28,16 @@ public class RandomUtils {
         return choices;
     }
 
+    public static int choiceIndex(int size, Random random) {
+        if(size == 1) {
+            // only 1 element, no need to randomly choose
+            return 0;
+        } else {
+            // multiple elements, randomly choose
+            return random.nextInt(size);
+        }
+    }
+    
     /**
      * choice several indices from a set range.
      * @param size the max size (i.e. max index is size-1, min index is 0)
@@ -35,15 +46,16 @@ public class RandomUtils {
      * @param withReplacement whether to allow indices to be picked more than once
      * @return
      */
-    public static ArrayList<Integer> choiceIndex(int size, Random random, int numChoices, boolean withReplacement) {
+    public static List<Integer> choiceIndex(int size, Random random, int numChoices, boolean withReplacement) {
         if(numChoices == 1) {
-            final int i = random.nextInt(size);
-            return newArrayList(i);
+            // single choice
+            return newArrayList(choiceIndex(size, random));
         }
-        if(!withReplacement && numChoices > size) {
+        if(numChoices > size && !withReplacement) {
+            // too many choices given size
             throw new IllegalArgumentException("cannot choose " + numChoices + " from 0.." + size + " without replacement");
         }
-        final List<Integer> indices = ArrayUtilities.sequence(size);
+        final List<Integer> indices = new IndexList(size);
         final RandomIterator<Integer>
                 iterator = new BaseRandomIterator<>();
         iterator.setWithReplacement(withReplacement);
@@ -78,41 +90,38 @@ public class RandomUtils {
         return choiceIndexExcept(size, random, Collections.singletonList(1));        
     }
 
-    public static Integer choiceIndex(int size, Random random) {
-        return choiceIndex(size, random, 1, false).get(0);
-    }
-
-    public static ArrayList<Integer> choiceIndexWithReplacement(int size, Random random, int numChoices) {
+    public static List<Integer> choiceIndexWithReplacement(int size, Random random, int numChoices) {
         return choiceIndex(size, random, numChoices, true);
     }
 
-    public static ArrayList<Integer> choiceIndex(int size, Random random, int numChoices) {
+    public static List<Integer> choiceIndex(int size, Random random, int numChoices) {
         return choiceIndex(size, random, numChoices, false);
     }
     
-    public static ArrayList<Integer> shuffleIndices(int size, Random random) {
+    public static List<Integer> shuffleIndices(int size, Random random) {
         return choiceIndex(size, random, size);
     }
 
     // choose elements directly
 
-    public static <A> ArrayList<A> shuffle(List<A> list, Random random) {
+    public static <A> List<A> shuffle(List<A> list, Random random) {
         return Utilities.apply(shuffleIndices(list.size(), random), list::get);
     }
     
-    public static <A> ArrayList<A> choice(List<A> list, Random random, int numChoices, boolean withReplacement) {
+    public static <A> List<A> choice(List<A> list, Random random, int numChoices, boolean withReplacement) {
         return Utilities.apply( choiceIndex(list.size(), random, numChoices, withReplacement), list::get);
     }
 
     public static <A> A choice(List<A> list, Random random) {
-        return choice(list, random, 1, false).get(0);
+        final int i = choiceIndex(list.size(), random);
+        return list.get(i);
     }
 
-    public static <A> ArrayList<A> choiceWithReplacement(List<A> list, Random random, int numChoices) {
+    public static <A> List<A> choiceWithReplacement(List<A> list, Random random, int numChoices) {
         return choice(list, random, numChoices, true);
     }
 
-    public static <A> ArrayList<A> choice(List<A> list, Random random, int numChoices) {
+    public static <A> List<A> choice(List<A> list, Random random, int numChoices) {
         return choice(list, random, numChoices, false);
     }
 
@@ -127,22 +136,26 @@ public class RandomUtils {
      * @param <A>
      * @return
      */
-    public static <A> ArrayList<A> pick(List<A> list, Random random, int numChoices, boolean withReplacement) {
-        final ArrayList<Integer> indices = choiceIndex(list.size(), random, numChoices, withReplacement);
+    public static <A> List<A> pick(List<A> list, Random random, int numChoices, boolean withReplacement) {
+        List<Integer> indices = choiceIndex(list.size(), random, numChoices, withReplacement);
         final ArrayList<A> chosen = Utilities.apply(indices, list::get);
-        CollectionUtils.removeAllUnordered(list, indices);
+        indices = indices.stream().distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+        for(int index : indices) {
+            list.remove(index);
+        }
         return chosen;
     }
     
     public static <A> A pick(List<A> list, Random random) {
-        return pick(list, random, 1).get(0);
+        final int i = choiceIndex(list.size(), random);
+        return list.remove(i);
     }
 
-    public static <A> ArrayList<A> pick(List<A> list, Random random, int numChoices) {
+    public static <A> List<A> pick(List<A> list, Random random, int numChoices) {
         return pick(list, random, numChoices, false);
     }
 
-    public static <A> ArrayList<A> pickWithReplacement(List<A> list, Random random, int numChoices) {
+    public static <A> List<A> pickWithReplacement(List<A> list, Random random, int numChoices) {
         return pick(list, random, numChoices, true);
     }
 
