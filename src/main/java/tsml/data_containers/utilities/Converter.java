@@ -14,7 +14,9 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+/**
+ * @author Aaron Bostrom and George Oastler
+  */
 package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
