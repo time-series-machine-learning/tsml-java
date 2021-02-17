@@ -475,7 +475,33 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 ((Randomizable) tree).setSeed(seed * (classifiersBuilt + 1));
 
             if (bagging) {
-                // TODO: this
+                // convert data to Instances
+                double[][][] tempSeries = new double[data.numInstances()][1][numIntervals * 3];
+                int i = 0;
+                for (double[] t : transformedData) {
+                    tempSeries[i++][0] = t;
+                }
+                TimeSeriesInstances temp = new TimeSeriesInstances(tempSeries, data.getClassIndexes(), data.getClassLabels());
+                Instances converted = Converter.toArff(temp);
+
+                long t1 = System.nanoTime();
+                boolean[] bag = new boolean[converted.numInstances()];
+                Instances bagData = converted.resampleWithWeights(rand, bag);
+                tree.buildClassifier(bagData);
+                inBag.add(bag);
+                if (getEstimateOwnPerformance()) {
+                    for (int j = 0; j < converted.numInstances(); j++) {
+                        if (bag[j])
+                            continue;
+                        double[] newProbs = tree.distributionForInstance(converted.instance(j));
+                        oobCounts[j]++;
+                        for (int k = 0; k < newProbs.length; k++)
+                            trainDistributions[j][k] += newProbs[k];
+                    }
+                }
+                long t2 = System.nanoTime();
+                if (getEstimateOwnPerformance())
+                    trainResults.setErrorEstimateTime(t2 - t1 + trainResults.getErrorEstimateTime());
             }
             else {
                 double[][][] tempSeries = new double[data.numInstances()][1][numIntervals * 3];
@@ -522,7 +548,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
          */
         if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
-            estimateOwnPerformance(Converter.toArff(data)); // TODO: Maybe change this to TSInstances
+            estimateOwnPerformance(Converter.toArff(data));
             long est2 = System.nanoTime();
 
             if (bagging)
