@@ -1,13 +1,9 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.transformed.BaseTransformDistanceMeasure;
-import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMeasure;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
-import tsml.transformers.Derivative;
 import utilities.Utilities;
 
 import java.util.Arrays;
@@ -31,82 +27,72 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
         }
         return sum;
     }
-    
-    private double windowSize = 1;
 
-    @Override public void setWindowSize(final double windowSize) {
-        this.windowSize = Utilities.requirePercentage(windowSize);
+    private double window = 1;
+
+    @Override public void setWindow(final double window) {
+        this.window = Utilities.requirePercentage(window);
     }
 
-    @Override public double getWindowSize() {
-        return windowSize;
+    @Override public double getWindow() {
+        return window;
     }
 
     public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
+        // make a the longest time series
+        if(a.getMaxLength() < b.getMaxLength()) {
+            TimeSeriesInstance tmp = a;
+            a = b;
+            b = tmp;
+        }
+        
         final int aLength = a.getMaxLength();
         final int bLength = b.getMaxLength();
-        setup(aLength, bLength, true);
-        final double lengthRatio = (double) bLength / aLength;
-        final double windowSize = this.windowSize * bLength;
-        
+        // pad an extra inf row and inf col
+        setup(aLength + 1, bLength + 1, true);
+        // step is the increment of the mid point for each row
+        final double step = (double) (bLength - 1) / (aLength - 1);
+        final double windowSize = this.window * bLength;
+
         // start and end of window
-        int start = 0;
-        int j = start;
-        double mid;
-        int end =  (int) Math.min(bLength - 1, Math.ceil(windowSize));
-        int prevEnd;
-        int i = 0;
-        double[] row = getRow(i);
+        int start, prevEnd, end = 0;
+        double mid, min;
         double[] prevRow;
+        double[] row = getRow(0);
         
-        // process top left sqaure of mat
-        double min = row[j++] = cost(a, 0, b, 0);
-        // compute the first row
-        for(; j <= end; j++) {
-            row[j] = row[j - 1] + cost(a, 0, b, j);
-            min = Math.min(min, row[j]);
-        }
-        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
-        i++;
-        
+        // anchor point of zero in the padding inf col / row
+        row[0] = 0;
+
         // process remaining rows
-        for(; i < aLength; i++) {
+        for(int i = 1; i < aLength + 1; i++) {
             // reset min for the row
             min = Double.POSITIVE_INFINITY;
-            
+
             // start, end and mid of window
             prevEnd = end;
-            mid = i * lengthRatio;
-            start = (int) Math.max(0, Math.floor(mid - windowSize));
-            end = (int) Math.min(bLength - 1, Math.ceil(mid + windowSize));
-            j = start;
+            mid = (i - 1) * step + 1;
+            start = Math.max(1, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength, (int) Math.floor(mid + windowSize));
             
             // change rows
             prevRow = row;
             row = getRow(i);
-            
+            row[start - 1] = Double.POSITIVE_INFINITY;
+
             // set the top values outside of window to inf
             Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
-            // set the value left of the window to inf
-            if(j > 0) row[j - 1] = Double.POSITIVE_INFINITY;
-            
-            // if assessing the left most column then only mapping option is top - not left or topleft
-            if(j == 0) {
-                row[j] = prevRow[j] + cost(a, i, b, j);
-                min = Math.min(min, row[j++]);
-            }
-            
+
             // compute the distance for each cell in the row
-            for(; j <= end; j++) {
-                row[j] = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i, b, j);
+            for(int j = start; j <= end; j++) {
+                row[j] = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i - 1, b, j - 1);
                 min = Math.min(min, row[j]);
             }
-            
+
             // quit if beyond limit
             if(min > limit) return Double.POSITIVE_INFINITY;
         }
-        
+
         // last value in the current row is the distance
         final double distance = row[row.length - 1];
         teardown();
@@ -114,11 +100,27 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
     }
 
     @Override public ParamSet getParams() {
-        return new ParamSet().add(WINDOW_SIZE_FLAG, windowSize);
+        return new ParamSet().add(WINDOW_FLAG, window);
     }
 
     @Override public void setParams(final ParamSet paramSet) throws Exception {
-        ParamHandlerUtils.setParam(paramSet, WINDOW_SIZE_FLAG, this::setWindowSize, Double::parseDouble);
+        setWindow(paramSet.get(WINDOW_FLAG, window));
     }
 
+    public static void main(String[] args) {
+        final DTWDistance dm = new DTWDistance();
+        dm.setWindow(0.2);
+        dm.setRecordCostMatrix(true);
+        final double a = dm.distanceUnivariate(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, new double[]{1, 2, 3});
+        System.out.println();
+        System.out.println("-----");
+        System.out.println();
+        final double b = dm.distanceUnivariate(new double[]{1, 2, 3}, new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        System.out.println(a);
+        System.out.println(b);
+        if(a != b) {
+            System.out.println("not eq");
+            System.out.println();
+        }
+    }
 }
