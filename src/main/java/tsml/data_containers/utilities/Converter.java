@@ -164,8 +164,7 @@ public class Converter {
         ArrayList<Attribute> attributes = createAttributes(numAttributes);
         //add the class label at the end.
         attributes.add(new Attribute("ClassLabel", Arrays.stream(classLabels).collect(Collectors.toList())));
-
-        //TODO: put the dataset name in the TSInstances
+        
         Instances output = new Instances(data.getProblemName(), attributes, data.numInstances());
         output.setClassIndex(output.numAttributes() - 1);
 
@@ -176,13 +175,11 @@ public class Converter {
             System.arraycopy(values[i][0], 0, vals, 0, values[i][0].length);
             for(int j=values[i][0].length; j<numAttributes; j++)
                 vals[j] =  Double.NaN; //all missing values are NaN.
-            vals[vals.length-1] = (double)classIndexes[i]; //put class val at the end.
+            vals[vals.length-1] = classIndexes[i]; //put class val at the end.
             output.add(new DenseInstance(1.0, vals));
         }
 
         return output;
-            
-
     }
 
     public static Instance toArff(TimeSeriesInstance tsinst, String[] Labels) {

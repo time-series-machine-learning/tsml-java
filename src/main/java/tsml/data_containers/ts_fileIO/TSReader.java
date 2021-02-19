@@ -45,7 +45,7 @@ public class TSReader {
     public static final String MISSING = "@missing";
     public static final String DATA = "@data";
 
-    private HashMap<String, String> variables = new HashMap<>();
+    private HashMap<String, String> variables;
 
     private final StreamTokenizer m_Tokenizer;
     private int m_Lines;
@@ -53,9 +53,9 @@ public class TSReader {
     TimeSeriesInstances m_data;
     private String description;
     private String problemName;
-    private boolean univariate = false;
-    private boolean missing = false;
-    private boolean timeStamps = false;
+    private boolean univariate;
+    private boolean missing;
+    private boolean timeStamps;
     private boolean classLabel;
     private List<String> classLabels;
 
@@ -64,6 +64,7 @@ public class TSReader {
     private List<Double> raw_labels;
 
     public TSReader(Reader reader) throws IOException {
+        variables = new HashMap<>();
         m_Tokenizer = new StreamTokenizer(reader);
         initTokenizer();
 
@@ -112,7 +113,18 @@ public class TSReader {
                 multi_timeSeries.add(timeSeries);
                 timeSeries = new ArrayList<>();
             } else {
-                timeSeries.add(m_Tokenizer.sval == "?" ? Double.NaN : m_Tokenizer.nval);
+                double val = m_Tokenizer.nval;
+                //Nasty hack to deal with Exponents not being supported in tokenizer - Look away!
+                //Aaron 15/02/2021
+                if(m_Tokenizer.sval != null && m_Tokenizer.sval.contains("E")){
+                    val = Double.parseDouble(m_Tokenizer.nval + m_Tokenizer.sval);
+                    //remove the value we just added. as it was a partial.
+                    timeSeries.remove(timeSeries.size()-1);
+                }
+                else if(m_Tokenizer.sval == "?")
+                    val = Double.NaN;
+
+                timeSeries.add(val);
                 classValue = m_Tokenizer.sval == null ? "" + m_Tokenizer.nval : m_Tokenizer.sval; // the last value to
                                                                                                   // be tokenized should
                                                                                                   // be the class value.

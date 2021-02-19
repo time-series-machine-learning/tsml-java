@@ -174,7 +174,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         for(double[] in : data){
             seriesDimensions.add(new TimeSeries(in));
         }
-        System.out.println(labelIndex);
         this.labelIndex = labelIndex;
 
         dataChecks();
