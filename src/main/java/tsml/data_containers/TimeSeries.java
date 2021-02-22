@@ -140,32 +140,6 @@ public class TimeSeries implements Iterable<Double> {
     public Stream<Double> stream() {
         return series.stream();
     }
-    
-    /**
-     * Returns a view of the portion of the series between the specified start, inclusive,
-     * and end, exclusive.
-     *
-     * @param start index to start from (inclusive)
-     * @param end index to end from (exclusive)
-     * @return Sliding window of series
-     */
-    public List<Double> getSlidingWindow(int start, int end) {
-        // TODO: duplicate, remove usages and replace with getVSliceList(start, end)
-        return series.subList(start, end);
-    }
-
-    /**
-     * Returns a view of the portion of the series between the specified start, inclusive,
-     * and end, exclusive.
-     *
-     * @param start index to start from (inclusive)
-     * @param end index to end from (exclusive)
-     * @return Sliding window of series
-     */
-    public double[] getSlidingWindowArray(int start, int end) {
-        // TODO: duplicate, remove usages and replace with getVSliceArray(start, end)
-        return series.subList(start, end).stream().mapToDouble(Double::doubleValue).toArray();
-    }
 
     /**
      * Returns all values in series.
