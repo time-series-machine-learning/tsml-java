@@ -128,7 +128,7 @@ public class ShapeletDistance implements Serializable{
             candidateTSInst = inst;
         }
         
-        double[] temp = inst.get(dimension).getSlidingWindowArray(start, start+length);
+        double[] temp = inst.get(dimension).getVSliceArray(start, start+length);
         cand.setShapeletContent(temp);
         
         // znorm candidate here so it's only done once, rather than in each distance calculation
