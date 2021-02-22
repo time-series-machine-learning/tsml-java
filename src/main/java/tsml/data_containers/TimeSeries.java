@@ -106,7 +106,7 @@ public class TimeSeries implements Iterable<Double> {
      * Returns a value at a specific index in the time series. This method conducts unboxing so use getValue if you care about performance.
      *
      * @param index to get value from
-     * @return
+     * @return value at index
      */
     public Double get(int index) {
         return series.get(index);
