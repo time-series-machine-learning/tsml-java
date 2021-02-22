@@ -28,6 +28,8 @@ import java.util.stream.Stream;
  * The model for the indexes is the first is always zero the other indexes are in units of md.increment
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
+
+ @author Aaron Bostrom, 2020
  * */
 public class TimeSeries implements Iterable<Double> {
 

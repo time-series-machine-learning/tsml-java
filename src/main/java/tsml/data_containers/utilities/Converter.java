@@ -14,7 +14,9 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+/**
+ * @author Aaron Bostrom and George Oastler
+  */
 package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
@@ -162,8 +164,7 @@ public class Converter {
         ArrayList<Attribute> attributes = createAttributes(numAttributes);
         //add the class label at the end.
         attributes.add(new Attribute("ClassLabel", Arrays.stream(classLabels).collect(Collectors.toList())));
-
-        //TODO: put the dataset name in the TSInstances
+        
         Instances output = new Instances(data.getProblemName(), attributes, data.numInstances());
         output.setClassIndex(output.numAttributes() - 1);
 
@@ -174,18 +175,15 @@ public class Converter {
             System.arraycopy(values[i][0], 0, vals, 0, values[i][0].length);
             for(int j=values[i][0].length; j<numAttributes; j++)
                 vals[j] =  Double.NaN; //all missing values are NaN.
-            vals[vals.length-1] = (double)classIndexes[i]; //put class val at the end.
+            vals[vals.length-1] = classIndexes[i]; //put class val at the end.
             output.add(new DenseInstance(1.0, vals));
         }
 
         return output;
-            
-
     }
-    
-    public static Instance toArff(TimeSeriesInstance tsinst) {
-        final TimeSeriesInstances tsinsts =
-                new TimeSeriesInstances(new TimeSeriesInstance[]{tsinst}, tsinst.getClassLabels());
+
+    public static Instance toArff(TimeSeriesInstance tsinst, String[] Labels) {
+        final TimeSeriesInstances tsinsts = new TimeSeriesInstances(new TimeSeriesInstance[]{tsinst}, Labels);
         final Instances insts = toArff(tsinsts);
         return insts.get(0);
     }

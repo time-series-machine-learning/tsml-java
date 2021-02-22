@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -178,7 +180,7 @@ public class Experiments  {
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
 //              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},null,probFiles,0,folds);
             }
             else {//Local run without args, mainly for debugging
                 for (String prob:probFiles) {
@@ -218,19 +220,30 @@ public class Experiments  {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
-        // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
-        // represented as different classifiers, e.g. ST_1day, ST_2day
-        // The set classifier call is therefore made before defining paths that are dependent on the classifier name
-        Classifier classifier = ClassifierLists.setClassifier(expSettings);
+        // if a pre-instantiated classifier instance hasn't been supplied, generate one here
+        if (expSettings.classifier == null) {
+            // if a classifier-generating-function has been given (typically in the case of bespoke classifiers wanted in threaded exps),
+            // instantiate the classifier from that
+            if (expSettings.classifierGenerator != null)
+                expSettings.classifier = expSettings.classifierGenerator.get();
+            else {
+                // else, use the classic setClassifier
 
-        buildExperimentDirectoriesAndFilenames(expSettings, classifier);
+                // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
+                // represented as different classifiers, e.g. ST_1day, ST_2day
+                // The set classifier call is therefore made before defining paths that are dependent on the classifier name
+                expSettings.classifier = ClassifierLists.setClassifier(expSettings);
+            }
+        }
+
+        buildExperimentDirectoriesAndFilenames(expSettings, expSettings.classifier);
         //Check whether results already exists, if so and force evaluation is false: just quit
         if (quitEarlyDueToResultsExistence(expSettings))
             return null;
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
-        setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
-        ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
+        setupClassifierExperimentalOptions(expSettings, expSettings.classifier, data[0]);
+        ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], expSettings.classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
         return results;
@@ -583,6 +596,8 @@ public class Experiments  {
     private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
         String parameterFileName = null;
 
+        if (classifier instanceof Randomizable)
+            ((Randomizable)classifier).setSeed(expSettings.foldId);
 
         // Parameter/thread/job splitting and checkpointing are treated as mutually exclusive, thus if/else
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
@@ -845,17 +860,69 @@ public class Experiments  {
     /**
      * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. Will by default set numThreads = numCores
+     *
+     * If using bespoke classifiers (not found in setClassifier), e.g. different parameterisations, bespoke ensembles etc,
+     * provide a generator function for each classifier, in a list that is parallel with classifierNames. Assuming the
+     * classifier is Randomizable, the seed shall be set equal to the expSettings foldId
+     *
+     * If simply using setClassifier to instantiate classifiers, classifierGenerators itself or fields within it can be null
+     *
+     * For e.g. classifierNames = { "TSF" }, these methods of classifier instance generation are all equivalent
+     *       -  classifierGenerators = null                                          // uses setClassifier("TSF")
+     *       -  classifierGenerators = Arrays.asList(null);                          // uses setClassifier("TSF")
+     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});
+     *       -  classifierGenerators = Arrays.asList(() -> {return setClassifierClassic("TSF",0)});
      */
-    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
-        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, datasetNames, minFolds, maxFolds, 0);
+    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
+        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, classifierGenerators, datasetNames, minFolds, maxFolds, 0);
+
+
+        /*
+        bespoke classifier example usage:
+
+        Experiments.ExperimentalArguments standardArgs = new Experiments.ExperimentalArguments();
+        standardArgs.dataReadLocation = "src/main/java/experiments/data/uci/";
+        standardArgs.resultsWriteLocation = "C:/Temp/tests/";
+
+        String[] classifierNames = { "ED", "RandF", "BespokeEnsemble" };
+
+        Supplier<Classifier> ensembleSupplier = () -> {
+            CAWPE cawpe = new CAWPE();
+            cawpe.setClassifiersForBuildingInMemory(new Classifier[] { new ED1NN(), new RandomForest() });
+            return cawpe;
+        };
+
+        List<Supplier<Classifier>> classifierGenerators = Arrays.asList(
+            () -> {return new ED1NN();},
+            () -> {return new RandomForest();},
+            ensembleSupplier
+        );
+        String[] datasets = { "hayes-roth", "iris", "teaching" };
+        int numFolds = 3;
+
+        Experiments.setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, classifierGenerators, datasets, 0, numFolds);
+
+         */
     }
 
     /**
      * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. If numThreads > 0, will spawn that many threads. If numThreads == 0, will use as many threads as there are cores,
      * else if numThreads == -1, will spawn as many threads as there are cores minus 1, to aid usability of the machine.
+     *
+     * If using bespoke classifiers (not found in setClassifier), e.g. different parameterisations, bespoke ensembles etc,
+     * provide a generator function for each classifier, in a list that is parallel with classifierNames. Assuming the
+     * classifier is Randomizable, the seed shall be set equal to the expSettings foldId
+     *
+     * If simply using setClassifier to instantiate classifiers, classifierGenerators itself or fields within it can be null
+     *
+     * For e.g. classifierNames = { "TSF" }, these methods of classifier instance generation are all equivalent
+     *       -  classifierGenerators = null                                          // uses setClassifier("TSF")
+     *       -  classifierGenerators = Arrays.asList(null);                          // uses setClassifier("TSF")
+     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});
+     *       -  classifierGenerators = Arrays.asList(() -> {return setClassifierClassic("TSF",0)});
      */
-    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds, int numThreads) throws Exception{
+    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFolds, int maxFolds, int numThreads) throws Exception{
         int numCores = Runtime.getRuntime().availableProcessors();
         if (numThreads == 0)
             numThreads = numCores;
@@ -866,7 +933,7 @@ public class Experiments  {
         System.out.println("# threads ="+numThreads);
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
-        List<ExperimentalArguments> exps = standardArgs.generateExperiments(classifierNames, datasetNames, minFolds, maxFolds);
+        List<ExperimentalArguments> exps = standardArgs.generateExperiments(classifierNames, classifierGenerators, datasetNames, minFolds, maxFolds);
         for (ExperimentalArguments exp : exps)
             executor.execute(exp);
 
@@ -994,6 +1061,11 @@ public class Experiments  {
         public String trainFoldFileName = null;
         public String testFoldFileName = null;
 
+        // a function that returns a classifier instance, mainly for generating multiple instances for different
+        // threaded exps. If not supplied (default), the classifier is instantiated via setClassifier(classifierName)
+        public Supplier<Classifier> classifierGenerator = null;
+        public Classifier classifier = null;
+
         public ExperimentalArguments() {
 
         }
@@ -1023,7 +1095,7 @@ public class Experiments  {
          * @param maxFold exclusive, i.e will make folds [ for (int f = minFold; f < maxFold; ++f) ]
          * @return a list of unique experimental arguments, covering all combinations of classifier, datasets, and folds passed, with the same meta info as 'this' currently stores
          */
-        public List<ExperimentalArguments> generateExperiments(String[] classifierNames, String[] datasetNames, int minFold, int maxFold) {
+        public List<ExperimentalArguments> generateExperiments(String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFold, int maxFold) {
 
             if (minFold > maxFold) {
                 int t = minFold;
@@ -1033,7 +1105,10 @@ public class Experiments  {
 
             ArrayList<ExperimentalArguments> exps = new ArrayList<>(classifierNames.length * datasetNames.length * (maxFold - minFold));
 
-            for (String classifier : classifierNames) {
+
+            for (int i = 0; i < classifierNames.length; i++) {
+                String classifier = classifierNames[i];
+
                 for (String dataset : datasetNames) {
                     for (int fold = minFold; fold < maxFold; fold++) {
                         ExperimentalArguments exp = new ExperimentalArguments();
@@ -1041,13 +1116,26 @@ public class Experiments  {
                         exp.datasetName = dataset;
                         exp.foldId = fold;
 
+                        // enforce that if a classifier instance has been provided, it's nulled to avoid
+                        // the same instance being accessed across multipel threads
+                        exp.classifier = null;
+
+                        if (classifierGenerators != null && classifierGenerators.get(i) != null)
+                            exp.classifierGenerator = classifierGenerators.get(i);
+                        else
+                            exp.classifierGenerator = null;
+
+
                         // copying fields via reflection now to avoid cases of forgetting to account for newly added paras
                         for (Field field : ExperimentalArguments.class.getFields()) {
 
                             // these are the ones being set individually per exp, skip the copying over
                             if (field.getName().equals("classifierName") ||
                                     field.getName().equals("datasetName") ||
-                                    field.getName().equals("foldId"))
+                                    field.getName().equals("foldId") ||
+                                    field.getName().equals("classifier") ||
+                                    field.getName().equals("classifierGenerator")
+                                )
                                 continue;
 
                             try {

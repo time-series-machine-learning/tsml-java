@@ -74,10 +74,6 @@ public class Convolution implements Transformer {
         return null;
     }
 
-    @Override
-    public Instance transform(Instance inst) {
-        return Converter.toArff(transform(Converter.fromArff(inst)));
-    }
 
     @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
@@ -93,7 +89,7 @@ public class Convolution implements Transformer {
             out = convolution2D(inst.toValueArray());
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     public double[] convolution1D(double[] data) {

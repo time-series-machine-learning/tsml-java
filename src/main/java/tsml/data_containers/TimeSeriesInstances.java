@@ -22,17 +22,20 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
-
 /**
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
+ *
+ * @author Aaron Bostrom, 2020
+ *
+ *
+ *
  */
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     /* Meta Information */
-    private String description;
-    private String problemName;
+    private String description = "";
+    private String problemName = "default";
     private boolean isEquallySpaced = true;
     private boolean hasMissing;
     private boolean isEqualLength;
@@ -157,6 +160,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     // mapping for class labels. so ["apple","orange"] => [0,1]
     // this could be optional for example regression problems.
+    public static String[] EMPTY_CLASS_LABELS = new String[0];
     private String[] classLabels = EMPTY_CLASS_LABELS;
 
     private int[] classCounts;
@@ -189,7 +193,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         int index = 0;
         for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
-            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue(), classLabels));
+            seriesCollection.add(new TimeSeriesInstance(series, labelIndexes.get(index++).intValue()));
         }
 
         dataChecks();
@@ -228,7 +232,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 	
 	public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
-        this(data, data.isEmpty() ? EMPTY_CLASS_LABELS : data.get(0).getClassLabels());
+        this(data, EMPTY_CLASS_LABELS);
     }
     
     public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] classLabels) {
@@ -322,12 +326,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
      * @param newSeries
      */
     public void add(final TimeSeriesInstance newSeries) {
-        // check that the class labels match
-        if(!Arrays.equals(classLabels, newSeries.getClassLabels())) {
-            throw new IllegalArgumentException("class labels " + Arrays.toString(classLabels) + " to not match class labels in instance to be added " +
-                                                       Arrays.toString(newSeries.getClassLabels()));
-        }
-
         seriesCollection.add(newSeries);
 
         //guard for if we're going to force update classCounts after.

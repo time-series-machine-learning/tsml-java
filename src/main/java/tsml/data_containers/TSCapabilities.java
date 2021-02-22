@@ -22,6 +22,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Capabilities mechanism similar to that used by Weka, needs example usage
+ *
+ *  @author Aaron Bostrom, 2020
+ */
+
 public class TSCapabilities {
 
     /** the object that owns this capabilities instance */

@@ -17,6 +17,10 @@
  
 package tsml.data_containers;
 
+/**
+ *
+ *  *  @author Aaron Bostrom, 2020
+ */
 public interface TSCapabilitiesHandler {
     public TSCapabilities getTSCapabilities();
 }

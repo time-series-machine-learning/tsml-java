@@ -86,6 +86,17 @@ public class ClassificationExamples {
 			public AbstractClassifier getClassifier() {
 				return nn;
 			}
+
+            public TimeSeriesInstances trainData;
+            @Override
+            public TimeSeriesInstances getTSTrainData(){
+                return trainData;
+            }
+            
+            @Override
+            public void setTSTrainData(TimeSeriesInstances train){
+                trainData = train;
+            }
         };
 
         nn.buildClassifier(data1);
@@ -128,7 +139,7 @@ public class ClassificationExamples {
 
 
     public static void main(String[] args) throws Exception {
-        example3();
+        example2();
     }
 
 
