@@ -1,9 +1,9 @@
-/* 
+/*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.data_containers;
 
 import java.util.*;
@@ -27,14 +27,13 @@ import java.util.stream.Stream;
  *
  * The model for the indexes is the first is always zero the other indexes are in units of md.increment
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
-
-
- @author Aaron Bostrom, 2020
- * */
+ *
+ * @author Aaron Bostrom, 2020
+ */
 public class TimeSeries implements Iterable<Double> {
 
     public final static double DEFAULT_VALUE = Double.NaN;
-    private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 
+    private final static List<Double> EMPTY_INDICES = Collections.emptyList();
 
     private List<Double> series;
     private List<Double> indices = EMPTY_INDICES;
@@ -111,7 +110,7 @@ public class TimeSeries implements Iterable<Double> {
     public Double get(int index) {
         return series.get(index);
     }
-    
+
     /**
      * Returns value at index passed, or default value if no valid value at index.
      *
@@ -122,7 +121,6 @@ public class TimeSeries implements Iterable<Double> {
         return hasValidValueAt(index) ? getValue(index) : DEFAULT_VALUE;
     }
 
-    
     /**
      * Returns a DoubleStream of values in series.
      *
@@ -149,14 +147,14 @@ public class TimeSeries implements Iterable<Double> {
     public List<Double> getSeries() {
         return series;
     }
-    
+
     /**
      * @return List<Double>
      */
     public List<Double> getIndices() {
         return indices;
     }
-    
+
     /**
      * Returns the series, separated by commas.
      *
