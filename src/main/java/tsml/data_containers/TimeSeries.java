@@ -39,125 +39,162 @@ public class TimeSeries implements Iterable<Double> {
     private List<Double> series;
     private List<Double> indices = EMPTY_INDICES;
 
-    private TimeSeries() {
-        // just for internal use
-    }
-    
-    public TimeSeries(double[] d){
+    // just for internal use
+    private TimeSeries() {}
+
+    /**
+     * Create a TimeSeries object from an array of time series data.
+     *
+     * @param data time series raw data
+     */
+    public TimeSeries(double[] data){
         series = new ArrayList<Double>();
-        for(double dd : d)
-            series.add(dd);
+        for(double value : data)
+            series.add(value);
     }
-    
-    public TimeSeries(List<Double> d) {
-        series = new ArrayList<>(d);
+
+    /**
+     * Create a TimeSeries object from a list of time series data.
+     *
+     * @param data time series raw data
+     */
+    public TimeSeries(List<Double> data) {
+        series = new ArrayList<>(data);
     }
-    
+
+    /**
+     * Create a TimeSeries object from another TimeSeries object.
+     *
+     * @param other TimeSeries object
+     */
     public TimeSeries(TimeSeries other) {
         this(other.series);
     }
 
-    
-    /** 
-     * @return int
+    /**
+     * Returns the length of the series.
+     *
+     * @return int length of series
      */
-    public int getSeriesLength(){
+    public int getSeriesLength() {
         return series.size();
     }
 
-    
-    /** 
-     * @param i
-     * @return boolean
+    /**
+     * Returns whether there is a valid value at the index passed.
+     * i.e. if index is out of range or NaN, returns false.
+     *
+     * @param index to check
+     * @return true if valid, false if not
      */
-    public boolean hasValidValueAt(int i){
-        //test whether its out of range, or NaN
-        boolean output = i < series.size() &&
-                         Double.isFinite(series.get(i));
-        return output;
-    }
-
-    
-    /** 
-     * @param i
-     * @return double
-     */
-    public double getValue(int i){
-        return series.get(i);
+    public boolean hasValidValueAt(int index) {
+        // test whether its out of range, or NaN
+        return index < series.size() && Double.isFinite(series.get(index));
     }
 
     /**
-     * Gets a value at a specific index in the time series. This method conducts unboxing so use getValue if you care about performance.
-     * @param i
+     * Returns value at passed index.
+     *
+     * @param index to get value from
+     * @return value at index
+     */
+    public double getValue(int index){
+        return series.get(index);
+    }
+
+    /**
+     * Returns a value at a specific index in the time series. This method conducts unboxing so use getValue if you care about performance.
+     *
+     * @param index to get value from
      * @return
      */
-    public Double get(int i) {
-        return series.get(i);
+    public Double get(int index) {
+        return series.get(index);
     }
     
-    /** 
-     * @param i
-     * @return double
+    /**
+     * Returns value at index passed, or default value if no valid value at index.
+     *
+     * @param index to get value from
+     * @return value at index, or default value if not valid at index
      */
-    public double getOrDefault(int i){
-        return hasValidValueAt(i) ? getValue(i) : DEFAULT_VALUE;
+    public double getOrDefault(int index) {
+        return hasValidValueAt(index) ? getValue(index) : DEFAULT_VALUE;
     }
 
     
-    /** 
-     * @return DoubleStream
+    /**
+     * Returns a DoubleStream of values in series.
+     *
+     * @return stream of values in series
      */
-    public DoubleStream streamValues(){
+    public DoubleStream streamValues() {
         return series.stream().mapToDouble(Double::doubleValue);
     }
-    
+
+    /**
+     * Returns Stream of doubles for values in series.
+     *
+     * @return stream of doubles in series
+     */
     public Stream<Double> stream() {
         return series.stream();
     }
     
-    /** 
-     * @param start
-     * @param end
-     * @return List<Double>
+    /**
+     * Returns a view of the portion of the series between the specified start, inclusive,
+     * and end, exclusive.
+     *
+     * @param start index to start from (inclusive)
+     * @param end index to end from (exclusive)
+     * @return Sliding window of series
      */
-    public List<Double> getSlidingWindow(int start, int end){
+    public List<Double> getSlidingWindow(int start, int end) {
         return series.subList(start, end);
     }
 
-    
-    /** 
-     * @param start
-     * @param end
-     * @return double[]
+    /**
+     * Returns a view of the portion of the series between the specified start, inclusive,
+     * and end, exclusive.
+     *
+     * @param start index to start from (inclusive)
+     * @param end index to end from (exclusive)
+     * @return Sliding window of series
      */
-    public double[] getSlidingWindowArray(int start, int end){
+    public double[] getSlidingWindowArray(int start, int end) {
         return series.subList(start, end).stream().mapToDouble(Double::doubleValue).toArray();
     }
 
+    /**
+     * Returns all values in series.
+     *
+     * @return values in series
+     */
+    public List<Double> getSeries() {
+        return series;
+    }
     
-    /** 
+    /**
      * @return List<Double>
      */
-    public List<Double> getSeries(){ return series;}
+    public List<Double> getIndices() {
+        return indices;
+    }
     
-    /** 
-     * @return List<Double>
-     */
-    public List<Double> getIndices(){ return indices;}
-
-    
-    /** 
-     * @return String
+    /**
+     * Returns the series, separated by commas.
+     *
+     * @return series, comma separated
      */
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
 
-        for(double val : series){
+        for(double val : series) {
             sb.append(val).append(',');
         }
 
-        return sb.toString();
+        return sb.substring(0, sb.length() - 1);
     }
 
     /** 
