@@ -19,6 +19,7 @@ public class localCollateResults {
         m.readInClassifiers(ts,readPath);
         m.runComparison();
     }
+    
 
     public static void distanceCompare() throws Exception {
         String[] classifiers={"sktime-MSM"};

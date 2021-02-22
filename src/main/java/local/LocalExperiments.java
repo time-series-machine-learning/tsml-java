@@ -56,7 +56,7 @@ public class LocalExperiments {
                 Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
 //              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
-                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
+//                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
             }
             else {//Local run without args, mainly for debugging
                 for (String prob:probFiles) {
