@@ -27,7 +27,7 @@ import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
  * The reason for specialising is this class has the option of searching for the optimal window length
  * through a grid search of values.
  * 
- * By default this class does a search. 
+ * By default this class does not do a search (optimiseWindow=false).
  * To search for the window size call
  * optimiseWindow(true);
  * By default, this does a leave one out cross validation on every possible window size, then sets the 
@@ -40,7 +40,7 @@ import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
  * setIncrementSize(int s) where s is on range 1...trainSetSize 
  * 
  * This is a basic brute force implementation,
- * 
+ * @author Tony Bagnall, circa 2012?
  */
 
 public class DTW_kNN extends kNN {
@@ -73,7 +73,7 @@ public class DTW_kNN extends kNN {
             optimiseWindow=true;
             setDistanceFunction(dtw);
     }
-    public void buildClassifier(Instances d){
+    public void buildClassifier(Instances d) throws Exception {
         dist.setInstances(d);
         train=d;
         trainSize=d.numInstances();

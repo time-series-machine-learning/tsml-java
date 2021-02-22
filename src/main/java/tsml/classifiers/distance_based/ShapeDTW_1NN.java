@@ -17,7 +17,6 @@
  
 package tsml.classifiers.distance_based;
 
-import org.apache.commons.lang3.ArrayUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.multivariate.MultivariateAbstractClassifier;
 import tsml.transformers.DWT;
@@ -268,7 +267,11 @@ public class ShapeDTW_1NN extends EnhancedAbstractClassifier {
             for(int j=0;j<dim2.length;j++) {
                 dim2[j] = dim2[j]*this.weightingFactor;
             }
-            double [] both = ArrayUtils.addAll(dim1,dim2);
+
+            double [] both = new double[dim1.length+dim2.length];
+            System.arraycopy(dim1,0,both,0,dim1.length);
+            System.arraycopy(dim2,0,both,dim1.length,dim2.length);
+//            ArrayUtils.addAll(dim1,dim2);
             //Create the new Instance
             DenseInstance newInst = new DenseInstance(both.length);
             for(int j=0;j<both.length;j++) {
