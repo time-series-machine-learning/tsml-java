@@ -193,7 +193,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
     
     
     @Override
-    public void buildClassifier(Instances train){      
+    public void buildClassifier(Instances train) throws Exception {
         long startTime=System.nanoTime();
         this.setDistanceFunction(cid);
 //        cid.setInstances(train);
@@ -298,8 +298,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             k2.useDTW();
             Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
             Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
-            k.buildClassifier(train);
-            k2.buildClassifier(train);
+            try {
+                k.buildClassifier(train);
+                k2.buildClassifier(train);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             double a1=ClassifierTools.accuracy(test, k);
             double a2=ClassifierTools.accuracy(test, k2);
             System.out.println(s+","+a1+","+a2);
@@ -316,8 +320,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             NN_CID k2= new NN_CID();
             Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
             Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
-            k.buildClassifier(train);
-            k2.buildClassifier(train);
+            try {
+                k.buildClassifier(train);
+                k2.buildClassifier(train);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             double a1=ClassifierTools.accuracy(test, k);
             double a2=ClassifierTools.accuracy(test, k2);
             System.out.println(s+","+a1+","+a2);

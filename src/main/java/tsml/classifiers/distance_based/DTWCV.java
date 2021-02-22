@@ -55,13 +55,14 @@ the accuracy cannot be better than the best so far, we can quit.
 to store the distance matrix for a given window size. This requires O(n^2) extra
 memory and means you cannot early abandon individual distances. 
 
-O DO: 
 DONE: avoid repeated evaluations for short series. Needs a debug
 2. Set up check pointing
 
 
 CHECK THIS: For implementation reasons, a window size of 1 
 is equivalent to Euclidean distance (rather than a window size of 0
+*
+* @author: ajb
  */
 
 public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParameter,ParameterSplittable{
