@@ -73,7 +73,7 @@ public class DTW_kNN extends kNN {
             optimiseWindow=true;
             setDistanceFunction(dtw);
     }
-    public void buildClassifier(Instances d){
+    public void buildClassifier(Instances d) throws Exception {
         dist.setInstances(d);
         train=d;
         trainSize=d.numInstances();

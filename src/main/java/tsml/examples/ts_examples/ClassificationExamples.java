@@ -28,7 +28,7 @@ import weka.classifiers.AbstractClassifier;
 public class ClassificationExamples {
 
     // Using a Weka Classifier the annoying way.
-    public static void example1() {
+    public static void example1() throws Exception {
         double[][][] in = {
                 // instance zero.
                 {
