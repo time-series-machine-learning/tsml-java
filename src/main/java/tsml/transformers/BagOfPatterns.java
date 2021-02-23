@@ -125,7 +125,7 @@ public class BagOfPatterns implements TrainableTransformer {
             prevPattern[i] = -1;
 
         for (int windowStart = 0; windowStart + windowSize - 1 < series.getSeriesLength(); ++windowStart) {
-            double[] pattern = series.getSlidingWindowArray(windowStart, windowStart+windowSize);
+            double[] pattern = series.getVSliceArray(windowStart, windowStart+windowSize);
 
             StatisticalUtilities.normInPlace(pattern);
             pattern = SAX.convertSequence(pattern, alphabetSize, numIntervals);
