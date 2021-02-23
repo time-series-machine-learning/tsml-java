@@ -30,9 +30,8 @@ import java.util.stream.Stream;
  * Should Instances be immutable after creation? Meta data is calculated on
  * creation, mutability can break this
  *
- @author Aaron Bostrom, 2020
+ * @author Aaron Bostrom, 2020
  */
-
 public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     /* Meta Information */
@@ -44,35 +43,55 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     private int minLength;
     private int maxLength;
 
+    /**
+     * Returns whether data is multivariate.
+     *
+     * @return true if multivariate, false if not
+     */
     public boolean isMultivariate() {
         return isMultivariate;
     }
 
+    /**
+     * Returns whether data is equally spaced.
+     *
+     * @return true if equally spaced, false if not
+     */
     public boolean isEquallySpaced() {
         return isEquallySpaced;
     }
 
+    /**
+     * Returns whether data has missing values in.
+     *
+     * @return true if missing values, false if not
+     */
     public boolean hasMissing() {
         return hasMissing;
     }
 
-    /** 
-     * @return boolean
+    /**
+     * Returns whether data is equal length.
+     *
+     * @return true if equal length, false if not
      */
-    public boolean isEqualLength(){
+    public boolean isEqualLength() {
         return isEqualLength;
     }
 
-    /** 
-     * @return int
+    /**
+     * Returns the minimum length of the data.
+     *
+     * @return minimum length
      */
     public int getMinLength() {
         return minLength;
     }
 
-    
-    /** 
-     * @return int
+    /**
+     * Returns the maximum length of the data.
+     *
+     * @return maximum length
      */
     public int getMaxLength() {
         return maxLength;
@@ -85,14 +104,28 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     private List<TimeSeries> seriesDimensions;
     private int labelIndex = -1;
     private double targetValue = Double.NaN;
-    
+
+    /**
+     * Create a TimeSeriesInstance object from a target value and a list of time
+     * series data. For regression.
+     *
+     * @param targetValue value
+     * @param series raw data
+     */
     public TimeSeriesInstance(double targetValue, List<? extends TimeSeries> series) {
         this.seriesDimensions = new ArrayList<>(series);
         this.targetValue = targetValue;
         
         dataChecks();
     }
-    
+
+    /**
+     * Create a TimeSeriesInstance object from a label index and a list of time
+     * series data. For classification.
+     *
+     * @param labelIndex of class label
+     * @param series raw data
+     */
     public TimeSeriesInstance(int labelIndex, List<? extends TimeSeries> series) {
         this.seriesDimensions = new ArrayList<>(series);
         this.labelIndex = labelIndex;
