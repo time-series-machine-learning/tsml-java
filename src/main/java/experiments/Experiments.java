@@ -870,7 +870,7 @@ public class Experiments  {
      * For e.g. classifierNames = { "TSF" }, these methods of classifier instance generation are all equivalent
      *       -  classifierGenerators = null                                          // uses setClassifier("TSF")
      *       -  classifierGenerators = Arrays.asList(null);                          // uses setClassifier("TSF")
-     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});
+     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});     // be careful with rng seeding though
      *       -  classifierGenerators = Arrays.asList(() -> {return setClassifierClassic("TSF",0)});
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
@@ -919,7 +919,7 @@ public class Experiments  {
      * For e.g. classifierNames = { "TSF" }, these methods of classifier instance generation are all equivalent
      *       -  classifierGenerators = null                                          // uses setClassifier("TSF")
      *       -  classifierGenerators = Arrays.asList(null);                          // uses setClassifier("TSF")
-     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});
+     *       -  classifierGenerators = Arrays.asList(() -> {return new TSF();});     // be careful with rng seeding though
      *       -  classifierGenerators = Arrays.asList(() -> {return setClassifierClassic("TSF",0)});
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFolds, int maxFolds, int numThreads) throws Exception{
@@ -952,8 +952,8 @@ public class Experiments  {
         public String dataReadLocation = null;
 
         @Parameter(names={"-rp","--resultsPath"}, required=true, order=1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
-                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...")
-        public String resultsWriteLocation = null;
+                + "[--resultsPath]/[--classifierName]/Predictions/[--datasetName]/...   This defaults to current working directory + 'results/' ")
+        public String resultsWriteLocation = "results/";
 
         @Parameter(names={"-cn","--classifierName"}, required=true, order=2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
         public String classifierName = null;
