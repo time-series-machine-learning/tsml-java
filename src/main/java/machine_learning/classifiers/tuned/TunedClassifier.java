@@ -113,6 +113,13 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.tuner = tuner;
     }
 
+    @Override
+    public String toString() {
+        return super.toString() +
+                classifier.getClass().getSimpleName() +
+                (bestParas != null ? "_"+bestParas.toString() : "");
+    }
+
     /**
      * PRE: Classifier must be set, if not, noothing happens
      * @return true if successful in turning on internal estimate
@@ -322,10 +329,16 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     @Override
     public String getParameters() {
-        String str=classifier.getClass().getSimpleName();
-        if(classifier instanceof EnhancedAbstractClassifier)
-            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
-        return str;
+        StringBuilder sb = new StringBuilder(classifier.getClass().getSimpleName());
+
+        if (bestParas != null)
+            sb.append(",BESTPARAS:").append(bestParas.toString().replace("\n", ","));
+
+        sb.append(",SPACE:").append(space.toString().replace("\n", ","));
+
+//        if(classifier instanceof EnhancedAbstractClassifier)
+//            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return sb.toString();
     }
 
     @Override //SaveEachParameter
