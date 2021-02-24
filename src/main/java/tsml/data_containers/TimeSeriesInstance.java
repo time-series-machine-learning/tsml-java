@@ -387,10 +387,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
     /**
-     * Returns a list of values from the dimension in the series at the index.
+     * Returns an array of values from the dimension in the series at the index.
      *
      * @param dimensionIndex to get values from
-     * @return a list of values
+     * @return an array of values
      */
     public double[] getVSliceArray(int dimensionIndex) {
         double[] out = new double[getNumDimensions()];
@@ -538,7 +538,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return out;
     }
 
-
     /**
      * Returns a 2d array: an array for each dimension index passed; containing the
      * series.
@@ -549,7 +548,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public double[][] getHSliceArray(int[] dimensionsToKeep) {
         return getHSliceArray(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
-
 
     /**
      * Returns a 2d array: an array for each dimension index passed; containing the
