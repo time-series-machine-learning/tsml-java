@@ -19,7 +19,6 @@ package tsml.data_containers;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -658,26 +657,50 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
     /**
-     * @param i
-     * @return TimeSeries
+     * Returns the TimeSeries object at the index.
+     * @param index to get
+     * @return TimeSeries object
      */
-    public TimeSeries get(int i) {
-        return this.seriesDimensions.get(i);
+    public TimeSeries get(int index) {
+        return this.seriesDimensions.get(index);
     }
 
+    /**
+     * Returns the target value.
+     *
+     * @return target value
+     */
     public double getTargetValue() {
         return targetValue;
     }
 
+    /**
+     * Returns an iterator, iterating over the each dimension of series.
+     *
+     * @return dimension iterator
+     */
     @Override
     public Iterator<TimeSeries> iterator() {
         return seriesDimensions.iterator();
     }
 
+    /**
+     * Returns a Stream of TimeSeries objects.
+     *
+     * @return Stream of TimeSeries.
+     */
     public Stream<TimeSeries> stream() {
         return seriesDimensions.stream();
     }
 
+    /**
+     * Returns a new TimeSeriesInstance object containing the dimensions from
+     * the specified start, inclusive, and end, exclusive.
+     *
+     * @param startInclusive index of dimension to start from (inclusive)
+     * @param endExclusive index of dimension to end at (exclusive)
+     * @return new TimeSeriesInstance object
+     */
     public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
         final TimeSeriesInstance tsi = copy();
@@ -687,22 +710,62 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return tsi;
     }
 
+    /**
+     * Returns a 2d list, containing the dimensions from the specified start,
+     * inclusive and end, exclusive.
+     *
+     * @param startInclusive index of dimension to start from (inclusive)
+     * @param endExclusive index of dimension to end at (exclusive)
+     * @return 2d list
+     */
     public List<List<Double>> getHSliceList(int startInclusive, int endExclusive) {
         return seriesDimensions.subList(startInclusive, endExclusive).stream().map(TimeSeries::getSeries).collect(Collectors.toList());
     }
 
+    /**
+     * Returns a 2d array, containing the dimensions from the specified start,
+     * inclusive and end, exclusive.
+     *
+     * @param startInclusive index of dimension to start from (inclusive)
+     * @param endExclusive index of dimension to end at (exclusive)
+     * @return 2d array
+     */
     public double[][] getHSliceArray(int startInclusive, int endExclusive) {
         return getHSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
     }
 
+    /**
+     * Returns a 2d list, containing all dimensions but series cut between the
+     * specified start, inclusive, and end, exclusive.
+     *
+     * @param startInclusive index to start from (inclusive)
+     * @param endExclusive index to end from (exclusive)
+     * @return 2d list
+     */
     public List<List<Double>> getVSliceList(int startInclusive, int endExclusive) {
         return seriesDimensions.stream().map(dim -> dim.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
 
+    /**
+     * Returns a 2d array, containing all dimensions but series cut between the
+     * specified start, inclusive, and end, exclusive.
+     *
+     * @param startInclusive index to start from (inclusive)
+     * @param endExclusive index to end from (exclusive)
+     * @return 2d array
+     */
     public double[][] getVSliceArray(int startInclusive, int endExclusive) {
         return getVSliceList(startInclusive, endExclusive).stream().map(dim -> dim.stream().mapToDouble(d -> d).toArray()).toArray(double[][]::new);
     }
 
+    /**
+     * Returns a new TimeSeriesInstance object, containing all dimensions but
+     * series cut between the specified start, inclusive, and end, exclusive.
+     *
+     * @param startInclusive index to start from (inclusive)
+     * @param endExclusive index to end from (exclusive)
+     * @return new TimeSeriesInstance object
+     */
     public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
         final TimeSeriesInstance tsi = copy();
@@ -712,38 +775,69 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return tsi;
     }
 
+    /**
+     * Returns whether a TimeSeriesInstance object is equal to another based if
+     * label index is equal, target value is equal and series are equal.
+     *
+     * @param other object
+     * @return true if equal, false if not
+     */
     @Override
-    public boolean equals(final Object o) {
-        if (!(o instanceof TimeSeriesInstance)) {
+    public boolean equals(final Object other) {
+        if (!(other instanceof TimeSeriesInstance)) {
             return false;
         }
-        final TimeSeriesInstance that = (TimeSeriesInstance) o;
+        final TimeSeriesInstance that = (TimeSeriesInstance) other;
         return labelIndex == that.labelIndex &&
                 Double.compare(that.targetValue, targetValue) == 0 &&
                 seriesDimensions.equals(that.seriesDimensions);
     }
 
+    /**
+     * Returns an int of the hash code based on the series and label index.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
-
         return Objects.hash(seriesDimensions, labelIndex);
     }
 
+    /**
+     * Returns whether data has label index.
+     *
+     * @return true if label index is set, fasle if not
+     */
     public boolean isLabelled() {
         // is labelled if label index points to a class label
         return labelIndex >= 0;
     }
 
+    /**
+     * Returns whether data is regressed.
+     *
+     * @return true if regressed, false if not
+     */
     public boolean isRegressed() {
         // is regressed if the target value is set
-        return targetValue != Double.NaN;
+        return !Double.isNaN(targetValue);
     }
 
+    /**
+     * Returns whether data is for a classification problem.
+     *
+     * @return true if classification problem, false if not
+     */
     public boolean isClassificationProblem() {
         // if a set of class labels are set then it's a classification problem
         return labelIndex >= 0;
     }
 
+    /**
+     * Returns whether data is for a regression problem.
+     *
+     * @return true if regression problem, false if not
+     */
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
     }
