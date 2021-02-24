@@ -637,12 +637,24 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return output;
     }
 
-    
-    /** 
-     * @return double[][]
+    /**
+     * Returns a transposed 2d array.
+     *
+     * @return transposed array
      */
-    public double[][] toTransposedArray(){
-        return this.getVSliceArray(IntStream.range(0, maxLength).toArray());
+    public double[][] toTransposedArray() {
+        double[][] original = this.toValueArray();
+        double[][] transposed = new double[maxLength][seriesDimensions.size()];
+
+        // for each dimension
+        for (int i = 0; i < seriesDimensions.size(); i++) {
+            // for each value in series
+            for (int j = 0; j < maxLength; j++) {
+                transposed[j][i] = original[i][j];
+            }
+        }
+
+        return transposed;
     }
 
     /**
