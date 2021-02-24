@@ -258,7 +258,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * labelling variables. This is only intended for internal use in avoiding
      * copying the data again after a vslice / hslice.
      *
-     * @param data series
+     * @param data  series
      * @param other TimeSeriesInstance
      */
     private TimeSeriesInstance(double[][] data, TimeSeriesInstance other) {
@@ -521,7 +521,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return getHSliceList(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
-     /**
+    /**
      * Returns a 2d list: a list for each dimension index passed; containing the
      * series.
      *
@@ -658,6 +658,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
     /**
      * Returns the TimeSeries object at the index.
+     *
      * @param index to get
      * @return TimeSeries object
      */
@@ -698,7 +699,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * the specified start, inclusive, and end, exclusive.
      *
      * @param startInclusive index of dimension to start from (inclusive)
-     * @param endExclusive index of dimension to end at (exclusive)
+     * @param endExclusive   index of dimension to end at (exclusive)
      * @return new TimeSeriesInstance object
      */
     public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
@@ -715,7 +716,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * inclusive and end, exclusive.
      *
      * @param startInclusive index of dimension to start from (inclusive)
-     * @param endExclusive index of dimension to end at (exclusive)
+     * @param endExclusive   index of dimension to end at (exclusive)
      * @return 2d list
      */
     public List<List<Double>> getHSliceList(int startInclusive, int endExclusive) {
@@ -727,7 +728,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * inclusive and end, exclusive.
      *
      * @param startInclusive index of dimension to start from (inclusive)
-     * @param endExclusive index of dimension to end at (exclusive)
+     * @param endExclusive   index of dimension to end at (exclusive)
      * @return 2d array
      */
     public double[][] getHSliceArray(int startInclusive, int endExclusive) {
@@ -739,7 +740,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * specified start, inclusive, and end, exclusive.
      *
      * @param startInclusive index to start from (inclusive)
-     * @param endExclusive index to end from (exclusive)
+     * @param endExclusive   index to end from (exclusive)
      * @return 2d list
      */
     public List<List<Double>> getVSliceList(int startInclusive, int endExclusive) {
@@ -751,7 +752,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * specified start, inclusive, and end, exclusive.
      *
      * @param startInclusive index to start from (inclusive)
-     * @param endExclusive index to end from (exclusive)
+     * @param endExclusive   index to end from (exclusive)
      * @return 2d array
      */
     public double[][] getVSliceArray(int startInclusive, int endExclusive) {
@@ -763,7 +764,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * series cut between the specified start, inclusive, and end, exclusive.
      *
      * @param startInclusive index to start from (inclusive)
-     * @param endExclusive index to end from (exclusive)
+     * @param endExclusive   index to end from (exclusive)
      * @return new TimeSeriesInstance object
      */
     public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
