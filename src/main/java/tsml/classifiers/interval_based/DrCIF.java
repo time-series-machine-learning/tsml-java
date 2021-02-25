@@ -1538,33 +1538,39 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         public MultiThreadPredictionHolder call() throws Exception{
             MultiThreadPredictionHolder h = new MultiThreadPredictionHolder();
 
-            Catch22 c22 = new Catch22();
-            c22.setOutlierNormalise(outlierNorm);
+            if (base instanceof ContinuousIntervalTree) {
+                h.c = (int) ((ContinuousIntervalTree) trees.get(i)).classifyInstance(dimensions, functions,
+                            intervals.get(i), subsampleAtts.get(i), intervalDimensions.get(i));
+            }
+            else {
+                Catch22 c22 = new Catch22();
+                c22.setOutlierNormalise(outlierNorm);
 
-            int p = 0;
-            for (int r = 0; r < dimensions.length; r++) {
-                for (int j = 0; j < intervals.get(i)[r].length; j++) {
-                    double[] series = dimensions[r][intervalDimensions.get(i)[r][j]];
-                    double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[r][j][0],
-                            intervals.get(i)[r][j][1] + 1);
+                int p = 0;
+                for (int r = 0; r < dimensions.length; r++) {
+                    for (int j = 0; j < intervals.get(i)[r].length; j++) {
+                        double[] series = dimensions[r][intervalDimensions.get(i)[r][j]];
+                        double[] intervalArray = Arrays.copyOfRange(series, intervals.get(i)[r][j][0],
+                                intervals.get(i)[r][j][1] + 1);
 
-                    for (int a = 0; a < numAttributes; a++) {
-                        if (subsampleAtts.get(i)[a] < 22){
-                            testHolder.instance(0).setValue(p,
-                                    c22.getSummaryStatByIndex(subsampleAtts.get(i)[a], j, intervalArray));
+                        for (int a = 0; a < numAttributes; a++) {
+                            if (subsampleAtts.get(i)[a] < 22) {
+                                testHolder.instance(0).setValue(p,
+                                        c22.getSummaryStatByIndex(subsampleAtts.get(i)[a], j, intervalArray));
+                            } else {
+                                testHolder.instance(0).setValue(p,
+                                        FeatureSet.calcFeatureByIndex(subsampleAtts.get(i)[a],
+                                                intervals.get(i)[r][j][0], intervals.get(i)[r][j][1], series));
+                            }
+
+                            p++;
                         }
-                        else {
-                            testHolder.instance(0).setValue(p,
-                                    FeatureSet.calcFeatureByIndex(subsampleAtts.get(i)[a],
-                                            intervals.get(i)[r][j][0], intervals.get(i)[r][j][1], series));
-                        }
-
-                        p++;
                     }
                 }
+
+                h.c = (int) tree.classifyInstance(testHolder.instance(0));
             }
 
-            h.c = (int) tree.classifyInstance(testHolder.instance(0));
             return h;
         }
     }
