@@ -16,13 +16,14 @@ dependencies {
     compile fileTree(dir: 'lib', include: ['*.jar']) // all of the jars in the lib folder
     // https://mvnrepository.com/artifact/junit/junit
     testCompile group: 'junit', name: 'junit', version: '4.13'
-    // https://mvnrepository.com/artifact/com.google.guava/guava
-    compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-collections4
     compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
     // https://mvnrepository.com/artifact/com.carrotsearch/hppc
+    // WEASEL WEASEL_MUSE IndividualTDE MultivariateIndividualTDE
     compile group: 'com.carrotsearch', name: 'hppc', version: '0.7.3'
     // https://mvnrepository.com/artifact/com.beust/jcommander
     compile group: 'com.beust', name: 'jcommander', version: '1.78'
@@ -32,19 +33,24 @@ dependencies {
     compile group: 'com.esotericsoftware', name: 'kryo', version: '5.0.0-RC1'
     // https://mvnrepository.com/artifact/org.n52.matlab/matlab-control
     compile group: 'org.n52.matlab', name: 'matlab-control', version: '5.0.0'
-    // https://mvnrepository.com/artifact/com.carrotsearch/java-sizeof
-    compile group: 'com.carrotsearch', name: 'java-sizeof', version: '0.0.5'
     // https://mvnrepository.com/artifact/ml.dmlc/xgboost4j
     compile group: 'ml.dmlc', name: 'xgboost4j', version: '0.81'
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
     // https://mvnrepository.com/artifact/com.google.guava/guava-testlib
     compile group: 'com.google.guava', name: 'guava-testlib', version: '28.2-jre'
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     compile group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
     // https://mvnrepository.com/artifact/de.bwaldvogel/liblinear
+    // WEASEL WEASEL_MUSE
     compile group: 'de.bwaldvogel', name: 'liblinear', version: '2.41'
     // https://mvnrepository.com/artifact/tw.edu.ntu.csie/libsvm
+    // TEASER
     compile group: 'tw.edu.ntu.csie', name: 'libsvm', version: '3.24'
+    // https://mvnrepository.com/artifact/com.github.rwl/jtransforms
+    compile group: 'com.github.rwl', name: 'jtransforms', version: '2.4.0'
     // https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
+    // RidgeClassifierCV
     compile group: 'org.nd4j', name: 'nd4j-native-platform', version: '1.0.0-beta4'
 }
 
