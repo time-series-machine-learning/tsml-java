@@ -81,7 +81,7 @@ public class MultivariateDistance extends ShapeletDistance implements Serializab
         }
         
         for(int i=0; i< numChannels; i++){
-            double[] temp = inst.get(dimension).getSlidingWindowArray(start, start+length);
+            double[] temp = inst.get(dimension).getVSliceArray(start, start+length);
             temp = seriesRescaler.rescaleSeries(temp, false); //normalise each series.
             cand.setShapeletContent(i, temp);
         } 
