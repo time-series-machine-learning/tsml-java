@@ -221,8 +221,8 @@ public class ClassifierLists {
     /**
      * DICTIONARY BASED: classifiers based on counting the occurrence of words in series
      */
-    public static String[] dictionary= {
-        "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
+    public static String[] dictionary= {"BOP","SAXVSM","SAX_1NN","BOSS","cBOSS","S-BOSS","BoTSWEnsemble","WEASEL",
+            "TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -247,7 +247,7 @@ public class ClassifierLists {
             case "BOSSC45":
                 c = new BOSSC45();
                 break;
-            case "SpatialBOSS": case "S-BOSS":
+            case "S-BOSS":
                 c = new SpatialBOSS();
                 break;
             case "BoTSWEnsemble":
@@ -310,7 +310,8 @@ public class ClassifierLists {
     /**
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
-    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC"};
+    public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
+            "ShapeletTreeClassifier","STC","ROCKET","ARSENAL"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -329,6 +330,15 @@ public class ClassifierLists {
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();
                 break;
+            case "ROCKET":
+                c = new ROCKETClassifier();
+                break;
+            case "ARSENAL":
+                c = new ROCKETClassifier();
+                ((ROCKETClassifier)c).setEnsemble(true);
+                ((ROCKETClassifier)c).setEnsembleSize(25);
+                ((ROCKETClassifier)c).setNumKernels(2000);
+                break;
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -342,7 +352,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22","ROCKET","ARSENAL"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -364,17 +374,8 @@ public class ClassifierLists {
             case "catch22":
                 c = new Catch22Classifier();
                 break;
-            case "ROCKET":
-                c = new ROCKETClassifier();
-                break;
-            case "ARSENAL":
-                c = new ROCKETClassifier();
-                ((ROCKETClassifier)c).setEnsemble(true);
-                ((ROCKETClassifier)c).setEnsembleSize(25);
-                ((ROCKETClassifier)c).setNumKernels(2000);
-                break;
             default:
-                System.out.println("Unknown hybrid based classifier, should not be able to get here ");
+                System.out.println("Unknown hybrid based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array hybrids and the switch statement ");
                 throw new UnsupportedOperationException("Unknown hybrid based  classifier, should not be able to get here "
                         + "There is a mismatch between array hybrids and the switch statement ");
@@ -404,7 +405,7 @@ public class ClassifierLists {
         switch(classifier) {
             case "Shapelet_I": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
-//Default to 1 day max run: could do this better
+                //Default to 1 day max run: could do this better
                 ((MultivariateShapeletTransformClassifier)c).setOneDayLimit();
                 ((MultivariateShapeletTransformClassifier)c).setSeed(fold);
                 ((MultivariateShapeletTransformClassifier)c).setTransformType(classifier);
@@ -515,7 +516,7 @@ public class ClassifierLists {
         int fold=exp.foldId;
         Classifier c;
         switch(classifier) {
-//TIME DOMAIN CLASSIFIERS
+            //TIME DOMAIN CLASSIFIERS
             case "XGBoostMultiThreaded":
                 c = new TunedXGBoost();
                 break;
@@ -609,7 +610,8 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
+    public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL",
+            "HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
