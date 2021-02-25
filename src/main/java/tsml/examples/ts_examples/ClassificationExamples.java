@@ -28,7 +28,7 @@ import weka.classifiers.AbstractClassifier;
 public class ClassificationExamples {
 
     // Using a Weka Classifier the annoying way.
-    public static void example1() {
+    public static void example1() throws Exception {
         double[][][] in = {
                 // instance zero.
                 {
@@ -86,6 +86,17 @@ public class ClassificationExamples {
 			public AbstractClassifier getClassifier() {
 				return nn;
 			}
+
+            public TimeSeriesInstances trainData;
+            @Override
+            public TimeSeriesInstances getTSTrainData(){
+                return trainData;
+            }
+            
+            @Override
+            public void setTSTrainData(TimeSeriesInstances train){
+                trainData = train;
+            }
         };
 
         nn.buildClassifier(data1);
@@ -128,7 +139,7 @@ public class ClassificationExamples {
 
 
     public static void main(String[] args) throws Exception {
-        example3();
+        example2();
     }
 
 

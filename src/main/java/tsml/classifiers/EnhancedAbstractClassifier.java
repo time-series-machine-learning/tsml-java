@@ -14,12 +14,15 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers;
 
 import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstances;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,9 +103,24 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return rand;
     }
 
+
+    /*Start Aaron Stuff for TSInstances wrapper*/
     public AbstractClassifier getClassifier(){
         return this;
     }
+    
+    public TimeSeriesInstances trainData;
+    
+    @Override
+    public TimeSeriesInstances getTSTrainData(){
+        return trainData;
+    }
+    
+    @Override
+    public void setTSTrainData(TimeSeriesInstances train){
+        trainData = train;
+    }
+    /*END - Aaron Stuff for TSClassifier wrapper*/
 
     /**
      * Set the classifier RNG	

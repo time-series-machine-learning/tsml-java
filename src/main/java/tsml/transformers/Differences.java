@@ -148,7 +148,7 @@ public class Differences implements Transformer {
         	else out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 }

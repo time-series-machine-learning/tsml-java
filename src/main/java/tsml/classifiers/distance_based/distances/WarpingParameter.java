@@ -16,6 +16,10 @@
  */
  
 package tsml.classifiers.distance_based.distances;
+/**
+ * @author George Oastler circa 2019
+some comments added by Tony 2021
+ */
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
@@ -23,6 +27,7 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 
 public class WarpingParameter implements
         WarpingDistanceMeasure, ParamHandler {
+    // windowSize and windowSizePercentage -1 indicates full window
     private int windowSize = -1;
     private double windowSizePercentage = -1;
     private boolean windowSizeInPercentage = false;

@@ -19,10 +19,15 @@ import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.ed.EDistance;
+import tsml.classifiers.distance_based.distances.erp.ERPDistance;
+import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
+import tsml.classifiers.distance_based.distances.msm.MSMDistance;
+import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
-import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.early_classification.*;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -35,6 +40,7 @@ import tsml.classifiers.hybrids.ROCKETClassifier;
 import tsml.classifiers.interval_based.*;
 import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
+import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
 import tsml.classifiers.multivariate.*;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.classifiers.shapelet_based.FastShapelets;
@@ -92,21 +98,12 @@ public class ClassifierLists {
      * DISTANCE BASED: classifiers based on measuring the distance between two classifiers
      */
     public static String[] distance= {
-        "ED","DTW","DTWCV", "EE","LEE","ApproxElasticEnsemble","ProximityForest","PF","FastElasticEnsemble",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID",
-        "PF_R1",
-        "PF_R5",
-        "PF_R10",
-        "PF_WRAPPED",
-        "PF_R5_OOB",
-        "PF_R5_OOB_R",
-        "PF_R5_OOB_W",
-        "PF_R5_OOB_R_W",
-        "PF_R5_CV",
-        "PF_R5_CV_W",
-            "DD_DTW","DTD_C","CID_DTW","NN_CID","NN_ShapeDTW_Raw","NN_ShapeDTW_PAA","NN_ShapeDTW_DWT",
-            "NN_ShapeDTW_Slope","NN_ShapeDTW_Der","NN_ShapeDTW_Hog","NN_ShapeDTW_Comp","SVM_ShapeDTW_Poly",
-            "SVM_ShapeDTW_RBF"
+//Nearest Neighbour with distances
+        "1NN-ED","1NN-DTW","1NN-DTWCV", "DD_DTW","DTD_C","CID_DTW","NN_CID", "NN_ShapeDTW", "1NN-DTW_New","1NN-DTW-Jay","1NN-MSM","1NN-ERP","1NN-LCSS","1NN-WDTW",
+//EE derivatives
+            "ElasticEnsemble","EE","LEE","ApproxElasticEnsemble","FastElasticEnsemble",
+//Tree based
+            "ProximityForest","PF"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
@@ -114,45 +111,39 @@ public class ClassifierLists {
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
-            case "PF_R1":
-                c = ProximityForest.Config.PF_R1.configure(new ProximityForest());
-                break;
-            case "PF_R5":
-                c = ProximityForest.Config.PF_R5.configure(new ProximityForest());
-                break;
-            case "PF_R10":
-                c = ProximityForest.Config.PF_R10.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB":
-                c = ProximityForest.Config.PF_R5_OOB.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB_R":
-                c = ProximityForest.Config.PF_R5_OOB_R.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB_W":
-                c = ProximityForest.Config.PF_R5_OOB_W.configure(new ProximityForest());
-                break;
-            case "PF_R5_OOB_R_W":
-                c = ProximityForest.Config.PF_R5_OOB_R_W.configure(new ProximityForest());
-                break;
-            case "PF_R5_CV":
-                c = ProximityForest.Config.PF_R5_CV.configure(new ProximityForest());
-                break;
-            case "PF_R5_CV_W":
-                c = ProximityForest.Config.PF_R5_CV_W.configure(new ProximityForest());
-                break;
-            case "PF_WRAPPED":
-                c = new ProximityForestWrapper();
-                break;
-            case "ED":
+            case "1NN-ED":
                 c = new KNN();
+                ((KNN) c).setDistanceFunction(new EDistance());
                 break;
-            case "DTW":
+            case "1NN-DTW":
                 c = new DTW_kNN();
                 ((DTW_kNN)c).optimiseWindow(false);
                 ((DTW_kNN)c).setMaxR(1.0);
                 break;
-            case "DTWCV":
+            case "1NN-DTW-Jay":
+                c = new DTW1NN();
+                break;
+            case "1NN-DTW_New":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new DTWDistance());
+                break;
+            case "1NN-MSM":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new MSMDistance());
+                break;
+            case "1NN-ERP":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new ERPDistance());
+                break;
+            case "1NN-LCSS":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new LCSSDistance());
+                break;
+            case "1NN-WDTW":
+                c = new KNN();
+                ((KNN) c).setDistanceFunction(new WDTWDistance());
+                break;
+            case "1NN-DTWCV":
                 c = new DTWCV();
                 break;
             case "EE":
@@ -339,7 +330,7 @@ public class ClassifierLists {
                 c=new ShapeletTree();
                 break;
            default:
-                System.out.println("Unknown interval based classifier, should not be able to get here ");
+                System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
                 throw new UnsupportedOperationException("Unknown interval based  classifier, should not be able to get here "
                         + "There is a mismatch between array interval and the switch statement ");
@@ -554,7 +545,7 @@ public class ClassifierLists {
                 c = new BayesNet();
                 break;
             case "ED":
-                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();;
+                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();
                 break;
             case "C45":
                 c=new J48();

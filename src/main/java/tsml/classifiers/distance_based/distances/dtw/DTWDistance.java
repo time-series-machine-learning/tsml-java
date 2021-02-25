@@ -26,8 +26,14 @@ import weka.core.Instance;
 /**
  * DTW distance measure.
  * <p>
- * Contributors: goastler
- */
+ * Contributors: goastler circa 2019
+ *
+ * some comments from Tony, 2021
+ * DTW distance function that defaults to full window
+ * This replaces legacy.elastic_ensemble.distance_functions variants of DTW
+ *
+ * It defaults to full window warping. To set the window size, either
+ * */
 public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW {
 
     public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
@@ -128,6 +134,12 @@ public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW
         return warpingParameter.getWindowSize();
     }
 
+    /**
+     * Sets the window size in WarpingParameter object as an absolute maximum number of time points, and sets
+     * warpingParameter.windowSizeInPercentage to false. Set to -1 for full window.
+     * @param windowSize integer, negative indicates full window, otherwise between 0 (Euclidean distance) and
+     *                   seriesLength (full warp)
+     */
     @Override public void setWindowSize(final int windowSize) {
         warpingParameter.setWindowSize(windowSize);
     }
@@ -136,6 +148,11 @@ public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW
         return warpingParameter.getWindowSizePercentage();
     }
 
+    /**
+     *  * Sets the window size in WarpingParameter object as a proportion of the full length.
+     *  Need to clarify if it
+     * @param windowSizePercentage
+     */
     @Override public void setWindowSizePercentage(final double windowSizePercentage) {
         warpingParameter.setWindowSizePercentage(windowSizePercentage);
     }

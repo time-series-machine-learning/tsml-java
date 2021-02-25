@@ -222,7 +222,7 @@ public class DD_DTW extends kNN implements SaveParameterInfo{
     }
     
     @Override
-    public void buildClassifier(Instances train){
+    public void buildClassifier(Instances train) throws Exception {
         long startTime=System.nanoTime();
         
         if(!paramsSet){
