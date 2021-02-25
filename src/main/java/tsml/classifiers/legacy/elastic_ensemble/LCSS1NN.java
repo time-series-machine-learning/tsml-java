@@ -82,8 +82,8 @@ public class LCSS1NN extends Efficient1NN {
             m = first.numAttributes() - 1;
             n = second.numAttributes() - 1;
         } else {
-            // default case, use the original MSM class (horrible efficiency, but just in as a fail safe for edge-cases) 
-            System.err.println("Warning: class designed to use problems with class index as last attribute. Defaulting to original MSM distance");
+            // default case, use the original LCSS class (horrible efficiency, but just in as a fail safe for edge-cases)
+            System.err.println("Warning: class designed to use problems with class index as last attribute. Defaulting to original LCSS distance");
             return new LCSSDistance(this.delta, this.epsilon).distance(first, second);
         }
 
