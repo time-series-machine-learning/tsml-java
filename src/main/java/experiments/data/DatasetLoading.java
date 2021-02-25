@@ -389,7 +389,7 @@ public class DatasetLoading {
             inst = new Instances(reader);
         }
         else if (extension.toLowerCase().equals(TS)) {
-            TSReader tsreader = new TSReader(reader);
+            TSReader2 tsreader = new TSReader2(reader);
             inst = tsreader.GetInstances();
         }
 

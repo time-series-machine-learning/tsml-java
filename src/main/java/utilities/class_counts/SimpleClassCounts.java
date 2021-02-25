@@ -14,12 +14,8 @@
  */
 package utilities.class_counts;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
+
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -59,6 +55,18 @@ public class SimpleClassCounts extends ClassCounts {
             classDistribution[i] = in.get(i);
         }
         keySet = in.keySet();
+    }
+
+    public SimpleClassCounts(int[] classDistribution){
+
+        //copy over the data.
+        this.classDistribution = new Integer[classDistribution.length];
+        this.keySet = new HashSet<Double>();
+        for(int i=0; i<classDistribution.length; i++)
+        {
+            this.classDistribution[i] = classDistribution[i];
+            this.keySet.add((double)i);
+        }
     }
    
     

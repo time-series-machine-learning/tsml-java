@@ -1,10 +1,16 @@
 package tsml.classifiers.shapelet_based.quality;
 
-import tsml.transformers.shapelet_tools.OrderLineObj;
+import tsml.classifiers.shapelet_based.type.ShapeletMV;
+import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
 
-public class FStat implements ShapeletQualityMV{
+public class FStat extends ShapeletQualityMV{
+
+    public FStat(double[][][] instancesArray, int[] classIndexes, String[] classNames, int[] classCounts, ShapeletDistanceMV distance) {
+        super(instancesArray, classIndexes, classNames, classCounts, distance);
+    }
+
     @Override
-    public double getQuality(OrderLineObj[] orderline) {
+    public double calculate(ShapeletMV candidate){
         return 0;
     }
 }

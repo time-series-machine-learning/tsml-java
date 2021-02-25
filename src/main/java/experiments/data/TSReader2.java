@@ -9,7 +9,6 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Optional;
 
 import static utilities.multivariate_tools.MultivariateInstanceTools.createRelationHeader;
 
@@ -19,7 +18,7 @@ File for reading sktime format data
  @author Aaron Bostrom, pushed 22/4/2020
  */
 
-public class TSReader {
+public class TSReader2 {
 
 
     //need to change this to a map function.
@@ -51,7 +50,7 @@ public class TSReader {
 
     private ArrayList<Double> raw_labels;
 
-    public TSReader(Reader reader) throws IOException{
+    public TSReader2(Reader reader) throws IOException{
         m_Tokenizer = new StreamTokenizer(reader);
         initTokenizer();
 
@@ -432,7 +431,7 @@ public class TSReader {
             //System.out.println(f);
 
             long time = System.nanoTime();
-            TSReader ts_reader = new TSReader(new FileReader(f));
+            TSReader2 ts_reader = new TSReader2(new FileReader(f));
             System.out.println("after: " + (System.nanoTime() - time));
 
             Instances train_data = ts_reader.GetInstances();
@@ -452,7 +451,7 @@ public class TSReader {
             File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
             System.out.println(f1);
             time = System.nanoTime();
-            TSReader ts_reader_multi = new TSReader(new FileReader(f1));
+            TSReader2 ts_reader_multi = new TSReader2(new FileReader(f1));
             Instances train_data_multi = ts_reader_multi.GetInstances();
             System.out.println("after: " + (System.nanoTime() - time));
 

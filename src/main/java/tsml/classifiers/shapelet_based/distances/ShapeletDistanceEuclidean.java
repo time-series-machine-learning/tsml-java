@@ -1,32 +1,24 @@
 package tsml.classifiers.shapelet_based.distances;
 
-import tsml.classifiers.shapelet_based.classifiers.ShapeletMV;
+import tsml.classifiers.shapelet_based.type.ShapeletMV;
 
 public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
     @Override
-    public double distance(ShapeletMV shapelet, double[][] instance, int seriesLength) {
+    public double calculate(ShapeletMV shapelet, double[][] instance) {
         double bestSum = Double.MAX_VALUE;
         double sum;
         double[] subseq;
         double temp;
         int shapeletLength = shapelet.getLength();
-        double[][] shapeletData = shapelet.getData();
         //m-l+1
         //multivariate instances that are split dont have a class value on them.
-        for (int i = 0; i < seriesLength -  + 1; i++)
+        int minLength = Integer.MAX_VALUE;
+        for(int i=0;i<instance.length;i++){
+            minLength = Math.min(minLength,instance[i].length);
+        }
+        for (int i = 0; i < minLength - shapeletLength + 1; i++)
         {
-            sum = 0;
-
-            for(int j=0; j< instance.length; j++){
-
-                for (int k = 0; k < shapeletLength; k++)
-                {
-                    //count ops
-                    //incrementCount();
-                    temp = shapeletData[j][k] - instance[j][k+i];
-                    sum = sum + (temp * temp);
-                }
-            }
+            sum = shapelet.getDistanceToInstance(i,instance);
 
             if (sum < bestSum)
             {
@@ -35,7 +27,28 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
             }
         }
 
-        double dist = (bestSum == 0.0) ? 0.0 : (1.0 / length * bestSum);
+        double dist = (bestSum == 0.0) ? 0.0 : (1.0 / shapeletLength * bestSum);
         return dist;
     }
+
+    public double calculate(double[][] a, double[][] b, double shapeletLength) {
+
+            double temp,sum=0;
+
+            for(int i=0; i< a.length; i++){
+
+                for (int j = 0; j < a[i].length; j++)
+                {
+                    temp = b[i][j] - a[i][j];
+                    sum = sum + (temp * temp);
+                }
+            }
+
+
+        double dist = (sum == 0.0) ? 0.0 : (1.0 / shapeletLength * sum);
+        return dist;
+    }
+
+
+
 }

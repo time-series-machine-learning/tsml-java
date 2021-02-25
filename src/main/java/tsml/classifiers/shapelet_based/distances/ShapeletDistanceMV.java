@@ -1,8 +1,10 @@
 package tsml.classifiers.shapelet_based.distances;
 
-import tsml.classifiers.shapelet_based.classifiers.ShapeletMV;
+import tsml.classifiers.shapelet_based.type.ShapeletMV;
 
 public interface ShapeletDistanceMV {
 
-    public double distance(ShapeletMV shapelet, double[][] instance, int seriesLength);
+    public double calculate(ShapeletMV shapelet, double[][] instance);
+    public double calculate(double[][] a, double[][] b, double shapeletLength);
+
 }
