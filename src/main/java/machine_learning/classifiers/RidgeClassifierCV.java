@@ -21,6 +21,7 @@ import experiments.data.DatasetLoading;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
+import tsml.classifiers.MultiThreadable;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -39,7 +40,7 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
  *
  * @author Matthew Middlehurst
  */
-public class RidgeClassifierCV extends AbstractClassifier {
+public class RidgeClassifierCV extends AbstractClassifier implements MultiThreadable {
 
     //alphas used in sktime ROCKET
     private final double[] alphas = {1.00000000e-03, 4.64158883e-03, 2.15443469e-02, 1.00000000e-01,
@@ -48,14 +49,30 @@ public class RidgeClassifierCV extends AbstractClassifier {
     private INDArray coefficients;
     private double[] intercept;
 
+    private int numThreads = 1;
+
     private double bestScore = -999999;
 
     public double getBestScore() { return bestScore; }
 
     @Override
+    public void enableMultiThreading(int numThreads) {
+        this.numThreads = numThreads;
+    }
+
+    @Override
     public void buildClassifier(Instances instances) throws Exception {
         if (instances.classIndex() != instances.numAttributes() - 1)
             throw new Exception("Class attribute must be the final index.");
+
+        String value = System.getenv("OMP_NUM_THREADS");
+        if (value == null && numThreads != Runtime.getRuntime().availableProcessors())
+            throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable not set. Set it to the " +
+                    "number of threads you wish to use or set numThreads to " +
+                    "Runtime.getRuntime().availableProcessors()");
+        if (value != null && Integer.parseInt(value) != numThreads)
+            throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable and numThreads do not " +
+                    "match.");
 
         bestScore = -999999;
 
@@ -100,7 +117,6 @@ public class RidgeClassifierCV extends AbstractClassifier {
         preprocessData(data, labels, xOffset, yOffset, xScale);
 
         //original uses SVD when no. instances > no. attributes
-        Nd4j.setNumThreads(1);
         INDArray matrix = Nd4j.create(data);
         INDArray q = matrix.mmul(matrix.transpose());
         INDArray eigvals = Eigen.symmetricGeneralizedEigenvalues(q);

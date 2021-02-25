@@ -101,7 +101,10 @@ public class PerformanceMetric {
 
     public static PerformanceMetric benchmarkTime = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower);
     public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse);
-    
+
+    public static PerformanceMetric earliness       = new PerformanceMetric("Earliness", ClassifierResults.GETTER_Earliness,             mean, min,   worse);
+    public static PerformanceMetric harmonicMean    = new PerformanceMetric("HarmonicMean", ClassifierResults.GETTER_HarmonicMean,       mean, max,   better);
+
     
     public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
@@ -132,6 +135,9 @@ public class PerformanceMetric {
         stats.add(specificity);
 
         //stats.add(memory);
+
+        //stats.add(earliness);
+        //stats.add(harmonicMean);
 
         return stats;
     }

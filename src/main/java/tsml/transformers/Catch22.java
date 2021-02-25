@@ -34,6 +34,7 @@ import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 
 import static utilities.ArrayUtilities.mean;
+import static utilities.ArrayUtilities.sum;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.GenericTools.*;
 import static utilities.StatisticalUtilities.median;
@@ -61,7 +62,7 @@ public class Catch22 implements Transformer {
     private boolean outlierNorm = false;
 
     // for summary stat by index
-    private int currentSeriesIndex = Integer.MIN_VALUE;
+    private int currentSeriesID = Integer.MIN_VALUE;
     private double idxMin;
     private double idxMax;
     private double idxMean;
@@ -70,8 +71,7 @@ public class Catch22 implements Transformer {
     private double[] idxOutlierSeries;
     private double[] idxSeries;
 
-    public Catch22() {
-    }
+    public Catch22() { }
 
     public void setNormalise(boolean b) {
         this.norm = b;
@@ -203,9 +203,9 @@ public class Catch22 implements Transformer {
         return featureSet;
     }
 
-    public double getSummaryStatByIndex(int summaryStatIndex, int seriesIndex, double[] series) throws Exception {
-        if (seriesIndex != currentSeriesIndex) {
-            currentSeriesIndex = seriesIndex;
+    public double getSummaryStatByIndex(int summaryStatIndex, int seriesID, double[] series) throws Exception {
+        if (seriesID != currentSeriesID) {
+            currentSeriesID = seriesID;
             idxMin = Double.MAX_VALUE;
             idxMax = Double.MIN_VALUE;
             idxMean = Double.MIN_VALUE;
@@ -374,6 +374,163 @@ public class Catch22 implements Transformer {
                 break;
             default:
                 throw new Exception("Invalid Catch22 summary stat index.");
+        }
+
+        if (Double.isNaN(feature) || Double.isInfinite(feature)){
+            feature = 0;
+        }
+
+        return feature;
+    }
+
+    public static double getSummaryStatByIndex(int summaryStatIndex, double[] series, boolean outlierNorm) {
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
+        double mean = Double.MIN_VALUE;
+        Complex[] fft = null;
+        double[] ac = null;
+        double[] newSeries = series;
+
+        if (summaryStatIndex < 0 || summaryStatIndex > 21){
+            System.err.println("Invalid Catch22 summary stat index.");
+            return Double.MAX_VALUE;
+        }
+
+        switch (summaryStatIndex) {
+            case 0:
+            case 1:
+            case 11:
+                for (double v : newSeries) {
+                    if (v < min) {
+                        min = v;
+                    }
+                    if (v > max) {
+                        max = v;
+                    }
+                }
+                break;
+            case 2:
+                mean = mean(newSeries);
+                break;
+            case 3:
+            case 4:
+                if (outlierNorm) {
+                    newSeries = new double[newSeries.length];
+                    System.arraycopy(series, 0, newSeries, 0, series.length);
+                    zNormalise(newSeries);
+                }
+                break;
+            case 7:
+            case 8:
+                mean = mean(newSeries);
+
+                int nfft = (int) Math.pow(2.0, (int) Math.ceil(Math.log(newSeries.length) / Math.log(2)));
+                fft = new Complex[nfft];
+                for (int j = 0; j < nfft; j++) {
+                    if (j < newSeries.length)
+                        fft[j] = new Complex(newSeries[j] - mean, 0);
+                    else
+                        fft[j] = new Complex(0, 0);
+                }
+
+                FastFourierTransformer f = new FastFourierTransformer(DftNormalization.STANDARD);
+                fft = f.transform(fft, TransformType.FORWARD);
+                break;
+            case 5:
+            case 6:
+            case 12:
+            case 16:
+            case 17:
+            case 20:
+                mean = mean(newSeries);
+
+                int nfft2 = (int) Math.pow(2.0, (int) Math.ceil(Math.log(newSeries.length) / Math.log(2)));
+                fft = new Complex[nfft2];
+                for (int j = 0; j < nfft2; j++) {
+                    if (j < newSeries.length)
+                        fft[j] = new Complex(newSeries[j] - mean, 0);
+                    else
+                        fft[j] = new Complex(0, 0);
+                }
+
+                FastFourierTransformer f2 = new FastFourierTransformer(DftNormalization.STANDARD);
+                fft = f2.transform(fft, TransformType.FORWARD);
+
+                ac = autoCorr(newSeries, fft);
+                break;
+        }
+
+
+        double feature;
+        switch (summaryStatIndex) {
+            case 0:
+                feature = histMode5DN(newSeries, min, max);
+                break;
+            case 1:
+                feature = histMode10DN(newSeries, min, max);
+                break;
+            case 2:
+                feature = binaryStatsMeanLongstretch1SB(newSeries, mean);
+                break;
+            case 3:
+                feature = outlierIncludeP001mdrmdDN(newSeries);
+                break;
+            case 4:
+                feature = outlierIncludeN001mdrmdDN(newSeries);
+                break;
+            case 5:
+                feature = f1ecacCO(ac);
+                break;
+            case 6:
+                feature = firstMinacCO(ac);
+                break;
+            case 7:
+                feature = summariesWelchRectArea51SP(newSeries, fft);
+                break;
+            case 8:
+                feature = summariesWelchRectCentroidSP(newSeries, fft);
+                break;
+            case 9:
+                feature = localSimpleMean3StderrFC(newSeries);
+                break;
+            case 10:
+                feature = trev1NumCO(newSeries);
+                break;
+            case 11:
+                feature = histogramAMIeven25CO(newSeries, min, max);
+                break;
+            case 12:
+                feature = autoMutualInfoStats40GaussianFmmiIN(ac);
+                break;
+            case 13:
+                feature = hrvClassicPnn40MD(newSeries);
+                break;
+            case 14:
+                feature = binaryStatsDiffLongstretch0SB(newSeries);
+                break;
+            case 15:
+                feature = motifThreeQuantileHhSB(newSeries);
+                break;
+            case 16:
+                feature = localSimpleMean1TauresratFC(newSeries, ac);
+                break;
+            case 17:
+                feature = embed2DistTauDExpfitMeandiffCO(newSeries, ac);
+                break;
+            case 18:
+                feature = fluctAnal2Dfa5012LogiPropR1SC(newSeries);
+                break;
+            case 19:
+                feature = fluctAnal2Rsrangefit501LogiPropR1SC(newSeries);
+                break;
+            case 20:
+                feature = transitionMatrix3acSumdiagcovSB(newSeries, ac);
+                break;
+            case 21:
+                feature = periodicityWangTh001PD(newSeries);
+                break;
+            default:
+                feature = Double.MAX_VALUE;
         }
 
         if (Double.isNaN(feature) || Double.isInfinite(feature)){

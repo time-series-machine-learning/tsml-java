@@ -57,6 +57,7 @@ public class STC_D extends EnhancedAbstractClassifier {
 
     private int[] redundantFeatures;
     private long transformBuildTime;
+    private String[] classLabels;
 
     public STC_D(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
@@ -75,6 +76,8 @@ public class STC_D extends EnhancedAbstractClassifier {
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         long startTime = System.nanoTime();
+
+        classLabels = data.getClassLabels();
 
         Instances shapeletData = createTransformData(data);
         transformBuildTime = System.nanoTime()-startTime;
@@ -112,7 +115,7 @@ public class STC_D extends EnhancedAbstractClassifier {
 
     @Override
     public double classifyInstance(TimeSeriesInstance ins) throws Exception{
-        Instances temp = Converter.toArff(transform.transform(ins)).dataset();
+        Instances temp = Converter.toArff(transform.transform(ins), classLabels).dataset();
 
         for(int del: redundantFeatures)
             temp.deleteAttributeAt(del);
@@ -128,7 +131,7 @@ public class STC_D extends EnhancedAbstractClassifier {
 
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception{
-        Instances temp = Converter.toArff(transform.transform(ins)).dataset();
+        Instances temp = Converter.toArff(transform.transform(ins), classLabels).dataset();
 
         for(int del: redundantFeatures)
             temp.deleteAttributeAt(del);

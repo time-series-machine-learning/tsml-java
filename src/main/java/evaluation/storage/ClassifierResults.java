@@ -375,6 +375,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
 
     public static final Function<ClassifierResults, Double> GETTER_MemoryMB = (ClassifierResults cr) -> { return (double)(cr.memoryUsage/1e+6); };
 
+    public static final Function<ClassifierResults, Double> GETTER_Earliness = (ClassifierResults cr) -> { return cr.earliness; };
+    public static final Function<ClassifierResults, Double> GETTER_HarmonicMean = (ClassifierResults cr) -> { return cr.harmonicMean; };
+
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
     //      a double's mantissa = 52bits, 2^52 / 1000000000 / 60 / 60 / 24 / 7 = 7.something weeks
@@ -1796,6 +1799,10 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         //timing
         medianPredTime=findMedianPredTime();
 
+        //early classification
+        //earliness=findEarliness();
+        //harmonicMean=findHarmonicMean();
+
         allStatsFound = true;
     }
 
@@ -2089,7 +2096,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public double findEarliness(){
         double e = 0;
         for (String d : predDescriptions){
-            earliness += Double.parseDouble(d);
+            e += Double.parseDouble(d);
         }
         earliness = e / predDescriptions.size();
         return earliness;

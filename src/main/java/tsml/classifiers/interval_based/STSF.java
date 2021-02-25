@@ -17,7 +17,7 @@ package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.TimeSeriesTree;
+import machine_learning.classifiers.ContinuousIntervalTree;
 import tsml.classifiers.*;
 import tsml.transformers.ColumnNormalizer;
 import tsml.transformers.Differences;
@@ -51,7 +51,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
     /** Ensemble members of base classifier, default to random forest RandomTree */
     private ArrayList<Classifier> trees;
-    private Classifier classifier = new TimeSeriesTree();
+    private Classifier classifier = new ContinuousIntervalTree();
 
     /** for each classifier i representation r attribute a interval j  starts at intervals[i][r][a][j][0] and
      ends  at  intervals[i][r][a][j][1] */
@@ -84,6 +84,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setSeed(s);
     }
+
     /**
      *
      * @param c a base classifier constructed elsewhere and cloned into ensemble
@@ -99,6 +100,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     public void setVoteEnsemble(boolean b){
         voteEnsemble=b;
     }
+
     public void setProbabilityEnsemble(boolean b){
         voteEnsemble=!b;
     }
@@ -125,6 +127,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         return result;
  
     }
+
     public void setNumTrees(int t){
         numClassifiers=t;
     }
@@ -484,10 +487,12 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     private void copyParameters(STSF other){
         this.numClassifiers=other.numClassifiers;
     }
+
     @Override
     public long getTrainContractTimeNanos(){
             return trainContractTimeNanos;
     }
+
     /**
      * @param ins to classifier
      * @return array of doubles: probability of each class
@@ -535,6 +540,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
                 d[i]=d[i]/sum;
         return d;
     }
+
     /**
      * @param ins
      * @return
@@ -557,14 +563,15 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         else
             trainTimeContract = false;
     }
+
     @Override//TrainTimeContractable
     public boolean withinTrainContract(long start){
         if(trainContractTimeNanos<=0) return true; //Not contracted
         return System.nanoTime()-start < finalBuildtrainContractTimeNanos;
     }
  
-//Nested class to store three simple summary features used to construct train data
-    public static class FeatureSet{
+    //Nested class to store seven simple summary features used to construct train data
+    private static class FeatureSet{
         static int numFeatures = 7;
 
         public static double calcFeatureByIndex(int idx, int start, int end, double[] data) {

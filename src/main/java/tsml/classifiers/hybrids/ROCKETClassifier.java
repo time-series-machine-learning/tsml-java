@@ -141,6 +141,9 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         trainResults.setBuildTime(System.nanoTime());
         getCapabilities().testWithFail(data);
 
+        if (multithreading && cls instanceof MultiThreadable)
+            ((MultiThreadable)cls).enableMultiThreading(threads);
+
         Instances trainEstData = null;
         Instances[] ensembleTrainEstData = null;
 
