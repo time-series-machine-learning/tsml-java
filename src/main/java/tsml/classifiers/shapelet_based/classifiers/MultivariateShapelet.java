@@ -62,7 +62,6 @@ public class MultivariateShapelet implements TSClassifier {
     private Instances buildTansformedDataset(TimeSeriesInstances data) {
         //Reorder the training data and reset the shapelet indexes
         Instances output = determineOutputFormat(data);
-        output.instance(0).
         // for each data, get distance to each shapelet and create new instance
         int size = shapelets.size();
         int dataSize = data.numInstances();
