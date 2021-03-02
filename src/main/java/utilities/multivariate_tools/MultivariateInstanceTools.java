@@ -22,6 +22,7 @@ import utilities.class_counts.TreeSetClassCounts;
 import weka.core.*;
 import tsml.transformers.RowNormalizer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -302,11 +303,11 @@ public class MultivariateInstanceTools {
     }
     
 
-    public static void main(String[] args){
-        String local_path = "D:\\Work\\Data\\Multivariate_arff\\"; //Aarons local path for testing.
-        String dataset_name = "EigenWorms";
-        Instances train = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TRAIN.arff");
-        Instances test  = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TEST.arff");
+    public static void main(String[] args) throws IOException {
+        String localPath="src/main/java/experiments/data/mtsc/";
+        String datasetName = "BasicMotions";
+        Instances train = experiments.data.DatasetLoading.loadData(localPath + datasetName + java.io.File.separator + datasetName+"_TRAIN.arff");
+        Instances test  = experiments.data.DatasetLoading.loadData(localPath + datasetName + java.io.File.separator + datasetName+"_TEST.arff");
         Instances[] resampled = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(train, test, 1);
         //Instances[] resampled_old = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(train, test, 1);
 

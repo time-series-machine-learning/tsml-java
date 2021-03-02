@@ -409,8 +409,8 @@ public class DatasetLoading {
      * @param fullPath path to the file to try and load
      * @return Instances from file.
      */
-    public static Instances loadData(String fullPath) {
-        return loadDataNullable(new File(fullPath));
+    public static Instances loadData(String fullPath) throws IOException {
+        return loadDataThrowable(new File(fullPath));
     }
 
 

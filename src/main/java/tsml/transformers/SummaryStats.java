@@ -30,6 +30,7 @@ import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /* simple Filter that just summarises the series
@@ -138,14 +139,12 @@ public class SummaryStats implements Transformer {
         return new DenseInstance(1.0, atts);
     }
 
-    public static void main(String[] args) {
 
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
-        String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
-        Instances test = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
+    public static void main(String[] args) throws IOException {
+        String localPath = "src/main/java/experiments/data/tsc/"; //  path for testing.
+        String datasetName = "ChinaTown";
+        Instances train = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TEST.ts");
         // Instances filter=new SummaryStats().process(test);
         SummaryStats m = new SummaryStats();
         Instances filter = m.transform(test);
