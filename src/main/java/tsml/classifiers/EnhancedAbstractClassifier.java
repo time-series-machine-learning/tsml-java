@@ -90,6 +90,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
     protected int seed = 0;
+    protected boolean buildCalled=false; // set true on a class to buildClassifier, check performed in classify instance to
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
@@ -197,7 +198,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
     protected int numClasses = -1;
-
+    protected boolean buildClassifierCalled = false;
     public int getNumClasses() {
         return numClasses;
     }
@@ -209,6 +210,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override
     public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
+        buildClassifierCalled=true;
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = trainData.numClasses();
