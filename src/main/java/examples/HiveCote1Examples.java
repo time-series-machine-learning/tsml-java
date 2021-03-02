@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * HIVE-COTE version 1.0: published here
  *
  */
-public class Ex07_HIVE_COTE_Examples {
+public class HiveCote1Examples {
 
     public static void basicUsage() throws Exception {
         System.out.println(" Basic Usage: load a dataset, build a default config classifier, make some predictions:");

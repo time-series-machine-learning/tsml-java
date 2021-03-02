@@ -31,7 +31,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Ex02_Classifiers {
+public class Classifiers {
 
     public static void main(String[] args) throws Exception {
         
