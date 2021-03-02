@@ -535,18 +535,17 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         double[] distributionForInstance(double[][][] inst, Function<Interval, Double>[] functions,
                                          int[][][] intervals, int[] attributes, int[][] dimensions){
             if (bestSplit > -1){
-                int att = bestSplit%attributes.length;
-
                 int repSum = 0;
                 int rep = -1;
                 for (int i = 0; i < intervals.length; i++) {
-                    if (bestSplit < repSum + attributes.length * intervals[0].length){
+                    if (bestSplit < repSum + attributes.length * intervals[i].length){
                         rep = i;
                         break;
                     }
-                    repSum += attributes.length * intervals[0].length;
+                    repSum += attributes.length * intervals[i].length;
                 }
 
+                int att = bestSplit%attributes.length;
                 int interval = (bestSplit-repSum)/attributes.length;
                 int dim = dimensions[rep][interval];
 
@@ -609,9 +608,18 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
                                          int[][][] intervals, int[] attributes, int[][] dimensions,
                                          ArrayList<double[]> info){
             if (bestSplit > -1){
-                int interval = bestSplit/attributes.length;
+                int repSum = 0;
+                int rep = -1;
+                for (int i = 0; i < intervals.length; i++) {
+                    if (bestSplit < repSum + attributes.length * intervals[i].length){
+                        rep = i;
+                        break;
+                    }
+                    repSum += attributes.length * intervals[i].length;
+                }
+
                 int att = bestSplit%attributes.length;
-                int rep = bestSplit/(attributes.length*intervals.length);
+                int interval = (bestSplit-repSum)/attributes.length;
                 int dim = dimensions[rep][interval];
 
                 double val = functions[attributes[att]].apply(new Interval(inst[rep][dim], intervals[rep][interval][0],

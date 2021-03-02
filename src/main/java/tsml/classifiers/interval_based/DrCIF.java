@@ -243,8 +243,9 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         if (trees != null) nt = trees.size();
         String temp=super.getParameters()+",numTrees,"+nt+",attSubsampleSize,"+attSubsampleSize+
                 ",outlierNorm,"+outlierNorm+",basicSummaryStats,"+useSummaryStats+",numIntervals,"+
-                Arrays.toString(numIntervals)+",minIntervalLength,"+Arrays.toString(minIntervalLength)+
-                ",maxIntervalLength,"+Arrays.toString(maxIntervalLength)+ ",baseClassifier,"+
+                Arrays.toString(numIntervals).replace(',', ';')+",minIntervalLength,"+
+                Arrays.toString(minIntervalLength).replace(',', ';')+",maxIntervalLength,"+
+                Arrays.toString(maxIntervalLength).replace(',', ';')+",baseClassifier,"+
                 base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+estimator.name()+
                 ",contractTime,"+contractTime;
         return temp;
@@ -1691,7 +1692,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception if tests fail
      */
     public static void main(String[] arg) throws Exception{
-        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
+        String dataLocation="D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\";
         String problem="ItalyPowerDemand";
         Instances train= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
