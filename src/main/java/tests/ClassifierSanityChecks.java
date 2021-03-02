@@ -45,20 +45,22 @@ public class ClassifierSanityChecks {
      */
     public static void hackFile() throws Exception {
         String path="src/main/java/experiments/data/tsc/";
-        String problem="ArrowHead";
+        String problem="Chinatown";
 
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
-
         for(String str:classifiers) {
             EnhancedAbstractClassifier c = setClassifier(str);
             if(c!=null) {
-                c.buildClassifier(train);
-                double acc = ClassifierTools.accuracy(test, c);
-                System.out.println(str+" on "+problem+"  test acc = " + acc);
+//                try {
+                    c.buildClassifier(train);
+                    double acc = ClassifierTools.accuracy(test, c);
+                    System.out.println(str + " on " + problem + "  test acc = " + acc);
+//                }catch(Exception e){
+//                    System.out.println(" Error building classifier "+str+" exception = "+e);
+//                }
             }
         }
-
 
 
     }
