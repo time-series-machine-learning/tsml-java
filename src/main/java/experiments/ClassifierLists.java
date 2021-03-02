@@ -29,6 +29,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.early_classification.*;
+import tsml.classifiers.hybrids.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -334,10 +335,7 @@ public class ClassifierLists {
                 c = new ROCKETClassifier();
                 break;
             case "ARSENAL":
-                c = new ROCKETClassifier();
-                ((ROCKETClassifier)c).setEnsemble(true);
-                ((ROCKETClassifier)c).setEnsembleSize(25);
-                ((ROCKETClassifier)c).setNumKernels(2000);
+                c = new Arsenal();
                 break;
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
