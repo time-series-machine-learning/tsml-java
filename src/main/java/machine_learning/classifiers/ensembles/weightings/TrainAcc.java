@@ -33,13 +33,13 @@ public class TrainAcc extends ModuleWeightingScheme {
     
     public TrainAcc() {
         uniformWeighting = true;
-        needTrainPreds = false;
+        needTrainPreds = true;
     }
     
     public TrainAcc(double power) {
         this.power = power;
         uniformWeighting = true;
-        needTrainPreds = false;
+        needTrainPreds = true;
     }
     
     public double getPower() { 

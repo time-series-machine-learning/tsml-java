@@ -30,7 +30,7 @@ import java.util.Arrays;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Ex05_ThoroughEvaluation {
+public class ThoroughEvaluation {
 
     public static void main(String[] args) throws Exception {
         

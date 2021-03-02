@@ -34,7 +34,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Ex03_BasicEvaluation {
+public class BasicEvaluation {
 
     public static void main(String[] args) throws Exception {
         

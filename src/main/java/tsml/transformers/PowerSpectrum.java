@@ -114,7 +114,7 @@ public class PowerSpectrum extends FFT {
 
         //Set class value.
         if(inst.classIndex()>=0)
-            out.setValue(out.numAttributes()-1, f.classValue());
+            out.setValue(out.numAttributes()-1, inst.classValue());
 
         return out;
     }
@@ -133,12 +133,12 @@ public class PowerSpectrum extends FFT {
                 double l1;		
                 for(int j=0;j<length;j++){
                     l1= Math.sqrt(f.getValue(j*2)*f.getValue(j*2)+f.getValue(j*2+1)*f.getValue(j*2+1));
-                    vals.set(j,Math.log(l1));
+                    vals.add(Math.log(l1));
                 }
             }
             else{
                 for (int j = 0; j < length; j++) {
-                    vals.set(j, Math.sqrt(f.getValue(j * 2) * f.getValue(j * 2) + f.getValue(j * 2 + 1) * f.getValue(j * 2 + 1)));
+                    vals.add(Math.sqrt(f.getValue(j * 2) * f.getValue(j * 2) + f.getValue(j * 2 + 1) * f.getValue(j * 2 + 1)));
                 }
             }
 

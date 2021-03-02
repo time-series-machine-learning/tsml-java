@@ -40,6 +40,7 @@ import tsml.classifiers.*;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.early_classification.AbstractEarlyClassifier;
 import weka.classifiers.Classifier;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -56,8 +57,12 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Randomizable;
+
+import static utilities.GenericTools.indexOfMax;
+import static utilities.InstanceTools.*;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -317,7 +322,7 @@ public class Experiments  {
         MemoryMonitor memoryMonitor = new MemoryMonitor();
         memoryMonitor.installMonitor();
 
-        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation || expSettings.forceEvaluationTrainFold)) {
             //Tell the classifier to generate train results if it can do it internally,
             //otherwise perform the evaluation externally here (e.g. cross validation on the
             //train data
@@ -347,7 +352,7 @@ public class Experiments  {
         //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
         //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation)) {
+        if (expSettings.generateErrorEstimateOnTrainSet && (!trainFoldExists || expSettings.forceEvaluation || expSettings.forceEvaluationTrainFold)) {
             writeResults(expSettings, trainResults, expSettings.trainFoldFileName, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
         }
@@ -415,8 +420,10 @@ public class Experiments  {
             //a) another process may have been doing the same experiment
             //b) we have a special case for the file builder that copies the results over in buildClassifier (apparently?)
             //no reason not to check again
-            if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
-                testResults = evaluateClassifier(expSettings, classifier, testSet);
+            if (expSettings.forceEvaluation || expSettings.forceEvaluationTestFold || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
+                if (classifier instanceof AbstractEarlyClassifier) testResults = evaluateEarlyClassifier(expSettings,
+                        (AbstractEarlyClassifier) classifier, testSet);
+                else testResults = evaluateClassifier(expSettings, classifier, testSet);
                 testResults.setParas(trainResults.getParas());
                 testResults.turnOffZeroTimingsErrors();
                 testResults.setBenchmarkTime(testResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
@@ -484,7 +491,7 @@ public class Experiments  {
     public static boolean quitEarlyDueToResultsExistence(ExperimentalArguments expSettings) {
         boolean quit = false;
 
-        if (!expSettings.forceEvaluation &&
+        if (!expSettings.forceEvaluation && !expSettings.forceEvaluationTestFold && !expSettings.forceEvaluationTrainFold &&
                 ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
                         (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
             LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + expSettings.testFoldFileName + ", exiting.");
@@ -742,6 +749,61 @@ public class Experiments  {
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator(exp.foldId, false, true, exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         return eval.evaluate(classifier, testSet);
+    }
+
+    /**
+     * Mimics SingleTestSetEvaluator but for early classification classifiers.
+     * Earliness for each test instance is written to the description.
+     * Normalisation for experimental purposes should be handled by the individual classifiers/decision makers.
+     */
+    public static ClassifierResults evaluateEarlyClassifier(ExperimentalArguments exp, AbstractEarlyClassifier classifier, Instances testSet) throws Exception {
+        ClassifierResults res = new ClassifierResults(testSet.numClasses());
+        res.setTimeUnit(TimeUnit.NANOSECONDS);
+        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setDatasetName(testSet.relationName());
+        res.setFoldID(exp.foldId);
+        res.setSplit("test");
+
+        int length = testSet.numAttributes()-1;
+        int[] thresholds = classifier.getThresholds();
+        Instances[] truncatedInstances = new Instances[thresholds.length];
+        truncatedInstances[thresholds.length-1] = new Instances(testSet, 0);
+        for (int i = 0; i < thresholds.length-1; i++) {
+            truncatedInstances[i] = truncateInstances(truncatedInstances[thresholds.length-1], length, thresholds[i]);
+        }
+
+        res.turnOffZeroTimingsErrors();
+        for (Instance testinst : testSet) {
+            double trueClassVal = testinst.classValue();
+            testinst.setClassMissing();
+
+            long startTime = System.nanoTime();
+
+            double[] dist = null;
+            double earliness = 0;
+            for (int i = 0; i < thresholds.length; i++){
+                Instance newInst = truncateInstance(testinst, length, thresholds[i]);
+                newInst.setDataset(truncatedInstances[i]);
+
+                dist = classifier.distributionForInstance(newInst);
+
+                if (dist != null) {
+                    earliness = thresholds[i]/(double)length;
+                    break;
+                }
+            }
+
+            long predTime = System.nanoTime() - startTime;
+
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, Double.toString(earliness));
+        }
+
+        res.turnOnZeroTimingsErrors();
+
+        res.finaliseResults();
+        res.findAllStatsOnce();
+
+        return res;
     }
 
     /**
@@ -1034,8 +1096,14 @@ public class Experiments  {
         @Parameter(names={"-sc","--serialiseClassifier"}, arity=1, description = "(boolean) If true, and the classifier is serialisable, the classifier will be serialised to the --supportingFilesPath after training, but before testing.")
         public boolean serialiseTrainedClassifier = false;
 
-        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting file already exists. The old file will be overwritten with the new evaluation results.")
+        @Parameter(names={"--force"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting files already exists. The old files will be overwritten with the new evaluation results.")
         public boolean forceEvaluation = false;
+
+        @Parameter(names={"--forceTest"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting test file already exists. The old test file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluationTestFold = false;
+
+        @Parameter(names={"--forceTrain"}, arity=1, description = "(boolean) If true, the evaluation will occur even if what would be the resulting train file already exists. The old train file will be overwritten with the new evaluation results.")
+        public boolean forceEvaluationTrainFold = false;
 
         @Parameter(names={"-tem", "--trainEstimateMethod"}, arity=1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")

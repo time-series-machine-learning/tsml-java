@@ -31,6 +31,7 @@ public class ConfusionEntropy extends ModuleWeightingScheme {
 
     public ConfusionEntropy() {
         uniformWeighting = true;
+        needTrainPreds = true;
     }
     
     @Override

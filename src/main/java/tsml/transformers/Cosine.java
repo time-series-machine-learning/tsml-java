@@ -18,6 +18,7 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.io.IOException;
 
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeries;
@@ -100,18 +101,14 @@ public class Cosine implements Transformer {
         return result;
     }
 
-    public static void main(String[] args) {
-        // final double[][] t1 = {{0, Math.PI, Math.PI*2},{ Math.PI * 0.5, Math.PI *
-        // 1.5, Math.PI*2.5}};
-        // final double[] labels = {1,2};
-        // final Instances train = InstanceTools.toWekaInstances(t1, labels);
+    public static void main(String[] args) throws IOException {
 
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
-        String dataset_name = "ChinaTown";
+        String localPath = "src/main/java/experiments/data/tsc/"; //  path for testing.
+        String datasetName = "ChinaTown";
         Instances train = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
+                .loadData(localPath + datasetName + File.separator + datasetName + "_TRAIN.ts");
         Instances test = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
+                .loadData(localPath + datasetName + File.separator + datasetName + "_TEST.ts");
         Cosine cosTransform = new Cosine();
         Instances out_train = cosTransform.transform(train);
         Instances out_test = cosTransform.transform(test);

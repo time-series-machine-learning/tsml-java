@@ -31,11 +31,14 @@ import tsml.data_containers.TimeSeriesInstance;
  * */
 public class Differences implements Transformer {
 	private int order = 1;
+	private boolean subtractFormerValue = false;
 	String attName = "";
 
 	public void setOrder(int m) {
 		order = m;
 	}
+
+	public void setSubtractFormerValue(boolean b) { subtractFormerValue = b; }
 
 	private static final long serialVersionUID = 1L;
 
@@ -85,7 +88,9 @@ public class Differences implements Transformer {
 		int classIndexMod = (c >= 0 ? 1 : 0);
 		int numAtts = inst.numAttributes() - order - classIndexMod; //if have a classindex then make it one shorter.
 
-		double[] diffs = calculateDifferences(d, numAtts);
+		double[] diffs;
+		if (subtractFormerValue) diffs = calculateDifferences2(d, numAtts);
+		else diffs = calculateDifferences(d, numAtts);
 
 		// Extract out the terms and set the attributes
 		Instance newInst = new DenseInstance(diffs.length + classIndexMod);
@@ -105,6 +110,14 @@ public class Differences implements Transformer {
 
 		for (int j = 0; j < diffs.length; j++)
 			diffs[j] = d[j] - d[j + order];
+		return diffs;
+	}
+
+	private double[] calculateDifferences2(double[] d, int numAtts) {
+		double[] diffs = new double[numAtts];
+
+		for (int j = 0; j < diffs.length; j++)
+			diffs[j] = d[j + order] - d[j];
 		return diffs;
 	}
 
@@ -130,7 +143,9 @@ public class Differences implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
+            if (subtractFormerValue) out[i++] = calculateDifferences2(ts.toValueArray(),
+					ts.getSeriesLength() - order);
+        	else out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
         }
 
         return new TimeSeriesInstance(out, inst.getLabelIndex());

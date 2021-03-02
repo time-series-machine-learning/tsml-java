@@ -951,21 +951,21 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        int nn = 0;
 
-        for (Bag bag : bags) {
+        for (int i = 0; i < bags.size(); ++i) {
             double dist;
             if (histogramIntersection)
-                dist = -histogramIntersection(testBag, bag);
-            else dist = BOSSdistance(testBag, bag, bestDist);
+                dist = -histogramIntersection(testBag, bags.get(i));
+            else dist = BOSSdistance(testBag, bags.get(i), bestDist);
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bag.classVal;
+                nn = i;
             }
         }
 
-        return nn;
+        return bags.get(nn).getClassVal();
     }
 
     @Override
@@ -999,7 +999,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
         //1NN distance
         double bestDist = Double.MAX_VALUE;
-        double nn = 0;
+        int nn = 0;
 
         for (int i = 0; i < bags.size(); ++i) {
             if (i == testIndex) //skip 'this' one, leave-one-out
@@ -1012,11 +1012,11 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
             if (dist < bestDist) {
                 bestDist = dist;
-                nn = bags.get(i).classVal;
+                nn = i;
             }
         }
 
-        return nn;
+        return bags.get(nn).getClassVal();
     }
 
     public class TestNearestNeighbourThread implements Callable<Double>{

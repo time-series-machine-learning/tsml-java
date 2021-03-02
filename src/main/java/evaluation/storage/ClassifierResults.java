@@ -294,6 +294,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
 
+    //Early classification
+    public double earliness = -1;
+    public double harmonicMean;
 
     /**
      * Used to avoid infinite NLL scores when prob of true class =0 or
@@ -371,6 +374,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
 
     public static final Function<ClassifierResults, Double> GETTER_MemoryMB = (ClassifierResults cr) -> { return (double)(cr.memoryUsage/1e+6); };
+
+    public static final Function<ClassifierResults, Double> GETTER_Earliness = (ClassifierResults cr) -> { return cr.earliness; };
+    public static final Function<ClassifierResults, Double> GETTER_HarmonicMean = (ClassifierResults cr) -> { return cr.harmonicMean; };
 
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -885,6 +891,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public long getErrorEstimateTime() {
         return errorEstimateTime;
     }
+    public long getErrorEstimateTimeInNanos() {
+        return timeUnit.toNanos(errorEstimateTime);
+    }
 
     /**
      * todo initially intended as a temporary measure, but might stay here until a switch
@@ -917,6 +926,9 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      */
     public long getBuildPlusEstimateTime() {
         return buildPlusEstimateTime;
+    }
+    public long getBuildPlusEstimateTimeInNanos() {
+        return timeUnit.toNanos(buildPlusEstimateTime);
     }
 
     /**
@@ -1787,6 +1799,10 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         //timing
         medianPredTime=findMedianPredTime();
 
+        //early classification
+        //earliness=findEarliness();
+        //harmonicMean=findHarmonicMean();
+
         allStatsFound = true;
     }
 
@@ -2073,6 +2089,25 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             auroc+=(roc.get(i+1).y-roc.get(i).y)*(roc.get(i+1).x);
         }
         return auroc;
+    }
+
+    //Early classification
+    //Currently assumes each predictions earliness is stored in the prediction description alone.
+    public double findEarliness(){
+        double e = 0;
+        for (String d : predDescriptions){
+            e += Double.parseDouble(d);
+        }
+        earliness = e / predDescriptions.size();
+        return earliness;
+    }
+
+    //Early classification
+    public double findHarmonicMean(){
+        if (earliness < 0) earliness = findEarliness();
+        if (acc < 0) calculateAcc();
+        harmonicMean = (2 * acc * (1 - earliness)) / (acc + (1 - earliness));
+        return harmonicMean;
     }
 
     public String allPerformanceMetricsToString() {

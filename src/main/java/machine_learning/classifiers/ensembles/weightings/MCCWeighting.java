@@ -37,6 +37,7 @@ public class MCCWeighting extends ModuleWeightingScheme {
     public MCCWeighting(double power) {
         this.power = power;
         uniformWeighting = true;
+        needTrainPreds = true;
     }
     
     public double getPower() { 

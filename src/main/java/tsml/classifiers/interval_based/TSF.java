@@ -22,7 +22,7 @@ import evaluation.storage.ClassifierResults;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import fileIO.OutFile;
-import machine_learning.classifiers.TimeSeriesTree;
+import machine_learning.classifiers.ContinuousIntervalTree;
 import tsml.classifiers.*;
 import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
@@ -34,6 +34,8 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.io.File;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -227,7 +229,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      * Ensemble members of base classifier, default to random forest RandomTree
      */
     private ArrayList<Classifier> trees;
-    private Classifier classifier = new TimeSeriesTree();
+    private Classifier classifier = new ContinuousIntervalTree();
     /**
      * for each classifier [i]  interval j  starts at intervals[i][j][0] and
      * ends  at  intervals[i][j][1]
@@ -369,6 +371,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         // otherwise initialise variables
         else {
+            numClasses = data.getClassLabels().length;
             seriesLength = data.getMaxLength();
             if (numIntervalsFinder == null) {
                 numIntervals = (int) Math.sqrt(seriesLength);
@@ -582,6 +585,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             loadFromFile(checkpointPath + "TSF" + seed + ".ser");
         }
         else {//else initialise variables
+            numClasses = data.numClasses();
             seriesLength = data.numAttributes() - 1;
             if (numIntervalsFinder == null) {
                 numIntervals = (int) Math.sqrt(seriesLength);
@@ -896,7 +900,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double[] distributionForInstance(Instance ins) throws Exception {
-        double[] d = new double[ins.numClasses()];
+        double[] d = new double[numClasses];
         //Build transformed instance
         double[] series = ins.toDoubleArray();
         for (int i = 0; i < trees.size(); i++) {
@@ -1058,6 +1062,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //            trainContractTimeNanos = saved.trainContractTimeNanos;
             seriesLength = saved.seriesLength;
 
+            numClasses = saved.numClasses;
             rand = saved.rand;
             seedClassifier = saved.seedClassifier;
             seed = saved.seed;
@@ -1136,43 +1141,62 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
     @Override
     public boolean createVisualisation() throws Exception {
-        if (!(classifier instanceof TimeSeriesTree)) {
+        if (!(classifier instanceof ContinuousIntervalTree)) {
             System.err.println("TSF temporal importance curve only available for time series tree.");
             return false;
         }
 
-        if (visSavePath == null) {
+        if (visSavePath == null){
             System.err.println("TSF visualisation save path not set.");
             return false;
         }
 
         double[][] curves = new double[3][seriesLength];
-        for (int i = 0; i < trees.size(); i++) {
-            TimeSeriesTree tree = (TimeSeriesTree) trees.get(i);
+        for (int i = 0; i < trees.size(); i++){
+            ContinuousIntervalTree tree = (ContinuousIntervalTree)trees.get(i);
             ArrayList<Double>[] sg = tree.getTreeSplitsGain();
 
-            for (int n = 0; n < sg[0].size(); n++) {
+            for (int n = 0; n < sg[0].size(); n++){
                 double split = sg[0].get(n);
                 double gain = sg[1].get(n);
-                int interval = (int) (split / 3);
-                int att = (int) (split % 3);
+                int interval = (int)(split/3);
+                int att = (int)(split%3);
 
-                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++) {
+                for (int j = intervals.get(i)[interval][0]; j <= intervals.get(i)[interval][1]; j++){
                     curves[att][j] += gain;
                 }
             }
         }
 
         OutFile of = new OutFile(visSavePath + "/vis" + seed + ".txt");
-        String[] atts = new String[]{"mean", "stdev", "slope"};
-        for (int i = 0; i < 3; i++) {
+        String[] atts = new String[]{"mean","stdev","slope"};
+        for (int i = 0 ; i < 3; i++){
             of.writeLine(atts[i]);
+            of.writeLine("0");
             of.writeLine(Arrays.toString(curves[i]));
         }
         of.closeFile();
 
-        Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
-                visSavePath.replace("\\", "/") + "\" " + seed + " 3 3");
+        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+                visSavePath.replace("\\", "/")+ "\" " + seed + " 3 1 3");
+
+        if (debug) {
+            System.out.println("TSF vis python output:");
+            BufferedReader out = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            System.out.println("output : ");
+            String outLine = out.readLine();
+            while (outLine != null) {
+                System.out.println(outLine);
+                outLine = out.readLine();
+            }
+            System.out.println("error : ");
+            String errLine = err.readLine();
+            while (errLine != null) {
+                System.out.println(errLine);
+                errLine = err.readLine();
+            }
+        }
 
         return true;
     }
@@ -1253,14 +1277,14 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new TSF(0), 0.967930029154519, "2019/09/25"));
 
 // Basic correctness tests, including setting paras through
-        String dataLocation = "Z:\\ArchiveData\\Univariate_arff\\";
-        String resultsLocation = "D:\\temp\\";
-        String problem = "ItalyPowerDemand";
-        File f = new File(resultsLocation + problem);
-        if (!f.isDirectory())
+        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
+        String resultsLocation="D:\\temp\\";
+        String problem="ItalyPowerDemand";
+        File f= new File(resultsLocation+problem);
+        if(!f.isDirectory())
             f.mkdirs();
-        Instances train = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable(dataLocation + problem + "\\" + problem + "_TEST");
+        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
+        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         TSF tsf = new TSF();
         tsf.setSeed(0);
         tsf.setTrainTimeLimit((long) 1.5e+10);

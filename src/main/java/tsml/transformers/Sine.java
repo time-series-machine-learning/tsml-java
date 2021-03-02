@@ -18,6 +18,7 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.io.IOException;
 
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeries;
@@ -95,11 +96,11 @@ public class Sine implements Transformer {
     }
 
 
-    public static void main(String[] args){
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
-        String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
-        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+    public static void main(String[] args) throws IOException {
+        String localPath="src/main/java/experiments/data/tsc/";
+        String datasetName = "ChinaTown";
+        Instances train = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TEST.ts");
         Sine sineTransform= new Sine();
         Instances out_train = sineTransform.transform(train);
         Instances out_test = sineTransform.transform(test);

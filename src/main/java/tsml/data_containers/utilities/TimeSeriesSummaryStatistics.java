@@ -141,7 +141,7 @@ public class TimeSeriesSummaryStatistics {
      * @return int
      */
     public static int argmax(double[] inst) {
-        double max = Double.MIN_VALUE;
+        double max = -999999999;
         int arg = -1;
         int j = 0;
         for (double x : inst) {

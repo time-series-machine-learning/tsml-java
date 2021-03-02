@@ -28,6 +28,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -313,11 +314,12 @@ public class SAX implements Transformer, TechnicalInformationHandler {
                                                                        // Tools | Templates.
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         System.out.println("SAXtest\n\n");
+        String localPath="src/main/java/experiments/data/tsc/";
 
         Instances test = DatasetLoading
-                .loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
+                .loadData(localPath+"Chinatown/Chinatown_TRAIN.arff");
 
         test = new RowNormalizer().transform(test);
 

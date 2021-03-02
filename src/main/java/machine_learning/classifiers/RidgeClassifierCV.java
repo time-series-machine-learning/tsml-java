@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
-
 package machine_learning.classifiers;
 
 import experiments.data.DatasetLoading;
@@ -22,6 +21,7 @@ import experiments.data.DatasetLoading;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
+import tsml.classifiers.MultiThreadable;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -32,18 +32,49 @@ import java.util.Arrays;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
 
-public class RidgeClassifierCV extends AbstractClassifier {
+/**
+ * Ridge classification with cross-validation to select the alpha value.
+ *
+ * Based on RidgeClassifierCV from sklearn.
+ * https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifierCV.html
+ *
+ * @author Matthew Middlehurst
+ */
+public class RidgeClassifierCV extends AbstractClassifier implements MultiThreadable {
 
+    //alphas used in sktime ROCKET
     private final double[] alphas = {1.00000000e-03, 4.64158883e-03, 2.15443469e-02, 1.00000000e-01,
             4.64158883e-01, 2.15443469e+00, 1.00000000e+01, 4.64158883e+01, 2.15443469e+02, 1.00000000e+03};
 
-    INDArray coefficients;
-    double[] intercept;
+    private INDArray coefficients;
+    private double[] intercept;
+
+    private int numThreads = 1;
+
+    private double bestScore = -999999;
+
+    public double getBestScore() { return bestScore; }
+
+    @Override
+    public void enableMultiThreading(int numThreads) {
+        this.numThreads = numThreads;
+    }
 
     @Override
     public void buildClassifier(Instances instances) throws Exception {
         if (instances.classIndex() != instances.numAttributes() - 1)
             throw new Exception("Class attribute must be the final index.");
+
+        String value = System.getenv("OMP_NUM_THREADS");
+        if (value == null && numThreads != Runtime.getRuntime().availableProcessors())
+            throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable not set. Set it to the " +
+                    "number of threads you wish to use or set numThreads to " +
+                    "Runtime.getRuntime().availableProcessors()");
+        if (value != null && Integer.parseInt(value) != numThreads)
+            throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable and numThreads do not " +
+                    "match.");
+
+        bestScore = -999999;
 
         double[][] data = new double[instances.numInstances()][instances.numAttributes()-1];
         for (int i = 0; i < data.length; i++) {
@@ -85,7 +116,7 @@ public class RidgeClassifierCV extends AbstractClassifier {
         double[] xScale = new double[data[0].length];
         preprocessData(data, labels, xOffset, yOffset, xScale);
 
-        Nd4j.setNumThreads(1);
+        //original uses SVD when no. instances > no. attributes
         INDArray matrix = Nd4j.create(data);
         INDArray q = matrix.mmul(matrix.transpose());
         INDArray eigvals = Eigen.symmetricGeneralizedEigenvalues(q);
@@ -93,7 +124,6 @@ public class RidgeClassifierCV extends AbstractClassifier {
         qt_y = qt_y.mmul(Nd4j.create(labels));
 
         INDArray bestCoef = null;
-        double bestScore = -999999;
         for (double alpha : alphas){
             double[] w = new double[(int)eigvals.size(0)];
             for (int i = 0; i < w.length; i++){
@@ -106,7 +136,6 @@ public class RidgeClassifierCV extends AbstractClassifier {
             double[] k = sw.mmul(q).toDoubleVector();
             for (int i = 0 ; i < k.length; i++) k[i] = Math.abs(k[i]);
             int idx = argmax(k);
-            if (idx != 0) System.out.println("not 0, this is actually doing stuff");
             w[idx] = 0;
 
             double[][] d = new double[w.length][(int)qt_y.size(1)];
@@ -132,9 +161,10 @@ public class RidgeClassifierCV extends AbstractClassifier {
                 }
             }
             e /= sums.length * coefs.size(1);
+            e = 1 - e;
 
-            if (-e > bestScore){
-                bestScore = -e;
+            if (e > bestScore){
+                bestScore = e;
                 bestCoef = coefs;
             }
         }
@@ -235,11 +265,11 @@ public class RidgeClassifierCV extends AbstractClassifier {
         int fold = 0;
 
         //Minimum working example
-        String dataset = "GunPoint";
-        Instances train = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\"
-                + dataset + "\\" + dataset + "_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\"
-                + dataset + "\\" + dataset + "_TEST.arff");
+        String dataset = "ItalyPowerDemand";
+        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                + "\\" + dataset + "_TRAIN.arff");
+        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
+                + "\\" + dataset + "_TEST.arff");
         Instances[] data = resampleTrainAndTestInstances(train, test, fold);
         train = data[0];
         test = data[1];

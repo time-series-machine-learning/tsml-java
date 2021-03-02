@@ -19,12 +19,17 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import tsml.classifiers.*;
+import tsml.classifiers.dictionary_based.bitword.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
+import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
+import utilities.generic_storage.SerialisableComparablePair;
 import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 
@@ -36,6 +41,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
@@ -915,7 +921,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of a training instance using the trained model, removing said instance if present.
      *
-     * @param ins train instance index
+     * @param test train instance index
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -960,7 +966,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1015,7 +1021,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1027,7 +1033,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1040,7 +1046,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1199,7 +1205,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Development tests for the TDE classifier.
      *
-     * @param arg arguments, unused
+     * @param args arguments, unused
      * @throws Exception if tests fail
      */
     public static void main(String[] args) throws Exception{

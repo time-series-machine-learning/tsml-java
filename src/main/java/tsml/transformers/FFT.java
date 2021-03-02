@@ -37,6 +37,8 @@ import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Arrays;
+
 public class FFT implements Transformer {
 	/**
 	 *
@@ -312,6 +314,8 @@ public class FFT implements Transformer {
 				out[i][2 * j] = c[j].real;
 				out[i][2 * j + 1] = c[j].imag;
 			}
+
+			i++;
 		}
 
 		return new TimeSeriesInstance(out, inst.getLabelIndex());

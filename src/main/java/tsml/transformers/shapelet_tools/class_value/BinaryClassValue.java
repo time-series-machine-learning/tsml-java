@@ -17,6 +17,7 @@
  
 package tsml.transformers.shapelet_tools.class_value;
 
+import tsml.data_containers.TimeSeriesInstances;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import weka.core.Instance;
@@ -38,7 +39,15 @@ public class BinaryClassValue extends NormalClassValue{
         super.init(inst);
         binaryClassDistribution = createBinaryDistributions();
     }
-    
+
+    @Override
+    public void init(TimeSeriesInstances inst)
+    {
+        //this inits the classDistributions.
+        super.init(inst);
+        binaryClassDistribution = createBinaryDistributions();
+    }
+
     @Override
     public ClassCounts getClassDistributions() {
         return binaryClassDistribution[(int)shapeletValue];        

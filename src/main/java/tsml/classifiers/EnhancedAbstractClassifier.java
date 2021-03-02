@@ -17,6 +17,7 @@
 
 package tsml.classifiers;
 
+import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
 import tsml.data_containers.TimeSeries;
@@ -382,9 +383,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     }
     
     public int setNumberOfFolds(Instances data){
-        return data.numInstances()<10?data.numInstances():10;
-    }    
-    
+        return Math.min(data.numInstances(), 10);
+    }
+
+    public int setNumberOfFolds(TimeSeriesInstances data){
+        return Math.min(data.numInstances(), 10);
+    }
+
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally 
      * be used to describe this classifier. By default, this will simply be the 

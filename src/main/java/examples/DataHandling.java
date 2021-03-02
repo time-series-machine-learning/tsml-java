@@ -29,7 +29,7 @@ import weka.core.Instances;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Ex01_Datahandling {
+public class DataHandling {
 
     public static void main(String[] args) throws Exception {
         

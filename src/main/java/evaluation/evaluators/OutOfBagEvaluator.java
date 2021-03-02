@@ -62,7 +62,6 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
         // pick n instances from train data, where n is the size of train data
         for(int i = 0; i < data.size(); i++) {
             int index = random.nextInt(data.size());
-            Instance instance = data.get(index);
             inBagTrainDataIndices.add(index);
             // remove the train instance from the test bag (if not already)
             oobTestSetIndices.remove(index);

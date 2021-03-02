@@ -167,8 +167,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     public TimeSeriesInstances(final String[] classLabels) {        
         this.classLabels = classLabels;
-        
-        dataChecks();
+
+        minLength = Integer.MAX_VALUE;
+        maxLength = 0;
+        maxNumDimensions = 0;
     }
 
     public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, List<Double> targetValues) {
@@ -281,7 +283,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     private void calculateNumDimensions(){
-        maxNumDimensions = seriesCollection.stream().mapToInt(e -> e.getNumDimensions()).max().getAsInt();
+        maxNumDimensions = seriesCollection.stream().mapToInt(TimeSeriesInstance::getNumDimensions).max().getAsInt();
     }
     
     private void calculateIfMultivariate(){

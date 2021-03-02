@@ -35,6 +35,7 @@ public class TrainAccOrMCC extends ModuleWeightingScheme {
     
     public TrainAccOrMCC() {
         uniformWeighting = true;
+        needTrainPreds = true;
     }
     
     /**

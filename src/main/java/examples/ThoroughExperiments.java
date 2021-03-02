@@ -27,7 +27,7 @@ import experiments.Experiments.ExperimentalArguments;
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
-public class Ex04_ThoroughExperiments {
+public class ThoroughExperiments {
     
     public static void main(String[] args) throws Exception {
         // NOTE: If you want to run this file, you'll need to define an 

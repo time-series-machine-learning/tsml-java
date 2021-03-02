@@ -30,6 +30,8 @@ import experiments.data.DatasetLoading;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
+import java.io.IOException;
+
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -44,7 +46,7 @@ import weka.core.Instances;
      */
     public class MultivariateProcessing {
 
-        public static void makeConcatenatedFiles(){
+        public static void makeConcatenatedFiles() throws IOException {
             String path="Z:\\Data\\Multivariate TSC Problems\\";
             String dest="Z:\\Data\\ConcatenatedMTSC\\";
             OutFile out=new OutFile(path+"SummaryData.csv");
@@ -134,7 +136,7 @@ import weka.core.Instances;
         }
 
         //TODO CHECK TO SEE IF FILES ALREADY MADE
-        public static Instances[] convertToUnivariate(String path, String dest, String prob){
+        public static Instances[] convertToUnivariate(String path, String dest, String prob) throws IOException {
 
             if (!CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")
                     || !CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TEST")){
@@ -200,7 +202,7 @@ import weka.core.Instances;
         }
 
         //TODO CHECK TO SEE IF FILES ALREADY MADE
-        public static Instances convertToUnivariateTrain(String path, String dest, String prob){
+        public static Instances convertToUnivariateTrain(String path, String dest, String prob) throws IOException {
 
             if (!CollateResults.validateSingleFoldFile(dest+prob+"_UNI"+"/"+prob+"_UNI_TRAIN")){
 
@@ -265,7 +267,7 @@ import weka.core.Instances;
 
         }
 
-        public static void formatPhilData(){
+        public static void formatPhilData() throws IOException {
             Instances multi=DatasetLoading.loadData("C:\\Users\\ajb\\Dropbox\\Data\\Multivariate TSC Problems\\FinalMulti");
             Instances trans=MultivariateInstanceTools.transposeRelationalData(multi);
 //       double[][] rawData=
@@ -284,7 +286,7 @@ import weka.core.Instances;
             OutFile testF=new OutFile("C:\\Users\\ajb\\Dropbox\\Data\\Multivariate TSC Problems\\RacketSports\\RacketSports_TEST.arff");
             testF.writeString(split[1].toString());
         }
-        public static void splitData(String path,String prob){
+        public static void splitData(String path,String prob) throws IOException {
             Instances all=DatasetLoading.loadData(path+prob+"\\"+prob);
             Instances[] split=InstanceTools.resampleInstances(all, 0, 0.5);
             OutFile out=new OutFile(path+prob+"\\"+prob+"_TRAIN.arff");
@@ -293,7 +295,7 @@ import weka.core.Instances;
             out.writeLine(split[1].toString());
         }
 
-        public static void formatDuckDuckGeese(){
+        public static void formatDuckDuckGeese() throws IOException {
             String path="Z:\\Data\\MultivariateTSCProblems\\DuckDuckGeese\\";
             Instances data=DatasetLoading.loadData(path+"DuckDuckGeese");
             Instance temp=data.instance(0);
@@ -314,7 +316,7 @@ import weka.core.Instances;
         }
 
 
-        public static void formatCricket(){
+        public static void formatCricket() throws IOException {
             String path="Z:\\Data\\Multivariate Working Area\\Cricket\\";
             Instances[] data=new Instances[6];
             data[0]=DatasetLoading.loadData(path+"CricketXLeft.arff");
@@ -341,7 +343,7 @@ import weka.core.Instances;
 
 
         }
-        public static void makeSingleDimensionFiles(){
+        public static void makeSingleDimensionFiles() throws IOException {
             String path="Z:\\Data\\MultivariateTSCProblems\\";
             for(String prob: DatasetLists.mtscProblems2018){
 
@@ -376,7 +378,7 @@ import weka.core.Instances;
             }
         }
 
-        public static void summariseData(){
+        public static void summariseData() throws IOException {
             String path="Z:\\Data\\MultivariateTSCProblems\\";
             OutFile out=new OutFile("Z:\\Data\\MultivariateTSCProblems\\SummaryData.csv");
             out.writeLine("problem,numTrainCases,numTestCases,numDimensions,seriesLength,numClasses");
@@ -635,7 +637,7 @@ import weka.core.Instances;
 
         }
         //BCI 3 Dataset 1
-        public static void formatMotorImagery(){
+        public static void formatMotorImagery() throws IOException {
 //Each channel is on a different line in the text file.
 //Labels in a separate text file
             int m=3000;
@@ -710,7 +712,7 @@ import weka.core.Instances;
             Instances train =DatasetLoading.loadData(path+prob+"\\"+prob+"_TRAIN");
 
         }
-        public static void exampleUsage(){
+        public static void exampleUsage() throws IOException {
 //        ECGActivities
             Instances train,test;
             train=DatasetLoading.loadData("Z:\\Data\\MultivariateTSCProblems\\ECGActivities\\ECGActivities_TRAIN");
@@ -726,7 +728,7 @@ import weka.core.Instances;
                 System.out.println("Fold TRAIN  instance num dimensions "+ins.relationalValue(0).numInstances()+" series length "+ins.relationalValue(0).numAttributes());
 
         }
-        public static void mergeEpilepsy(){
+        public static void mergeEpilepsy() throws IOException {
             Instances x,y,z;
             Instances all;
             String sourcePath="C:\\Users\\ajb\\Dropbox\\TSC Problems\\EpilepsyX\\";
@@ -765,7 +767,7 @@ import weka.core.Instances;
          * See https://weka.wikispaces.com/Multi-instance+classification
          * for more
          * */
-        public static void gettingStarted(){
+        public static void gettingStarted() throws IOException {
 //Load a multivariate data set
             String path="\\\\cmptscsvr.cmp.uea.ac.uk\\ueatsc\\Data\\Multivariate\\univariateConcatExample";
             Instances train =DatasetLoading.loadData(path);

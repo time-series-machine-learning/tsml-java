@@ -34,7 +34,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  * 
  * @author Matthew Middlehurst (m.middlehurst@uea.ac.uk)
  */
-public class Ex06_Clusterers {
+public class Clusterers {
 
     public static void main(String[] args) throws Exception {
         

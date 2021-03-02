@@ -31,7 +31,7 @@ public class ProportionalTrainAcc extends ModuleWeightingScheme {
     
     public ProportionalTrainAcc() {
         uniformWeighting = true;
-        needTrainPreds = false;
+        needTrainPreds = true;
     }
     
     public void defineWeightings(EnsembleModule[] modules, int numClasses) {
