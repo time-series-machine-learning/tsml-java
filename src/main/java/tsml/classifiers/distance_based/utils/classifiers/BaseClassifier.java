@@ -39,9 +39,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Purpose: base classifier implementing all common interfaces. Note, this is only for implementation ubiquitous to
- * *every single classifier*. Don't add any optional / unused interface implementation, that should be done via mixins
- * in your concrete class.
+ * Purpose: base classifier implementing all common interfaces for the classifiers.distance_based.
+ * Note, this is only for distance based classifiers, which currently run a parallel code structure to the other classifiers
+ * there is duplication here that could be removed (e.g. TrainEstimateable and seedSet variable)
  * <p>
  * Contributors: goastler
  */
