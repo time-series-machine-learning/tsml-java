@@ -31,6 +31,8 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -117,6 +119,10 @@ public class DatasetLoading {
         final Instances[] instances = sampleItalyPowerDemand(0);
         instances[0].addAll(instances[1]);
         return instances[0];
+    }
+
+    public static TimeSeriesInstances loadItalyPowerDemandTS() {
+
     }
 
     public static Instances[] sampleGunPoint(int seed) throws Exception {
@@ -399,6 +405,67 @@ public class DatasetLoading {
         reader.close();
 
         return inst;
+    }
+
+    /**
+     * Loads the ts file at the target location or throws IOException on any error.
+     *
+     * @param targetFile the file to try and load
+     * @return Instances from file.
+     * @throws java.io.IOException if cannot find the file, or file is malformed
+     */
+    public static TimeSeriesInstances loadTSData(File targetFile) throws IOException {
+        String[] parts = targetFile.getName().split(Pattern.quote("."));
+        String extension;
+        final String ARFF = ".arff", TS = ".ts";
+
+        if (parts.length == 2) {
+            extension = "." + parts[1]; //split will remove the .
+        }
+        else {
+            //have not been given a specific extension
+            //look for arff or ts formats
+            //arbitrarily looking for arff first
+            File newtarget = new File(targetFile.getAbsolutePath() + ARFF);
+            if (newtarget.exists()) {
+                targetFile = newtarget;
+                extension = ARFF;
+            }
+            else {
+                newtarget = new File(targetFile.getAbsolutePath() + TS);
+                if (newtarget.exists()) {
+                    targetFile = newtarget;
+                    extension = TS;
+                }
+                else
+                    throw new IOException("Cannot find file " + targetFile.getAbsolutePath() + " with either .arff or .ts extensions.");
+            }
+        }
+
+        TimeSeriesInstances inst = null;
+        FileReader reader = new FileReader(targetFile);
+
+        if (extension.equalsIgnoreCase(ARFF)) {
+            inst = Converter.fromArff(new Instances(reader));
+        }
+        else if (extension.equalsIgnoreCase(TS)) {
+            tsml.data_containers.ts_fileIO.TSReader tsreader = new tsml.data_containers.ts_fileIO.TSReader(reader);
+            inst = tsreader.GetInstances();
+        }
+
+        reader.close();
+
+        return inst;
+    }
+
+    /**
+     * Loads the ts file at the target location.
+     *
+     * @param fullPath path to the file to try and load
+     * @return Instances from file.
+     */
+    public static TimeSeriesInstances loadTSData(String fullPath) throws IOException {
+        return loadTSData(new File(fullPath));
     }
 
 
