@@ -180,7 +180,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         long startTime=System.nanoTime();
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
 //All in nanos
-        System.out.println("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
+        printDebug("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
         if(trainTimeContract) {
 
             transformContractTime = trainContractTimeNanos * 2 / 3;
@@ -321,7 +321,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         saveShapelets=true;
     }
     private void saveShapeletData(Instances data){
-        System.out.println("Saving the transform as an arff file and the transform data in different files. The shapelets will also be saved by the transform in the same location.");
+        printDebug("Saving the transform as an arff file and the transform data in different files. The shapelets will also be saved by the transform in the same location.");
         //Write shapelet transform to arff file
         File f= new File(shapeletOutputPath+"ShapeletTransforms/"+data.relationName());
         if(!f.exists())
@@ -477,8 +477,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         int m = train.numAttributes() - 1;
         if(time>0){
             searchType = SearchType.RANDOM;
-            if(debug)
-                System.out.println("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
+            printLineDebug("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
 //This is aarons way of doing it based on hard coded estimate of the time for a single operation
             proportionToEvaluate= estimatePropOfFullSearchAaron(n,m,time);
@@ -490,11 +489,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             }
             else
                 numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
-            if(debug) {
-                System.out.println(" Total number of shapelets = " + numShapeletsInProblem);
-                System.out.println(" Proportion to evaluate = " + proportionToEvaluate);
-                System.out.println(" Number to evaluate = " + numShapeletsToEvaluate);
-            }
+            printLineDebug(" Total number of shapelets = " + numShapeletsInProblem);
+            printLineDebug(" Proportion to evaluate = " + proportionToEvaluate);
+            printLineDebug(" Number to evaluate = " + numShapeletsToEvaluate);
             if(numShapeletsToEvaluate<n)//Got to do 1 per series. Really should reduce if we do this.
                 numShapeletsToEvaluate=n;
             numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;

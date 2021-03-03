@@ -19,8 +19,6 @@ package tsml.transformers;
 
 import java.io.Serializable;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TSCapabilitiesHandler;
@@ -74,7 +72,7 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      * @return transformed Instance
      */
     default Instance transform(Instance inst){
-        throw new NotImplementedException("Legacy: In general this function should be used or implemented.");
+        throw new UnsupportedOperationException("Legacy: In general this function should be used or implemented.");
     }
 
     /**
@@ -93,7 +91,7 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      * @throws Exception
      */
     default void setOptions(String[] options) throws Exception{
-        throw new NotImplementedException("calling default method of setOptions in Transformer interface, it has not been implemented for class "+this.getClass().getSimpleName());
+        throw new UnsupportedOperationException("calling default method of setOptions in Transformer interface, it has not been implemented for class "+this.getClass().getSimpleName());
     }
 
     /**
