@@ -78,8 +78,12 @@ ClassifierResults trainResults can also store other information about the traini
  EnhancedAbstractClassifier c= //Get classifier
  c.buildClassifier(train)    //ALL STATS SET HERE
  * Update 1/7/2020:
- * @author Tony Bagnall and James Large EstimatorMethod estimator moved up from subclasses, since the pattern
+ * @author Tony Bagnall and James Large
+ * EstimatorMethod estimator moved up from subclasses, since the pattern
  * appears in multiple forest based ensembles
+ * update 14/2/2021:
+ * @author Aaron Bostrom and George Oastler: add TSClassifier interface and capabilities for handling
+ * TimeSeriesInstances
  */
 abstract public class EnhancedAbstractClassifier extends AbstractClassifier implements SaveParameterInfo,
                                                                                        Serializable,

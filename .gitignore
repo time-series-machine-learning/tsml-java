@@ -66,3 +66,5 @@ settings.json
 
 out/
 src/main/java/local_code/test_distances.java
+src/main/java/local_code/HashCodeExamples.java
+src/main/java/local_code/Prog2ParseSheets.java
