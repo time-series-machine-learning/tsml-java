@@ -344,7 +344,7 @@ public class LEFTIST {
             }
 
             for (int i = 0; i < noFeatures; i++) {
-                double max = Double.MIN_VALUE;
+                double max = -99999999;
                 int feature = 0;
 
                 fsInstances.insertAttributeAt(new Attribute(Integer.toString(i), vals), i);

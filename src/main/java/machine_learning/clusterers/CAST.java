@@ -215,7 +215,7 @@ public class CAST extends AbstractVectorClusterer {
     }
 
     private void normaliseDistanceMatrix(){
-        double maxDist = Double.MIN_VALUE;
+        double maxDist = -99999999;
         double minDist = Double.MAX_VALUE;
 
         for (int i = 0; i < distanceMatrix.length; i++){
