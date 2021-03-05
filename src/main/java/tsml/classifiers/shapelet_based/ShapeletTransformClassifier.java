@@ -107,6 +107,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     private double proportionToEvaluate=1;// Proportion of total num shapelets to evaluate based on time contract
     private long numShapeletsToEvaluate = 0; //Total num shapelets to evaluate over all cases (NOT per case)
     private long transformBuildTime=0;
+    transient private long finalBuildtrainContractTimeNanos = 0;
+
     public void setTransformTime(long t){
         transformContractTime=t;
     }
@@ -114,8 +116,15 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         transformContractHours =(int)t;
         transformContractTime=TimeUnit.NANOSECONDS.convert(t, TimeUnit.HOURS);
     }
+/************* GENERATING TRAIN FILES WITH OOB   ***************************/
+    private boolean bagging = false; //Use if we want an OOB estimate from the final build
+    private ArrayList<boolean[]> inBag;
+    private int[] oobCounts;
+    private double[][] trainDistributions;
 
-/************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
+
+
+    /************* CHECKPOINTING and SAVING ************ Could all  move to transformOptions */
 //Check pointing is not fully debugged
     private String checkpointFullPath=""; //location to check point
     private boolean checkpoint=false;
@@ -129,25 +138,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     public void setPruneMatchingShapelets(boolean pruneMatchingShapelets) {
         this.pruneMatchingShapelets = pruneMatchingShapelets;
     }
-
-    /** If trainAccuracy is required, there are two mechanisms to obtain it:
-     * 2. estimator=CV: do a 10x CV on the train set with a clone
-     * of this classifier
-     * 3. estimator=OOB: build an OOB model just to get the OOB
-     * accuracy estimate
-     */
-    enum EstimatorMethod{CV,OOB}
-    private EstimatorMethod estimator=EstimatorMethod.CV;
-    public void setEstimatorMethod(String str){
-        String s=str.toUpperCase();
-        if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
-        else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else
-            throw new UnsupportedOperationException("Unknown estimator method in TSF = "+str);
-    }
-
 
 
     public ShapeletTransformClassifier(){
@@ -230,29 +220,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 
         printLineDebug("Starting STC build classifier after "+(System.nanoTime()-startTime)/1000000000+" ......");
-        if(getEstimateOwnPerformance()){
-// if the classifier can estimate its own performance, do that. This is not yet in the time contract!
-            boolean doExternalCV=false;
-            doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
-            if(doExternalCV) {
-                printLineDebug("Doing a CV with base to estimate accuracy");
-                int numFolds = setNumberOfFolds(data);
-                CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                cv.setSeed(seed * 12);
-                cv.setNumFolds(numFolds);
-                trainResults = cv.crossValidateWithStats(classifier, shapeletData);
-            }
-            else{//The classifier can handler it internally
-                throw new RuntimeException(("ERROR: internal estimates not sorted out yet"));
-
-            }
-        }
-
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
 
-        //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
+/*        //Optionally do a PCA to reduce dimensionality. Not an option currently, it is broken
         if(performPCA){
             printLineDebug("Do a PCA");
             printLineDebug(" before num features "+(shapeletData.numAttributes()-1));
@@ -261,7 +233,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             shapeletData=pca.transform(shapeletData);
             printLineDebug(" after "+(shapeletData.numAttributes()-1));
         }
-
+*/
 //Here get the train estimate directly from classifier using cv for now
         if(classifier instanceof EnhancedAbstractClassifier)
             ((EnhancedAbstractClassifier)classifier).setDebug(debug);
@@ -279,6 +251,23 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
 //HERE: If the base classifier can estimate its own performance, then lets do it here
+        if(getEstimateOwnPerformance()){
+// if the classifier can estimate its own performance, do that. This is not yet in the time contract!
+            boolean doExternalCV=false;
+            doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
+            if(doExternalCV) {
+                printLineDebug("Doing a CV with base to estimate accuracy");
+                int numFolds = setNumberOfFolds(data);
+                CrossValidationEvaluator cv = new CrossValidationEvaluator();
+                cv.setSeed(seed * 12);
+                cv.setNumFolds(numFolds);
+                trainResults = cv.crossValidateWithStats(classifier, shapeletData);
+            }
+            else{//The classifier can handler it internally
+                throw new RuntimeException(("ERROR: internal estimates not sorted out yet"));
+
+            }
+        }
 
     }
 
@@ -329,7 +318,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
      * @param data
      * @throws Exception from distributionForInstance
      */
-/*
+
 
     private void estimateOwnPerformance(Instances data) throws Exception {
         if (bagging) {
@@ -364,41 +353,45 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             if (seedClassifier)
                 cv.setSeed(seed * 5);
             cv.setNumFolds(numFolds);
-            TSF tsf = new TSF();
-            tsf.copyParameters(this);
-            tsf.setDebug(this.debug);
+            ShapeletTransformClassifier stc= new ShapeletTransformClassifier();
+            stc.copyParameters(this);
+            stc.setDebug(this.debug);
             if (seedClassifier)
-                tsf.setSeed(seed * 100);
-            tsf.setEstimateOwnPerformance(false);
+                stc.setSeed(seed * 100);
+            stc.setEstimateOwnPerformance(false);
             if (trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
-                tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos / numFolds);
-            printLineDebug(" Doing CV evaluation estimate performance with  " + tsf.getTrainContractTimeNanos() / 1000000000 + " secs per fold.");
+                stc.setTrainTimeLimit(finalBuildtrainContractTimeNanos / numFolds);
+            printLineDebug(" Doing CV evaluation estimate performance with  " + stc.getTrainContractTimeNanos() / 1000000000 + " secs per fold.");
             long buildTime = trainResults.getBuildTime();
-            trainResults = cv.evaluate(tsf, data);
+            trainResults = cv.evaluate(stc, data);
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("TSFCV");
+            trainResults.setClassifierName("STCCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
         else if (estimator == EnhancedAbstractClassifier.EstimatorMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
-            TSF tsf = new TSF();
-            tsf.copyParameters(this);
-            tsf.setDebug(this.debug);
-            tsf.setSeed(seed);
-            tsf.setEstimateOwnPerformance(true);
-            tsf.bagging = true;
-            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
-            printLineDebug(" Doing Bagging estimate performance with " + tsf.getTrainContractTimeNanos() / 1000000000 + " secs per fold ");
-            tsf.buildClassifier(data);
+            ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+            stc.copyParameters(this);
+            stc.setDebug(this.debug);
+            stc.setSeed(seed);
+            stc.setEstimateOwnPerformance(true);
+            stc.bagging = true;
+            stc.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
+            printLineDebug(" Doing Bagging estimate performance with " + stc.getTrainContractTimeNanos() / 1000000000 + " secs per fold ");
+            stc.buildClassifier(data);
             long buildTime = trainResults.getBuildTime();
-            trainResults = tsf.trainResults;
+            trainResults = stc.trainResults;
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("TSFOOB");
+            trainResults.setClassifierName("STCOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }
+    private void copyParameters(ShapeletTransformClassifier other) {
+//        this.numClassifiers = other.numClassifiers;
+//        this.numIntervalsFinder = other.numIntervalsFinder;
+    }
 
-*/
+
 
     public void setShapeletOutputFilePath(String path){
         shapeletOutputPath = path;
