@@ -30,9 +30,9 @@ import static utilities.ArrayUtilities.sum;
 
 /**
  * A tree for time series interval forests.
- * Based on the time series tree implementation from the time series forest (TSF) paper.
+ * Based on the time series tree (TST) implementation from the time series forest (TSF) paper.
  *
- * Author: Matthew Middlehurst
+ * @author Matthew Middlehurst
  **/
 public class ContinuousIntervalTree extends AbstractClassifier implements Randomizable, Serializable {
 
