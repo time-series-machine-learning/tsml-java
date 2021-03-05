@@ -49,7 +49,7 @@ public interface Checkpointable extends Serializable {
     boolean setCheckpointPath(String path);
 
     /**
-     * DEFAULT FOR NOW: make abstract when fully implemented
+     *
      * @param t number of hours between checkpoints
      * @return true if set correctly.
      */

@@ -31,6 +31,7 @@ import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import tsml.classifiers.Tuneable;
+import tsml.classifiers.interval_based.TSF;
 import utilities.InstanceTools;
 import weka.core.*;
 import weka.classifiers.Classifier;
@@ -191,8 +192,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         }
         //Data independent parameters are set in the constructor. These are parameters of the data
         configureDataDependentShapeletTransform(data);
-//Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
-//This is done by estimating the time to evaluate a single shapelet then extrapolating (not in aarons way)
+        //Contracting with the shapelet transform is handled by setting the number of shapelets per series to evaluate.
+        //This is done by estimating the time to evaluate a single shapelet then extrapolating (not in aarons way)
+        //It would be better to just search until the time limit is up, but the whole search structure is series
+        //by series, so this is hopefully just an interim measure
         if(transformContractTime >0) {
             printLineDebug(" Contract time limit = "+ transformContractTime);
             configureTrainTimeContract(data, transformContractTime);
@@ -313,6 +316,85 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         return classifier.distributionForInstance(test);
     }
 
+    /**
+     * estimating own performance
+     *  Three scenarios
+     *      1. If we bagged the full build (bagging ==true), we estimate using the full build OOB. Assumes the final
+     *      model has already been built
+     *      If we built on all data (bagging ==false) we estimate either
+     *          2. with a 10xCV if estimator==EstimatorMethod.CV
+     *          3. Build a bagged model simply to get the estimate estimator==EstimatorMethod.OOB
+     *  Note that all this needs to come out of any contract time we specify.
+     *
+     * @param data
+     * @throws Exception from distributionForInstance
+     */
+    private void estimateOwnPerformance(Instances data) throws Exception {
+        if (bagging) {
+            // Use bag data, counts normalised to probabilities
+            printLineDebug("Finding the OOB estimates");
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
+                long predTime = System.nanoTime();
+                for (int k = 0; k < trainDistributions[j].length; k++)
+                    if (oobCounts[j] > 0)
+                        trainDistributions[j][k] /= oobCounts[j];
+                preds[j] = findIndexOfMax(trainDistributions[j], rand);
+                actuals[j] = data.instance(j).classValue();
+                predTimes[j] = System.nanoTime() - predTime;
+            }
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
+            trainResults.setClassifierName("TSFBagging");
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setSplit("train");
+            trainResults.setFoldID(seed);
+            trainResults.finaliseResults(actuals);
+            trainResults.setErrorEstimateMethod("OOB");
+
+        }
+        //Either do a CV, or bag and get the estimates
+        else if (estimator == EnhancedAbstractClassifier.EstimatorMethod.CV || estimator == EnhancedAbstractClassifier.EstimatorMethod.NONE) {
+            // Defaults to 10 or numInstances, whichever is smaller.
+            int numFolds = setNumberOfFolds(data);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            if (seedClassifier)
+                cv.setSeed(seed * 5);
+            cv.setNumFolds(numFolds);
+            TSF tsf = new TSF();
+            tsf.copyParameters(this);
+            tsf.setDebug(this.debug);
+            if (seedClassifier)
+                tsf.setSeed(seed * 100);
+            tsf.setEstimateOwnPerformance(false);
+            if (trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
+                tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos / numFolds);
+            printLineDebug(" Doing CV evaluation estimate performance with  " + tsf.getTrainContractTimeNanos() / 1000000000 + " secs per fold.");
+            long buildTime = trainResults.getBuildTime();
+            trainResults = cv.evaluate(tsf, data);
+            trainResults.setBuildTime(buildTime);
+            trainResults.setClassifierName("TSFCV");
+            trainResults.setErrorEstimateMethod("CV_" + numFolds);
+        }
+        else if (estimator == EnhancedAbstractClassifier.EstimatorMethod.OOB) {
+            // Build a single new TSF using Bagging, and extract the estimate from this
+            TSF tsf = new TSF();
+            tsf.copyParameters(this);
+            tsf.setDebug(this.debug);
+            tsf.setSeed(seed);
+            tsf.setEstimateOwnPerformance(true);
+            tsf.bagging = true;
+            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
+            printLineDebug(" Doing Bagging estimate performance with " + tsf.getTrainContractTimeNanos() / 1000000000 + " secs per fold ");
+            tsf.buildClassifier(data);
+            long buildTime = trainResults.getBuildTime();
+            trainResults = tsf.trainResults;
+            trainResults.setBuildTime(buildTime);
+            trainResults.setClassifierName("TSFOOB");
+            trainResults.setErrorEstimateMethod("OOB");
+        }
+    }
 
 
 
