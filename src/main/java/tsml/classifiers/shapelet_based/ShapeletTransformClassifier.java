@@ -329,6 +329,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
      * @param data
      * @throws Exception from distributionForInstance
      */
+/*
+
     private void estimateOwnPerformance(Instances data) throws Exception {
         if (bagging) {
             // Use bag data, counts normalised to probabilities
@@ -396,7 +398,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         }
     }
 
-
+*/
 
     public void setShapeletOutputFilePath(String path){
         shapeletOutputPath = path;
