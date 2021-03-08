@@ -115,21 +115,23 @@ public class ClassifierSanityChecks {
         EnhancedAbstractClassifier c = new ContractRotationForest();
         EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
         long t1= System.nanoTime();
-        c.setEstimateOwnPerformance(true);
+        c.setEstimateOwnPerformance(false);
         c.buildClassifier(train);
+        c.setDebug(true);
         long t2= System.nanoTime();
         long trainTime = (t2-t1)/1000000000;
         int correct=0;
         ClassifierResults trainRes = c.getTrainResults();
+        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+/*
         double[] trainPred=trainRes.getPredClassValsAsArray();
         double[][] trainProbs=trainRes.getProbabilityDistributionsAsArray();
-        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
         for(int i=0;i<trainPred.length;i++){
             System.out.print("\n actual = "+train.instance(i).classValue()+" predicted  = "+trainPred[i]+" probs = ");
             for(double d: trainProbs[i])
                 System.out.print(d+",");
         }
-
+*/
 
         for(Instance ins:test){
             double pred=c.classifyInstance(ins);
@@ -137,34 +139,37 @@ public class ClassifierSanityChecks {
             if(pred==ins.classValue())
                 correct++;
         }
-        c.setEstimateOwnPerformance(true);
-        System.out.println(" CRF finished in "+trainTime+" secs, num correct = "+correct);
+        System.out.println("\n CRF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
         t1= System.nanoTime();
-        c2.setEstimateOwnPerformance(true);
-        c.buildClassifier(train);
+        c2.setEstimateOwnPerformance(false);
+        c2.setDebug(true);
+//        c2.setEstimatorMethod("OOB");
+        c2.buildClassifier(train);
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
         correct=0;
-        trainRes = c.getTrainResults();
+        trainRes = c2.getTrainResults();
+        System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+/*
         trainPred=trainRes.getPredClassValsAsArray();
         trainProbs=trainRes.getProbabilityDistributionsAsArray();
-        System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+
         for(int i=0;i<trainPred.length;i++){
             System.out.print("\n actual = "+train.instance(i).classValue()+" predicted  = "+trainPred[i]+" probs = ");
             for(double d: trainProbs[i])
                 System.out.print(d+",");
         }
-
-
+*/
+        correct=0;
         for(Instance ins:test){
-            double pred=c.classifyInstance(ins);
-            double[] d = c.distributionForInstance(ins);
+            double pred=c2.classifyInstance(ins);
+            double[] d = c2.distributionForInstance(ins);
             if(pred==ins.classValue())
                 correct++;
         }
         c.setEstimateOwnPerformance(true);
-        System.out.println(" CRF finished in "+trainTime+" secs, num correct = "+correct);
+        System.out.println("\n ERF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
 
 

@@ -103,8 +103,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     double alpha=0.2;//Learning rate for timing update
 
     double perForBag = 0.5;
-    double[][][] distributions;
-    double[] bagAccuracies;
 
   /**
    * Constructor.
@@ -480,7 +478,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug("Finished build");
+        printLineDebug("Finished build with "+numTrees+" trees ");
 
     }
 
@@ -876,10 +874,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         for (int i = 0; i < finalDistributions.length; i++) {
             double predClass = findIndexOfMax(finalDistributions[i], rand);
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
-            if (predClass == data.get(i).classValue()) {
-                acc++;
-            }
-            trainResults.setAcc(acc / data.size());
         }
     }
 

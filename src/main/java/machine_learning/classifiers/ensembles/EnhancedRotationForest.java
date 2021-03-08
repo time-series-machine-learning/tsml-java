@@ -29,6 +29,7 @@
 
 package machine_learning.classifiers.ensembles;
 
+import evaluation.evaluators.CrossValidationEvaluator;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
@@ -262,6 +263,14 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         long startTime=System.nanoTime();
         //Set up the results file
         super.buildClassifier(data);
+//This is from the RotationForest: remove zero variance and normalise attributes.
+//Do this before loading from file, so we can perform checks of dataset?
+        removeUseless = new RemoveUseless();
+        removeUseless.setInputFormat(data);
+        data = Filter.useFilter(data, removeUseless);
+        normalize = new Normalize();
+        normalize.setInputFormat(data);
+        data = Filter.useFilter(data, normalize);
         seriesLength = data.numAttributes()-1;
         numInstances = data.numInstances();
 
@@ -300,34 +309,51 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         do{//Always build at least one tree
 //Formed bag data set
             Instances trainData=data;
+            boolean[] inBag=null;
             if(bagging){
-                //Only need to clone it if bagging, dont need to store
+                //Resample data with replacement
+                long t1 = System.nanoTime();
+                inBag = new boolean[trainData.numInstances()];
+                trainData = trainData.resampleWithWeights(rand, inBag);
             }
 //Build classifier
-            classifiers.add(buildTree(data,instancesOfClass,numTrees++, data.numAttributes()-1));
+            Classifier c= buildTree(trainData,instancesOfClass,numTrees, data.numAttributes()-1);
+            classifiers.add(c);
+            if(bagging) { // Get bagged distributions
+                for(int i=0;i<data.numInstances();i++){
+                    if(!inBag[i]){
+                        oobCounts[i]++;
+                        double[] dist=c.distributionForInstance(data.instance(i));
+                        for(int j=0;j<dist.length;j++)
+                            trainDistributions[i][j]+=dist[j];
+                    }
+                }
+            }
 //If the first one takes too long, adjust length parameter
-
+            numTrees++;
         }while(withinTrainContract(trainResults.getBuildTime()) && classifiers.size() < minNumTrees);
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug("Finished build");
+        if (getEstimateOwnPerformance()) {
+            long est1 = System.nanoTime();
+            estimateOwnPerformance(data);
+            long est2 = System.nanoTime();
 
-    }
+            if (bagging)
+                trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
+            else
+                trainResults.setErrorEstimateTime(est2 - est1);
 
-    private int[][] generateBags(int numBags, int bagProp, Instances data){
-        int[][] bags = new int[numBags][data.size()];
-
-        Random random = new Random(seed);
-        for (int i = 0; i < numBags; i++) {
-            for (int j = 0; j < data.size() * (bagProp/100.0); j++) {
-                bags[i][random.nextInt(data.size())]++;
-            }
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
-        return bags;
+
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+
     }
 
-    /** Build a rotation forest tree, possibly
+    /** Build a rotation forest tree, possibly not using all the attributes to speed things up
      *
      * @param data
      * @param instancesOfClass
@@ -426,6 +452,87 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         return c;
     }
 
+
+
+    private void estimateOwnPerformance(Instances data) throws Exception {
+        if (bagging) {
+            // Use bag data, counts normalised to probabilities
+            printLineDebug("Finding the OOB estimates");
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
+                long predTime = System.nanoTime();
+                for (int k = 0; k < trainDistributions[j].length; k++)
+                    if (oobCounts[j] > 0)
+                        trainDistributions[j][k] /= oobCounts[j];
+                preds[j] = findIndexOfMax(trainDistributions[j], rand);
+                actuals[j] = data.instance(j).classValue();
+                predTimes[j] = System.nanoTime() - predTime;
+            }
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
+            trainResults.setClassifierName("TSFBagging");
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setSplit("train");
+            trainResults.setFoldID(seed);
+            trainResults.finaliseResults(actuals);
+            trainResults.setErrorEstimateMethod("OOB");
+
+        }
+        //Either do a CV, or bag and get the estimates
+        else if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+            // Defaults to 10 or numInstances, whichever is smaller.
+            int numFolds = setNumberOfFolds(data);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            if (seedClassifier)
+                cv.setSeed(seed * 5);
+            cv.setNumFolds(numFolds);
+            EnhancedRotationForest rotf = new EnhancedRotationForest();
+            rotf.copyParameters(this);
+            rotf.setDebug(this.debug);
+            if (seedClassifier)
+                rotf.setSeed(seed * 100);
+            rotf.setEstimateOwnPerformance(false);
+//            if (trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
+//                rotf.setTrainTimeLimit(buildtrainContractTimeNanos / numFolds);
+            printLineDebug(" Doing CV evaluation estimate performance with  " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold.");
+            long buildTime = trainResults.getBuildTime();
+            trainResults = cv.evaluate(rotf, data);
+            trainResults.setBuildTime(buildTime);
+            trainResults.setClassifierName("RotFCV");
+            trainResults.setErrorEstimateMethod("CV_" + numFolds);
+        }
+        else if (estimator == EstimatorMethod.OOB) {
+            // Build a single new TSF using Bagging, and extract the estimate from this
+            EnhancedRotationForest rotf = new EnhancedRotationForest();
+            rotf.copyParameters(this);
+            rotf.setDebug(this.debug);
+            rotf.setSeed(seed*33);
+            rotf.setEstimateOwnPerformance(true);
+            rotf.bagging = true;
+//            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
+            printLineDebug(" Doing Bagging estimate performance with " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold ");
+            rotf.buildClassifier(data);
+            long buildTime = trainResults.getBuildTime();
+            trainResults = rotf.trainResults;
+            trainResults.setBuildTime(buildTime);
+            trainResults.setClassifierName("RotFOOB");
+            trainResults.setErrorEstimateMethod("OOB");
+        }
+    }
+
+    private void copyParameters(EnhancedRotationForest other) {
+        this.minNumTrees = other.minNumTrees;
+        this.baseClassifier = other.baseClassifier;
+        this.minGroup = other.minGroup;
+        this.maxGroup = other.maxGroup;
+        this.removedPercentage = other.removedPercentage;
+        this.maxGroup = other.maxGroup;
+        this.minGroup = other.minGroup;
+        this.maxGroup = other.maxGroup;
+
+
+    }
 
 
     /**
@@ -751,10 +858,11 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         else
             trainTimeContract = false;
     }
-
     @Override
     public boolean withinTrainContract(long start) {
         return start<trainContractTimeNanos;
     }
+    @Override
+    public long getTrainContractTimeNanos() { return trainContractTimeNanos; }
 }
 
