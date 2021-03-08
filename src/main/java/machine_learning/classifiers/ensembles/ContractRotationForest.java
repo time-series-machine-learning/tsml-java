@@ -1438,7 +1438,13 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         else
             trainTimeContract = false;
     }
-  /**
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+    /**
    * Main method for testing this class.
    *
    * @param argv the options

@@ -390,6 +390,10 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         trainContractTimeNanos =amount;
         trainTimeContract = true;
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return tuner.withinTrainContract(start);
+    }
 
     
     /**

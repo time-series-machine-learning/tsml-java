@@ -44,7 +44,7 @@ import tsml.classifiers.TrainTimeContractable;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner 
-        implements SaveEachParameter,Checkpointable {
+        implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
     private ParameterSearcher searcher;                      //default = new GridSearcher();
@@ -288,7 +288,7 @@ public class Tuner
 //                int numParasEvald = parameterSetID + 1; 
 //                long avgTimePerPara = totalTimeSoFar / numParasEvald;
                 
-                if (!canWeEvaluateAnotherParaSet(maxParaEvalTime, totalTimeSoFar))
+                if (withinTrainContract(totalTimeSoFar+maxParaEvalTime))
                     break;
             }
             
@@ -496,6 +496,11 @@ public class Tuner
     public void setTrainTimeLimit(long amount) {
         trainTimeContract = true;
         trainContractTimeNanos =amount;
+    }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
 }

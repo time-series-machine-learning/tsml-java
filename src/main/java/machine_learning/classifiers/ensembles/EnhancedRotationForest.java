@@ -76,23 +76,20 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
     /** Filter that normalized the attributes */
     protected Normalize normalize = null;
 
-    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
 
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos =0;
-    double contractHours=0;    //Defaults to no contract
     //Added features
-    double estSingleTree;
-    int numTrees=0;
-    int minNumTrees=50;
-    int maxNumTrees=200;
+    private double estSingleTree;
+    //Stores the actual number of trees after the build, may vary with contract
+    private int numTrees=0;
+    private int minNumTrees=200;
+    private int maxNumTrees=200;
     int maxNumAttributes;
     String checkpointPath=null;
     boolean checkpoint=false;
     double timeUsed;
-    double alpha=0.2;//Learning rate for timing update
 
-    double percentageCasesPerGroup = 0.5;
     /** Flags and data required if Bagging **/
     private boolean bagging = false;
     private int[] oobCounts;
@@ -298,14 +295,16 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         Instances [] instancesOfClass;
         instancesOfClass = new Instances[numClasses];
         for( int i = 0; i < instancesOfClass.length; i++ ) {
-            instancesOfClass[ i ] = new Instances( data, 0 );
+            instancesOfClass[i] = new Instances( data, 0 );
         }
         while(withinTrainContract(trainResults.getBuildTime()) && classifiers.size() < minNumTrees) {
 //Formed bag data set
-
+            Instances trainData=data;
+            if(bagging){
+                //Only need to clone it if bagging, dont need to store
+            }
 //Build classifier
-            for(int i=0;i<numTrees;i++)
-                classifiers.add(buildTree(data,instancesOfClass,i, data.numAttributes()-1));
+            classifiers.add(buildTree(data,instancesOfClass,numTrees++, data.numAttributes()-1));
 //If the first one takes too long, adjust length parameter
 
         }
@@ -726,7 +725,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
 
 //Copy ContractRotationForest attributes. Not su
-        this.contractHours=saved.contractHours;
         trainResults=saved.trainResults;
         minNumTrees=saved.minNumTrees;
         maxNumTrees=saved.maxNumTrees;
@@ -739,17 +737,16 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
     }
 
     /**
-     * abstract method from TrainTimeContractable interface
+     * abstract methods from TrainTimeContractable interface
      * @param amount
      */
-    @Override//TrainTimeContractable
+    @Override
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" Setting ContractRotationForest contract to be "+amount);
+        printLineDebug(" Setting EnhancedRotationForest contract to be "+amount);
 
         if(amount>0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
-            contractHours=trainContractTimeNanos/1000000000/60.0/60.0;
         }
         else
             trainTimeContract = false;
