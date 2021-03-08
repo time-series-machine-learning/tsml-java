@@ -288,7 +288,7 @@ public class Tuner
 //                int numParasEvald = parameterSetID + 1; 
 //                long avgTimePerPara = totalTimeSoFar / numParasEvald;
                 
-                if (!canWeEvaluateAnotherParaSet(maxParaEvalTime, totalTimeSoFar))
+                if (withinTrainContract(totalTimeSoFar+maxParaEvalTime))
                     break;
             }
             
@@ -496,6 +496,11 @@ public class Tuner
     public void setTrainTimeLimit(long amount) {
         trainTimeContract = true;
         trainContractTimeNanos =amount;
+    }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
 }

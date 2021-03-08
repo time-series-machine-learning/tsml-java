@@ -65,6 +65,7 @@ public class RidgeClassifierCV extends AbstractClassifier implements MultiThread
         if (instances.classIndex() != instances.numAttributes() - 1)
             throw new Exception("Class attribute must be the final index.");
 
+        //Set to OMP_NUM_THREADS=1 for single thread run
         String value = System.getenv("OMP_NUM_THREADS");
         if (value == null && numThreads != Runtime.getRuntime().availableProcessors())
             throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable not set. Set it to the " +

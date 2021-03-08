@@ -457,7 +457,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             indiv.buildClassifier(data);
 
             double accuracy = individualTrainAcc(indiv, data, classifiers.size() < maxEnsembleSize
-                    ? Double.MIN_VALUE : lowestAcc);
+                    ? -99999999 : lowestAcc);
             indiv.setAccuracy(accuracy);
             if (accuracy == 0) indiv.setWeight(Double.MIN_VALUE);
             else indiv.setWeight(Math.pow(accuracy, 4));

@@ -170,6 +170,23 @@ public class DatasetLoading {
     }
 
     /**
+     * Helper function for loading the baked-in ERing dataset, one of the
+     * UEA datasets for MTSC
+     *
+     * http://timeseriesclassification.com/description.php?Dataset=ERing
+     *
+     * UEA-MTSC data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     *
+     * @param seed the seed for resampling the data
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception if data loading or sampling failed
+     */
+    public static Instances[] sampleERing(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "ERing", seed);
+    }
+
+    /**
      * Helper function for loading the baked-in Iris dataset, one of the classical
      * UCI datasets for general classification
      *

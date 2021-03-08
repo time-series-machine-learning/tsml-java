@@ -47,8 +47,7 @@ public class GenericTools {
     }
 
     public static double[] minmax(final double[] a) {
-        final int n = a.length;
-        double max = Double.MIN_VALUE;
+        double max = -99999999;
         double min = Double.MAX_VALUE;
         for (double v : a) {
             if (v > max) max = v;

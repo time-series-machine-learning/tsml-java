@@ -103,14 +103,12 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     double alpha=0.2;//Learning rate for timing update
 
     double perForBag = 0.5;
-    double[][][] distributions;
-    double[] bagAccuracies;
 
   /**
    * Constructor.
    */
   public ContractRotationForest() {
-    super(CANNOT_ESTIMATE_OWN_PERFORMANCE);
+    super(CAN_ESTIMATE_OWN_PERFORMANCE);
       
     baseClassifier = new weka.classifiers.trees.J48();
     projectionFilter = defaultFilter();
@@ -480,7 +478,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug("Finished build");
+        printLineDebug("Finished build with "+numTrees+" trees ");
 
     }
 
@@ -876,10 +874,6 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         for (int i = 0; i < finalDistributions.length; i++) {
             double predClass = findIndexOfMax(finalDistributions[i], rand);
             trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
-            if (predClass == data.get(i).classValue()) {
-                acc++;
-            }
-            trainResults.setAcc(acc / data.size());
         }
     }
 
@@ -1423,10 +1417,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     }
 
     /**
-     * abstract method from TrainTimeContractable interface
+     * abstract methods from TrainTimeContractable interface
      * @param amount
      */
-    @Override//TrainTimeContractable
+    @Override
     public void setTrainTimeLimit(long amount) {
         printLineDebug(" Setting ContractRotationForest contract to be "+amount);
 
@@ -1438,7 +1432,13 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         else
             trainTimeContract = false;
     }
-  /**
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+    /**
    * Main method for testing this class.
    *
    * @param argv the options

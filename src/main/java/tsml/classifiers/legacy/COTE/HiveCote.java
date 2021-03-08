@@ -88,7 +88,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
 
     private static int MAXCONTRACTHOURS=7*24;
     private int contractHours=MAXCONTRACTHOURS;  //Default to maximum 7 days run time
-    private long contractTimeNanos = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract =false;
 
     public HiveCote(){
@@ -633,7 +633,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
     public void setTrainTimeLimit(long amount) {
 //Split the time up equally if contracted, if not we have no control    
         trainTimeContract =true;
-        contractTimeNanos=amount;
+        trainContractTimeNanos =amount;
         long used=0;
         for(Classifier c:classifiers){
             if(c instanceof TrainTimeContractable)
@@ -652,6 +652,12 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
             }
         }
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+
 
     /**
      * Parses a given list of options to set the parameters of the classifier.

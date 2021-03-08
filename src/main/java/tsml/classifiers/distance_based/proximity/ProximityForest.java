@@ -17,7 +17,6 @@
  
 package tsml.classifiers.distance_based.proximity;
 
-import evaluation.MultipleClassifierEvaluation;
 import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
@@ -202,7 +201,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the number of trees
     private int numTreeLimit;
     // the train time limit / contract
-    private transient long trainTimeLimitNanos;
+    private transient long trainContractTimeNanos;
+    //TODO George to integrate the boolean into the classifier logic
+    private boolean trainTimeContract = false;
+
+
     // the test time limit / contract
     private transient long testTimeLimitNanos;
     // the longest tree build time for predicting train time requirements
@@ -272,7 +275,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             constituents = new ArrayList<>();
             // zero tree build time so the first tree build will always set the bar
             longestTrainStageTimeNanos = 0;
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
         }
         // lap train timer
         trainTimer.lap();
@@ -282,7 +285,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 &&
                 insideTrainTimeLimit(trainTimer.getTime() + longestTrainStageTimeNanos)
         ) {
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
             // reset the tree build timer
             trainStageTimer.resetAndStart();
             final int treeIndex = constituents.size();
@@ -328,7 +331,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // update train timer
             trainTimer.lap();
         }
-        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+        LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
         // if work has been done towards estimating the train error
         if(estimateOwnPerformance && isRebuildTrainEstimateResults()) {
             trainEstimateTimer.start();
@@ -486,12 +489,21 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public long getTrainTimeLimit() {
-        return trainTimeLimitNanos;
+        return trainContractTimeNanos;
     }
 
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override
     public void setTrainTimeLimit(final long nanos) {
-        trainTimeLimitNanos = nanos;
+        trainContractTimeNanos = nanos;
+        trainTimeContract=true;
+    }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
     @Override

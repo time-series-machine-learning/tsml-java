@@ -624,7 +624,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             boss.cleanAfterBuild = true;
             boss.seed = seed;
             boss.buildClassifier(data);
-            boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? Double.MIN_VALUE : lowestAcc[currentSeries]);
+            boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? -99999999
+                    : lowestAcc[currentSeries]);
 
             if (useWeights){
                 boss.weight = Math.pow(boss.accuracy, 4);
@@ -756,20 +757,20 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             numClassifiers[currentSeries]++;
 
             if (useWeights){
-                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
+                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) {
-                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
+                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
             if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
 //            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
             if (getEstimateOwnPerformance()){
-                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, Double.MIN_VALUE);
+                if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
                 for (int i = 0; i < latestTrainIdx.size(); i++){
                     idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
                     trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
@@ -1342,7 +1343,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         return distributions;
     }
-
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start < trainContractTimeNanos;
+    }
     public static void main(String[] args) throws Exception{
         int fold = 0;
 

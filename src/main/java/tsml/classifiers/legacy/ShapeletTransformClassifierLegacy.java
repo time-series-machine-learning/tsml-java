@@ -611,32 +611,12 @@ public class ShapeletTransformClassifierLegacy extends EnhancedAbstractClassifie
         trainTimeContract=true;
         trainContractTimeNanos = amount;
     }
-/*    I think this is now redundant, default method in TrainTimeContractable does this
-    //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        //min,hour,day converted to nanosecs.
-        switch(time){
-            case NANOSECONDS:
-                contractTime = amount;
-                break;
-            case SECONDS:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60/60) * amount;
-                break;
-            case MINUTES:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24/60) * amount;
-                break;
-            case HOURS:
-                contractTime = (ShapeletTransformTimingUtilities.dayNano/24) * amount;
-                break;
-            case DAYS:
-                contractTime = ShapeletTransformTimingUtilities.dayNano * amount;
-                break;
-            default:
-                throw new InvalidParameterException("Invalid time unit");
-        }
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
-*/
+
+
     public void setNumberOfShapeletsToEvaluate(long numS){
         numShapeletsToEvaluate = numS;
     }

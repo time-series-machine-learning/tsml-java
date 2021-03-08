@@ -23,7 +23,6 @@ import tsml.filters.shapelet_filters.ShapeletFilter;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
 import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import java.io.File;
-import java.security.InvalidParameterException;
 import java.util.concurrent.TimeUnit;
 
 import utilities.InstanceTools;
@@ -74,7 +73,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     private SearchType searchType = SearchType.IMPROVED_RANDOM;
     private long numShapelets = 0;
 
-    private long timeLimit = Long.MAX_VALUE;
+    private long trainContractTimeNanos = Long.MAX_VALUE;
     private boolean trainTimeContract = false;
 
 
@@ -126,7 +125,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
     public String getParameters(){
         String paras=transform.getParameters();
         String ens=this.ensemble.getParameters();
-        return super.getParameters()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+timeLimit+",TransformParas,"+paras+",EnsembleParas,"+ens;
+        return super.getParameters()+",CVAcc,"+res.getAcc()+",TransformBuildTime,"+transformBuildTime+",timeLimit,"+ trainContractTimeNanos +",TransformParas,"+paras+",EnsembleParas,"+ens;
     }
     
 
@@ -156,9 +155,13 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
 
     @Override
     public void setTrainTimeLimit(long amount) {
-        timeLimit=amount;
+        trainContractTimeNanos =amount;
         trainTimeContract = false;
 
+    }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
     public void setNumberOfShapelets(long numS){
@@ -172,7 +175,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         }
         else{
             long startTime=System.nanoTime();
-            format = doTransform ? createTransformData(data, timeLimit) : data;
+            format = doTransform ? createTransformData(data, trainContractTimeNanos) : data;
             transformBuildTime=System.nanoTime()-startTime;
             if(seedClassifier)
                 ensemble.setSeed((int) seed);
@@ -418,7 +421,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
         numShapelets  =st.numShapelets;
         seed =st.seed;
         seedClassifier=st.seedClassifier;
-        timeLimit =st.timeLimit;
+        trainContractTimeNanos =st.trainContractTimeNanos;
 
         
     }

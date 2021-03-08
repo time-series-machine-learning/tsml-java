@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-#Script to plot a univariate time series ARFF with the class value as the final attribute.
+# Script to plot a univariate time series ARFF with the class value as the final attribute.
 #
-#Author: Matthew Middlehurst
+# Author: Matthew Middlehurst
 
 import sys
 from matplotlib import pyplot as plt

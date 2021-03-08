@@ -1330,13 +1330,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     arr[0] = att;
                     arr[1] = intervals.get(i)[interval][0];
                     arr[2] = intervals.get(i)[interval][1];
-                    if (tree.getNormalise()){
-                        arr[3] = nodeData[1] * tree.getNormStdev((int) nodeData[0])
-                                + tree.getNormMean((int) nodeData[0]);
-                    }
-                    else {
-                        arr[3] = nodeData[1];
-                    }
+                    arr[3] = nodeData[1];
                     arr[4] = nodeData[2];
 
                     of.writeLine(Arrays.toString(arr));
