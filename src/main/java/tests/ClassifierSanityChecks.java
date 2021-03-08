@@ -1,7 +1,10 @@
 package tests;
 
 import core.contracts.Dataset;
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import machine_learning.classifiers.ensembles.ContractRotationForest;
+import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
@@ -101,6 +104,73 @@ public class ClassifierSanityChecks {
 
 
     }
+
+
+    public static void contractRotationForestTest()throws Exception
+    {
+        String path="src/main/java/experiments/data/tsc/";
+        String problem="ArrowHead";
+        Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
+        Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
+        EnhancedAbstractClassifier c = new ContractRotationForest();
+        EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
+        long t1= System.nanoTime();
+        c.setEstimateOwnPerformance(true);
+        c.buildClassifier(train);
+        long t2= System.nanoTime();
+        long trainTime = (t2-t1)/1000000000;
+        int correct=0;
+        ClassifierResults trainRes = c.getTrainResults();
+        double[] trainPred=trainRes.getPredClassValsAsArray();
+        double[][] trainProbs=trainRes.getProbabilityDistributionsAsArray();
+        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+        for(int i=0;i<trainPred.length;i++){
+            System.out.print("\n actual = "+train.instance(i).classValue()+" predicted  = "+trainPred[i]+" probs = ");
+            for(double d: trainProbs[i])
+                System.out.print(d+",");
+        }
+
+
+        for(Instance ins:test){
+            double pred=c.classifyInstance(ins);
+            double[] d = c.distributionForInstance(ins);
+            if(pred==ins.classValue())
+                correct++;
+        }
+        c.setEstimateOwnPerformance(true);
+        System.out.println(" CRF finished in "+trainTime+" secs, num correct = "+correct);
+
+        t1= System.nanoTime();
+        c2.setEstimateOwnPerformance(true);
+        c.buildClassifier(train);
+        t2= System.nanoTime();
+        trainTime = (t2-t1)/1000000000;
+        correct=0;
+        trainRes = c.getTrainResults();
+        trainPred=trainRes.getPredClassValsAsArray();
+        trainProbs=trainRes.getProbabilityDistributionsAsArray();
+        System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+        for(int i=0;i<trainPred.length;i++){
+            System.out.print("\n actual = "+train.instance(i).classValue()+" predicted  = "+trainPred[i]+" probs = ");
+            for(double d: trainProbs[i])
+                System.out.print(d+",");
+        }
+
+
+        for(Instance ins:test){
+            double pred=c.classifyInstance(ins);
+            double[] d = c.distributionForInstance(ins);
+            if(pred==ins.classValue())
+                correct++;
+        }
+        c.setEstimateOwnPerformance(true);
+        System.out.println(" CRF finished in "+trainTime+" secs, num correct = "+correct);
+
+
+
+    }
+
+
 
     public static void shortContractTest() throws Exception {
         String path = "src/main/java/experiments/data/tsc/";
@@ -273,9 +343,9 @@ public class ClassifierSanityChecks {
 
     public static void main(String[] args) throws Exception {
 //        basicUsageTest();
-        shortContractTest();
+//        shortContractTest();
 //        mediumContractTest();
-
+        contractRotationForestTest();
     }
 
 }

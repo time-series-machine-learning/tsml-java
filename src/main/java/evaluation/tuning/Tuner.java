@@ -44,7 +44,7 @@ import tsml.classifiers.TrainTimeContractable;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class Tuner 
-        implements SaveEachParameter,Checkpointable, TrainTimeContractable {
+        implements SaveEachParameter,Checkpointable {
     
     //Main 3 design choices.
     private ParameterSearcher searcher;                      //default = new GridSearcher();

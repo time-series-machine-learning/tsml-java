@@ -804,7 +804,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
         else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
-            /** Build a single new TSF using Bagging, and extract the estimate from this
+            /** Build a single new DrCIF using Bagging, and extract the estimate from this
              */
             DrCIF cif=new DrCIF();
             cif.copyParameters(this);
