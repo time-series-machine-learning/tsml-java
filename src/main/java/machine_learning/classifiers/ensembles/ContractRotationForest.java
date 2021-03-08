@@ -1423,10 +1423,10 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     }
 
     /**
-     * abstract method from TrainTimeContractable interface
+     * abstract methods from TrainTimeContractable interface
      * @param amount
      */
-    @Override//TrainTimeContractable
+    @Override
     public void setTrainTimeLimit(long amount) {
         printLineDebug(" Setting ContractRotationForest contract to be "+amount);
 

@@ -1179,6 +1179,12 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         else
             trainTimeContract = false;
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+
 
     /**
      * for interface TechnicalInformationHandler

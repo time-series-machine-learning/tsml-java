@@ -249,9 +249,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     }
 
     @Override
-    public void setTrainTimeLimit(final long nanos) {
+    public void setTrainTimeLimit(long nanos) {
         trainTimeLimit = nanos;
     }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        throw new UnsupportedOperationException(" Prox Tree contract needs standardising");
+    }
+
+
 
     @Override
     public void buildClassifier(Instances trainData) throws Exception {

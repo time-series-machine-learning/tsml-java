@@ -297,7 +297,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         for( int i = 0; i < instancesOfClass.length; i++ ) {
             instancesOfClass[i] = new Instances( data, 0 );
         }
-        while(withinTrainContract(trainResults.getBuildTime()) && classifiers.size() < minNumTrees) {
+        do{//Always build at least one tree
 //Formed bag data set
             Instances trainData=data;
             if(bagging){
@@ -307,7 +307,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             classifiers.add(buildTree(data,instancesOfClass,numTrees++, data.numAttributes()-1));
 //If the first one takes too long, adjust length parameter
 
-        }
+        }while(withinTrainContract(trainResults.getBuildTime()) && classifiers.size() < minNumTrees);
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());

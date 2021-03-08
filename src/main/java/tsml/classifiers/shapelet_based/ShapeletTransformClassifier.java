@@ -672,6 +672,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         trainTimeContract=true;
         trainContractTimeNanos = amount;
     }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+
     public void setNumberOfShapeletsToEvaluate(long numS){
         numShapeletsToEvaluate = numS;
     }

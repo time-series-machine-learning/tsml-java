@@ -324,13 +324,21 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      *      i.e. even if it can run the building of two or more classifiers in parallel, 
      *      this will still naively set the contract per classifier as amount/numClassifiers
      */
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
         trainTimeContract = true;
         trainContractTimeNanos = amount;
         contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     }
-    
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
     /**
      * Sets up the ensemble for contracting, to be called at the start of build classifier,
      * i.e. when parameters can no longer be changed.
