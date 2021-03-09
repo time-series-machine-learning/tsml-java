@@ -919,6 +919,9 @@ public class Experiments  {
         }
     }
 
+    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds) throws Exception {
+        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, null, datasetNames, minFolds, maxFolds, 0);
+    }
     /**
      * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. Will by default set numThreads = numCores
@@ -1004,6 +1007,8 @@ public class Experiments  {
         }
         System.out.println("Finished all threads");
     }
+
+
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
