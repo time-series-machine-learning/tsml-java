@@ -556,6 +556,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         resultsFilesParametersInitialised = true;
 
         this.readResultsFilesDirectories = individualResultsFilesDirectories;
+        this.datasetName = datasetName;
         setSeed(resampleIdentifier);
     }
 
