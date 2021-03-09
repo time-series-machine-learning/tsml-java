@@ -16,6 +16,7 @@ import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
+import weka.classifiers.meta.RotationForest;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -112,17 +113,18 @@ public class ClassifierSanityChecks {
         String problem="ArrowHead";
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
-        EnhancedAbstractClassifier c = new ContractRotationForest();
-        EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
-        long t1= System.nanoTime();
+        long t1,t2, trainTime;
+        int correct=0;
+
+/*        EnhancedAbstractClassifier c = new ContractRotationForest();
+        t1= System.nanoTime();
+        c.setDebug(false);
         c.setEstimateOwnPerformance(false);
         c.buildClassifier(train);
-        c.setDebug(true);
-        long t2= System.nanoTime();
-        long trainTime = (t2-t1)/1000000000;
-        int correct=0;
-        ClassifierResults trainRes = c.getTrainResults();
-        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+        t2= System.nanoTime();
+        trainTime = (t2-t1)/1000000000;
+//        ClassifierResults trainRes = c.getTrainResults();
+//        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
 /*
         double[] trainPred=trainRes.getPredClassValsAsArray();
         double[][] trainProbs=trainRes.getProbabilityDistributionsAsArray();
@@ -132,7 +134,7 @@ public class ClassifierSanityChecks {
                 System.out.print(d+",");
         }
 */
-
+/*
         for(Instance ins:test){
             double pred=c.classifyInstance(ins);
             double[] d = c.distributionForInstance(ins);
@@ -140,7 +142,8 @@ public class ClassifierSanityChecks {
                 correct++;
         }
         System.out.println("\n CRF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
-
+*/
+        EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
         t1= System.nanoTime();
         c2.setEstimateOwnPerformance(false);
         c2.setDebug(true);
@@ -149,8 +152,8 @@ public class ClassifierSanityChecks {
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
         correct=0;
-        trainRes = c2.getTrainResults();
-        System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+ //       trainRes = c2.getTrainResults();
+  //      System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
 /*
         trainPred=trainRes.getPredClassValsAsArray();
         trainProbs=trainRes.getProbabilityDistributionsAsArray();
@@ -168,9 +171,20 @@ public class ClassifierSanityChecks {
             if(pred==ins.classValue())
                 correct++;
         }
-        c.setEstimateOwnPerformance(true);
         System.out.println("\n ERF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
-
+        RotationForest rotf1= new RotationForest();
+        t1= System.nanoTime();
+        rotf1.setNumIterations(200);
+        rotf1.buildClassifier(train);
+        t2= System.nanoTime();
+        trainTime = (t2-t1)/1000000000;
+        correct=0;
+        for(Instance ins:test){
+            double pred=rotf1.classifyInstance(ins);
+            if(pred==ins.classValue())
+                correct++;
+        }
+        System.out.println("\n Default RotF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
 
     }

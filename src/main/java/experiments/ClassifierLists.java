@@ -350,7 +350,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22", "HC_OOB", "HC_CV"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -368,6 +368,24 @@ public class ClassifierLists {
                 c=new HIVE_COTE();
                 ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((HIVE_COTE)c).setSeed(fold);
+                break;
+            case "HC_cv":
+                HIVE_COTE hc=new HIVE_COTE();
+                String[] classifiers={"Arsenal-cv","DrCIF-cv","TDE-cv"};
+                hc.setSeed(fold);
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC_OOB":
+                HIVE_COTE hc2=new HIVE_COTE();
+                hc2.setBuildIndividualsFromResultsFiles(true);
+                hc2.setSeed(fold);
+                hc2.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                String[] x2={"Arsenal-oob","DrCIF-oob","TDE-oob"};
+                hc2.setClassifiersNamesForFileRead(x2);
+                c=hc2;
                 break;
             case "catch22":
                 c = new Catch22Classifier();
