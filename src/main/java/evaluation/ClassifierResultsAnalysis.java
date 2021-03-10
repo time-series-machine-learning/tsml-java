@@ -251,7 +251,15 @@ public class ClassifierResultsAnalysis {
             compMetrics.add(memoryMaxMetric);
             compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
             compMetrics.add(benchmarkedTestTimeMetric);
-//            compMetrics.add(estimateTimeMetric);
+
+            // if there are train results, get the time needed to make that estimate in a couple different forms
+            if (Arrays.asList(results.getSplits()).contains("train")) { //wrong on so many levels
+                compMetrics.add(PerformanceMetric.totalBuildPlusEstimateTime);
+                compMetrics.add(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked);
+                compMetrics.add(PerformanceMetric.additionalTimeForEstimate);
+                compMetrics.add(PerformanceMetric.additionalTimeForEstimateBenchmarked);
+            }
+
             for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
                 String label = compMetrics.get(j).name;
                 if (compResourceSummaries.get(j) != null) {
