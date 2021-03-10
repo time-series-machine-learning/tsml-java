@@ -30,11 +30,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.MultiThreadable;
-import tsml.classifiers.TestTimeContractable;
-import tsml.classifiers.TrainTimeContractable;
+
+import tsml.classifiers.*;
 import tsml.transformers.Transformer;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
@@ -250,6 +247,24 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         }
 
         public String getParameters() {
+
+            //priority of parameter info:
+            // 1) directly provided by setParameters or in the constructor (it's not already empty)
+            // 2) from the classifier itself
+            // 3) from existing train results (if read in from file e.g.)
+            // 4) from existing test results (if only test results read from file)
+
+            if (parameters == null || parameters == "") {
+                if (classifier instanceof SaveParameterInfo)
+                    parameters = ((SaveParameterInfo) classifier).getParameters();
+                else if (trainResults != null)
+                    parameters = trainResults.getParas();
+                else if (testResults != null)
+                    parameters = testResults.getParas();
+                else
+                    parameters = "NoParaInfoFound";
+            }
+
             return parameters;
         }
 
@@ -813,12 +828,17 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         StringBuilder out = new StringBuilder();
         out.append(weightingScheme.toString()).append(",").append(votingScheme.toString()).append(",");
 
-        for(int m = 0; m < modules.length; m++){
-            out.append(modules[m].getModuleName()).append("(").append(modules[m].priorWeight);
-            for (int j = 0; j < modules[m].posteriorWeights.length; ++j)
-                out.append("/").append(modules[m].posteriorWeights[j]);
+        for (EnsembleModule module : modules) {
+            out.append(module.getModuleName()).append("(").append(module.priorWeight);
+
+            for (double weight : module.posteriorWeights)
+                out.append("/").append(weight);
+            
             out.append("),");
         }
+
+        for (EnsembleModule module : modules)
+            out.append(module.getParameters()).append(",,");
 
         return out.toString();
     }
