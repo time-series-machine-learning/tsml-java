@@ -350,8 +350,12 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                             for(int j=0;j<dist.length;j++)
                                 trainDistributions[i][j]+=dist[j];
                         }catch(Exception e){
-                            System.out.println(" Exception thrown for instance "+i+" maybe an empty tree? TREE = "+c);
-                            System.out.println(" Train data =  "+trainData+ " original data   = "+data);
+                            System.out.println(" Exception thrown for instance "+i+" using the following tree = "+c);
+//                            System.out.println(" Train data =  "+trainData+ " original data   = "+data);
+                            System.out.println(" Instance it crashes on ="+data.instance(i));
+                            for(int k=i+1;k<data.numInstances();k++){
+                                System.out.println(" instance k "+k+" prediction = "+c.classifyInstance(data.instance(k)));
+                            }
                             System.exit(1);
                     }
                     }
@@ -396,7 +400,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     for (int k = 0; k < trainDistributions[j].length; k++)
                         trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
-                if(j<3){
+                if(debug && j<3){
                     for(int m=0;m<trainDistributions[j].length;m++)
                         System.out.println("Class  "+m+" Prob = "+trainDistributions[j][m]);
                 }
@@ -446,7 +450,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
             rotf.setEstimateOwnPerformance(true);
             rotf.setBagging(true);
-//            rotf.setRemovedPercentage(0);
+            rotf.setRemovedPercentage(10);
 //            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
             printLineDebug(" Doing Bagging estimate performance with " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold  and with min trees = "+rotf.minNumTrees);
             rotf.buildClassifier(data);

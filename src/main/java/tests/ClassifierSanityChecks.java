@@ -109,10 +109,10 @@ public class ClassifierSanityChecks {
 
     public static void contractRotationForestTest()throws Exception
     {
-        String path="src/main/java/experiments/data/tsc/";
-        String problem="ArrowHead";
-//        String path="Z:\\ArchiveData\\Univariate_arff\\";
-//        String problem="ElectricDevices";
+ //       String path="src/main/java/experiments/data/tsc/";
+//        String problem="";
+        String path="Z:\\ArchiveData\\Univariate_arff\\";
+        String problem="ChinaTown";
 
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
@@ -150,13 +150,13 @@ public class ClassifierSanityChecks {
 */
         EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
         t1= System.nanoTime();
-        c2.setEstimateOwnPerformance(true);
         ((TrainTimeContractable) c2).setMinuteLimit(3);
         c2.setDebug(true);
 
-        ((EnhancedRotationForest)c2).setRemovedPercentage(10);
+        ((EnhancedRotationForest)c2).setRemovedPercentage(0);
         ((EnhancedRotationForest)c2).setBagging(true);
-//        c2.setEstimatorMethod("OOB");
+        c2.setEstimateOwnPerformance(true);
+        c2.setEstimatorMethod("OOB");
         c2.buildClassifier(train);
         c2.setDebug(true);
         t2= System.nanoTime();
