@@ -111,49 +111,59 @@ public class ClassifierSanityChecks {
     {
         String path="src/main/java/experiments/data/tsc/";
         String problem="ArrowHead";
+//        String path="Z:\\ArchiveData\\Univariate_arff\\";
+//        String problem="ElectricDevices";
+
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
         long t1,t2, trainTime;
         int correct=0;
 
-/*        EnhancedAbstractClassifier c = new ContractRotationForest();
+        EnhancedAbstractClassifier c = new ContractRotationForest();
+        TrainTimeContractable x=( TrainTimeContractable) c;
+        ((TrainTimeContractable) c).setMinuteLimit(3);
         t1= System.nanoTime();
-        c.setDebug(false);
+        c.setDebug(true);
         c.setEstimateOwnPerformance(false);
+        int count=0;
+        ClassifierResults trainRes;
+/*
         c.buildClassifier(train);
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
-//        ClassifierResults trainRes = c.getTrainResults();
-//        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
-/*
-        double[] trainPred=trainRes.getPredClassValsAsArray();
-        double[][] trainProbs=trainRes.getProbabilityDistributionsAsArray();
-        for(int i=0;i<trainPred.length;i++){
-            System.out.print("\n actual = "+train.instance(i).classValue()+" predicted  = "+trainPred[i]+" probs = ");
-            for(double d: trainProbs[i])
-                System.out.print(d+",");
-        }
-*/
-/*
+        trainRes = c.getTrainResults();
+        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
         for(Instance ins:test){
             double pred=c.classifyInstance(ins);
             double[] d = c.distributionForInstance(ins);
             if(pred==ins.classValue())
                 correct++;
+            if(count<2) {
+                for (double dd : d)
+                    System.out.print(dd + ", ");
+                System.out.println(" PREDICTION = " + pred+ " actual = "+ins.classValue());
+            }
+            count++;
+
         }
         System.out.println("\n CRF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 */
         EnhancedAbstractClassifier c2 = new EnhancedRotationForest();
         t1= System.nanoTime();
-        c2.setEstimateOwnPerformance(false);
+        c2.setEstimateOwnPerformance(true);
+        ((TrainTimeContractable) c2).setMinuteLimit(3);
         c2.setDebug(true);
+
+        ((EnhancedRotationForest)c2).setRemovedPercentage(10);
+        ((EnhancedRotationForest)c2).setBagging(true);
 //        c2.setEstimatorMethod("OOB");
         c2.buildClassifier(train);
+        c2.setDebug(true);
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
         correct=0;
- //       trainRes = c2.getTrainResults();
-  //      System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+       trainRes = c2.getTrainResults();
+      System.out.println(" ENHANCED: Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
 /*
         trainPred=trainRes.getPredClassValsAsArray();
         trainProbs=trainRes.getProbabilityDistributionsAsArray();
@@ -164,10 +174,17 @@ public class ClassifierSanityChecks {
                 System.out.print(d+",");
         }
 */
+        count=0;
         correct=0;
         for(Instance ins:test){
             double pred=c2.classifyInstance(ins);
             double[] d = c2.distributionForInstance(ins);
+            if(count<2) {
+                for (double dd : d)
+                    System.out.print(dd + ", ");
+                System.out.println(" PREDICTION = " + pred+ " actual = "+ins.classValue());
+            }
+            count++;
             if(pred==ins.classValue())
                 correct++;
         }
@@ -178,11 +195,18 @@ public class ClassifierSanityChecks {
         rotf1.buildClassifier(train);
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
-        correct=0;
+        correct=count=0;
         for(Instance ins:test){
             double pred=rotf1.classifyInstance(ins);
+            double[] d = rotf1.distributionForInstance(ins);
             if(pred==ins.classValue())
                 correct++;
+            if(count<2) {
+                for (double dd : d)
+                    System.out.print(dd + ", ");
+                System.out.println(" PREDICTION = " + pred);
+            }
+            count++;
         }
         System.out.println("\n Default RotF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
