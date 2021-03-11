@@ -298,7 +298,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             proximityTreeConfig.configure(tree);
             tree.setSeed(rand.nextInt());
             // estimate the performance of the tree
-            if(!estimator.equals(EstimatorMethod.NONE)) {
+            if(!trainEstimateMethod.equals(TrainEstimateMethod.NONE)) {
                 trainEstimateTimer.start();
                 // build train estimate based on method
                 final Evaluator evaluator = buildEvaluator();
@@ -317,7 +317,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 results.setErrorEstimateTime(trainStageTimer.getTime());
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
-            if(estimator.equals(EstimatorMethod.NONE) || rebuildConstituentAfterEvaluation) {
+            if(trainEstimateMethod.equals(TrainEstimateMethod.NONE) || rebuildConstituentAfterEvaluation) {
                 logger.info(() -> "building tree " + treeIndex);
                 tree.setRebuild(true);
                 tree.buildClassifier(trainData);
@@ -352,10 +352,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 final List<Integer> trainDataIndices;
                 final Instances dataInTrainEstimate;
                 // the train estimate data may be different depending on the evaluation method
-                if(estimator.equals(EstimatorMethod.OOB)) {
+                if(trainEstimateMethod.equals(TrainEstimateMethod.OOB)) {
                     dataInTrainEstimate = ((OutOfBagEvaluator) evaluator).getOutOfBagTestData();
                     trainDataIndices = ((OutOfBagEvaluator) evaluator).getOutOfBagTestDataIndices();
-                } else if(estimator.equals(EstimatorMethod.CV)) {
+                } else if(trainEstimateMethod.equals(TrainEstimateMethod.CV)) {
                     dataInTrainEstimate = trainData;
                     trainDataIndices = ArrayUtilities.sequence(trainData.size());
                 } else {

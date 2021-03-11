@@ -18,14 +18,12 @@
 package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
-import tsml.classifiers.interval_based.CIF;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -33,12 +31,7 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances;
 
 /**
  * Contractable classifier making use of the ROCKET transformer.
@@ -252,7 +245,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
     }
 
     private void estimateOwnPerformance(Instances data) {
-        if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+        if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something
@@ -270,7 +263,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setFoldID(seed);
             trainResults.setClassifierName("ArsenalCV");
             trainResults.setErrorEstimateMethod("CV_10"); //numfolds
-        } else if (estimator == EstimatorMethod.OOB) {
+        } else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something

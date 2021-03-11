@@ -46,7 +46,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 
 public class EnhancedRotationForest extends EnhancedAbstractClassifier
@@ -106,7 +105,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
      */
     public EnhancedRotationForest() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
-        estimator=EstimatorMethod.OOB;
+        trainEstimateMethod = TrainEstimateMethod.OOB;
         baseClassifier = new weka.classifiers.trees.J48();
         projectionFilter = defaultFilter();
         checkpointPath=null;
@@ -418,7 +417,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         }
         //Either do a CV, or bag and get the estimates. THIS IS NOT CONTRACTED
-        else if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -440,7 +439,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setClassifierName("RotFCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
-        else if (estimator == EstimatorMethod.OOB) {
+        else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
             EnhancedRotationForest rotf = new EnhancedRotationForest();
 //            rotf.setTrainTimeLimit();
