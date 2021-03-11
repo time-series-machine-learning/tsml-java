@@ -166,11 +166,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     protected boolean estimateOwnPerformance = false;
 
-    /** If trainAccuracy is required, there are two options that can be implemented
-     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
-     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+    /** If trainAccuracy is required, there are three options that can be implemented
+     * All three options involve a two stage process: Fit whole model then estimate (which might mean fit more models)
+     *   1. trainEstimateMethod=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. trainEstimateMethod=OOB: build a single OOB model just to get the OOB predictions
+     *   3. trainEstimateMethod-TRAIN: use the data used to train the model to make predictions
      */
-    public enum TrainEstimateMethod {CV,OOB,NONE}
+    public enum TrainEstimateMethod {CV,OOB,TRAIN,NONE}
     protected TrainEstimateMethod trainEstimateMethod = TrainEstimateMethod.NONE;
     public void setEstimatorMethod(String str){
         String s=str.toUpperCase();
