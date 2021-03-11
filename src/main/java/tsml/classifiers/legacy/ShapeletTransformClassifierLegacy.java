@@ -143,7 +143,7 @@ public class ShapeletTransformClassifierLegacy extends EnhancedAbstractClassifie
      */
     enum EstimatorMethod{CV,OOB}
     private EstimatorMethod estimator= EstimatorMethod.CV;
-    public void setEstimatorMethod(String str){
+    public void setTrainEstimateMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))
             estimator= EstimatorMethod.CV;

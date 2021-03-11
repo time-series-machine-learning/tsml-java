@@ -266,7 +266,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 ",outlierNorm,"+outlierNorm+",basicSummaryStats,"+useSummaryStats+",numIntervals,"+numIntervals+
                 ",minIntervalLength,"+minIntervalLength+",maxIntervalLength,"+maxIntervalLength+
                 ",baseClassifier,"+base.getClass().getSimpleName()+",bagging,"+bagging+
-                ",estimator,"+estimator.name()+",contractTime,"+contractTime;
+                ",estimator,"+ trainEstimateMethod.name()+",contractTime,"+contractTime;
         return temp;
     }
 
@@ -764,7 +764,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.finaliseResults(actuals);
         }
         //Either do a CV, or bag and get the estimates
-        else if(estimator== EstimatorMethod.CV){
+        else if(trainEstimateMethod == TrainEstimateMethod.CV){
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -784,7 +784,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setClassifierName("CIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
-        else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
+        else if(trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE){
             /** Build a single new TSF using Bagging, and extract the estimate from this
              */
             CIF cif=new CIF();
@@ -1091,7 +1091,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             seed = saved.seed;
             rand = saved.rand;
             estimateOwnPerformance = saved.estimateOwnPerformance;
-            estimator = saved.estimator;
+            trainEstimateMethod = saved.trainEstimateMethod;
             numClasses = saved.numClasses;
 
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
@@ -1744,7 +1744,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         CIF c = new CIF();
         c.setSeed(0);
         c.estimateOwnPerformance = true;
-        c.estimator = EstimatorMethod.OOB;
+        c.trainEstimateMethod = TrainEstimateMethod.OOB;
         double a;
         long t1 = System.nanoTime();
         c.buildClassifier(train);

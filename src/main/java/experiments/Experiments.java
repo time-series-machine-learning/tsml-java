@@ -149,7 +149,7 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=1;
+            int folds=30;
             String[] settings=new String[9];
 
             /*
@@ -919,9 +919,6 @@ public class Experiments  {
         }
     }
 
-    public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, String[] datasetNames, int minFolds, int maxFolds) throws Exception {
-        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, null, datasetNames, minFolds, maxFolds, 0);
-    }
     /**
      * Will run through all combinations of classifiers*datasets*folds provided, using the meta experimental info stored in the
      * standardArgs. Will by default set numThreads = numCores

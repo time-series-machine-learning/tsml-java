@@ -297,50 +297,6 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setClassifierName("ArsenalOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-//        } else if (estimator == EstimatorMethod.OOB) {
-//            int[] oobCount = new int[data[0].numInstances()];
-//            double[] preds=new double[data[0].numInstances()];
-//            double[] actuals=new double[data[0].numInstances()];
-//            double[][] trainDistributions=new double[data[0].numInstances()][data[0].numClasses()];
-//            long[] predTimes=new long[data[0].numInstances()];//Dummy variable, need something
-//            for (int r = 0; r < data.length; r++) {
-//                OutOfBagEvaluator oob = new OutOfBagEvaluator();
-//                oob.setSeed((seed+1)*5*(r+1));
-//                Classifier newCls = AbstractClassifier.makeCopy(cls);
-//                if (seedClassifier && cls instanceof Randomizable)
-//                    ((Randomizable)newCls).setSeed((seed+1)*100*(r+1));
-//                ClassifierResults results = oob.evaluate(newCls, data[r]);
-//                List<Integer> indicies = oob.getOutOfBagTestDataIndices();
-//                for (int i = 0; i < indicies.size(); i++) {
-//                    int index = indicies.get(i);
-//                    oobCount[index]++;
-//                    double[] dist = results.getProbabilityDistribution(i);
-//                    for (int n = 0; n < trainDistributions[i].length; n++) {
-//                        trainDistributions[index][n] += dist[n];
-//                    }
-//                }
-//            }
-//            for (int i = 0; i < preds.length; i++) {
-//                if (oobCount[i] > 0) {
-//                    preds[i] = findIndexOfMax(trainDistributions[i], rand);
-//                    for (int n = 0; n < trainDistributions[i].length; n++) {
-//                        trainDistributions[i][n] /= oobCount[i];
-//                    }
-//                }
-//                else{
-//                    Arrays.fill(trainDistributions[i], 1.0/numClasses);
-//                }
-//
-//                actuals[i] = data[0].get(i).classValue();
-//                preds[i] = findIndexOfMax(trainDistributions[i], rand);
-//            }
-//            trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
-//            trainResults.setDatasetName(data[0].relationName());
-//            trainResults.setSplit("train");
-//            trainResults.setFoldID(seed);
-//            trainResults.setClassifierName("ArsenalOOB");
-//            trainResults.setErrorEstimateMethod("OOB");
-//        }
     }
 
     @Override

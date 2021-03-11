@@ -123,7 +123,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
         result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance())
-            result+=",EstimateMethod,"+estimator;
+            result+=",EstimateMethod,"+ trainEstimateMethod;
         return result;
  
     }

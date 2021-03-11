@@ -759,7 +759,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
-        if(estimator==EstimatorMethod.OOB) {
+        if(trainEstimateMethod == TrainEstimateMethod.OOB) {
             trainResults.setFoldID(seed);
             int numTrees = 500;
             int bagProp = 100;
@@ -858,7 +858,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             trainResults.setClassifierName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE) {
+        else if(trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -1157,8 +1157,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
         result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance()) {
-            result += ",trainEstimateMethod," + estimator;
-            if (estimator == EstimatorMethod.OOB && trainTimeContract)
+            result += ",trainEstimateMethod," + trainEstimateMethod;
+            if (trainEstimateMethod == TrainEstimateMethod.OOB && trainTimeContract)
                 result += ", Percentage contract for OOB, " + perForBag;
         }
         return result;

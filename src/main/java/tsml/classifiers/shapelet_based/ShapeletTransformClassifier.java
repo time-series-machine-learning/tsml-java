@@ -31,7 +31,6 @@ import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import tsml.classifiers.Tuneable;
-import tsml.classifiers.interval_based.TSF;
 import utilities.InstanceTools;
 import weka.core.*;
 import weka.classifiers.Classifier;
@@ -346,7 +345,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
         }
         //Either do a CV, or bag and get the estimates
-        else if (estimator == EnhancedAbstractClassifier.EstimatorMethod.CV || estimator == EnhancedAbstractClassifier.EstimatorMethod.NONE) {
+        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -368,7 +367,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             trainResults.setClassifierName("STCCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
-        else if (estimator == EnhancedAbstractClassifier.EstimatorMethod.OOB) {
+        else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
             ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
             stc.copyParameters(this);
@@ -641,7 +640,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
         result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance()) {
-            result += ",trainEstimateMethod," + estimator;
+            result += ",trainEstimateMethod," + trainEstimateMethod;
         }
 
         return result;
