@@ -95,7 +95,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setTrainTimeLimit(0);
                 proximityForest.setTestTimeLimit(0);
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
-                proximityForest.setEstimatorMethod("none");
+                proximityForest.setTrainEstimateMethod("none");
                 proximityForest.setNumTreeLimit(100);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
                 proximityForest.setUseDistributionInVoting(false);
@@ -124,7 +124,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 return proximityForest;
             }
@@ -133,7 +133,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 return proximityForest;
             }
@@ -142,7 +142,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
@@ -152,7 +152,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
@@ -162,7 +162,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("CV");
+                proximityForest.setTrainEstimateMethod("CV");
                 return proximityForest;
             }
         },
@@ -170,7 +170,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("CV");
+                proximityForest.setTrainEstimateMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }

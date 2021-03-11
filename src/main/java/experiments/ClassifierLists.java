@@ -592,14 +592,14 @@ public class ClassifierLists {
             case "ERotFOOB":
                 erf=new EnhancedRotationForest();
                 erf.setBagging(false);
-                erf.setEstimatorMethod("OOB");
+                erf.setTrainEstimateMethod("OOB");
                 erf.setMaxNumTrees(200);
                 c = erf;
                 break;
             case "ERotFCV":
                 erf=new EnhancedRotationForest();
                 erf.setBagging(false);
-                erf.setEstimatorMethod("CV");
+                erf.setTrainEstimateMethod("CV");
                 erf.setMaxNumTrees(200);
                 c = erf;
                 break;

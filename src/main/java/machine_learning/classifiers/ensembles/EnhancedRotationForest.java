@@ -89,7 +89,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
     String checkpointPath=null;
     boolean checkpoint=false;
     double timeUsed;
-
+    Instances trainData;
     /** Flags and data required if Bagging **/
     private boolean bagging = false;
     private int[] oobCounts;
@@ -263,7 +263,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         //Set up the results file
         super.buildClassifier(data);
         data = new Instances( data );
-
+        trainData = data;
         File file = new File(checkpointPath + "RotF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
         if (checkpoint && file.exists()){ //Configure from file
@@ -295,7 +295,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         numInstances = data.numInstances();
         numClasses = data.numClasses();
 
-
         //Set up for Bagging if required
         if(bagging && getEstimateOwnPerformance()) {
             trainDistributions = new double[numInstances][numClasses];
@@ -318,34 +317,34 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         do{//Always build at least one tree
 //Formed bag data set if bagging
-            Instances trainData=data;
+            Instances trainD=data;
             boolean[] inBag=null;
             if(bagging){
                 //Resample data with replacement
  //               long t1 = System.nanoTime();
                 inBag = new boolean[data.numInstances()];
-                trainData = data.resampleWithWeights(rand, inBag);
+                trainD = data.resampleWithWeights(rand, inBag);
                 instancesOfClass = new Instances[numClasses];
                 for( int i = 0; i < instancesOfClass.length; i++ ) {
-                    instancesOfClass[i] = new Instances( data, 0 );
+                    instancesOfClass[i] = new Instances( trainD, 0 );
                 }
-                for(Instance instance:trainData) {
+                for(Instance instance:trainD) {
                     int c = (int)instance.classValue();
                     instancesOfClass[c].add( instance );
                 }
             }
 //TO DO: Alter the num attributes or cases for very big data
-            int numAtts=trainData.numAttributes()-1;
+            int numAtts=trainD.numAttributes()-1;
             printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
             Classifier c= buildTree(trainData,instancesOfClass,numTrees, numAtts);
             printLineDebug(" Train cases = "+trainData.numInstances()+ " number of classes = "+trainData.numClasses()+" should be "+numInstances+" cases and "+numClasses+" classes");
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
-                for(int i=0;i<data.numInstances();i++){
+                for(int i=0;i<trainData.numInstances();i++){
                     if(!inBag[i]){
                         oobCounts[i]++;
                         try {
-                            double[] dist = c.distributionForInstance(data.instance(i));
+                            double[] dist = c.distributionForInstance(trainData.instance(i));
                             for(int j=0;j<dist.length;j++)
                                 trainDistributions[i][j]+=dist[j];
                         }catch(Exception e){
@@ -416,11 +415,29 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setErrorEstimateMethod("OOB");
 
         }
-        else if(trainEstimateMethod == TrainEstimateMethod.TRAIN){
+        else if(trainEstimateMethod == TrainEstimateMethod.TRAIN|| trainEstimateMethod == TrainEstimateMethod.NONE){      //Just use the final
+            printLineDebug("Finding the  train set estimates");
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
+                long predTime = System.nanoTime();
+                trainDistributions[j]=distributionForInstance(trainData.instance(j));
+                preds[j] = findIndexOfMax(trainDistributions[j], rand);
+                actuals[j] = data.instance(j).classValue();
+                predTimes[j] = System.nanoTime() - predTime;
+            }
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
+            trainResults.setClassifierName("RotFTrain");
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setSplit("train");
+            trainResults.setFoldID(seed);
+            trainResults.finaliseResults(actuals);
+            trainResults.setErrorEstimateMethod("TRAIN");
 
         }
-        //Either do a CV, or bag and get the estimates. THIS IS NOT CONTRACTED
-        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
+        //The other options involve building ne model(s) on the train data. TO DO SORT OUT CONTRACT
+        else if (trainEstimateMethod == TrainEstimateMethod.CV ) {
             // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();

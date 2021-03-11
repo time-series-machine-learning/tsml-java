@@ -175,7 +175,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         classifiers.add(boss);
         
         TSF tsf=new TSF();
-        tsf.setEstimatorMethod("CV");
+        tsf.setTrainEstimateMethod("CV");
         tsf.setEstimateOwnPerformance(true);
         classifiers.add(tsf);
         

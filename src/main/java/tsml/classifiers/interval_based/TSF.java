@@ -1304,7 +1304,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         tsf.setTrainTimeLimit((long) 1.5e+10);
         //tsf.setSavePath("D:\\temp\\");
         tsf.setEstimateOwnPerformance(true);
-        tsf.setEstimatorMethod("OOB");
+        tsf.setTrainEstimateMethod("OOB");
         String[] options = new String[4];
         options[0] = "-T";
         options[1] = "10";

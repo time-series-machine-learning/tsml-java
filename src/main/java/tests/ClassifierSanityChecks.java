@@ -1,6 +1,5 @@
 package tests;
 
-import core.contracts.Dataset;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
@@ -15,7 +14,6 @@ import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
 import weka.classifiers.meta.RotationForest;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -154,9 +152,9 @@ public class ClassifierSanityChecks {
         c2.setDebug(true);
 
         ((EnhancedRotationForest)c2).setRemovedPercentage(0);
-        ((EnhancedRotationForest)c2).setBagging(true);
+        ((EnhancedRotationForest)c2).setBagging(false);
         c2.setEstimateOwnPerformance(true);
-        c2.setEstimatorMethod("OOB");
+        c2.setTrainEstimateMethod("TRAIN");
         c2.buildClassifier(train);
         c2.setDebug(true);
         t2= System.nanoTime();

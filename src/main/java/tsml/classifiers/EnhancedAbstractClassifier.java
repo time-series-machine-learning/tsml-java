@@ -174,15 +174,16 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public enum TrainEstimateMethod {CV,OOB,TRAIN,NONE}
     protected TrainEstimateMethod trainEstimateMethod = TrainEstimateMethod.NONE;
-    public void setEstimatorMethod(String str){
+    public void setTrainEstimateMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))
             trainEstimateMethod = TrainEstimateMethod.CV;
         else if(s.equals("OOB"))
             trainEstimateMethod = TrainEstimateMethod.OOB;
-        else if(s.equals("NONE")) {
+        else if(s.equals("NONE"))
             trainEstimateMethod = TrainEstimateMethod.NONE;
-        }
+        else if(s.equals("TRAIN"))
+            trainEstimateMethod = TrainEstimateMethod.TRAIN;
         else
             throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
     }
