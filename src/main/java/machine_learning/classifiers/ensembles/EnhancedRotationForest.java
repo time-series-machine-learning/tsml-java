@@ -294,7 +294,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         seriesLength = data.numAttributes()-1;
         numInstances = data.numInstances();
         numClasses = data.numClasses();
-
         //Set up for Bagging if required
         if(bagging && getEstimateOwnPerformance()) {
             trainDistributions = new double[numInstances][numClasses];
@@ -386,6 +385,9 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
 
     private void estimateOwnPerformance(Instances data) throws Exception {
+        if(trainDistributions==null)//This can happen if option is NONE or TRAIN
+            trainDistributions = new double[numInstances][numClasses];
+
         if (bagging) {
             // Bagging used to build the final model, so use bag data, counts normalised to probabilities
             printLineDebug("Finding the OOB estimates");

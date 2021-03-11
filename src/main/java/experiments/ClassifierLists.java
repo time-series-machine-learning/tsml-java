@@ -547,7 +547,7 @@ public class ClassifierLists {
      * STANDARD classifiers such as random forest etc
      */
     public static String[] standard= {
-        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotFBag","ERotFOOB","ERotFCV","PLSNominalClassifier","BayesNet","ED","C45",
+        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
             "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(Experiments.ExperimentalArguments exp){
@@ -600,6 +600,12 @@ public class ClassifierLists {
                 erf=new EnhancedRotationForest();
                 erf.setBagging(false);
                 erf.setTrainEstimateMethod("CV");
+                erf.setMaxNumTrees(200);
+                c = erf;
+                break;
+            case "ERotFTRAIN":
+                erf=new EnhancedRotationForest();
+                erf.setTrainEstimateMethod("TRAIN");
                 erf.setMaxNumTrees(200);
                 c = erf;
                 break;
