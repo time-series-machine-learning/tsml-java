@@ -388,7 +388,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
     private void estimateOwnPerformance(Instances data) throws Exception {
         if (bagging) {
-            // Use bag data, counts normalised to probabilities
+            // Bagging used to build the final model, so use bag data, counts normalised to probabilities
             printLineDebug("Finding the OOB estimates");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
@@ -414,6 +414,9 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setFoldID(seed);
             trainResults.finaliseResults(actuals);
             trainResults.setErrorEstimateMethod("OOB");
+
+        }
+        else if(trainEstimateMethod == TrainEstimateMethod.TRAIN){
 
         }
         //Either do a CV, or bag and get the estimates. THIS IS NOT CONTRACTED
