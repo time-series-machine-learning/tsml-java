@@ -62,6 +62,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
     /** The percentage of instances to be removed */
     protected int removedPercentage = 50;
     /** The attributes of each group */
+    protected double probPerClass =0.5;
     ArrayList< int[][]> groups;
     /** The type of projection filter */
     protected Filter projectionFilter;
@@ -195,6 +196,18 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         this.removedPercentage = removedPercentage;
     }
+
+    public void setProbabilityClassSelection( double p ) throws IllegalArgumentException {
+
+        if( p <= 0 )
+            throw new IllegalArgumentException( "Probability of class selection has to be >0." );
+        if( p > 1 )
+            throw new IllegalArgumentException( "Probability of class selection has to be <=1." );
+
+        this.probPerClass = p;
+    }
+
+
 
     /**
      * Gets the percentage of instances to be removed
@@ -335,15 +348,14 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
             printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
-            Classifier c= buildTree(trainData,instancesOfClass,numTrees, numAtts);
-            printLineDebug(" Train cases = "+trainData.numInstances()+ " number of classes = "+trainData.numClasses()+" should be "+numInstances+" cases and "+numClasses+" classes");
+            Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
-                for(int i=0;i<trainData.numInstances();i++){
+                for(int i=0;i<data.numInstances();i++){
                     if(!inBag[i]){
                         oobCounts[i]++;
                         try {
-                            double[] dist = c.distributionForInstance(trainData.instance(i));
+                            double[] dist = c.distributionForInstance(data.instance(i));
                             for(int j=0;j<dist.length;j++)
                                 trainDistributions[i][j]+=dist[j];
                         }catch(Exception e){
@@ -656,7 +668,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         boolean selected[] = new boolean[ numClasses ];
 
         for( int i = 0; i < selected.length; i++ ) {
-            if(random.nextBoolean()) {
+            if(random.nextDouble()<probPerClass) {
                 selected[i] = true;
                 numSelected++;
             }
