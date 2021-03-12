@@ -110,7 +110,7 @@ public class ClassifierSanityChecks {
  //       String path="src/main/java/experiments/data/tsc/";
 //        String problem="";
         String path="Z:\\ArchiveData\\Univariate_arff\\";
-        String problem="Coffee";
+        String problem="ArrowHead";
 
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");

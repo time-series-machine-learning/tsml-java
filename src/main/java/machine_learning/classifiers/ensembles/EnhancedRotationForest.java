@@ -344,7 +344,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     int c = (int)instance.classValue();
                     instancesOfClass[c].add( instance );
                 }
-                System.out.println(" SIZE of train data  = "+trainD.numInstances());
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
@@ -356,7 +355,8 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     if(!inBag[i]){
                         oobCounts[i]++;
                         try {
-                            double[] dist = c.distributionForInstance(data.instance(i));
+                            Instance convertedInstance = convertInstance(data.instance(i), numTrees);
+                            double[] dist = c.distributionForInstance(convertedInstance);
                             for(int j=0;j<dist.length;j++)
                                 trainDistributions[i][j]+=dist[j];
                         }catch(Exception e){
