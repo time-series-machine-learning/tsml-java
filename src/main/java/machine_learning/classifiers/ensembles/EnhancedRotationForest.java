@@ -484,7 +484,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
             rotf.setEstimateOwnPerformance(true);
             rotf.setBagging(true);
-            rotf.setRemovedPercentage(10);
+//            rotf.setRemovedPercentage(10);
 //            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
             printLineDebug(" Doing Bagging estimate performance with " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold  and with min trees = "+rotf.minNumTrees);
             rotf.buildClassifier(data);
