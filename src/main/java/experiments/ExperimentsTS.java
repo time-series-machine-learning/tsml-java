@@ -206,14 +206,25 @@ public class ExperimentsTS {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
+
+        //Check whether results already exists, if so and force evaluation is false: just quit
+        //if (quitEarlyDueToResultsExistence(expSettings))
+        //   return null;
+
+        TimeSeriesInstances[] data = DatasetLoadingTS.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+
+        int f = Math.max(500,(int)Math.sqrt(data[0].numInstances()*data[0].getMaxLength()*data[0].getMaxNumChannels()));
+
         // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
         // represented as different classifiers, e.g. ST_1day, ST_2day
         // The set classifier call is therefore made before defining paths that are dependent on the classifier name
-        MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(2000,5,15,
-                MultivariateShapelet.ShapeletFilters.EXHAUSTIVE, MultivariateShapelet.ShapeletQualities.ORDER_LINE,
+        int min = Math.min(data[0].getMaxLength(),10);
+        int max = Math.min(data[0].getMaxLength()-1,30);
+        MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(f,min,max,
+                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.ORDER_LINE,
                 MultivariateShapelet.ShapeletDistances.EUCLIDEAN,
                 MultivariateShapelet.ShapeletFactories.DEPENDANT,
-                MultivariateShapelet.AuxClassifiers.LINEAR);
+                MultivariateShapelet.AuxClassifiers.ROT);
 
         if (expSettings.classifierName.equals("Shapelet_I")){
             params.type =  MultivariateShapelet.ShapeletFactories.INDEPENDENT;
@@ -222,11 +233,6 @@ public class ExperimentsTS {
         TSClassifier classifier = new MultivariateShapelet(params);
 
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
-        //Check whether results already exists, if so and force evaluation is false: just quit
-        //if (quitEarlyDueToResultsExistence(expSettings))
-        //   return null;
-
-        TimeSeriesInstances[] data = DatasetLoadingTS.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());

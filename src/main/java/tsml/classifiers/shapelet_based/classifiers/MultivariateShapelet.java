@@ -17,7 +17,6 @@ import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
-import tsml.filters.shapelet_filters.ShapeletFilter;
 import tsml.transformers.shapelet_tools.Shapelet;
 import utilities.ClusteringUtilities;
 import weka.classifiers.Classifier;
@@ -34,40 +33,53 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class MultivariateShapelet implements TSClassifier {
 
-    ShapeletParams params ;
-
-    ShapeletTransformMV transform;
-
+    private ShapeletParams params;
+    private ShapeletTransformMV transform;
     private Classifier classifier;
     private ArrayList<ShapeletMV> shapelets;
     private Instances transformData;
 
-
+    public static Random RAND = new Random();
 
     public MultivariateShapelet(ShapeletParams params){
         this.params = params;
     }
-
 
     @Override
     public Classifier getClassifier() {
         return null;
     }
 
+    @Override
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        shapelets = this.params.filter.createFilter().findShapelets(params, data);
+        transformData = buildTansformedDataset( data);
+        classifier = params.classifier.createClassifier();
+        classifier.buildClassifier(transformData);
+    }
 
+    @Override
+    public double[] distributionForInstance(TimeSeriesInstance data) throws Exception {
+        Instance transformData = buildTansformedInstance(data);
+        return classifier.distributionForInstance(transformData);
+    }
+
+    @Override
+    public double classifyInstance(TimeSeriesInstance data) throws Exception {
+        Instance transformData = buildTansformedInstance(data);
+        return classifier.classifyInstance(transformData);
+    }
 
     private Instances buildTansformedDataset(TimeSeriesInstances data) {
-        //Reorder the training data and reset the shapelet indexes
         Instances output = determineOutputFormat(data);
-        // for each data, get distance to each shapelet and create new instance
         int size = shapelets.size();
         int dataSize = data.numInstances();
         double[][][] instancesArray = data.toValueArray();
 
-        //create our data instances
         for (int j = 0; j < dataSize; j++) {
             output.add(new DenseInstance(size + 1));
             for (int k=0;k<instancesArray[j].length;k++){
@@ -78,7 +90,6 @@ public class MultivariateShapelet implements TSClassifier {
         double dist;
         int i=0;
         for (ShapeletMV shapelet: this.shapelets) {
-
             for (int j = 0; j < dataSize; j++) {
                 dist = this.params.distance.createShapeletDistance().calculate(shapelet,instancesArray[j]);
                 output.instance(j).setValue(i, dist);
@@ -86,9 +97,7 @@ public class MultivariateShapelet implements TSClassifier {
             i++;
         }
 
-        //do the classValues.
         for (int j = 0; j < dataSize; j++) {
-            //we always want to write the true ClassValue here. Irrelevant of binarised or not.
             output.instance(j).setValue(size, data.get(j).getTargetValue());
         }
 
@@ -96,15 +105,9 @@ public class MultivariateShapelet implements TSClassifier {
     }
 
     private Instance buildTansformedInstance(TimeSeriesInstance data) {
-        //Reorder the training data and reset the shapelet indexes
-
-
-
         Shapelet s;
-        // for each data, get distance to each shapelet and create new instance
         int size = shapelets.size();
         double[][] instance = data.toValueArray();
-        //create our data instances
         Instance out = new DenseInstance(size + 1);
         for (int k=0;k<instance.length;k++){
             ClusteringUtilities.zNormalise(instance[k]);
@@ -114,26 +117,21 @@ public class MultivariateShapelet implements TSClassifier {
         double dist;
         int i=0;
         for (ShapeletMV shapelet: this.shapelets) {
-
             dist = this.params.distance.createShapeletDistance().calculate(shapelet,instance);
             out.setValue(i, dist);
             i++;
         }
-
-
         return out;
     }
 
     private Instances determineOutputFormat(TimeSeriesInstances inputFormat) throws IllegalArgumentException {
 
         if (this.shapelets.size() < 1) {
-
-            System.out.println(this.shapelets.size());
-            throw new IllegalArgumentException("ShapeletTransform not initialised correctly - please specify a value of k (this.numShapelets) that is greater than or equal to 1. It is currently set tp "+this.shapelets.size());
+            throw new IllegalArgumentException("ShapeletTransform not initialised correctly - " +
+                    "please specify a value of k (this.numShapelets) that is greater than or equal to 1. " +
+                    "It is currently set tp "+this.shapelets.size());
         }
 
-        //Set up instances size and format.
-        //int length = this.numShapelets;
         int length = this.shapelets.size();
         ArrayList<Attribute> atts = new ArrayList<>();
         String name;
@@ -142,86 +140,15 @@ public class MultivariateShapelet implements TSClassifier {
             atts.add(new Attribute(name));
         }
 
-
         FastVector vals = new FastVector(inputFormat.numClasses());
         for (int i = 0; i < inputFormat.numClasses(); i++) {
-             vals.addElement(inputFormat.getClassLabels()[i]);
+            vals.addElement(inputFormat.getClassLabels()[i]);
         }
         atts.add(new Attribute("Target", vals));
 
         Instances result = new Instances("Shapelets" + inputFormat.getProblemName(), atts, inputFormat.numInstances());
         result.setClassIndex(result.numAttributes() - 1);
         return result;
-    }
-
-    @Override
-    public void buildClassifier(TimeSeriesInstances data) throws Exception {
-        shapelets = this.params.filter.createFilter().findShapelets(params, data);
-      //  System.out.println(Arrays.toString(shapelets.toArray()));
-        transformData = buildTansformedDataset( data);
-        
-   //     System.out.println(transformData);
-        classifier = params.classifier.createClassifier();
-        classifier.buildClassifier(transformData);
-
-    }
-
-    @Override
-    public double[] distributionForInstance(TimeSeriesInstance data) throws Exception {
-        Instance transformData = buildTansformedInstance(data);
-        System.out.println(transformData);
-        return classifier.distributionForInstance(transformData);
-    }
-
-    @Override
-    public double classifyInstance(TimeSeriesInstance data) throws Exception {
-        Instance transformData = buildTansformedInstance(data);
-        return classifier.classifyInstance(transformData);
-    }
-
-
-
-    public static void main(String[] arg){
-        String m_local_path = "C:\\Users\\fbu19zru\\code\\Multivariate_ts\\";
-
-        String dataset = "BasicMotions";
-        String filepath = m_local_path + dataset + "\\" + dataset;
-
-        TSReader ts_reader = null;
-        try {
-            ts_reader = new TSReader(new FileReader(new File(filepath + "_TRAIN" + ".ts")));
-            TimeSeriesInstances ts_train_data = ts_reader.GetInstances();
-
-            ts_reader = new TSReader(new FileReader(new File(filepath + "_TEST" + ".ts")));
-            TimeSeriesInstances ts_test_data = ts_reader.GetInstances();
-
-            ShapeletParams params = new ShapeletParams(100,10,23,
-                    ShapeletFilters.EXHAUSTIVE, ShapeletQualities.ORDER_LINE, ShapeletDistances.EUCLIDEAN,
-                    ShapeletFactories.DEPENDANT,
-                    AuxClassifiers.ENSEMBLE);
-
-            MultivariateShapelet shapelet = new MultivariateShapelet(params);
-            shapelet.buildClassifier(ts_train_data);
-
-            double ok=0, wrong=0;
-            for (TimeSeriesInstance ts: ts_test_data){
-                double pred = shapelet.classifyInstance(ts);
-                if (ts.getTargetValue()==pred){
-                    ok++;
-                }else{
-                    wrong++;
-                }
-            }
-            System.out.println("Acc= " + ok/(ok+wrong));
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
     }
 
     public enum ShapeletFilters {
@@ -366,11 +293,18 @@ public class MultivariateShapelet implements TSClassifier {
                 return  svml;
 
             }
+        },
+        ROT{
+            @Override
+            public Classifier createClassifier() {
+                RotationForest rf = new RotationForest();
+                rf.setNumIterations(100);
+                return rf;
+            }
         };
 
         public abstract Classifier createClassifier();
     }
-
 
     public static class ShapeletParams{
         public int k;
@@ -395,6 +329,50 @@ public class MultivariateShapelet implements TSClassifier {
             this.type = type;
             this.classifier = classifier;
         }
+
+    }
+
+    public static void main(String[] arg){
+        String m_local_path = "C:\\Users\\fbu19zru\\code\\Multivariate_ts\\";
+
+        String dataset = "BasicMotions";
+        String filepath = m_local_path + dataset + "\\" + dataset;
+
+        TSReader ts_reader = null;
+        try {
+            ts_reader = new TSReader(new FileReader(new File(filepath + "_TRAIN" + ".ts")));
+            TimeSeriesInstances ts_train_data = ts_reader.GetInstances();
+
+            ts_reader = new TSReader(new FileReader(new File(filepath + "_TEST" + ".ts")));
+            TimeSeriesInstances ts_test_data = ts_reader.GetInstances();
+            int f = ts_train_data.numInstances()*ts_test_data.getMaxLength()*ts_train_data.getMaxNumChannels();
+            System.out.println( "f= " + f);
+            ShapeletParams params = new ShapeletParams(100,10,23,
+                    ShapeletFilters.RANDOM, ShapeletQualities.ORDER_LINE, ShapeletDistances.EUCLIDEAN,
+                    ShapeletFactories.DEPENDANT,
+                    AuxClassifiers.ENSEMBLE);
+
+            MultivariateShapelet shapelet = new MultivariateShapelet(params);
+            shapelet.buildClassifier(ts_train_data);
+
+            double ok=0, wrong=0;
+            for (TimeSeriesInstance ts: ts_test_data){
+                double pred = shapelet.classifyInstance(ts);
+                if (ts.getTargetValue()==pred){
+                    ok++;
+                }else{
+                    wrong++;
+                }
+            }
+            System.out.println("Acc= " + ok/(ok+wrong));
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
     }
 }
