@@ -572,10 +572,6 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
 
         this.readResultsFilesDirectories = individualResultsFilesDirectories;
         this.datasetName = datasetName;
-
-        if (this.seedClassifier && this.seed != resampleIdentifier)
-            System.out.println("**************WARNING: have set the seed via setSeed() already, but now setting up to build the ensemble" +
-                    " from file with a different fold id identifier. Using the new value for future seeding operations");
         setSeed(resampleIdentifier);
     }
 

@@ -149,7 +149,7 @@ public class Experiments  {
             setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=1;
+            int folds=30;
             String[] settings=new String[9];
 
             /*
@@ -1004,6 +1004,8 @@ public class Experiments  {
         }
         System.out.println("Finished all threads");
     }
+
+
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {

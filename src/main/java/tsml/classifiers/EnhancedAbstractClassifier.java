@@ -20,16 +20,11 @@ package tsml.classifiers;
 import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
-import tsml.data_containers.TimeSeries;
-import tsml.data_containers.TimeSeriesInstances;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
-import evaluation.storage.ClassifierResults;
-import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 
@@ -171,27 +166,30 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     protected boolean estimateOwnPerformance = false;
 
-    /** If trainAccuracy is required, there are two options that can be implemented
-     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
-     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+    /** If trainAccuracy is required, there are three options that can be implemented
+     * All three options involve a two stage process: Fit whole model then estimate (which might mean fit more models)
+     *   1. trainEstimateMethod=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. trainEstimateMethod=OOB: build a single OOB model just to get the OOB predictions
+     *   3. trainEstimateMethod-TRAIN: use the data used to train the model to make predictions
      */
-    public enum EstimatorMethod{CV,OOB,NONE}
-    protected EstimatorMethod estimator=EstimatorMethod.NONE;
-    public void setEstimatorMethod(String str){
+    public enum TrainEstimateMethod {CV,OOB,TRAIN,NONE}
+    protected TrainEstimateMethod trainEstimateMethod = TrainEstimateMethod.NONE;
+    public void setTrainEstimateMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
+            trainEstimateMethod = TrainEstimateMethod.CV;
         else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else if(s.equals("NONE")) {
-            estimator = EstimatorMethod.NONE;
-        }
+            trainEstimateMethod = TrainEstimateMethod.OOB;
+        else if(s.equals("NONE"))
+            trainEstimateMethod = TrainEstimateMethod.NONE;
+        else if(s.equals("TRAIN"))
+            trainEstimateMethod = TrainEstimateMethod.TRAIN;
         else
             throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
     }
 
     public String getEstimatorMethod() {
-        return estimator.name();
+        return trainEstimateMethod.name();
     }
 
     //utilities for readability in setting the above bools via super constructor in subclasses

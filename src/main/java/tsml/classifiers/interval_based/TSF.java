@@ -26,7 +26,6 @@ import machine_learning.classifiers.ContinuousIntervalTree;
 import tsml.classifiers.*;
 import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
-import tsml.data_containers.utilities.TimeSeriesStatsTools;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -315,7 +314,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         result += ",EstimateOwnPerformance," + getEstimateOwnPerformance();
         if (getEstimateOwnPerformance())
-            result += ",EstimateMethod," + estimator;
+            result += ",EstimateMethod," + trainEstimateMethod;
         return result;
 
     }
@@ -789,7 +788,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         }
         //Either do a CV, or bag and get the estimates
-        else if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             // Defaults to 10 or numInstances, whichever is smaller.
             int numFolds = setNumberOfFolds(data);
             CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -811,7 +810,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             trainResults.setClassifierName("TSFCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
-        else if (estimator == EstimatorMethod.OOB) {
+        else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
             TSF tsf = new TSF();
             tsf.copyParameters(this);
@@ -1053,7 +1052,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             inBag = saved.inBag;
             oobCounts = saved.oobCounts;
             trainDistributions = saved.trainDistributions;
-            estimator = saved.estimator;
+            trainEstimateMethod = saved.trainEstimateMethod;
             checkpoint = saved.checkpoint;
             checkpointPath = saved.checkpointPath;
             checkpointTime = saved.checkpointTime;
@@ -1305,7 +1304,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         tsf.setTrainTimeLimit((long) 1.5e+10);
         //tsf.setSavePath("D:\\temp\\");
         tsf.setEstimateOwnPerformance(true);
-        tsf.setEstimatorMethod("OOB");
+        tsf.setTrainEstimateMethod("OOB");
         String[] options = new String[4];
         options[0] = "-T";
         options[1] = "10";
