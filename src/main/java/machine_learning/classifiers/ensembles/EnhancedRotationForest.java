@@ -344,6 +344,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     int c = (int)instance.classValue();
                     instancesOfClass[c].add( instance );
                 }
+                System.out.println(" SIZE of train data  = "+trainD.numInstances());
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
