@@ -244,21 +244,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         trainResults.setParas(getParameters());
 //HERE: If the base classifier can estimate its own performance, then lets do it here
         if(getEstimateOwnPerformance()){
-// if the classifier can estimate its own performance, do that. This is not yet in the time contract!
-            boolean doExternalCV=false;
-            doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
-            if(doExternalCV) {
-                printLineDebug("Doing a CV with base to estimate accuracy");
-                int numFolds = setNumberOfFolds(data);
-                CrossValidationEvaluator cv = new CrossValidationEvaluator();
-                cv.setSeed(seed * 12);
-                cv.setNumFolds(numFolds);
-                trainResults = cv.crossValidateWithStats(classifier, shapeletData);
-            }
-            else{//The classifier can handler it internally
-                throw new RuntimeException(("ERROR: internal estimates not sorted out yet"));
-
-            }
+            estimateOwnPerformance(data);
         }
 
     }
@@ -306,6 +292,20 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 
     private void estimateOwnPerformance(Instances data) throws Exception {
+        // if the classifier can estimate its own performance, do that. This is not yet in the time contract!
+        boolean doExternalCV=false;
+        doExternalCV=!((classifier instanceof EnhancedAbstractClassifier)&&((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance());
+        if(doExternalCV) {
+            printLineDebug("Doing a CV with base to estimate accuracy");
+            int numFolds = setNumberOfFolds(data);
+            CrossValidationEvaluator cv = new CrossValidationEvaluator();
+            cv.setSeed(seed * 12);
+            cv.setNumFolds(numFolds);
+            trainResults = cv.crossValidateWithStats(classifier, shapeletData);
+        }
+        else{
+            trainResults = ((EnhancedAbstractClassifier) classifier).getTrainResults();
+        }
 
     }
     private void copyParameters(ShapeletTransformClassifier other) {
