@@ -43,9 +43,9 @@ public class DataHandling {
          * Uncomment which function is needed depending on data file type.
          */
 
-        //dataHandlingWithARFF(); // .arff
+        dataHandlingWithARFF(); // .arff
 
-        dataHandlingWithTS(); // .ts
+        //dataHandlingWithTS(); // .ts
     }
 
     private static void dataHandlingWithARFF() throws Exception {
