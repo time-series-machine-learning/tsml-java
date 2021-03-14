@@ -24,6 +24,7 @@ import experiments.Experiments;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -33,6 +34,7 @@ import java.util.regex.Pattern;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
+import tsml.data_containers.utilities.TimeSeriesResampler;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.multivariate_tools.MultivariateInstanceTools;
@@ -115,14 +117,14 @@ public class DatasetLoading {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
 
+    public static TimeSeriesInstances[] sampleTSItalyPowerDemand(int seed) throws IOException {
+        return sampleTSDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
+    }
+
     public static Instances loadItalyPowerDemand() throws Exception {
         final Instances[] instances = sampleItalyPowerDemand(0);
         instances[0].addAll(instances[1]);
         return instances[0];
-    }
-
-    public static TimeSeriesInstances loadItalyPowerDemandTS() {
-
     }
 
     public static Instances[] sampleGunPoint(int seed) throws Exception {
@@ -466,10 +468,9 @@ public class DatasetLoading {
             inst = Converter.fromArff(new Instances(reader));
         }
         else if (extension.equalsIgnoreCase(TS)) {
-            tsml.data_containers.ts_fileIO.TSReader tsreader = new tsml.data_containers.ts_fileIO.TSReader(reader);
-            inst = tsreader.GetInstances();
+            tsml.data_containers.ts_fileIO.TSReader tsReader = new tsml.data_containers.ts_fileIO.TSReader(reader);
+            inst = tsReader.GetInstances();
         }
-
         reader.close();
 
         return inst;
@@ -483,6 +484,20 @@ public class DatasetLoading {
      */
     public static TimeSeriesInstances loadTSData(String fullPath) throws IOException {
         return loadTSData(new File(fullPath));
+    }
+
+    public static TimeSeriesInstances[] sampleTSDataset(String parentFolder, String problem, int fold) throws IOException {
+        TimeSeriesInstances[] split = new TimeSeriesInstances[2];
+
+        TimeSeriesInstances train = DatasetLoading.loadTSData(parentFolder + problem + "/" + problem + "_TRAIN.ts");
+        TimeSeriesInstances test = DatasetLoading.loadTSData(parentFolder + problem + "/" + problem + "_TEST.ts");
+
+        // We could then resample these, while maintaining train/test distributions, using this
+        TimeSeriesResampler.TrainTest trainTest = TimeSeriesResampler.resampleTrainTest(train, test, fold);
+        split[0] = trainTest.train;
+        split[1] = trainTest.test;
+
+        return split;
     }
 
 
