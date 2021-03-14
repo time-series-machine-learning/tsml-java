@@ -591,18 +591,9 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
                 else
                     current = searchFunction;
 
-                System.out.println(" time for case " + casesSoFar + " evaluate  " + seriesShapelets.size()
-                        + " but what about early ones?");
-                System.out.println(" Est time per shapelet  " + timePerShapelet / 1000000000 + " actual "
-                        + newTimePerShapelet / 1000000000);
-                shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
+              shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
                         newTimePerShapelet);
-                System.out.println("Changing number of shapelets sampled from "
-                        + searchFunction.getNumShapeletsPerSeries() + " to " + shapeletsSearchedPerSeries);
                 searchFunction.setNumShapeletsPerSeries(shapeletsSearchedPerSeries);
-                System.out.println("data : " + casesSoFar + " has " + seriesShapelets.size() + " candidates"
-                        + " cumulative early abandons " + numEarlyAbandons + " worst so far =" + worstShapelet
-                        + " evaluated this series = " + (seriesShapelets.size() + tempEA));
             }
             if (seriesShapelets != null) {
                 Collections.sort(seriesShapelets, shapeletComparator);
@@ -705,19 +696,19 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
                 else
                     current = searchFunction;
 
-                System.out.println(" time for case " + casesSoFar + " evaluate  " + seriesShapelets.size()
+/*                System.out.println(" time for case " + casesSoFar + " evaluate  " + seriesShapelets.size()
                         + " but what about early ones?");
                 System.out.println(" Est time per shapelet  " + timePerShapelet / 1000000000 + " actual "
                         + newTimePerShapelet / 1000000000);
-                shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
+*/                shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
                         newTimePerShapelet);
-                System.out.println("Changing number of shapelets sampled from "
+/*                System.out.println("Changing number of shapelets sampled from "
                         + searchFunction.getNumShapeletsPerSeries() + " to " + shapeletsSearchedPerSeries);
                 searchFunction.setNumShapeletsPerSeries(shapeletsSearchedPerSeries);
                 System.out.println("data : " + casesSoFar + " has " + seriesShapelets.size() + " candidates"
                         + " cumulative early abandons " + numEarlyAbandons + " worst so far =" + worstShapelet
                         + " evaluated this series = " + (seriesShapelets.size() + tempEA));
-            }
+*/            }
             if (seriesShapelets != null) {
                 Collections.sort(seriesShapelets, shapeletComparator);
                 if (isRemoveSelfSimilar())

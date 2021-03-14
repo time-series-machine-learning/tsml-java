@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 
-import scala.tools.nsc.Global;
+//import scala.tools.nsc.Global;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -1031,7 +1031,7 @@ public class InstanceTools {
     }
 
     public static int argmax(Instance inst){
-        double max = Double.MIN_VALUE;
+        double max = -99999999;
         int arg = -1;
         for (int j = 0; j < inst.numAttributes(); j++) {
             if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{

@@ -142,7 +142,7 @@ public class Catch22 implements Transformer {
 
         // can reduce amount of computation by pre-computing stats and transforms
         double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
+        double max = -99999999;
         double mean = 0;
         for (double v : arr) {
             if (v < min) {
@@ -207,7 +207,7 @@ public class Catch22 implements Transformer {
         if (seriesID != currentSeriesID) {
             currentSeriesID = seriesID;
             idxMin = Double.MAX_VALUE;
-            idxMax = Double.MIN_VALUE;
+            idxMax = -99999999;
             idxMean = Double.MIN_VALUE;
             idxFFT = null;
             idxAC = null;
@@ -385,7 +385,7 @@ public class Catch22 implements Transformer {
 
     public static double getSummaryStatByIndex(int summaryStatIndex, double[] series, boolean outlierNorm) {
         double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
+        double max = -99999999;
         double mean = Double.MIN_VALUE;
         Complex[] fft = null;
         double[] ac = null;

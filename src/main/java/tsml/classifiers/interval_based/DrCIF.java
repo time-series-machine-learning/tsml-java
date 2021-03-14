@@ -243,9 +243,10 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         if (trees != null) nt = trees.size();
         String temp=super.getParameters()+",numTrees,"+nt+",attSubsampleSize,"+attSubsampleSize+
                 ",outlierNorm,"+outlierNorm+",basicSummaryStats,"+useSummaryStats+",numIntervals,"+
-                Arrays.toString(numIntervals)+",minIntervalLength,"+Arrays.toString(minIntervalLength)+
-                ",maxIntervalLength,"+Arrays.toString(maxIntervalLength)+ ",baseClassifier,"+
-                base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+estimator.name()+
+                Arrays.toString(numIntervals).replace(',', ';')+",minIntervalLength,"+
+                Arrays.toString(minIntervalLength).replace(',', ';')+",maxIntervalLength,"+
+                Arrays.toString(maxIntervalLength).replace(',', ';')+",baseClassifier,"+
+                base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+ trainEstimateMethod.name()+
                 ",contractTime,"+contractTime;
         return temp;
     }
@@ -293,7 +294,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @param data TimeSeriesInstances object
      * @throws Exception unable to train model
      */
-    @Override //TSClassifier
+    @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         /** Build Stage:
          *  Builds the final classifier with or without bagging.
@@ -782,7 +783,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.finaliseResults(actuals);
         }
         //Either do a CV, or bag and get the estimates
-        else if(estimator== EstimatorMethod.CV){
+        else if(trainEstimateMethod == TrainEstimateMethod.CV){
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -802,8 +803,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.setClassifierName("DrCIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
-        else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
-            /** Build a single new TSF using Bagging, and extract the estimate from this
+        else if(trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE){
+            /** Build a single new DrCIF using Bagging, and extract the estimate from this
              */
             DrCIF cif=new DrCIF();
             cif.copyParameters(this);
@@ -1087,7 +1088,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             seed = saved.seed;
             rand = saved.rand;
             estimateOwnPerformance = saved.estimateOwnPerformance;
-            estimator = saved.estimator;
+            trainEstimateMethod = saved.trainEstimateMethod;
             numClasses = saved.numClasses;
 
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
@@ -1691,14 +1692,14 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception if tests fail
      */
     public static void main(String[] arg) throws Exception{
-        String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
+        String dataLocation="D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\";
         String problem="ItalyPowerDemand";
         Instances train= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
         Instances test= DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
         DrCIF c = new DrCIF();
         c.setSeed(0);
         c.estimateOwnPerformance = true;
-        c.estimator = EstimatorMethod.OOB;
+        c.trainEstimateMethod = TrainEstimateMethod.OOB;
         double a;
         long t1 = System.nanoTime();
         c.buildClassifier(train);

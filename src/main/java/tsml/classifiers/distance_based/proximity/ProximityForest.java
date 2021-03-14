@@ -17,7 +17,6 @@
  
 package tsml.classifiers.distance_based.proximity;
 
-import evaluation.MultipleClassifierEvaluation;
 import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
@@ -96,7 +95,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 proximityForest.setTrainTimeLimit(0);
                 proximityForest.setTestTimeLimit(0);
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
-                proximityForest.setEstimatorMethod("none");
+                proximityForest.setTrainEstimateMethod("none");
                 proximityForest.setNumTreeLimit(100);
                 proximityForest.setProximityTreeConfig(ProximityTree.Config.PT_R5);
                 proximityForest.setUseDistributionInVoting(false);
@@ -125,7 +124,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 return proximityForest;
             }
@@ -134,7 +133,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 return proximityForest;
             }
@@ -143,7 +142,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(false);
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
@@ -153,7 +152,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("OOB");
+                proximityForest.setTrainEstimateMethod("OOB");
                 proximityForest.setRebuildConstituentAfterEvaluation(true);
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
@@ -163,7 +162,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("CV");
+                proximityForest.setTrainEstimateMethod("CV");
                 return proximityForest;
             }
         },
@@ -171,7 +170,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             @Override
             public <B extends ProximityForest> B configureFromEnum(B proximityForest) {
                 proximityForest = PF_R5.configure(proximityForest);
-                proximityForest.setEstimatorMethod("CV");
+                proximityForest.setTrainEstimateMethod("CV");
                 proximityForest.setWeightTreesByTrainEstimate(true);
                 return proximityForest;
             }
@@ -202,7 +201,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     // the number of trees
     private int numTreeLimit;
     // the train time limit / contract
-    private transient long trainTimeLimitNanos;
+    private transient long trainContractTimeNanos;
+    //TODO George to integrate the boolean into the classifier logic
+    private boolean trainTimeContract = false;
+
+
     // the test time limit / contract
     private transient long testTimeLimitNanos;
     // the longest tree build time for predicting train time requirements
@@ -272,7 +275,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             constituents = new ArrayList<>();
             // zero tree build time so the first tree build will always set the bar
             longestTrainStageTimeNanos = 0;
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
         }
         // lap train timer
         trainTimer.lap();
@@ -282,7 +285,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 &&
                 insideTrainTimeLimit(trainTimer.getTime() + longestTrainStageTimeNanos)
         ) {
-            LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+            LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
             // reset the tree build timer
             trainStageTimer.resetAndStart();
             final int treeIndex = constituents.size();
@@ -295,7 +298,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             proximityTreeConfig.configure(tree);
             tree.setSeed(rand.nextInt());
             // estimate the performance of the tree
-            if(!estimator.equals(EstimatorMethod.NONE)) {
+            if(!trainEstimateMethod.equals(TrainEstimateMethod.NONE)) {
                 trainEstimateTimer.start();
                 // build train estimate based on method
                 final Evaluator evaluator = buildEvaluator();
@@ -314,7 +317,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 results.setErrorEstimateTime(trainStageTimer.getTime());
             }
             // build the tree if not producing train estimate OR rebuild after evaluation
-            if(estimator.equals(EstimatorMethod.NONE) || rebuildConstituentAfterEvaluation) {
+            if(trainEstimateMethod.equals(TrainEstimateMethod.NONE) || rebuildConstituentAfterEvaluation) {
                 logger.info(() -> "building tree " + treeIndex);
                 tree.setRebuild(true);
                 tree.buildClassifier(trainData);
@@ -328,7 +331,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // update train timer
             trainTimer.lap();
         }
-        LogUtils.logTimeContract(trainTimer.getTime(), trainTimeLimitNanos, logger, "train");
+        LogUtils.logTimeContract(trainTimer.getTime(), trainContractTimeNanos, logger, "train");
         // if work has been done towards estimating the train error
         if(estimateOwnPerformance && isRebuildTrainEstimateResults()) {
             trainEstimateTimer.start();
@@ -349,10 +352,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 final List<Integer> trainDataIndices;
                 final Instances dataInTrainEstimate;
                 // the train estimate data may be different depending on the evaluation method
-                if(estimator.equals(EstimatorMethod.OOB)) {
+                if(trainEstimateMethod.equals(TrainEstimateMethod.OOB)) {
                     dataInTrainEstimate = ((OutOfBagEvaluator) evaluator).getOutOfBagTestData();
                     trainDataIndices = ((OutOfBagEvaluator) evaluator).getOutOfBagTestDataIndices();
-                } else if(estimator.equals(EstimatorMethod.CV)) {
+                } else if(trainEstimateMethod.equals(TrainEstimateMethod.CV)) {
                     dataInTrainEstimate = trainData;
                     trainDataIndices = ArrayUtilities.sequence(trainData.size());
                 } else {
@@ -486,12 +489,21 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 
     @Override
     public long getTrainTimeLimit() {
-        return trainTimeLimitNanos;
+        return trainContractTimeNanos;
     }
 
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override
     public void setTrainTimeLimit(final long nanos) {
-        trainTimeLimitNanos = nanos;
+        trainContractTimeNanos = nanos;
+        trainTimeContract=true;
+    }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
     @Override

@@ -21,6 +21,7 @@ package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.tuning.ParameterSpace;
@@ -29,8 +30,11 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
 import tsml.classifiers.dictionary_based.BOSS;
+import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
+import tsml.classifiers.distance_based.proximity.ProximityForest;
+import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -204,6 +208,66 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
 
+
+
+    public void setupHIVE_COTE_2_0() {
+        this.ensembleName = "HIVE-COTE 2.0";
+
+        this.weightingScheme = new TrainAcc(4);
+        this.votingScheme = new MajorityConfidence();
+        this.transform = null;
+
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+        cv.setNumFolds(10);
+        this.trainEstimator = cv;
+
+        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+        DrCIF cif= new DrCIF();
+        ProximityForest pf=new ProximityForest();
+        Arsenal afc = new Arsenal();
+        TDE tde= new TDE();
+
+        String[] classifierNames = new String[5];
+        classifierNames[0] = "STC";
+        classifierNames[1] = "DrCIF";
+        classifierNames[2] = "PF";
+        classifierNames[3] = "Arsenal";
+        classifierNames[4] = "TDE";
+        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[5];
+        classifiers[0]=stc;
+        classifiers[1]=cif;
+        classifiers[2]=pf;
+        classifiers[3]=afc;
+        classifiers[4]=tde;
+
+
+        stc.setEstimateOwnPerformance(true);
+
+        cBOSS boss = new cBOSS();
+        boss.setEstimateOwnPerformance(true);
+        classifiers[2] = boss;
+
+        TSF tsf = new TSF();
+        classifiers[3] = tsf;
+        classifierNames[3] = "TSF";
+        tsf.setEstimateOwnPerformance(true);
+
+        try {
+            setClassifiers(classifiers, classifierNames, null);
+        } catch (Exception e) {
+            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
+                    + "be fixed before continuing");
+            System.exit(1);
+        }
+
+        setSeed(seed);
+
+        if(trainTimeContract)
+            setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
+    }
+
+
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         if(debug) {
@@ -260,13 +324,21 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      *      i.e. even if it can run the building of two or more classifiers in parallel, 
      *      this will still naively set the contract per classifier as amount/numClassifiers
      */
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
         trainTimeContract = true;
         trainContractTimeNanos = amount;
         contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     }
-    
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
     /**
      * Sets up the ensemble for contracting, to be called at the start of build classifier,
      * i.e. when parameters can no longer be changed.
@@ -342,16 +414,14 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public String getParameters() {
-        String str="WeightingScheme,"+weightingScheme+",";//+alpha;
+        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",";//+alpha;
+
         for (EnsembleModule module : modules)
-            str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
-        for (EnsembleModule module : modules) {
-            if (module.getClassifier() instanceof EnhancedAbstractClassifier)
-                str += ((EnhancedAbstractClassifier) module.getClassifier()).getParameters();
-            else
-                str += "NoParaInfo,";
-            str += ",,";
-        }
+            str+=module.getModuleName()+","+module.posteriorWeights[0]+",";
+
+        for (EnsembleModule module : modules)
+            str += module.getParameters() + ",,";
+
         return str;
 
     }

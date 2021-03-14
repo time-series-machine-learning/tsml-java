@@ -43,7 +43,7 @@ public interface TrainTimeContractable {
      * @param start classifier build start time
      * @return true if classifier is within the train time contract, false otherwise
      */
-    default boolean withinTrainContract(long start){ return false;}
+    boolean withinTrainContract(long start);
 
     default void setOneDayLimit(){ setTrainTimeLimit(TimeUnit.DAYS, 1); }
     

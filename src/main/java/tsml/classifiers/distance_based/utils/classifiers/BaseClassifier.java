@@ -22,9 +22,6 @@ import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Assert;
@@ -33,15 +30,13 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import utilities.ArrayUtilities;
-import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Purpose: base classifier implementing all common interfaces. Note, this is only for implementation ubiquitous to
- * *every single classifier*. Don't add any optional / unused interface implementation, that should be done via mixins
- * in your concrete class.
+ * Purpose: base classifier implementing all common interfaces for the classifiers.distance_based.
+ * Note, this is only for distance based classifiers, which currently run a parallel code structure to the other classifiers
+ * there is duplication here that could be removed (e.g. TrainEstimateable and seedSet variable)
  * <p>
  * Contributors: goastler
  */
@@ -64,7 +59,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     protected Evaluator buildEvaluator() {
-        switch(estimator) {
+        switch(trainEstimateMethod) {
             case OOB:
                 final OutOfBagEvaluator outOfBagEvaluator = new OutOfBagEvaluator();
                 outOfBagEvaluator.setCloneClassifier(false);
@@ -77,7 +72,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
                 crossValidationEvaluator.setSetClassMissing(false);
                 return crossValidationEvaluator;
             default:
-                throw new UnsupportedOperationException("cannot handle " + estimator);
+                throw new UnsupportedOperationException("cannot handle " + trainEstimateMethod);
         }
     }
 
@@ -110,7 +105,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             }
             return msg;
         });
-        if(estimateOwnPerformance && estimator.equals(EstimatorMethod.NONE)) {
+        if(estimateOwnPerformance && trainEstimateMethod.equals(TrainEstimateMethod.NONE)) {
             throw new IllegalStateException("estimator method NONE but estimate own performance enabled!");
         }
         if(rebuild) {

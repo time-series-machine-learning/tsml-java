@@ -32,7 +32,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
 /**
  * Examples to show the method for building clusterers and basic usage.
  * 
- * @author Matthew Middlehurst (m.middlehurst@uea.ac.uk)
+ * @author Matthew Middlehurst
  */
 public class Clusterers {
 
