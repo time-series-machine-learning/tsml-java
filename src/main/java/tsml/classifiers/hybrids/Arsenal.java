@@ -237,7 +237,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
         if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
-            estimateOwnPerformance(data);
+            findEnsembleTrainEstimate(data);
             long est2 = System.nanoTime();
             trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
         }
@@ -245,7 +245,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setParas(getParameters());
     }
 
-    private void estimateOwnPerformance(Instances data) throws Exception {
+    private void findEnsembleTrainEstimate(Instances data) throws Exception {
         if (bagging){
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
@@ -265,7 +265,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setClassifierName("ArsenalOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
+        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something
@@ -284,7 +284,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setClassifierName("ArsenalCV");
             trainResults.setErrorEstimateMethod("CV_10"); //numfolds
         }
-        else if (estimator == EstimatorMethod.OOB) {
+        else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             Arsenal ar = new Arsenal();
             ar.copyParameters(this);
             ar.setSeed(seed*5);
