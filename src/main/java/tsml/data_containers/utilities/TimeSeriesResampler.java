@@ -74,7 +74,9 @@ public class TimeSeriesResampler {
         newTrain.setDescription(train.getDescription());
         newTest.setDescription(test.getDescription());
 
-        // TODO: this does not copy over the class counts.
+        // set class counts
+        train.getClassCounts();
+        test.getClassCounts();
 
         return new TrainTest(newTrain, newTest);
     }
