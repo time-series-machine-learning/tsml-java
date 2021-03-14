@@ -492,7 +492,6 @@ public class DatasetLoading {
         TimeSeriesInstances train = DatasetLoading.loadTSData(parentFolder + problem + "/" + problem + "_TRAIN.ts");
         TimeSeriesInstances test = DatasetLoading.loadTSData(parentFolder + problem + "/" + problem + "_TEST.ts");
 
-        // We could then resample these, while maintaining train/test distributions, using this
         TimeSeriesResampler.TrainTest trainTest = TimeSeriesResampler.resampleTrainTest(train, test, fold);
         split[0] = trainTest.train;
         split[1] = trainTest.test;
