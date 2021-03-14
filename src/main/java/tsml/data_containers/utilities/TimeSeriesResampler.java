@@ -64,7 +64,7 @@ public class TimeSeriesResampler {
         }
 
         TimeSeriesInstances newTrain = new TimeSeriesInstances(new_train, train.getClassLabels());
-        TimeSeriesInstances newTest = new TimeSeriesInstances(new_train, test.getClassLabels());
+        TimeSeriesInstances newTest = new TimeSeriesInstances(new_test, test.getClassLabels());
 
         // set problem name
         newTrain.setProblemName(train.getProblemName());
