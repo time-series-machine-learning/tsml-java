@@ -1,11 +1,11 @@
 package tsml.classifiers.distance_based.utils.collections.params.dimensions;
 
-import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * hold the parameter dimension. In here should be a method of retreiving values for the given parameter along
@@ -15,57 +15,30 @@ import java.util.List;
 public abstract class ParamDimension<A> implements Serializable {
 
     // list of subspaces to explore
-    private List<ParamSpace> subSpaces;
-    // some type holding the values for this dimension. This would usually be a list.
-    private A values;
+    private ParamSpace subSpace;
 
-    public ParamDimension(A values) {
-        this(values, new ArrayList<>());
+    public ParamDimension() {
+        this(new ParamSpace());
     }
 
-    public ParamDimension(A values, List<ParamSpace> subSpaces) {
-        setValues(values);
-        setSubSpaces(subSpaces);
+    public ParamDimension(ParamSpace subSpace) {
+        setSubSpace(subSpace);
     }
 
     @Override
     public String toString() {
-        String subSpacesString = "";
-        if(!getSubSpaces().isEmpty()) {
-            subSpacesString = ", subSpaces=" + subSpaces;
+        if(!getSubSpace().isEmpty()) {
+            return ", subSpace=" + subSpace;
         }
-        return "{" +
-            "values=" + values +
-            subSpacesString +
-            '}';
+        return "";
     }
 
-    public List<ParamSpace> getSubSpaces() {
-        return subSpaces;
+    public ParamSpace getSubSpace() {
+        return subSpace;
     }
 
-    public void setSubSpaces(final List<ParamSpace> subSpaces) {
-        Assert.assertNotNull(subSpaces);
-        this.subSpaces = subSpaces;
-    }
-
-
-    public A getValues() {
-        return values;
-    }
-
-    public ParamDimension<A> setValues(final A values) {
-        Assert.assertNotNull(values);
-        this.values = values;
-        return this;
-    }
-
-    public void addSubSpace(ParamSpace subSpace) {
-        getSubSpaces().add(subSpace);
-    }
-
-    public void addValue(A values) {
-        this.values = values;
+    public void setSubSpace(final ParamSpace subSpace) {
+        this.subSpace = Objects.requireNonNull(subSpace);
     }
 
 }

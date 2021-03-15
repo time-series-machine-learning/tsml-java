@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
-import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 
@@ -11,8 +10,6 @@ import java.util.Objects;
 public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable {
     
     private ParamSpace paramSpace;
-    private boolean hasNextCalled;
-    private boolean hasNext;
     private int iterationCount;
     
     @Override
@@ -22,7 +19,6 @@ public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable
 
     public void buildSearch(ParamSpace paramSpace) {
         this.paramSpace = Objects.requireNonNull(paramSpace);
-        hasNextCalled = false;
         iterationCount = 0;
     }
 
@@ -35,15 +31,12 @@ public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable
     protected abstract ParamSet nextParamSet();
     
     @Override public final boolean hasNext() {
-        if(hasNextCalled) {
-            return hasNext;
-        }
         if(paramSpace == null) throw new IllegalStateException("param space search has not been built");
-        return hasNext = hasNextParamSet();
+        return hasNextParamSet();
     }
 
     @Override public final ParamSet next() {
-        if(!hasNext) {
+        if(!hasNext()) {
             throw new IllegalStateException("hasNext false");
         }
         final ParamSet paramSet = nextParamSet();
@@ -54,4 +47,6 @@ public abstract class AbstractSearch implements Iterator<ParamSet>, Serializable
     public int getIterationCount() {
         return iterationCount;
     }
+    
+    public abstract int size();
 }

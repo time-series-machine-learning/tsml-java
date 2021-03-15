@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.collections.params.dimensions.disc
 
 import org.junit.Assert;
 import org.junit.Test;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceTest;
@@ -15,11 +16,11 @@ import java.util.Set;
  * <p>
  * Contributors: goastler
  */
-public class IndexedParamSpaceTest {
+public class GridParamSpaceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNonDiscreteParameterDimensionException() {
-        IndexedParamSpace space = new IndexedParamSpace(new ParamSpaceTest().buildLParams());
+        GridParamSpace space = new GridParamSpace(new ParamSpaceTest().buildLParams());
         for(int i = 0; i < space.size(); i++) {
             space.get(i);
         }
@@ -27,28 +28,26 @@ public class IndexedParamSpaceTest {
 
     @Test
     public void testUniquePermutations() {
-        IndexedParamSpace space = new IndexedParamSpace(new ParamSpaceTest().buildWParams());
+        GridParamSpace space = new GridParamSpace(new ParamSpaceTest().buildWParams());
         int size = space.size();
-        Set<ParamSet> paramSets = new HashSet<>();
+        Set<ParamSet> set = new HashSet<>();
         for(int i = 0; i < size; i++) {
             ParamSet paramSet = space.get(i);
-            boolean added = paramSets.add(paramSet);
-//            System.out.println(paramSet);
-            if(!added) {
-                Assert.fail("duplicate parameter set: " + paramSet);
-            }
+            boolean added = set.add(paramSet);
+            if(!added) Assert.fail("duplicate parameter set: " + paramSet);
         }
+        Assert.assertEquals(space.size(), set.size());
     }
 
     @Test
     public void testEquals() {
         ParamSpace wParams = new ParamSpaceTest().buildWParams();
-        IndexedParamSpace a = new IndexedParamSpace(wParams);
-        IndexedParamSpace b = new IndexedParamSpace(wParams);
+        GridParamSpace a = new GridParamSpace(wParams);
+        GridParamSpace b = new GridParamSpace(wParams);
         ParamSpace alt = new ParamSpace();
-        alt.add("letters", new DiscreteParamDimension<>(Arrays.asList("a", "b", "c")));
-        IndexedParamSpace c = new IndexedParamSpace(alt);
-        IndexedParamSpace d = new IndexedParamSpace(alt);
+        alt.add(new ParamMap().add("letters", new DiscreteParamDimension<>(Arrays.asList("a", "b", "c"))));
+        GridParamSpace c = new GridParamSpace(alt);
+        GridParamSpace d = new GridParamSpace(alt);
         Assert.assertEquals(a, b);
         Assert.assertEquals(a.hashCode(), b.hashCode());
         Assert.assertEquals(c, d);

@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.collections.params.iteration;
 import tsml.classifiers.distance_based.utils.collections.iteration.LinearIterator;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.IndexedParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.GridParamSpace;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -12,18 +12,18 @@ import tsml.classifiers.distance_based.utils.collections.params.dimensions.discr
  */
 public class GridSearch extends AbstractSearch {
 
-    private IndexedParamSpace indexedParamSpace;
+    private GridParamSpace gridParamSpace;
     private final LinearIterator<ParamSet> iterator = new LinearIterator<>();
 
     public GridSearch() {}
 
-    public IndexedParamSpace getIndexedParamSpace() {
-        return indexedParamSpace;
+    public GridParamSpace getIndexedParamSpace() {
+        return gridParamSpace;
     }
 
     private void setParamSpace(final ParamSpace paramSpace) {
-        indexedParamSpace = new IndexedParamSpace(paramSpace);
-        iterator.buildIterator(indexedParamSpace);
+        gridParamSpace = new GridParamSpace(paramSpace);
+        iterator.buildIterator(gridParamSpace);
     }
 
     @Override public void buildSearch(final ParamSpace paramSpace) {
@@ -33,7 +33,7 @@ public class GridSearch extends AbstractSearch {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "paramSpace=" + indexedParamSpace.getParamSpace().toString() + "}";
+        return getClass().getSimpleName() + "paramSpace=" + gridParamSpace.getParamSpace().toString() + "}";
     }
 
     @Override
@@ -47,7 +47,7 @@ public class GridSearch extends AbstractSearch {
     }
 
     public int size() {
-        return indexedParamSpace.size();
+        return gridParamSpace.size();
     }
 
 }

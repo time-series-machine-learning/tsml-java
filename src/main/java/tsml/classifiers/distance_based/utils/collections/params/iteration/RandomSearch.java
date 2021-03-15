@@ -2,14 +2,16 @@ package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
 import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.IndexedParamSpace;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.continuous.ContinuousParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.GridParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -26,6 +28,7 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     private int iterationLimit = DEFAULT_ITERATION_LIMIT;
     private final RandomIterator<ParamSet> randomIterator = new BaseRandomIterator<>();
     private boolean discrete;
+    private GridParamSpace gridParamSpace; // only used if paramspace is discrete
 
     public RandomSearch() {
         setWithReplacement(false);
@@ -39,18 +42,26 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
         return randomIterator.getRandom();
     }
 
+    @Override public void setSeed(final int seed) {
+        randomIterator.setSeed(seed);
+    }
+
+    @Override public int getSeed() {
+        return randomIterator.getSeed();
+    }
+
     @Override public void buildSearch(final ParamSpace paramSpace) {
         super.buildSearch(paramSpace);
-        if(randomIterator.getRandom() == null) throw new IllegalStateException("random not set");
+        checkRandom();
+
         // is the param space discrete?
-        try {
+        gridParamSpace = null;
+        discrete = GridParamSpace.isDiscrete(paramSpace);
+        if(discrete) {
             // if so then build the random iterator
-            randomIterator.buildIterator(new IndexedParamSpace(paramSpace));
-            discrete = true;
-        } catch(IllegalArgumentException e) {
-            // param space is not discrete. Do not use the random iterator
-            discrete = false;
-        }
+            gridParamSpace = new GridParamSpace(paramSpace);
+            randomIterator.buildIterator(gridParamSpace);
+        } // else param space is not discrete. Do not use the random iterator
     }
 
     public boolean hasIterationLimit() {
@@ -62,12 +73,14 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     }
     
     @Override protected boolean hasNextParamSet() {
-        return insideIterationCountLimit() && (!discrete || randomIterator.hasNext());
+        return insideIterationCountLimit() && (!discrete || getParamSpace().isEmpty() || randomIterator.hasNext());
     }
 
     @Override protected ParamSet nextParamSet() {
         // if dealing with a discrete space
-        if(discrete) {
+        if(getParamSpace().isEmpty()) {
+            return new ParamSet();
+        } else if(discrete) {
             // then use the random iterator to iterate over it
             return randomIterator.next();
         } else {
@@ -77,41 +90,39 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     }
 
     /**
-     * CAUTION: this may return an item within a list, therefore mutations of said item will modify the same instance in the list!
-     * @param values
+     * 
      * @param random
      * @return
      */
-    private static Object extractRandomValue(Object values, Random random) {
+    private static Object extractRandomValue(ParamDimension<?> dimension, Random random) {
         final Object value;
-        if(values instanceof Distribution<?>) {
-            Distribution<?> distribution = (Distribution<?>) values;
+        if(dimension instanceof ContinuousParamDimension<?>) {
+            Distribution<?> distribution = ((ContinuousParamDimension<?>) dimension).getDistribution();
             // same as below, but a distribution should make a new instance of the value already. Take a copy just in case.
             value = distribution.sample(random);
-        } else if(values instanceof List<?>) {
-            List<?> list = (List<?>) values;
+        } else if(dimension instanceof DiscreteParamDimension<?>) {
+            List<?> list = ((DiscreteParamDimension<?>) dimension).getValues();
             value = RandomUtils.choice(list, random);
         } else {
-            throw new IllegalArgumentException("cannot handle type {" + values.getClass() + "} for dimension content");
+            throw new IllegalArgumentException("cannot handle dimension of type " + dimension.getClass().getSimpleName());
         }
         return value;
     }
 
     public static ParamSet extractRandomParamSet(ParamSpace paramSpace, Random random) {
-        final Map<String, List<ParamDimension<?>>> dimensionMap = paramSpace.getDimensionMap();
         final ParamSet paramSet = new ParamSet();
-        for(Map.Entry<String, List<ParamDimension<?>>> entry : dimensionMap.entrySet()) {
+        if(paramSpace.isEmpty()) {
+            return paramSet;
+        }
+        final ParamMap paramMap = RandomUtils.choice(paramSpace, random);
+        for(Map.Entry<String, List<ParamDimension<?>>> entry : paramMap.entrySet()) {
             final String name = entry.getKey();
             List<ParamDimension<?>> dimensions = entry.getValue();
             ParamDimension<?> dimension = RandomUtils.choice(dimensions, random);
-            final Object value = extractRandomValue(dimension.getValues(), random);
-            final List<ParamSpace> subSpaces = dimension.getSubSpaces();
-            final List<ParamSet> subParamSets = new ArrayList<>(subSpaces.size());
-            for(ParamSpace subSpace : subSpaces) {
-                final ParamSet subParamSet = extractRandomParamSet(subSpace, random);
-                subParamSets.add(subParamSet);
-            }
-            paramSet.add(name, value, subParamSets);
+            final Object value = extractRandomValue(dimension, random);
+            final ParamSpace subSpace = dimension.getSubSpace();
+            final ParamSet subParamSet = extractRandomParamSet(subSpace, random);
+            paramSet.add(name, value, subParamSet);
         }
         return paramSet;
     }
@@ -132,8 +143,8 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
     public static List<ParamSet> choice(ParamSpace paramSpace, Random random, int numChoices) {
         final RandomSearch iterator = new RandomSearch();
         iterator.setRandom(random);
-        iterator.buildSearch(paramSpace);
         iterator.setIterationLimit(numChoices);
+        iterator.buildSearch(paramSpace);
         return RandomUtils.choice(iterator, numChoices);
     }
 
@@ -143,5 +154,15 @@ public class RandomSearch extends AbstractSearch implements RandomIterator<Param
 
     @Override public void setWithReplacement(final boolean withReplacement) {
         randomIterator.setWithReplacement(withReplacement);
+    }
+
+    @Override public int size() {
+        int size = iterationLimit;
+        if(getParamSpace().isEmpty()) {
+            size = Math.min(size, 1);
+        } else if(discrete) {
+            size = Math.min(size, gridParamSpace.size());
+        }
+        return size;
     }
 }
