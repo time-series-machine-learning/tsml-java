@@ -40,7 +40,6 @@ public class InternalEstimateEvaluator extends Evaluator {
         eac.buildClassifier(insts);
 
         ClassifierResults res = eac.getTrainResults();
-        res.findAllStatsOnce();
 
         return res;
     }
