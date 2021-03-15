@@ -4,24 +4,24 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class IntervalTest {
+public class IntIntervalTest {
 
-    private Interval interval;
+    private IntInterval interval;
     private int start;
     private int length;
 
     @Before
     public void before() {
-        interval = new Interval();
+        interval = new IntInterval();
         this.start = 50;
         this.length = 11;
         interval.setStart(start);
-        interval.setLength(length);
+        interval.setEnd(length + start - 1);
     }
 
     @Test
     public void testIntervalSize() {
-        Assert.assertEquals(length, interval.size());
+        Assert.assertEquals(length, (long) interval.size());
     }
 
     @Test

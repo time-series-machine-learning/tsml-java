@@ -1,8 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.intervals;
 
-import experiments.data.DatasetLoading;
 import weka.core.Attribute;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -10,11 +8,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 
 public class IntervalInstance implements Instance {
-    public IntervalInstance(Interval interval, Instance instance) {
+    public IntervalInstance(IntInterval interval, Instance instance) {
         this(instance, interval);
     }
 
-    public IntervalInstance(final Instance instance, Interval interval) {
+    public IntervalInstance(final Instance instance, IntInterval interval) {
         setDataset(instance.dataset());
         setInterval(interval);
         setInstance(instance);
@@ -26,14 +24,14 @@ public class IntervalInstance implements Instance {
     }
 
     private Instance instance;
-    private Interval interval;
+    private IntInterval interval;
     private Instances dataset;
 
-    public Interval getInterval() {
+    public IntInterval getInterval() {
         return interval;
     }
 
-    public void setInterval(final Interval interval) {
+    public void setInterval(final IntInterval interval) {
         this.interval = interval;
     }
 
