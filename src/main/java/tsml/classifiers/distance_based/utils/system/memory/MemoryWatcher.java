@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.system.memory;
 
-import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
 
 import javax.management.ListenerNotFoundException;
@@ -15,6 +14,7 @@ import java.lang.management.MemoryUsage;
 import java.util.*;
 
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
+import utilities.Utilities;
 
 /**
  * Purpose: watch the memory whilst enabled, tracking the mean, std dev, count, gc time and max mem usage.
@@ -26,15 +26,54 @@ import tsml.classifiers.distance_based.utils.system.timing.Stated;
  */
 public class MemoryWatcher extends Stated implements MemoryWatchable {
 
+    public static void main(String[] args) {
+        final MemoryWatcher memoryWatcher = new MemoryWatcher();
+        memoryWatcher.start();
+        final LinkedList<double[]> list = new LinkedList<>();
+        int i = 0;
+        while(true) {
+            i++;
+            Utilities.sleep(1);
+            list.add(new double[1000]);
+//            System.out.println(list.size());
+            if(i % 10 == 0) {
+                list.remove(0);
+            }
+            if(i % 10000 == 0) {
+                System.out.println(memoryWatcher.getMaxMemoryUsage());
+            }
+        }
+    }
+    
+    public synchronized void update() {
+        // deliberately update memory usage using the used memory AT THE TIME OF INVOCATION. I.e. not necessarily the time of max memory usage!
+        // we do this to work around the cases where the gc hasn't run, therefore we don't know the max memory over time
+        // instead, we poll the memory usage at the current time
+        if(maxMemoryUsage < 0) {
+            maxMemoryUsage = Math.max(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), maxMemoryUsage);
+        }
+    }
+    
     public synchronized long getMaxMemoryUsage() {
+        update();
         return maxMemoryUsage;
     }
 
     private long maxMemoryUsage = -1;
     private transient NotificationListener listener = this::handleNotification;
+    private boolean activeListener = false;
+    
+    public MemoryWatcher() {}
 
-    public MemoryWatcher() {
-        
+    @Override public void start() {
+        addListener();
+        super.start();
+    }
+
+    @Override public void stop() {
+        MemoryWatchable.gc(); // clean up memory before stopping
+        removeListener();
+        super.stop();
     }
 
     private void addListener() {
@@ -51,9 +90,12 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
              */
             emitter.addNotificationListener(listener, null, null);
         }
+        
+        if(activeListener) throw new IllegalStateException("listener already active");
+        activeListener = true;
     }
     
-    private void removeListener() throws ListenerNotFoundException {
+    private void removeListener() {
         // emitters are used to listen to each memory pool (usually young / old gen).
         // garbage collector for old and young gen
         List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
@@ -61,8 +103,16 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             // to log
             // listen to notification from the emitter
             NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
-            emitter.removeNotificationListener(listener);
+            try {
+                emitter.removeNotificationListener(listener);
+            } catch(ListenerNotFoundException ignored) {
+                // nevermind, already been removed
+                System.out.println("failed to remove listener");
+            }
         }
+
+        if(!activeListener) throw new IllegalStateException("listener already inactive");
+        activeListener = false;
     }
     
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
@@ -73,96 +123,35 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         if(isStarted()) {
             super.stop();
         }
-        
-        // when loading from serialisation, the listener is not preserved, therefore need to listen to memory again.
-        addListener();
 
-    }
-
-    @Override protected void finalize() throws Throwable {
-        super.finalize();
-        removeListener();
     }
 
     private synchronized void handleNotification(final Notification notification, final Object handback) {
-        if(MemoryWatcher.this.isStarted()) {
-            if(notification.getType()
-                       .equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
-                GarbageCollectionNotificationInfo info =
-                        GarbageCollectionNotificationInfo
-                                .from((CompositeData) notification.getUserData());
-                Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
-                for(Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
-                    MemoryUsage memoryUsageSnapshot = entry.getValue();
-                    long memoryUsage = memoryUsageSnapshot.getUsed();
-                    maxMemoryUsage = Math.max(memoryUsage, maxMemoryUsage);
-                }
+        if(notification.getType()
+                   .equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+            GarbageCollectionNotificationInfo info =
+                    GarbageCollectionNotificationInfo
+                            .from((CompositeData) notification.getUserData());
+            for(Map.Entry<String, MemoryUsage> entry : info.getGcInfo().getMemoryUsageAfterGc().entrySet()) {
+                MemoryUsage memoryUsageSnapshot = entry.getValue();
+                long memoryUsage = memoryUsageSnapshot.getUsed();
+                maxMemoryUsage = Math.max(memoryUsage, maxMemoryUsage);
+            }
+            for(Map.Entry<String, MemoryUsage> entry : info.getGcInfo().getMemoryUsageAfterGc().entrySet()) {
+                MemoryUsage memoryUsageSnapshot = entry.getValue();
+                long memoryUsage = memoryUsageSnapshot.getUsed();
+                maxMemoryUsage = Math.max(memoryUsage, maxMemoryUsage);
             }
         }
     }
-
-    public synchronized void checkStopped() {
-        super.checkStopped();
-    }
-
-    public synchronized void checkStarted() {
-        super.checkStarted();
-    }
-
-    @Override public synchronized void start() {
-        super.start();
-    }
-
-    @Override public synchronized boolean isStopped() {
-        return super.isStopped();
-    }
-
-    @Override public synchronized void stop() {
-        super.stop();
-    }
-
-    @Override public synchronized void resetAndStart() {
-        super.resetAndStart();
-    }
-
-    @Override public synchronized void stopAndReset() {
-        super.stopAndReset();
-    }
-
-    @Override public synchronized void optionalStart() {
-        super.optionalStart();
-    }
-
-    @Override public synchronized void optionalStop() {
-        super.optionalStop();
-    }
-
-    public synchronized boolean isStarted() {
-        return super.isStarted();
-    }
-
+    
     @Override
     public String toString() {
-        return "maxMemory: " + maxMemoryUsage;
-    }
-
-    @Override
-    public synchronized void reset() {
-        super.reset();
+        return "maxMemory: " + getMaxMemoryUsage();
     }
 
     public synchronized void onReset() {
-        maxMemoryUsage = 0;
-    }
-
-    /**
-     * this cleans the memory by forcing the garbage collector invocation. Guava's finalization tools not only invoke
-     * the gc but also create a weak ref and continue to invoke the gc until said weak ref is cleaned up. The theory
-     * here is if the most recently created weak ref has been cleaned up, all older memory should have already been
-     * dealt with / cleaned up as matter of priority over the latest memory allocation.
-     */
-    public void cleanup() {
-        GcFinalization.awaitFullGc();
+        maxMemoryUsage = -1;
     }
 
 }
