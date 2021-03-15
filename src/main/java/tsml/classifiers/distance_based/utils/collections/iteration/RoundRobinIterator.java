@@ -33,7 +33,7 @@ public class RoundRobinIterator<A> extends LinearIterator<A> {
         }
     }
 
-    @Override protected boolean findHasNext() {
+    protected boolean findHasNext() {
         return !getList().isEmpty();
     }
 

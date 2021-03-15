@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.utils.collections.iteration;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -10,14 +11,14 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
     private int nextIndex = -1;
     private List<A> list;
     private boolean findNextIndex = true;
-    private boolean hasNext;
-    private boolean findHasNext = true;
     
     public AbstractListIterator(List<A> list) {
         buildIterator(list);
     }
     
-    public AbstractListIterator() {}
+    public AbstractListIterator() {
+        
+    }
     
     protected int getIndex() {
         return index;
@@ -26,7 +27,6 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
     protected void setIndex(int index) {
         this.index = index;
         findNextIndex = true;
-        findHasNext = true;
     }
     
     @Override public A next() {
@@ -45,16 +45,14 @@ public abstract class AbstractListIterator<A> implements DefaultListIterator<A>,
         return nextIndex;
     }
 
-    @Override final public boolean hasNext() {
-        if(findHasNext) {
-            if(list == null) throw new IllegalStateException("iterator has not been built, list is null");
-            hasNext = findHasNext();
-            findHasNext = false;
+    @Override public final boolean hasNext() {
+        if(list == null) {
+            throw new IllegalStateException("iterator not built");
         }
-        return hasNext;
+        return !list.isEmpty() && findHasNext();
     }
     
-    abstract protected boolean findHasNext();
+    protected abstract boolean findHasNext();
 
     abstract protected int findNextIndex();
 

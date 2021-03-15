@@ -18,8 +18,26 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     private boolean withReplacement;
     private List<Integer> indices;
     private int indexOfIndex = -1;
-    private Random random;
-    
+    private Random random = null;
+    private int seed;
+
+    @Override public Random getRandom() {
+        return random;
+    }
+
+    @Override public void setRandom(final Random random) {
+        this.random = random;
+    }
+
+    @Override public int getSeed() {
+        return seed;
+    }
+
+    @Override public void setSeed(final int seed) {
+        this.seed = seed;
+        setRandom(new Random(seed));
+    }
+
     public BaseRandomIterator() {
         setWithReplacement(false);
     }
@@ -40,7 +58,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
     @Override public void buildIterator(final List<A> list) {
         super.buildIterator(list);
         indices = sequence(list.size());
-        Objects.requireNonNull(random);
+        if(random == null) throw new IllegalStateException("random / seed not set");
     }
 
     @Override protected int findNextIndex() {
@@ -58,8 +76,7 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
         return element;
     }
 
-    @Override
-    protected boolean findHasNext() {
+    @Override protected boolean findHasNext() {
         return !indices.isEmpty();
     }
 
@@ -73,14 +90,6 @@ public class BaseRandomIterator<A> extends AbstractListIterator<A> implements Ra
         if(withReplacement) {
             removeIndex();
         }
-    }
-
-    @Override public void setRandom(final Random random) {
-        this.random = random;
-    }
-
-    @Override public Random getRandom() {
-        return random;
     }
 
 }
