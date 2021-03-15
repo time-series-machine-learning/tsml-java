@@ -5,6 +5,6 @@ package tsml.classifiers.distance_based.utils.classifiers;
  *
  * Contributors: goastler
  */
-public interface TestTimeable {
+public interface TimedTest {
     long getTestTime();
 }

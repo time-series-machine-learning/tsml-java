@@ -14,4 +14,5 @@ public interface TrainEstimateable {
     boolean getEstimateOwnPerformance();
 
     void setEstimateOwnPerformance(boolean estimateOwnPerformance);
+    
 }
