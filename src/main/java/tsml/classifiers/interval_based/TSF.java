@@ -434,7 +434,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 minIntervalLength = data.numInstances();
 
             for (int i = 0; i < numIntervals; i++) {
-                interval[i][0] = rand.nextInt(data.getMaxLength() - minIntervalLength); // Start point
+                if (data.getMaxLength() - minIntervalLength > 0)
+                    interval[i][0] = rand.nextInt(data.getMaxLength() - minIntervalLength); // Start point
                 int length = rand.nextInt(data.getMaxLength() - interval[i][0]); // Min length 3
 
                 if (length < minIntervalLength)
@@ -658,7 +659,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             if (data.numAttributes() - 1 < minIntervalLength)
                 minIntervalLength = data.numAttributes() - 1;
             for (int j = 0; j < numIntervals; j++) {
-                interval[j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);       //Start point
+                if (data.numAttributes() - 1 - minIntervalLength > 0)
+                    interval[j][0] = rand.nextInt(data.numAttributes() - 1 - minIntervalLength);   //Start point
                 int length = rand.nextInt(data.numAttributes() - 1 - interval[j][0]);//Min length 3
                 if (length < minIntervalLength)
                     length = minIntervalLength;

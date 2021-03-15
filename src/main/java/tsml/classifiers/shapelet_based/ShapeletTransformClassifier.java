@@ -31,7 +31,6 @@ import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import tsml.classifiers.Tuneable;
-import tsml.classifiers.interval_based.TSF;
 import utilities.InstanceTools;
 import weka.core.*;
 import weka.classifiers.Classifier;
