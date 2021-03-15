@@ -1,24 +1,23 @@
 package tsml.classifiers.distance_based.utils.classifiers;
 
-import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.evaluators.Evaluator;
-import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 
 import java.util.Objects;
-import java.util.logging.Level;
+import java.util.Random;
 import java.util.logging.Logger;
-import org.junit.Assert;
+
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.system.random.Randomised;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.Utils;
 
 /**
  * Purpose: base classifier implementing all common interfaces. Note, this is only for implementation ubiquitous to
@@ -27,13 +26,13 @@ import weka.core.Instances;
  * <p>
  * Contributors: goastler
  */
-public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable, Loggable {
-    // method of logging
-    private transient Logger log = LogUtils.DEFAULT_LOG;
+public abstract class BaseClassifier extends EnhancedAbstractClassifier implements Rebuildable, ParamHandler, Copier, TrainEstimateable, Loggable,
+                                                                                           Randomised {
+    
+    private transient Logger log = LogUtils.getLogger(getClass());
+    
     // whether the classifier is to be built from scratch or not. Set this to true to incrementally improve the model on every buildClassifier call
     private boolean rebuild = true;
-    // whether the seed has been set
-    private boolean seedSet = false;
 
     protected BaseClassifier() {
         this(false);
@@ -43,23 +42,16 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
         super(a);
     }
 
-    @Override public void setDebug(final boolean b) {
-        super.setDebug(b);
-        if(debug) {
-            setLogLevel(Level.ALL);
-        } else {
-            log = LogUtils.DEFAULT_LOG;
-        }
-    }
-    
-    protected Logger getLog() {
+    @Override public Logger getLogger() {
         return log;
+    }
+
+    @Override public void setLogger(final Logger logger) {
+        log = Objects.requireNonNull(logger);
     }
 
     @Override public void setClassifierName(final String classifierName) {
         super.setClassifierName(Objects.requireNonNull(classifierName));
-        // set the log level to the current level. If this is different to the default logger then a new logger will be made with the new classifier name
-        setLogLevel(getLogLevel());
     }
 
     @Override public void buildClassifier(final TimeSeriesInstances trainData) throws Exception {
@@ -67,9 +59,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             // reset train results
             trainResults = new ClassifierResults();
             // check the seed has been set
-            if(!seedSet) {
-                throw new IllegalStateException("seed not set");
-            }
+            checkRandom();
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(Converter.toArff(Objects.requireNonNull(trainData)));
         }
@@ -78,14 +68,6 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public final void buildClassifier(Instances trainData) throws Exception {
         buildClassifier(Converter.fromArff(trainData));
-    }
-
-    @Override public Level getLogLevel() {
-        return log.getLevel();
-    }
-
-    @Override public void setLogLevel(final Level level) {
-        log = LogUtils.updateLogLevel(this, log, Objects.requireNonNull(level));
     }
 
     @Override
@@ -114,7 +96,7 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     @Override
     public void setSeed(int seed) {
         super.setSeed(seed);
-        seedSet = true;
+        setRandom(new Random(seed));
     }
 
     @Override
@@ -123,4 +105,21 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     }
 
     @Override public abstract double[] distributionForInstance(final TimeSeriesInstance inst) throws Exception;
+
+    @Override public String[] getOptions() {
+        return ParamHandler.super.getOptions();
+    }
+
+    @Override public void setOptions(final String[] options) throws Exception {
+        ParamHandler.super.setOptions(options);
+    }
+
+    @Override public String toString() {
+        final String options = Utils.joinOptions(getOptions());
+        if(!options.isEmpty()) {
+            return getClassifierName() + " " + options;
+        } else {
+            return getClassifierName();
+        }
+    }
 }
