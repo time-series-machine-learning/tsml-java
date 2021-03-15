@@ -9,8 +9,8 @@ import tsml.data_containers.TimeSeriesInstances;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
-public class EDistanceSpace implements ParamSpaceBuilder {
+public class EDistanceParams implements ParamSpaceBuilder {
     @Override public ParamSpace build(final TimeSeriesInstances data) {
-        return new ParamSpace(new ParamMap().add(DistanceMeasure.DISTANCE_MEASURE_FLAG, newArrayList(new EDistance())));
+        return new ParamSpace();
     }
 }

@@ -12,7 +12,7 @@ public class EDistanceTest {
     @Test
     public void matchesDtwZeroWindow() {
         DTWDistance dtw = new DTWDistance();
-        dtw.setWindowSize(0);
+        dtw.setWindow(0);
         final Instances instances = buildInstances();
         dtw.buildDistanceMeasure(instances);
         final double d1 = df.distance(instances.get(0), instances.get(1));
