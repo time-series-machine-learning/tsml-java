@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.distances;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
@@ -74,4 +75,35 @@ public interface DistanceMeasure extends Serializable, ParamHandler {
         return new DistanceMeasureAdapter(df);
     }
     
+    default double distanceUnivariate(double[] a, double[] b, double limit) {
+        return distance(new TimeSeriesInstance(a), new TimeSeriesInstance(b), limit);
+    }
+    
+    default double distanceUnivariate(double[] a, double[] b) {
+        return distanceUnivariate(a, b, Double.POSITIVE_INFINITY);
+    }
+    
+    default double distanceMultivariate(double[][] a, double[][] b, double limit) {
+        return distance(new TimeSeriesInstance(a), new TimeSeriesInstance(b), limit);
+    }
+    
+    default double distanceMultivariate(double[][] a, double[][] b) {
+        return distanceMultivariate(a, b, Double.POSITIVE_INFINITY);
+    }
+    
+    default double distanceUnivariate(List<Double> a, List<Double> b, double limit) {
+        return distanceMultivariate(Collections.singletonList(a), Collections.singletonList(b), limit);
+    }
+    
+    default double distanceUnivariate(List<Double> a, List<Double> b) {
+        return distanceUnivariate(a, b, Double.POSITIVE_INFINITY);
+    }
+    
+    default double distanceMultivariate(List<List<Double>> a, List<List<Double>> b, double limit) {
+        return distance(new TimeSeriesInstance(a), new TimeSeriesInstance(b), limit);
+    }
+    
+    default double distanceMultivariate(List<List<Double>> a, List<List<Double>> b) {
+        return distanceMultivariate(a, b, Double.POSITIVE_INFINITY);
+    }
 }
