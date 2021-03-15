@@ -3,8 +3,6 @@ package tsml.classifiers.distance_based.utils.system.random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import utilities.ArrayUtilities;
-import weka.core.Debug;
 
 import java.util.HashSet;
 import java.util.List;
@@ -12,8 +10,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 public class RandomUtilsTest {
 
@@ -44,27 +40,27 @@ public class RandomUtilsTest {
 
     @Test
     public void testRandomPickSingle() {
-        int choice = RandomUtils.pick(list, random);
+        int choice = RandomUtils.remove(list, random);
         Assert.assertEquals(1, choice);
         Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(9, list.size());
 
-        choice = RandomUtils.pick(list, random);
+        choice = RandomUtils.remove(list, random);
         Assert.assertEquals(9, choice);
         Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(8, list.size());
 
-        choice = RandomUtils.pick(list, random);
+        choice = RandomUtils.remove(list, random);
         Assert.assertEquals(3, choice);
         Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(7, list.size());
 
-        choice = RandomUtils.pick(list, random);
+        choice = RandomUtils.remove(list, random);
         Assert.assertEquals(5, choice);
         Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(6, list.size());
 
-        choice = RandomUtils.pick(list, random);
+        choice = RandomUtils.remove(list, random);
         Assert.assertEquals(10, choice);
         Assert.assertFalse(list.contains(choice));
         Assert.assertEquals(5, list.size());
@@ -84,7 +80,7 @@ public class RandomUtilsTest {
 
     @Test
     public void testRandomPickMultiple() {
-        final List<Integer> choice = RandomUtils.pick(list, random, 5);
+        final List<Integer> choice = RandomUtils.remove(list, random, 5);
         Assert.assertEquals(5, choice.size());
         Assert.assertEquals(new Integer(1), choice.get(0));
         Assert.assertEquals(new Integer(8), choice.get(1));
@@ -118,7 +114,7 @@ public class RandomUtilsTest {
 
     @Test
     public void testRandomPickAll() {
-        final List<Integer> choice = RandomUtils.pick(list, random, 10);
+        final List<Integer> choice = RandomUtils.remove(list, random, 10);
         Assert.assertEquals(0, list.size());
         Assert.assertEquals(10, choice.size());
         Assert.assertEquals(new Integer(1), choice.get(0));
@@ -160,7 +156,7 @@ public class RandomUtilsTest {
 
     @Test
     public void testRandomPickWithoutReplacement() {
-        final List<Integer> choice = RandomUtils.pick(list, random, 10);
+        final List<Integer> choice = RandomUtils.remove(list, random, 10);
         final Set<Integer> set = new HashSet<>(choice);
         Assert.assertEquals(choice.size(), set.size());
         Assert.assertEquals(0, list.size());

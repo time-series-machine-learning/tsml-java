@@ -3,11 +3,9 @@ package tsml.classifiers.distance_based.utils.system.random;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.iteration.BaseRandomIterator;
 import tsml.classifiers.distance_based.utils.collections.iteration.RandomIterator;
 import tsml.classifiers.distance_based.utils.collections.lists.IndexList;
-import utilities.ArrayUtilities;
 import utilities.Utilities;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
@@ -72,10 +70,10 @@ public class RandomUtils {
      * @param random
      * @return
      */
-    public static Integer choiceIndexExcept(int size, Random random, List<Integer> exceptions) {
-        Integer index = choiceIndex(size - exceptions.size(), random);
+    public static Integer choiceIndexExcept(int size, Random random, Collection<Integer> exceptions) {
+        int index = choiceIndex(size - exceptions.size(), random);
         // if the chosen index lies within the exception zone, then the index needs to be shifted by the zone length to avoid these indices
-        Collections.sort(exceptions);
+        exceptions = exceptions.stream().distinct().sorted().collect(Collectors.toList());
         for(Integer exception : exceptions) {
             if(index >= exception) {
                 index++;
@@ -87,7 +85,7 @@ public class RandomUtils {
     }
     
     public static Integer choiceIndexExcept(int size, Random random, int exception) {
-        return choiceIndexExcept(size, random, Collections.singletonList(1));        
+        return choiceIndexExcept(size, random, Collections.singletonList(exception));        
     }
 
     public static List<Integer> choiceIndexWithReplacement(int size, Random random, int numChoices) {
@@ -136,7 +134,7 @@ public class RandomUtils {
      * @param <A>
      * @return
      */
-    public static <A> List<A> pick(List<A> list, Random random, int numChoices, boolean withReplacement) {
+    public static <A> List<A> remove(List<A> list, Random random, int numChoices, boolean withReplacement) {
         List<Integer> indices = choiceIndex(list.size(), random, numChoices, withReplacement);
         final ArrayList<A> chosen = Utilities.apply(indices, list::get);
         indices = indices.stream().distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
@@ -146,17 +144,17 @@ public class RandomUtils {
         return chosen;
     }
     
-    public static <A> A pick(List<A> list, Random random) {
+    public static <A> A remove(List<A> list, Random random) {
         final int i = choiceIndex(list.size(), random);
         return list.remove(i);
     }
 
-    public static <A> List<A> pick(List<A> list, Random random, int numChoices) {
-        return pick(list, random, numChoices, false);
+    public static <A> List<A> remove(List<A> list, Random random, int numChoices) {
+        return remove(list, random, numChoices, false);
     }
 
     public static <A> List<A> pickWithReplacement(List<A> list, Random random, int numChoices) {
-        return pick(list, random, numChoices, true);
+        return remove(list, random, numChoices, true);
     }
 
 }

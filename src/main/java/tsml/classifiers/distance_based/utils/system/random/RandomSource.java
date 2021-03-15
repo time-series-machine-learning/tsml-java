@@ -12,4 +12,5 @@ import java.util.Random;
 
 public interface RandomSource extends Serializable {
     Random getRandom();
+    int getSeed();
 }
