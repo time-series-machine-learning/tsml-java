@@ -10,7 +10,7 @@ public class PrunedMapTest {
     
     @Test
     public void testPrune() {
-        final PrunedMap<Integer, Integer> map = new PrunedMap<>(3);
+        final PrunedMap<Integer, Integer> map = PrunedMap.desc(3);
         // test overflow when equal
         for(int i = 0; i < 5; i++) {
             map.add(3, i);

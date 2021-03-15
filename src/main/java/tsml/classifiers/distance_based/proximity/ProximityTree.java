@@ -14,6 +14,7 @@ import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMe
 import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceSpace;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceContinuousSpace;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceContinuousSpace;
+import tsml.classifiers.distance_based.optimised.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Chkpt;
@@ -22,7 +23,6 @@ import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.RandomSearch;
-import tsml.classifiers.distance_based.utils.collections.pruned.BestScoreFilter;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTree;
 import tsml.classifiers.distance_based.utils.collections.tree.BaseTreeNode;
 import tsml.classifiers.distance_based.utils.collections.tree.Tree;
@@ -1015,7 +1015,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          */
         public int findPartitionIndexIndexFor(final TimeSeriesInstance inst, int instIndexInTrainData, List<Integer> partitionIndicesIterator) {
             // a map to maintain the closest partition indices
-            final BestScoreFilter<Integer, Double> filter = new BestScoreFilter<>(false);
+            final PrunedMap<Double, Integer> filter = PrunedMap.asc(1);
             // maintain a limit on distance computation
             double limit = Double.POSITIVE_INFINITY;
             // loop through exemplars / partitions
@@ -1040,7 +1040,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     // find the distance
                     final double distance = distanceMeasure.distance(transformedInstance, transformedExemplar, limit);
                     // add the distance and partition to the map
-                    if(filter.add(i, distance)) {
+                    if(filter.add(distance, i)) {
                         // new min dist
                         // set new limit if early abandon enabled
                         if(earlyAbandonDistances) {
@@ -1051,7 +1051,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
             
             // random pick the best partition for the instance
-            return RandomUtils.choice(filter.getBest(), rand);
+            return RandomUtils.choice(filter.valuesList(), rand);
         }
 
         /**

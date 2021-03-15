@@ -32,9 +32,9 @@ public abstract class BaseAgent implements Agent {
     }
 
     @Override public List<Evaluation> getBestEvaluations() {
-        final PrunedMap<Double, Evaluation> prunedMap = new PrunedMap<>();
+        final PrunedMap<Double, Evaluation> prunedMap = PrunedMap.desc(1);
         for(Evaluation evaluation : evaluations) {
-            prunedMap.put(evaluation.getScore(), evaluation);
+            prunedMap.add(evaluation.getScore(), evaluation);
         }
         return prunedMap.valuesList();
     }

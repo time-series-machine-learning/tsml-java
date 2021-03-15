@@ -479,7 +479,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
                     availableClassIndices.add(j);
                 }
             }
-            nearestNeighbourIndices = new PrunedMap<Double, Integer>(k, true);
+            nearestNeighbourIndices = PrunedMap.asc(k);
         }
         
         private final TimeSeriesInstance target;

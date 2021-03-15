@@ -5,37 +5,64 @@ import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import java.io.Serializable;
 import java.util.*;
 
-public class PrunedMap<A extends Comparable<A>, B> implements Map<A, List<B>>, NavigableMap<A, List<B>>, SortedMap<A, List<B>>,
+public class PrunedMap<A, B> implements Map<A, List<B>>, 
+                                                NavigableMap<A, List<B>>, 
+                                                SortedMap<A, List<B>>,
                                                                     Serializable {
+
+    public static void main(String[] args) {
+        class A {}
+        final TreeMap<A, Integer> map = new TreeMap<>();
+    }
     
     private int limit;
     private int size;
     private final TreeMap<A, List<B>> map;
     
-    public PrunedMap(Comparator<A> comparator) {
-        this(1, comparator);
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> asc() {
+        return new PrunedMap<>(Comparator.naturalOrder());
     }
     
-    public PrunedMap() {
-        this(1);
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> desc() {
+        return new PrunedMap<>(Comparator.reverseOrder());
     }
 
-    public PrunedMap(int limit, Comparator<A> comparator) {
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> asc(int limit) {
+        final PrunedMap<A, B> map = asc();
+        map.setLimit(limit);
+        return map;
+    }
+
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> desc(int limit) {
+        final PrunedMap<A, B> map = desc();
+        map.setLimit(limit);
+        return map;
+    }
+    
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> newPrunedMap(int limit, boolean asc) {
+        if(asc) {
+            return asc(limit);
+        } else {
+            return desc(limit);
+        }
+    }
+    
+    public static <A extends Comparable<? super A>, B> PrunedMap<A, B> newPrunedMap(boolean asc) {
+        if(asc) {
+            return asc();
+        } else {
+            return desc();
+        }
+    }
+    
+    public PrunedMap(Comparator<? super A> comparator) {
+        this(1, comparator);
+    }
+
+    public PrunedMap(int limit, Comparator<? super A> comparator) {
         map = new TreeMap<>(comparator);
         setLimit(limit);
         clear();
-    }
-    
-    public PrunedMap(int limit, boolean ascending) {
-        this(limit, ascending ? Comparator.naturalOrder() : Comparator.reverseOrder());
-    }
-
-    public PrunedMap(int limit) {
-        this(limit, false);
-    }
-
-    public PrunedMap(boolean ascending) {
-        this(1, ascending);
     }
     
     public int getLimit() {
@@ -152,11 +179,6 @@ public class PrunedMap<A extends Comparable<A>, B> implements Map<A, List<B>>, N
         return map.tailMap(a);
     }
 
-    @Override public List<B> put(final A a, final List<B> bs) {
-        addAll(a, bs);
-        return get(a);
-    }
-
     @Override public List<B> remove(final Object o) {
         final List<B> removed = map.remove(o);
         if(removed != null) {
@@ -178,10 +200,6 @@ public class PrunedMap<A extends Comparable<A>, B> implements Map<A, List<B>>, N
             }
         }
         return removed;
-    }
-    
-    public boolean put(A key, B value) {
-        return add(key, value);
     }
     
     public boolean putAll(A key, List<B> value) {
@@ -264,6 +282,11 @@ public class PrunedMap<A extends Comparable<A>, B> implements Map<A, List<B>>, N
             return null;
         }
         return Collections.unmodifiableList(list);
+    }
+
+    @Override public List<B> put(final A a, final List<B> bs) {
+        addAll(a, bs);
+        return get(a);
     }
 
     @Override public Comparator<? super A> comparator() {

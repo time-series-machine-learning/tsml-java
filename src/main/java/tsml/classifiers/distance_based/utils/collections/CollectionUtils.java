@@ -3,8 +3,7 @@ package tsml.classifiers.distance_based.utils.collections;
 import java.util.*;
 import java.util.function.*;
 
-import tsml.classifiers.distance_based.utils.collections.lists.IndexList;
-import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
+import tsml.classifiers.distance_based.optimised.PrunedMap;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import utilities.Utilities;
 
@@ -219,15 +218,15 @@ public class CollectionUtils {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     public static <A> List<Integer> bestIndices(List<A> collection, int numChoices, Comparator<A> comparator) {
-        final PrunedMultimap<A, Integer> map = new PrunedMultimap<>(comparator);
-        map.setSoftLimit(numChoices);
+        final PrunedMap<A, Integer> map = new PrunedMap<>(comparator);
+        map.setLimit(numChoices);
 
         int i = 0;
         for(A item : collection) {
-            map.put(item, i++);
+            map.add(item, i++);
         }
 
-        return new ArrayList<>(map.values());
+        return map.valuesList();
     }
     
     public static <A extends Comparable<A>> List<Integer> bestIndices(List<A> collection, int numChoices) {
