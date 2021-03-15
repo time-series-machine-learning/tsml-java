@@ -121,7 +121,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     private long checkpointTime = 0;
     private long lastCheckpointTime = 0;
     private long checkpointTimeDiff = 0;
-    private boolean internalContractCheckpointHandling = true;
+    private boolean internalContractCheckpointHandling = false;
 
     /** Flags and data required if Contracting **/
     private boolean trainTimeContract = false;
@@ -505,7 +505,8 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             for (int j = 0; j < numIntervals; j++) {
                 if (rand.nextBoolean()) {
-                    interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
+                    if (seriesLength - minIntervalLength > 0)
+                            interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
 
                     int range = Math.min(seriesLength - interval[j][0], maxIntervalLength);
                     int length;
@@ -513,8 +514,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                     else length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                     interval[j][1] = interval[j][0] + length;
                 } else {
-                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
-                            + minIntervalLength; //End point
+                    if (seriesLength - minIntervalLength > 0)
+                        interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
+                                + minIntervalLength; //End point
 
                     int range = Math.min(interval[j][1], maxIntervalLength);
                     int length;
@@ -1480,14 +1482,16 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
 
             for (int j = 0; j < numIntervals; j++) {
                 if (rand.nextBoolean()) {
-                    interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
+                    if (seriesLength - minIntervalLength > 0)
+                        interval[j][0] = rand.nextInt(seriesLength - minIntervalLength); //Start point
 
                     int range = Math.min(seriesLength - interval[j][0], maxIntervalLength);
                     int length = rand.nextInt(range - minIntervalLength) + minIntervalLength;
                     interval[j][1] = interval[j][0] + length;
                 } else {
-                    interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
-                            + minIntervalLength; //Start point
+                    if (seriesLength - minIntervalLength > 0)
+                        interval[j][1] = rand.nextInt(seriesLength - minIntervalLength)
+                                + minIntervalLength; //End point
 
                     int range = Math.min(interval[j][1], maxIntervalLength);
                     int length;

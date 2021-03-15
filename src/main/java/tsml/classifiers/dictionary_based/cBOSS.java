@@ -1343,10 +1343,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         return distributions;
     }
+
     @Override
     public boolean withinTrainContract(long start) {
         return start < trainContractTimeNanos;
     }
+
     public static void main(String[] args) throws Exception{
         int fold = 0;
 

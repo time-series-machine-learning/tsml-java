@@ -19,12 +19,17 @@ package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import fileIO.OutFile;
 import tsml.classifiers.*;
+import tsml.classifiers.dictionary_based.bitword.BitWord;
+import tsml.classifiers.dictionary_based.bitword.BitWordInt;
+import tsml.classifiers.dictionary_based.bitword.BitWordLong;
 import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
+import utilities.generic_storage.SerialisableComparablePair;
 import weka.classifiers.functions.GaussianProcesses;
 import weka.core.*;
 
