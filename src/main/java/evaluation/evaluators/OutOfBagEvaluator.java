@@ -5,22 +5,17 @@ import org.junit.Assert;
 import tsml.classifiers.TSClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
-import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
-import weka.classifiers.Classifier;
-import weka.core.Instance;
-import weka.core.Instances;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class OutOfBagEvaluator extends Evaluator implements Loggable {
+public class OutOfBagEvaluator extends Evaluator {
 
-    private static final Logger DEFAULT_LOGGER = LogUtils.buildLogger(OutOfBagEvaluator.class);
+    private static final Logger DEFAULT_LOGGER = LogUtils.getLogger(OutOfBagEvaluator.class);
     private transient Logger log = DEFAULT_LOGGER;
     private TimeSeriesInstances inBagTrainData;
     private List<Integer> inBagTrainDataIndices;
@@ -96,11 +91,4 @@ public class OutOfBagEvaluator extends Evaluator implements Loggable {
         return outOfBagTestDataIndices;
     }
 
-    @Override public Level getLogLevel() {
-        return log.getLevel();
-    }
-
-    @Override public void setLogLevel(final Level level) {
-        log = LogUtils.updateLogLevel(this, log, level);
-    }
 }
