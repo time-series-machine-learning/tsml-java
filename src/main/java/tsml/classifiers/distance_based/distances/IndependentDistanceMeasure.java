@@ -1,10 +1,8 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.Objects;
@@ -52,17 +50,21 @@ public class IndependentDistanceMeasure extends BaseDistanceMeasure {
     @Override public void buildDistanceMeasure(final Instances data) {
         distanceMeasure.buildDistanceMeasure(data);
     }
-    
+
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
+    }
+
     private void setDistanceMeasure(DistanceMeasure distanceMeasure) {
         this.distanceMeasure = Objects.requireNonNull(distanceMeasure);
     }
 
     @Override public void setParams(final ParamSet paramSet) throws Exception {
-        ParamHandlerUtils.setParam(paramSet, DISTANCE_MEASURE_FLAG, this::setDistanceMeasure);
+        setDistanceMeasure(paramSet.get(DISTANCE_MEASURE_FLAG, getDistanceMeasure()));
     }
 
     @Override public ParamSet getParams() {
-        return new ParamSet().add(DISTANCE_MEASURE_FLAG, distanceMeasure);
+        return new ParamSet().add(DISTANCE_MEASURE_FLAG, getDistanceMeasure());
     }
 
     @Override public String toString() {

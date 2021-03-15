@@ -10,6 +10,7 @@ Contributors: goastler
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
@@ -99,8 +100,8 @@ public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure imp
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer);
-        ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceMeasure);
+        setTransformer(param.get(TRANSFORMER_FLAG, transformer));
+        setDistanceMeasure(param.get(DISTANCE_MEASURE_FLAG, distanceMeasure));
         super.setParams(param);
     }
 

@@ -48,34 +48,34 @@ public class StrUtilsTest {
         LCSSDistance lcss = new LCSSDistance();
         final TransformDistanceMeasure tdm = new BaseTransformDistanceMeasure("", new Derivative(), lcss);
         lcss.setEpsilon(6);
-        lcss.setWindowSize(0.7);
+        lcss.setWindow(0.7);
         String[] strs = tdm.getOptions();
-        Assert.assertEquals("-d", strs[0]);
-        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 6.0 -w 0.7", strs[1]);
-        Assert.assertEquals("-t", strs[2]);
-        Assert.assertEquals("tsml.transformers.Derivative", strs[3]);
+        Assert.assertEquals("-d", strs[2]);
+        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -w 0.7 -e 6.0", strs[3]);
+        Assert.assertEquals("-t", strs[0]);
+        Assert.assertEquals("tsml.transformers.Derivative", strs[1]);
         Assert.assertEquals(4, strs.length);
-        String[] substrs = Utils.splitOptions(strs[1]);
+        String[] substrs = Utils.splitOptions(strs[3]);
         Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance", substrs[0]);
-        Assert.assertEquals("-e", substrs[1]);
-        Assert.assertEquals("6.0", substrs[2]);
-        Assert.assertEquals("-w", substrs[3]);
-        Assert.assertEquals("0.7", substrs[4]);
+        Assert.assertEquals("-e", substrs[3]);
+        Assert.assertEquals("6.0", substrs[4]);
+        Assert.assertEquals("-w", substrs[1]);
+        Assert.assertEquals("0.7", substrs[2]);
         Assert.assertEquals(5, substrs.length);
         lcss.setEpsilon(-1);
-        lcss.setWindowSize(-1);
+        lcss.setWindow(-1);
         tdm.setOptions(strs);
         lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
-        Assert.assertEquals(0.7, lcss.getWindowSize(), 0d);
+        Assert.assertEquals(0.7, lcss.getWindow(), 0d);
         final ParamSet paramSet = new ParamSet();
         paramSet.setOptions(strs);
         lcss.setEpsilon(-1);
-        lcss.setWindowSize(1);
+        lcss.setWindow(1);
         tdm.setParams(paramSet);
         lcss = (LCSSDistance) tdm.getDistanceMeasure();
         Assert.assertEquals(6, lcss.getEpsilon(), 0.0d);
-        Assert.assertEquals(0.7, lcss.getWindowSize(), 0d);
+        Assert.assertEquals(0.7, lcss.getWindow(), 0d);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class StrUtilsTest {
 
     @Test
     public void testToOptionsValueObject() {
-        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -e 0.01 -w 1.0", StrUtils.toOptionValue(new LCSSDistance()));
+        Assert.assertEquals("tsml.classifiers.distance_based.distances.lcss.LCSSDistance -w 1.0 -e 0.01", StrUtils.toOptionValue(new LCSSDistance()));
     }
 
     @Test

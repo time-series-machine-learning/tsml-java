@@ -1,7 +1,5 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -9,8 +7,6 @@ import tsml.data_containers.utilities.Converter;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
-
-import java.util.Enumeration;
 
 public class DistanceMeasureAdapter implements DistanceMeasure {
 
