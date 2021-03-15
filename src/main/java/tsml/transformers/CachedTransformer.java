@@ -1,16 +1,18 @@
 package tsml.transformers;
 
-import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Capabilities;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -23,22 +25,6 @@ import weka.core.Instances;
  */
 public class CachedTransformer extends BaseTrainableTransformer {
 
-    public static class TransformedInstance implements Serializable {
-        private TransformedInstance(final Instance instance) {
-            this.instance = instance;
-        }
-
-        private Instance instance;
-
-        public Instance getInstance() {
-            return instance;
-        }
-
-        public void setInstance(final Instance instance) {
-            this.instance = instance;
-        }
-    }
-
     // the filter to cache the output of
     private Transformer transformer;
     // whether to only cache instances from the fit() call OR all instances handed
@@ -46,7 +32,8 @@ public class CachedTransformer extends BaseTrainableTransformer {
     private boolean cacheFittedDataOnly;
 
     // the cache to store instances against their corresponding transform output
-    private Map<Instance, TransformedInstance> cache;
+    private Map<TimeSeriesInstance, TimeSeriesInstance> tsCache; // use object as key so we can accept either inst or tsinst
+    private Map<Instance, Instance> arffCache;
 
     public CachedTransformer(final Transformer transformer) {
         setTransformer(transformer);
@@ -62,40 +49,32 @@ public class CachedTransformer extends BaseTrainableTransformer {
         this.cacheFittedDataOnly = cacheFittedDataOnly;
     }
 
-    // the cache to store instances against their corresponding output
-    private Map<TimeSeriesInstance, TimeSeriesInstance> ts_cache;
-
-    public CachedTransformer(final Transformer transformer, final Map<Instance, TransformedInstance> cache,
-            final Map<TimeSeriesInstance, TimeSeriesInstance> ts_cache) {
-        this.transformer = transformer;
-        this.cache = cache;
-        this.ts_cache = ts_cache;
-    }
-
     public void reset() {
         super.reset();
-        cache = null;
-        ts_cache = new HashMap<>();
+        tsCache = new HashMap<>();
+        arffCache = new HashMap<>();
     }
 
     @Override
     public void fit(final Instances data) {
         super.fit(data);
-        // make the cache match the size of the data (as that is the max expected cache
-        // entries at any point in time)
-        // . Load factor of 1 should mean if no more than data size instances are added,
-        // the hashmap will not expand
-        // and waste cpu time
-        cache = new HashMap<>(data.size(), 1);
+        if(transformer instanceof TrainableTransformer) {
+            ((TrainableTransformer) transformer).fit(data);
+        }
         for (final Instance instance : data) {
-            cache.put(instance, new TransformedInstance(null));
+            arffCache.put(instance, null);
         }
     }
 
     @Override
     public void fit(final TimeSeriesInstances data) {
-        // TODO Auto-generated method stub
-
+        super.fit(data);
+        if(transformer instanceof TrainableTransformer) {
+            ((TrainableTransformer) transformer).fit(data);
+        }
+        for (final TimeSeriesInstance instance : data) {
+            tsCache.put(instance, null);
+        }
     }
 
     @Override
@@ -108,41 +87,33 @@ public class CachedTransformer extends BaseTrainableTransformer {
         this.transformer = transformer;
     }
 
-    public void setCache(final Map<Instance, TransformedInstance> cache) {
-        Assert.assertNotNull(cache);
-        this.cache = cache;
-    }
-
     @Override
-    public Instance transform(Instance instance) {
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         if(!isFit()) {
             throw new IllegalStateException("must be fitted first");
         }
-        TransformedInstance transformedInstance = cache.get(instance);
-        Instance transform;
-        if(transformedInstance == null) {
-            transform = transformer.transform(instance);
-            if(!cacheFittedDataOnly) {
-                cache.put(instance, new TransformedInstance(transform));
-            }
-        } else {
-            transform = transformedInstance.getInstance();
-            if(transform == null) {
-                transform = transformer.transform(instance);
-                transformedInstance.setInstance(transform);
+        TimeSeriesInstance transformed = tsCache.get(inst);
+        if(transformed == null) {
+            transformed = transformer.transform(inst);
+            if(!cacheFittedDataOnly || tsCache.containsKey(inst)) {
+                tsCache.put(inst, transformed);
             }
         }
-        return transform;
+        return transformed;
     }
 
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // if the key is not in the map, transform and store it.
-        if (!ts_cache.containsKey(inst)) {
-            ts_cache.put(inst, transformer.transform(inst));
+    @Override public Instance transform(final Instance inst) {
+        if(!isFit()) {
+            throw new IllegalStateException("must be fitted first");
         }
-
-        return ts_cache.get(inst);
+        Instance transformed = arffCache.get(inst);
+        if(transformed == null) {
+            transformed = transformer.transform(inst);
+            if(!cacheFittedDataOnly || arffCache.containsKey(inst)) {
+                arffCache.put(inst, transformed);
+            }
+        }
+        return transformed;
     }
 
     @Override
@@ -154,18 +125,10 @@ public class CachedTransformer extends BaseTrainableTransformer {
         return transformer;
     }
 
-    public Map<Instance, TransformedInstance> getCache() {
-        return cache;
-    }
-
-    public Map<TimeSeriesInstance, TimeSeriesInstance> getTSCache() {
-        return ts_cache;
-    }
-
     @Override
     public void setParams(final ParamSet paramSet) throws Exception {
         super.setParams(paramSet);
-        ParamHandlerUtils.setParam(paramSet, TRANSFORMER_FLAG, this::setTransformer);
+        setTransformer(paramSet.get(TRANSFORMER_FLAG, getTransformer()));
     }
 
     @Override
@@ -175,5 +138,12 @@ public class CachedTransformer extends BaseTrainableTransformer {
 
     public static final String TRANSFORMER_FLAG = "f";
 
-
+    public static void main(String[] args) throws Exception {
+        final CachedTransformer ct = new CachedTransformer(new Derivative());
+        final List<TimeSeriesInstances> data =
+                Arrays.stream(DatasetLoading.sampleGunPoint(0)).map(Converter::fromArff).collect(Collectors.toList());
+        ct.fit(data.get(0));
+        ct.transform(data.get(1).get(0));
+        ct.transform(data.get(0).get(0));
+    }
 }
