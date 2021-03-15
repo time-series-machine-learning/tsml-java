@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.twed.spaces;
 
 import tsml.classifiers.distance_based.distances.twed.TWEDistance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.data_containers.TimeSeriesInstances;
@@ -39,9 +40,9 @@ public class TWEDistanceParams implements ParamSpaceBuilder {
         };
         List<Double> nuValuesUnique = unique(nuValues);
         List<Double> lambdaValuesUnique = unique(lambdaValues);
-        ParamSpace params = new ParamSpace();
+        ParamMap params = new ParamMap();
         params.add(TWEDistance.LAMBDA_FLAG, lambdaValuesUnique);
         params.add(TWEDistance.NU_FLAG, nuValuesUnique);
-        return params;
+        return new ParamSpace(params);
     }
 }

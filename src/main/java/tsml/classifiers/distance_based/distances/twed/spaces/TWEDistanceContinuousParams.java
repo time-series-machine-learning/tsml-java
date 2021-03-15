@@ -1,14 +1,13 @@
 package tsml.classifiers.distance_based.distances.twed.spaces;
 
 import tsml.classifiers.distance_based.distances.twed.TWEDistance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.CompositeDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 import tsml.data_containers.TimeSeriesInstances;
-
-import java.util.List;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 import static utilities.ArrayUtilities.unique;
@@ -26,9 +25,9 @@ public class TWEDistanceContinuousParams implements ParamSpaceBuilder {
                 0.5,
                 1d));
         UniformDoubleDistribution lambdaDistribution = new UniformDoubleDistribution();
-        ParamSpace params = new ParamSpace();
+        ParamMap params = new ParamMap();
         params.add(TWEDistance.LAMBDA_FLAG, lambdaDistribution);
         params.add(TWEDistance.NU_FLAG, nuDistribution);
-        return params;
+        return new ParamSpace(params);
     }
 }
