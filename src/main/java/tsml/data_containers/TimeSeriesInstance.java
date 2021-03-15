@@ -1,5 +1,6 @@
 package tsml.data_containers;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
  * creation, mutability can break this
  */
 
-public class TimeSeriesInstance implements Iterable<TimeSeries> {
+public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
 
     /* Meta Information */
     private boolean isMultivariate;

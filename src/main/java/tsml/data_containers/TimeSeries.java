@@ -1,5 +1,6 @@
 package tsml.data_containers;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -12,7 +13,7 @@ import java.util.stream.Stream;
  * Hopefully most of this can be encapsulated, so if the data has equal increments then indices is null and the user
 
  * */
-public class TimeSeries implements Iterable<Double> {
+public class TimeSeries implements Iterable<Double>, Serializable {
 
     public final static double DEFAULT_VALUE = Double.NaN;
     private final static List<Double> EMPTY_INDICES = Collections.emptyList(); 

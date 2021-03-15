@@ -1,5 +1,6 @@
 package tsml.data_containers;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -10,7 +11,7 @@ import static tsml.data_containers.TimeSeriesInstance.EMPTY_CLASS_LABELS;
  * Data structure able to handle unequal length, unequally spaced, univariate or
  * multivariate time series.
  */
-public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
+public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serializable {
 
     /* Meta Information */
     private String description;
