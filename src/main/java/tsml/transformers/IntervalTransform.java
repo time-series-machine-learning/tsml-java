@@ -2,7 +2,7 @@ package tsml.transformers;
 
 import experiments.data.DatasetLoading;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
+import tsml.classifiers.distance_based.utils.collections.intervals.IntInterval;
 import tsml.classifiers.distance_based.utils.collections.intervals.IntervalInstance;
 import tsml.data_containers.TimeSeriesInstance;
 import weka.core.Attribute;
@@ -13,15 +13,15 @@ import java.util.ArrayList;
 
 public class IntervalTransform implements Transformer {
 
-    private Interval interval;
+    private IntInterval interval;
     private boolean deepCopyInstances;
     private Instances header;
 
     public IntervalTransform() {
-        this(new Interval(0, 0));
+        this(new IntInterval(0, 0));
     }
 
-    public IntervalTransform(Interval interval) {
+    public IntervalTransform(IntInterval interval) {
         setInterval(interval);
         setDeepCopyInstances(false);
     }
@@ -64,11 +64,11 @@ public class IntervalTransform implements Transformer {
         return data;
     }
 
-    public Interval getInterval() {
+    public IntInterval getInterval() {
         return interval;
     }
 
-    public void setInterval(final Interval interval) {
+    public void setInterval(final IntInterval interval) {
         Assert.assertNotNull(interval);
         this.interval = interval;
     }
@@ -84,7 +84,7 @@ public class IntervalTransform implements Transformer {
     public static void main(String[] args) throws Exception {
         final Instances instances = DatasetLoading.loadGunPoint();
         final Instance instance = instances.get(0);
-        final IntervalInstance intervalInstance = new IntervalInstance(new Interval(10, 5), instance);
+        final IntervalInstance intervalInstance = new IntervalInstance(new IntInterval(10, 5), instance);
         System.out.println(intervalInstance.toString());
     }
 
