@@ -75,15 +75,17 @@ public class BasicReproductionTests {
             tsClassifiers + "distance_based.SlowDTW_1NN",
 
 //            tsClassifiers + "hybrids.HIVE_COTE", //assumed to cover its consituents
-//            tsClassifiers + "hybrids.ROCKETClassifier", //requires an enviroment variable to be set currently
 
             tsClassifiers + "interval_based.LPS",
             tsClassifiers + "interval_based.TSF",
             tsClassifiers + "interval_based.RISE",
+            tsClassifiers + "interval_based.STSF",
             tsClassifiers + "interval_based.CIF",
+            tsClassifiers + "interval_based.DrCIF",
 
             tsClassifiers + "shapelet_based.FastShapelets",
             tsClassifiers + "shapelet_based.LearnShapelets",
+//            tsClassifiers + "shapelet_based.ROCKETClassifier", //requires env variable, transform covered
 
             extraClassifiers + "PLSNominalClassifier",
             extraClassifiers + "kNN",

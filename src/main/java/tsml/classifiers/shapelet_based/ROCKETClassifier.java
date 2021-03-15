@@ -15,11 +15,9 @@
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
  
-package tsml.classifiers.hybrids;
+package tsml.classifiers.shapelet_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.evaluators.OutOfBagEvaluator;
-import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -32,8 +30,6 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;

@@ -333,7 +333,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @param data TimeSeriesInstances object
      * @throws Exception unable to train model
      */
-    @Override
+    @Override //TSClassifier
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         /** Build Stage:
          *  Builds the final classifier with or without bagging.
