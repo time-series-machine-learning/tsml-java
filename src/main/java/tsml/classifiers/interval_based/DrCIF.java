@@ -67,51 +67,73 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         return null;
     }
 
-    /** Primary parameters potentially tunable */
+    /**
+     * Primary parameters potentially tunable
+     */
     private int numClassifiers = 500;
 
-    /** Amount of attributes to be subsampled and related data storage. */
+    /**
+     * Amount of attributes to be subsampled and related data storage.
+     */
     private int attSubsampleSize = 10;
     private int numAttributes = 29;
     private int startNumAttributes;
     private ArrayList<int[]> subsampleAtts;
 
-    /** Normalise outlier catch22 features which break on data not normalised */
+    /**
+     * Normalise outlier catch22 features which break on data not normalised
+     */
     private boolean outlierNorm = true;
 
-    /** Use STSF features as well as catch22 features */
+    /**
+     * Use STSF features as well as catch22 features
+     */
     private boolean useSummaryStats = true;
 
     /** IntervalsFinders sets parameter values in buildClassifier if -1. */
-    /** Num intervals selected per representation per tree built */
+    /**
+     * Num intervals selected per representation per tree built
+     */
     private int[] numIntervals;
-    private transient Function<Integer,Integer> numIntervalsFinder;
+    private transient Function<Integer, Integer> numIntervalsFinder;
 
     /** Secondary parameters */
     /** Mainly there to avoid single item intervals, which have no slope or std dev */
-    /** Min defaults to 3, Max defaults to m/2 */
+    /**
+     * Min defaults to 3, Max defaults to m/2
+     */
     private int[] minIntervalLength;
-    private transient Function<Integer,Integer> minIntervalLengthFinder;
+    private transient Function<Integer, Integer> minIntervalLengthFinder;
     private int[] maxIntervalLength;
-    private transient Function<Integer,Integer> maxIntervalLengthFinder;
+    private transient Function<Integer, Integer> maxIntervalLengthFinder;
 
-    /** Ensemble members of base classifier, default to TimeSeriesTree */
+    /**
+     * Ensemble members of base classifier, default to TimeSeriesTree
+     */
     private ArrayList<Classifier> trees;
-    private Classifier base= new ContinuousIntervalTree();
+    private Classifier base = new ContinuousIntervalTree();
 
-    /** for each classifier i representation r attribute a interval j  starts at intervals[i][r][a][j][0] and
-     ends  at  intervals[i][r][j][1] */
+    /**
+     * for each classifier i representation r attribute a interval j  starts at intervals[i][r][a][j][0] and
+     * ends  at  intervals[i][r][j][1]
+     */
     private ArrayList<int[][][]> intervals;
 
-    /**Holding variable for test classification in order to retain the header info */
+    /**
+     * Holding variable for test classification in order to retain the header info
+     */
     private Instances testHolder;
 
-    /** Flags and data required if bagging, only OOB is available for train estimates in this case */
+    /**
+     * Flags and data required if bagging, only OOB is available for train estimates in this case
+     */
     private boolean bagging = false;
     private int[] oobCounts;
     private double[][] trainDistributions;
 
-    /** Flags and data required if Checkpointing */
+    /**
+     * Flags and data required if Checkpointing
+     */
     private boolean checkpoint = false;
     private String checkpointPath;
     private long checkpointTime = 0;
@@ -119,27 +141,39 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     private long checkpointTimeDiff = 0;
     private boolean internalContractCheckpointHandling = false;
 
-    /** Flags and data required if Contracting */
+    /**
+     * Flags and data required if Contracting
+     */
     private boolean trainTimeContract = false;
     private long contractTime = 0;
     private int maxClassifiers = 500;
 
-    /** Multithreading */
+    /**
+     * Multithreading
+     */
     private int numThreads = 1;
     private boolean multiThread = false;
     private ExecutorService ex;
 
-    /** data information */
+    /**
+     * data information
+     */
     private int numInstances;
 
-    /** Multivariate */
+    /**
+     * Multivariate
+     */
     private int numDimensions;
     private ArrayList<int[][]> intervalDimensions;
 
-    /** Transformer used to obtain catch22 features */
+    /**
+     * Transformer used to obtain catch22 features
+     */
     private transient Catch22 c22;
 
-    /** Transformers used for other representations */
+    /**
+     * Transformers used for other representations
+     */
     private transient Fast_FFT fft;
     private transient Differences di;
 
@@ -148,7 +182,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     /**
      * Default constructor for DrCIF. Can estimate own performance.
      */
-    public DrCIF(){
+    public DrCIF() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
 
@@ -157,7 +191,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param t number of trees
      */
-    public void setNumTrees(int t){
+    public void setNumTrees(int t) {
         numClassifiers = t;
     }
 
@@ -184,7 +218,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param f a function for the number of intervals
      */
-    public void setNumIntervalsFinder(Function<Integer,Integer> f){
+    public void setNumIntervalsFinder(Function<Integer, Integer> f) {
         numIntervalsFinder = f;
     }
 
@@ -193,7 +227,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param f a function for min interval length
      */
-    public void setMinIntervalLengthFinder(Function<Integer,Integer> f){
+    public void setMinIntervalLengthFinder(Function<Integer, Integer> f) {
         minIntervalLengthFinder = f;
     }
 
@@ -202,7 +236,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param f a function for max interval length
      */
-    public void setMaxIntervalLengthFinder(Function<Integer,Integer> f){
+    public void setMaxIntervalLengthFinder(Function<Integer, Integer> f) {
         maxIntervalLengthFinder = f;
     }
 
@@ -220,8 +254,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param c a base classifier constructed elsewhere and cloned into ensemble
      */
-    public void setBaseClassifier(Classifier c){
-        base=c;
+    public void setBaseClassifier(Classifier c) {
+        base = c;
     }
 
     /**
@@ -229,7 +263,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param b boolean to set bagging
      */
-    public void setBagging(boolean b){
+    public void setBagging(boolean b) {
         bagging = b;
     }
 
@@ -242,13 +276,13 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     public String getParameters() {
         int nt = numClassifiers;
         if (trees != null) nt = trees.size();
-        return super.getParameters()+",numTrees,"+nt+",attSubsampleSize,"+attSubsampleSize+
-                ",outlierNorm,"+outlierNorm+",basicSummaryStats,"+useSummaryStats+",numIntervals,"+
-                Arrays.toString(numIntervals).replace(',', ';')+",minIntervalLength,"+
-                Arrays.toString(minIntervalLength).replace(',', ';')+",maxIntervalLength,"+
-                Arrays.toString(maxIntervalLength).replace(',', ';')+",baseClassifier,"+
-                base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+ trainEstimateMethod.name()+
-                ",contractTime,"+contractTime;
+        return super.getParameters() + ",numTrees," + nt + ",attSubsampleSize," + attSubsampleSize +
+                ",outlierNorm," + outlierNorm + ",basicSummaryStats," + useSummaryStats + ",numIntervals," +
+                Arrays.toString(numIntervals).replace(',', ';') + ",minIntervalLength," +
+                Arrays.toString(minIntervalLength).replace(',', ';') + ",maxIntervalLength," +
+                Arrays.toString(maxIntervalLength).replace(',', ';') + ",baseClassifier," +
+                base.getClass().getSimpleName() + ",bagging," + bagging + ",estimator," + trainEstimateMethod.name() +
+                ",contractTime," + contractTime;
     }
 
     /**
@@ -258,7 +292,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @return the capabilities of DrCIF
      */
     @Override //AbstractClassifier
-    public Capabilities getCapabilities(){
+    public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
 
@@ -280,7 +314,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @return the time series capabilities of DrCIF
      */
-    public TSCapabilities getTSCapabilities(){
+    public TSCapabilities getTSCapabilities() {
         TSCapabilities capabilities = new TSCapabilities();
         capabilities.enable(TSCapabilities.EQUAL_LENGTH)
                 .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
@@ -322,9 +356,9 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
 
         File file = new File(checkpointPath + "DrCIF" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && file.exists()){
+        if (checkpoint && file.exists()) {
             //path checkpoint files will be saved to
-            if(debug)
+            if (debug)
                 System.out.println("Loading from checkpoint file");
             loadFromFile(checkpointPath + "DrCIF" + seed + ".ser");
         }
@@ -337,11 +371,10 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             minIntervalLength = new int[representations.length];
             maxIntervalLength = new int[representations.length];
             for (int r = 0; r < 3; r++) {
-                if (numIntervalsFinder == null){
-                    numIntervals[r] = (int)(4 + (Math.sqrt(representations[r].getMaxLength()) *
-                            Math.sqrt(numDimensions))/3);
-                }
-                else {
+                if (numIntervalsFinder == null) {
+                    numIntervals[r] = (int) (4 + (Math.sqrt(representations[r].getMaxLength()) *
+                            Math.sqrt(numDimensions)) / 3);
+                } else {
                     numIntervals[r] = numIntervalsFinder.apply(representations[0].getMaxLength());
                 }
 
@@ -371,7 +404,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 }
             }
 
-            if (!useSummaryStats){
+            if (!useSummaryStats) {
                 numAttributes = 22;
             }
 
@@ -383,18 +416,17 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             }
 
             //Set up for Bagging if required
-            if(getEstimateOwnPerformance() && (bagging || trainEstimateMethod != TrainEstimateMethod.OOB)) {
+            if (getEstimateOwnPerformance() && (bagging || trainEstimateMethod != TrainEstimateMethod.OOB)) {
                 trainDistributions = new double[numInstances][numClasses];
                 if (bagging) oobCounts = new int[numInstances];
             }
 
             //cancel loop using time instead of number built.
-            if (trainTimeContract){
+            if (trainTimeContract) {
                 numClassifiers = maxClassifiers;
                 trees = new ArrayList<>();
                 intervals = new ArrayList<>();
-            }
-            else{
+            } else {
                 trees = new ArrayList<>(numClassifiers);
                 intervals = new ArrayList<>(numClassifiers);
             }
@@ -408,44 +440,43 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
 
         //Set up instances size and format.
-        ArrayList<Attribute> atts=new ArrayList<>();
+        ArrayList<Attribute> atts = new ArrayList<>();
         String name;
-        for(int j = 0; j < sum(numIntervals)*numAttributes; j++){
-            name = "F"+j;
+        for (int j = 0; j < sum(numIntervals) * numAttributes; j++) {
+            name = "F" + j;
             atts.add(new Attribute(name));
         }
         //Get the class values as an array list
         ArrayList<String> vals = new ArrayList<>(numClasses);
-        for(int j = 0; j < numClasses; j++)
+        for (int j = 0; j < numClasses; j++)
             vals.add(Integer.toString(j));
         atts.add(new Attribute("cls", vals));
         //create blank instances with the correct class value
         Instances result = new Instances("Tree", atts, numInstances);
-        result.setClassIndex(result.numAttributes()-1);
-        for(int i = 0; i < numInstances; i++){
+        result.setClassIndex(result.numAttributes() - 1);
+        for (int i = 0; i < numInstances; i++) {
             DenseInstance in = new DenseInstance(result.numAttributes());
-            in.setValue(result.numAttributes()-1, data.get(i).getLabelIndex());
+            in.setValue(result.numAttributes() - 1, data.get(i).getLabelIndex());
             result.add(in);
         }
 
-        testHolder = new Instances(result,1);
+        testHolder = new Instances(result, 1);
         DenseInstance in = new DenseInstance(testHolder.numAttributes());
-        in.setValue(testHolder.numAttributes()-1, -1);
+        in.setValue(testHolder.numAttributes() - 1, -1);
         testHolder.add(in);
 
-        if (multiThread){
+        if (multiThread) {
             multiThreadBuildDrCIF(representations, result);
-        }
-        else{
+        } else {
             buildDrCIF(representations, result);
         }
 
-        if(trees.size() == 0){//Not enough time to build a single classifier
+        if (trees.size() == 0) {//Not enough time to build a single classifier
             throw new Exception((" ERROR in DrCIF, no trees built, contract time probably too low. Contract time = "
                     + contractTime));
         }
 
-        if(checkpoint) {
+        if (checkpoint) {
             saveToFile(checkpointPath);
         }
 
@@ -453,7 +484,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff
                 - trainResults.getErrorEstimateTime());
 
-        if(getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
             estimateOwnPerformance(data);
             long est2 = System.nanoTime();
@@ -462,7 +493,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished DrCIF Build with " + trees.size() + " Trees built in " +
-                trainResults.getBuildTime()/1000000000 + " Seconds  ***************");
+                trainResults.getBuildTime() / 1000000000 + " Seconds  ***************");
     }
 
     /**
@@ -478,7 +509,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
 
     /**
      * Build the DrCIF classifier
-     * For each base classifier
+     * For each base classifier:
      *     generate random intervals
      *     do the transfrorms
      *     build the classifier
@@ -486,15 +517,15 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception unable to build DrCIF
      */
     public void buildDrCIF(TimeSeriesInstances[] representations, Instances result) throws Exception {
-        double[][][][] dimensions =  new double[numInstances][representations.length][][];
-        for (int r = 0; r < representations.length; r++){
+        double[][][][] dimensions = new double[numInstances][representations.length][][];
+        for (int r = 0; r < representations.length; r++) {
             double[][][] arr = representations[r].toValueArray();
             for (int n = 0; n < numInstances; n++) {
                 dimensions[n][r] = arr[n];
             }
         }
 
-        while(withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
+        while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
             int i = trees.size();
 
             //1. Select random intervals for tree i
@@ -514,8 +545,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                         if (range - minIntervalLength[r] == 0) length = minIntervalLength[r];
                         else length = rand.nextInt(range - minIntervalLength[r]) + minIntervalLength[r];
                         interval[r][j][1] = interval[r][j][0] + length;
-                    }
-                    else {
+                    } else {
                         if (representations[r].getMaxLength() - minIntervalLength[r] > 0)
                             interval[r][j][1] = rand.nextInt(representations[r].getMaxLength() -
                                     minIntervalLength[r]) + minIntervalLength[r]; //End point
@@ -549,12 +579,12 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
 
             //find attributes to subsample
             ArrayList<Integer> arrl = new ArrayList<>(startNumAttributes);
-            for (int n = 0; n < startNumAttributes; n++){
+            for (int n = 0; n < startNumAttributes; n++) {
                 arrl.add(n);
             }
 
             int[] subsampleAtt = new int[numAttributes];
-            for (int n = 0; n < numAttributes; n++){
+            for (int n = 0; n < numAttributes; n++) {
                 subsampleAtt[n] = arrl.remove(rand.nextInt(arrl.size()));
             }
 
@@ -614,8 +644,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                             if (subsampleAtt[a] < 22) {
                                 result.instance(k).setValue(p,
                                         c22.getSummaryStatByIndex(subsampleAtt[a], j, intervalArray));
-                            }
-                            else {
+                            } else {
                                 result.instance(k).setValue(p,
                                         FeatureSet.calcFeatureByIndex(subsampleAtt[a], interval[r][j][0],
                                                 interval[r][j][1], series));
@@ -637,7 +666,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             if (getEstimateOwnPerformance() && bagging) {
                 long t1 = System.nanoTime();
 
-                if (base instanceof ContinuousIntervalTree){
+                if (base instanceof ContinuousIntervalTree) {
                     for (int n = 0; n < numInstances; n++) {
                         if (inBag[n])
                             continue;
@@ -648,8 +677,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                         for (int k = 0; k < newProbs.length; k++)
                             trainDistributions[n][k] += newProbs[k];
                     }
-                }
-                else {
+                } else {
                     for (int n = 0; n < numInstances; n++) {
                         if (inBag[n])
                             continue;
@@ -684,8 +712,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 }
 
                 trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + (System.nanoTime() - t1));
-            }
-            else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.TRAIN){
+            } else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.TRAIN) {
                 long t1 = System.nanoTime();
 
                 for (int n = 0; n < numInstances; n++) {
@@ -695,23 +722,22 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 }
 
                 trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + (System.nanoTime() - t1));
-            }
-            else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.CV) {
+            } else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.CV) {
                 long t1 = System.nanoTime();
 
-                int numFolds=Math.min(result.numInstances(), 10);
+                int numFolds = Math.min(result.numInstances(), 10);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 if (seedClassifier)
-                    cv.setSeed(seed*5*i);
+                    cv.setSeed(seed * 5 * i);
                 cv.setNumFolds(numFolds);
                 Classifier cvtree = AbstractClassifier.makeCopy(base);
                 if (seedClassifier && cvtree instanceof Randomizable)
                     ((Randomizable) cvtree).setSeed(seed * (i + 1));
 
-                ClassifierResults cvResults=cv.evaluate(cvtree,result);
-                for (int g = 0; g < result.numInstances(); g++){
+                ClassifierResults cvResults = cv.evaluate(cvtree, result);
+                for (int g = 0; g < result.numInstances(); g++) {
                     double[] dist = cvResults.getProbabilityDistribution(g);
-                    for (int n = 0; n < trainDistributions[g].length; n++){
+                    for (int n = 0; n < trainDistributions[g].length; n++) {
                         trainDistributions[g][n] += dist[n];
                     }
                 }
@@ -725,8 +751,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             intervalDimensions.add(intervalDimension);
 
             //Timed checkpointing if enabled, else checkpoint every 100 trees
-            if(checkpoint && ((checkpointTime>0 && System.nanoTime()-lastCheckpointTime>checkpointTime)
-                    || trees.size()%100 == 0)) {
+            if (checkpoint && ((checkpointTime > 0 && System.nanoTime() - lastCheckpointTime > checkpointTime)
+                    || trees.size() % 100 == 0)) {
                 saveToFile(checkpointPath);
             }
         }
@@ -736,17 +762,17 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * Build the DrCIF classifier using multiple threads.
      * Unable to checkpoint until after the build process while using multiple threads.
      * For each base classifier
-     *     generate random intervals
-     *     do the transfrorms
-     *     build the classifier
+     * generate random intervals
+     * do the transfrorms
+     * build the classifier
      *
      * @param representations TimeSeriesInstances data
-     * @param result Instances object formatted for transformed data
+     * @param result          Instances object formatted for transformed data
      * @throws Exception unable to build DrCIF
      */
     private void multiThreadBuildDrCIF(TimeSeriesInstances[] representations, Instances result) throws Exception {
-        double[][][][] dimensions =  new double[numInstances][representations.length][][];
-        for (int r = 0; r < representations.length; r++){
+        double[][][][] dimensions = new double[numInstances][representations.length][][];
+        for (int r = 0; r < representations.length; r++) {
             double[][][] arr = representations[r].toValueArray();
             for (int n = 0; n < numInstances; n++) {
                 dimensions[n][r] = arr[n];
@@ -759,12 +785,12 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
             ArrayList<Future<MultiThreadBuildHolder>> futures = new ArrayList<>(buildStep);
 
-            int end = trees.size()+buildStep;
+            int end = trees.size() + buildStep;
             for (int i = trees.size(); i < end; ++i) {
                 Instances resultCopy = new Instances(result, numInstances);
-                for(int n = 0; n < numInstances; n++){
+                for (int n = 0; n < numInstances; n++) {
                     DenseInstance in = new DenseInstance(result.numAttributes());
-                    in.setValue(result.numAttributes()-1, result.instance(n).classValue());
+                    in.setValue(result.numAttributes() - 1, result.instance(n).classValue());
                     resultCopy.add(in);
                 }
 
@@ -778,7 +804,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 subsampleAtts.add(h.subsampleAtts);
                 intervalDimensions.add(h.intervalDimensions);
 
-                if (getEstimateOwnPerformance() && (bagging || trainEstimateMethod != TrainEstimateMethod.OOB)){
+                if (getEstimateOwnPerformance() && (bagging || trainEstimateMethod != TrainEstimateMethod.OOB)) {
                     trainResults.setErrorEstimateTime(trainResults.getErrorEstimateTime() + h.errorTime);
                     for (int n = 0; n < numInstances; n++) {
                         if (bagging) oobCounts[n] += h.oobCounts[n];
@@ -793,7 +819,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     /**
      * Estimate accuracy stage: Three scenarios
      * 1. If we bagged the full build (bagging ==true), we estimate using the full build OOB.
-     *    If we built on all data (bagging ==false) we estimate either:
+     * If we built on all data (bagging ==false) we estimate either:
      * 2. With a 10 fold CV.
      * 3. Build a bagged model simply to get the estimate.
      *
@@ -801,75 +827,72 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception unable to obtain estimate
      */
     private void estimateOwnPerformance(TimeSeriesInstances data) throws Exception {
-        if(bagging){
+        if (bagging) {
             // Use bag data, counts normalised to probabilities
-            double[] preds=new double[data.numInstances()];
-            double[] actuals=new double[data.numInstances()];
-            long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-            for(int j=0;j<data.numInstances();j++){
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
                 long predTime = System.nanoTime();
-                for(int k=0;k<trainDistributions[j].length;k++)
+                for (int k = 0; k < trainDistributions[j].length; k++)
                     trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
                 actuals[j] = data.get(j).getLabelIndex();
-                predTimes[j] = System.nanoTime()-predTime;
+                predTimes[j] = System.nanoTime() - predTime;
             }
-            trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
             trainResults.setClassifierName("DrCIFBagging");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
             trainResults.setErrorEstimateMethod("OOB");
             trainResults.finaliseResults(actuals);
-        }
-        else if (trainEstimateMethod == TrainEstimateMethod.TRAIN){
-            double[] preds=new double[data.numInstances()];
-            double[] actuals=new double[data.numInstances()];
-            long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-            for(int j=0;j<data.numInstances();j++){
+        } else if (trainEstimateMethod == TrainEstimateMethod.TRAIN) {
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
                 long predTime = System.nanoTime();
-                for(int k=0;k<trainDistributions[j].length;k++)
+                for (int k = 0; k < trainDistributions[j].length; k++)
                     trainDistributions[j][k] /= trees.size();
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
                 actuals[j] = data.get(j).getLabelIndex();
-                predTimes[j] = System.nanoTime()-predTime;
+                predTimes[j] = System.nanoTime() - predTime;
             }
-            trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
             trainResults.setClassifierName("SCIFTrainPreds");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
             trainResults.setErrorEstimateMethod("TrainPred");
             trainResults.finaliseResults(actuals);
-        }
-        else if(trainEstimateMethod == TrainEstimateMethod.CV){
-            double[] preds=new double[data.numInstances()];
-            double[] actuals=new double[data.numInstances()];
-            long[] predTimes=new long[data.numInstances()];//Dummy variable, need something
-            for(int j=0;j<data.numInstances();j++){
+        } else if (trainEstimateMethod == TrainEstimateMethod.CV) {
+            double[] preds = new double[data.numInstances()];
+            double[] actuals = new double[data.numInstances()];
+            long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
+            for (int j = 0; j < data.numInstances(); j++) {
                 long predTime = System.nanoTime();
-                for(int k=0;k<trainDistributions[j].length;k++)
+                for (int k = 0; k < trainDistributions[j].length; k++)
                     trainDistributions[j][k] /= trees.size();
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
                 actuals[j] = data.get(j).getLabelIndex();
-                predTimes[j] = System.nanoTime()-predTime;
+                predTimes[j] = System.nanoTime() - predTime;
             }
-            trainResults.addAllPredictions(actuals,preds, trainDistributions, predTimes, null);
+            trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
             trainResults.setClassifierName("SCIFInternalCV");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
             trainResults.setErrorEstimateMethod("InternalCV");
             trainResults.finaliseResults(actuals);
-        }
-        else if(trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE){
+        } else if (trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE) {
             /** Build a single new DrCIF using Bagging, and extract the estimate from this
              */
-            DrCIF cif=new DrCIF();
+            DrCIF cif = new DrCIF();
             cif.copyParameters(this);
-            cif.setSeed(seed*5);
+            cif.setSeed(seed * 5);
             cif.setEstimateOwnPerformance(true);
-            cif.bagging=true;
+            cif.bagging = true;
             cif.numThreads = numThreads;
             cif.multiThread = multiThread;
             cif.buildClassifier(data);
@@ -886,7 +909,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      *
      * @param other A DrCIF object
      */
-    private void copyParameters(DrCIF other){
+    private void copyParameters(DrCIF other) {
         this.numClassifiers = other.numClassifiers;
         this.attSubsampleSize = other.attSubsampleSize;
         this.outlierNorm = other.outlierNorm;
@@ -895,7 +918,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         this.numIntervalsFinder = other.numIntervalsFinder;
         this.minIntervalLength = other.minIntervalLength;
         this.minIntervalLengthFinder = other.minIntervalLengthFinder;
-        this.maxIntervalLength = other.maxIntervalLength ;
+        this.maxIntervalLength = other.maxIntervalLength;
         this.maxIntervalLengthFinder = other.maxIntervalLengthFinder;
         this.base = other.base;
         this.bagging = other.bagging;
@@ -919,13 +942,13 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         dimensions[1] = fft.transform(ins).toValueArray();
         dimensions[2] = di.transform(ins).toValueArray();
 
-        if (multiThread){
+        if (multiThread) {
             ArrayList<Future<MultiThreadPredictionHolder>> futures = new ArrayList<>(trees.size());
 
             for (int i = 0; i < trees.size(); ++i) {
                 Instances testCopy = new Instances(testHolder, 1);
                 DenseInstance in = new DenseInstance(testHolder.numAttributes());
-                in.setValue(testHolder.numAttributes()-1, -1);
+                in.setValue(testHolder.numAttributes() - 1, -1);
                 testCopy.add(in);
 
                 futures.add(ex.submit(new TreePredictionThread(i, dimensions, trees.get(i), testCopy)));
@@ -936,15 +959,13 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 d[h.c]++;
 
             }
-        }
-        else if (base instanceof ContinuousIntervalTree) {
+        } else if (base instanceof ContinuousIntervalTree) {
             for (int i = 0; i < trees.size(); i++) {
                 int c = (int) ((ContinuousIntervalTree) trees.get(i)).classifyInstance(dimensions, functions,
-                            intervals.get(i), subsampleAtts.get(i), intervalDimensions.get(i));
+                        intervals.get(i), subsampleAtts.get(i), intervalDimensions.get(i));
                 d[c]++;
             }
-        }
-        else {
+        } else {
             //Build transformed instance
             for (int i = 0; i < trees.size(); i++) {
                 Catch22 c22 = new Catch22();
@@ -958,11 +979,10 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                                 intervals.get(i)[r][j][1] + 1);
 
                         for (int a = 0; a < numAttributes; a++) {
-                            if (subsampleAtts.get(i)[a] < 22){
+                            if (subsampleAtts.get(i)[a] < 22) {
                                 testHolder.instance(0).setValue(p,
                                         c22.getSummaryStatByIndex(subsampleAtts.get(i)[a], j, intervalArray));
-                            }
-                            else {
+                            } else {
                                 testHolder.instance(0).setValue(p,
                                         FeatureSet.calcFeatureByIndex(subsampleAtts.get(i)[a],
                                                 intervals.get(i)[r][j][0], intervals.get(i)[r][j][1], series));
@@ -979,10 +999,10 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
 
         double sum = 0;
-        for(double x: d)
-            sum += x ;
-        for(int i = 0; i < d.length; i++)
-            d[i] = d[i]/sum;
+        for (double x : d)
+            sum += x;
+        for (int i = 0; i < d.length; i++)
+            d[i] = d[i] / sum;
 
         return d;
     }
@@ -1042,9 +1062,9 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @return true if within the contract or not contracted, false otherwise.
      */
     @Override //TrainTimeContractable
-    public boolean withinTrainContract(long start){
-        if(contractTime<=0) return true; //Not contracted
-        return System.nanoTime()-start-checkpointTimeDiff < contractTime;
+    public boolean withinTrainContract(long start) {
+        if (contractTime <= 0) return true; //Not contracted
+        return System.nanoTime() - start - checkpointTimeDiff < contractTime;
     }
 
     /**
@@ -1056,7 +1076,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
         boolean validPath = Checkpointable.super.createDirectories(path);
-        if(validPath){
+        if (validPath) {
             checkpointPath = path;
             checkpoint = true;
         }
@@ -1070,8 +1090,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @return true
      */
     @Override //Checkpointable
-    public boolean setCheckpointTimeHours(int t){
-        checkpointTime=TimeUnit.NANOSECONDS.convert(t,TimeUnit.HOURS);
+    public boolean setCheckpointTimeHours(int t) {
+        checkpointTime = TimeUnit.NANOSECONDS.convert(t, TimeUnit.HOURS);
         return true;
     }
 
@@ -1082,14 +1102,14 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception object fails to save
      */
     @Override //Checkpointable
-    public void saveToFile(String path) throws Exception{
+    public void saveToFile(String path) throws Exception {
         lastCheckpointTime = System.nanoTime();
         Checkpointable.super.saveToFile(path + "DrCIF" + seed + "temp.ser");
         File file = new File(path + "DrCIF" + seed + "temp.ser");
         File file2 = new File(path + "DrCIF" + seed + ".ser");
         file2.delete();
         file.renameTo(file2);
-        if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime()-lastCheckpointTime;
+        if (internalContractCheckpointHandling) checkpointTimeDiff += System.nanoTime() - lastCheckpointTime;
     }
 
     /**
@@ -1102,7 +1122,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     public void copyFromSerObject(Object obj) throws Exception {
         if (!(obj instanceof DrCIF))
             throw new Exception("The SER file is not an instance of TSF");
-        DrCIF saved = ((DrCIF)obj);
+        DrCIF saved = ((DrCIF) obj);
         System.out.println("Loading DrCIF" + seed + ".ser");
 
         try {
@@ -1157,7 +1177,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
                     + (System.nanoTime() - saved.lastCheckpointTime);
             lastCheckpointTime = System.nanoTime();
-        }catch(Exception ex){
+        } catch (Exception ex) {
             System.out.println("Unable to assign variables when loading serialised file");
         }
     }
@@ -1168,18 +1188,18 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @return default parameter space for tuning
      */
     @Override //Tunable
-    public ParameterSpace getDefaultParameterSearchSpace(){
-        ParameterSpace ps=new ParameterSpace();
-        String[] numAtts={"8","16","25"};
+    public ParameterSpace getDefaultParameterSearchSpace() {
+        ParameterSpace ps = new ParameterSpace();
+        String[] numAtts = {"8", "16", "25"};
         ps.addParameter("-A", numAtts);
-        String[] maxIntervalLengths={"0.5","0.75","1"};
+        String[] maxIntervalLengths = {"0.5", "0.75", "1"};
         ps.addParameter("-L", maxIntervalLengths);
         return ps;
     }
 
     /**
      * Parses a given list of options. Valid options are:
-     *
+     * <p>
      * -A  The number of attributes to subsample as an integer from 1-25.
      * -L  Max interval length as a proportion of series length as a double from 0-1.
      *
@@ -1187,7 +1207,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @throws Exception if an option value is invalid
      */
     @Override //AbstractClassifier
-    public void setOptions(String[] options) throws Exception{
+    public void setOptions(String[] options) throws Exception {
         System.out.println(Arrays.toString(options));
 
         String numAttsString = Utils.getOption("-A", options);
@@ -1198,7 +1218,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         String maxIntervalLengthsString = Utils.getOption("-L", options);
         System.out.println(maxIntervalLengthsString);
         if (maxIntervalLengthsString.length() != 0)
-            maxIntervalLengthFinder = (numAtts) -> (int)(numAtts*Double.parseDouble(maxIntervalLengthsString));
+            maxIntervalLengthFinder = (numAtts) -> (int) (numAtts * Double.parseDouble(maxIntervalLengthsString));
 
         System.out.println(attSubsampleSize + " " + maxIntervalLengthFinder.apply(100));
     }
@@ -1224,106 +1244,113 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      */
     private static class FeatureSet {
         public static double calcFeatureByIndex(int idx, int start, int end, double[] data) {
-            switch (idx){
-                case 22: return calcMean(start, end, data);
-                case 23: return calcMedian(start, end, data);
-                case 24: return calcStandardDeviation(start, end, data);
-                case 25: return calcSlope(start, end, data);
-                case 26: return calcInterquartileRange(start, end, data);
-                case 27: return calcMin(start, end, data);
-                case 28: return calcMax(start, end, data);
-                default: return Double.NaN;
+            switch (idx) {
+                case 22:
+                    return calcMean(start, end, data);
+                case 23:
+                    return calcMedian(start, end, data);
+                case 24:
+                    return calcStandardDeviation(start, end, data);
+                case 25:
+                    return calcSlope(start, end, data);
+                case 26:
+                    return calcInterquartileRange(start, end, data);
+                case 27:
+                    return calcMin(start, end, data);
+                case 28:
+                    return calcMax(start, end, data);
+                default:
+                    return Double.NaN;
             }
         }
 
-        public static double calcMean(int start, int end, double[] data){
+        public static double calcMean(int start, int end, double[] data) {
             double sumY = 0;
-            for(int i = start; i <= end; i++) {
+            for (int i = start; i <= end; i++) {
                 sumY += data[i];
             }
 
-            int length = end-start+1;
-            return sumY/length;
+            int length = end - start + 1;
+            return sumY / length;
         }
 
-        public static double calcMedian(int start, int end, double[] data){
-            ArrayList<Double> sortedData = new ArrayList<>(end-start+1);
-            for(int i = start; i <= end; i++){
+        public static double calcMedian(int start, int end, double[] data) {
+            ArrayList<Double> sortedData = new ArrayList<>(end - start + 1);
+            for (int i = start; i <= end; i++) {
                 sortedData.add(data[i]);
             }
 
             return median(sortedData, false); //sorted in function
         }
 
-        public static double calcStandardDeviation(int start, int end, double[] data){
+        public static double calcStandardDeviation(int start, int end, double[] data) {
             double sumY = 0;
             double sumYY = 0;
-            for(int i = start; i <= end; i++) {
+            for (int i = start; i <= end; i++) {
                 sumY += data[i];
                 sumYY += data[i] * data[i];
             }
 
-            int length = end-start+1;
-            return (sumYY-(sumY*sumY)/length)/(length-1);
+            int length = end - start + 1;
+            return (sumYY - (sumY * sumY) / length) / (length - 1);
         }
 
-        public static double calcSlope(int start, int end, double[] data){
+        public static double calcSlope(int start, int end, double[] data) {
             double sumY = 0;
             double sumX = 0, sumXX = 0, sumXY = 0;
             for (int i = start; i <= end; i++) {
                 sumY += data[i];
-                sumX+=(i-start);
-                sumXX+=(i-start)*(i-start);
-                sumXY+=data[i]*(i-start);
+                sumX += (i - start);
+                sumXX += (i - start) * (i - start);
+                sumXY += data[i] * (i - start);
             }
 
-            int length = end-start+1;
-            double slope=(sumXY-(sumX*sumY)/length);
-            double denom=sumXX-(sumX*sumX)/length;
-            slope = denom == 0 ? 0 : slope/denom;
+            int length = end - start + 1;
+            double slope = (sumXY - (sumX * sumY) / length);
+            double denom = sumXX - (sumX * sumX) / length;
+            slope = denom == 0 ? 0 : slope / denom;
             return slope;
         }
 
-        public static double calcInterquartileRange(int start, int end, double[] data){
-            ArrayList<Double> sortedData = new ArrayList<>(end-start+1);
-            for (int i = start; i <= end; i++){
+        public static double calcInterquartileRange(int start, int end, double[] data) {
+            ArrayList<Double> sortedData = new ArrayList<>(end - start + 1);
+            for (int i = start; i <= end; i++) {
                 sortedData.add(data[i]);
             }
             Collections.sort(sortedData);
 
-            int length = end-start+1;
+            int length = end - start + 1;
             ArrayList<Double> left = new ArrayList<>(length / 2 + 1);
             ArrayList<Double> right = new ArrayList<>(length / 2 + 1);
             if (length % 2 == 1) {
-                for (int i = 0; i <= length / 2; i++){
+                for (int i = 0; i <= length / 2; i++) {
                     left.add(sortedData.get(i));
                 }
-            }
-            else {
-                for (int i = 0; i < length / 2; i++){
+            } else {
+                for (int i = 0; i < length / 2; i++) {
                     left.add(sortedData.get(i));
                 }
 
             }
-            for (int i = length / 2; i < sortedData.size(); i++){
+            for (int i = length / 2; i < sortedData.size(); i++) {
                 right.add(sortedData.get(i));
             }
 
             return median(right, false) - median(left, false);
         }
 
-        public static double calcMin(int start, int end, double[] data){
+        public static double calcMin(int start, int end, double[] data) {
             double min = Double.MAX_VALUE;
-            for (int i = start; i <= end; i++){
+            for (int i = start; i <= end; i++) {
                 if (data[i] < min)
                     min = data[i];
             }
             return min;
         }
 
-        public static double calcMax(int start, int end, double[] data){
+        public static double calcMax(int start, int end, double[] data) {
             double max = -999999999;
-            for (int i = start; i <= end; i++){
+            for (int i = start; i <= end; i++) {
                 if (data[i] > max)
                     max = data[i];
             }
@@ -1344,7 +1371,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         int[] oobCounts;
         long errorTime;
 
-        public MultiThreadBuildHolder() { }
+        public MultiThreadBuildHolder() {
+        }
     }
 
     /**
@@ -1356,7 +1384,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         int[] classVals;
         Instances result;
 
-        public TreeBuildThread(int i, double[][][][] dimensions, int[] classVals, Instances result){
+        public TreeBuildThread(int i, double[][][][] dimensions, int[] classVals, Instances result) {
             this.i = i;
             this.dimensions = dimensions;
             this.classVals = classVals;
@@ -1364,12 +1392,12 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
 
         /**
-         *   generate random intervals
-         *   do the transfrorms
-         *   build the classifier
+         * generate random intervals
+         * do the transfrorms
+         * build the classifier
          **/
         @Override
-        public MultiThreadBuildHolder call() throws Exception{
+        public MultiThreadBuildHolder call() throws Exception {
             MultiThreadBuildHolder h = new MultiThreadBuildHolder();
             Random rand = new Random(seed + i * numClassifiers);
 
@@ -1393,8 +1421,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                         if (range - minIntervalLength[r] == 0) length = minIntervalLength[r];
                         else length = rand.nextInt(range - minIntervalLength[r]) + minIntervalLength[r];
                         interval[r][j][1] = interval[r][j][0] + length;
-                    }
-                    else {
+                    } else {
                         if (dimensions[0][r][0].length - minIntervalLength[r] > 0)
                             interval[r][j][1] = rand.nextInt(dimensions[0][r][0].length -
                                     minIntervalLength[r]) + minIntervalLength[r]; //Start point
@@ -1428,12 +1455,12 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
 
             //find attributes to subsample
             ArrayList<Integer> arrl = new ArrayList<>(startNumAttributes);
-            for (int n = 0; n < startNumAttributes; n++){
+            for (int n = 0; n < startNumAttributes; n++) {
                 arrl.add(n);
             }
 
             int[] subsampleAtts = new int[numAttributes];
-            for (int n = 0; n < numAttributes; n++){
+            for (int n = 0; n < numAttributes; n++) {
                 subsampleAtts[n] = arrl.remove(rand.nextInt(arrl.size()));
             }
 
@@ -1463,15 +1490,13 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                     while (true) {
                         if (instInclusions[instIdx] == 0) {
                             instIdx++;
-                        }
-                        else {
+                        } else {
                             instInclusions[instIdx]--;
 
                             if (instIdx == lastIdx) {
                                 result.set(k, new DenseInstance(result.instance(k - 1)));
                                 sameInst = true;
-                            }
-                            else {
+                            } else {
                                 lastIdx = instIdx;
                             }
 
@@ -1482,8 +1507,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                     if (sameInst) continue;
 
                     result.instance(k).setValue(result.classIndex(), classVals[instIdx]);
-                }
-                else {
+                } else {
                     instIdx = k;
                 }
 
@@ -1499,8 +1523,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                             if (subsampleAtts[a] < 22) {
                                 result.instance(k).setValue(p,
                                         c22.getSummaryStatByIndex(subsampleAtts[a], j, intervalArray));
-                            }
-                            else {
+                            } else {
                                 result.instance(k).setValue(p,
                                         FeatureSet.calcFeatureByIndex(subsampleAtts[a], interval[r][j][0],
                                                 interval[r][j][1], series));
@@ -1524,7 +1547,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 int[] oobCounts = new int[numInstances];
                 double[][] trainDistributions = new double[numInstances][numClasses];
 
-                if (base instanceof ContinuousIntervalTree){
+                if (base instanceof ContinuousIntervalTree) {
                     for (int n = 0; n < numInstances; n++) {
                         if (inBag[n])
                             continue;
@@ -1535,8 +1558,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                         for (int k = 0; k < newProbs.length; k++)
                             trainDistributions[n][k] += newProbs[k];
                     }
-                }
-                else {
+                } else {
                     for (int n = 0; n < numInstances; n++) {
                         if (inBag[n])
                             continue;
@@ -1552,8 +1574,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                                     if (subsampleAtts[a] < 22) {
                                         result.instance(0).setValue(p,
                                                 c22.getSummaryStatByIndex(subsampleAtts[a], j, intervalArray));
-                                    }
-                                    else {
+                                    } else {
                                         result.instance(0).setValue(p,
                                                 FeatureSet.calcFeatureByIndex(subsampleAtts[a],
                                                         interval[r][j][0], interval[r][j][1], series));
@@ -1574,8 +1595,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 h.oobCounts = oobCounts;
                 h.trainDistribution = trainDistributions;
                 h.errorTime = System.nanoTime() - t1;
-            }
-            else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.TRAIN){
+            } else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.TRAIN) {
                 long t1 = System.nanoTime();
                 double[][] trainDistributions = new double[numInstances][numClasses];
 
@@ -1587,24 +1607,23 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
 
                 h.trainDistribution = trainDistributions;
                 h.errorTime = System.nanoTime() - t1;
-            }
-            else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.CV) {
+            } else if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.CV) {
                 long t1 = System.nanoTime();
                 double[][] trainDistributions = new double[numInstances][numClasses];
 
-                int numFolds=Math.min(result.numInstances(), 10);
+                int numFolds = Math.min(result.numInstances(), 10);
                 CrossValidationEvaluator cv = new CrossValidationEvaluator();
                 if (seedClassifier)
-                    cv.setSeed(seed*5*i);
+                    cv.setSeed(seed * 5 * i);
                 cv.setNumFolds(numFolds);
                 Classifier cvtree = AbstractClassifier.makeCopy(base);
                 if (seedClassifier && cvtree instanceof Randomizable)
                     ((Randomizable) cvtree).setSeed(seed * (i + 1));
 
-                ClassifierResults cvResults=cv.evaluate(cvtree,result);
-                for (int g = 0; g < result.numInstances(); g++){
+                ClassifierResults cvResults = cv.evaluate(cvtree, result);
+                for (int g = 0; g < result.numInstances(); g++) {
                     double[] dist = cvResults.getProbabilityDistribution(g);
-                    for (int n = 0; n < trainDistributions[g].length; n++){
+                    for (int n = 0; n < trainDistributions[g].length; n++) {
                         trainDistributions[g][n] += dist[n];
                     }
                 }
@@ -1625,7 +1644,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     private static class MultiThreadPredictionHolder {
         int c;
 
-        public MultiThreadPredictionHolder() { }
+        public MultiThreadPredictionHolder() {
+        }
     }
 
     /**
@@ -1637,7 +1657,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         Classifier tree;
         Instances testHolder;
 
-        public TreePredictionThread(int i, double[][][] dimensions, Classifier tree, Instances testHolder){
+        public TreePredictionThread(int i, double[][][] dimensions, Classifier tree, Instances testHolder) {
             this.i = i;
             this.dimensions = dimensions;
             this.tree = tree;
@@ -1645,14 +1665,13 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
 
         @Override
-        public MultiThreadPredictionHolder call() throws Exception{
+        public MultiThreadPredictionHolder call() throws Exception {
             MultiThreadPredictionHolder h = new MultiThreadPredictionHolder();
 
             if (base instanceof ContinuousIntervalTree) {
                 h.c = (int) ((ContinuousIntervalTree) trees.get(i)).classifyInstance(dimensions, functions,
-                            intervals.get(i), subsampleAtts.get(i), intervalDimensions.get(i));
-            }
-            else {
+                        intervals.get(i), subsampleAtts.get(i), intervalDimensions.get(i));
+            } else {
                 Catch22 c22 = new Catch22();
                 c22.setOutlierNormalise(outlierNorm);
 
@@ -1667,8 +1686,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                             if (subsampleAtts.get(i)[a] < 22) {
                                 testHolder.instance(0).setValue(p,
                                         c22.getSummaryStatByIndex(subsampleAtts.get(i)[a], j, intervalArray));
-                            }
-                            else {
+                            } else {
                                 testHolder.instance(0).setValue(p,
                                         FeatureSet.calcFeatureByIndex(subsampleAtts.get(i)[a],
                                                 intervals.get(i)[r][j][0], intervals.get(i)[r][j][1], series));
@@ -1686,7 +1704,9 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
     }
 
-    /** DrCIF attributes as functions **/
+    /**
+     * DrCIF attributes as functions
+     **/
     public Function<Interval, Double>[] functions = new Function[]{c22_0, c22_1, c22_2, c22_3, c22_4, c22_5, c22_6,
             c22_7, c22_8, c22_9, c22_10, c22_11, c22_12, c22_13, c22_14, c22_15, c22_16, c22_17, c22_18, c22_19, c22_20,
             c22_21, mean, median, stdev, slope, iqr, min, max};
@@ -1801,10 +1821,10 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      * @param arg arguments, unused
      * @throws Exception if tests fail
      */
-    public static void main(String[] arg) throws Exception{
+    public static void main(String[] arg) throws Exception {
         Instances[] data = DatasetLoading.sampleItalyPowerDemand(0);
-        Instances train= data[0];
-        Instances test= data[1];
+        Instances train = data[0];
+        Instances test = data[1];
         DrCIF c = new DrCIF();
         c.setSeed(0);
         c.estimateOwnPerformance = true;
@@ -1812,16 +1832,16 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         double a;
         long t1 = System.nanoTime();
         c.buildClassifier(train);
-        System.out.println("Train time="+(System.nanoTime()-t1)*1e-9);
-        System.out.println("build ok: original atts = "+(train.numAttributes()-1)+" new atts = "
-                +(c.testHolder.numAttributes()-1)+" num trees = "+c.trees.size()+" num intervals = "+
+        System.out.println("Train time=" + (System.nanoTime() - t1) * 1e-9);
+        System.out.println("build ok: original atts = " + (train.numAttributes() - 1) + " new atts = "
+                + (c.testHolder.numAttributes() - 1) + " num trees = " + c.trees.size() + " num intervals = " +
                 Arrays.toString(c.numIntervals));
-        System.out.println("recorded times: train time = "+(c.trainResults.getBuildTime()*1e-9)+" estimate time = "
-                +(c.trainResults.getErrorEstimateTime()*1e-9)
-                +" both = "+(c.trainResults.getBuildPlusEstimateTime()*1e-9));
-        a= ClassifierTools.accuracy(test, c);
-        System.out.println("Test Accuracy = "+a);
-        System.out.println("Train Accuracy = "+c.trainResults.getAcc());
+        System.out.println("recorded times: train time = " + (c.trainResults.getBuildTime() * 1e-9) + " estimate time = "
+                + (c.trainResults.getErrorEstimateTime() * 1e-9)
+                + " both = " + (c.trainResults.getBuildPlusEstimateTime() * 1e-9));
+        a = ClassifierTools.accuracy(test, c);
+        System.out.println("Test Accuracy = " + a);
+        System.out.println("Train Accuracy = " + c.trainResults.getAcc());
 
         //Test Accuracy = 0.9650145772594753
         //Train Accuracy = 0.9552238805970149
