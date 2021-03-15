@@ -1,9 +1,6 @@
 package tsml.classifiers.distance_based.distances;
 
-import tsml.data_containers.TimeSeriesInstance;
-
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Abstract distance measure. This takes the weka interface for DistanceFunction and implements some default methods,
@@ -16,12 +13,12 @@ import java.util.Objects;
  */
 public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
 
-    private boolean generateDistanceMatrix = false;
+    private boolean recordCostMatrix = false;
     // the distance matrix produced by the distance function
-    private double[][] matrix;
+    private double[][] costMatrix;
     private double[] oddRow;
     private double[] evenRow;
-    private int j;
+    private int numCols;
     private boolean recycleRows;
 
     /**
@@ -32,16 +29,20 @@ public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
     protected void setup(int numRows, int numCols, boolean recycleRows) {
         oddRow = null;
         evenRow = null;
-        matrix = null;
-        this.j = numCols;
+        costMatrix = null;
+        this.numCols = numCols;
         this.recycleRows = recycleRows;
-        if(generateDistanceMatrix) {
-            matrix = new double[numRows][numCols];
-            for(double[] array : matrix) Arrays.fill(array, Double.POSITIVE_INFINITY);
+        if(recordCostMatrix) {
+            costMatrix = new double[numRows][numCols];
+            for(double[] array : costMatrix) Arrays.fill(array, getFillerValue());
         } else {
             oddRow = new double[numCols];
             evenRow = new double[numCols];
         }
+    }
+    
+    protected double getFillerValue() {
+        return Double.POSITIVE_INFINITY;
     }
 
     /**
@@ -50,10 +51,10 @@ public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
     protected void teardown() {
         oddRow = null;
         evenRow = null;
-        j = -1;
+        numCols = -1;
         recycleRows = false;
-        if(!generateDistanceMatrix) {
-            matrix = null;
+        if(!recordCostMatrix) {
+            costMatrix = null;
         }
     }
 
@@ -63,34 +64,28 @@ public abstract class MatrixBasedDistanceMeasure extends BaseDistanceMeasure {
      * @return
      */
     protected double[] getRow(int i) {
-        if(generateDistanceMatrix) {
-            return matrix[i];
+        if(recordCostMatrix) {
+            return costMatrix[i];
         } else if(recycleRows) {
             return i % 2 == 0 ? evenRow : oddRow;
         } else {
-            return new double[j];
+            return new double[numCols];
         }
     }
     
-    public double[][] getDistanceMatrix() {
-        return matrix;
+    public double[][] costMatrix() {
+        return costMatrix;
     }
 
-    protected void setDistanceMatrix(double[][] matrix) {
-        if(isGenerateDistanceMatrix()) {
-            this.matrix = matrix;
-        }
+    public void clear() {
+        costMatrix = null;
     }
 
-    public void cleanDistanceMatrix() {
-        matrix = null;
+    public boolean isRecordCostMatrix() {
+        return recordCostMatrix;
     }
 
-    public boolean isGenerateDistanceMatrix() {
-        return generateDistanceMatrix;
-    }
-
-    public void setGenerateDistanceMatrix(final boolean generateDistanceMatrix) {
-        this.generateDistanceMatrix = generateDistanceMatrix;
+    public void setRecordCostMatrix(final boolean recordCostMatrix) {
+        this.recordCostMatrix = recordCostMatrix;
     }
 }
