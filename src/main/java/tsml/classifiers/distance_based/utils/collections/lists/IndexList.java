@@ -1,8 +1,9 @@
 package tsml.classifiers.distance_based.utils.collections.lists;
 
+import java.io.Serializable;
 import java.util.AbstractList;
 
-public class IndexList extends AbstractList<Integer> {
+public class IndexList extends AbstractList<Integer> implements Serializable {
 
     public IndexList(final int size) {
         if(size < 0) {
