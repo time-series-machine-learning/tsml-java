@@ -55,6 +55,12 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> asc(Supplier<? extends List<V>> supplier) {
         return new PrunedMultimap<K, V>(Comparator.naturalOrder(), supplier);
     }
+    
+    public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> ascSoft(int k) {
+        final PrunedMultimap<K, V> map = asc();
+        map.setSoftLimit(k);
+        return map;
+    }
 
     public static <K extends Comparable<? super K>, V> PrunedMultimap<K, V> desc() {
         return desc(ArrayList::new);
@@ -66,6 +72,14 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
 
     public K lastKey() {
         return backingMap.lastKey();
+    }
+    
+    public Map.Entry<K, Collection<V>> lastEntry() {
+        return backingMap.lastEntry();
+    }
+    
+    public Map.Entry<K, Collection<V>> firstEntry() {
+        return backingMap.firstEntry();
     }
 
     public K firstKey() {
@@ -297,12 +311,6 @@ public class PrunedMultimap<K, V> implements Serializable, ListMultimap<K, V> {
     }
 
     @Override public String toString() {
-        return "PrunedMultimap{" +
-               "softLimit=" + softLimit +
-               ", hardLimit=" + hardLimit +
-               ", size=" + listMultimap.size() +
-               ", discardType=" + discardType +
-               ", listMultimap=" + listMultimap +
-               '}';
+        return listMultimap.toString();
     }
 }
