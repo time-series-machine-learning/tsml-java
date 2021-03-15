@@ -41,7 +41,7 @@ import java.util.function.Function;
  */
 public class PerformanceMetric {
 
-    public static final String benchmarkSuffix = "_bm";
+    public static final String benchmarkSuffix = "_BM";
 
     public String name;
     public Function<ClassifierResults, Double> getter;

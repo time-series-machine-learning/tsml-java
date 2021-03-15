@@ -410,7 +410,7 @@ public class BasicReproductionTests {
         StringBuilder sb = new StringBuilder();
         while (scan.hasNext()) {
             String t = scan.nextLine();
-            if (t.contains("ExtraTimeForEst_BM:")) //this is now the first timing metric, these can't be reliably reproduced ofc so ignore
+            if (t.contains("ExtraTimeForEst")) //this is now the first timing metric, these can't be reliably reproduced ofc so ignore
                 break;
             sb.append(t).append("\n");
         }
