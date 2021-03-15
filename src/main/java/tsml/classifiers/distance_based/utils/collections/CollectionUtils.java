@@ -1,17 +1,25 @@
 package tsml.classifiers.distance_based.utils.collections;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.function.*;
 
-import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.lists.IndexList;
+import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMultimap;
+import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
+import utilities.Utilities;
 
 import static utilities.ArrayUtilities.unique;
 
 public class CollectionUtils {
     private CollectionUtils() {}
+    
+    public static <A> List<A> concat(Iterable<? extends Collection<A>> iterable) {
+        final List<A> list = new ArrayList<>();
+        for(Collection<A> collection : iterable) {
+            list.addAll(collection);
+        }
+        return list;
+    }
     
     public static ArrayList<Integer> complement(int size, List<Integer> indices) {
         indices = unique(indices);
@@ -161,4 +169,80 @@ public class CollectionUtils {
         }
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static <A extends Comparable<A>> A best(List<A> collection, Random random) {
+        return best(collection, random, Comparator.reverseOrder());
+    }
+
+    public static <A> A best(List<A> collection, Random random, Comparator<A> comparator) {
+        return best(collection, 1, comparator).get(0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    public static <A> List<A> best(List<A> collection, int numChoices, Comparator<A> comparator) {
+        final List<Integer> indices = bestIndices(collection, numChoices, comparator);
+        return Utilities.apply(indices, collection::get);
+    }
+
+    public static <A extends Comparable<A>> List<A> best(List<A> collection, int numChoices) {
+        return best(collection, numChoices, Comparator.reverseOrder());
+    }
+    
+    public static <A extends Comparable<A>> List<A> best(List<A> collection) {
+        return best(collection, 1, Comparator.reverseOrder());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static <A extends Comparable<A>> int bestIndex(List<A> collection, Random random) {
+        return bestIndex(collection, random, Comparator.reverseOrder());
+    }
+    
+    public static <A> int bestIndex(List<A> collection, Random random, Comparator<A> comparator) {
+        return bestIndices(collection, 1, comparator).get(0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    public static <A> List<Integer> bestIndices(List<A> collection, int numChoices, Random random, Comparator<A> comparator) {
+        final List<Integer> indices = bestIndices(collection, numChoices, comparator);
+        return RandomUtils.choice(indices, random, numChoices);
+    }
+    
+    public static <A extends Comparable<A>> List<Integer> bestIndices(List<A> collection, int numChoices, Random random) {
+        return bestIndices(collection, numChoices, random, Comparator.reverseOrder());
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    public static <A> List<Integer> bestIndices(List<A> collection, int numChoices, Comparator<A> comparator) {
+        final PrunedMultimap<A, Integer> map = new PrunedMultimap<>(comparator);
+        map.setSoftLimit(numChoices);
+
+        int i = 0;
+        for(A item : collection) {
+            map.put(item, i++);
+        }
+
+        return new ArrayList<>(map.values());
+    }
+    
+    public static <A extends Comparable<A>> List<Integer> bestIndices(List<A> collection, int numChoices) {
+        return bestIndices(collection, numChoices, Comparator.reverseOrder());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static <A> List<A> filter(final Iterable<A> collection, final Predicate<A> predicate) {
+        final ArrayList<A> list = new ArrayList<>();
+        for(A item : collection) {
+            if(predicate.test(item)) {
+                list.add(item);
+            }
+        }
+        return list;
+    }
 }
