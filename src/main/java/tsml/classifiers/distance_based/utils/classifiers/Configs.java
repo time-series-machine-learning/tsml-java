@@ -2,6 +2,7 @@ package tsml.classifiers.distance_based.utils.classifiers;
 
 import tsml.classifiers.distance_based.utils.collections.iteration.TransformIterator;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -10,7 +11,7 @@ import java.util.stream.Collectors;
  * A set of configs are targeted at a specific type, say PT for example. Each config is mapped by name to create a factory which can produce fresh instances of that type, e.g. PT.
  * @param <A>
  */
-public class Configs<A> implements Iterable<Config<A>> {
+public class Configs<A> implements Iterable<Config<A>>, Serializable {
     
     private final Map<String, Config<A>> map = new TreeMap<>(); // using treemap to maintain ordering of names
 
@@ -33,13 +34,11 @@ public class Configs<A> implements Iterable<Config<A>> {
     
     public void add(String name, String description, String templateName, Configurer<? super A> configurer) {
         final Config<A> template = get(templateName);
-        add(name, template.description() + ". " + description, template, new Configurer<A>() {
-            @Override public void configure(final A obj) {
-                // configure the template
-                template.configure(obj);
-                // then apply the specialisation config over the template
-                configurer.configure(obj);
-            }
+        add(name, template.description() + ". " + description, template, (Configurer<A>) obj -> {
+            // configure the template
+            template.configure(obj);
+            // then apply the specialisation config over the template
+            configurer.configure(obj);
         });
     }
     
