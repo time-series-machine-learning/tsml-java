@@ -1,26 +1,28 @@
 package tsml.classifiers.distance_based.utils.collections.params.distribution.int_based;
 
+import tsml.classifiers.distance_based.utils.collections.intervals.IntInterval;
+import tsml.classifiers.distance_based.utils.collections.params.distribution.ClampedDistribution;
+
+import java.util.Random;
+
 /**
  * Purpose: // todo - docs - type the purpose of the code here
  * <p>
  * Contributors: goastler
  */
-public class UniformIntDistribution extends ClampedIntDistribution {
+public class UniformIntDistribution extends ClampedDistribution<Integer> {
 
-    public UniformIntDistribution() {}
-    
-    public UniformIntDistribution(final Integer end) {
-        super(end);
+    public UniformIntDistribution() {
+        this(0, 1);
     }
 
     public UniformIntDistribution(final Integer start, final Integer end) {
-        super(start, end);
+        super(new IntInterval(start, end));
     }
-
-    @Override
-    public Integer sample() {
+    
+    public Integer sample(Random random) {
         int end = getEnd();
         int start = getStart();
-        return getRandom().nextInt(end - start + 1) + start;
+        return random.nextInt(Math.abs(end - start) + 1) + Math.min(start, end);
     }
 }

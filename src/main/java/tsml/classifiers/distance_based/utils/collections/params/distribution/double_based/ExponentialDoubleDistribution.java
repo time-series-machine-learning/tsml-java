@@ -3,7 +3,9 @@ package tsml.classifiers.distance_based.utils.collections.params.distribution.do
 import tsml.classifiers.distance_based.utils.collections.params.distribution.BaseDistribution;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
 
-public class ExponentialDoubleDistribution extends BaseDistribution<Double> implements DoubleDistribution {
+import java.util.Random;
+
+public class ExponentialDoubleDistribution extends BaseDistribution<Double> implements Distribution<Double> {
 
     private Distribution<? extends Number> exponentDistribution;
     private double base;
@@ -25,8 +27,8 @@ public class ExponentialDoubleDistribution extends BaseDistribution<Double> impl
         this(2);
     }
     
-    @Override public Double sample() {
-        final Number exponent = exponentDistribution.sample(getRandom());
+    public Double sample(Random random) {
+        final Number exponent = exponentDistribution.sample(random);
         return Math.pow(base, exponent.doubleValue());
     }
 
@@ -47,6 +49,9 @@ public class ExponentialDoubleDistribution extends BaseDistribution<Double> impl
         this.base = base;
     }
 }
+
+
+// OLD VERSION BELOW
 
 
 //package tsml.classifiers.distance_based.utils.collections.params.distribution.double_based;

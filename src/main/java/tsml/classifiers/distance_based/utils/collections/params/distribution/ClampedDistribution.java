@@ -1,44 +1,52 @@
 package tsml.classifiers.distance_based.utils.collections.params.distribution;
 
 import org.junit.Assert;
+import tsml.classifiers.distance_based.utils.collections.intervals.Interval;
 
-public abstract class ClampedDistribution<A> extends BaseDistribution<A> {
+import java.util.Objects;
+
+public abstract class ClampedDistribution<A> extends BaseDistribution<A> implements Interval<A> {
     
-    private A start;
-    private A end;
+    private Interval<A> interval;
     
-    public ClampedDistribution(A end) {
-        setEnd(end);
-    }
-    
-    public ClampedDistribution(A start, A end) {
-        setStart(start);
-        setEnd(end);
+    public ClampedDistribution(Interval<A> interval) {
+        setInterval(interval);
     }
 
-    public A getEnd() {
-        return end;
+    public void setInterval(final Interval<A> interval) {
+        this.interval = Objects.requireNonNull(interval);
     }
 
-    public void setEnd(final A end) {
-        Assert.assertNotNull(end);
-        this.end = end;
+    public Interval<A> getInterval() {
+        return interval;
     }
 
-    public A getStart() {
-        return start;
+    @Override public A getStart() {
+        return interval.getStart();
     }
 
-    public void setStart(final A start) {
-        Assert.assertNotNull(start);
-        this.start = start;
+    @Override public A getEnd() {
+        return interval.getEnd();
+    }
+
+    @Override public void setStart(final A start) {
+        interval.setStart(start);
+    }
+
+    @Override public void setEnd(final A end) {
+        interval.setEnd(end);
+    }
+
+    @Override public A size() {
+        return interval.size();
+    }
+
+    @Override public boolean contains(final A item) {
+        return interval.contains(item);
     }
 
     @Override public String toString() {
-        return getClass().getSimpleName() + "{" +
-                       "start=" + start +
-                       ", end=" + end +
-                       '}';
+        return super.toString() + "(" + interval.getStart() + ", " + interval.getEnd() + ")";
     }
 
     @Override public boolean equals(final Object o) {
@@ -46,6 +54,6 @@ public abstract class ClampedDistribution<A> extends BaseDistribution<A> {
             return false;
         }
         ClampedDistribution<?> other = (ClampedDistribution<?>) o;
-        return other.getClass().equals(getClass()) && other.getStart().equals(getStart()) && other.getEnd().equals(getEnd());
+        return other.getClass().equals(getClass()) && other.interval.equals(interval);
     }
 }

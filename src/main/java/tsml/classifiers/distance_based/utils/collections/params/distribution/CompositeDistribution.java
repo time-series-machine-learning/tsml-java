@@ -5,6 +5,7 @@ import tsml.classifiers.distance_based.utils.collections.params.distribution.int
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.BiFunction;
 
@@ -42,8 +43,7 @@ public class CompositeDistribution<A> extends BaseDistribution<A> {
     
     private List<Distribution<A>> distributions = new ArrayList<>();
     
-    @Override public A sample() {
-        final Random random = getRandom();
+    @Override public A sample(Random random) {
         final int index = random.nextInt(distributions.size());
         final Distribution<A> distribution = distributions.get(index);
         return distribution.sample(random);
@@ -54,6 +54,9 @@ public class CompositeDistribution<A> extends BaseDistribution<A> {
     }
 
     public void setDistributions(final List<Distribution<A>> distributions) {
-        this.distributions = distributions;
+        this.distributions = Objects.requireNonNull(distributions);
+        if(distributions.isEmpty()) {
+            throw new IllegalArgumentException("empty");
+        }
     }
 }
