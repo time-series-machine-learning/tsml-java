@@ -18,14 +18,12 @@
 package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.evaluators.OutOfBagEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
-import tsml.classifiers.interval_based.CIF;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -33,12 +31,8 @@ import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Contractable classifier making use of the ROCKET transformer.
@@ -243,7 +237,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
         if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
-            estimateOwnPerformance(data);
+            findEnsembleTrainEstimate(data);
             long est2 = System.nanoTime();
             trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
         }
@@ -251,26 +245,8 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setParas(getParameters());
     }
 
-    private void estimateOwnPerformance(Instances data) {
-        if (estimator == EstimatorMethod.CV || estimator == EstimatorMethod.NONE) {
-            double[] preds=new double[data.numInstances()];
-            double[] actuals=new double[data.numInstances()];
-            long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something
-            for(int j=0;j<data.numInstances();j++){
-                long predTime = System.nanoTime();
-                for(int k=0;k<trainDistributions[j].length;k++)
-                    trainDistributions[j][k] /= data.numInstances();
-                preds[j] = findIndexOfMax(trainDistributions[j], rand);
-                actuals[j] = data.get(j).classValue();
-                predTimes[j] = System.nanoTime()-predTime;
-            }
-            trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
-            trainResults.setDatasetName(data.relationName());
-            trainResults.setSplit("train");
-            trainResults.setFoldID(seed);
-            trainResults.setClassifierName("ArsenalCV");
-            trainResults.setErrorEstimateMethod("CV_10"); //numfolds
-        } else if (estimator == EstimatorMethod.OOB) {
+    private void findEnsembleTrainEstimate(Instances data) throws Exception {
+        if (bagging){
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];
             long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something
@@ -289,50 +265,38 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setClassifierName("ArsenalOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-//        } else if (estimator == EstimatorMethod.OOB) {
-//            int[] oobCount = new int[data[0].numInstances()];
-//            double[] preds=new double[data[0].numInstances()];
-//            double[] actuals=new double[data[0].numInstances()];
-//            double[][] trainDistributions=new double[data[0].numInstances()][data[0].numClasses()];
-//            long[] predTimes=new long[data[0].numInstances()];//Dummy variable, need something
-//            for (int r = 0; r < data.length; r++) {
-//                OutOfBagEvaluator oob = new OutOfBagEvaluator();
-//                oob.setSeed((seed+1)*5*(r+1));
-//                Classifier newCls = AbstractClassifier.makeCopy(cls);
-//                if (seedClassifier && cls instanceof Randomizable)
-//                    ((Randomizable)newCls).setSeed((seed+1)*100*(r+1));
-//                ClassifierResults results = oob.evaluate(newCls, data[r]);
-//                List<Integer> indicies = oob.getOutOfBagTestDataIndices();
-//                for (int i = 0; i < indicies.size(); i++) {
-//                    int index = indicies.get(i);
-//                    oobCount[index]++;
-//                    double[] dist = results.getProbabilityDistribution(i);
-//                    for (int n = 0; n < trainDistributions[i].length; n++) {
-//                        trainDistributions[index][n] += dist[n];
-//                    }
-//                }
-//            }
-//            for (int i = 0; i < preds.length; i++) {
-//                if (oobCount[i] > 0) {
-//                    preds[i] = findIndexOfMax(trainDistributions[i], rand);
-//                    for (int n = 0; n < trainDistributions[i].length; n++) {
-//                        trainDistributions[i][n] /= oobCount[i];
-//                    }
-//                }
-//                else{
-//                    Arrays.fill(trainDistributions[i], 1.0/numClasses);
-//                }
-//
-//                actuals[i] = data[0].get(i).classValue();
-//                preds[i] = findIndexOfMax(trainDistributions[i], rand);
-//            }
-//            trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
-//            trainResults.setDatasetName(data[0].relationName());
-//            trainResults.setSplit("train");
-//            trainResults.setFoldID(seed);
-//            trainResults.setClassifierName("ArsenalOOB");
-//            trainResults.setErrorEstimateMethod("OOB");
-//        }
+        else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
+            double[] preds=new double[data.numInstances()];
+            double[] actuals=new double[data.numInstances()];
+            long[] predTimes=new long[data.numInstances()]; //Dummy variable, need something
+            for(int j=0;j<data.numInstances();j++){
+                long predTime = System.nanoTime();
+                for(int k=0;k<trainDistributions[j].length;k++)
+                    trainDistributions[j][k] /= data.numInstances();
+                preds[j] = findIndexOfMax(trainDistributions[j], rand);
+                actuals[j] = data.get(j).classValue();
+                predTimes[j] = System.nanoTime()-predTime;
+            }
+            trainResults.addAllPredictions(actuals,preds,trainDistributions,predTimes, null);
+            trainResults.setDatasetName(data.relationName());
+            trainResults.setSplit("train");
+            trainResults.setFoldID(seed);
+            trainResults.setClassifierName("ArsenalCV");
+            trainResults.setErrorEstimateMethod("CV_10"); //numfolds
+        }
+        else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
+            Arsenal ar = new Arsenal();
+            ar.copyParameters(this);
+            ar.setSeed(seed*5);
+            ar.setEstimateOwnPerformance(true);
+            ar.bagging=true;
+            ar.buildClassifier(data);
+            long tt = trainResults.getBuildTime();
+            trainResults= ar.trainResults;
+            trainResults.setBuildTime(tt);
+            trainResults.setClassifierName("ArsenalOOB");
+            trainResults.setErrorEstimateMethod("OOB");
+        }
     }
 
     @Override
@@ -356,6 +320,16 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
 
         for (int i = 0; i < probs.length; i++) probs[i] /= sum;
         return probs;
+    }
+
+    private void copyParameters(Arsenal other){
+        this.numKernels = other.numKernels;
+        this.ensembleSize = other.ensembleSize;
+        this.normalise = other.normalise;
+        this.cls = other.cls;
+        this.bagging = other.bagging;
+        this.trainContractTimeNanos = other.trainContractTimeNanos;
+        this.trainTimeContract = other.trainTimeContract;
     }
 
     public static void main(String[] args) throws Exception {

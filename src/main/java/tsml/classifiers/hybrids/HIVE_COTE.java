@@ -324,13 +324,21 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      *      i.e. even if it can run the building of two or more classifiers in parallel, 
      *      this will still naively set the contract per classifier as amount/numClassifiers
      */
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
         trainTimeContract = true;
         trainContractTimeNanos = amount;
         contractTrainTimeUnit = TimeUnit.NANOSECONDS;
     }
-    
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
     /**
      * Sets up the ensemble for contracting, to be called at the start of build classifier,
      * i.e. when parameters can no longer be changed.
@@ -406,16 +414,14 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public String getParameters() {
-        String str="WeightingScheme,"+weightingScheme+",";//+alpha;
+        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",";//+alpha;
+
         for (EnsembleModule module : modules)
-            str+=module.posteriorWeights[0]+","+module.getModuleName()+",";
-        for (EnsembleModule module : modules) {
-            if (module.getClassifier() instanceof EnhancedAbstractClassifier)
-                str += ((EnhancedAbstractClassifier) module.getClassifier()).getParameters();
-            else
-                str += "NoParaInfo,";
-            str += ",,";
-        }
+            str+=module.getModuleName()+","+module.posteriorWeights[0]+",";
+
+        for (EnsembleModule module : modules)
+            str += module.getParameters() + ",,";
+
         return str;
 
     }

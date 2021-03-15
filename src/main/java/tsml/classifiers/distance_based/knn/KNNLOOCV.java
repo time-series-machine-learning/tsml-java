@@ -266,7 +266,10 @@ public class KNNLOOCV
     private static final long serialVersionUID = 0;
     public static final String NEIGHBOUR_LIMIT_FLAG = "n";
     public static final String NEIGHBOUR_ITERATION_STRATEGY_FLAG = "s";
-    protected transient long trainTimeLimitNanos = -1;
+    protected transient long trainContractTimeNanos = -1;
+    private boolean trainTimeContract = false;
+
+
     protected List<NeighbourSearcher> searchers;
     protected long longestNeighbourEvalTimeInNanos;
     protected int neighbourLimit = -1;
@@ -303,10 +306,20 @@ public class KNNLOOCV
         return comparisonCount;
     }
 
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
     @Override
-    public void setTrainTimeLimit(long nanos) {
-        trainTimeLimitNanos = nanos;
+    public void setTrainTimeLimit(final long nanos) {
+        trainContractTimeNanos = nanos;
+        trainTimeContract=true;
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
 
     public List<NeighbourSearcher> getSearchers() {
         return searchers;
@@ -540,11 +553,11 @@ public class KNNLOOCV
     }
 
     public long getTrainTimeLimit() {
-        return trainTimeLimitNanos;
+        return trainContractTimeNanos;
     }
 
-    public void setTrainTimeLimitNanos(final long trainTimeLimit) {
-        this.trainTimeLimitNanos = trainTimeLimit;
+    public void setTrainContractTimeNanos(final long trainTimeLimit) {
+        this.trainContractTimeNanos = trainTimeLimit;
     }
 
     public int getNeighbourLimit() {

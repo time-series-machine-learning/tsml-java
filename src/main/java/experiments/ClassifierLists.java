@@ -17,6 +17,8 @@ package experiments;
 
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
+import machine_learning.classifiers.ensembles.ContractRotationForest;
+import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
@@ -350,7 +352,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22"};
+    public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22", "HC_OOB", "HC-cv-pf-stc","HC-cv-stc","HCV2-cv"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -368,6 +370,45 @@ public class ClassifierLists {
                 c=new HIVE_COTE();
                 ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                 ((HIVE_COTE)c).setSeed(fold);
+                break;
+            case "HC-cv-pf-stc":
+                HIVE_COTE hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                String[] classifiers={"Arsenal-cv","DrCIF-cv","TDE-cv","PF-cv","STC-cv"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-cv-stc":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"Arsenal-cv","DrCIF-cv","TDE-cv","STC-cv"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HCV2-cv":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"Arsenal-cv","DrCIF-cv","TDE-cv","STC-cv","PF-cv"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC_OOB":
+                HIVE_COTE hc2=new HIVE_COTE();
+                hc2.setBuildIndividualsFromResultsFiles(true);
+                hc2.setSeed(fold);
+                hc2.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                String[] x2={"Arsenal-oob","DrCIF-oob","TDE-oob"};
+                hc2.setClassifiersNamesForFileRead(x2);
+                c=hc2;
                 break;
             case "catch22":
                 c = new Catch22Classifier();
@@ -506,7 +547,7 @@ public class ClassifierLists {
      * STANDARD classifiers such as random forest etc
      */
     public static String[] standard= {
-        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "PLSNominalClassifier","BayesNet","ED","C45",
+        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
             "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(Experiments.ExperimentalArguments exp){
@@ -536,6 +577,37 @@ public class ClassifierLists {
                 RotationForest rf=new RotationForest();
                 rf.setNumIterations(200);
                 c = rf;
+                break;
+            case "ContractRotF":
+                ContractRotationForest crf=new ContractRotationForest();
+                crf.setMaxNumTrees(200);
+                c = crf;
+                break;
+            case "ERotFBag":
+                EnhancedRotationForest erf=new EnhancedRotationForest();
+                erf.setBagging(true);
+                erf.setMaxNumTrees(200);
+                c = erf;
+                break;
+            case "ERotFOOB":
+                erf=new EnhancedRotationForest();
+                erf.setBagging(false);
+                erf.setTrainEstimateMethod("OOB");
+                erf.setMaxNumTrees(200);
+                c = erf;
+                break;
+            case "ERotFCV":
+                erf=new EnhancedRotationForest();
+                erf.setBagging(false);
+                erf.setTrainEstimateMethod("CV");
+                erf.setMaxNumTrees(200);
+                c = erf;
+                break;
+            case "ERotF": case "ERotFTRAIN":
+                erf=new EnhancedRotationForest();
+                erf.setTrainEstimateMethod("TRAIN");
+                erf.setMaxNumTrees(200);
+                c = erf;
                 break;
             case "PLSNominalClassifier":
                 c = new PLSNominalClassifier();

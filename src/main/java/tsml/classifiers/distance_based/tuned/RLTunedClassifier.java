@@ -48,8 +48,7 @@ import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.
 
 public class RLTunedClassifier extends BaseClassifier implements Rebuildable, TrainTimeContractable,
     WatchedMemory,
-    TimedTrain, TimedTrainEstimate,
-                                                                    Checkpointable, Parallelisable {
+    TimedTrain, TimedTrainEstimate, Checkpointable, Parallelisable {
 
     /*
         how do we do tuning?
@@ -260,9 +259,18 @@ public class RLTunedClassifier extends BaseClassifier implements Rebuildable, Tr
         // finish params
     }
 
-    @Override public void setTrainTimeLimit(final long nanos) {
+    /**
+     * Overriding TrainTimeContract methods
+     * @param nanos
+     */
+    @Override
+    public void setTrainTimeLimit(final long nanos) {
         trainContractTimeNanos = nanos;
         trainTimeContract=true;
+    }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
     }
 
     public long predictNextTrainTimeNanos() {

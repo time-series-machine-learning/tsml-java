@@ -361,8 +361,14 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
 
     @Override
     public void setTrainTimeLimit(long nanos) {
+        trainTimeContract=true;
         trainTimeLimitNanos = nanos;
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
 
     public long predictNextTrainTimeNanos() { // todo this may be better in its own interface
         long result = 0;
@@ -528,6 +534,7 @@ public class ElasticEnsemble extends BaseClassifier implements TrainTimeContract
         // set the train time limit if possible
         if(constituent instanceof TrainTimeContractable && hasTimeRemainingPerConstituent()) {
 //            ((TrainTimeContractable) constituent).setTrainTimeLimitNanos(remainingTrainTimeNanosPerConstituent);
+
         }
         // track the train time of the constituent
         StopWatch constituentTrainTimer = new StopWatch();

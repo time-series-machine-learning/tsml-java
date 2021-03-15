@@ -246,7 +246,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 Arrays.toString(numIntervals).replace(',', ';')+",minIntervalLength,"+
                 Arrays.toString(minIntervalLength).replace(',', ';')+",maxIntervalLength,"+
                 Arrays.toString(maxIntervalLength).replace(',', ';')+",baseClassifier,"+
-                base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+estimator.name()+
+                base.getClass().getSimpleName()+",bagging,"+ bagging+",estimator,"+ trainEstimateMethod.name()+
                 ",contractTime,"+contractTime;
         return temp;
     }
@@ -783,7 +783,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.finaliseResults(actuals);
         }
         //Either do a CV, or bag and get the estimates
-        else if(estimator== EstimatorMethod.CV){
+        else if(trainEstimateMethod == TrainEstimateMethod.CV){
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -803,8 +803,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.setClassifierName("DrCIFCV");
             trainResults.setErrorEstimateMethod("CV_"+numFolds);
         }
-        else if(estimator== EstimatorMethod.OOB || estimator==EstimatorMethod.NONE){
-            /** Build a single new TSF using Bagging, and extract the estimate from this
+        else if(trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE){
+            /** Build a single new DrCIF using Bagging, and extract the estimate from this
              */
             DrCIF cif=new DrCIF();
             cif.copyParameters(this);
@@ -1088,7 +1088,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             seed = saved.seed;
             rand = saved.rand;
             estimateOwnPerformance = saved.estimateOwnPerformance;
-            estimator = saved.estimator;
+            trainEstimateMethod = saved.trainEstimateMethod;
             numClasses = saved.numClasses;
 
             if (internalContractCheckpointHandling) checkpointTimeDiff = saved.checkpointTimeDiff
@@ -1699,7 +1699,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         DrCIF c = new DrCIF();
         c.setSeed(0);
         c.estimateOwnPerformance = true;
-        c.estimator = EstimatorMethod.OOB;
+        c.trainEstimateMethod = TrainEstimateMethod.OOB;
         double a;
         long t1 = System.nanoTime();
         c.buildClassifier(train);
