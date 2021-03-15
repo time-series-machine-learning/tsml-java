@@ -1,255 +1,51 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-
-import org.junit.Assert;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.OptionHandler;
 import weka.core.Utils;
 
-/**
- * Purpose: store a mapping of parameter names to their corresponding values.
- *
- * Note, this parameter mapping stuff can be a little confusing so read this first!
- * We maintain a map of parameter names to a list of values. There are a list of values because some parameters may
- * be able to accept lists / arrays, therefore we have a 1 to many mapping. This list stores objects. This was chosen
- * over a generic implementation due to the complexity and reduction in versatility by making it generic. I.e. it's
- * very easy to handle a ParamSet with objects as the value, passing it to other classes which accept ParamSets. If
- * it were generic, the layer of complexity to pass around generic ParamSets and potential compatibility issues make
- * it not worth it. Further, this way we can store values in any which form (e.g. Strings from the command line).
- * These will be passed inside the implementation class appropriately, therefore it doesn't matter that we have
- * parameters in String or primitive type format - either work. That's also a win on memory, as storing all values as
- * Strings takes up a fair amount of memory / time to convert primitive to String and back.
- *
- * Another complexity of the ParamSet structure is the fact that the values for each parameter themselves could be
- * ParamSets. This is to support sub parameter sets, e.g. if a KNN has a distance measure, but that distance measure
- * also takes parameters. We need to be able to specify the distance measure value for the KNN *and* the parameters
- * for the distance measure all in one ParamSet. In this case we would have 1 ParamSet mapping "dm" (for distance
- * measure, say) to an Object of type DistanceMeasure (say, an instance of DTW). The DTW instance then houses its own
- * parameters in the same way. When the KNN receives a ParamSet through setParams, the distance measure is assigned
- * the corresponding parameter value and the parameter for the distance measure are passed on from the KNN.
- *
- * Contributors: goastler
- */
-public class ParamSet implements ParamHandler, Serializable {
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-    public ParamSet() {
+import static tsml.classifiers.distance_based.utils.strings.StrUtils.toOptionValue;
 
+public class ParamSet implements Map<String, Object>, ParamHandler {
+    
+    private final Map<String, Object> map = new LinkedHashMap<>();
+
+    public ParamSet(Map<String, Object> other) {
+        putAll(other);
     }
-
+    
+    public ParamSet() {}
+    
     public ParamSet(String[] options) throws Exception {
         setOptions(options);
     }
-
+    
     public ParamSet(List<String> options) throws Exception {
-        this(options.toArray(new String[0]));
-    }
-
-    public ParamSet(String name, Object value, List<ParamSet> paramSets) {
-        add(name, value, paramSets);
-    }
-
-    public ParamSet(String name, Object value, ParamSet paramSet) {
-        this(name, value, Collections.singletonList(paramSet));
-    }
-
-    public ParamSet(String name, Object value) {
-        add(name, value);
-    }
-
-    public ParamSet(ParamSet paramSet) {
-        addAll(paramSet);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if(this == o) {
-            return true;
-        }
-        if(o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final ParamSet paramSet = (ParamSet) o;
-        return paramMap.equals(paramSet.paramMap);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(paramMap);
-    }
-
-    private final Map<String, List<Object>> paramMap = new HashMap<>();
-
-    public int size() {
-        int size = 0;
-        for(Map.Entry<String, List<Object>> entry : paramMap.entrySet()) {
-            List<Object> values = entry.getValue();
-            for(Object value : values) {
-                if(value instanceof ParamSet) {
-                    size += ((ParamSet) value).size();
-                } else {
-                    size++;
-                }
-            }
-        }
-        return size;
-    }
-
-    public boolean isEmpty() {
-        return paramMap.isEmpty();
-    }
-
-    /**
-     * NOTE: the values associated with each parameter name may be strings. This is especially likely when the options come
-     * from the command line. It is down to the client to handle the fact that the object returned by the get() method
-     * may be a string instead of the object they are intending. E.g. say I have the ParamSet { "w" -> 5 }. 5 is an
-     * integer so I can handle it normally. However, if this ParamSet had come off the cmdline then it would be { "w"
-     * -> "5" } as there is no context to what the value of "w" (i.e. "5") should be (is it a long / double / int /
-     * String?). Consequently, the value you expect back from this function may be as a string rather than the type
-     * you're expecting. You must do a "x instanceof String" check and parse from a string as necessary / required.
-     *
-     * @param name
-     * @return
-     */
-    public <A> List<A> get(String name) {
-        List<Object> list = paramMap.get(name);
-        if(list == null) {
-            return null;
-        }
-        try {
-            List<A> result = new ArrayList<>(list.size());
-            for(int i = 0; i < list.size(); i++) {
-                final A item = (A) list.get(i);
-                result.add(CopierUtils.deepCopy(item));
-            }
-            return result;
-        } catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public <A> A getSingle(String name) {
-        final List<A> list = get(name);
-        if(list == null) {
-            return null;
-        }
-        Assert.assertEquals(1, list.size());
-        return list.get(0);
-    }
-
-    public boolean contains(String name) {
-        return paramMap.get(name) != null;
-    }
-
-    public ParamSet add(String name, Object value) {
-        return add(name, value, Collections.emptyList());
-    }
-
-    public ParamSet add(String name, Object value, ParamSet params) {
-        add(name, value, Collections.singletonList(params));
-        return this;
-    }
-
-    /**
-     * add a parameter name mapping to a parameter value. The value is a parameter handler which accepts the ParamSet
-     * . The ParamSet is applied to the value during this function. An example would be ("DTW", new DTW(), dtwParams)
-     * . The DTW instance accepts the dtwParams object which sets, say, the warping window. Back here, the "DTW"
-     * string is mapped to the DTW instance. All parameters / configuration are therefore housed in a map using
-     * containment.
-     *  If multiple ParamSets are specified, each one is applied to the value in turn
-     * @param name
-     * @param value
-     * @param params
-     * @return
-     */
-    public ParamSet add(String name, Object value, List<ParamSet> params) {
-        value = CopierUtils.deepCopy(value); // deep copy the value so it cannot be changed from outside. This is especially important when considering values supplied from a paramspace which contains a list of values. Mutating the object directly would change the values in the param space with dia consequence.
-        setParams(value, params);
-        paramMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
-        return this;
-    }
-
-    public static void setParams(Object value, ParamSet param) {
-        setParams(value, Collections.singletonList(param));
-    }
-
-    public static void setParams(Object value, List<ParamSet> params) {
-        if(!params.isEmpty()) {
-            if(value instanceof ParamHandler) {
-                for(ParamSet param : params) {
-                    try {
-                        ((ParamHandler) value).setParams(param);
-                    } catch(Exception e) {
-                        throw new IllegalArgumentException(e);
-                    }
-                }
-            } else if(value instanceof OptionHandler) {
-                for(ParamSet param : params) {
-                    try {
-                        ((OptionHandler) value).setOptions(param.getOptions());
-                    } catch(Exception e) {
-                        throw new IllegalArgumentException(e);
-                    }
-                }
-            } else {
-                throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler therefore "
-                                                           + "cannot set the parameters {" + params.toString() + "}");
-            }
-        }
-    }
-
-    public ParamSet addAll(ParamSet paramSet) {
-        for(Entry<String, List<Object>> entry : paramSet.paramMap.entrySet()) {
-            String key = entry.getKey();
-            List<Object> list = entry.getValue();
-            for(Object value : list) {
-                add(key, value);
-            }
-        }
-        return this;
-    }
-
-    public ParamSet clear() {
-        paramMap.clear();
-        return this;
-    }
-
-    // todo make paramSet / paramSpace compatible with flags (urgh flags are naff) (weka uses flags for boolean
-    //  values, these are very difficult to parse, especially when it comes to neg numbers. We need to implement
-    //  flags, but also check whether the value after the flag is an option or not. If it is, that flag is for a
-    //  bespoke type, say int, and if not the flag's presence means the boolean is on. The tough part comes with the
-    //  flags absence, as this corresponds to either a) boolean is false or b) the user forgot to specify that
-    //  argument, as they don't currently have to specify every parameter when setting params. I think the only way
-    //  around this is to either force booleans to be parameter based (followed by t/f) or force that everytime
-    //  params are set boolean values need to be specified. *or* we have a boolean which controls whether the
-    //  booleans have been left out deliberately or left out accidentally. That's probably best, I'll make two new
-    //  functions for each of those when I have some time.
-
-    @Override
-    public List<String> getOptionsList() {
-        List<String> list = new ArrayList<>();
-        for(Map.Entry<String, List<Object>> entry : paramMap.entrySet()) {
-            String name = entry.getKey();
-            List<Object> paramValues = entry.getValue();
-            for(Object paramValue : paramValues) {
-                list.add(StrUtils.flagify(name));
-                list.add(StrUtils.toOptionValue(paramValue));
-            }
-        }
-        return list;
+        setOptions(options);
     }
     
-    @Override public void setOptionsList(final List<String> options) throws Exception {
-        setOptions(options.toArray(new String[0]));
+    public ParamSet(String key, Object value, List<ParamSet> subParamSets) {
+        add(key, value, subParamSets);   
+    }
+    
+    public ParamSet(String key, Object value, ParamSet subParamSet) {
+        add(key, value, subParamSet);
+    }
+    
+    public ParamSet(String key, Object value) {
+        add(key, value);
+    }
+
+    @Override public void setOptions(final List<String> options) throws Exception {
+        setOptions(options.toArray(new String[options.size()]));
     }
 
     @Override public void setOptions(final String[] options) throws Exception {
@@ -282,35 +78,297 @@ public class ParamSet implements ParamHandler, Serializable {
                     paramSet.setOptions(subOptions);
                     // add the parameter to this paramSet with correspond value (example "DTW") and corresponding
                     // sub options / parameters for that value (example "-w 5")
-                    add(flag, value, paramSet);
+                    put(flag, value, paramSet);
                 } else {
                     // the parameter is raw, i.e. "-a 6" <-- 6 has no parameters, therefore is raw
-                    add(flag, value);
+                    put(flag, value);
                 }
             } else {
                 // assume all flags are represented using boolean values
-                add(flag, true);
+                put(flag, true);
             }
         }
     }
 
-    @Override
-    public ParamSet getParams() {
-        return this;
+    @Override public int size() {
+        return map.size();
     }
 
-    @Override
-    public void setParams(final ParamSet param) {
-        for(Entry<String, List<Object>> entry : param.paramMap.entrySet()) {
-            String key = entry.getKey();
-            List<Object> value = entry.getValue();
-            add(key, value);
+    @Override public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    @Override public boolean containsKey(final Object o) {
+        return map.containsKey(o);
+    }
+
+    @Override public boolean containsValue(final Object o) {
+        return map.containsValue(o);
+    }
+
+    @Override public Object get(final Object o) {
+        // must copy value otherwise can be changed externally
+        return CopierUtils.deepCopy(map.get(o));
+    }
+    
+    public <A> A get(String key) {
+        return (A) get((Object) key);
+    }
+
+    @Override public Object put(final String s, final Object o) {
+        // copy value so external changes to the value are not propagated in the paramset
+        return map.put(s, CopierUtils.deepCopy(o));
+    }
+    
+    public Object put(final String key, final Object value, ParamSet paramSet) {
+        paramSet.applyTo(value);
+        return put(key, value);
+    }
+    
+    public ParamSet add(final String key, final Object value) {
+        return add(key, value, new ParamSet());
+    }
+    
+    public ParamSet add(final String key, final Object value, final ParamSet subParamSet) {
+        final Object before = put(key, value, subParamSet);
+        if(before != null) {
+            throw new IllegalArgumentException("already have parameter set under key: " + key);
+        }
+        return this;
+    }
+    
+    public ParamSet add(final String key, final Object value, final Iterable<ParamSet> subParamSets) {
+        for(ParamSet paramSet : subParamSets) {
+            paramSet.applyTo(value);   
+        }
+        return add(key, value);
+    }
+    
+    public void applyTo(Object value) {
+        if(this.isEmpty()) {
+            return;
+        }
+        if(value instanceof ParamHandler) {
+            try {
+                ((ParamHandler) value).setParams(this);
+            } catch(Exception e) {
+                throw new IllegalArgumentException(e);
+            }
+        } else if(value instanceof OptionHandler) {
+            try {
+                ((OptionHandler) value).setOptions(this.getOptions());
+            } catch(Exception e) {
+                throw new IllegalArgumentException(e);
+            }
+        } else {
+            throw new IllegalArgumentException("{" + value.toString() + "} is not a ParamHandler or OptionHandler therefore "
+                                                       + "cannot set the parameters " + this.toString());
         }
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return Utils.joinOptions(getOptions());
     }
+    
+    @Override
+    public List<String> getOptionsList() {
+        List<String> list = new ArrayList<>();
+        for(Map.Entry<String, ?> entry : entrySet()) {
+            String name = entry.getKey();
+            Object value = entry.getValue();
+            list.add(StrUtils.flagify(name));
+            list.add(toOptionValue(value));
+        }
+        return list;
+    }
 
+    public String toJson() {
+        /*
+        supported formats:
+        {
+          "a": 1,
+          "b": [
+            2,
+            3
+          ],
+          "c": [
+            [
+              4
+            ],
+            [
+              5
+            ]
+          ],
+          "d": [
+            [
+              6,
+              {
+                "da": 6.1,
+                "db": [
+                  6.2,
+                  6.3
+                ]
+              }
+            ],
+            [
+              7,
+              {
+                "dc": 6.4,
+                "dd": [
+                  6.5,
+                  6.6
+                ]
+              }
+            ]
+          ]
+        }
+
+        essentially, a param could:
+            - map to a single value (a)
+            - map to multiple values (b)
+            - map to multiple values each contained in a array (c)
+            - map to multiple values, each in their own array with a second obj in the array corresponding to their paramset in json form (d)
+         */
+
+        return new GsonBuilder().create().toJson(toJsonValue());
+    }
+
+    protected Map<String, Object> toJsonValue() {
+        final HashMap<String, Object> output = new HashMap<>();
+        for(String name : keySet()) {
+            Object value = get(name);
+            final ParamSet params = ParamHandlerUtils.getParams(value);
+            if(!params.isEmpty()) {
+                value = Arrays.asList(value, params.toJsonValue());
+            }
+            output.put(name, value);
+        }
+        return output;
+    }
+    
+    protected static ParamSet fromJsonValue(Map<String, Object> json) {
+        final ParamSet paramSet = new ParamSet();
+        for(String name : json.keySet()) {
+            Object value = json.get(name);
+            if(value instanceof List<?>) {
+                // list of 2 items: the value then the sub params
+                final List<?> parts = (List<?>) value;
+                value = parts.get(0);
+                final ParamSet params = (ParamSet) parts.get(1);
+                params.applyTo(value);
+            }
+            paramSet.put(name, value);
+        }
+        return paramSet;
+    }
+
+    public static ParamSet fromJson(String json) {
+        final HashMap<?, ?> hashMap = new Gson().fromJson(json, HashMap.class);
+        final ParamSet paramSet = new ParamSet();
+        for(Map.Entry<?, ?> entry : hashMap.entrySet()) {
+            final Object key = entry.getKey();
+            final String keyStr;
+            if(key instanceof String) {
+                keyStr = (String) key;
+            } else {
+                throw new IllegalStateException("expected string type for key: " + key);
+            }
+            Object value = entry.getValue();
+            ParamSet subParamSet = new ParamSet();
+            if(value instanceof List<?>) {
+                final List<?> parts = ((List<?>) value);
+                value = parts.get(0);
+                subParamSet = ParamSet.fromJsonValue((Map<String, Object>) parts.get(1));
+            }
+            paramSet.put(keyStr, value, subParamSet);
+        }
+        return paramSet;
+    }
+    
+    @Override public Object remove(final Object o) {
+        return map.remove(o);
+    }
+
+    @Override public void putAll(final Map<? extends String, ?> map) {
+        this.map.putAll(map);
+    }
+
+    @Override public void clear() {
+        map.clear();
+    }
+
+    @Override public Set<String> keySet() {
+        return map.keySet();
+    }
+
+    @Override public Collection<Object> values() {
+        return map.values();
+    }
+
+    @Override public Set<Entry<String, Object>> entrySet() {
+        return map.entrySet();
+    }
+
+    @Override public boolean equals(final Object o) {
+        return map.equals(o);
+    }
+
+    @Override public int hashCode() {
+        return map.hashCode();
+    }
+
+    public <A> A get(String key, A defaultValue) {
+        return (A) getOrDefault(key, defaultValue);
+    }
+    
+    @Override public Object getOrDefault(final Object o, final Object defaultValue) {
+        Object value = map.getOrDefault(o, defaultValue);
+        if(value instanceof String) {
+            value = StrUtils.parse((String) value, defaultValue.getClass());
+        }
+        return value;
+    }
+
+    @Override public void forEach(final BiConsumer<? super String, ? super Object> biConsumer) {
+        map.forEach(biConsumer);
+    }
+
+    @Override public void replaceAll(final BiFunction<? super String, ? super Object, ?> biFunction) {
+        map.replaceAll(biFunction);
+    }
+
+    @Override public Object putIfAbsent(final String s, final Object o) {
+        return map.putIfAbsent(s, o);
+    }
+
+    @Override public boolean remove(final Object o, final Object o1) {
+        return map.remove(o, o1);
+    }
+
+    @Override public boolean replace(final String s, final Object o, final Object v1) {
+        return map.replace(s, o, v1);
+    }
+
+    @Override public Object replace(final String s, final Object o) {
+        return map.replace(s, o);
+    }
+
+    @Override public Object computeIfAbsent(final String s, final Function<? super String, ?> function) {
+        return map.computeIfAbsent(s, function);
+    }
+
+    @Override public Object computeIfPresent(final String s,
+            final BiFunction<? super String, ? super Object, ?> biFunction) {
+        return map.computeIfPresent(s, biFunction);
+    }
+
+    @Override public Object compute(final String s,
+            final BiFunction<? super String, ? super Object, ?> biFunction) {
+        return map.compute(s, biFunction);
+    }
+
+    @Override public Object merge(final String s, final Object o,
+            final BiFunction<? super Object, ? super Object, ?> biFunction) {
+        return map.merge(s, o, biFunction);
+    }
 }

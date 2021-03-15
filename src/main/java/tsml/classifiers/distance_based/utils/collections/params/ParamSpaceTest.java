@@ -1,6 +1,5 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -11,10 +10,11 @@ import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
+import tsml.classifiers.distance_based.utils.collections.params.dimensions.continuous.ContinuousParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
 import tsml.classifiers.distance_based.utils.collections.params.distribution.double_based.UniformDoubleDistribution;
 
-import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_FLAG;
 import static tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace.newDDTWDistance;
 
 /**
@@ -30,7 +30,6 @@ public class ParamSpaceTest {
     }
 
     private int seed;
-    private Random random;
     private ParamSpace wParams;
     private List<Integer> wParamValues;
     private ParamSpace lParams;
@@ -43,7 +42,6 @@ public class ParamSpaceTest {
     @Before
     public void before() {
         seed = 0;
-        random = new Random(seed);
         wParamValues = buildWParamValues();
         wParams = buildWParams();
         lParams = buildLParams();
@@ -63,10 +61,10 @@ public class ParamSpaceTest {
     }
 
     public ParamSpace buildWParams() {
-        ParamSpace wParams = new ParamSpace();
+        ParamMap wParams = new ParamMap();
         List<Integer> wParamValues = buildWParamValues();
-        wParams.add(WINDOW_SIZE_FLAG, wParamValues);
-        return wParams;
+        wParams.add(WINDOW_FLAG, wParamValues);
+        return new ParamSpace(wParams);
     }
 
     public List<Integer> buildDummyValuesA() {
@@ -78,38 +76,35 @@ public class ParamSpaceTest {
     }
 
     public ParamSpace build2DDiscreteSpace() {
-        ParamSpace space = new ParamSpace();
+        ParamMap space = new ParamMap();
         List<Integer> a = buildDummyValuesA();
         List<Integer> b = buildDummyValuesB();
         space.add("a", a);
         space.add("b", b);
-        return space;
+        return new ParamSpace(space);
     }
 
     public UniformDoubleDistribution buildDummyDistributionA() {
         UniformDoubleDistribution u = new UniformDoubleDistribution(0d, 0.5d);
-        u.setRandom(buildRandom());
         return u;
     }
 
     public UniformDoubleDistribution buildDummyDistributionB() {
         UniformDoubleDistribution u = new UniformDoubleDistribution(0.5d, 1d);
-        u.setRandom(buildRandom());
         return u;
     }
 
     public ParamSpace build2DContinuousSpace() {
-        ParamSpace space = new ParamSpace();
+        ParamMap space = new ParamMap();
         UniformDoubleDistribution a = buildDummyDistributionA();
         UniformDoubleDistribution b = buildDummyDistributionB();
         space.add("a", a);
         space.add("b", b);
-        return space;
+        return new ParamSpace(space);
     }
 
     public UniformDoubleDistribution buildEDist() {
         UniformDoubleDistribution eDist = new UniformDoubleDistribution();
-        eDist.setRandom(buildRandom());
         eDist.setStart(0d);
         eDist.setEnd(0.25);
         return eDist;
@@ -117,57 +112,58 @@ public class ParamSpaceTest {
 
     public UniformDoubleDistribution buildDDist() {
         UniformDoubleDistribution eDist = new UniformDoubleDistribution();
-        eDist.setRandom(buildRandom());
         eDist.setStart(0.5);
         eDist.setEnd(1.0);
         return eDist;
     }
 
     public ParamSpace buildLParams() {
-        ParamSpace lParams = new ParamSpace();
+        ParamMap lParams = new ParamMap();
         lParams.add(LCSSDistance.EPSILON_FLAG, buildEDist());
-        lParams.add(WINDOW_SIZE_FLAG, buildDDist());
-        return lParams;
+        lParams.add(WINDOW_FLAG, buildDDist());
+        return new ParamSpace(lParams);
     }
 
     public DiscreteParamDimension<DistanceMeasure> buildWDmParams() {
         DiscreteParamDimension<DistanceMeasure> wDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new DTWDistance(), newDDTWDistance()));
-        wDmParams.addSubSpace(buildWParams());
+        wDmParams.setSubSpace(buildWParams());
         return wDmParams;
     }
 
     public DiscreteParamDimension<DistanceMeasure> buildLDmParams() {
         DiscreteParamDimension<DistanceMeasure> lDmParams = new DiscreteParamDimension<>(
             Arrays.asList(new LCSSDistance()));
-        lDmParams.addSubSpace(buildLParams());
+        lDmParams.setSubSpace(buildLParams());
         return lDmParams;
     }
 
     public ParamSpace buildParams() {
-        ParamSpace params = new ParamSpace();
+        ParamMap params = new ParamMap();
         params.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, lDmParams);
         params.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, wDmParams);
-        return params;
+        return new ParamSpace(params);
     }
 
     @Test
     public void testAddAndGetForListOfValues() {
-        List<ParamDimension<?>> valuesOut = wParams.get(WINDOW_SIZE_FLAG);
-        Object value = valuesOut.get(0).getValues();
-        Assert.assertEquals(value, wParamValues);
+        List<ParamDimension<?>> valuesOut = wParams.getSingle().get(WINDOW_FLAG);
+        List<?> values = ((DiscreteParamDimension<?>) valuesOut.get(0)).getValues();
+        Assert.assertEquals(values, wParamValues);
     }
 
     @Test
     public void testAddAndGetForDistributionOfValues() {
-        List<ParamDimension<?>> dimensions = lParams.get(LCSSDistance.EPSILON_FLAG);
-        for(ParamDimension<?> dimension : dimensions) {
-            Object values = dimension.getValues();
+        List<ParamDimension<?>> dimensions = lParams.getSingle().get(LCSSDistance.EPSILON_FLAG);
+        for(ParamDimension<?> d : dimensions) {
+            ContinuousParamDimension<?> dimension = (ContinuousParamDimension<?>) d;
+            Object values = dimension.getDistribution();
             Assert.assertEquals(eDist, values);
         }
-        dimensions = lParams.get(WINDOW_SIZE_FLAG);
-        for(ParamDimension<?> dimension : dimensions) {
-            Object values = dimension.getValues();
+        dimensions = lParams.getSingle().get(WINDOW_FLAG);
+        for(ParamDimension<?> d : dimensions) {
+            ContinuousParamDimension<?> dimension = (ContinuousParamDimension<?>) d;
+            Object values = dimension.getDistribution();
             Assert.assertEquals(values, dDist);
         }
     }
@@ -175,38 +171,38 @@ public class ParamSpaceTest {
     @Test
     public void testParamsToString() {
 //        System.out.println(params.toString());
-        Assert.assertEquals(params.toString(), "{d=[{values=[LCSSDistance -e 0.01 -w 1.0], "
-            + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}, {values=[DTWDistance -w 1.0, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -w 1.0\" -t tsml.transformers.Derivative], "
-            + "subSpaces=[{w=[{values=[1, 2, 3, 4, 5]}]}]}]}");
+        Assert.assertEquals("[{d=[{values=[LCSSDistance -w 1.0 -e 0.01], "
+            + "subSpace=[{e=[dist=UniformDouble(0.0, 0.25)], "
+            + "w=[dist=UniformDouble(0.5, 1.0)]}]}, {values=[DTWDistance -w 1.0, DDTWDistance -w 1.0], "
+            + "subSpace=[{w=[{values=[1, 2, 3, 4, 5]}]}]}]}]", params.toString());
     }
 
     @Test
     public void testWParamsToString() {
 //        System.out.println(wParams.toString());
-        Assert.assertEquals(wParams.toString(), "{w=[{values=[1, 2, 3, 4, 5]}]}");
+        Assert.assertEquals("[{w=[{values=[1, 2, 3, 4, 5]}]}]", wParams.toString());
     }
 
     @Test
     public void testLParamsToString() {
 //        System.out.println(lParams.toString());
-        Assert.assertEquals(lParams.toString(), "{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}");
+        Assert.assertEquals("[{e=[dist=UniformDouble(0.0, 0.25)], "
+            + "w=[dist=UniformDouble(0.5, 1.0)]}]", lParams.toString());
     }
 
     @Test
     public void testWDmParamsToString() {
 //        System.out.println(wDmParams.toString());
-        Assert.assertEquals(wDmParams.toString(), "{values=[DTWDistance -w 1.0, DDTWDistance -d \"tsml.classifiers.distance_based.distances.dtw.DTWDistance -w 1.0\" -t tsml.transformers.Derivative], subSpaces=[{w=[{values=[1, "
-            + "2, 3, 4, 5]}]}]}");
+        Assert.assertEquals("{values=[DTWDistance -w 1.0, DDTWDistance -w 1.0], subSpace=[{w=[{values=[1, "
+            + "2, 3, 4, 5]}]}]}", wDmParams.toString());
     }
 
     @Test
     public void testLDmParamsToString() {
 //        System.out.println(lDmParams.toString());
-        Assert.assertEquals(lDmParams.toString(), "{values=[LCSSDistance -e 0.01 -w 1.0], "
-            + "subSpaces=[{e=[{values=UniformDoubleDistribution{start=0.0, end=0.25}}], "
-            + "w=[{values=UniformDoubleDistribution{start=0.5, end=1.0}}]}]}");
+        Assert.assertEquals("{values=[LCSSDistance -w 1.0 -e 0.01], "
+            + "subSpace=[{e=[dist=UniformDouble(0.0, 0.25)], "
+            + "w=[dist=UniformDouble(0.5, 1.0)]}]}", lDmParams.toString());
     }
 
     @Test

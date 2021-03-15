@@ -7,7 +7,7 @@ import org.junit.Test;
 import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
-import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG;
+import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_FLAG;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here
@@ -16,7 +16,16 @@ import static tsml.classifiers.distance_based.distances.dtw.DTW.WINDOW_SIZE_FLAG
  */
 public class ParamSetTest {
 
-
+    @Test
+    public void testDuplicate() {
+        final ParamSet paramSet = new ParamSet();
+        paramSet.add("a", 5);
+        try {
+            paramSet.add("a", 6);
+            Assert.fail("added duplicate parameter");
+        } catch(Exception ignored) {}
+    }
+    
     @Test
     public void testSetAndGetOptions() {
         String aFlag = "a";
@@ -31,8 +40,8 @@ public class ParamSetTest {
             Assert.fail(e.getMessage());
         }
         Assert.assertNotNull(other.get(aFlag));
-        Assert.assertEquals(other.get(aFlag).size(), 1);
-        Assert.assertEquals(String.valueOf(other.get(aFlag).get(0)), String.valueOf(aValue));
+        final String o = other.get(aFlag);
+        Assert.assertEquals(String.valueOf(o), String.valueOf(aValue));
     }
 
     @Test
@@ -69,37 +78,15 @@ public class ParamSetTest {
         Assert.assertEquals(paramSet.toString(), "-a 1");
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
-        List<Object> list = paramSet.get(aFlag);
-        Assert.assertEquals(list.size(), 1);
-        Assert.assertEquals(list.get(0), aValue);
-    }
-
-    @Test
-    public void testAddNameAndMultipleValues() {
-        String aFlag = "a";
-        int aValue = 1;
-        double anotherAValue = 3.3;
-        String yetAnotherAValue = "not another!";
-        ParamSet paramSet = new ParamSet(aFlag, aValue);
-        paramSet.add(aFlag, anotherAValue);
-        paramSet.add(aFlag, yetAnotherAValue);
-//        System.out.println(paramSet);
-        String out = "-a 1 -a 3.3 -a \"\\\"\\\\\\\"not another!\\\\\\\"\\\"\"";
-        Assert.assertEquals(out, paramSet.toString());
-        Assert.assertFalse(paramSet.isEmpty());
-        Assert.assertEquals(paramSet.size(), 3);
-        List<Object> list = paramSet.get(aFlag);
-        Assert.assertEquals(list.size(), 3);
-        Assert.assertEquals(list.get(0), aValue);
-        Assert.assertEquals(list.get(1), anotherAValue);
-        Assert.assertEquals(list.get(2), yetAnotherAValue);
+        Object value = paramSet.get(aFlag);
+        Assert.assertEquals(value, aValue);
     }
 
     @Test
     public void testAddNameAndValueAndParamSet() {
         String aFlag = "a";
         LCSSDistance aValue = new LCSSDistance();
-        String bFlag = WINDOW_SIZE_FLAG;
+        String bFlag = WINDOW_FLAG;
         double bValue = 0.5;
         String cFlag = LCSSDistance.EPSILON_FLAG;
         double cValue = 0.2;
@@ -108,56 +95,40 @@ public class ParamSetTest {
         ParamSet paramSet = new ParamSet(aFlag, aValue, Lists.newArrayList(subParamSetB, subParamSetC));
 //        System.out.println(paramSet);
         aValue.setEpsilon(cValue);
-        aValue.setWindowSize(bValue);
-        Assert.assertEquals(paramSet.toString(), "-a \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
-            + "-e 0.2 -w 0.5\"");
+        aValue.setWindow(bValue);
+        Assert.assertEquals("-a \"tsml.classifiers.distance_based.distances.lcss.LCSSDistance "
+            + "-w 0.5 -e 0.2\"", paramSet.toString());
         Assert.assertFalse(paramSet.isEmpty());
         Assert.assertEquals(paramSet.size(), 1);
-        List<Object> list = paramSet.get(aFlag);
-        Object aValueOut = list.get(0);
-        Assert.assertEquals(list.size(), 1);
+        Object aValueOut = paramSet.get(aFlag);
         Assert.assertNotSame(aValueOut, aValue);
-        list = ((ParamHandler) aValueOut).getParams().get(bFlag);
-        Assert.assertEquals(list.size(), 1);
-        Assert.assertEquals(list.get(0), bValue);
+        Object list = ((ParamHandler) aValueOut).getParams().get(bFlag);
+        Assert.assertEquals(list, bValue);
         list = ((ParamHandler) aValueOut).getParams().get(cFlag);
-        Assert.assertEquals(list.size(), 1);
-        Assert.assertEquals(list.get(0), cValue);
+        Assert.assertEquals(list, cValue);
 
         try {
-            ParamHandlerUtils.setParam(paramSet, aFlag, i -> {
-                // should clone so should not be the same instance
-                Assert.assertNotSame(i, aValue);
-            });
+            Assert.assertNotSame(aValue, paramSet.get(aFlag));
         } catch(Exception e) {
             Assert.fail(e.toString());
         }
 
         try {
             // value may be in string form
-            ParamHandlerUtils.setParam(new ParamSet(aFlag, StrUtils.toOptionValue(aValue)), aFlag, i -> {
-                // should clone so should not be the same instance
-                Assert.assertNotSame(i, aValue);
-            });
+            Assert.assertNotSame(aValue, new ParamSet(aFlag, StrUtils.toOptionValue(aValue)).get(aFlag, aValue));
         } catch(Exception e) {
             Assert.fail(e.toString());
         }
 
         try {
-            ParamHandlerUtils.setParam(subParamSetC, cFlag, i -> {
-                // should not clone as it's primitive
-                Assert.assertEquals(i, cValue);
-            });
+            Assert.assertEquals(cValue, subParamSetC.get(cFlag, cValue), -1d);
         } catch(Exception e) {
             Assert.fail(e.toString());
         }
 
         try {
             // value may be in string form
-            ParamHandlerUtils.setParam(new ParamSet().add(cFlag, String.valueOf(cValue)), cFlag, i -> {
-                // should not clone as it's primitive
-                Assert.assertEquals(i, cValue, 0d);
-            }, Double::parseDouble);
+            Assert.assertEquals(cValue, new ParamSet().add(cFlag, String.valueOf(cValue)).get(cFlag, -1d), 0d);
         } catch(Exception e) {
             Assert.fail(e.toString());
         }

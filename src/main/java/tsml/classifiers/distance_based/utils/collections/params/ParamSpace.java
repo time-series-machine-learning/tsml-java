@@ -1,79 +1,48 @@
 package tsml.classifiers.distance_based.utils.collections.params;
 
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.ParamDimension;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.continuous.ContinuousParamDimension;
-import tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete.DiscreteParamDimension;
-import tsml.classifiers.distance_based.utils.collections.params.distribution.Distribution;
+import tsml.classifiers.distance_based.utils.collections.DefaultList;
+import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
+public class ParamSpace implements DefaultList<ParamMap> {
 
-public class ParamSpace implements Serializable {
-
-    // 1 to many mapping of param name to list of param dimensions
-    private final Map<String, List<ParamDimension<?>>> dimensionMap = new LinkedHashMap<>();
-
-    public Map<String, List<ParamDimension<?>>> getDimensionMap() {
-        return dimensionMap;
-    }
-
-    @Override
-    public String toString() {
-        return String.valueOf(dimensionMap);
-    }
-
-    public ParamSpace addDimension(String name, ParamDimension<?> dimension) {
-        getDimensionMap().computeIfAbsent(name, s -> new ArrayList<>()).add(dimension);
-        return this;
-    }
-
-    public <A> ParamSpace add(String name, double[] values) {
-        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
-    }
-
-    public <A> ParamSpace add(String name, int[] values) {
-        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
-    }
-
-    public <A> ParamSpace add(String name, long[] values) {
-        return add(name, Arrays.stream(values).boxed().collect(Collectors.toList()));
+    public ParamSpace(final List<ParamMap> paramMaps) {
+        addAll(paramMaps);
     }
     
-    public <A> ParamSpace add(String name, List<A> values) {
-        final DiscreteParamDimension<A> dimension;
-        if(values instanceof DiscreteParamDimension) {
-            dimension = (DiscreteParamDimension<A>) values;
-        } else {
-            dimension = new DiscreteParamDimension<>(values);
-        }
-        return addDimension(name, dimension);
+    public ParamSpace() {
+        
+    }
+    
+    public ParamSpace(ParamMap... paramMap) {
+        this(Arrays.asList(paramMap));
     }
 
-    public <A> ParamSpace add(String name, List<A> values, List<ParamSpace> subSpaces) {
-        return addDimension(name, new DiscreteParamDimension<>(values, subSpaces));
+    private final List<ParamMap> paramMaps = new ArrayList<>();
+
+    public boolean add(ParamMap paramMap) {
+        paramMaps.add(Objects.requireNonNull(paramMap));
+        return true;
     }
 
-    public <A> ParamSpace add(String name, List<A> values, ParamSpace subSpace) {
-        return add(name, values, newArrayList(subSpace));
+    @Override public ParamMap get(final int i) {
+        return paramMaps.get(i);
     }
 
-    public <A> ParamSpace add(String name, Distribution<A> values) {
-        return addDimension(name, new ContinuousParamDimension<A>(values));
+    @Override public int size() {
+        return paramMaps.size();
     }
 
-    public <A> ParamSpace add(String name, Distribution<A> values, List<ParamSpace> subSpaces) {
-        return addDimension(name, new ContinuousParamDimension<>(values, subSpaces));
+    @Override public String toString() {
+        return paramMaps.toString();
     }
-
-    public <A> ParamSpace add(String name, Distribution<A> values, ParamSpace subSpace) {
-        return add(name, values, newArrayList(subSpace));
-    }
-
-    public List<ParamDimension<?>> get(String name) {
-        return getDimensionMap().get(name);
+    
+    public ParamMap getSingle() {
+        return Checks.requireSingle(paramMaps);
     }
 
 }
