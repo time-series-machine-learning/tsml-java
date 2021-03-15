@@ -33,7 +33,14 @@ public class Configs<A> implements Iterable<Config<A>> {
     
     public void add(String name, String description, String templateName, Configurer<? super A> configurer) {
         final Config<A> template = get(templateName);
-        add(name, template.description() + ". " + description, template, configurer);
+        add(name, template.description() + ". " + description, template, new Configurer<A>() {
+            @Override public void configure(final A obj) {
+                // configure the template
+                template.configure(obj);
+                // then apply the specialisation config over the template
+                configurer.configure(obj);
+            }
+        });
     }
     
     public void add(Config<A> config) {
