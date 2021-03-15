@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.msm.spaces;
 
 import tsml.classifiers.distance_based.distances.msm.MSMDistance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.data_containers.TimeSeriesInstances;
@@ -115,8 +116,8 @@ public class MSMDistanceParams implements ParamSpaceBuilder {
                 100// </editor-fold>
         };
         List<Double> costValuesUnique = unique(costValues);
-        ParamSpace params = new ParamSpace();
+        ParamMap params = new ParamMap();
         params.add(MSMDistance.C_FLAG, costValuesUnique);
-        return params;
+        return new ParamSpace(params);
     }
 }
