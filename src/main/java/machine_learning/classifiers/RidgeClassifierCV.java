@@ -70,7 +70,8 @@ public class RidgeClassifierCV extends AbstractClassifier implements MultiThread
         if (value == null && numThreads != Runtime.getRuntime().availableProcessors())
             throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable not set. Set it to the " +
                     "number of threads you wish to use or set numThreads to " +
-                    "Runtime.getRuntime().availableProcessors()");
+                    "Runtime.getRuntime().availableProcessors(). Must be consistent with numThreads." +
+                    System.lineSeparator() + "Example: OMP_NUM_THREADS=1 java tsml.jar");
         if (value != null && Integer.parseInt(value) != numThreads)
             throw new Exception("RidgeClassifierCV: OMP_NUM_THREADS environmental variable and numThreads do not " +
                     "match.");

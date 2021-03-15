@@ -237,7 +237,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
         if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
-            estimateOwnPerformance(data);
+            findEnsembleTrainEstimate(data);
             long est2 = System.nanoTime();
             trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
         }
@@ -245,7 +245,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         trainResults.setParas(getParameters());
     }
 
-    private void estimateOwnPerformance(Instances data) throws Exception {
+    private void findEnsembleTrainEstimate(Instances data) throws Exception {
         if (bagging){
             double[] preds=new double[data.numInstances()];
             double[] actuals=new double[data.numInstances()];

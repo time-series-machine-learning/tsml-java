@@ -16,7 +16,6 @@
  */
 package machine_learning.classifiers;
 
-import experiments.data.DatasetLoading;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 
@@ -182,13 +181,14 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         return root.distributionForInstance(instance, functions, intervals, attributes, dimensions);
     }
 
-    //Fills the info List with the attribute, threshold and where it next moved for each node traversed
+    //Fills the info List with the attribute, threshold and the next node for each node traversed
     public double[] distributionForInstance(double[][] instance, Function<Interval, Double>[] functions,
                                             int[][] intervals, int[] attributes,
                                             int[] dimensions, ArrayList<double[]> info) throws Exception {
         return root.distributionForInstance(instance, functions, intervals, attributes, dimensions, info);
     }
 
+    //Same as above but for multiple representations
     public double[] distributionForInstance(double[][][] instance, Function<Interval, Double>[] functions,
                                             int[][][] intervals, int[] attributes,
                                             int[][] dimensions, ArrayList<double[]> info) throws Exception {
@@ -265,7 +265,7 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         int bestSplit = -1;
         double bestThreshold = 0;
         double bestGain = 0;
-        double bestMargin = 0;
+        double bestMargin = -1;
         TreeNode[] children;
         double[] leafDistribution;
         int depth;
@@ -296,13 +296,13 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
                             bestSplit = i;
                             bestThreshold = thresholds[i][n];
                             bestGain = entropies[0][0];
-                            bestMargin = 0;
+                            bestMargin = -1;
                             bestEntropies = entropies;
                         }
                         //Use margin gain if there is a tie
                         else if (useMargin && entropies[0][0] == bestGain && entropies[0][0] > 0){
                             double margin = findMargin(data, i, thresholds[i][n]);
-                            if (bestMargin == 0) bestMargin = findMargin(data, bestSplit, bestThreshold);
+                            if (bestMargin == -1) bestMargin = findMargin(data, bestSplit, bestThreshold);
 
                             //Select randomly if there is a tie again
                             if (margin > bestMargin || (margin == bestMargin && rand.nextBoolean())){
@@ -348,11 +348,11 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
                 }
             }
             else{
-                leafDistribution = distribution;
-                leafDistribution = normalise(leafDistribution);
+                leafDistribution = normalise(distribution);
             }
         }
 
+        //Distribution, entropy for each split and information gain
         double[][] entropyGain(Instances data, int att, double threshold, double parentEntropy){
             double[][] dists = new double[4][data.numClasses()];
             for (Instance inst: data){
@@ -391,6 +391,7 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
             return dists;
         }
 
+        //Margin gain for tie breaks
         double findMargin(Instances data, int att, double threshold){
             double min = Double.MAX_VALUE;
 
@@ -594,16 +595,5 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
             this.start = start;
             this.end = end;
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        int fold = 0;
-
-        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
-        Instances train = data[0];
-        Instances test = data[1];
-
-        ContinuousIntervalTree c = new ContinuousIntervalTree();
-        c.buildClassifier(train);
     }
 }
