@@ -25,20 +25,24 @@ import tsml.data_containers.TSCapabilities;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
-import tsml.transformers.*;
+import tsml.transformers.Catch22;
+import tsml.transformers.Differences;
+import tsml.transformers.Fast_FFT;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static utilities.ArrayUtilities.sum;
 import static utilities.StatisticalUtilities.median;
-import static utilities.Utilities.argMax;
 
 /**
  * Diverse Representation catch22 Interval Forest (DrCIF)
