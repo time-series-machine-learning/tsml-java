@@ -144,6 +144,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
 
         dataChecks();
     }
+    
+    public TimeSeriesInstance(double[] singleDimension) {
+	    this(new double[][] {singleDimension});
+    }
 
     /**
      * Construct an labelled instance from raw data.
