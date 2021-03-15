@@ -309,12 +309,11 @@ public class ClassifierLists {
         }
         return c;
     }
-
     /**
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
-            "ShapeletTreeClassifier","STC","ROCKET","ARSENAL"};
+            "ShapeletTreeClassifier","STC","ROCKET","ARSENAL","STC-Pruned"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -329,6 +328,11 @@ public class ClassifierLists {
                 break;
             case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
+                break;
+                case "STC-Pruned":
+                    ShapeletTransformClassifier stc=new ShapeletTransformClassifier();
+                    stc.setPruneMatchingShapelets(true);
+                    c=stc;
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();
