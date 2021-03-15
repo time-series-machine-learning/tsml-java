@@ -105,8 +105,7 @@ public class ClassifierSanityChecks {
     }
 
 
-    public static void contractRotationForestTest()throws Exception
-    {
+    public static void contractRotationForestTest()throws Exception {
  //       String path="src/main/java/experiments/data/tsc/";
 //        String problem="";
         String path="Z:\\ArchiveData\\Univariate_arff\\";
@@ -210,6 +209,50 @@ public class ClassifierSanityChecks {
             count++;
         }
         System.out.println("\n Default RotF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
+
+
+    }
+
+
+
+    public static void shapeletTransformClassifiertTest()throws Exception {
+        //       String path="src/main/java/experiments/data/tsc/";
+//        String problem="";
+        String path="Z:\\ArchiveData\\Univariate_arff\\";
+        String problem="ElectricDevices";
+
+        Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
+        Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
+        long t1,t2, trainTime;
+        int correct=0;
+
+        EnhancedAbstractClassifier c = new ShapeletTransformClassifier();
+        TrainTimeContractable x=( TrainTimeContractable) c;
+        ((TrainTimeContractable) c).setMinuteLimit(2);
+        t1= System.nanoTime();
+        c.setDebug(true);
+        c.setEstimateOwnPerformance(true);
+        int count=0;
+        ClassifierResults trainRes;
+        c.buildClassifier(train);
+        t2= System.nanoTime();
+        trainTime = (t2-t1)/1000000000;
+        trainRes = c.getTrainResults();
+        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+        for(Instance ins:test){
+            double pred=c.classifyInstance(ins);
+            double[] d = c.distributionForInstance(ins);
+            if(pred==ins.classValue())
+                correct++;
+            if(count<2) {
+                for (double dd : d)
+                    System.out.print(dd + ", ");
+                System.out.println(" PREDICTION = " + pred+ " actual = "+ins.classValue());
+            }
+            count++;
+
+        }
+        System.out.println("\n STC finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
 
     }
@@ -389,7 +432,8 @@ public class ClassifierSanityChecks {
 //        basicUsageTest();
 //        shortContractTest();
 //        mediumContractTest();
-        contractRotationForestTest();
+//        contractRotationForestTest();
+        shapeletTransformClassifiertTest();
     }
 
 }

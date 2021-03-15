@@ -98,7 +98,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     private boolean trainTimeContract =false;
     private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
     private int transformContractHours =1;// Hours contract for ST, defaults to 1 hour.
-    private long transformContractTime = TimeUnit.NANOSECONDS.convert(transformContractHours, TimeUnit.HOURS);//Time limit assigned to transform, based on contractTime, but fixed in buildClassifier in an adhoc way
+    //Time limit assigned to transform, this is considered a parameter, as too long results in over fitting
+    //however, if the classifier is contracted, then it is set as 50% of the contract time.
+    private long transformContractTime = TimeUnit.NANOSECONDS.convert(transformContractHours, TimeUnit.HOURS);
     private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
 
 /**** Shapelet Transform Information *************/
@@ -142,7 +144,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         configureDefaultShapeletTransform();
         EnhancedRotationForest rotf=new EnhancedRotationForest();
         rotf.setMaxNumTrees(200);
-        trainEstimateMethod=TrainEstimateMethod.CV;
+        trainEstimateMethod=TrainEstimateMethod.OOB;
         classifier=rotf;
     }
 // Not debugged, doesnt currently work
@@ -209,6 +211,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 
         printLineDebug("Starting STC build classifier after "+(System.nanoTime()-startTime)/1000000000+" ......");
+//Change to interface method
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
@@ -225,28 +228,31 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Here get the train estimate directly from classifier
         if(classifier instanceof EnhancedAbstractClassifier)
             ((EnhancedAbstractClassifier)classifier).setDebug(debug);
+        printLineDebug(" Shapelets evaluated = "+transform.getShapeletCounts());
         printLineDebug("Entering build classifier with classifier contract = "+classifierContractTime);
         if(getEstimateOwnPerformance()) {
-            ((EnhancedAbstractClassifier) classifier).setTrainEstimateMethod(trainEstimateMethod);
-            ((EnhancedAbstractClassifier) classifier).setEstimateOwnPerformance(true);
+            EnhancedAbstractClassifier eac=((EnhancedAbstractClassifier) classifier);
+            eac.setTrainEstimateMethod(trainEstimateMethod);
+            if(eac.ableToEstimateOwnPerformance())
+                eac.setEstimateOwnPerformance(true);
         }
         classifier.buildClassifier(shapeletData);
-        shapeletData=new Instances(data,0);
-
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        if(getEstimateOwnPerformance()){
-            trainResults.setBuildTime(System.nanoTime()-startTime - trainResults.getErrorEstimateTime());
-        }
-        else{
-            trainResults.setBuildTime(System.nanoTime()-startTime);
-        }
-        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
-        trainResults.setParas(getParameters());
-//HERE: If the base classifier can estimate its own performance, then lets do it here
+        long endTime=System.nanoTime();
         if(getEstimateOwnPerformance()){
             estimateOwnPerformance(data);
         }
+        if(classifier instanceof EnhancedAbstractClassifier) {
+            trainResults.setErrorEstimateTime(((EnhancedAbstractClassifier) classifier).getTrainResults().getErrorEstimateTime());
+            trainResults.setBuildTime(endTime - startTime-trainResults.getErrorEstimateTime());
+        }
+        else
+            trainResults.setBuildTime(endTime - startTime);
 
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+        trainResults.setParas(getParameters());
+        //To help garbage collection
+        shapeletData=new Instances(data,0);
     }
 
     @Override

@@ -285,7 +285,11 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             loadFromFile(checkpointPath + "RotF" + seed + ".ser");
             //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        else{   //Initialise:
+        else{
+            //Initialise
+            if (baseClassifier == null) {
+                throw new Exception("A base classifier has not been specified!");
+            }//Initialise:
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
@@ -388,10 +392,10 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     }
                 }
             }
-//If the first one takes too long, adjust length parameter
             numTrees++;
+            //If the first one takes too long, adjust length parameter
+            //Not used yet
             long endTreeTime=System.nanoTime();
-            trainResults.setBuildTime(endTreeTime-startTime);
             singleTreeTime=endTreeTime-singleTreeTime;
 
         }while((!trainTimeContract || withinTrainContract(trainResults.getBuildTime())) && classifiers.size() < minNumTrees);

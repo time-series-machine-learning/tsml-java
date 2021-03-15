@@ -85,7 +85,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     /** Filter that normalized the attributes */
     protected Normalize normalize = null;
 
-    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
+    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpointing
 
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos =0;
