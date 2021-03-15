@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
@@ -40,19 +40,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
 import static utilities.Utilities.argMax;
-import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
  * TDE classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
  * If parameters are known, use the class IndividualTDE and directly provide them.
- *
+ * <p>
  * Has the capability to contract train time and checkpoint.
- *
+ * <p>
  * Alphabetsize fixed to four and maximum wordLength of 16.
- *
+ * <p>
  * Implementation based on the algorithm described in getTechnicalInformation()
  *
  * @author Matthew Middlehurst
@@ -139,7 +137,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     private double lowestAcc;
     private double maxAcc;
 
-    //temp vis/int
     private String visSavePath;
     private String interpSavePath;
     private ArrayList<Integer> interpData;
@@ -162,98 +159,126 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      *
      * @param size number of parameters considered
      */
-    public void setParametersConsidered(int size) { parametersConsidered = size; }
+    public void setParametersConsidered(int size) {
+        parametersConsidered = size;
+    }
 
     /**
      * Max number of classifiers for the ensemble.
      *
      * @param size max ensemble size
      */
-    public void setMaxEnsembleSize(int size) { maxEnsembleSize = size; }
+    public void setMaxEnsembleSize(int size) {
+        maxEnsembleSize = size;
+    }
 
     /**
      * Proportion of train set to be randomly subsampled for each classifier.
      *
      * @param d train subsample proportion
      */
-    public void setTrainProportion(double d) { trainProportion = d; }
+    public void setTrainProportion(double d) {
+        trainProportion = d;
+    }
 
     /**
      * Dimension accuracy cutoff threshold for multivariate time series.
      *
      * @param d dimension cutoff threshold
      */
-    public void setDimensionCutoffThreshold(double d) { dimensionCutoffThreshold = d; }
+    public void setDimensionCutoffThreshold(double d) {
+        dimensionCutoffThreshold = d;
+    }
 
     /**
      * Maximum number of dimensions kept for multivariate time series.
      *
      * @param d Max number of dimensions
      */
-    public void setMaxNoDimensions(int d) { maxNoDimensions = d; }
+    public void setMaxNoDimensions(int d) {
+        maxNoDimensions = d;
+    }
 
     /**
      * Whether to delete checkpoint files after building has finished.
      *
      * @param b clean up checkpoint files
      */
-    public void setCleanupCheckpointFiles(boolean b) { cleanupCheckpointFiles = b; }
+    public void setCleanupCheckpointFiles(boolean b) {
+        cleanupCheckpointFiles = b;
+    }
 
     /**
      * Whether to load checkpoint files and finish building from the loaded state.
      *
      * @param b load ser files and finish building
      */
-    public void loadAndFinish(boolean b) { loadAndFinish = b; }
+    public void loadAndFinish(boolean b) {
+        loadAndFinish = b;
+    }
 
     /**
      * Max window length as proportion of the series length.
      *
      * @param d max window length proportion
      */
-    public void setMaxWinLenProportion(double d) { maxWinLenProportion = d; }
+    public void setMaxWinLenProportion(double d) {
+        maxWinLenProportion = d;
+    }
 
     /**
      * Max number of window lengths to search through as proportion of the series length.
      *
      * @param d window length search proportion
      */
-    public void setMaxWinSearchProportion(double d) { maxWinSearchProportion = d; }
+    public void setMaxWinSearchProportion(double d) {
+        maxWinSearchProportion = d;
+    }
 
     /**
      * Whether to use GP parameter selection for IndividualBOSS classifiers.
      *
      * @param b use GP parameter selection
      */
-    public void setBayesianParameterSelection(boolean b) { bayesianParameterSelection = b; }
+    public void setBayesianParameterSelection(boolean b) {
+        bayesianParameterSelection = b;
+    }
 
     /**
      * Wether to use bigrams in IndividualBOSS classifiers.
      *
      * @param b use bigrams
      */
-    public void setUseBigrams(Boolean b) { useBigrams = b; }
+    public void setUseBigrams(Boolean b) {
+        useBigrams = b;
+    }
 
     /**
      * Wether to use feature selection in IndividualBOSS classifiers.
      *
      * @param b use feature selection
      */
-    public void setUseFeatureSelection(boolean b) { useFeatureSelection = b; }
+    public void setUseFeatureSelection(boolean b) {
+        useFeatureSelection = b;
+    }
 
     /**
      * Whether to remove ensemble members below a proportion of the highest accuracy.
      *
      * @param b use ensemble cutoff
      */
-    public void setCutoff(boolean b) { cutoff = b; }
+    public void setCutoff(boolean b) {
+        cutoff = b;
+    }
 
     /**
      * Ensemble accuracy cutoff as proportion of highest ensemble memeber accuracy.
      *
      * @param d cutoff proportion
      */
-    public void setCutoffThreshold(double d) { cutoffThreshold = d; }
+    public void setCutoffThreshold(double d) {
+        cutoffThreshold = d;
+    }
 
     /**
      * Outputs TDE and IndivdiualTDE parameters as a String.
@@ -307,7 +332,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      *
      * @return the time series capabilities of TDE
      */
-    public TSCapabilities getTSCapabilities(){
+    public TSCapabilities getTSCapabilities() {
         TSCapabilities capabilities = new TSCapabilities();
         capabilities.enable(TSCapabilities.EQUAL_LENGTH)
                 .enable(TSCapabilities.MULTI_OR_UNIVARIATE)
@@ -359,9 +384,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         else {
             classifiers = new LinkedList<>();
 
-            if (checkpoint){
+            if (checkpoint) {
                 checkpointIDs = new ArrayList<>();
-                for (int i = 0; i < maxEnsembleSize; i++){
+                for (int i = 0; i < maxEnsembleSize; i++) {
                     checkpointIDs.add(i);
                 }
             }
@@ -443,14 +468,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             if (parameters == null) break;
 
             IndividualTDE indiv;
-            if (series.isMultivariate()){
+            if (series.isMultivariate()) {
                 indiv = new MultivariateIndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
-                ((MultivariateIndividualTDE)indiv).setDimensionCutoffThreshold(dimensionCutoffThreshold);
-                ((MultivariateIndividualTDE)indiv).setMaxNoDimensions(maxNoDimensions);
-            }
-            else{
+                ((MultivariateIndividualTDE) indiv).setDimensionCutoffThreshold(dimensionCutoffThreshold);
+                ((MultivariateIndividualTDE) indiv).setMaxNoDimensions(maxNoDimensions);
+            } else {
                 indiv = new IndividualTDE((int) parameters[0], (int) parameters[1], (int) parameters[2],
                         parameters[3] == 1, (int) parameters[4], parameters[5] == 1,
                         multiThread, numThreads, ex);
@@ -483,7 +507,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     if (b.getAccuracy() < maxAcc * cutoffThreshold) {
                         it.remove();
 
-                        if (checkpoint){
+                        if (checkpoint) {
                             checkpointIDs.add(b.getEnsembleID());
                         }
                     }
@@ -498,7 +522,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     }
                     classifiers.add(indiv);
 
-                    if (checkpoint){
+                    if (checkpoint) {
                         indiv.setEnsembleID(checkpointIDs.remove(0));
                         checkpointChange = true;
                     }
@@ -510,7 +534,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     IndividualTDE rm = classifiers.remove(lowestAccIdx);
                     classifiers.add(lowestAccIdx, indiv);
 
-                    if (checkpoint){
+                    if (checkpoint) {
                         indiv.setEnsembleID(rm.getEnsembleID());
                         checkpointChange = true;
                     }
@@ -532,7 +556,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * as meta info.
      *
      * @param classifier last build IndividualTDE classifier
-     * @param saveIndiv whether to save the new IndividualClassifier
+     * @param saveIndiv  whether to save the new IndividualClassifier
      */
     private void checkpoint(IndividualTDE classifier, boolean saveIndiv) {
         try {
@@ -630,7 +654,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      *
      * @param minWindow min window size
      * @param maxWindow max windoew size
-     * @param winInc window size increment
+     * @param winInc    window size increment
      * @return possible parameters as an Instances object
      */
     private Instances uniqueParameters(int minWindow, int maxWindow, int winInc) {
@@ -753,7 +777,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * Randomly subsample the train set.
      *
      * @param series data to be subsampled
-     * @param indiv classifier being subsampled for
+     * @param indiv  classifier being subsampled for
      * @return subsampled data
      */
     private TimeSeriesInstances subsampleData(TimeSeriesInstances series, IndividualTDE indiv) {
@@ -761,12 +785,12 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         ArrayList<TimeSeriesInstance> data = new ArrayList<>();
 
         ArrayList<Integer> indices = new ArrayList<>(series.numInstances());
-        for (int n = 0; n < series.numInstances(); n++){
+        for (int n = 0; n < series.numInstances(); n++) {
             indices.add(n);
         }
 
         ArrayList<Integer> subsampleIndices = new ArrayList<>(series.numInstances());
-        while (subsampleIndices.size() < newSize){
+        while (subsampleIndices.size() < newSize) {
             subsampleIndices.add(indices.remove(rand.nextInt(indices.size())));
         }
 
@@ -782,8 +806,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * Estimate the accruacy of an IndividualTDE using LOO CV for the subsampled data. Early exit if it is impossible
      * to meet the required accuracy.
      *
-     * @param indiv classifier to evaluate
-     * @param series subsampled data
+     * @param indiv     classifier to evaluate
+     * @param series    subsampled data
      * @param lowestAcc lowest accuracy in the ensemble
      * @return estimated accuracy
      * @throws Exception unable to estimate accuracy
@@ -802,7 +826,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
             for (int i = 0; i < series.numInstances(); ++i) {
                 if (series.isMultivariate())
-                    futures.add(ex.submit(((MultivariateIndividualTDE)indiv).new TrainNearestNeighbourThread(i)));
+                    futures.add(ex.submit(((MultivariateIndividualTDE) indiv).new TrainNearestNeighbourThread(i)));
                 else
                     futures.add(ex.submit(indiv.new TrainNearestNeighbourThread(i)));
             }
@@ -847,7 +871,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * @throws Exception unable to obtain estimate
      */
     private void findEnsembleTrainEstimate() throws Exception {
-        if (trainEstimateMethod == TrainEstimateMethod.OOB && trainProportion < 1){
+        if (trainEstimateMethod == TrainEstimateMethod.OOB && trainProportion < 1) {
             for (int i = 0; i < train.numInstances(); ++i) {
                 double[] probs = new double[train.numClasses()];
                 double sum = 0;
@@ -855,8 +879,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 for (int j = 0; j < classifiers.size(); j++) {
                     IndividualTDE classifier = classifiers.get(j);
 
-                    if (!classifier.getSubsampleIndices().contains(i)){
-                        probs[(int)classifier.classifyInstance(train.get(i))] += classifier.getWeight();
+                    if (!classifier.getSubsampleIndices().contains(i)) {
+                        probs[(int) classifier.classifyInstance(train.get(i))] += classifier.getWeight();
                         sum += classifier.getWeight();
                     }
                 }
@@ -864,8 +888,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 if (sum != 0) {
                     for (int j = 0; j < probs.length; ++j)
                         probs[j] = (probs[j] / sum);
-                }
-                else{
+                } else {
                     Arrays.fill(probs, 1.0 / train.numClasses());
                 }
 
@@ -875,12 +898,11 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
             trainResults.setClassifierName("TDEOOB");
             trainResults.setErrorEstimateMethod("OOB");
-        }
-        else {
+        } else {
             double[][] trainDistributions = new double[train.numInstances()][train.numClasses()];
             int[] idxSubsampleCount = new int[train.numInstances()];
 
-            if (trainEstimateMethod == TrainEstimateMethod.NONE) {
+            if (trainEstimateMethod == TrainEstimateMethod.NONE || trainEstimateMethod == TrainEstimateMethod.TRAIN) {
                 for (int i = 0; i < classifiers.size(); i++) {
                     ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
                     ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
@@ -901,8 +923,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
                 trainResults.setClassifierName("TDESubsampleLOO");
                 trainResults.setErrorEstimateMethod("SubsampleLOOCV");
-            }
-            else{
+            } else {
                 trainResults.setClassifierName("TDELOO");
                 trainResults.setErrorEstimateMethod("LOOCV");
             }
@@ -943,17 +964,14 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         for (IndividualTDE classifier : classifiers) {
             double classification;
 
-            if (classifier.getSubsampleIndices() == null){
+            if (classifier.getSubsampleIndices() == null) {
                 classification = classifier.classifyInstance(test);
-            }
-            else if (classifier.getSubsampleIndices().contains(test)){
+            } else if (classifier.getSubsampleIndices().contains(test)) {
                 classification = classifier.classifyInstance(classifier.getSubsampleIndices().indexOf(test));
-            }
-            else if (trainEstimateMethod == TrainEstimateMethod.CV) {
+            } else if (trainEstimateMethod == TrainEstimateMethod.CV) {
                 TimeSeriesInstance series = train.get(test);
                 classification = classifier.classifyInstance(series);
-            }
-            else{
+            } else {
                 continue;
             }
 
@@ -964,8 +982,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         if (sum != 0) {
             for (int i = 0; i < probs.length; ++i)
                 probs[i] = (probs[i] / sum);
-        }
-        else{
+        } else {
             Arrays.fill(probs, 1.0 / train.numClasses());
         }
 
@@ -986,17 +1003,17 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         //get sum of all channels, votes from each are weighted the same.
         double sum = 0;
 
-        if (interpSavePath != null){
+        if (interpSavePath != null) {
             interpData = new ArrayList<>();
             interpPreds = new ArrayList<>();
         }
 
-        if (multiThread){
+        if (multiThread) {
             ArrayList<Future<Double>> futures = new ArrayList<>(classifiers.size());
 
             for (IndividualTDE classifier : classifiers) {
                 if (train.isMultivariate())
-                    futures.add(ex.submit(((MultivariateIndividualTDE)classifier)
+                    futures.add(ex.submit(((MultivariateIndividualTDE) classifier)
                             .new TestNearestNeighbourThread(instance)));
                 else
                     futures.add(ex.submit(classifier.new TestNearestNeighbourThread(instance)));
@@ -1009,8 +1026,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 sum += weight;
                 idx++;
             }
-        }
-        else {
+        } else {
             for (IndividualTDE classifier : classifiers) {
                 double classification = classifier.classifyInstance(instance);
                 classHist[(int) classification] += classifier.getWeight();
@@ -1018,7 +1034,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
                 if (interpSavePath != null) {
                     interpData.add(classifier.getLastNNIdx());
-                    interpPreds.add((int)classification);
+                    interpPreds.add((int) classification);
                 }
             }
         }
@@ -1028,15 +1044,14 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         if (sum != 0) {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += classHist[i] / sum;
-        }
-        else{
+        } else {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += 1.0 / numClasses;
         }
 
         if (interpSavePath != null) {
             interpSeries = instance.toValueArray()[0];
-            interpPred = argMax(distributions,rand);
+            interpPred = argMax(distributions, rand);
         }
 
         return distributions;
@@ -1098,7 +1113,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      */
     @Override //TrainTimeContractable
     public boolean withinTrainContract(long start) {
-        if(trainContractTimeNanos <= 0) return true; //Not contracted
+        if (trainContractTimeNanos <= 0) return true; //Not contracted
         return System.nanoTime() - start - checkpointTimeDiff < trainContractTimeNanos;
     }
 
@@ -1111,7 +1126,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
         boolean validPath = Checkpointable.super.createDirectories(path);
-        if(validPath){
+        if (validPath) {
             checkpointPath = path;
             checkpoint = true;
         }
@@ -1131,8 +1146,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             throw new Exception("The SER file is not an instance of TDE");
         TDE saved = ((TDE) obj);
         System.out.println("Loading TDE.ser");
-
-        //todo update for vis
 
         //copy over variables from serialised object
         parametersConsidered = saved.parametersConsidered;
@@ -1180,6 +1193,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
         maxAcc = saved.maxAcc;
+        visSavePath = saved.visSavePath;
+        interpSavePath = saved.interpSavePath;
+        //interpData = saved.interpData;
+        //interpPreds = saved.interpPreds;
+        //interpCount = saved.interpCount;
+        //interpSeries = saved.interpSeries;
+        //interpPred = saved.interpPred;
 
         trainResults = saved.trainResults;
         if (!internalContractCheckpointHandling) trainResults.setBuildTime(System.nanoTime());
@@ -1231,7 +1251,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override
     public boolean setInterpretabilitySavePath(String path) {
         boolean validPath = Interpretable.super.createInterpretabilityDirectories(path);
-        if(validPath){
+        if (validPath) {
             interpSavePath = path;
         }
         return validPath;
@@ -1239,18 +1259,18 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
     @Override
     public boolean lastClassifiedInterpretability() throws Exception {
-        if (interpSavePath == null){
+        if (interpSavePath == null) {
             System.err.println("TDE interpretability output save path not set.");
             return false;
         }
 
-        if (train.isMultivariate()){
+        if (train.isMultivariate()) {
             System.err.println("TDE interpretability only available for univariate series.");
             return false;
         }
 
         TreeMap<Integer, Double> topNeighbours = new TreeMap<>(Collections.reverseOrder());
-        for (int i = 0; i < interpData.size(); i++){
+        for (int i = 0; i < interpData.size(); i++) {
             if (train.get(interpData.get(i)).getLabelIndex() == interpPred) {
                 Double val = topNeighbours.get(interpData.get(i));
                 if (val == null) val = 0.0;
@@ -1260,8 +1280,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         int topNeighbour = 0;
         double topInstanceWeight = Double.MIN_VALUE;
-        for (Map.Entry<Integer, Double> entry: topNeighbours.entrySet()){
-            if (entry.getValue() > topInstanceWeight){
+        for (Map.Entry<Integer, Double> entry : topNeighbours.entrySet()) {
+            if (entry.getValue() > topInstanceWeight) {
                 topNeighbour = entry.getKey();
                 topInstanceWeight = entry.getValue();
             }
@@ -1269,8 +1289,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         int topClassifier = 0;
         double topClassifierWeight = Double.MIN_VALUE;
-        for (int i = 0; i < interpData.size(); i++){
-            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight){
+        for (int i = 0; i < interpData.size(); i++) {
+            if (interpData.get(i) == topNeighbour && classifiers.get(i).getWeight() > topClassifierWeight) {
                 topClassifier = i;
                 topClassifierWeight = classifiers.get(i).getWeight();
             }
@@ -1286,51 +1306,49 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             int c1 = obj1.var1 - obj2.var1;
             if (c1 != 0) {
                 return c1;
-            }
-            else {
+            } else {
                 int c2 = obj1.var2.length() - obj2.var2.length();
                 if (c2 != 0) {
                     return c2;
-                }
-                else {
+                } else {
                     return obj1.var2.compareTo(obj2.var2);
                 }
             }
         });
 
         HashMap<SerialisableComparablePair<Byte, String>, Integer> histWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: histogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
-                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : histogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong) entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt) entry.getKey().var1).toStringUnigram();
 
             keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
             histWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
         }
 
         HashMap<SerialisableComparablePair<Byte, String>, Integer> nearestWords = new HashMap<>();
-        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry: nearestHistogram.entrySet()) {
-            String word = entry.getKey().var2 == -1 ? ((BitWordLong)entry.getKey().var1).toStringBigram()
-                    : ((BitWordInt)entry.getKey().var1).toStringUnigram();
+        for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : nearestHistogram.entrySet()) {
+            String word = entry.getKey().var2 == -1 ? ((BitWordLong) entry.getKey().var1).toStringBigram()
+                    : ((BitWordInt) entry.getKey().var1).toStringUnigram();
             keys.add(new SerialisableComparablePair<>(entry.getKey().var2, word));
             nearestWords.put(new SerialisableComparablePair<>(entry.getKey().var2, word), entry.getValue());
         }
 
         int numLevels = 1;
-        for (int i = 0; i < tde.getLevels(); i++){
-            numLevels += Math.pow(2,i);
+        for (int i = 0; i < tde.getLevels(); i++) {
+            numLevels += Math.pow(2, i);
         }
 
         ArrayList<Integer>[][] counts = new ArrayList[numLevels][2];
         ArrayList<String>[] words = new ArrayList[numLevels];
-        for (int i = 0; i < numLevels; i++){
+        for (int i = 0; i < numLevels; i++) {
             words[i] = new ArrayList<>();
-            for (int n = 0; n < 2; n++){
+            for (int n = 0; n < 2; n++) {
                 counts[i][n] = new ArrayList<>();
             }
         }
 
-        for (SerialisableComparablePair<Byte, String> key: keys){
-            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
+        for (SerialisableComparablePair<Byte, String> key : keys) {
+            int idx = key.var1 == -1 ? numLevels - 1 : key.var1;
 
             words[idx].add(key.var2);
 
@@ -1357,8 +1375,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityTDE.py \"" +
-                interpSavePath.replace("\\", "/")+ "\" " + seed + " " + interpCount
-                + " " + tde.getLevels() + " " +  interpPred + " " + train.get(topNeighbour).getLabelIndex());
+                interpSavePath.replace("\\", "/") + "\" " + seed + " " + interpCount
+                + " " + tde.getLevels() + " " + interpPred + " " + train.get(topNeighbour).getLabelIndex());
 
         interpCount++;
 
@@ -1384,29 +1402,27 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     }
 
     @Override
-    public int getPredID(){
+    public int getPredID() {
         return interpCount;
     }
 
     @Override
     public boolean setVisualisationSavePath(String path) {
         boolean validPath = Visualisable.super.createVisualisationDirectories(path);
-        if(validPath){
+        if (validPath) {
             visSavePath = path;
         }
         return validPath;
     }
 
-    //TODO clean up vis file and python script
-
     @Override
     public boolean createVisualisation() throws Exception {
-        if (visSavePath == null){
+        if (visSavePath == null) {
             System.err.println("TDE visualisation save path not set.");
             return false;
         }
 
-        if (train.isMultivariate()){
+        if (train.isMultivariate()) {
             System.err.println("TDE visualisation only available for univariate series.");
             return false;
         }
@@ -1417,7 +1433,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         HashMap<Boolean, Double> IGBCounts = new HashMap<>(useIGB.length);
         ArrayList<Integer> windowLengths = new ArrayList<>(classifiers.size());
         double weightSum = 0;
-        for (int i = 0; i < classifiers.size(); i++){
+        for (int i = 0; i < classifiers.size(); i++) {
             IndividualTDE cls = classifiers.get(i);
 
             Double val = wordLengthCounts.get(cls.getWordLength());
@@ -1443,8 +1459,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         int maxWordLength = -1;
         double maxWeight1 = -1;
-        for (Map.Entry<Integer, Double> ent: wordLengthCounts.entrySet()){
-            if (ent.getValue() > maxWeight1 || (ent.getValue() == maxWeight1 && rand.nextBoolean())){
+        for (Map.Entry<Integer, Double> ent : wordLengthCounts.entrySet()) {
+            if (ent.getValue() > maxWeight1 || (ent.getValue() == maxWeight1 && rand.nextBoolean())) {
                 maxWordLength = ent.getKey();
                 maxWeight1 = ent.getValue();
             }
@@ -1452,8 +1468,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
         int maxLevels = -1;
         double maxWeight2 = -1;
-        for (Map.Entry<Integer, Double> ent: levelsCounts.entrySet()){
-            if (ent.getValue() > maxWeight2 || (ent.getValue() == maxWeight2 && rand.nextBoolean())){
+        for (Map.Entry<Integer, Double> ent : levelsCounts.entrySet()) {
+            if (ent.getValue() > maxWeight2 || (ent.getValue() == maxWeight2 && rand.nextBoolean())) {
                 maxLevels = ent.getKey();
                 maxWeight2 = ent.getValue();
             }
@@ -1462,24 +1478,24 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         Collections.sort(windowLengths);
         int medianWindowLength;
         if (windowLengths.size() % 2 == 1)
-            medianWindowLength = windowLengths.get(windowLengths.size()/2);
+            medianWindowLength = windowLengths.get(windowLengths.size() / 2);
         else
-            medianWindowLength = (windowLengths.get(windowLengths.size()/2 - 1) +
-                    windowLengths.get(windowLengths.size()/2)) / 2;
+            medianWindowLength = (windowLengths.get(windowLengths.size() / 2 - 1) +
+                    windowLengths.get(windowLengths.size() / 2)) / 2;
 
         ArrayList<IndividualTDE> sortedClassifiers = new ArrayList<>(classifiers);
-        Collections.sort(sortedClassifiers,Collections.reverseOrder());
+        Collections.sort(sortedClassifiers, Collections.reverseOrder());
         IndividualTDE tde = null;
         int rank = 1;
-        for (IndividualTDE indiv: sortedClassifiers){
-            if (indiv.getWordLength() == maxWordLength && indiv.getLevels() == maxLevels){
+        for (IndividualTDE indiv : sortedClassifiers) {
+            if (indiv.getWordLength() == maxWordLength && indiv.getLevels() == maxLevels) {
                 tde = indiv;
                 break;
             }
             rank++;
         }
 
-        if (tde == null){
+        if (tde == null) {
             System.out.println("No TDE classifier with word length: " + maxWordLength + ", levels: " + maxLevels
                     + ", using top weighted classifier.");
             tde = sortedClassifiers.get(0);
@@ -1487,12 +1503,12 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
 
         HashMap<SerialisableComparablePair<Byte, String>, Integer>[] classCounts = new HashMap[getNumClasses()];
-        for (int i = 0; i < getNumClasses(); i++){
+        for (int i = 0; i < getNumClasses(); i++) {
             classCounts[i] = new HashMap<>();
         }
 
         int[] classCount = new int[getNumClasses()];
-        for (IndividualTDE.Bag bag: tde.getBags()){
+        for (IndividualTDE.Bag bag : tde.getBags()) {
             int cls = bag.getClassVal();
             if (classCount[cls] >= 1) continue;
             classCount[cls]++;
@@ -1500,8 +1516,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             for (Map.Entry<SerialisableComparablePair<BitWord, Byte>, Integer> entry : bag.entrySet()) {
                 SerialisableComparablePair<BitWord, Byte> key = entry.getKey();
 
-                String word = key.var2 == -1 ? ((BitWordLong)key.var1).toStringBigram()
-                        : ((BitWordInt)key.var1).toStringUnigram();
+                String word = key.var2 == -1 ? ((BitWordLong) key.var1).toStringBigram()
+                        : ((BitWordInt) key.var1).toStringUnigram();
 
                 SerialisableComparablePair<Byte, String> newKey = new SerialisableComparablePair<>(key.var2, word);
                 Integer val = classCounts[cls].get(newKey);
@@ -1514,40 +1530,38 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             int c1 = obj1.var1 - obj2.var1;
             if (c1 != 0) {
                 return c1;
-            }
-            else {
+            } else {
                 int c2 = obj1.var2.length() - obj2.var2.length();
                 if (c2 != 0) {
                     return c2;
-                }
-                else {
+                } else {
                     return obj1.var2.compareTo(obj2.var2);
                 }
             }
         });
-        for (HashMap<SerialisableComparablePair<Byte, String>, Integer> map: classCounts){
+        for (HashMap<SerialisableComparablePair<Byte, String>, Integer> map : classCounts) {
             keys.addAll(map.keySet());
         }
 
         int numLevels = 1;
-        for (int i = 0; i < tde.getLevels(); i++){
-            numLevels += Math.pow(2,i);
+        for (int i = 0; i < tde.getLevels(); i++) {
+            numLevels += Math.pow(2, i);
         }
 
         ArrayList<Integer>[][] counts = new ArrayList[numLevels][getNumClasses()];
         ArrayList<String>[] words = new ArrayList[numLevels];
-        for (int i = 0; i < numLevels; i++){
+        for (int i = 0; i < numLevels; i++) {
             words[i] = new ArrayList<>();
-            for (int n = 0; n < getNumClasses(); n++){
+            for (int n = 0; n < getNumClasses(); n++) {
                 counts[i][n] = new ArrayList<>();
             }
         }
 
-        for (SerialisableComparablePair<Byte, String> key: keys){
-            int idx = key.var1 == -1 ? numLevels-1 : key.var1;
+        for (SerialisableComparablePair<Byte, String> key : keys) {
+            int idx = key.var1 == -1 ? numLevels - 1 : key.var1;
 
             words[idx].add(key.var2);
-            for (int i = 0; i < getNumClasses(); i++){
+            for (int i = 0; i < getNumClasses(); i++) {
                 Integer val = classCounts[i].get(key);
                 if (val == null) val = 0;
                 counts[idx][i].add(val);
@@ -1586,7 +1600,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         of.closeFile();
 
         Process p = Runtime.getRuntime().exec("py src/main/python/visTDE.py \"" +
-                visSavePath.replace("\\", "/")+ "\" " + seed + " " + getNumClasses());
+                visSavePath.replace("\\", "/") + "\" " + seed + " " + getNumClasses());
 
         if (debug) {
             System.out.println("TDE vis python output:");
@@ -1615,27 +1629,19 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * @param args arguments, unused
      * @throws Exception if tests fail
      */
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         int fold = 0;
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-                "\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+
-                "\\"+dataset+"_TEST.arff");
-        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
-        train = data[0];
-        test = data[1];
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
+        Instances train = data[0];
+        Instances test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TEST.arff");
-        Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
-        train2 = data2[0];
-        test2 = data2[1];
+        Instances[] data2 = DatasetLoading.sampleERing(fold);
+        Instances train2 = data2[0];
+        Instances test2 = data2[1];
 
         TDE c;
         double accuracy;
@@ -1686,7 +1692,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         System.out.println("Build time on " + dataset2 + " fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
 
-        //Output 06/10/20
+        //Output 15/03/21
         /*
             TDE accuracy on ItalyPowerDemand fold 0 = 0.9543245869776482
             Train accuracy on ItalyPowerDemand fold 0 = 0.9701492537313433

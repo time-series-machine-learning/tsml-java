@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,31 +14,33 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers.dictionary_based;
 
-import java.util.*;
-import tsml.classifiers.*;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import tsml.classifiers.MemoryContractable;
-import utilities.*;
-import utilities.samplers.*;
-import weka.classifiers.functions.GaussianProcesses;
-import weka.core.*;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.MultiThreadable;
+import tsml.classifiers.TrainTimeContractable;
+import utilities.ClassifierTools;
+import utilities.samplers.RandomIndexSampler;
+import utilities.samplers.RandomRoundRobinIndexSampler;
+import utilities.samplers.RandomStratifiedIndexSampler;
+import utilities.samplers.Sampler;
+import weka.classifiers.functions.GaussianProcesses;
+import weka.core.*;
 
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 import static weka.core.Utils.sum;
 
@@ -46,18 +48,18 @@ import static weka.core.Utils.sum;
  * cBOSS classifier with parameter search and ensembling for univariate and
  * multivariate time series classification.
  * If parameters are known, use the class BOSSIndividual and directly provide them.
- *
+ * <p>
  * Options to change the method of ensembling to randomly select parameters with or without a filter.
  * Has the capability to contract train time and checkpoint when using a random ensemble.
- *
+ * <p>
  * Alphabetsize fixed to four and maximum wordLength of 16.
  *
  * @author Matthew Middlehurst
- *
+ * <p>
  * Implementation based on the algorithm described in getTechnicalInformation()
  */
 public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContractable,
-        MemoryContractable, Checkpointable, TechnicalInformationHandler, MultiThreadable {
+        Checkpointable, TechnicalInformationHandler, MultiThreadable {
 
     private ArrayList<Double>[] paramAccuracy;
     private ArrayList<Double>[] paramTime;
@@ -88,9 +90,9 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     private int currentSeries = 0;
     private boolean isMultivariate = false;
 
-    private final int[] wordLengths = { 16, 14, 12, 10, 8 };
-    private final int[] alphabetSize = { 4 };
-    private final boolean[] normOptions = { true, false };
+    private final int[] wordLengths = {16, 14, 12, 10, 8};
+    private final int[] alphabetSize = {4};
+    private final boolean[] normOptions = {true, false};
     private final double correctThreshold = 0.92;
     private int maxEnsembleSize = 500;
 
@@ -110,11 +112,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private boolean underContractTime = false;
-
-    private long memoryLimit = 0;
-    private long bytesUsed = 0;
-    private boolean memoryContract = false;
-    private boolean underMemoryLimit = true;
 
     //cBOSS CV acc variables, stored as field for checkpointing.
     private int[] classifiersBuilt;
@@ -140,12 +137,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     protected static final long serialVersionUID = 22554L;
 
-    public cBOSS(){
+    public cBOSS() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         useRecommendedSettings();
     }
 
-    public cBOSS(boolean useRecommendedSettings){
+    public cBOSS(boolean useRecommendedSettings) {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         if (useRecommendedSettings) useRecommendedSettings();
     }
@@ -165,7 +162,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     @Override
-    public Capabilities getCapabilities(){
+    public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
 
@@ -201,7 +198,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         return sb.toString();
     }
 
-    private void useRecommendedSettings(){
+    private void useRecommendedSettings() {
         ensembleSize = 250;
         maxEnsembleSize = 50;
         randomCVAccEnsemble = true;
@@ -213,39 +210,13 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     //pass in an enum of hour, minute, day, and the amount of them.
     @Override
-    public void setTrainTimeLimit(long amount){
-        printLineDebug(" cBOSS setting contract to "+amount);
-        if(amount>0) {
+    public void setTrainTimeLimit(long amount) {
+        printLineDebug(" cBOSS setting contract to " + amount);
+        if (amount > 0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
-        }
-        else
+        } else
             trainTimeContract = false;
-    }
-
-    @Override
-    public void setMemoryLimit(DataUnit unit, long amount){
-        try {
-            throw new Exception("Memory contract currently unavailable");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-
-//        switch (unit){
-//            case GIGABYTE:
-//                memoryLimit = amount*1073741824;
-//                break;
-//            case MEGABYTE:
-//                memoryLimit = amount*1048576;
-//                break;
-//            case BYTES:
-//                memoryLimit = amount;
-//                break;
-//            default:
-//                throw new InvalidParameterException("Invalid data unit");
-//        }
-//        memoryContract = true;
     }
 
     @Override
@@ -253,8 +224,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (numThreads > 1) {
             this.numThreads = numThreads;
             multiThread = true;
-        }
-        else{
+        } else {
             this.numThreads = 1;
             multiThread = false;
         }
@@ -263,8 +233,8 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     //Set the path where checkpointed versions will be stored
     @Override //Checkpointable
     public boolean setCheckpointPath(String path) {
-        boolean validPath=Checkpointable.super.createDirectories(path);
-        if(validPath){
+        boolean validPath = Checkpointable.super.createDirectories(path);
+        if (validPath) {
             checkpointPath = path;
             checkpoint = true;
         }
@@ -273,10 +243,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     //Define how to copy from a loaded object to this object
     @Override
-    public void copyFromSerObject(Object obj) throws Exception{
-        if(!(obj instanceof cBOSS))
+    public void copyFromSerObject(Object obj) throws Exception {
+        if (!(obj instanceof cBOSS))
             throw new Exception("The SER file is not an instance of cBOSS");
-        cBOSS saved = ((cBOSS)obj);
+        cBOSS saved = ((cBOSS) obj);
         System.out.println("Loading cBOSS" + seed + ".ser");
 
         //copy over variables from serialised object
@@ -322,10 +292,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
         underContractTime = saved.underContractTime;
-        memoryLimit = saved.memoryLimit;
-        bytesUsed = saved.bytesUsed;
-        memoryContract = saved.memoryContract;
-        underMemoryLimit = saved.underMemoryLimit;
         classifiersBuilt = saved.classifiersBuilt;
         lowestAccIdx = saved.lowestAccIdx;
         lowestAcc = saved.lowestAcc;
@@ -367,7 +333,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     }
 
     @Override
-    public ClassifierResults getTrainResults(){
+    public ClassifierResults getTrainResults() {
 //        trainResults.setAcc(ensembleCvAcc);
         return trainResults;
     }
@@ -380,7 +346,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         maxEnsembleSize = size;
     }
 
-    public void setRandomCVAccEnsemble(boolean b){
+    public void setRandomCVAccEnsemble(boolean b) {
         randomCVAccEnsemble = b;
     }
 
@@ -388,7 +354,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         useWeights = b;
     }
 
-    public void setFastTrainEstimate(boolean b){
+    public void setFastTrainEstimate(boolean b) {
         useFastTrainEstimate = b;
     }
 
@@ -400,15 +366,15 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         maxEvalPerClass = i;
     }
 
-    public void setReduceTrainInstances(boolean b){
+    public void setReduceTrainInstances(boolean b) {
         reduceTrainInstances = b;
     }
 
-    public void setTrainProportion(double d){
+    public void setTrainProportion(double d) {
         trainProportion = d;
     }
 
-    public void setMaxTrainInstances(int i){
+    public void setMaxTrainInstances(int i) {
         maxTrainInstances = i;
     }
 
@@ -416,7 +382,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         cleanupCheckpointFiles = b;
     }
 
-    public void setFullTrainCVEstimate(boolean b){
+    public void setFullTrainCVEstimate(boolean b) {
         fullTrainCVEstimate = b;
     }
 
@@ -424,7 +390,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         cutoff = b;
     }
 
-    public void cleanupCheckpointFiles(boolean b){
+    public void cleanupCheckpointFiles(boolean b) {
         cleanupCheckpointFiles = b;
     }
 
@@ -432,11 +398,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         loadAndFinish = b;
     }
 
-    public void setMaxWinLenProportion(double d){
+    public void setMaxWinLenProportion(double d) {
         maxWinLenProportion = d;
     }
 
-    public void setMaxWinSearchProportion(double d){
+    public void setMaxWinSearchProportion(double d) {
         maxWinSearchProportion = d;
     }
 
@@ -449,7 +415,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         // can classifier handle the data?
         getCapabilities().testWithFail(data);
         trainResults.setBuildTime(System.nanoTime());
-        long startTime=System.nanoTime();
+        long startTime = System.nanoTime();
 
         if (data.checkForAttributeType(Attribute.RELATIONAL)) {
             isMultivariate = true;
@@ -469,7 +435,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 //        checkpointPath = checkpointPath + "/" + checkpointName(data.relationName()) + "/";
         File file = new File(checkpointPath + "cBOSS" + seed + ".ser");
         //if checkpointing and serialised files exist load said files
-        if (checkpoint && file.exists()){
+        if (checkpoint && file.exists()) {
             //path checkpoint files will be saved to
             printLineDebug("Loading from checkpoint file");
             loadFromFile(checkpointPath + "cBOSS" + seed + ".ser");
@@ -480,7 +446,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             if (data.classIndex() != data.numAttributes() - 1)
                 throw new Exception("BOSS_BuildClassifier: Class attribute not set as last attribute in dataset");
 
-            printLineDebug("Building cBOSS  target number of classifiers = " +ensembleSize);
+            printLineDebug("Building cBOSS  target number of classifiers = " + ensembleSize);
 
             numClasses = data.numClasses();
 
@@ -515,23 +481,23 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
             parameterPool = uniqueParameters(minWindow, maxWindow, winInc);
 
-            if (randomCVAccEnsemble){
+            if (randomCVAccEnsemble) {
                 classifiersBuilt = new int[numSeries];
                 lowestAccIdx = new int[numSeries];
                 lowestAcc = new double[numSeries];
                 for (int i = 0; i < numSeries; i++) lowestAcc[i] = Double.MAX_VALUE;
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance()) {
                     filterTrainPreds = new ArrayList[numSeries];
-                    filterTrainIdx  = new ArrayList[numSeries];
-                    for (int n = 0; n < numSeries; n++){
+                    filterTrainIdx = new ArrayList[numSeries];
+                    for (int n = 0; n < numSeries; n++) {
                         filterTrainPreds[n] = new ArrayList();
                         filterTrainIdx[n] = new ArrayList();
                     }
                 }
             }
 
-            if (getEstimateOwnPerformance()){
+            if (getEstimateOwnPerformance()) {
                 trainDistributions = new double[data.numInstances()][numClasses];
                 idxSubsampleCount = new double[data.numInstances()];
             }
@@ -548,7 +514,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 */
         train = data;
 
-        if (multiThread){
+        if (multiThread) {
             if (numThreads == 1) numThreads = Runtime.getRuntime().availableProcessors();
             if (ex == null) ex = Executors.newFixedThreadPool(numThreads);
         }
@@ -562,21 +528,21 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             seriesHeader = new Instances(series[0], 0);
         }
         //Univariate
-        else{
+        else {
             series = new Instances[1];
             series[0] = data;
         }
 
         //Contracting
-        if (trainTimeContract){
+        if (trainTimeContract) {
             ensembleSize = 0;
             underContractTime = true;
         }
 
         //If checkpointing and flag is set stop building.
-        if (!(checkpoint && loadAndFinish)){
+        if (!(checkpoint && loadAndFinish)) {
             //Randomly selected ensemble with accuracy filter
-            if (randomCVAccEnsemble){
+            if (randomCVAccEnsemble) {
                 buildRandomCVAccBOSS(series);
             }
             //Randomly selected ensemble
@@ -600,26 +566,27 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         trainResults.setParas(getParameters());
 
         //delete any serialised files and holding folder for checkpointing on completion
-        if (checkpoint && cleanupCheckpointFiles){
+        if (checkpoint && cleanupCheckpointFiles) {
             checkpointCleanup();
         }
         trainResults.setParas(getParameters());
 
         if (randomCVAccEnsemble)
-            printLineDebug("*************** Finished cBOSS Build with "+classifiersBuilt[0]+" Base BOSS evaluated " +
-                "*************** in "+(System.nanoTime()-startTime)/1000000000+" Seconds. Number retained = " + classifiers[0].size());
+            printLineDebug("*************** Finished cBOSS Build with " + classifiersBuilt[0] + " Base BOSS evaluated " +
+                    "*************** in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds. Number retained = " + classifiers[0].size());
 
     }
 
     private void buildRandomCVAccBOSS(Instances[] series) throws Exception {
         //build classifiers up to a set size
-        while (((underContractTime || sum(classifiersBuilt) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
+        while ((withinTrainContract(trainResults.getBuildTime()) || sum(classifiersBuilt) < ensembleSize) &&
+                parameterPool[numSeries - 1].size() > 0) {
             long indivBuildTime = System.nanoTime();
             boolean checkpointChange = false;
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            IndividualBOSS boss = new IndividualBOSS((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, multiThread, numThreads, ex);
+            IndividualBOSS boss = new IndividualBOSS((int) parameters[0], (int) parameters[1], (int) parameters[2], parameters[3] == 1, multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -627,37 +594,35 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             boss.accuracy = individualTrainAcc(boss, data, numClassifiers[currentSeries] < maxEnsembleSize ? -99999999
                     : lowestAcc[currentSeries]);
 
-            if (useWeights){
+            if (useWeights) {
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
             }
 
             if (bayesianParameterSelection) paramAccuracy[currentSeries].add(boss.accuracy);
-            if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
-//            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
+            if (trainTimeContract) paramTime[currentSeries].add((double) (System.nanoTime() - indivBuildTime));
 
-            if (numClassifiers[currentSeries] < maxEnsembleSize){
-                if (boss.accuracy < lowestAcc[currentSeries]){
+            if (numClassifiers[currentSeries] < maxEnsembleSize) {
+                if (boss.accuracy < lowestAcc[currentSeries]) {
                     lowestAccIdx[currentSeries] = classifiersBuilt[currentSeries];
                     lowestAcc[currentSeries] = boss.accuracy;
                 }
                 classifiers[currentSeries].add(boss);
                 numClassifiers[currentSeries]++;
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance()) {
                     filterTrainPreds[currentSeries].add(latestTrainPreds);
                     filterTrainIdx[currentSeries].add(latestTrainIdx);
                 }
-            }
-            else if (boss.accuracy > lowestAcc[currentSeries]) {
+            } else if (boss.accuracy > lowestAcc[currentSeries]) {
                 double[] newLowestAcc = findMinEnsembleAcc();
-                lowestAccIdx[currentSeries] = (int)newLowestAcc[0];
+                lowestAccIdx[currentSeries] = (int) newLowestAcc[0];
                 lowestAcc[currentSeries] = newLowestAcc[1];
 
                 classifiers[currentSeries].remove(lowestAccIdx[currentSeries]);
                 classifiers[currentSeries].add(lowestAccIdx[currentSeries], boss);
 
-                if (getEstimateOwnPerformance()){
+                if (getEstimateOwnPerformance()) {
                     filterTrainPreds[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainIdx[currentSeries].remove(lowestAccIdx[currentSeries]);
                     filterTrainPreds[currentSeries].add(lowestAccIdx[currentSeries], latestTrainPreds);
@@ -677,30 +642,27 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             if (checkpoint) {
                 if (classifiersBuilt[currentSeries] <= maxEnsembleSize) {
                     checkpoint(prev, -1, true);
-                }
-                else{
+                } else {
                     checkpoint(prev, lowestAccIdx[prev], checkpointChange);
                 }
             }
-
-            checkContracts();
         }
 
-        if (cutoff){
+        if (cutoff) {
             for (int n = 0; n < numSeries; n++) {
                 double maxAcc = 0;
-                for (int i = 0; i < classifiers[n].size(); i++){
-                    if (classifiers[n].get(i).accuracy > maxAcc){
+                for (int i = 0; i < classifiers[n].size(); i++) {
+                    if (classifiers[n].get(i).accuracy > maxAcc) {
                         maxAcc = classifiers[n].get(i).accuracy;
                     }
                 }
 
-                for (int i = 0; i < classifiers[n].size(); i++){
+                for (int i = 0; i < classifiers[n].size(); i++) {
                     IndividualBOSS b = classifiers[n].get(i);
                     if (b.accuracy < maxAcc * correctThreshold) {
                         classifiers[currentSeries].remove(i);
 
-                        if (getEstimateOwnPerformance()){
+                        if (getEstimateOwnPerformance()) {
                             filterTrainPreds[n].remove(i);
                             filterTrainIdx[n].remove(i);
                         }
@@ -712,7 +674,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance()) {
             for (int n = 0; n < numSeries; n++) {
                 for (int i = 0; i < filterTrainIdx[n].size(); i++) {
                     ArrayList<Integer> trainIdx = filterTrainIdx[n].get(i);
@@ -730,7 +692,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             latestTrainPreds = null;
             latestTrainIdx = null;
 
-            for (int i = 0; i < trainDistributions.length; i++){
+            for (int i = 0; i < trainDistributions.length; i++) {
                 if (idxSubsampleCount[i] > 0) {
                     for (int n = 0; n < trainDistributions[i].length; n++) {
                         trainDistributions[i][n] /= idxSubsampleCount[i];
@@ -742,13 +704,14 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
     private void buildRandomBOSS(Instances[] series) throws Exception {
         //build classifiers up to a set size
-        while ((((underContractTime && numClassifiers[numSeries-1] < maxEnsembleSize)
-                || sum(numClassifiers) < ensembleSize) && underMemoryLimit) && parameterPool[numSeries-1].size() > 0) {
+        while (((withinTrainContract(trainResults.getBuildTime()) && numClassifiers[numSeries - 1] < maxEnsembleSize)
+                || sum(numClassifiers) < ensembleSize) && parameterPool[numSeries - 1].size() > 0) {
             long indivBuildTime = System.nanoTime();
             double[] parameters = selectParameters();
             if (parameters == null) continue;
 
-            IndividualBOSS boss = new IndividualBOSS((int)parameters[0], (int)parameters[1], (int)parameters[2], parameters[3] == 1, multiThread, numThreads, ex);
+            IndividualBOSS boss = new IndividualBOSS((int) parameters[0], (int) parameters[1], (int) parameters[2],
+                    parameters[3] == 1, multiThread, numThreads, ex);
             Instances data = resampleData(series[currentSeries], boss);
             boss.cleanAfterBuild = true;
             boss.seed = seed;
@@ -756,7 +719,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             classifiers[currentSeries].add(boss);
             numClassifiers[currentSeries]++;
 
-            if (useWeights){
+            if (useWeights) {
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
                 boss.weight = Math.pow(boss.accuracy, 4);
                 if (boss.weight == 0) boss.weight = Double.MIN_VALUE;
@@ -766,34 +729,32 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
                 paramAccuracy[currentSeries].add(boss.accuracy);
             }
-            if (trainTimeContract) paramTime[currentSeries].add((double)(System.nanoTime() - indivBuildTime));
+            if (trainTimeContract) paramTime[currentSeries].add((double) (System.nanoTime() - indivBuildTime));
 //            if (memoryContract) paramMemory[currentSeries].add((double)SizeOf.deepSizeOf(boss));
 
-            if (getEstimateOwnPerformance()){
+            if (getEstimateOwnPerformance()) {
                 if (boss.accuracy == -1) boss.accuracy = individualTrainAcc(boss, data, -99999999);
-                for (int i = 0; i < latestTrainIdx.size(); i++){
+                for (int i = 0; i < latestTrainIdx.size(); i++) {
                     idxSubsampleCount[latestTrainIdx.get(i)] += boss.weight;
                     trainDistributions[latestTrainIdx.get(i)][latestTrainPreds.get(i)] += boss.weight;
                 }
             }
 
             int prev = currentSeries;
-            if (isMultivariate){
+            if (isMultivariate) {
                 nextSeries();
             }
 
             if (checkpoint) {
                 checkpoint(prev, -1, true);
             }
-
-            checkContracts();
         }
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance()) {
             latestTrainPreds = null;
             latestTrainIdx = null;
 
-            for (int i = 0; i < trainDistributions.length; i++){
+            for (int i = 0; i < trainDistributions.length; i++) {
                 if (idxSubsampleCount[i] > 0) {
                     for (int n = 0; n < trainDistributions[i].length; n++) {
                         trainDistributions[i][n] /= idxSubsampleCount[i];
@@ -803,11 +764,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         }
     }
 
-    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv){
-        if(checkpointPath!=null){
-            try{
+    private void checkpoint(int seriesNo, int classifierNo, boolean saveIndiv) {
+        if (checkpointPath != null) {
+            try {
                 File f = new File(checkpointPath);
-                if(!f.isDirectory())
+                if (!f.isDirectory())
                     f.mkdirs();
                 //time the checkpoint occured
                 checkpointTime = System.nanoTime();
@@ -841,57 +802,51 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 file.renameTo(file2);
 
                 checkpointTimeDiff += System.nanoTime() - checkpointTime;
-            }
-            catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Serialisation to "+checkpointPath+" FAILED");
+                System.out.println("Serialisation to " + checkpointPath + " FAILED");
             }
         }
     }
 
-    private void checkpointCleanup(){
+    private void checkpointCleanup() {
         File f = new File(checkpointPath);
         String[] files = f.list();
 
-        for (String file: files){
+        for (String file : files) {
             File f2 = new File(f.getPath() + "\\" + file);
-            boolean b = f2.delete();
+            f2.delete();
         }
 
         f.delete();
     }
 
-    private String checkpointName(String datasetName){
+    private String checkpointName(String datasetName) {
         String name = datasetName + seed + "cBOSS";
 
-        if (trainTimeContract){
+        if (trainTimeContract) {
             name += ("TTC" + trainContractTimeNanos);
-        }
-        else if (isMultivariate && ensembleSizePerChannel > 0){
-            name += ("PC" + (ensembleSizePerChannel*numSeries));
-        }
-        else{
+        } else if (isMultivariate && ensembleSizePerChannel > 0) {
+            name += ("PC" + (ensembleSizePerChannel * numSeries));
+        } else {
             name += ("S" + ensembleSize);
-        }
-
-        if (memoryContract){
-            name += ("MC" + memoryLimit);
         }
 
         if (randomCVAccEnsemble) {
             name += ("M" + maxEnsembleSize);
         }
 
-        if (useWeights){
+        if (useWeights) {
             name += "W";
         }
 
         return name;
     }
 
-    public void checkContracts(){
-        underContractTime = System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff < trainContractTimeNanos;
-        underMemoryLimit = !memoryContract || bytesUsed < memoryLimit;
+    @Override
+    public boolean withinTrainContract(long start) {
+        if (trainContractTimeNanos <= 0) return true; //Not contracted
+        return System.nanoTime() - start - checkpointTimeDiff < trainContractTimeNanos;
     }
 
     //[0] = index, [1] = acc
@@ -906,14 +861,14 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        return new double[] { minAccInd, minAcc };
+        return new double[]{minAccInd, minAcc};
     }
 
-    private Instances[] uniqueParameters(int minWindow, int maxWindow, int winInc){
+    private Instances[] uniqueParameters(int minWindow, int maxWindow, int winInc) {
         Instances[] parameterPool = new Instances[numSeries];
         ArrayList<double[]> possibleParameters = new ArrayList();
 
-        for (Boolean normalise: normOptions) {
+        for (Boolean normalise : normOptions) {
             for (Integer alphSize : alphabetSize) {
                 for (int winSize = minWindow; winSize <= maxWindow; winSize += winInc) {
                     for (Integer wordLen : wordLengths) {
@@ -924,9 +879,9 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        int numAtts = possibleParameters.get(0).length+1;
+        int numAtts = possibleParameters.get(0).length + 1;
         ArrayList<Attribute> atts = new ArrayList<>(numAtts);
-        for (int i = 0; i < numAtts; i++){
+        for (int i = 0; i < numAtts; i++) {
             atts.add(new Attribute("att" + i));
         }
 
@@ -935,33 +890,27 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         for (int n = 0; n < numSeries; n++) {
             parameterPool[n] = new Instances("params", atts, possibleParameters.size());
-            parameterPool[n].setClassIndex(numAtts-1);
+            parameterPool[n].setClassIndex(numAtts - 1);
             prevParameters[n] = new Instances(parameterPool[n], 0);
-            prevParameters[n].setClassIndex(numAtts-1);
+            prevParameters[n].setClassIndex(numAtts - 1);
 
             for (int i = 0; i < possibleParameters.size(); i++) {
                 DenseInstance inst = new DenseInstance(1, possibleParameters.get(i));
-                inst.insertAttributeAt(numAtts-1);
+                inst.insertAttributeAt(numAtts - 1);
                 parameterPool[n].add(inst);
             }
         }
 
-        if (bayesianParameterSelection){
+        if (bayesianParameterSelection) {
             paramAccuracy = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
+            for (int i = 0; i < numSeries; i++) {
                 paramAccuracy[i] = new ArrayList<>();
             }
         }
-        if (trainTimeContract){
+        if (trainTimeContract) {
             paramTime = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
+            for (int i = 0; i < numSeries; i++) {
                 paramTime[i] = new ArrayList<>();
-            }
-        }
-        if (memoryContract){
-            paramMemory = new ArrayList[numSeries];
-            for (int i = 0; i < numSeries; i++){
-                paramMemory[i] = new ArrayList<>();
             }
         }
 
@@ -991,27 +940,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-        if (memoryContract) {
-            if (prevParameters[currentSeries].size() > 0) {
-                for (int i = 0; i < paramMemory[currentSeries].size(); i++) {
-                    prevParameters[currentSeries].get(i).setClassValue(paramMemory[currentSeries].get(i));
-                }
-
-                GaussianProcesses gp = new GaussianProcesses();
-                gp.buildClassifier(prevParameters[currentSeries]);
-                long remainingMemory = memoryLimit - bytesUsed;
-
-                for (int i = 0; i < parameterPool[currentSeries].size(); i++) {
-                    double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
-                    if (pred > remainingMemory) {
-                        parameterPool[currentSeries].remove(i);
-                        i--;
-                    }
-                }
-            }
-        }
-
-        if (parameterPool[currentSeries].size() == 0){
+        if (parameterPool[currentSeries].size() == 0) {
             return null;
         }
 
@@ -1020,7 +949,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 initialParameterCount[currentSeries]++;
                 params = parameterPool[currentSeries].remove(rand.nextInt(parameterPool[currentSeries].size()));
             } else {
-                for (int i = 0; i < paramAccuracy[currentSeries].size(); i++){
+                for (int i = 0; i < paramAccuracy[currentSeries].size(); i++) {
                     prevParameters[currentSeries].get(i).setClassValue(paramAccuracy[currentSeries].get(i));
                 }
 
@@ -1032,7 +961,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 for (int i = 0; i < parameterPool[currentSeries].numInstances(); i++) {
                     double pred = gp.classifyInstance(parameterPool[currentSeries].get(i));
 
-                    if (pred > bestAcc){
+                    if (pred > bestAcc) {
                         bestIndex = i;
                         bestAcc = pred;
                     }
@@ -1040,8 +969,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
                 params = parameterPool[currentSeries].remove(bestIndex);
             }
-        }
-        else {
+        } else {
             params = parameterPool[currentSeries].remove(rand.nextInt(parameterPool[currentSeries].size()));
         }
 
@@ -1049,24 +977,22 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         return params.toDoubleArray();
     }
 
-    private Instances resampleData(Instances series, IndividualBOSS boss){
+    private Instances resampleData(Instances series, IndividualBOSS boss) {
         Instances data;
         int newSize;
 
-        if (trainProportion > 0){
-            newSize = (int)(series.numInstances()*trainProportion);
-        }
-        else{
+        if (trainProportion > 0) {
+            newSize = (int) (series.numInstances() * trainProportion);
+        } else {
             newSize = maxTrainInstances;
         }
 
-        if (reduceTrainInstances && series.numInstances() > newSize){
+        if (reduceTrainInstances && series.numInstances() > newSize) {
             Sampler sampler;
 
-            if (stratifiedSubsample){
+            if (stratifiedSubsample) {
                 sampler = new RandomStratifiedIndexSampler(rand);
-            }
-            else{
+            } else {
                 sampler = new RandomIndexSampler(rand);
             }
 
@@ -1074,13 +1000,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             data = new Instances(series, newSize);
             boss.subsampleIndices = new ArrayList<>(newSize);
 
-            for (int i = 0; i < newSize; i++){
-                int n = (Integer)sampler.next();
+            for (int i = 0; i < newSize; i++) {
+                int n = (Integer) sampler.next();
                 data.add(series.get(n));
                 boss.subsampleIndices.add(n);
             }
-        }
-        else{
+        } else {
             data = series;
         }
 
@@ -1090,12 +1015,12 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
     private double individualTrainAcc(IndividualBOSS boss, Instances series, double lowestAcc) throws Exception {
         int[] indicies;
 
-        if (getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance()) {
             latestTrainPreds = new ArrayList();
             latestTrainIdx = new ArrayList();
         }
 
-        if (useFastTrainEstimate && maxEval < series.numInstances()){
+        if (useFastTrainEstimate && maxEval < series.numInstances()) {
             RandomRoundRobinIndexSampler sampler = new RandomRoundRobinIndexSampler(rand);
             sampler.setInstances(series);
             indicies = new int[maxEval];
@@ -1104,8 +1029,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                 int subsampleIndex = sampler.next();
                 indicies[i] = subsampleIndex;
             }
-        }
-        else {
+        } else {
             indicies = new int[series.numInstances()];
 
             for (int i = 0; i < series.numInstances(); ++i) {
@@ -1115,23 +1039,22 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         int correct = 0;
         int numInst = indicies.length;
-        int requiredCorrect = (int)(lowestAcc*numInst);
+        int requiredCorrect = (int) (lowestAcc * numInst);
 
-        if (multiThread){
+        if (multiThread) {
             ArrayList<Future<Double>> futures = new ArrayList<>(numInst);
 
             for (int i = 0; i < numInst; ++i)
                 futures.add(ex.submit(boss.new TrainNearestNeighbourThread(i)));
 
             int idx = 0;
-            for (Future<Double> f: futures){
+            for (Future<Double> f : futures) {
                 if (f.get() == series.get(idx).classValue()) {
                     ++correct;
                 }
                 idx++;
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < numInst; ++i) {
                 if (correct + numInst - i < requiredCorrect) {
                     return -1;
@@ -1142,12 +1065,11 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     ++correct;
                 }
 
-                if (getEstimateOwnPerformance()){
-                    latestTrainPreds.add((int)c);
+                if (getEstimateOwnPerformance()) {
+                    latestTrainPreds.add((int) c);
                     if (boss.subsampleIndices != null) {
                         latestTrainIdx.add(boss.subsampleIndices.get(indicies[i]));
-                    }
-                    else {
+                    } else {
                         latestTrainIdx.add(indicies[i]);
                     }
                 }
@@ -1157,11 +1079,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         return (double) correct / (double) numInst;
     }
 
-    public void nextSeries(){
-        if (currentSeries == numSeries-1){
+    public void nextSeries() {
+        if (currentSeries == numSeries - 1) {
             currentSeries = 0;
-        }
-        else{
+        } else {
             currentSeries++;
         }
     }
@@ -1181,10 +1102,9 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
 
         for (int i = 0; i < data.numInstances(); ++i) {
             double[] probs;
-            if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)){
+            if (idxSubsampleCount[i] > 0 && (!fullTrainCVEstimate || idxSubsampleCount[i] == totalClassifers)) {
                 probs = trainDistributions[i];
-            }
-            else {
+            } else {
                 probs = distributionForInstance(i);
             }
 
@@ -1200,25 +1120,25 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         return correct / data.numInstances();
     }
 
-    public double getTrainAcc(){
-        if(ensembleCvAcc >= 0){
+    public double getTrainAcc() {
+        if (ensembleCvAcc >= 0) {
             return this.ensembleCvAcc;
         }
 
-        try{
+        try {
             return this.findEnsembleTrainAcc(train);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         return -1;
     }
 
-    public double[] getTrainPreds(){
-        if(this.ensembleCvPreds == null){
-            try{
+    public double[] getTrainPreds() {
+        if (this.ensembleCvPreds == null) {
+            try {
                 this.findEnsembleTrainAcc(train);
-            }catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -1238,21 +1158,18 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             for (IndividualBOSS classifier : classifiers[n]) {
                 double classification;
 
-                if (classifier.subsampleIndices == null){
+                if (classifier.subsampleIndices == null) {
                     classification = classifier.classifyInstance(test);
-                }
-                else if (classifier.subsampleIndices.contains(test)){
+                } else if (classifier.subsampleIndices.contains(test)) {
                     classification = classifier.classifyInstance(classifier.subsampleIndices.indexOf(test));
-                }
-                else if (fullTrainCVEstimate) {
+                } else if (fullTrainCVEstimate) {
                     Instance series = train.get(test);
-                    if (isMultivariate){
+                    if (isMultivariate) {
                         series = splitMultivariateInstance(series)[n];
                         series.setDataset(seriesHeader);
                     }
                     classification = classifier.classifyInstance(series);
-                }
-                else{
+                } else {
                     continue;
                 }
 
@@ -1266,8 +1183,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (sum != 0) {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += (classHist[i] / sum);
-        }
-        else{
+        } else {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += 1.0 / numClasses;
         }
@@ -1300,7 +1216,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             series[0] = instance;
         }
 
-        if (multiThread){
+        if (multiThread) {
             ArrayList<Future<Double>>[] futures = new ArrayList[numSeries];
 
             for (int n = 0; n < numSeries; n++) {
@@ -1319,8 +1235,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
                     idx++;
                 }
             }
-        }
-        else {
+        } else {
             for (int n = 0; n < numSeries; n++) {
                 for (IndividualBOSS classifier : classifiers[n]) {
                     double classification = classifier.classifyInstance(series[n]);
@@ -1335,8 +1250,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         if (sum != 0) {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += classHist[i] / sum;
-        }
-        else{
+        } else {
             for (int i = 0; i < classHist.length; ++i)
                 distributions[i] += 1.0 / numClasses;
         }
@@ -1344,28 +1258,19 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         return distributions;
     }
 
-    @Override
-    public boolean withinTrainContract(long start) {
-        return start < trainContractTimeNanos;
-    }
-
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         int fold = 0;
 
         //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\"+dataset+"\\"+dataset+"_TEST.arff");
-        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
-        train = data[0];
-        test = data[1];
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
+        Instances train = data[0];
+        Instances test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+"\\"+dataset2+"_TEST.arff");
-        Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
-        train2 = data2[0];
-        test2 = data2[1];
+        Instances[] data2 = DatasetLoading.sampleERing(fold);
+        Instances train2 = data2[0];
+        Instances test2 = data2[1];
 
         cBOSS c;
         double accuracy;
@@ -1470,10 +1375,10 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         c.setEstimateOwnPerformance(true);
         long startTime = System.nanoTime();
         c.buildClassifier(train);
-        long endTime =System.nanoTime() - startTime;
+        long endTime = System.nanoTime() - startTime;
         accuracy = ClassifierTools.accuracy(test, c);
 
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers) + " in " + endTime*1e-9 + " seconds");
+        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers) + " in " + endTime * 1e-9 + " seconds");
 
         c = new cBOSS(false);
         c.setTrainTimeLimit(TimeUnit.MINUTES, 1);
@@ -1486,21 +1391,20 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         long endTime2 = System.nanoTime() - startTime2;
         accuracy = ClassifierTools.accuracy(test2, c);
 
-        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers)  + " in " + endTime2*1e-9 + " seconds");
+        System.out.println("Contract 1 Min Checkpoint BOSS accuracy on " + dataset2 + " fold " + fold + " = " + accuracy + " numClassifiers = " + Arrays.toString(c.numClassifiers) + " in " + endTime2 * 1e-9 + " seconds");
 
-        //Output 19/11/19
+        //Output 15/03/21
         /*
-        JAVAGENT: call premain instrumentation for class SizeOf
         CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.923226433430515 numClassifiers = [50]
-        CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
+        CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8777777777777778 numClassifiers = [50, 50, 50, 50]
         Bayesian CVAcc CAWPE BOSS accuracy on ItalyPowerDemand fold 0 = 0.9300291545189504 numClassifiers = [50]
-        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8962962962962963 numClassifiers = [50, 50, 50, 50]
+        Bayesian CVAcc CAWPE BOSS accuracy on ERing fold 0 = 0.8777777777777778 numClassifiers = [50, 50, 50, 50]
         FastMax CVAcc BOSS accuracy on ItalyPowerDemand fold 0 = 0.8415937803692906 numClassifiers = [50]
-        FastMax CVAcc BOSS accuracy on ERing fold 0 = 0.725925925925926 numClassifiers = [50, 50, 50, 50]
+        FastMax CVAcc BOSS accuracy on ERing fold 0 = 0.8888888888888888 numClassifiers = [50, 50, 50, 50]
         CAWPE Subsample BOSS accuracy on ItalyPowerDemand fold 0 = 0.9271137026239067 numClassifiers = [80]
-        CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.8481481481481481 numClassifiers = [25, 25, 25, 25]
-        Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80] in 2.2928520000000003 seconds
-        Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190] in 27.359452200000003 seconds
+        CAWPE Subsample BOSS accuracy on ERing fold 0 = 0.9 numClassifiers = [190, 190, 190, 190]
+        Contract 1 Min Checkpoint BOSS accuracy on ItalyPowerDemand fold 0 = 0.6958211856171039 numClassifiers = [80] in 1.1385895000000001 seconds
+        Contract 1 Min Checkpoint BOSS accuracy on ERing fold 0 = 0.5259259259259259 numClassifiers = [190, 190, 190, 190] in 13.5186788 seconds
         */
     }
 }
