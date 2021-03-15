@@ -15,7 +15,7 @@
 package tsml.classifiers;
 
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
 
 /**
  * Interface that allows the user to impose a test time contract of a classifier that
@@ -24,7 +24,7 @@ import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
     known classifiers: None
  * @author pfm15hbu
  */
-public interface TestTimeContractable extends TestTimeable {
+public interface TestTimeContractable extends TimedTest {
     default void setOneSecondLimit(){ setTestTimeLimit(TimeUnit.SECONDS, 1); }
 
     default void setOneMillisecondLimit(){ setTestTimeLimit(TimeUnit.MILLISECONDS, 1); }

@@ -35,7 +35,7 @@ import weka.classifiers.bayes.NaiveBayes;
 import java.util.logging.Level;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
@@ -49,11 +49,7 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
@@ -478,6 +474,9 @@ public class ClassifierTools {
      * @throws Exception
      */
     public static void trainTestPrint(Classifier classifier, Instances[] trainAndTestData, int seed) throws Exception {
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
         Random random = new Random(seed);
         MemoryWatcher overallMemoryWatcher = new MemoryWatcher();
         StopWatch overallTimer = new StopWatch();
@@ -567,8 +566,8 @@ public class ClassifierTools {
         long timestamp = System.nanoTime();
         final double[] distribution = classifier.distributionForInstance(test);
         long testTime = System.nanoTime() - timestamp;
-        if(classifier instanceof TestTimeable) {
-            testTime = ((TestTimeable) classifier).getTestTime();
+        if(classifier instanceof TimedTest) {
+            testTime = ((TimedTest) classifier).getTestTime();
         }
         final double prediction = Utilities.argMax(distribution, random);
         results.addPrediction(classValue, distribution, prediction, testTime, null);
@@ -579,10 +578,10 @@ public class ClassifierTools {
             throws Exception {
         final double classValue = test.getLabelIndex();
         long timestamp = System.nanoTime();
-        final double[] distribution = classifier.distributionForInstance(new TimeSeriesInstance(test.getVSliceList(0, test.getNumDimensions()), -1, test.getClassLabels()));
+        final double[] distribution = classifier.distributionForInstance(test);
         long testTime = System.nanoTime() - timestamp;
-        if(classifier instanceof TestTimeable) {
-            testTime = ((TestTimeable) classifier).getTestTime();
+        if(classifier instanceof TimedTest) {
+            testTime = ((TimedTest) classifier).getTestTime();
         }
         final double prediction = Utilities.argMax(distribution, random);
         results.addPrediction(classValue, distribution, prediction, testTime, null);

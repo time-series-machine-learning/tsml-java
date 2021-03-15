@@ -97,7 +97,7 @@ public class Experiment implements Copier {
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
     private final MemoryWatcher experimentMemoryWatcher = new MemoryWatcher();
     private long benchmarkScore;
-    private final Logger log = LogUtils.buildLogger(this);
+    private final Logger log = LogUtils.getLogger(this);
     private ExperimentConfig config;
     private ExperimentConfig previousConfig;
     
@@ -315,7 +315,7 @@ public class Experiment implements Copier {
     
     private boolean isModelFullyBuiltFromPreviousRun() {
         // skip if the model is fully built from a previous contract
-        return previousConfig != null && classifier instanceof ContractedTrain && ((ContractedTrain) classifier).isModelFullyBuilt();
+        return previousConfig != null && classifier instanceof ContractedTrain && ((ContractedTrain) classifier).isFullyBuilt();
     }
     
     private void train() throws Exception {
