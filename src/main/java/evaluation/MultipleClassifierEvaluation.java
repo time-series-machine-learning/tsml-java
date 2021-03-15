@@ -72,7 +72,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private Map<String, Map<String, String[]>> datasetGroupings; // Map<GroupingMethodTitle(e.g "ByNumAtts"), Map<GroupTitle(e.g "<100"), dsetsInGroup(must be subset of datasets)>>
     private ClassifierResultsCollection resultsCollection;
     private int numFolds;
-    private ArrayList<PerformanceMetric> metrics;
+    private List<PerformanceMetric> metrics;
     
     /**
      * if true, the relevant .m files must be located in the netbeans project directory

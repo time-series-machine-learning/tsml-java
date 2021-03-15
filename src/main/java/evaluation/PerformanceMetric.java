@@ -19,6 +19,7 @@ package evaluation;
 
 import evaluation.storage.ClassifierResults;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -39,6 +40,8 @@ import java.util.function.Function;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class PerformanceMetric {
+
+    public static final String benchmarkSuffix = "_bm";
 
     public String name;
     public Function<ClassifierResults, Double> getter;
@@ -98,12 +101,12 @@ public class PerformanceMetric {
     public static PerformanceMetric totalBuildPlusEstimateTime = new PerformanceMetric("BuildAndEstTimes", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillis, median, min, slower, isNotBenchmarked, estimate);
     public static PerformanceMetric extraTimeForEstimate = new PerformanceMetric("ExtraTimeForEst", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillis, median, min, slower, isNotBenchmarked, estimate);
 
-    public static PerformanceMetric buildTimeBenchmarked = new PerformanceMetric("TrainTimes_BM", ClassifierResults.GETTER_buildTimeDoubleMillisBenchmarked,         median, min, slower, isBenchmarked, train);
-    public static PerformanceMetric totalTestTimeBenchmarked = new PerformanceMetric("TestTimes_BM", ClassifierResults.GETTER_totalTestTimeDoubleMillisBenchmarked,      median, min, slower, isBenchmarked, test);
-    public static PerformanceMetric avgTestPredTimeBenchmarked = new PerformanceMetric("AvgPredTimes_BM", ClassifierResults.GETTER_avgTestPredTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, test);
-    public static PerformanceMetric fromScratchEstimateTimeBenchmarked = new PerformanceMetric("FromScratchEstTimes_BM", ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
-    public static PerformanceMetric totalBuildPlusEstimateTimeBenchmarked = new PerformanceMetric("BuildAndEstTimes_BM", ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
-    public static PerformanceMetric extraTimeForEstimateBenchmarked = new PerformanceMetric("ExtraTimeForEst_BM", ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
+    public static PerformanceMetric buildTimeBenchmarked = new PerformanceMetric("TrainTimes"+benchmarkSuffix, ClassifierResults.GETTER_buildTimeDoubleMillisBenchmarked,         median, min, slower, isBenchmarked, train);
+    public static PerformanceMetric totalTestTimeBenchmarked = new PerformanceMetric("TestTimes"+benchmarkSuffix, ClassifierResults.GETTER_totalTestTimeDoubleMillisBenchmarked,      median, min, slower, isBenchmarked, test);
+    public static PerformanceMetric avgTestPredTimeBenchmarked = new PerformanceMetric("AvgPredTimes"+benchmarkSuffix, ClassifierResults.GETTER_avgTestPredTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, test);
+    public static PerformanceMetric fromScratchEstimateTimeBenchmarked = new PerformanceMetric("FromScratchEstTimes"+benchmarkSuffix, ClassifierResults.GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
+    public static PerformanceMetric totalBuildPlusEstimateTimeBenchmarked = new PerformanceMetric("BuildAndEstTimes"+benchmarkSuffix, ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
+    public static PerformanceMetric extraTimeForEstimateBenchmarked = new PerformanceMetric("ExtraTimeForEst"+benchmarkSuffix, ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
 
     public static PerformanceMetric benchmarkTime   = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower, isNotBenchmarked, train);
     public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse, isNotBenchmarked, train);
@@ -112,13 +115,13 @@ public class PerformanceMetric {
     public static PerformanceMetric harmonicMean    = new PerformanceMetric("HarmonicMean", ClassifierResults.GETTER_HarmonicMean,       mean, max,   better, isNotBenchmarked, test);
 
     
-    public static ArrayList<PerformanceMetric> getAccuracyStatistic() { 
+    public static List<PerformanceMetric> getAccuracyStatistic() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(acc);
         return stats;
     }
     
-    public static ArrayList<PerformanceMetric> getDefaultStatistics() { 
+    public static List<PerformanceMetric> getDefaultStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(acc);
         stats.add(balacc);
@@ -127,7 +130,7 @@ public class PerformanceMetric {
         return stats;
     }
         
-    public static ArrayList<PerformanceMetric> getAllPredictionStatistics() {
+    public static List<PerformanceMetric> getAllPredictionStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(acc);
         stats.add(balacc);
@@ -148,14 +151,14 @@ public class PerformanceMetric {
         return stats;
     }
 
-    public static ArrayList<PerformanceMetric> getAllTimingStatistics() {
-        ArrayList<PerformanceMetric> stats = getBenchmarkedTimingStatistics();
+    public static List<PerformanceMetric> getAllTimingStatistics() {
+        List<PerformanceMetric> stats = getBenchmarkedTimingStatistics();
         stats.addAll(getNonBenchmarkedTimingStatistics());
 
         return stats;
     }
 
-    public static ArrayList<PerformanceMetric> getBenchmarkedTimingStatistics() {
+    public static List<PerformanceMetric> getBenchmarkedTimingStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(buildTimeBenchmarked);
         stats.add(totalTestTimeBenchmarked);
@@ -168,7 +171,7 @@ public class PerformanceMetric {
     }
 
 
-    public static ArrayList<PerformanceMetric> getNonBenchmarkedTimingStatistics() {
+    public static List<PerformanceMetric> getNonBenchmarkedTimingStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(buildTime);
         stats.add(totalTestTime);

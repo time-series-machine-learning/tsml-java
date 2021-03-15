@@ -983,13 +983,9 @@ public class ClassifierResultsAnalysis {
 
         for (PerformanceMetric metric : metrics) {
 
-            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains("benchmark") ? computationalDiaFolderName_benchmark : computationalDiaFolderName_raw) + "/";
+            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains(PerformanceMetric.benchmarkSuffix) ? computationalDiaFolderName_benchmark : computationalDiaFolderName_raw) + "/";
 
-            String evalSet = metric.equals(PerformanceMetric.totalTestTime) || metric.equals(testTimeMetric) ||
-                            metric.equals(PerformanceMetric.totalTestTimeBenchmarked) || metric.equals(benchmarkedTestTimeMetric)
-                            || metric.equals(memoryMaxMetric)
-                    ? testLabel
-                    : trainLabel;
+            String evalSet = metric.defaultSplit;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
 
             String ylabel = metric.equals(memoryMaxMetric) ?
