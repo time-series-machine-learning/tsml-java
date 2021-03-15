@@ -249,6 +249,24 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
     public TimeSeriesInstance(double labelIndex, String[] classLabels, TimeSeries[] data) {
         this(discretiseLabelIndex(labelIndex), classLabels, Arrays.asList(data));
     }
+    
+    public TimeSeriesInstance(TimeSeriesInstance other) {
+        this.seriesDimensions = other.seriesDimensions;
+        this.classLabels = other.classLabels;
+        this.targetValue = other.targetValue;
+        this.labelIndex = other.labelIndex;
+        
+        dataChecks();
+    }
+    
+    public TimeSeriesInstance(TimeSeriesInstance other, int labelIndex) {
+        this.seriesDimensions = other.seriesDimensions;
+        this.classLabels = other.classLabels;
+        this.targetValue = other.targetValue;
+        this.labelIndex = labelIndex;
+        
+        dataChecks();
+    }
 
     private void dataChecks(){
         

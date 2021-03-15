@@ -577,6 +577,7 @@ public class ClassifierTools {
     public static void addPrediction(TSClassifier classifier, TimeSeriesInstance test, ClassifierResults results, Random random)
             throws Exception {
         final double classValue = test.getLabelIndex();
+        test = new TimeSeriesInstance(test, -1);
         long timestamp = System.nanoTime();
         final double[] distribution = classifier.distributionForInstance(test);
         long testTime = System.nanoTime() - timestamp;
