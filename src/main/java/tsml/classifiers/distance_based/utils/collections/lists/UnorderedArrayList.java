@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.lists;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -10,7 +11,7 @@ import java.util.stream.Stream;
  * An ArrayList except operations may reorder the list for efficiency purposes, e.g. the remove(int i) function swaps the element to the end and then removes to avoid shuffling all elements > i down 1 place. 
  * @param <A>
  */
-public class UnorderedArrayList<A> extends AbstractList<A> {
+public class UnorderedArrayList<A> extends AbstractList<A> implements Serializable {
 
     private final ArrayList<A> list;
     
@@ -47,7 +48,8 @@ public class UnorderedArrayList<A> extends AbstractList<A> {
     }
 
     @Override public void add(final int i, final A a) {
-        list.add(i, a);
+        list.add(a);
+        Collections.swap(list, i, list.size() - 1);
     }
 
     @Override public A set(final int i, final A a) {
