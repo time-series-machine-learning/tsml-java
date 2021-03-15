@@ -3,9 +3,13 @@ package tsml.classifiers.distance_based.utils.system.memory;
 import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
 
+import javax.management.ListenerNotFoundException;
 import javax.management.Notification;
 import javax.management.NotificationEmitter;
+import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.*;
@@ -27,10 +31,16 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
     }
 
     private long maxMemoryUsage = -1;
+    private transient NotificationListener listener = this::handleNotification;
 
     public MemoryWatcher() {
+        
+    }
+
+    private void addListener() {
         // emitters are used to listen to each memory pool (usually young / old gen).
         // garbage collector for old and young gen
+        listener = this::handleNotification;
         List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
         for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
             // to log
@@ -39,11 +49,41 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
             /**
              * the memory update listener
              */
-            emitter.addNotificationListener(this::handleNotification, null, null);
-            // todo should probably remove the listener at some point otherwise it listens forever...
+            emitter.addNotificationListener(listener, null, null);
         }
     }
     
+    private void removeListener() throws ListenerNotFoundException {
+        // emitters are used to listen to each memory pool (usually young / old gen).
+        // garbage collector for old and young gen
+        List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
+        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
+            // to log
+            // listen to notification from the emitter
+            NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
+            emitter.removeNotificationListener(listener);
+        }
+    }
+    
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        // default deserialization
+        ois.defaultReadObject();
+        
+        // stop if already started. Any memory watcher read from serialization should default to being stopped, like StopWatch
+        if(isStarted()) {
+            super.stop();
+        }
+        
+        // when loading from serialisation, the listener is not preserved, therefore need to listen to memory again.
+        addListener();
+
+    }
+
+    @Override protected void finalize() throws Throwable {
+        super.finalize();
+        removeListener();
+    }
+
     private synchronized void handleNotification(final Notification notification, final Object handback) {
         if(MemoryWatcher.this.isStarted()) {
             if(notification.getType()
