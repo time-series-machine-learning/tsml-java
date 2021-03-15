@@ -7,12 +7,13 @@ Contributors: goastler
     
 */
 
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 
-public interface DTW extends ParamHandler {
-    String WINDOW_SIZE_FLAG = "w";
+public interface DTW extends DistanceMeasure {
+    String WINDOW_FLAG = "w";
 
-    double getWindowSize();
+    double getWindow();
     
-    void setWindowSize(double windowSize);
+    void setWindow(double window);
 }

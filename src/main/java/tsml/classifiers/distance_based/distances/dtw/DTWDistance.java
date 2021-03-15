@@ -20,8 +20,8 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final TimeSeries aDim = a.get(i);
             final TimeSeries bDim = b.get(i);
-            final Double aValue = aDim.get(aIndex);
-            final Double bValue = bDim.get(bIndex);
+            final double aValue = aDim.get(aIndex);
+            final double bValue = bDim.get(bIndex);
             final double sqDiff = Math.pow(aValue - bValue, 2);
             sum += sqDiff;
         }
@@ -49,48 +49,72 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
         
         final int aLength = a.getMaxLength();
         final int bLength = b.getMaxLength();
-        // pad an extra inf row and inf col
-        setup(aLength + 1, bLength + 1, true);
+        setup(aLength, bLength, true);
+        
         // step is the increment of the mid point for each row
         final double step = (double) (bLength - 1) / (aLength - 1);
         final double windowSize = this.window * bLength;
 
-        // start and end of window
-        int start, prevEnd, end = 0;
-        double mid, min;
-        double[] prevRow;
-        double[] row = getRow(0);
+        // row index
+        int i = 0;
         
-        // anchor point of zero in the padding inf col / row
-        row[0] = 0;
+        // start and end of window
+        int start = 0;
+        double mid = 0;
+        int end = Math.min(bLength - 1, (int) Math.floor(windowSize));
+        int prevEnd; // store end of window from previous row to fill in shifted space with inf
+        double[] row = getRow(i);
+        double[] prevRow;
+
+        // col index
+        int j = start;
+        // process the first row (can only warp left - not top/topLeft)
+        double min = row[j++] = cost(a, 0, b, 0); // process top left sqaure of mat
+        // compute the first row
+        for(; j <= end; j++) {
+            row[j] = row[j - 1] + cost(a, i, b, j);
+            min = Math.min(min, row[j]);
+        }
+        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
+        i++;
 
         // process remaining rows
-        for(int i = 1; i < aLength + 1; i++) {
+        for(; i < aLength; i++) {
             // reset min for the row
             min = Double.POSITIVE_INFINITY;
-
-            // start, end and mid of window
-            prevEnd = end;
-            mid = (i - 1) * step + 1;
-            start = Math.max(1, (int) Math.ceil(mid - windowSize));
-            end = Math.min(bLength, (int) Math.floor(mid + windowSize));
-            
             // change rows
             prevRow = row;
             row = getRow(i);
-            row[start - 1] = Double.POSITIVE_INFINITY;
 
-            // set the top values outside of window to inf
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * step;
+            // if using variable length time series and window size is fractional then the window may part cover an 
+            // element. Any part covered element is truncated from the window. I.e. mid point of 5.5 with window of 2.3
+            // would produce a start point of 2.2. The window would start from index 3 as it does not fully cover index
+            // 2. The same thing happens at the end, 5.5 + 2.3 = 7.8, so the end index is 7 as it does not fully cover 8
+            start = Math.max(0, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength - 1, (int) Math.floor(mid + windowSize));
+            j = start;
+            
+            // set the values above the current row and outside of previous window to inf
             Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
+            // set the value left of the window to inf
+            if(j > 0) row[j - 1] = Double.POSITIVE_INFINITY;
 
-            // compute the distance for each cell in the row
-            for(int j = start; j <= end; j++) {
-                row[j] = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i - 1, b, j - 1);
-                min = Math.min(min, row[j]);
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(j == 0) {
+                row[j] = prevRow[j] + cost(a, i, b, j);
+                min = Math.min(min, row[j++]);
             }
 
-            // quit if beyond limit
-            if(min > limit) return Double.POSITIVE_INFINITY;
+            // compute the distance for each cell in the row
+            for(; j <= end; j++) {
+                row[j] = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i, b, j);
+                min = Math.min(min, row[j]);
+            }
+            
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
 
         // last value in the current row is the distance

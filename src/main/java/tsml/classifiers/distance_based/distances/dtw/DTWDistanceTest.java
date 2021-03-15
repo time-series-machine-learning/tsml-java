@@ -1,24 +1,14 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import tsml.data_containers.TimeSeriesInstance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerTest;
 import tsml.data_containers.TimeSeriesInstances;
-import tsml.data_containers.utilities.Converter;
-import tsml.transformers.Derivative;
-import utilities.FileUtils;
 import utilities.InstanceTools;
-import weka.core.Instance;
 import weka.core.Instances;
 
-import static experiments.data.DatasetLoading.*;
+import static tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace.newDDTWDistance;
 
 /**
  * Purpose: test dtw
@@ -46,14 +36,14 @@ public class DTWDistanceTest {
 
     @Test
     public void testFullWarp() {
-        df.setWindowSize(1);
+        df.setWindow(1);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 203, 0);
     }
 
     @Test
     public void testConstrainedWarp() {
-        df.setWindowSize(0.4);
+        df.setWindow(0.4);
         double distance = df.distance(instances.get(0), instances.get(1));
         Assert.assertEquals(distance, 212, 0);
     }
@@ -61,8 +51,8 @@ public class DTWDistanceTest {
     @Test
     public void testVariableLengthTimeSeries() {
         DTWDistance dtw = new DTWDistance();
-        dtw.setGenerateDistanceMatrix(true);
-        dtw.setWindowSize(1);
+        dtw.setRecordCostMatrix(true);
+        dtw.setWindow(1);
         TimeSeriesInstances tsinsts = new TimeSeriesInstances(new double[][][]{
                 {
                         {7, 6, 1, 7, 7, 7, 3, 3, 5, 6}
@@ -86,8 +76,8 @@ public class DTWDistanceTest {
     @Test
     public void testVariableLengthTimeSeriesConstrainedWarp() {
         DTWDistance dtw = new DTWDistance();
-        dtw.setGenerateDistanceMatrix(true);
-        dtw.setWindowSize(0.25);
+        dtw.setRecordCostMatrix(true);
+        dtw.setWindow(0.25);
         TimeSeriesInstances tsinsts = new TimeSeriesInstances(new double[][][]{
                 {
                         {7, 6, 1, 7, 7, 7, 3, 3, 5, 6}
@@ -106,5 +96,19 @@ public class DTWDistanceTest {
         Assert.assertEquals(Double.POSITIVE_INFINITY, distance, 0d);
         otherDistance = dtw.distance(tsinsts.get(1), tsinsts.get(0), limit);
         Assert.assertEquals(distance, otherDistance, 0d);
+    }
+    
+    public static class DTWParamTest extends ParamHandlerTest {
+
+        @Override public Object getHandler() {
+            return new DTWDistance();
+        }
+    }
+
+    public static class DDTWParamTest extends ParamHandlerTest {
+
+        @Override public Object getHandler() {
+            return newDDTWDistance();
+        }
     }
 }
