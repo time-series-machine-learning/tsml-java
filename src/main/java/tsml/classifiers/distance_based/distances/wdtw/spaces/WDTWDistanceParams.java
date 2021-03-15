@@ -1,6 +1,7 @@
 package tsml.classifiers.distance_based.distances.wdtw.spaces;
 
 import tsml.classifiers.distance_based.distances.wdtw.WDTW;
+import tsml.classifiers.distance_based.utils.collections.params.ParamMap;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.data_containers.TimeSeriesInstances;
@@ -17,8 +18,8 @@ public class WDTWDistanceParams implements ParamSpaceBuilder {
             gValues[i] = (double) i / 100;
         }
         List<Double> gValuesUnique = unique(gValues);
-        ParamSpace params = new ParamSpace();
+        ParamMap params = new ParamMap();
         params.add(WDTW.G_FLAG, gValuesUnique);
-        return params;
+        return new ParamSpace(params);
     }
 }

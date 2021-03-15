@@ -1,5 +1,6 @@
 package tsml.classifiers.distance_based.distances.wdtw;
 
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
 
 /**
@@ -8,7 +9,7 @@ import tsml.classifiers.distance_based.distances.dtw.DTW;
  * Contributors: goastler
  */
 
-public interface WDTW {
+public interface WDTW extends DistanceMeasure {
 
     String G_FLAG = "g";
 
