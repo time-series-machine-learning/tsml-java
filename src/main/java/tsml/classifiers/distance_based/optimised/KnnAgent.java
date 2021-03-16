@@ -5,12 +5,13 @@ import evaluation.evaluators.InternalEstimateEvaluator;
 import tsml.classifiers.TSClassifier;
 import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
 import tsml.classifiers.distance_based.knn.KNN;
-import tsml.classifiers.distance_based.utils.classifiers.Builder;
-import tsml.classifiers.distance_based.utils.classifiers.ClassifierBuilder;
+import tsml.classifiers.distance_based.utils.classifiers.configs.Builder;
+import tsml.classifiers.distance_based.utils.classifiers.configs.ClassifierBuilder;
 import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.AbstractSearch;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.GridSearch;
+import tsml.classifiers.distance_based.utils.collections.patience.Patience;
 import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.*;

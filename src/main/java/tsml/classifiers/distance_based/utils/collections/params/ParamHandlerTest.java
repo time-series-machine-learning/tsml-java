@@ -11,15 +11,10 @@ import tsml.classifiers.distance_based.distances.lcss.LCSSDistance;
 import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.distances.twed.TWEDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import static tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace.newDDTWDistance;
 import static tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceSpace.newWDDTWDistance;

@@ -16,11 +16,8 @@ package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
 import tsml.classifiers.TSClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import weka.classifiers.Classifier;

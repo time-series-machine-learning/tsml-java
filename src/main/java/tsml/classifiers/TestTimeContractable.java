@@ -15,7 +15,7 @@
 package tsml.classifiers;
 
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTest;
 
 /**
  * Interface that allows the user to impose a test time contract of a classifier that

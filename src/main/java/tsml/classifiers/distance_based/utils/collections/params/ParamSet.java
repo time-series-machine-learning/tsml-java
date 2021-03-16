@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.utils.collections.params;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.core.OptionHandler;
 import weka.core.Utils;

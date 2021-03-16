@@ -16,7 +16,7 @@ import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceSpace;
 import tsml.classifiers.distance_based.optimised.KnnAgent;
 import tsml.classifiers.distance_based.optimised.OptimisedClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.Configs;
+import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;

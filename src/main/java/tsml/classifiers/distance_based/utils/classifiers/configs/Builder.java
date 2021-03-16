@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.utils.classifiers;
+package tsml.classifiers.distance_based.utils.classifiers.configs;
 
 import java.io.Serializable;
 

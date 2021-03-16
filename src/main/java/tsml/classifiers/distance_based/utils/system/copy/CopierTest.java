@@ -1,14 +1,11 @@
-package tsml.classifiers.distance_based.utils.classifiers;
+package tsml.classifiers.distance_based.utils.system.copy;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 

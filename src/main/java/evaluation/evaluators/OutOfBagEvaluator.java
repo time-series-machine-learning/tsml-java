@@ -3,7 +3,7 @@ package evaluation.evaluators;
 import evaluation.storage.ClassifierResults;
 import org.junit.Assert;
 import tsml.classifiers.TSClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;

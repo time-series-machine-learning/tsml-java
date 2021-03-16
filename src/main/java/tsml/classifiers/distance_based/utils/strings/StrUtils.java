@@ -1,16 +1,6 @@
 package tsml.classifiers.distance_based.utils.strings;
 
-import experiments.ClassifierLists;
-import experiments.Experiments;
-
-import java.lang.reflect.Array;
-import java.time.Duration;
-import org.apache.commons.lang3.StringUtils;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import weka.core.OptionHandler;
 import weka.core.Utils;
 
@@ -19,8 +9,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static java.time.temporal.ChronoUnit.*;
 
 public class StrUtils {
 

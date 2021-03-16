@@ -14,6 +14,7 @@ import tsml.classifiers.distance_based.distances.transformed.TransformDistanceMe
 import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceSpace;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceContinuousSpace;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceContinuousSpace;
+import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;

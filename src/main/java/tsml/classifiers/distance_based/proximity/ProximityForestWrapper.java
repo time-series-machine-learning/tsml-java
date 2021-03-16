@@ -24,7 +24,7 @@ import evaluation.MultipleClassifierEvaluation;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
-import tsml.classifiers.distance_based.utils.classifiers.Configs;
+import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;

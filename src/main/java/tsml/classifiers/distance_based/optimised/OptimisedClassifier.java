@@ -7,7 +7,7 @@ import tsml.classifiers.TestTimeContractable;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTest;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;

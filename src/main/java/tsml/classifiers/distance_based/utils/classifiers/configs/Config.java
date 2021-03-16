@@ -1,7 +1,6 @@
-package tsml.classifiers.distance_based.utils.classifiers;
+package tsml.classifiers.distance_based.utils.classifiers.configs;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * A config is targeted at a specific class, e.g. Proximity Tree. Then, given an object which is Proximity Tree or more specialised (extends PT) this config can configure it. Similarly, the default builder in this config may create instances which are Proximity Tree or more specialised (extends PT). The configurer may configure Proximity Tree or any class super to PT, e.g. configuring something in EAC say. This is fine because we know we always have at least a PT and at most something that extends PT, so a configurer which acts on anything in the inheritance hierarchy above PT is fine.

@@ -1,11 +1,6 @@
-package tsml.classifiers.distance_based.utils.classifiers;
-
-import java.io.IOException;
+package tsml.classifiers.distance_based.utils.system.copy;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
 /**
  * Purpose: shallow and deep copy various fields from object to object using reflection. You can filter the fields to

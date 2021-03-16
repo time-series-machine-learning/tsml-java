@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.distance_based.utils.system.copy.Copier;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;

@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.utils.collections.pruned;
 
 import org.junit.Assert;
 import org.junit.Test;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 
 import java.util.Arrays;
 

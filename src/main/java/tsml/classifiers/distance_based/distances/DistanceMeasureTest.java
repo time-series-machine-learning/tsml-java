@@ -24,7 +24,7 @@ import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceParams;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceParams;
 import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceSpace;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;

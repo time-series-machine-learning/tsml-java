@@ -4,10 +4,9 @@ import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import org.junit.Assert;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import tsml.classifiers.distance_based.utils.system.copy.Copier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

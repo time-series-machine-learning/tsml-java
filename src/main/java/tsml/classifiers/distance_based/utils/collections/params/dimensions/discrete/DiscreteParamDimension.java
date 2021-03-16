@@ -1,6 +1,6 @@
 package tsml.classifiers.distance_based.utils.collections.params.dimensions.discrete;
 
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.DefaultList;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;

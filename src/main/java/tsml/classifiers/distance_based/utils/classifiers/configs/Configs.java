@@ -1,11 +1,9 @@
-package tsml.classifiers.distance_based.utils.classifiers;
+package tsml.classifiers.distance_based.utils.classifiers.configs;
 
 import tsml.classifiers.distance_based.utils.collections.iteration.TransformIterator;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 /**
  * A set of configs are targeted at a specific type, say PT for example. Each config is mapped by name to create a factory which can produce fresh instances of that type, e.g. PT.

@@ -35,7 +35,7 @@ import weka.classifiers.bayes.NaiveBayes;
 import java.util.logging.Level;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTest;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;

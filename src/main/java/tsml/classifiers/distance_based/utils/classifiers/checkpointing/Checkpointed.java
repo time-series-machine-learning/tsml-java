@@ -1,8 +1,7 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
-import tsml.classifiers.distance_based.utils.system.logging.Loggable;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import utilities.FileUtils;
 
 import java.io.File;
