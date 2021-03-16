@@ -67,7 +67,8 @@ public class ElasticEnsemble extends BaseClassifier implements ContractedTrain, 
     }
 
     public ElasticEnsemble() {
-
+        super(true);
+        CONFIGS.get("EE").configure(this);
     }
 
     private final StopWatch runTimer = new StopWatch();

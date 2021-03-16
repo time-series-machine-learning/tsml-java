@@ -25,7 +25,20 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceFullWindowSpace;
+import tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace;
+import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceFullWindowSpace;
+import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
+import tsml.classifiers.distance_based.distances.ed.spaces.EDistanceSpace;
+import tsml.classifiers.distance_based.distances.erp.spaces.ERPDistanceSpace;
+import tsml.classifiers.distance_based.distances.lcss.spaces.LCSSDistanceSpace;
+import tsml.classifiers.distance_based.distances.msm.spaces.MSMDistanceSpace;
+import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceSpace;
+import tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceSpace;
+import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceSpace;
+import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
+import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
@@ -45,6 +58,8 @@ import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
+
+import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, ContractedTrain, TrainEstimateTimeable,
                                                          ContractedTest {
@@ -107,6 +122,27 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
         classifier.setCheckpointInterval(1, TimeUnit.MINUTES);
         ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleGunPoint(seed), seed);
     }
+
+
+    public final static Configs<KNN> CONFIGS = buildConfigs().immutable();
+
+    public static Configs<KNN> buildConfigs() {
+        final Configs<KNN> configs = new Configs<>();
+
+        configs.add("1NN_ED", "Euclidean distance", KNN::new, knn -> {
+            knn.setTestTimeLimit(-1);
+            knn.setTrainTimeLimit(-1);
+            knn.setDistanceMeasure(new EDistance());
+            knn.setK(1);
+            knn.setAutoK(false);
+            knn.setEarlyPredict(false);
+            knn.setEarlyAbandonDistances(false);
+            knn.setNeighbourhoodSizeLimit(-1);
+            knn.setNeighbourhoodSizeLimitProportional(1d);
+        });
+
+        return configs;
+    }
     
     private DistanceMeasure distanceMeasure;
     private int k;
@@ -159,12 +195,7 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
 
     public KNN() {
         super(true);
-        setK(1);
-        setDistanceMeasure(new EDistance());
-        setEarlyPredict(false);
-        setEarlyAbandonDistances(false);
-        setNeighbourhoodSizeLimit(-1);
-        setNeighbourhoodSizeLimitProportional(1d);
+        CONFIGS.get("1NN_ED").configure(this);
     }
 
     @Override public ParamSet getParams() {
