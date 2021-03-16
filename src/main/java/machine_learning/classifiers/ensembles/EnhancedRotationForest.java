@@ -895,7 +895,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+trainResults.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
+        String result="RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
         result+=",numTrees,"+numTrees;
         return result;
     }
