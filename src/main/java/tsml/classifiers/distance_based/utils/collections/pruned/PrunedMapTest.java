@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.optimised;
+package tsml.classifiers.distance_based.utils.collections.pruned;
 
 import org.junit.Assert;
 import org.junit.Test;

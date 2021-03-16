@@ -3,7 +3,7 @@ package tsml.classifiers.distance_based.utils.collections;
 import java.util.*;
 import java.util.function.*;
 
-import tsml.classifiers.distance_based.optimised.PrunedMap;
+import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMap;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import utilities.Utilities;
 

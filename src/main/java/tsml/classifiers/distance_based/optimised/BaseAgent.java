@@ -1,10 +1,10 @@
 package tsml.classifiers.distance_based.optimised;
 
+import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMap;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class BaseAgent implements Agent {
