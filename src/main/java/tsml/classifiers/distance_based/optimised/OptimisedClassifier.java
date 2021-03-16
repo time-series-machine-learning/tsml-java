@@ -9,7 +9,7 @@ import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.TimedTest;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Chkpt;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ProgressiveBuild;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTrain;
@@ -24,11 +24,10 @@ import tsml.data_containers.TimeSeriesInstances;
 import utilities.ClassifierTools;
 import weka.core.Instances;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-public class OptimisedClassifier extends BaseClassifier implements Chkpt, ProgressiveBuild, TimedTrain, TimedTest,
+public class OptimisedClassifier extends BaseClassifier implements Checkpointed, ProgressiveBuild, TimedTrain, TimedTest,
                                                                      ContractedTrain, MemoryWatchable,
                                                                            TrainEstimateTimeable, IterableBuild {
 

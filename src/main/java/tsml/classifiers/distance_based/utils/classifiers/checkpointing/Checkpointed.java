@@ -1,96 +1,176 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.Checkpointable;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
+import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import utilities.FileUtils;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-public interface Checkpointed extends Checkpointable, Copier {
+public interface Checkpointed extends Checkpointable {
 
-    String DEFAULT_CHECKPOINT_FILENAME = "checkpoint.gz.ser";
-    long DEFAULT_CHECKPOINT_INTERVAL = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    String CHECKPOINT_EXTENSION = "tar.gz";
+    String CHECKPOINT_EXTENSION_WITH_DOT = "." + CHECKPOINT_EXTENSION;
+    String CHECKPOINT_PREFIX = "checkpoint";
+    String CHECKPOINT_PREFIX_WITH_UNDERSCORE = CHECKPOINT_PREFIX + "_";
+    
+    CheckpointConfig getCheckpointConfig();
+    
+    default String getCheckpointPath() {
+        return getCheckpointConfig().getCheckpointPath();
+    }
+    
+    default long getLastCheckpointTimeStamp() {
+        return getCheckpointConfig().getLastCheckpointTimeStamp();
+    }
 
     /**
-     * Get the time spent checkpointing. Classifiers which grow to occupy large amount of mem take a lot of time to save to disk. Therefore it is helpful to record this for consideration in timing conclusions.
-     * @return <0 for time not recorded, >=0 for the time taken checkpointing so far.
+     * time spent saving checkpoints
      */
-    default long getCheckpointTime() {
-        return -1;
+    default long getCheckpointSaveTime() {
+        return getCheckpointConfig().getCheckpointSaveTime();
     }
     
-    long getCheckpointInterval();
-    void setCheckpointInterval(long nanos);
-    default void setCheckpointInterval(long amount, TimeUnit unit) {
-        setCheckpointInterval(TimeUnit.NANOSECONDS.convert(amount, unit));
-    }
-    @Override default boolean setCheckpointTimeHours(int t) {
-        setCheckpointInterval(t, TimeUnit.HOURS);
-        return true;
+    /**
+     * time spent saving checkpoints
+     */
+    default long getCheckpointLoadTime() {
+        return getCheckpointConfig().getCheckpointSaveTime();
     }
     
-    default boolean isCheckpointIntervalExpired() {
-        return getLastCheckpointTimeStamp() + getCheckpointInterval() < System.nanoTime();
+    default long getCheckpointInterval() {
+        return getCheckpointConfig().getCheckpointInterval();
+    }
+    
+    default void setCheckpointInterval(final long checkpointInterval) {
+        getCheckpointConfig().setCheckpointInterval(checkpointInterval);
     }
 
-    boolean isCheckpointLoadingEnabled();
-    void setCheckpointLoadingEnabled(boolean state);
-    
-    long getLastCheckpointTimeStamp();
-    void setLastCheckpointTimeStamp(long timeStamp);
-    
-    String getCheckpointPath();
-    
-    String getCheckpointFileName();
-    void setCheckpointFileName(String name);
-    
-    default boolean loadCheckpoint() {
-        if(!isCheckpointLoadingEnabled() || !isCheckpointPathValid()) {
-            return false;
-        }
-        try {
-            String path = getCheckpointPath() + "/" + getCheckpointFileName();
-            loadFromFile(path);
-            setLastCheckpointTimeStamp(System.nanoTime());
-            // disable loading future checkpoints (i.e. this has loaded a checkpoint already, any further checkpoints should be produced by this instance therefore pointless reloading the progress achieved by this instance)
-            setCheckpointLoadingEnabled(false);
-            return true;
-        } catch(Exception e) {
-            return false;
-        }
+    default void setCheckpointInterval(final long amount, final TimeUnit unit) {
+        setCheckpointInterval(TimeUnit.NANOSECONDS.convert(amount, unit));
+    }
+
+    default boolean isCheckpointPathSet() {
+        return getCheckpointConfig().getCheckpointPath() != null;
+    }
+
+
+    /**
+     * the total time spent checkpointing
+     * @return
+     */
+    default long getCheckpointingTime() {
+        return getCheckpointLoadTime() + getCheckpointSaveTime();
     }
     
-    default boolean forceSaveCheckpoint() {
+    default boolean isKeepPastCheckpoints() {
+        return getCheckpointConfig().isKeepPastCheckpoints();
+    }
+    
+    default void setKeepPastCheckpoints(boolean state) {
+        getCheckpointConfig().setKeepPastCheckpoints(state);
+    }
+
+    /**
+     * Load the most recent checkpoint
+     * @return
+     */
+    default boolean loadCheckpoint() throws Exception {
+        final long startTimeStamp = System.nanoTime();
+        boolean loaded = false;
+        if(isCheckpointPathSet()) {
+            final Logger logger = getCheckpointConfig().getLogger();
+            final File dir = new File(getCheckpointPath());
+            if(!dir.exists()) {
+                logger.info("checkpoint dir does not exist, skipping load checkpoint");
+            } else if(!dir.isDirectory()) {
+                logger.info("checkpoint path is not a dir, skipping load checkpoint");
+            } else {
+                final String[] files = dir.list();
+                if(files == null || files.length <= 0) {
+                    logger.info("no past checkpoints found");
+                } else {
+                    // get the file with the largest timestamp. Files are saved with as <timestamp>.tar.gz
+                    Arrays.sort(files, Comparator.comparingLong(file -> {
+                        final String time = file.replace(CHECKPOINT_PREFIX_WITH_UNDERSCORE, "").replace(CHECKPOINT_EXTENSION_WITH_DOT, "");
+                        return Long.parseLong(time);
+                    }));
+                    final String file = files[files.length - 1];
+                    final String checkpointPath = dir + "/" + file;
+                    loadFromFile(checkpointPath);
+                    loaded = true;
+                    logger.info("loaded checkpoint from " + checkpointPath);
+                }
+            }
+        }
+
+        // add time taken loading checkpoints onto total load time
+        CheckpointConfig config = getCheckpointConfig();
+        // set the last checkpoint time to now to avoid saveCheckpoint calls after this saving a new checkpoint when
+        // less than interval time has passed
+        config.setLastCheckpointTimeStamp(System.nanoTime());
+        config.addLoadTime(System.nanoTime() - startTimeStamp);
+        return loaded;
+    }
+    
+    default boolean saveCheckpoint() throws Exception {
+        return saveCheckpoint(false);
+    }
+
+    /**
+     * Save checkpoint irrelevant of checkpoint interval
+     * @return
+     * @throws Exception
+     */
+    default boolean forceSaveCheckpoint() throws Exception {
         return saveCheckpoint(true);
     }
     
-    default boolean saveCheckpoint() {
-        return saveCheckpoint(false);
+    default boolean saveCheckpoint(boolean force) throws Exception {
+        long timeStamp = System.nanoTime();
+        boolean saved = false;
+        if(isCheckpointPathSet()) {
+            if(isCheckpointIntervalExpired() || force) {
+                // get current checkpoints that already exist
+                final String path = getCheckpointPath();
+                final String[] files = new File(path).list();
+                // save this checkpoint
+                final String checkpointPath = path + "/" + CHECKPOINT_PREFIX_WITH_UNDERSCORE + System.nanoTime() + CHECKPOINT_EXTENSION_WITH_DOT;
+                final long timeStampBeforeSave = System.nanoTime();
+                // take snapshot of timings
+                getCheckpointConfig().addSaveTime(timeStampBeforeSave - timeStamp);
+                // update the start time as we've already accounted for time before save operation
+                timeStamp = timeStampBeforeSave;
+                saveToFile(checkpointPath);
+                // remove any previous checkpoints
+                if(!isKeepPastCheckpoints()) {
+                    if(files != null) {
+                        for(String file : files) {
+                            final File f = new File(path + "/" + file);
+                            final String name = f.getName();
+                            if(name.startsWith(CHECKPOINT_PREFIX_WITH_UNDERSCORE) && name.endsWith(CHECKPOINT_EXTENSION_WITH_DOT)) {
+                                if(!f.delete()) {
+                                    throw new IllegalStateException("failed to delete checkpoint " + f.getPath());
+                                }
+                            }
+                        }
+                    }
+                }
+                getCheckpointConfig().getLogger().info("saved checkpoint to " + checkpointPath);
+                // update the checkpoint time stamp
+                getCheckpointConfig().setLastCheckpointTimeStamp(System.nanoTime());
+            }
+        }
+        getCheckpointConfig().addSaveTime(System.nanoTime() - timeStamp);
+        return saved;
     }
     
-    default boolean saveCheckpoint(boolean force) {
-        if(!isCheckpointPathValid()) {
-            return false;
-        }
-        if(!force && isCheckpointIntervalExpired()) {
-            return false;
-        }
-        try {
-            String path = getCheckpointPath() + "/" + getCheckpointFileName();
-            saveToFile(path);
-            setLastCheckpointTimeStamp(System.nanoTime());
-            return true;
-        } catch(Exception e) {
-            return false;
-        }
-    }
-    
-    default boolean isCheckpointPathValid() {
-        return getCheckpointPath() != null;
-    }
-    
-    @Override default void loadFromFile(String path) throws Exception {
-        Checkpointable.super.loadFromFile(path);
+    @Override default void copyFromSerObject(Object obj) throws Exception {
+        CopierUtils.shallowCopy(obj, this);
     }
 
     @Override default void saveToFile(String path) throws Exception {
@@ -98,7 +178,13 @@ public interface Checkpointed extends Checkpointable, Copier {
         Checkpointable.super.saveToFile(path);
     }
 
-    @Override default void copyFromSerObject(Object obj) throws Exception {
-        shallowCopyFrom(obj);
+    @Override default boolean setCheckpointPath(String path) {
+        getCheckpointConfig().setCheckpointPath(path);
+        return true;
+    }
+
+
+    default boolean isCheckpointIntervalExpired() {
+        return System.nanoTime() >= getLastCheckpointTimeStamp() + getCheckpointInterval();
     }
 }

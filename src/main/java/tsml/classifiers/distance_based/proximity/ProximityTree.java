@@ -17,7 +17,7 @@ import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceContinu
 import tsml.classifiers.distance_based.optimised.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Chkpt;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.collections.lists.IndexList;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpace;
@@ -58,7 +58,7 @@ import static tsml.classifiers.distance_based.utils.collections.checks.Checks.re
  * <p>
  * Contributors: goastler
  */
-public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, Chkpt, MemoryWatchable {
+public class ProximityTree extends BaseClassifier implements ContractedTest, ContractedTrain, Checkpointed, MemoryWatchable {
 
     public static void main(String[] args) throws Exception {
 //        System.out.println(CONFIGS);

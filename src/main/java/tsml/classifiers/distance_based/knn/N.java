@@ -13,7 +13,7 @@ import tsml.classifiers.distance_based.optimised.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Chkpt;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
@@ -29,7 +29,7 @@ import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 
-public class N extends BaseClassifier implements ParamHandler, Chkpt, ContractedTrain, TrainEstimateTimeable,
+public class N extends BaseClassifier implements ParamHandler, Checkpointed, ContractedTrain, TrainEstimateTimeable,
                                                          ContractedTest {
 
     public static void main(String[] args) throws Exception {

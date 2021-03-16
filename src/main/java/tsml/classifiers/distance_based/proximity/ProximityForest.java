@@ -8,7 +8,7 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.utils.classifiers.*;
 import tsml.classifiers.distance_based.utils.classifiers.checkpointing.CheckpointConfig;
-import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Chkpt;
+import tsml.classifiers.distance_based.utils.classifiers.checkpointing.Checkpointed;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTest;
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
@@ -20,7 +20,6 @@ import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.ClassifierTools;
 
-import java.io.BufferedReader;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +32,7 @@ import static utilities.Utilities.argMax;
  * Contributors: goastler
  */
 public class ProximityForest extends BaseClassifier implements ContractedTrain, ContractedTest, TrainEstimateTimeable,
-                                                                       Chkpt, MemoryWatchable {
+                                                                       Checkpointed, MemoryWatchable {
 
     public static void main(String[] args) throws Exception {
 ////        Thread.sleep(10000);
