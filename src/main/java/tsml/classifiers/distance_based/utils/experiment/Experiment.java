@@ -163,9 +163,13 @@ public class Experiment implements Copier {
         }
         // check the state of all train time contracts so far to copy over old checkpoints
         if(config.isCheckpoint()) {
+            // if there's no train contract then bail
+            if(config.getTrainTimeLimit() == null) {
+                return;
+            }
             // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
             if(!FileUtils.isEmptyDir(config.getCheckpointDirPath())) {
-                log.info("checkpoint found in workspace");
+                log.info("checkpoint dir found but empty");
                 return;
             }
             // the target train time limit we'll be running next
