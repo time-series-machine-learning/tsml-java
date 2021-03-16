@@ -1,18 +1,20 @@
 /*
  * Copyright (C) 2019 xmw13bzu
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package experiments.data;
@@ -171,6 +173,23 @@ public class DatasetLoading {
      */
     public static Instances[] sampleBasicMotions(int seed) throws Exception {
         return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "BasicMotions", seed);
+    }
+
+    /**
+     * Helper function for loading the baked-in ERing dataset, one of the
+     * UEA datasets for MTSC
+     *
+     * http://timeseriesclassification.com/description.php?Dataset=ERing
+     *
+     * UEA-MTSC data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     *
+     * @param seed the seed for resampling the data
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception if data loading or sampling failed
+     */
+    public static Instances[] sampleERing(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_MTSC_DATA_PATH, "ERing", seed);
     }
 
     /**
@@ -413,8 +432,8 @@ public class DatasetLoading {
      * @param fullPath path to the file to try and load
      * @return Instances from file.
      */
-    public static Instances loadData(String fullPath) {
-        return loadDataNullable(new File(fullPath));
+    public static Instances loadData(String fullPath) throws IOException {
+        return loadDataThrowable(new File(fullPath));
     }
 
 

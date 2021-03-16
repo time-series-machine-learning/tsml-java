@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers;
 
 import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
@@ -46,7 +49,7 @@ public interface Checkpointable extends Serializable {
     boolean setCheckpointPath(String path);
 
     /**
-     * DEFAULT FOR NOW: make abstract when fully implemented
+     *
      * @param t number of hours between checkpoints
      * @return true if set correctly.
      */
@@ -75,7 +78,6 @@ public interface Checkpointable extends Serializable {
     }
 
 
-
     /**
      * Utility function to set the file structure up if required. Call this in setSavePath if you wish
      * */
@@ -90,4 +92,6 @@ public interface Checkpointable extends Serializable {
     //Define how to copy from a loaded object to this object
     void copyFromSerObject(Object obj) throws Exception;
 
+    //delete any checkpoint file if present, not required currently
+    default boolean deleteCheckpoint() { return false; }
 }

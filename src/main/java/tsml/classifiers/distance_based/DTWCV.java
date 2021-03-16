@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.distance_based;
 import java.util.ArrayList;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
@@ -52,13 +55,14 @@ the accuracy cannot be better than the best so far, we can quit.
 to store the distance matrix for a given window size. This requires O(n^2) extra
 memory and means you cannot early abandon individual distances. 
 
-O DO: 
 DONE: avoid repeated evaluations for short series. Needs a debug
 2. Set up check pointing
 
 
 CHECK THIS: For implementation reasons, a window size of 1 
 is equivalent to Euclidean distance (rather than a window size of 0
+*
+* @author: ajb
  */
 
 public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParameter,ParameterSplittable{

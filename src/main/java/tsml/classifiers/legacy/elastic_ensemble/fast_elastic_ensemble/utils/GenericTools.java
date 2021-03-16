@@ -1,17 +1,22 @@
-/* Copyright (C) 2019 Chang Wei Tan
+/* 
+ * Copyright (C) 2019 Chang Wei Tan
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.legacy.elastic_ensemble.fast_elastic_ensemble.utils;
 
 /**
@@ -42,8 +47,7 @@ public class GenericTools {
     }
 
     public static double[] minmax(final double[] a) {
-        final int n = a.length;
-        double max = Double.MIN_VALUE;
+        double max = -99999999;
         double min = Double.MAX_VALUE;
         for (double v : a) {
             if (v > max) max = v;

@@ -1,20 +1,24 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers;
 
 import java.io.File;
+import java.io.IOException;
 
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeries;
@@ -46,7 +50,7 @@ public class Sine implements Transformer {
             }
             out[index++] = data;
         }
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     @Override
@@ -92,11 +96,11 @@ public class Sine implements Transformer {
     }
 
 
-    public static void main(String[] args){
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; //Aarons local path for testing.
-        String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TRAIN.ts");
-        Instances test  = DatasetLoading.loadData(local_path + dataset_name + File.separator + dataset_name+"_TEST.ts");
+    public static void main(String[] args) throws IOException {
+        String localPath="src/main/java/experiments/data/tsc/";
+        String datasetName = "ChinaTown";
+        Instances train = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TEST.ts");
         Sine sineTransform= new Sine();
         Instances out_train = sineTransform.transform(train);
         Instances out_test = sineTransform.transform(test);

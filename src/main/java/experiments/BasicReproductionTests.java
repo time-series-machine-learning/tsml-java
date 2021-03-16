@@ -50,7 +50,7 @@ public class BasicReproductionTests {
     public static boolean failTestsOnTimingsDifference = false;
     public static double timingEqualityThreshold = 1.2;
     
-    public static String reproductionDirectory = "src/main/java/experiments/reproductions/";
+    public static String reproductionDirectory = "src/main/java/experiments/reproductions/classifiers/";
     
     static { 
         new File(reproductionDirectory).mkdirs();
@@ -60,37 +60,33 @@ public class BasicReproductionTests {
     private static final String extraClassifiers = "machine_learning.classifiers.";
     
     public static final String[] classifierPaths = {
-        
-        tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
-        tsClassifiers + "dictionary_based.SAXVSM",
-        tsClassifiers + "dictionary_based.WEASEL",
-        tsClassifiers + "dictionary_based.cBOSS",
-        tsClassifiers + "dictionary_based.TDE",
-       
-        tsClassifiers + "distance_based.DTWCV",
-        tsClassifiers + "distance_based.proximity.ProximityForestWrapper",
+            tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
+            tsClassifiers + "dictionary_based.SAXVSM",
+            tsClassifiers + "dictionary_based.WEASEL",
+            tsClassifiers + "dictionary_based.cBOSS",
+            tsClassifiers + "dictionary_based.TDE",
         tsClassifiers + "distance_based.proximity.ProximityForest",
-        tsClassifiers + "distance_based.SlowDTW_1NN",
-        
-//        tsClassifiers + "frequency_based.cRISE",
-//        tsClassifiers + "hybrids.HIVE_COTE",
 
-//        tsClassifiers + "hybrids.FlatCote", 
-//        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
-        
-        tsClassifiers + "interval_based.LPS",
-        tsClassifiers + "interval_based.TSF",
-        tsClassifiers + "interval_based.CIF",
-        
-        tsClassifiers + "shapelet_based.FastShapelets",
-        tsClassifiers + "shapelet_based.LearnShapelets",        
-        
-        extraClassifiers + "PLSNominalClassifier",
-        extraClassifiers + "kNN",
-        
-        extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.stackers.SMLR",
-        
+            tsClassifiers + "distance_based.DTWCV",
+            tsClassifiers + "distance_based.ProximityForestWrapper",
+            tsClassifiers + "distance_based.SlowDTW_1NN",
+
+//            tsClassifiers + "hybrids.HIVE_COTE", //assumed to cover its consituents
+//            tsClassifiers + "hybrids.ROCKETClassifier", //requires an enviroment variable to be set currently
+
+            tsClassifiers + "interval_based.LPS",
+            tsClassifiers + "interval_based.TSF",
+            tsClassifiers + "interval_based.RISE",
+            tsClassifiers + "interval_based.CIF",
+
+            tsClassifiers + "shapelet_based.FastShapelets",
+            tsClassifiers + "shapelet_based.LearnShapelets",
+
+            extraClassifiers + "PLSNominalClassifier",
+            extraClassifiers + "kNN",
+
+            extraClassifiers + "ensembles.CAWPE",
+            extraClassifiers + "ensembles.stackers.SMLR",
     };
     
     ////////////////////////

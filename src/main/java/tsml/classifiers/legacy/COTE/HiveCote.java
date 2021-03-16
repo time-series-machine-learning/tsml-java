@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.legacy.COTE;
 
 
@@ -85,7 +88,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
 
     private static int MAXCONTRACTHOURS=7*24;
     private int contractHours=MAXCONTRACTHOURS;  //Default to maximum 7 days run time
-    private long contractTimeNanos = 0;
+    private long trainContractTimeNanos = 0;
     private boolean trainTimeContract =false;
 
     public HiveCote(){
@@ -172,7 +175,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
         classifiers.add(boss);
         
         TSF tsf=new TSF();
-        tsf.setEstimatorMethod("CV");
+        tsf.setTrainEstimateMethod("CV");
         tsf.setEstimateOwnPerformance(true);
         classifiers.add(tsf);
         
@@ -630,7 +633,7 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
     public void setTrainTimeLimit(long amount) {
 //Split the time up equally if contracted, if not we have no control    
         trainTimeContract =true;
-        contractTimeNanos=amount;
+        trainContractTimeNanos =amount;
         long used=0;
         for(Classifier c:classifiers){
             if(c instanceof TrainTimeContractable)
@@ -649,6 +652,12 @@ public class HiveCote extends EnhancedAbstractClassifier implements TrainTimeCon
             }
         }
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+
 
     /**
      * Parses a given list of options to set the parameters of the classifier.

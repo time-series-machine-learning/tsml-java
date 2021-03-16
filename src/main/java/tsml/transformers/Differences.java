@@ -1,17 +1,20 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers;
 
 import weka.core.Attribute;
@@ -28,11 +31,14 @@ import tsml.data_containers.TimeSeriesInstance;
  * */
 public class Differences implements Transformer {
 	private int order = 1;
+	private boolean subtractFormerValue = false;
 	String attName = "";
 
 	public void setOrder(int m) {
 		order = m;
 	}
+
+	public void setSubtractFormerValue(boolean b) { subtractFormerValue = b; }
 
 	private static final long serialVersionUID = 1L;
 
@@ -82,7 +88,9 @@ public class Differences implements Transformer {
 		int classIndexMod = (c >= 0 ? 1 : 0);
 		int numAtts = inst.numAttributes() - order - classIndexMod; //if have a classindex then make it one shorter.
 
-		double[] diffs = calculateDifferences(d, numAtts);
+		double[] diffs;
+		if (subtractFormerValue) diffs = calculateDifferences2(d, numAtts);
+		else diffs = calculateDifferences(d, numAtts);
 
 		// Extract out the terms and set the attributes
 		Instance newInst = new DenseInstance(diffs.length + classIndexMod);
@@ -102,6 +110,14 @@ public class Differences implements Transformer {
 
 		for (int j = 0; j < diffs.length; j++)
 			diffs[j] = d[j] - d[j + order];
+		return diffs;
+	}
+
+	private double[] calculateDifferences2(double[] d, int numAtts) {
+		double[] diffs = new double[numAtts];
+
+		for (int j = 0; j < diffs.length; j++)
+			diffs[j] = d[j + order] - d[j];
 		return diffs;
 	}
 
@@ -127,10 +143,12 @@ public class Differences implements Transformer {
         double[][] out = new double[inst.getNumDimensions()][];
         int i = 0;
         for (TimeSeries ts : inst) {
-            out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
+            if (subtractFormerValue) out[i++] = calculateDifferences2(ts.toValueArray(),
+					ts.getSeriesLength() - order);
+        	else out[i++] = calculateDifferences(ts.toValueArray(), ts.getSeriesLength() - order);
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 }

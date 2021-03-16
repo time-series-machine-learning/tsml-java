@@ -1,12 +1,27 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.multivariate;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.dictionary_based.cBOSS;
-import tsml.classifiers.frequency_based.RISE;
-import tsml.classifiers.hybrids.HIVE_COTE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import weka.classifiers.Classifier;

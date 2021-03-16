@@ -1,28 +1,30 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+
 package tsml.classifiers;
 
+import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.AbstractClassifier;
 import evaluation.storage.ClassifierResults;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
-import evaluation.storage.ClassifierResults;
-import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.*;
 
@@ -83,6 +85,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
 /** Store information of training. The minimum should be the build time, tune time and/or estimate acc time      */
     protected ClassifierResults trainResults = new ClassifierResults();
     protected int seed = 0;
+    protected boolean buildCalled=false; // set true on a class to buildClassifier, check performed in classify instance to
     /**Can seed for reproducibility*/
     protected Random rand=new Random(seed);
     protected boolean seedClassifier=false;
@@ -96,9 +99,24 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         return rand;
     }
 
+
+    /*Start Aaron Stuff for TSInstances wrapper*/
     public AbstractClassifier getClassifier(){
         return this;
     }
+    
+    public TimeSeriesInstances trainData;
+    
+    @Override
+    public TimeSeriesInstances getTSTrainData(){
+        return trainData;
+    }
+    
+    @Override
+    public void setTSTrainData(TimeSeriesInstances train){
+        trainData = train;
+    }
+    /*END - Aaron Stuff for TSClassifier wrapper*/
 
     /**
      * Set the classifier RNG	
@@ -148,34 +166,37 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     protected boolean estimateOwnPerformance = false;
 
-    /** If trainAccuracy is required, there are two options that can be implemented
-     *   1. estimator=CV: do a 10x CV on the train set with a clone of this classifier
-     *   2. estimator=OOB: build an OOB model just to get the OOB accuracy estimate
+    /** If trainAccuracy is required, there are three options that can be implemented
+     * All three options involve a two stage process: Fit whole model then estimate (which might mean fit more models)
+     *   1. trainEstimateMethod=CV: do a 10x CV on the train set with a clone of this classifier
+     *   2. trainEstimateMethod=OOB: build a single OOB model just to get the OOB predictions
+     *   3. trainEstimateMethod-TRAIN: use the data used to train the model to make predictions
      */
-    public enum EstimatorMethod{CV,OOB,NONE}
-    protected EstimatorMethod estimator=EstimatorMethod.NONE;
-    public void setEstimatorMethod(String str){
+    public enum TrainEstimateMethod {CV,OOB,TRAIN,NONE}
+    protected TrainEstimateMethod trainEstimateMethod = TrainEstimateMethod.NONE;
+    public void setTrainEstimateMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))
-            estimator=EstimatorMethod.CV;
+            trainEstimateMethod = TrainEstimateMethod.CV;
         else if(s.equals("OOB"))
-            estimator=EstimatorMethod.OOB;
-        else if(s.equals("NONE")) {
-            estimator = EstimatorMethod.NONE;
-        }
+            trainEstimateMethod = TrainEstimateMethod.OOB;
+        else if(s.equals("NONE"))
+            trainEstimateMethod = TrainEstimateMethod.NONE;
+        else if(s.equals("TRAIN"))
+            trainEstimateMethod = TrainEstimateMethod.TRAIN;
         else
             throw new UnsupportedOperationException("Unknown estimator method in classifier "+getClass().getSimpleName()+" = "+str);
     }
 
     public String getEstimatorMethod() {
-        return estimator.name();
+        return trainEstimateMethod.name();
     }
 
     //utilities for readability in setting the above bools via super constructor in subclasses
     public static final boolean CAN_ESTIMATE_OWN_PERFORMANCE = true;
     public static final boolean CANNOT_ESTIMATE_OWN_PERFORMANCE = false;
     protected int numClasses = -1;
-
+    protected boolean buildClassifierCalled = false;
     public int getNumClasses() {
         return numClasses;
     }
@@ -187,6 +208,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     @Override
     public void buildClassifier(final Instances trainData) throws
                                                                 Exception {
+        buildClassifierCalled=true;
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = trainData.numClasses();
@@ -361,9 +383,13 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
     }
     
     public int setNumberOfFolds(Instances data){
-        return data.numInstances()<10?data.numInstances():10;
-    }    
-    
+        return Math.min(data.numInstances(), 10);
+    }
+
+    public int setNumberOfFolds(TimeSeriesInstances data){
+        return Math.min(data.numInstances(), 10);
+    }
+
     /**
      * A printing-friendly and/or context/parameter-aware name that can optionally 
      * be used to describe this classifier. By default, this will simply be the 

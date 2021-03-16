@@ -1,17 +1,20 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers;
 
 import experiments.data.DatasetLoading;
@@ -27,6 +30,7 @@ import weka.filters.Filter;
 import weka.filters.SimpleBatchFilter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /* simple Filter that just summarises the series
@@ -135,14 +139,12 @@ public class SummaryStats implements Transformer {
         return new DenseInstance(1.0, atts);
     }
 
-    public static void main(String[] args) {
 
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
-        String dataset_name = "ChinaTown";
-        Instances train = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.ts");
-        Instances test = DatasetLoading
-                .loadData(local_path + dataset_name + File.separator + dataset_name + "_TEST.ts");
+    public static void main(String[] args) throws IOException {
+        String localPath = "src/main/java/experiments/data/tsc/"; //  path for testing.
+        String datasetName = "ChinaTown";
+        Instances train = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TRAIN.ts");
+        Instances test  = DatasetLoading.loadData(localPath + datasetName + File.separator + datasetName+"_TEST.ts");
         // Instances filter=new SummaryStats().process(test);
         SummaryStats m = new SummaryStats();
         Instances filter = m.transform(test);
@@ -179,7 +181,7 @@ public class SummaryStats implements Transformer {
             out[i][j++] = stats.getMax();
             i++;
         }
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 

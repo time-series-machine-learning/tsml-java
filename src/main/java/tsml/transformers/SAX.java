@@ -1,17 +1,20 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers;
 
 import experiments.data.DatasetLoading;
@@ -25,6 +28,7 @@ import weka.core.Instances;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -264,7 +268,7 @@ public class SAX implements Transformer, TechnicalInformationHandler {
             out[i++] = o;
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
     /**
@@ -310,11 +314,12 @@ public class SAX implements Transformer, TechnicalInformationHandler {
                                                                        // Tools | Templates.
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         System.out.println("SAXtest\n\n");
+        String localPath="src/main/java/experiments/data/tsc/";
 
         Instances test = DatasetLoading
-                .loadData("C:\\Users\\ajb\\Dropbox\\Data\\TSCProblems\\Chinatown\\Chinatown_TRAIN.arff");
+                .loadData(localPath+"Chinatown/Chinatown_TRAIN.arff");
 
         test = new RowNormalizer().transform(test);
 

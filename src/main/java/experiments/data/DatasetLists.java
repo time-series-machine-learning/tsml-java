@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package experiments.data;
 
 
@@ -96,7 +99,7 @@ public class DatasetLists {
 		"AsphaltObstaclesCoordinates",
 		"AsphaltPavementTypeCoordinates",
 		"AsphaltRegularityCoordinates",
-        "AtrialFibrillation",//1
+        "AtrialFibrillation",
         "BasicMotions",
         "CharacterTrajectories",
         "Cricket",
@@ -105,31 +108,28 @@ public class DatasetLists {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-        "FaceDetection",//10
+        "FaceDetection",
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",
         "Heartbeat",
-        "InsectWingbeat",//15
+        "InsectWingbeat",
 //        "KickVsPunch", Poorly formatted and very small train size
         "JapaneseVowels",
         "Libras",
         "LSST",
         "MotorImagery",
-        "NATOPS",//20
+        "NATOPS",
         "PenDigits",
         "PEMS-SF",
         "PhonemeSpectra",
         "RacketSports",
-        "SelfRegulationSCP1",//25
+        "SelfRegulationSCP1",
         "SelfRegulationSCP2",
         "SpokenArabicDigits",
         "StandWalkJump",        
-        "UWaveGestureLibrary",
-		"AsphaltObstaclesCoordinates",
-		"AsphaltPavementTypeCoordinates",
-		"AsphaltRegularityCoordinates"
-};    
+        "UWaveGestureLibrary"
+};
        //</editor-fold>       
 
  //TSC data sets for relaunch in 2018 
@@ -319,7 +319,7 @@ public class DatasetLists {
 	//<editor-fold defaultstate="collapsed" desc="Fixed length multivariate datasets">
 	public static String[] fixedLengthMultivariate = {
 			"ArticularyWordRecognition", //Index 0
-			"AtrialFibrillation",//1
+			"AtrialFibrillation",
 			"BasicMotions",
 			"Cricket",
 			"DuckDuckGeese",
@@ -327,7 +327,7 @@ public class DatasetLists {
 			"Epilepsy",
 			"EthanolConcentration",
 			"ERing",
-			"FaceDetection",//10
+			"FaceDetection",
 			"FingerMovements",
 			"HandMovementDirection",
 			"Handwriting",
@@ -335,12 +335,12 @@ public class DatasetLists {
 			"Libras",
 			"LSST",
 			"MotorImagery",
-			"NATOPS",//20
+			"NATOPS",
 			"PenDigits",
 			"PEMS-SF",
 			"PhonemeSpectra",
 			"RacketSports",
-			"SelfRegulationSCP1",//25
+			"SelfRegulationSCP1",
 			"SelfRegulationSCP2",
 			"StandWalkJump",
 			"UWaveGestureLibrary"
@@ -371,13 +371,13 @@ public class DatasetLists {
     //<editor-fold defaultstate="collapsed" desc="tsc Problems 2018 ">    
 		public static String[] equalLengthProblems={	
                                 //Train Size, Test Size, Series Length, Nos Classes
-                        "ACSF1",
+		    "ACSF1",
 			"Adiac",        // 390,391,176,37
 			"ArrowHead",    // 36,175,251,3
 			"Beef",         // 30,30,470,5
 			"BeetleFly",    // 20,20,512,2
 			"BirdChicken",  // 20,20,512,2
-                        "BME",
+		 	"BME",
 			"Car",          // 60,60,577,4
 			"CBF",                      // 30,900,128,3
 			"Chinatown",

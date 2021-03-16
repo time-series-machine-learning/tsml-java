@@ -1,3 +1,20 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
@@ -34,9 +51,8 @@ public class OutOfBagEvaluator extends Evaluator {
         final Set<Integer> oobTestSetIndices = new HashSet<>(data.numInstances());
         oobTestSetIndices.addAll(ArrayUtilities.sequence(data.numInstances()));
         // pick n instances from train data, where n is the size of train data
-        for(int i = 0; i < data.numInstances(); i++) {
-            int index = random.nextInt(data.numInstances());
-            TimeSeriesInstance instance = data.get(index);
+        for(int i = 0; i < data.size(); i++) {
+            int index = random.nextInt(data.size());
             inBagTrainDataIndices.add(index);
             // remove the train instance from the test bag (if not already)
             oobTestSetIndices.remove(index);
