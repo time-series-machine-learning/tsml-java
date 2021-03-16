@@ -50,8 +50,8 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setTrainTimeLimit(1, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             classifier.setLogLevel("all");
-//            classifier.setEstimateOwnPerformance(true);
-//            classifier.setEstimatorMethod("cv");
+            classifier.setEstimateOwnPerformance(true);
+            classifier.setEstimatorMethod("oob");
             classifier.setCheckpointPath("checkpoints");
             classifier.setCheckpointInterval(5, TimeUnit.SECONDS);
             ClassifierTools
@@ -165,6 +165,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 checkpointConfig.setLogger(getLogger());
             } else {
                 // case (1b)
+                memoryWatcher.reset();
                 // let super build anything necessary (will handle isRebuild accordingly in super class)
                 super.buildClassifier(trainData);
                 // if rebuilding
@@ -173,6 +174,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 runTimer.reset();
                 // clear other timers entirely
                 evaluationTimer.reset();
+                checkpointConfig.resetCheckpointingTime();
                 // no constituents to start with
                 trees = new ArrayList<>();
                 treeEvaluators = new ArrayList<>();

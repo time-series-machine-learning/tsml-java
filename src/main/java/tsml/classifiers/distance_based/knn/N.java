@@ -111,7 +111,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
     // track the time to test an inst
     private final StopWatch testTimer = new StopWatch();
     // track the time to build the train estimate
-    private final StopWatch trainEstimateTimer = new StopWatch();
+    private final StopWatch evaluationTimer = new StopWatch();
     // the max amount of time taken to add a neighbour
     private long longestAddNeighbourTime;
     
@@ -133,7 +133,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
     }
 
     @Override public long getTrainEstimateTime() {
-        return trainEstimateTimer.elapsedTime();
+        return evaluationTimer.elapsedTime();
     }
 
     @Override public CheckpointConfig getCheckpointConfig() {
@@ -227,8 +227,11 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
                 neighbourhoodSize = 0;
                 trainData = data;
                 longestAddNeighbourTime = 0;
+                runTimer.reset();
+                evaluationTimer.reset();
+                checkpointConfig.resetCheckpointingTime();
                 if(getEstimateOwnPerformance()) {
-                    trainEstimateTimer.start();
+                    evaluationTimer.start();
                     // init the searches for loocv
                     searches = new ArrayList<>();
                     remainingSearchIndices = new UnorderedArrayList<>();
@@ -240,7 +243,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
                             remainingSearchIndices.add(i);
                         }
                     }
-                    trainEstimateTimer.stop();
+                    evaluationTimer.stop();
                 }
             }
         }
@@ -260,7 +263,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
     }
     
     private void estimatePerformance() throws Exception {
-        trainEstimateTimer.start();
+        evaluationTimer.start();
         // if neighbourhood is empty, then set workDone to true to regenerate the (not yet made) train results
         // otherwise, more neighbours must be added before the train results are regenerated
         boolean workDone = neighbourhoodSize == 0;
@@ -346,7 +349,7 @@ public class N extends BaseClassifier implements ParamHandler, Chkpt, Contracted
             saveCheckpoint(true);
         }
         
-        trainEstimateTimer.stop();
+        evaluationTimer.stop();
     }
     
     private void generateTrainResults() {

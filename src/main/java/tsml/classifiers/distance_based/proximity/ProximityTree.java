@@ -156,9 +156,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
     // the tree of splits
     private Tree<Split> tree;
     // the train time limit / contract
-    private transient long trainTimeLimit;
+    private long trainTimeLimit;
     // the test time limit / contract
-    private transient long testTimeLimit;
+    private long testTimeLimit;
     // the longest time taken to build a node / split
     private long longestTrainStageTime;
     // the queue of nodes left to build
@@ -340,12 +340,14 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 checkpointConfig.setLogger(getLogger());
             } else {
                 // case (1b)
+                memoryWatcher.reset();
                 // let super build anything necessary (will handle isRebuild accordingly in super class)
                 super.buildClassifier(trainData);
                 // if rebuilding
                 // then init vars
                 // build timer is already started so just clear any time already accrued from previous builds. I.e. keep the time stamp of when the timer was started, but clear any record of accumulated time
                 runTimer.reset();
+                checkpointConfig.resetCheckpointingTime();
                 // setup the tree vars
                 tree = new BaseTree<>();
                 nodeBuildQueue = new LinkedList<>();

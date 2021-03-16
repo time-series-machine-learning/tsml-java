@@ -85,5 +85,19 @@ public class CheckpointConfig implements Serializable, Loggable {
     @Override public void setLogger(final Logger logger) {
         this.logger = logger;
     }
+    
+    public void resetSaveTime() {
+        checkpointSaveTime = 0;
+    }
+    
+    public void resetLoadTime() {
+        checkpointLoadTime = 0;
+    }
+    
+    public void resetCheckpointingTime() {
+        resetLoadTime();
+        resetSaveTime();
+    }
+
 
 }
