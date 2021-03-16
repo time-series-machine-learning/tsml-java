@@ -65,9 +65,9 @@ public class BasicReproductionTests {
             tsClassifiers + "dictionary_based.WEASEL",
             tsClassifiers + "dictionary_based.cBOSS",
             tsClassifiers + "dictionary_based.TDE",
-        tsClassifiers + "distance_based.proximity.ProximityForest",
 
             tsClassifiers + "distance_based.DTWCV",
+            tsClassifiers + "distance_based.proximity.ProximityForest",
             tsClassifiers + "distance_based.ProximityForestWrapper",
             tsClassifiers + "distance_based.SlowDTW_1NN",
 
