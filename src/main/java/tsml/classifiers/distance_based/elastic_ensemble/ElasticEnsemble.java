@@ -37,15 +37,15 @@ import java.util.*;
 
 import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
-public class EE extends BaseClassifier implements ContractedTrain, ContractedTest, ProgressiveBuild, Checkpointed,
+public class ElasticEnsemble extends BaseClassifier implements ContractedTrain, ContractedTest, ProgressiveBuild, Checkpointed,
                                                           MemoryWatchable, TrainEstimateTimeable {
 
-    public final static Configs<EE> CONFIGS = buildConfigs().immutable();
+    public final static Configs<ElasticEnsemble> CONFIGS = buildConfigs().immutable();
 
-    public static Configs<EE> buildConfigs() {
-        final Configs<EE> configs = new Configs<>();
+    public static Configs<ElasticEnsemble> buildConfigs() {
+        final Configs<ElasticEnsemble> configs = new Configs<>();
         
-        configs.add("EE", "Elastic ensemble with default constituents (ED, DTW, Full DTW, DDTW, Full DDTW, ERP, LCSS, MSM, TWED, WDTW, WDDTW", EE::new, ee -> {
+        configs.add("EE", "Elastic ensemble with default constituents (ED, DTW, Full DTW, DDTW, Full DDTW, ERP, LCSS, MSM, TWED, WDTW, WDDTW", ElasticEnsemble::new, ee -> {
             ee.setTestTimeLimit(-1);
             ee.setTrainTimeLimit(-1);
             ee.setDistanceMeasureSpaceBuilders(newArrayList(
@@ -66,7 +66,7 @@ public class EE extends BaseClassifier implements ContractedTrain, ContractedTes
         return configs;
     }
 
-    public EE() {
+    public ElasticEnsemble() {
 
     }
 
