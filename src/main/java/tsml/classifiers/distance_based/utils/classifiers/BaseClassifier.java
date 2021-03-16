@@ -51,13 +51,17 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
     
     // whether the classifier is to be built from scratch or not. Set this to true to incrementally improve the model on every buildClassifier call
     private boolean rebuild = true;
-
+    
     protected BaseClassifier() {
         this(false);
     }
 
     protected BaseClassifier(boolean a) {
         super(a);
+    }
+
+    public String[] getLabels() {
+        return getTSTrainData().getClassLabels();
     }
 
     @Override public Logger getLogger() {
@@ -78,6 +82,8 @@ public abstract class BaseClassifier extends EnhancedAbstractClassifier implemen
             trainResults = new ClassifierResults();
             // check the seed has been set
             checkRandom();
+            // remember the data
+            setTSTrainData(trainData);
             // we're rebuilding so set the seed / params, etc, using super
             super.buildClassifier(Converter.toArff(Objects.requireNonNull(trainData)));
         }
