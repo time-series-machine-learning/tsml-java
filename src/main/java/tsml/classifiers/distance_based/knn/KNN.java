@@ -29,12 +29,12 @@ import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 
-public class N extends BaseClassifier implements ParamHandler, Checkpointed, ContractedTrain, TrainEstimateTimeable,
+public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, ContractedTrain, TrainEstimateTimeable,
                                                          ContractedTest {
 
     public static void main(String[] args) throws Exception {
         final int seed = 0;
-        final N classifier = new N();
+        final KNN classifier = new KNN();
         classifier.setSeed(seed);
         classifier.setEstimateOwnPerformance(true);
         classifier.setEarlyPredict(true);
@@ -140,7 +140,7 @@ public class N extends BaseClassifier implements ParamHandler, Checkpointed, Con
         return checkpointConfig;
     }
 
-    public N() {
+    public KNN() {
         super(true);
         setK(1);
         setDistanceMeasure(new EDistance());

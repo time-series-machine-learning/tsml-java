@@ -4,10 +4,9 @@ import evaluation.evaluators.Evaluator;
 import evaluation.evaluators.InternalEstimateEvaluator;
 import tsml.classifiers.TSClassifier;
 import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
-import tsml.classifiers.distance_based.knn.N;
+import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.utils.classifiers.Builder;
 import tsml.classifiers.distance_based.utils.classifiers.ClassifierBuilder;
-import tsml.classifiers.distance_based.utils.collections.CollectionUtils;
 import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSpaceBuilder;
 import tsml.classifiers.distance_based.utils.collections.params.iteration.AbstractSearch;
@@ -24,7 +23,7 @@ public class KnnAgent extends BaseAgent {
         setSearch(new GridSearch());
         setEvaluatorBuilder(InternalEstimateEvaluator::new);
         paramAgent.setClassifierBuilder((ClassifierBuilder<TSClassifier>) () -> {
-            final N classifier = new N();
+            final KNN classifier = new KNN();
             classifier.setNeighbourhoodSizeLimit(neighbourhoodSize);
             classifier.setSeed(getSeed());
             return classifier;
@@ -191,7 +190,7 @@ public class KnnAgent extends BaseAgent {
         }
         final Evaluation evaluation = exploits.remove(0);
         evaluation.setResults(null); // clear the results (do not clear the score!)
-        final N classifier = getClassifier(evaluation);
+        final KNN classifier = getClassifier(evaluation);
         int prevNeighbourhoodSize = classifier.getNeighbourhoodSize();
         // if the distance measure is symmetric then there's a 2 for the price of 1 on the neighbours
         final int increase = classifier.getDistanceMeasure().isSymmetric() ? 2 : 1;
@@ -204,12 +203,12 @@ public class KnnAgent extends BaseAgent {
         return evaluation;
     }
 
-    private N getClassifier(Evaluation evaluation) {
+    private KNN getClassifier(Evaluation evaluation) {
         final TSClassifier classifier = evaluation.getClassifier();
-        if(!(classifier instanceof N)) {
+        if(!(classifier instanceof KNN)) {
             throw new IllegalStateException("expected knn");
         }
-        return (N) classifier;
+        return (KNN) classifier;
     }
     
     public boolean hasNextExploreParamSet() {
