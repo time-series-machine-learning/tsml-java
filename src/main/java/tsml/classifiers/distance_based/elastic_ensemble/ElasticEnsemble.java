@@ -221,7 +221,7 @@ public class ElasticEnsemble extends BaseClassifier implements ContractedTrain, 
     }
 
     @Override public double[] distributionForInstance(final TimeSeriesInstance inst) throws Exception {
-        final double[] distribution = new double[inst.numClasses()];
+        final double[] distribution = new double[getLabels().length];
         for(OptimisedClassifier classifier : constiteunts) {
             final double[] constituentDistribution = classifier.distributionForInstance(inst);
             final int prediction = Utilities.argMax(constituentDistribution, getRandom());
