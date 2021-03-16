@@ -616,7 +616,7 @@ public class ClassifierLists {
                 c = new BayesNet();
                 break;
             case "ED":
-                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();
+                c= KNN.CONFIGS.get(classifier).build();
                 break;
             case "C45":
                 c=new J48();
