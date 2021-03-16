@@ -595,11 +595,17 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         if(seriesDimensions.size() == 1 && dimensionsToKeep.size() == 1 && dimensionsToKeep.get(0) == 0) {
             return this;
         }
-        List<TimeSeries> dimensions = new ArrayList<>(dimensionsToKeep.size());
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
+        tsi.seriesDimensions = new ArrayList<>(dimensionsToKeep.size());
         for(Integer i : dimensionsToKeep) {
-            dimensions.add(seriesDimensions.get(i));
+            tsi.seriesDimensions.add(seriesDimensions.get(i));
         }
-        return new TimeSeriesInstance(dimensions, this);
+        tsi.targetValue = targetValue;
+        tsi.labelIndex = labelIndex;
+        
+        tsi.dataChecks();
+        
+        return tsi;
     }
 
     /**
