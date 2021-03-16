@@ -652,7 +652,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         public double[] distributionForInstance(final TimeSeriesInstance instance) {
             // this is a simple majority vote over all the exemplars in the exemplars group at the given partition
             // get the corresponding closest exemplars
-            final double[] distribution = new double[instance.numClasses()];
+            final double[] distribution = new double[data.numClasses()];
             // for each exemplar
             for(TimeSeriesInstance exemplar : exemplars) {
                 // vote for the exemplar's class
@@ -1122,7 +1122,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         values.add(value);
                     }
                 }
-                inst =  new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex(), inst.getClassLabels());
+                inst =  new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex());
                 
             } else if(dimensionConversionMode.equals(DimensionConversionMode.STRATIFY)) {
                 
@@ -1132,7 +1132,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         values.add(inst.get(i).get(j));
                     }
                 }
-                inst = new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex(), inst.getClassLabels());
+                inst = new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex());
                 
             } else if(dimensionConversionMode.equals(DimensionConversionMode.NONE)) {
                 // do nothing
