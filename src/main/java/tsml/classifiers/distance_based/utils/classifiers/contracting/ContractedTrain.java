@@ -48,6 +48,10 @@ public interface ContractedTrain extends TrainTimeContractable, TimedTrain, Prog
         return !hasTrainTimeLimit() || nanos < getTrainTimeLimit();
     }
 
+    default boolean withinTrainContract(long time) {
+        return insideTrainTimeLimit(time);
+    }
+    
     default long findRemainingTrainTime(long trainTime) {
         if(!hasTrainTimeLimit()) {
             return Long.MAX_VALUE;

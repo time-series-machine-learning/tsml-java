@@ -70,7 +70,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             classifier.setLogLevel("all");
             classifier.setEstimateOwnPerformance(true);
-            classifier.setEstimatorMethod("oob");
+            classifier.setTrainEstimateMethod("oob");
             classifier.setCheckpointPath("checkpoints");
             classifier.setCheckpointInterval(5, TimeUnit.SECONDS);
             ClassifierTools
@@ -106,7 +106,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             pf -> {
                 pf.setTrainTimeLimit(-1);
                 pf.setTestTimeLimit(-1);
-                pf.setEstimatorMethod("none");
+                pf.setTrainEstimateMethod("none");
                 pf.setEstimateOwnPerformance(false);
                 pf.setNumTreeLimit(100);
                 pf.setProximityTreeFactory(ProximityTree.CONFIGS.get("PT_R1"));
@@ -117,7 +117,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         for(String method : Arrays.asList("OOB", "CV")) {
             for(String name : Arrays.asList("PF_R1", "PF_R5", "PF_R10")) {
                 final Config<ProximityForest> conf = configs.get(name);
-                configs.add(name + "_" + method, method, conf, pf -> pf.setEstimatorMethod(method));
+                configs.add(name + "_" + method, method, conf, pf -> pf.setTrainEstimateMethod(method));
             }
         }
         
@@ -201,7 +201,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
                 // zero tree build time so the first tree build will always set the bar
                 longestTrainStageTime = 0;
                 // init the running train estimate variables if using OOB
-                if(estimateOwnPerformance && estimator.equals(EstimatorMethod.OOB)) {
+                if(estimateOwnPerformance && trainEstimateMethod.equals(TrainEstimateMethod.OOB)) {
                     trainEstimatePredictionTimes = new long[trainData.numInstances()];
                     trainEstimateDistributions = new double[trainData.numInstances()][trainData.numClasses()];
                     treeEvaluators = new ArrayList<>();
@@ -223,7 +223,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
         // maintain a timer for how long trees take to build
         final StopWatch trainStageTimer = new StopWatch();
         // while remaining time / more trees need to be built
-        if(estimateOwnPerformance && estimator.equals(EstimatorMethod.CV)) {
+        if(estimateOwnPerformance && trainEstimateMethod.equals(TrainEstimateMethod.CV)) {
             // if there's a train contract then need to spend half the time CV'ing
             evaluationTimer.start();
             getLogger().info("cross validating");
@@ -271,7 +271,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             // setup the constituent
             trees.add(tree);
             // estimate the performance of the tree
-            if(estimateOwnPerformance && estimator.equals(EstimatorMethod.OOB)) {
+            if(estimateOwnPerformance && trainEstimateMethod.equals(TrainEstimateMethod.OOB)) {
                 // the timer for contracting the estimate of train error
                 evaluationTimer.start();
                 // build train estimate based on method
@@ -315,7 +315,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
             longestTrainStageTime = Math.max(longestTrainStageTime, trainStageTimer.elapsedTime());
         }
         // if work has been done towards estimating the train error via OOB
-        if(estimateOwnPerformance && workDone && estimator.equals(EstimatorMethod.OOB)) {
+        if(estimateOwnPerformance && workDone && trainEstimateMethod.equals(TrainEstimateMethod.OOB)) {
             // must format the OOB errors into classifier results
             evaluationTimer.start();
             getLogger().info("finalising train estimate");
@@ -437,11 +437,11 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
     public void setTrainTimeLimit(final long nanos) {
         trainTimeLimit = nanos;
     }
-    @Override
-    public boolean withinTrainContract(long start) {
-        return start<trainContractTimeNanos;
+    
+    public boolean withinTrainContract(long time) {
+        return insideTrainTimeLimit(time);
     }
-
+    
     @Override
     public long getTestTimeLimit() {
         return testTimeLimit;

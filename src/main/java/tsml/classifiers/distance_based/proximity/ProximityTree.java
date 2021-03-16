@@ -204,6 +204,10 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         return distanceMode;
     }
 
+    public boolean withinTrainContract(long time) {
+        return insideTrainTimeLimit(time);
+    }
+    
     public void setDistanceMode(
             final DistanceMode distanceMode) {
         this.distanceMode = Objects.requireNonNull(distanceMode);

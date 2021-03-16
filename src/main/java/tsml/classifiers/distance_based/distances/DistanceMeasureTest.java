@@ -170,7 +170,7 @@ public class DistanceMeasureTest {
     private int i = 0;
     
     @Before
-    public void before() {
+    public void before() throws IOException {
 
         // load in the data
         dataPath = Arrays.asList(BAKED_IN_MTSC_DATASETS).contains(datasetName) ? BAKED_IN_MTSC_DATA_PATH :
@@ -270,7 +270,7 @@ public class DistanceMeasureTest {
         }
     }
     
-    private static TimeSeriesInstances loadData(String dirPath, String datasetName) {
+    private static TimeSeriesInstances loadData(String dirPath, String datasetName) throws IOException {
         final String trainPath = dirPath + "/" + datasetName + "/" + datasetName + "_TRAIN.arff";
         final String testPath = dirPath + "/" + datasetName + "/" + datasetName + "_TEST.arff";
         final TimeSeriesInstances data = Converter.fromArff(DatasetLoading.loadData(trainPath));
@@ -312,39 +312,39 @@ public class DistanceMeasureTest {
 
             // add the previous implementations
             if("LCSS".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.lcss(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.lcss(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         floorWindow,
                         ((LCSSDistance) distanceMeasure).getEpsilon());
             } else if("DDTW".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.dtw(Converter.toArff(new Derivative().transform(inst1)),
-                        Converter.toArff(new Derivative().transform(inst2)),
+                oldDistance = PreviousDistanceMeasureVersions.dtw(Converter.toArff(new Derivative().transform(inst1), data.getClassLabels()),
+                        Converter.toArff(new Derivative().transform(inst2), data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         floorWindow);
             } else if("WDDTW".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.wdtw(Converter.toArff(new Derivative().transform(inst1)),
-                        Converter.toArff(new Derivative().transform(inst2)),
+                oldDistance = PreviousDistanceMeasureVersions.wdtw(Converter.toArff(new Derivative().transform(inst1), data.getClassLabels()),
+                        Converter.toArff(new Derivative().transform(inst2), data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         ((WDTWDistance) ((TransformDistanceMeasure) distanceMeasure)
                                                 .getDistanceMeasure()).getG());
             } else if("DTW".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.dtw(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.dtw(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         floorWindow);
             } else if("WDTW".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.wdtw(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.wdtw(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         ((WDTWDistance) distanceMeasure).getG());
             } else if("ERP".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.erp(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.erp(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         floorWindow, ((ERPDistance) distanceMeasure).getG());
             } else if("MSM".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.msm(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.msm(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         ((MSMDistance) distanceMeasure).getC());
             } else if("TWED".equals(name)) {
-                oldDistance = PreviousDistanceMeasureVersions.twed(Converter.toArff(inst1), Converter.toArff(inst2),
+                oldDistance = PreviousDistanceMeasureVersions.twed(Converter.toArff(inst1, data.getClassLabels()), Converter.toArff(inst2, data.getClassLabels()),
                         Double.POSITIVE_INFINITY,
                         ((TWEDistance) distanceMeasure).getLambda(),
                         ((TWEDistance) distanceMeasure).getNu());

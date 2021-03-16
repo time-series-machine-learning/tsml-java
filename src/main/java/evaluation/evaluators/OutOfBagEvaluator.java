@@ -51,8 +51,8 @@ public class OutOfBagEvaluator extends Evaluator {
         final Set<Integer> oobTestSetIndices = new HashSet<>(data.numInstances());
         oobTestSetIndices.addAll(ArrayUtilities.sequence(data.numInstances()));
         // pick n instances from train data, where n is the size of train data
-        for(int i = 0; i < data.size(); i++) {
-            int index = random.nextInt(data.size());
+        for(int i = 0; i < data.numInstances(); i++) {
+            int index = random.nextInt(data.numInstances());
             inBagTrainDataIndices.add(index);
             // remove the train instance from the test bag (if not already)
             oobTestSetIndices.remove(index);

@@ -285,7 +285,7 @@ public class Experiment implements Copier {
                     EnhancedAbstractClassifier eac = (EnhancedAbstractClassifier) classifier;
                     // default to a cv if not set when building the classifier
                     if(eac.getEstimatorMethod().equalsIgnoreCase("none")) {
-                        eac.setEstimatorMethod("cv");
+                        eac.setTrainEstimateMethod("cv");
                     }
                 }
             } else {

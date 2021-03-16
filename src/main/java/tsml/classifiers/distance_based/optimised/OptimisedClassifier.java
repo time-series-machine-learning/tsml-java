@@ -59,6 +59,10 @@ public class OptimisedClassifier extends BaseClassifier implements Checkpointed,
     private long longestEvaluationTime;
     private TimeSeriesInstances trainData;
     private boolean explore;
+
+    public boolean withinTrainContract(long time) {
+        return insideTrainTimeLimit(time);
+    }
     
     public void setTrainData(TimeSeriesInstances trainData) {
         this.trainData = Objects.requireNonNull(trainData);

@@ -18,6 +18,9 @@
 package tsml.classifiers.distance_based.distances;
 
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
+import weka.core.Instance;
 import weka.core.Utils;
 
 public abstract class BaseDistanceMeasure implements DistanceMeasure {

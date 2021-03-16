@@ -8,6 +8,10 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+
 public class DistanceMeasureAdapter implements DistanceMeasure {
 
     public DistanceMeasureAdapter(final DistanceFunction df) {
@@ -15,9 +19,17 @@ public class DistanceMeasureAdapter implements DistanceMeasure {
     }
 
     private final DistanceFunction df;
-
+    private String[] labels;
+    
+    private void checkBuilt() {
+        if(labels == null) {
+            throw new IllegalStateException("distance measure not built - call buildDistanceMeasure or setInstances first");
+        }
+    }
+    
     @Override public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
-        return distance(Converter.toArff(a), Converter.toArff(b), limit);
+        checkBuilt();
+        return distance(Converter.toArff(a, labels), Converter.toArff(b, labels), limit);
     }
 
     @Override public double distance(final Instance a, final Instance b, final double limit) {
@@ -48,6 +60,13 @@ public class DistanceMeasureAdapter implements DistanceMeasure {
 
     @Override public void buildDistanceMeasure(final Instances data) {
         df.setInstances(data);
+        final Enumeration enumeration = data.classAttribute().enumerateValues();
+        final List<String> labels = new ArrayList<>();
+        while(enumeration.hasMoreElements()) {
+            final Object element = enumeration.nextElement();
+            labels.add(element.toString());
+        }
+        this.labels = labels.toArray(new String[0]);
     }
 
     @Override public DistanceFunction asDistanceFunction() {

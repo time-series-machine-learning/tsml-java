@@ -71,9 +71,7 @@ public interface DistanceMeasure extends Serializable, ParamHandler {
      * @param limit
      * @return
      */
-    default double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit) {
-        return distance(Converter.toArff(a), Converter.toArff(b), limit);
-    }
+    double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, double limit);
     
     default String getName() {
         return getClass().getSimpleName();

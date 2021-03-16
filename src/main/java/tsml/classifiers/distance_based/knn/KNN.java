@@ -210,7 +210,11 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
         final int numInstances = trainData.numInstances();
         return numInstances * (numInstances - 1); // -1 because each left out inst cannot be a neighbour for itself
     }
-    
+
+    @Override public boolean withinTrainContract(final long time) {
+        return ContractedTrain.super.withinTrainContract(time);
+    }
+
     private List<List<Integer>> neighbourIndicesByClass(int instIndex) {
 
         // break the neighbours into classes
@@ -232,7 +236,7 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
     @Override public void buildClassifier(final TimeSeriesInstances data) throws Exception {
         final long timeStamp = System.nanoTime();
         runTimer.start(timeStamp);
-        
+
         if(isRebuild()) {
             // attempt to load from a checkpoint
             if(loadCheckpoint()) {

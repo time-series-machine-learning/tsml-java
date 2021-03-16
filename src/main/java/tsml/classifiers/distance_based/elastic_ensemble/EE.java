@@ -230,6 +230,10 @@ public class EE extends BaseClassifier implements ContractedTrain, ContractedTes
         return distribution;
     }
 
+    public boolean withinTrainContract(long time) {
+        return insideTrainTimeLimit(time);
+    }
+    
     public List<ParamSpaceBuilder> getDistanceMeasureSpaceBuilders() {
         return distanceMeasureSpaceBuilders;
     }
