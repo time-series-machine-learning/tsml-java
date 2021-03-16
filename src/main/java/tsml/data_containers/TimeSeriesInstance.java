@@ -220,6 +220,19 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     }
 
     /**
+     * Retarget the class label, shallow copying the data from another inst.
+     * @param other
+     * @param classLabelIndex
+     */
+    public TimeSeriesInstance(TimeSeriesInstance other, int classLabelIndex) {
+        seriesDimensions = other.seriesDimensions;
+        labelIndex = classLabelIndex;
+        targetValue = classLabelIndex;
+        
+        dataChecks();
+    }
+
+    /**
      * Returns a discretised label index.
      *
      * @param labelIndex to discretise
