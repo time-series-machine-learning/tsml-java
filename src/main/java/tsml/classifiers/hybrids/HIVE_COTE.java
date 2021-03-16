@@ -21,7 +21,6 @@ package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.tuning.ParameterSpace;
@@ -37,6 +36,7 @@ import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.shapelet_based.Arsenal;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;

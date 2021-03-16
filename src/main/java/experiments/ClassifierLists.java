@@ -31,7 +31,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.early_classification.*;
-import tsml.classifiers.hybrids.Arsenal;
+import tsml.classifiers.shapelet_based.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -329,10 +329,10 @@ public class ClassifierLists {
             case "ShapeletTransformClassifier": case "STC":
                 c=new ShapeletTransformClassifier();
                 break;
-                case "STC-Pruned":
-                    ShapeletTransformClassifier stc=new ShapeletTransformClassifier();
-                    stc.setPruneMatchingShapelets(true);
-                    c=stc;
+            case "STC-Pruned":
+                ShapeletTransformClassifier stc=new ShapeletTransformClassifier();
+                stc.setPruneMatchingShapelets(true);
+                c=stc;
                 break;
             case "ShapeletTreeClassifier":
                 c=new ShapeletTree();

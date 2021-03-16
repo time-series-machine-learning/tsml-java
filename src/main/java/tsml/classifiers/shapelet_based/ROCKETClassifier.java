@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers.shapelet_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -37,7 +37,7 @@ import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMul
 
 /**
  * Contractable classifier making use of the ROCKET transformer.
- *
+ * <p>
  * Transform based on sktime python implementation by the author:
  * https://github.com/alan-turing-institute/sktime/blob/master/sktime/transformers/series_as_features/rocket.py
  *
@@ -59,16 +59,15 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     private ROCKET rocket;
     private Instances header;
 
-    public ROCKETClassifier(){
+    public ROCKETClassifier() {
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
     }
 
     @Override
     public String getParameters() {
         int nc = rocket == null ? numKernels : rocket.getNumKernels();
-        String temp=super.getParameters()+",numKernels,"+nc+",normalise,"+normalise+",trainContract,"+
-                trainTimeContract+",contractTime,"+trainContractTimeNanos+ ",numKernelStep,"+ numKernelsStep;
-        return temp;
+        return super.getParameters() + ",numKernels," + nc + ",normalise," + normalise + ",trainContract," +
+                trainTimeContract + ",contractTime," + trainContractTimeNanos + ",numKernelStep," + numKernelsStep;
     }
 
     @Override
@@ -88,17 +87,21 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         return result;
     }
 
-    public void setNumKernels(int numKernels){ this.numKernels = numKernels; }
+    public void setNumKernels(int numKernels) {
+        this.numKernels = numKernels;
+    }
 
-    public void setNormalise(boolean normalise){
+    public void setNormalise(boolean normalise) {
         this.normalise = normalise;
     }
 
-    public void setClassifier(Classifier cls){
+    public void setClassifier(Classifier cls) {
         this.cls = cls;
     }
 
-    public void setNumKernelsStep(int numKernelsStep) { this.numKernelsStep = numKernelsStep; }
+    public void setNumKernelsStep(int numKernelsStep) {
+        this.numKernelsStep = numKernelsStep;
+    }
 
     @Override
     public void setTrainTimeLimit(long time) {
@@ -108,12 +111,12 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
     @Override
     public boolean withinTrainContract(long start) {
-        if(trainContractTimeNanos <= 0) return true; //Not contracted
+        if (trainContractTimeNanos <= 0) return true; //Not contracted
         return System.nanoTime() - start < trainContractTimeNanos;
     }
 
     @Override
-    public void enableMultiThreading(int numThreads){
+    public void enableMultiThreading(int numThreads) {
         multithreading = true;
         threads = numThreads;
     }
@@ -125,7 +128,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         getCapabilities().testWithFail(data);
 
         if (multithreading && cls instanceof MultiThreadable)
-            ((MultiThreadable)cls).enableMultiThreading(threads);
+            ((MultiThreadable) cls).enableMultiThreading(threads);
 
         Instances trainEstData = null;
 
@@ -172,11 +175,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
             cls.buildClassifier(transformedData);
 
-            if (getEstimateOwnPerformance()){
+            if (getEstimateOwnPerformance()) {
                 trainEstData = transformedData;
             }
-        }
-        else {
+        } else {
             rocket = new ROCKET();
             rocket.setNumKernels(numKernels);
             rocket.setNormalise(normalise);
@@ -195,14 +197,14 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
 
             cls.buildClassifier(transformedData);
 
-            if (getEstimateOwnPerformance()){
+            if (getEstimateOwnPerformance()) {
                 trainEstData = transformedData;
             }
         }
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
-        if(getEstimateOwnPerformance()){
+        if (getEstimateOwnPerformance()) {
             long est1 = System.nanoTime();
             estimateOwnPerformance(trainEstData);
             long est2 = System.nanoTime();
@@ -213,19 +215,19 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     }
 
     private void estimateOwnPerformance(Instances data) throws Exception {
-        int numFolds=Math.min(data.numInstances(), 10);
+        int numFolds = Math.min(data.numInstances(), 10);
         CrossValidationEvaluator cv = new CrossValidationEvaluator();
         if (seedClassifier)
-            cv.setSeed(seed*5);
+            cv.setSeed(seed * 5);
         cv.setNumFolds(numFolds);
         Classifier newCls = AbstractClassifier.makeCopy(cls);
         if (seedClassifier && cls instanceof Randomizable)
-            ((Randomizable)newCls).setSeed(seed*100);
+            ((Randomizable) newCls).setSeed(seed * 100);
         long tt = trainResults.getBuildTime();
-        trainResults=cv.evaluate(newCls, data);
+        trainResults = cv.evaluate(newCls, data);
         trainResults.setBuildTime(tt);
         trainResults.setClassifierName("ROCKETCV");
-        trainResults.setErrorEstimateMethod("CV_"+numFolds);
+        trainResults.setErrorEstimateMethod("CV_" + numFolds);
     }
 
     @Override
@@ -253,10 +255,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\"+dataset2+
-                "\\"+dataset2+"_TEST.arff");
+        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\" + dataset2 +
+                "\\" + dataset2 + "_TRAIN.arff");
+        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\" + dataset2 +
+                "\\" + dataset2 + "_TEST.arff");
         Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
         train2 = data2[0];
         test2 = data2[1];
