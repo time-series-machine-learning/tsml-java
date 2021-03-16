@@ -1,4 +1,4 @@
-package tsml.classifiers.distance_based.optimised;
+package tsml.classifiers.distance_based.utils.collections.patience;
 
 import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 
