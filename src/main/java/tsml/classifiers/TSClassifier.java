@@ -64,7 +64,21 @@ public interface TSClassifier{
     }
     
     static TSClassifier wrapClassifier(Classifier classifier) {
-        return () -> classifier;
+        return new TSClassifier() {
+            private TimeSeriesInstances trainData;
+            
+            @Override public Classifier getClassifier() {
+                return classifier;
+            }
+
+            @Override public TimeSeriesInstances getTSTrainData() {
+                return trainData;
+            }
+
+            @Override public void setTSTrainData(final TimeSeriesInstances train) {
+                this.trainData = train;
+            }
+        };
     }
     
     static TSClassifier wrapClassifier(TSClassifier classifier) {
