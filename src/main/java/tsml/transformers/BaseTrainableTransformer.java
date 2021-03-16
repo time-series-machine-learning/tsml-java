@@ -24,22 +24,31 @@ import weka.core.Instances;
 
 public abstract class BaseTrainableTransformer implements TrainableTransformer {
 
-    protected boolean fitted;
+    private boolean fitted;
+    private String[] labels;
 
     @Override public void fit(final TimeSeriesInstances data) {
         fitted = true;
+        labels = data.getClassLabels();
     }
 
     public void reset() {
         fitted = false;
     }
-
+    
+    protected String[] getLabels() {
+        return labels;
+    }
+    
     @Override public boolean isFit() {
         return fitted;
     }
 
     @Override public Instance transform(final Instance inst) {
-        return Converter.toArff(transform(Converter.fromArff(inst)));
+        if(!isFit()) {
+            throw new IllegalStateException("not fitted");
+        }
+        return Converter.toArff(transform(Converter.fromArff(inst)), labels);
     }
 
     @Override public void fit(final Instances data) {
