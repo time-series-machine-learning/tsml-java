@@ -125,6 +125,7 @@ public class Experiment implements Copier {
             config.setTrainTimeLimit(trainTimeLimit);
             log.info("locking " + config.getLockFilePath());
             try(FileUtils.FileLock lock = new FileUtils.FileLock(config.getLockFilePath())) {
+                checks();
                 // setup the contract
                 setupTrainTimeContract();
                 // setup checkpointing config
@@ -245,18 +246,33 @@ public class Experiment implements Copier {
             results.setMemory(memoryWatcher.getMaxMemoryUsage());
         }
     }
+    
+    private void checkTrainResultsExistence() {
+        if(config.isEvaluateClassifier()) {
+            checkResultsExistence("train", config.getTrainFilePath());
+        }
+    }
+    
+    private void checkTestResultsExistence() {
+        if(!config.isTrainOnly()) {
+            checkResultsExistence("test", config.getTestFilePath());
+        }
+    }
 
     private void writeResults(String label, ClassifierResults results, String path) throws Exception {
         // write the train results to file, overwriting if necessary
+        final boolean exists = checkResultsExistence(label, path);
         results.setSplit(label);
-        final boolean trainResultsFileExists = new File(path).exists();
-        if(trainResultsFileExists && !config.isOverwriteResults()) {
-            log.info(label + " results already exist");
-            throw new IllegalStateException(label + " results exist");
-        } else {
-            log.info((trainResultsFileExists ? "overwriting" : "writing") + " " + label + " results");
-            results.writeFullResultsToFile(path);
+        log.info((exists ? "overwriting" : "writing") + " " + label + " results");
+        results.writeFullResultsToFile(path);
+    }
+    
+    private boolean checkResultsExistence(String label, String path) {
+        final boolean exists = new File(path).exists();
+        if(exists && !config.isOverwriteResults()) {
+            throw new IllegalStateException(label + " results exist at " + path);
         }
+        return exists;
     }
 
     private void setupTrainTimeContract() {
@@ -409,6 +425,11 @@ public class Experiment implements Copier {
         } else {
             log.info(config.getClassifierNameInResults() + " experiment complete under train time contract " + config.getTrainTimeLimit().label());
         }
+    }
+    
+    private void checks() {
+        checkTestResultsExistence();
+        checkTrainResultsExistence();
     }
     
     private void setupCheckpointing() throws FileUtils.FileLock.LockException, IOException {
