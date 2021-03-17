@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  *
  * @author Aaron Bostrom, 2020
  */
-public class TimeSeriesInstance implements Iterable<TimeSeries> {
+public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
 
     /* Meta Information */
     private boolean isMultivariate;
