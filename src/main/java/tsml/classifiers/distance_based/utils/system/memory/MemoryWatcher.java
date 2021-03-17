@@ -30,6 +30,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.*;
 
+import org.nd4j.linalg.io.Assert;
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
 import utilities.Utilities;
 
@@ -139,7 +140,9 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         // stop if already started. Any memory watcher read from serialization should default to being stopped, like StopWatch
         if(isStarted()) {
             super.stop();
+            activeListener = false;
         }
+        Assert.isNull(listener);
 
     }
 
