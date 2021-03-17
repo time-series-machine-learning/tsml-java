@@ -8,8 +8,10 @@ import tsml.classifiers.distance_based.utils.system.copy.Copier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -95,7 +97,7 @@ public class ExperimentConfig implements Copier {
         JCommander.newBuilder()
                 .addObject(this)
                 .build()
-                .parse(args);
+                .parse(Arrays.stream(args).filter(((Predicate<String>) String::isEmpty).negate()).toArray(String[]::new));
         // check the state of this experiment is set up
         if(seed == null) throw new IllegalStateException("seed not set");
         if(classifierName == null) throw new IllegalStateException("classifier name not set");
