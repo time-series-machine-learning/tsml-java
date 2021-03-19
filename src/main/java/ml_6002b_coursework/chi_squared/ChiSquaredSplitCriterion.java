@@ -40,7 +40,7 @@ public class ChiSquaredSplitCriterion
   @Override
   public double splitCritValue(Distribution bags){
 // HERE WORK OUT THE GINI FOR SPLITTING INTO THE DISTRIBUTION PASSED
-
+    //System.out.println(" HERE WE ARE!!!");
 
     return 0;
   }

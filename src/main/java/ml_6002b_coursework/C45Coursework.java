@@ -21,8 +21,10 @@
 
 package ml_6002b_coursework;
 
+import experiments.data.DatasetLoading;
 import ml_6002b_coursework.chi_squared.ChiSquaredModelSelection;
 import ml_6002b_coursework.gini.GiniModelSelection;
+import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Sourcable;
 import weka.classifiers.trees.j48.*;
@@ -30,6 +32,7 @@ import weka.core.*;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -236,10 +239,6 @@ public class C45Coursework
         return result;
     }
 
-    enum AttributeSelectionMethod {IG, CHISQUARED, GINI}
-
-    AttributeSelectionMethod attSelect = AttributeSelectionMethod.IG;
-
     /**
      * Generates the classifier.
      *
@@ -253,21 +252,12 @@ public class C45Coursework
         ModelSelection modSelection;
 
         if (m_binarySplits) {
-            switch (attSelect) {
-                case CHISQUARED:
-                    modSelection = new ChiSquaredModelSelection(m_minNumObj, instances, m_useMDLcorrection);
-                    break;
-                case GINI:
-                    modSelection = new GiniModelSelection(m_minNumObj, instances, m_useMDLcorrection);
-                    break;
-                case IG:
-                default:
-                    modSelection = new BinC45ModelSelection(m_minNumObj, instances, m_useMDLcorrection);
-                    break;
-
-            }
-        } else //Not implementing alternatives
+            modSelection = new BinC45ModelSelection(m_minNumObj, instances, m_useMDLcorrection);
+        } else {
             modSelection = new C45ModelSelection(m_minNumObj, instances, m_useMDLcorrection);
+        }
+
+
         if (!m_reducedErrorPruning)
             m_root = new C45PruneableClassifierTree(modSelection, !m_unpruned, m_CF,
                     m_subtreeRaising, !m_noCleanup, m_collapseTree);
@@ -277,17 +267,7 @@ public class C45Coursework
         m_root.buildClassifier(instances);
         //THIS REALLY SHOULD BE AN ABSTRACT METHOD IN ModelSelection!
         if (m_binarySplits) {
-            switch (attSelect) {
-                case IG:
-                    ((BinC45ModelSelection) modSelection).cleanup();
-                    break;
-                case CHISQUARED:
-                    ((ChiSquaredModelSelection) modSelection).cleanup();
-                    break;
-                case GINI:
-                    ((GiniModelSelection) modSelection).cleanup();
-                    break;
-            }
+            ((BinC45ModelSelection) modSelection).cleanup();
         } else {
             ((C45ModelSelection) modSelection).cleanup();
         }
@@ -1117,10 +1097,6 @@ public class C45Coursework
         return m_root.numNodes();
     }
 
-
-    public static void main(String[] args) {
-
-    }
 
 }
 
