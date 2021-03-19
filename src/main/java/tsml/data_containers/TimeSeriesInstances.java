@@ -1,9 +1,9 @@
-/* 
+/*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,12 +14,11 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.data_containers;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 /**
@@ -27,9 +26,6 @@ import java.util.stream.Stream;
  * multivariate time series.
  *
  * @author Aaron Bostrom, 2020
- *
- *
- *
  */
 public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
@@ -48,106 +44,118 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     private int maxLength;
     private int maxNumDimensions;
 
+    /**
+     * Returns the highest number of dimensions from the instances in the data.
+     *
+     * @return highest number of dimensions
+     */
     public int getMaxNumDimensions() {
         return maxNumDimensions;
     }
 
-    /** 
-     * @return String
+    /**
+     * Returns the problem name.
+     *
+     * @return String problem name
      */
     public String getProblemName() {
-		return problemName;
-	}
+        return problemName;
+    }
 
-	
-    /** 
-     * @return boolean
+    /**
+     * Returns whether the data has time stamps or not.
+     *
+     * @return boolean true if has time stamps, false if not
      */
     public boolean hasTimeStamps() {
-		return hasTimeStamps;
-	}
+        return hasTimeStamps;
+    }
 
-    
-    /** 
-     * @return boolean
+    /**
+     * Returns whether data has missing values in.
+     *
+     * @return true if missing values, false if not
      */
     public boolean hasMissing() {
         return hasMissing;
     }
 
-    
-    /** 
-     * @return boolean
+    /**
+     * Returns whether data is equally spaced.
+     *
+     * @return true if equally spaced, false if not
      */
     public boolean isEquallySpaced() {
         return isEquallySpaced;
     }
 
-    
-    /** 
-     * @return boolean
+    /**
+     * Returns whether data is multivariate.
+     *
+     * @return true if multivariate, false if not
      */
-    public boolean isMultivariate(){
+    public boolean isMultivariate() {
         return isMultivariate;
     }
 
-    
-    /** 
-     * @return boolean
+    /**
+     * Returns whether data is equal length.
+     *
+     * @return true if equal length, false if not
      */
     public boolean isEqualLength() {
         return isEqualLength;
     }
 
-    
-    /** 
-     * @return int
+    /**
+     * Returns the minimum length of the data.
+     *
+     * @return minimum length
      */
     public int getMinLength() {
         return minLength;
     }
 
-    
-    /** 
-     * @return int
+    /**
+     * Returns the maximum length of the data.
+     *
+     * @return maximum length
      */
     public int getMaxLength() {
         return maxLength;
     }
 
-    
-    /** 
-     * @return int
+    /**
+     * Returns the number of class labels in the data.
+     *
+     * @return number of class labels
      */
-    public int numClasses(){
+    public int numClasses() {
         return classLabels.length;
     }
 
-	
-    /** 
+    /**
      * @return int
      */
     public int getMaxNumChannels() {
-		return maxNumDimensions;
-	}
+        return maxNumDimensions;
+    }
 
-    
-    /** 
+    /**
      * @param problemName
      */
     public void setProblemName(String problemName) {
         this.problemName = problemName;
     }
-    
-    /** 
+
+    /**
      * @return String
      */
     public String getDescription() {
         return description;
     }
 
-    
-    /** 
+    /**
      * @param description
      */
     public void setDescription(String description) {
@@ -165,7 +173,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     private int[] classCounts;
 
-    public TimeSeriesInstances(final String[] classLabels) {        
+    public TimeSeriesInstances(final String[] classLabels) {
         this.classLabels = classLabels;
 
         minLength = Integer.MAX_VALUE;
@@ -183,15 +191,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
         dataChecks();
     }
-    
+
     public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, String[] classLabels, final List<Double> labelIndices) {
         this(rawData, labelIndices.stream().map(TimeSeriesInstance::discretiseLabelIndex).collect(Collectors.toList()), classLabels);
     }
-    
+
     public TimeSeriesInstances(final List<? extends List<? extends List<Double>>> rawData, final List<Integer> labelIndexes, String[] classLabels) {
-        
+
         this.classLabels = classLabels;
-        
+
         int index = 0;
         for (final List<? extends List<Double>> series : rawData) {
             //using the add function means all stats should be correctly counted.
@@ -202,7 +210,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * 
      * @param rawData
      * @param labelIndices
      * @param labels
@@ -210,7 +217,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public TimeSeriesInstances(double[][][] rawData, double[] labelIndices, String[] labels) {
         this(rawData, Arrays.stream(labelIndices).mapToInt(TimeSeriesInstance::discretiseLabelIndex).toArray(), labels);
     }
-    
+
     public TimeSeriesInstances(double[][][] rawData, double[] targetValues) {
 
         int index = 0;
@@ -219,7 +226,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
             seriesCollection.add(new TimeSeriesInstance(series, targetValues[index++]));
         }
     }
-    
+
     public TimeSeriesInstances(final double[][][] rawData, int[] labelIndexes, String[] labels) {
 
         classLabels = labels;
@@ -232,11 +239,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
         dataChecks();
     }
-	
-	public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
+
+    public TimeSeriesInstances(List<? extends TimeSeriesInstance> data) {
         this(data, EMPTY_CLASS_LABELS);
     }
-    
+
     public TimeSeriesInstances(List<? extends TimeSeriesInstance> data, String[] classLabels) {
 
         this.classLabels = classLabels;
@@ -245,24 +252,24 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
         dataChecks();
     }
-    
+
     public TimeSeriesInstances(TimeSeriesInstance[] data, String[] classLabels) {
         this(Arrays.asList(data), classLabels);
     }
-    
+
     public TimeSeriesInstances(TimeSeriesInstance[] data) {
         this(Arrays.asList(data));
     }
 
-	private void dataChecks(){
-        
-        if(seriesCollection == null) {
+    private void dataChecks() {
+
+        if (seriesCollection == null) {
             throw new NullPointerException("no series collection");
         }
-        if(classLabels == null) {
+        if (classLabels == null) {
             throw new NullPointerException("no class labels");
         }
-        
+
         calculateLengthBounds();
         calculateIfMissing();
         calculateIfMultivariate();
@@ -271,7 +278,7 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     private void calculateClassCounts() {
         classCounts = new int[classLabels.length];
-        for(TimeSeriesInstance inst : seriesCollection){
+        for (TimeSeriesInstance inst : seriesCollection) {
             classCounts[inst.getLabelIndex()]++;
         }
     }
@@ -282,11 +289,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         isEqualLength = minLength == maxLength;
     }
 
-    private void calculateNumDimensions(){
+    private void calculateNumDimensions() {
         maxNumDimensions = seriesCollection.stream().mapToInt(TimeSeriesInstance::getNumDimensions).max().getAsInt();
     }
-    
-    private void calculateIfMultivariate(){
+
+    private void calculateIfMultivariate() {
         isMultivariate = seriesCollection.stream().map(TimeSeriesInstance::isMultivariate).anyMatch(Boolean::booleanValue);
     }
 
@@ -295,43 +302,39 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         hasMissing = seriesCollection.stream().map(TimeSeriesInstance::hasMissing).anyMatch(Boolean::booleanValue);
     }
 
-    
-    /** 
+    /**
      * @return String[]
      */
     public String[] getClassLabels() {
         return classLabels;
     }
 
-    
-    /** 
+    /**
      * @return String
      */
-    public String getClassLabelsFormatted(){
+    public String getClassLabelsFormatted() {
         String output = " ";
-        for(String s : classLabels)
+        for (String s : classLabels)
             output += s + " ";
         return output;
     }
 
-    
-    /** 
+    /**
      * @return int[]
      */
-    public int[] getClassCounts(){
+    public int[] getClassCounts() {
         calculateClassCounts();
         return classCounts;
     }
 
-    
-    /** 
+    /**
      * @param newSeries
      */
     public void add(final TimeSeriesInstance newSeries) {
         seriesCollection.add(newSeries);
 
         //guard for if we're going to force update classCounts after.
-        if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
+        if (classCounts != null && newSeries.getLabelIndex() < classCounts.length)
             classCounts[newSeries.getLabelIndex()]++;
 
         minLength = Math.min(newSeries.getMinLength(), minLength);
@@ -342,14 +345,19 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         isMultivariate |= newSeries.isMultivariate();
     }
 
-    
-    /** 
-     * @return String
+    /**
+     * Returns a string containing:
+     * class labels
+     * then for each dimension:
+     * - num dimensions, class label index
+     * - the series
+     *
+     * @return class labels, then for instance: num dimensions, class label index
+     * and the series
      */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-
 
         sb.append("Labels: [").append(classLabels[0]);
         for (int i = 1; i < classLabels.length; i++) {
@@ -365,8 +373,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
         return sb.toString();
     }
-    
-    /** 
+
+    /**
      * @return double[][][]
      */
     public double[][][] toValueArray() {
@@ -378,30 +386,28 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return output;
     }
 
-    
-    /** 
+    /**
      * @return int[]
      */
-    public int[] getClassIndexes(){
+    public int[] getClassIndexes() {
         int[] out = new int[numInstances()];
-        int index=0;
-        for(TimeSeriesInstance inst : seriesCollection){
+        int index = 0;
+        for (TimeSeriesInstance inst : seriesCollection) {
             out[index++] = inst.getLabelIndex();
         }
         return out;
     }
 
-    
-    /** 
+    /**
      * @param index
      * @return double[]
      */
     //assumes equal numbers of channels
-    public double[] getVSliceArray(int index){
+    public double[] getVSliceArray(int index) {
         double[] out = new double[numInstances() * seriesCollection.get(0).getNumDimensions()];
-        int i=0;
-        for(TimeSeriesInstance inst : seriesCollection){
-            for(TimeSeries ts : inst)
+        int i = 0;
+        for (TimeSeriesInstance inst : seriesCollection) {
+            for (TimeSeries ts : inst)
                 // if the index isn't always valid, populate with NaN values.
                 out[i++] = ts.hasValidValueAt(index) ? ts.getValue(index) : Double.NaN;
         }
@@ -409,145 +415,145 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-    
-    /** 
+
+    /**
      * @param indexesToKeep
-     * @return List<List<List<Double>>>
+     * @return List<List < List < Double>>>
      */
-    public List<List<List<Double>>> getVSliceList(int[] indexesToKeep){
+    public List<List<List<Double>>> getVSliceList(int[] indexesToKeep) {
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-    
-    /** 
+
+    /**
      * @param indexesToKeep
-     * @return List<List<List<Double>>>
+     * @return List<List < List < Double>>>
      */
-    public List<List<List<Double>>> getVSliceList(List<Integer> indexesToKeep){
+    public List<List<List<Double>>> getVSliceList(List<Integer> indexesToKeep) {
         List<List<List<Double>>> out = new ArrayList<>(numInstances());
-        for(TimeSeriesInstance inst : seriesCollection){
+        for (TimeSeriesInstance inst : seriesCollection) {
             out.add(inst.getVSliceList(indexesToKeep));
         }
 
         return out;
     }
 
-    
-    /** 
+
+    /**
      * @param indexesToKeep
      * @return double[][][]
      */
-    public double[][][] getVSliceArray(int[] indexesToKeep){
+    public double[][][] getVSliceArray(int[] indexesToKeep) {
         return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-    
-    /** 
+
+    /**
      * @param indexesToKeep
      * @return double[][][]
      */
-    public double[][][] getVSliceArray(List<Integer> indexesToKeep){
+    public double[][][] getVSliceArray(List<Integer> indexesToKeep) {
         double[][][] out = new double[numInstances()][][];
-        int i=0;
-        for(TimeSeriesInstance inst : seriesCollection){
+        int i = 0;
+        for (TimeSeriesInstance inst : seriesCollection) {
             out[i++] = inst.getVSliceArray(indexesToKeep);
         }
 
         return out;
     }
 
-    
-    /** 
+
+    /**
      * @param dim
      * @return double[][]
      */
     //assumes equal numbers of channels
-    public double[][] getHSliceArray(int dim){
+    public double[][] getHSliceArray(int dim) {
         double[][] out = new double[numInstances()][];
-        int i=0;
-        for(TimeSeriesInstance inst : seriesCollection){
+        int i = 0;
+        for (TimeSeriesInstance inst : seriesCollection) {
             // if the index isn't always valid, populate with NaN values.
             out[i++] = inst.getHSliceArray(dim);
         }
         return out;
     }
-    
-    
-    /** 
+
+
+    /**
      * @param indexesToKeep
-     * @return List<List<List<Double>>>
+     * @return List<List < List < Double>>>
      */
-    public List<List<List<Double>>> getHSliceList(int[] indexesToKeep){
+    public List<List<List<Double>>> getHSliceList(int[] indexesToKeep) {
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
-    
-    
-    /** 
+
+
+    /**
      * @param indexesToKeep
-     * @return List<List<List<Double>>>
+     * @return List<List < List < Double>>>
      */
-    public List<List<List<Double>>> getHSliceList(List<Integer> indexesToKeep){
+    public List<List<List<Double>>> getHSliceList(List<Integer> indexesToKeep) {
         List<List<List<Double>>> out = new ArrayList<>(numInstances());
-        for(TimeSeriesInstance inst : seriesCollection){
+        for (TimeSeriesInstance inst : seriesCollection) {
             out.add(inst.getHSliceList(indexesToKeep));
         }
 
         return out;
     }
-    
-    
-    /** 
+
+
+    /**
      * @param indexesToKeep
      * @return double[][][]
      */
-    public double[][][] getHSliceArray(int[] indexesToKeep){
+    public double[][][] getHSliceArray(int[] indexesToKeep) {
         return getHSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-    
-    /** 
+
+    /**
      * @param indexesToKeep
      * @return double[][][]
      */
-    public double[][][] getHSliceArray(List<Integer> indexesToKeep){
+    public double[][][] getHSliceArray(List<Integer> indexesToKeep) {
         double[][][] out = new double[numInstances()][][];
-        int i=0;
-        for(TimeSeriesInstance inst : seriesCollection){
+        int i = 0;
+        for (TimeSeriesInstance inst : seriesCollection) {
             out[i++] = inst.getHSliceArray(indexesToKeep);
         }
 
         return out;
     }
 
-    
-    /** 
+
+    /**
      * @param i
      * @return TimeSeriesInstance
      */
     public TimeSeriesInstance get(final int i) {
         return seriesCollection.get(i);
     }
-    
-    
-    /** 
+
+
+    /**
      * @return List<TimeSeriesInstance>
      */
-    public List<TimeSeriesInstance> getAll(){
+    public List<TimeSeriesInstance> getAll() {
         return seriesCollection;
     }
 
-	
-    /** 
+
+    /**
      * @return int
      */
     public int numInstances() {
-		return seriesCollection.size();
+        return seriesCollection.size();
     }
-    
-    public Map<Integer, Integer> getHistogramOfLengths(){
+
+    public Map<Integer, Integer> getHistogramOfLengths() {
         Map<Integer, Integer> out = new TreeMap<>();
-        for(TimeSeriesInstance inst : seriesCollection){
-            for(TimeSeries ts : inst){
+        for (TimeSeriesInstance inst : seriesCollection) {
+            for (TimeSeries ts : inst) {
                 out.merge(ts.getSeriesLength(), 1, Integer::sum);
             }
         }
@@ -555,14 +561,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-    @Override public Iterator<TimeSeriesInstance> iterator() {
+    @Override
+    public Iterator<TimeSeriesInstance> iterator() {
         return seriesCollection.iterator();
     }
 
     public Stream<TimeSeriesInstance> stream() {
         return seriesCollection.stream();
     }
-    
+
     public List<List<List<Double>>> getVSliceList(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
@@ -573,19 +580,19 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         tsi.dataChecks();
         return tsi;
     }
-    
+
     public double[][][] getVSliceArray(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getVSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
-    
+
     public List<List<List<Double>>> getHSliceList(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getHSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
-    
+
     public double[][][] getHSliceArray(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getHSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
-    
+
     public TimeSeriesInstances getHSlice(int startInclusive, int endExclusive) {
         final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
         tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(startInclusive, endExclusive)).collect(Collectors.toList());
@@ -593,15 +600,17 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return tsi;
     }
 
-    @Override public boolean equals(final Object o) {
-        if(!(o instanceof TimeSeriesInstances)) {
+    @Override
+    public boolean equals(final Object o) {
+        if (!(o instanceof TimeSeriesInstances)) {
             return false;
         }
         final TimeSeriesInstances that = (TimeSeriesInstances) o;
         return Objects.equals(seriesCollection, that.seriesCollection) && Arrays.equals(classLabels, that.classLabels);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(seriesCollection, classLabels);
     }
 
