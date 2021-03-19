@@ -135,13 +135,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @return int
-     */
-    public int getMaxNumChannels() {
-        return maxNumDimensions;
-    }
-
-    /**
      * @param problemName
      */
     public void setProblemName(String problemName) {
