@@ -237,10 +237,10 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
     @Override
     public void fit(TimeSeriesInstances data) {
         if (multithreading){
-            fitRocketMultithread(data.getMaxLength(), data.getMaxNumChannels());
+            fitRocketMultithread(data.getMaxLength(), data.getMaxNumDimensions());
         }
         else {
-            fitRocket(data.getMaxLength(), data.getMaxNumChannels());
+            fitRocket(data.getMaxLength(), data.getMaxNumDimensions());
         }
     }
 

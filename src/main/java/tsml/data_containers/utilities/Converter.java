@@ -112,7 +112,7 @@ public class Converter {
         String[] classLabels = data.getClassLabels();
 
         int numAttributes = data.getMaxLength();
-        int numChannels = data.getMaxNumChannels();
+        int numChannels = data.getMaxNumDimensions();
         
         if(data.isMultivariate()){
             //create relational attributes.
