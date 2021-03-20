@@ -24,6 +24,7 @@ Contributors: goastler
     
 */
 
+import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
@@ -36,7 +37,7 @@ import weka.core.Instance;
 
 import java.util.Objects;
 
-public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure implements TransformDistanceMeasure {
+public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements TransformDistanceMeasure {
 
     public BaseTransformDistanceMeasure(String name, Transformer transformer,
                                         DistanceMeasure distanceMeasure) {
@@ -47,6 +48,10 @@ public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure imp
 
     public BaseTransformDistanceMeasure() {
         this(null, null, new EDistance());
+    }
+    
+    public BaseTransformDistanceMeasure(String name) {
+        this(name, null, new EDistance());
     }
 
     public static final String TRANSFORMER_FLAG = "t";
@@ -71,29 +76,26 @@ public class BaseTransformDistanceMeasure extends MatrixBasedDistanceMeasure imp
     @Override public boolean isSymmetric() {
         return distanceMeasure.isSymmetric();
     }
-
-    private static Instance transform(Transformer transformer, Instance instance) {
-        if(transformer == null) {
-            return instance;
-        } else {
-            return transformer.transform(instance);
-        }
+    
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        return transform(inst, true);
     }
     
-    private static TimeSeriesInstance transform(Transformer transformer, TimeSeriesInstance instance) {
-        if(transformer == null) {
-            return instance;
-        } else {
-            return transformer.transform(instance);
+    public TimeSeriesInstance transform(TimeSeriesInstance inst, boolean transform) {
+        if(transform) {
+            if(transformer != null) {
+                inst = transformer.transform(inst);
+            }
         }
+        return inst;
     }
     
-    public double distance(final TimeSeriesInstance a, final TimeSeriesInstance b, final double limit) {
+    public double distance(final TimeSeriesInstance a, final boolean transformA, final TimeSeriesInstance b, final boolean transformB, final double limit) {
         try {
             // users must call fit method on transformer if required before calling distance
-            final TimeSeriesInstance at = transform(transformer, a);
+            final TimeSeriesInstance at = transform(a, transformA);
             // need to take the interval here, before the transform
-            final TimeSeriesInstance bt = transform(transformer, b);
+            final TimeSeriesInstance bt = transform(b, transformB);
             return distanceMeasure.distance(at, bt, limit);
         } catch(Exception e) {
             throw new IllegalStateException(e);
