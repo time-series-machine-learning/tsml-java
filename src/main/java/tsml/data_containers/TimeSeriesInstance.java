@@ -305,24 +305,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
         this(data, Double.NaN);
     }
 
-    private TimeSeriesInstance() {
-    }
-
-    /**
-     * Returns a deep copy of a TimeSeriesInstance object.
-     *
-     * @return deep copy
-     */
-    private TimeSeriesInstance copy() {
-        final TimeSeriesInstance inst = new TimeSeriesInstance();
-        inst.labelIndex = labelIndex;
-        inst.seriesDimensions = seriesDimensions;
-        inst.targetValue = targetValue;
-
-        inst.dataChecks();
-
-        return inst;
-    }
+    private TimeSeriesInstance() {}
 
     public TimeSeriesInstance(double targetValue, TimeSeries[] data) {
         this(targetValue, Arrays.asList(data));
@@ -504,6 +487,26 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
         return getVSlice(new int[]{index});
     }
 
+    public TimeSeries getHSliceTS(int index) {
+        return getHSliceTS(Collections.singletonList(index)).get(0);
+    }
+    
+    public List<TimeSeries> getHSliceTS(List<Integer> indices) {
+        final List<TimeSeries> result = new ArrayList<>();
+        for(Integer i : indices) {
+            result.add(seriesDimensions.get(i));
+        }
+        return result;
+    }
+    
+    public List<TimeSeries> getHSliceTS(int fromInclusive, int toExclusive) {
+        return seriesDimensions.subList(fromInclusive, toExclusive);
+    }
+    
+    public TimeSeries[] getHSliceTS(int[] indices) {
+        return getHSliceTS(Arrays.stream(indices).boxed().collect(Collectors.toList()).stream().mapToInt(i -> i).toArray());
+    }
+    
     /**
      * Returns the series at the dimension passed.
      *
@@ -733,7 +736,9 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
      */
     public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
-        final TimeSeriesInstance tsi = copy();
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
+        tsi.labelIndex = labelIndex;
+        tsi.targetValue = targetValue;
         // trim current data to a subset
         tsi.seriesDimensions = seriesDimensions.subList(startInclusive, endExclusive);
         tsi.dataChecks();
@@ -798,9 +803,11 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
      */
     public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
-        final TimeSeriesInstance tsi = copy();
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
         // trim current data to a subset
         tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
+        tsi.labelIndex = labelIndex;
+        tsi.targetValue = labelIndex;
         tsi.dataChecks();
         return tsi;
     }
