@@ -69,10 +69,10 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //            classifier.setTrainTimeLimit(1, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(30, TimeUnit.SECONDS);
             classifier.setLogLevel("all");
-            classifier.setEstimateOwnPerformance(true);
-            classifier.setTrainEstimateMethod("oob");
-            classifier.setCheckpointPath("checkpoints");
-            classifier.setCheckpointInterval(5, TimeUnit.SECONDS);
+//            classifier.setEstimateOwnPerformance(true);
+//            classifier.setTrainEstimateMethod("oob");
+//            classifier.setCheckpointPath("checkpoints");
+//            classifier.setCheckpointInterval(5, TimeUnit.SECONDS);
             ClassifierTools
                     .trainTestPrint(classifier, DatasetLoading
                                                         .sampleDataset("/bench/phd/data/all_2019", "ItalyPowerDemand", seed), seed);

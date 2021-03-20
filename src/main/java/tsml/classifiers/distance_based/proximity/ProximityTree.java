@@ -49,23 +49,23 @@ import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedT
 import tsml.classifiers.distance_based.utils.classifiers.contracting.ContractedTrain;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
 import tsml.classifiers.distance_based.utils.stats.scoring.*;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatchable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.random.RandomUtils;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.CachedTransformer;
 import tsml.transformers.Derivative;
+import tsml.transformers.TransformPipeline;
 import tsml.transformers.Transformer;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -82,11 +82,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //        System.out.println(CONFIGS);
         for(int i = 0; i < 1; i++) {
             int seed = i;
-            ProximityTree classifier = CONFIGS.get("PT_R5").build();
+            ProximityTree classifier = CONFIGS.get("PT_R5_S_SS_I").build();
             classifier.setSeed(seed);
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.setLogLevel(Level.ALL);
-            classifier.setDebug(true);
+//            classifier.setDebug(true);
 //            classifier.setDistanceMode(DistanceMode.DEPENDENT);
 //            classifier.setDimensionConversion(DimensionConversionMode.NONE);
 //            classifier.setDimensionSamplingMode(DimensionSamplingMode.ALL);
@@ -96,9 +96,9 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //            classifier.setPartitionExaminationReordering(true);
             //            classifier.setTrainTimeLimit(10, TimeUnit.SECONDS);
 //            classifier.setCheckpointPath("checkpoints");
-            classifier.setCheckpointInterval(10, TimeUnit.SECONDS);
-            classifier.setTrainTimeLimit(5, TimeUnit.SECONDS);
-            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleItalyPowerDemand(seed), seed);
+//            classifier.setCheckpointInterval(10, TimeUnit.SECONDS);
+//            classifier.setTrainTimeLimit(5, TimeUnit.SECONDS);
+            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleBasicMotions(seed), seed);
         }
     }
     
@@ -142,11 +142,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         for(DimensionSamplingMode samplingMode : DimensionSamplingMode.values()) {
             for(DimensionConversionMode conversionMode : DimensionConversionMode.values()) {
                 for(DistanceMode distanceMode : DistanceMode.values()) {
-                    String base = "PF_R5";
+                    String base = "PT_R5";
                     String name = base
                                           + "_" + (samplingMode.equals(DimensionSamplingMode.SINGLE) ? '1' :
                                           samplingMode.name().charAt(0)) 
-                                          + "_" + conversionMode.name().charAt(0)
+                                          + "_" + StrUtils.join("", Arrays.stream(conversionMode.name().split("_")).map(s -> s.substring(0, 1)).toArray(String[]::new))
                                           + "_" + distanceMode.name().charAt(0);
                     configs.add(name, "", "PT_R5", pt -> {
                         pt.setDimensionSamplingMode(samplingMode);
@@ -264,9 +264,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     public enum DimensionSamplingMode {
         SINGLE, // randomly pick a single dimension, discarding others
-        MULTIPLE, // randomly pick a subset of dimensions (between 1 and all dimensions) and discard others
+        SUBSET, // randomly pick a subset of dimensions (between 1 and all dimensions) and discard others
         ALL, // retain all dimensions
-        SHUFFLE, // retain all dimensions but shuffle the order, which is helpful when stratifying or concat'ing
         ;
     }
     
@@ -274,6 +273,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         NONE, // don't convert dimensions whatsoever
         CONCAT, // concatenate dimensions into a single, long univariate time series
         STRATIFY, // stratify dimensions into a single, long univariate time series
+        SHUFFLE_CONCAT, // shuffle, then concat
+        SHUFFLE_STRATIFY, // shuffle, then stratify
         RANDOM, // random pick between the above conversions
         ;
     }
@@ -483,7 +484,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
             // check the data at the node is not pure
             final List<Integer> uniqueClassLabelIndices =
-                    node.getValue().getInsts().stream().map(TimeSeriesInstance::getLabelIndex).distinct()
+                    node.getValue().getDataAtSplit().stream().map(TimeSeriesInstance::getLabelIndex).distinct()
                             .collect(Collectors.toList());
             if(uniqueClassLabelIndices.size() > 1) {
                 // if not hit the stopping condition then add node to the build queue
@@ -569,7 +570,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private Split buildSplit(Split unbuiltSplit) {
         Split bestSplit = null;
-        final TimeSeriesInstances data = unbuiltSplit.getInsts();
+        final TimeSeriesInstances data = unbuiltSplit.getDataAtSplit();
         final List<Integer> dataIndices = unbuiltSplit.getInstIndicesInTrainData();
         // need to find the best of R splits
         // linearly go through r splits and select the best
@@ -615,8 +616,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             dataIndicesInTrainData = new ArrayList<>();
             this.data = new TimeSeriesInstances(classLabels);
             exemplars = new TimeSeriesInstances(classLabels);
-            transformedExemplars = new TimeSeriesInstances(classLabels);
-            exemplarIndicesInTrainData = new ArrayList<>();
+            exemplarIndicesInSplitData = new ArrayList<>();
         }
 
         // data in this partition / indices of that data in the train data
@@ -624,23 +624,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private final TimeSeriesInstances data;
         // exemplar instances representing this partition / indices of those exemplars in the train data
         private final TimeSeriesInstances exemplars;
-        private final List<Integer> exemplarIndicesInTrainData;
-        // exemplar instances need to be stripped to the chosen dimensions every distance computation. This houses the stripped down version to avoid recomputation. I.e. given an exemplar with 7 dimensions, if dim 1,2,4,5 have been chosen (from the multivariate strategy) then the stripped exemplars are the same as the given exemplars but without dim 3,6,7
-        private final TimeSeriesInstances transformedExemplars;
+        private final List<Integer> exemplarIndicesInSplitData;
         
         public void addData(TimeSeriesInstance instance, int i) {
             data.add(Objects.requireNonNull(instance));
             dataIndicesInTrainData.add(i);
         }
         
-        public void addExemplar(TimeSeriesInstance instance, int i, TimeSeriesInstance strippedExemplar) {
+        public void addExemplar(TimeSeriesInstance instance, int i) {
             exemplars.add(Objects.requireNonNull(instance));
-            transformedExemplars.add(Objects.requireNonNull(strippedExemplar));
-            exemplarIndicesInTrainData.add(i);
-        }
-
-        public TimeSeriesInstances getTransformedExemplars() {
-            return transformedExemplars;
+            exemplarIndicesInSplitData.add(i);
         }
 
         /**
@@ -675,31 +668,31 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return data;
         }
         
-        public List<Integer> getExemplarIndicesInTrainData() {
-            return exemplarIndicesInTrainData;
+        public List<Integer> getExemplarIndicesInSplitData() {
+            return exemplarIndicesInSplitData;
         }
 
         @Override public String toString() {
             return getClass().getSimpleName() + "{" +
-                           "exemplarIndices=" + exemplarIndicesInTrainData +
+                           "exemplarIndices=" + exemplarIndicesInSplitData +
                            ", dataIndices=" + dataIndicesInTrainData +
                            '}';
         }
     }
     
 
-    private class Split implements Serializable {
+    private class Split implements Serializable, Iterator<Integer> {
 
         public Split() {}
 
-        public Split(TimeSeriesInstances insts, List<Integer> instIndicesInTrainData) {
-            setData(insts, instIndicesInTrainData);
+        public Split(TimeSeriesInstances dataAtSplit, List<Integer> instIndicesInTrainData) {
+            setData(dataAtSplit, instIndicesInTrainData);
         }
         
         // the distance function for comparing instances to exemplars
         private DistanceMeasure distanceMeasure;
         // the data at this split (i.e. before being partitioned)
-        private TimeSeriesInstances insts;
+        private TimeSeriesInstances dataAtSplit;
         private List<Integer> instIndicesInTrainData;
         // the partitions of the data, each containing data for the partition and exemplars representing the partition
         private List<Partition> partitions;
@@ -712,7 +705,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private List<List<Integer>> partitionOrderByClass;
         
         // exemplars are normally checked ad-hoc during distance computation. Obviously checking which partition and exemplar belongs to is a waste of computation, as the distance will be zero and trump all other exemplars distances for other partitions. Therefore, it is important to check first. Original pf checked for exemplars as it went along, meaning for partition 5 it would compare exemplar 5 to exemplar 1..4 before realising it's an exemplar. Therefore, we can store the exemplar mapping to partition index and do a quick lookup before calculating distances. This is likely to only save a small amount of time, but increases as the breadth of trees / classes increases. I.e. for a 100 class problem, looking through 99 exemplars before realising we're examining the exemplar for the 100th partition is a large waste.
-        private Map<Integer, Integer> exemplarIndexInTrainDataToPartitionIndex = null;
+        private Map<Integer, Integer> exemplarIndexInSplitDataToPartitionIndex = null;
 
         // cache the scores
         private boolean findScore = true;
@@ -726,7 +719,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private List<Integer> dimensionIndices;
         // settings for handling multivariate distance measurements
         private DistanceMode distanceMode;
-        private DimensionConversionMode dimensionConversionMode;
+        private TransformPipeline pipeline;
+        private TimeSeriesInstances transformedDataAtSplit;
 
         public List<Integer> getPartitionIndices() {
             return partitionIndices;
@@ -739,11 +733,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private Labels<Integer> getParentLabels() {
             return new Labels<>(new AbstractList<Integer>() {
                 @Override public Integer get(final int i) {
-                    return insts.get(i).getLabelIndex();
+                    return dataAtSplit.get(i).getLabelIndex();
                 }
 
                 @Override public int size() {
-                    return insts.numInstances();
+                    return dataAtSplit.numInstances();
                 }
             }); // todo weights
         }
@@ -765,86 +759,92 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return score;
         }
 
-        public Iterator<Integer> getBuildIterator() {
-            // init build info
-            preBuild();
-            // return iterator to progressively build split
+        @Override public boolean hasNext() {
+            return instIndexInSplitData + 1 < dataAtSplit.numInstances();
+        }
+
+        @Override public Integer next() {
+
+            if(transformedDataAtSplit == null) {
+                setupTransform();
+                setupDistanceMeasure();
+                setupExemplars();
+                setupMisc();
+            }
+            
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
-            return new Iterator<Integer>() {
-                
-                @Override public boolean hasNext() {
-                    return instIndexInSplitData + 1 < insts.numInstances();
+
+            // shift i along to look at next inst
+            instIndexInSplitData++;
+            // mark that scores need recalculating, as we'd have added a new inst to a partition by the end of this method
+            findScore = true;
+            // get the inst to be partitioned
+            final TimeSeriesInstance inst = dataAtSplit.get(instIndexInSplitData);
+            final Integer instIndexInTrainData = instIndicesInTrainData.get(instIndexInSplitData);
+            Integer closestPartitionIndex = null;
+            if(earlyExemplarCheck) {
+                // check for exemplars. If the inst is an exemplar, we already know what partition it represents and therefore belongs to
+                closestPartitionIndex = exemplarIndexInSplitDataToPartitionIndex.get(instIndexInSplitData);
+            }
+
+            // if null then not exemplar / not doing quick exemplar checking
+            List<Integer> partitionIndicesOrder = null;
+            int closestPartitionIndexIndex = -1;
+            if(closestPartitionIndex == null) {
+                if(partitionExaminationReordering) {
+                    // use the desc order of partition size for the given class
+                    partitionIndicesOrder = partitionOrderByClass.get(inst.getLabelIndex());
+                } else {
+                    // otherwise just loop through all partitions in order looking for the closest. Order is static and never changed
+                    partitionIndicesOrder = partitionIndices;
+                }
+                closestPartitionIndexIndex = findPartitionIndexIndexFor(inst, instIndexInSplitData, partitionIndicesOrder);
+                closestPartitionIndex = partitionIndicesOrder.get(closestPartitionIndexIndex);
+            }
+
+            final Partition closestPartition = partitions.get(closestPartitionIndex);
+            // add the instance to the partition
+            closestPartition.addData(dataAtSplit.get(instIndexInSplitData), instIndexInTrainData);
+
+            // if using partition reordering and order has been set
+            if(partitionExaminationReordering && partitionIndicesOrder != null) {
+                // we know the partition which the inst will be allocated to
+                // need to update the partition order to maintain desc size
+                partitionIndicesOrder.set(closestPartitionIndexIndex, closestPartition.getData().numInstances());
+
+                // continue shifting up the current partition until it is in the correct ascending order
+                // e.g. index: [2,4,0,3,1]
+                //      sizes: [3,2,2,2,1]
+                //      would become (after incrementing size of partition 3, the closest partition, say):
+                //      index: [2,4,0,3,1]
+                //      sizes: [3,2,2,3,1]
+                //      shift the partition 3 upwards until desc order restored:
+                //      index: [2,3,4,0,1]
+                //      sizes: [3,3,2,2,1]
+                int i = closestPartitionIndexIndex - 1;
+                while(i >= 1 && partitionIndicesOrder.get(i - 1) > partitionIndicesOrder.get(i)) {
+                    Collections.swap(partitionIndicesOrder, i - 1, i);
                 }
 
-                @Override public Integer next() {
-                    // shift i along to look at next inst
-                    instIndexInSplitData++;
-                    // mark that scores need recalculating, as we'd have added a new inst to a partition by the end of this method
-                    findScore = true;
-                    // get the inst to be partitioned
-                    final TimeSeriesInstance inst = insts.get(instIndexInSplitData);
-                    final Integer instIndexInTrainData = instIndicesInTrainData.get(instIndexInSplitData);
-                    Integer closestPartitionIndex = null;
-                    if(earlyExemplarCheck) {
-                        // check for exemplars. If the inst is an exemplar, we already know what partition it represents and therefore belongs to
-                        closestPartitionIndex = exemplarIndexInTrainDataToPartitionIndex.get(instIndexInTrainData);
-                    }
-                    
-                    // if null then not exemplar / not doing quick exemplar checking
-                    List<Integer> partitionIndicesOrder = null;
-                    int closestPartitionIndexIndex = -1;
-                    if(closestPartitionIndex == null) {
-                        if(partitionExaminationReordering) {
-                            // use the desc order of partition size for the given class
-                            partitionIndicesOrder = partitionOrderByClass.get(inst.getLabelIndex());
-                        } else {
-                            // otherwise just loop through all partitions in order looking for the closest. Order is static and never changed
-                            partitionIndicesOrder = partitionIndices;
-                        }
-                        closestPartitionIndexIndex = findPartitionIndexIndexFor(inst, instIndexInTrainData, partitionIndicesOrder);
-                        closestPartitionIndex = partitionIndicesOrder.get(closestPartitionIndexIndex);
-                    }
-                    
-                    final Partition closestPartition = partitions.get(closestPartitionIndex);
-                    // add the instance to the partition
-                    closestPartition.addData(insts.get(instIndexInSplitData), instIndexInTrainData);
-                    
-                    // if using partition reordering and order has been set
-                    if(partitionExaminationReordering && partitionIndicesOrder != null) {
-                        // we know the partition which the inst will be allocated to
-                        // need to update the partition order to maintain desc size
-                        partitionIndicesOrder.set(closestPartitionIndexIndex, closestPartition.getData().numInstances());
-                        
-                        // continue shifting up the current partition until it is in the correct ascending order
-                        // e.g. index: [2,4,0,3,1]
-                        //      sizes: [3,2,2,2,1]
-                        //      would become (after incrementing size of partition 3, the closest partition, say):
-                        //      index: [2,4,0,3,1]
-                        //      sizes: [3,2,2,3,1]
-                        //      shift the partition 3 upwards until desc order restored:
-                        //      index: [2,3,4,0,1]
-                        //      sizes: [3,3,2,2,1]
-                        int i = closestPartitionIndexIndex - 1;
-                        while(i >= 1 && partitionIndicesOrder.get(i - 1) > partitionIndicesOrder.get(i)) {
-                            Collections.swap(partitionIndicesOrder, i - 1, i);
-                        }
-                        
-                    }
-                    
-                    // quick check that partitions line up with num insts
-                    if(isDebug() && !hasNext()) {
-                        final HashSet<Integer> set = new HashSet<>();
-                        partitions.forEach(partition -> set.addAll(partition.getDataIndicesInTrainData()));
-                        if(!new HashSet<>(instIndicesInTrainData).containsAll(set)) {
-                            throw new IllegalStateException("data indices mismatch against partitions: " + set + " should contain the same as " +
-                                                                    instIndicesInTrainData);
-                        }
-                    }
-                    
-                    return closestPartitionIndex;
+            }
+
+            // quick check that partitions line up with num insts
+            if(isDebug()) {
+                final HashSet<Integer> set = new HashSet<>();
+                partitions.forEach(partition -> set.addAll(partition.getDataIndicesInTrainData()));
+                if(!new HashSet<>(instIndicesInTrainData).containsAll(set)) {
+                    throw new IllegalStateException("data indices mismatch against partitions: " + set + " should contain the same as " +
+                                                            instIndicesInTrainData);
                 }
-            };
+            }
+
+            if(instIndexInTrainData == dataAtSplit.numInstances()) {
+                // done, free up the transformed copy of the data
+                transformedDataAtSplit = null;
+            }
+            
+            return closestPartitionIndex;
         }
 
         /**
@@ -861,15 +861,71 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             }
         }
         
+        private void setupTransform() {
+            
+            pipeline = new TransformPipeline();
+
+            if(dataAtSplit.isMultivariate()) {
+
+                // if sampling dimensions, then wrap distance measure in a sampler
+                int numDimensions = dataAtSplit.getMaxNumDimensions();
+                if(DimensionSamplingMode.SINGLE.equals(dimensionSamplingMode) || DimensionSamplingMode.SUBSET.equals(dimensionSamplingMode)) {
+                    final int numChoices;
+                    if(DimensionSamplingMode.SUBSET.equals(dimensionSamplingMode)) {
+                        // select anywhere between 1..all dimensions
+                        numDimensions = RandomUtils.choiceIndex(numDimensions, getRandom()) + 1;
+                    } else {
+                        // select only 1 dimension
+                        numDimensions = 1;
+                    }
+                    final List<Integer> dimensionIndices = RandomUtils.choiceIndex(dataAtSplit.getMaxNumDimensions(), getRandom(), numDimensions);
+                    // build a hSlicer to slice insts to the specified dimensions
+                    final HSlicer hSlicer = new HSlicer(dimensionIndices);
+                    // add the hslice to the transform pipeline
+                    pipeline.add(hSlicer);
+                } else if(DimensionSamplingMode.ALL.equals(dimensionSamplingMode)) {
+                    // do nothing
+                } else {
+                    throw new IllegalStateException("unknown dimension sampling mode");
+                }
+
+                // if converting multivariate data somehow, then do so
+                // if shuffling before the convert, then do so
+                if(DimensionConversionMode.SHUFFLE_STRATIFY.equals(dimensionConversionMode) ||
+                           DimensionConversionMode.SHUFFLE_CONCAT.equals(dimensionConversionMode)) {
+                    if(numDimensions > 1) {
+                        final HReorderer reorderer = new HReorderer();
+                        reorderer.setIndices(new ArrayList<>(new IndexList(numDimensions)));
+                        pipeline.add(reorderer);
+                    }
+                }
+                // then apply conversion from multivariate to univariate if need be
+                if(DimensionConversionMode.CONCAT.equals(dimensionConversionMode)) {
+                    // concat the dimensions into one (i.e. concat all the hSlices in turn)
+                    pipeline.add(new HConcatenator());
+                } else if(DimensionConversionMode.STRATIFY.equals(dimensionConversionMode)) {
+                    // stratify the dimensions into one (i.e. concat all the vSlices in turn)
+                    pipeline.add(new VConcatenator());
+                } else if(DimensionConversionMode.NONE.equals(dimensionConversionMode)
+                                  || DimensionConversionMode.SHUFFLE_CONCAT.equals(dimensionConversionMode)
+                                  || DimensionConversionMode.SHUFFLE_STRATIFY.equals(dimensionConversionMode)) {
+                    // do nothing, each mode already handled
+                } else {
+                    throw new IllegalStateException("unknown dimension conversion mode");
+                }
+
+            }
+            
+            transformedDataAtSplit = pipeline.fitTransform(dataAtSplit);
+        }
+        
         private void setupDistanceMeasure() {
             
             // pick the distance function
             // pick a random space
             ParamSpaceBuilder distanceMeasureSpaceBuilder = RandomUtils.choice(distanceMeasureSpaceBuilders, getRandom());
-            // if using certain dimensions for multivariate, must strip the dimensions not being examined before building the space
-            final TimeSeriesInstances dataForSpace = transformInsts(insts);
             // built that space
-            ParamSpace distanceMeasureSpace = distanceMeasureSpaceBuilder.build(dataForSpace);
+            ParamSpace distanceMeasureSpace = distanceMeasureSpaceBuilder.build(transformedDataAtSplit);
             // randomly pick the distance function / parameters from that space
             final ParamSet paramSet = RandomSearch.choice(distanceMeasureSpace, getRandom());
             // there is only one distance function in the ParamSet returned
@@ -889,14 +945,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     ((TransformDistanceMeasure) distanceMeasure).setTransformer(transformer);
                 }
             }
-            
-            // setup the distance function
-            distanceMeasure.buildDistanceMeasure(dataForSpace);
 
-            // if data is mv then apply the distance mode
-            if(insts.isMultivariate()) {
+            // wrap distance measure in multivariate handling capabilities (i.e. dependent / indep dist, etc)
+            if(transformedDataAtSplit.isMultivariate()) {
+
                 // apply the distance mode
-                distanceMode = ProximityTree.this.distanceMode;
+                DistanceMode distanceMode = ProximityTree.this.distanceMode;
                 // if randomly picking distance mode
                 if(distanceMode.equals(DistanceMode.RANDOM)) {
                     // then random pick from the remaining modes
@@ -908,16 +962,27 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // if in independent mode
                 if(distanceMode.equals(DistanceMode.INDEPENDENT)) {
                     // then wrap the distance measure to evaluate each dimension in isolation
-                    distanceMeasure = new IndependentDistanceMeasure(Split.this.distanceMeasure);
+                    distanceMeasure = new IndependentDistanceMeasure(distanceMeasure);
+                } else if(distanceMode.equals(DistanceMode.DEPENDENT)) {
+                    // do nothing, dependent is the default in distance measures
+                } else {
+                    throw new IllegalStateException("unknown distance mode");
                 }
-            }
 
+            }
+            
+            // setup the distance function (note this JUST sets up the distance measure, not the transformed distance measure)
+            distanceMeasure.buildDistanceMeasure(transformedDataAtSplit);
+                        
         }
         
         private void setupExemplars() {
+
             // pick the exemplars
+            Objects.requireNonNull(transformedDataAtSplit);
+            Assert.assertTrue(transformedDataAtSplit.iterator().hasNext());
             // change the view of the data into per class
-            final List<List<Integer>> instIndicesByClass = insts.getInstIndicesByClass();
+            final List<List<Integer>> instIndicesByClass = dataAtSplit.getInstIndicesByClass();
             // pick exemplars per class
             partitions = new ArrayList<>();
             // generate a partition per class
@@ -928,14 +993,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                     // random pick exemplars from this 
                     final List<Integer> exemplarIndices = RandomUtils.choice(sameClassInstIndices, rand, 1);
                     // generate the partition with empty data and the chosen exemplar instances
-                    final Partition partition = new Partition(insts.getClassLabels());
+                    final Partition partition = new Partition(dataAtSplit.getClassLabels());
                     for(Integer exemplarIndexInSplitData : exemplarIndices) {
                         // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance 
                         // in the data but the 5th instance may have index 33 in the train data)
-                        final TimeSeriesInstance exemplar = insts.get(exemplarIndexInSplitData);
+                        TimeSeriesInstance exemplar = transformedDataAtSplit.get(exemplarIndexInSplitData);
                         final Integer exemplarIndexInTrainData = instIndicesInTrainData.get(exemplarIndexInSplitData);
-                        final TimeSeriesInstance transformedExemplar = transformInst(exemplar);
-                        partition.addExemplar(exemplar, exemplarIndexInTrainData, transformedExemplar);
+                        partition.addExemplar(exemplar, exemplarIndexInTrainData);
                     }
                     // add the partition to list of partitions
                     partitions.add(partition);
@@ -952,72 +1016,31 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 // for each class, make a list holding the partition indices in desc order of size
                 // this order will be maintained as insts are allocated to partitions, hence maintaining a list of
                 // the most likely partition to end up in given an inst is of a certain class
-                partitionOrderByClass = new ArrayList<>(insts.numClasses());
-                for(int i = 0; i < insts.numClasses(); i++) {
+                partitionOrderByClass = new ArrayList<>(dataAtSplit.numClasses());
+                for(int i = 0; i < dataAtSplit.numClasses(); i++) {
                     partitionOrderByClass.add(new ArrayList<>(partitionIndices));
                 }
             }
 
 
             if(earlyExemplarCheck) {
-                exemplarIndexInTrainDataToPartitionIndex = new HashMap<>();
+                exemplarIndexInSplitDataToPartitionIndex = new HashMap<>();
                 // chuck all exemplars in a map to check against before doing distance computation
                 for(int partitionIndex = 0; partitionIndex < partitions.size(); partitionIndex++) {
                     final Partition partition = partitions.get(partitionIndex);
-                    for(Integer exemplarIndexInTrainData : partition.getExemplarIndicesInTrainData()) {
-                        exemplarIndexInTrainDataToPartitionIndex.put(exemplarIndexInTrainData, partitionIndex);
+                    for(Integer exemplarIndexInTrainData : partition.getExemplarIndicesInSplitData()) {
+                        exemplarIndexInSplitDataToPartitionIndex.put(exemplarIndexInTrainData, partitionIndex);
                     }
                 }
             }
-        }
-        
-        private void setupDimensions() {
-            
-            // if data is mv
-            if(insts.isMultivariate()) {
-                // then need to handle sampling mode for dimensions
-                if(dimensionSamplingMode.equals(DimensionSamplingMode.ALL)) {
-                    // use all dims
-                    // set the dimIndices to null to indicate no slicing of dimensions needs to be done
-                    dimensionIndices = null;
-                } else if(dimensionSamplingMode.equals(DimensionSamplingMode.SINGLE)) {
-                    // pick a single random dim
-                    dimensionIndices = Collections.singletonList(RandomUtils.choiceIndex(insts.getMaxNumDimensions(), getRandom()));
-                } else if(dimensionSamplingMode.equals(DimensionSamplingMode.MULTIPLE)) {
-                    // pick at least 1 dimension
-                    final int numChoices = RandomUtils.choiceIndex(insts.getMaxNumDimensions(), getRandom()) + 1;
-                    // randomly select that number of dimensions
-                    dimensionIndices = RandomUtils.choiceIndex(insts.getMaxNumDimensions(), getRandom(), numChoices);
-                } else if(dimensionSamplingMode.equals(DimensionSamplingMode.SHUFFLE)) {
-                    dimensionIndices = RandomUtils.shuffleIndices(insts.getMaxNumDimensions(), getRandom());
-                } else {
-                    throw new UnsupportedOperationException(dimensionSamplingMode + " unsupported");
-                }
-
-                dimensionConversionMode = ProximityTree.this.dimensionConversionMode;
-                 if(dimensionConversionMode.equals(DimensionConversionMode.RANDOM)) {
-                    // randomly choose an alternative mode than random
-                    final Integer index = RandomUtils
-                                                  .choiceIndexExcept(DimensionConversionMode.values().length, getRandom(), Arrays.asList(DimensionConversionMode.RANDOM.ordinal(), DimensionConversionMode.NONE.ordinal()));
-                    dimensionConversionMode = DimensionConversionMode.values()[index];
-                }
-            }
-        }
-        
-        private void preBuild() {
-            setupDimensions();
-            setupDistanceMeasure();
-            setupExemplars();
-            setupMisc();
         }
         
         /**
          * Partition the data and derive score for this split.
          */
         public void buildSplit() {
-            Iterator<Integer> it = getBuildIterator();
-            while(it.hasNext()) {
-                it.next();
+            while(hasNext()) {
+                next();
             }
         }
 
@@ -1025,8 +1048,8 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return distanceMeasure;
         }
         
-        public int findPartitionIndexFor(final TimeSeriesInstance inst, int instIndexInTrainData, List<Integer> partitionIndices) {
-            final int partitionIndexIndex = findPartitionIndexIndexFor(inst, instIndexInTrainData, partitionIndices);
+        public int findPartitionIndexFor(final TimeSeriesInstance inst, int instIndexInSplitData, List<Integer> partitionIndices) {
+            final int partitionIndexIndex = findPartitionIndexIndexFor(inst, instIndexInSplitData, partitionIndices);
             return partitionIndices.get(partitionIndexIndex);
         }
 
@@ -1034,10 +1057,16 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * get the partition of the given instance. The returned partition is the set of data the given instance belongs to based on its proximity to the exemplar instances representing the partition.
          *
          * @param inst
-         * @param instIndexInTrainData the index of the inst in the data at this node. If the inst is not in the data at this node then set this to -1
+         * @param instIndexInSplitData the index of the inst in the data at this node. If the inst is not in the data at this node then set this to -1
          * @return
          */
-        public int findPartitionIndexIndexFor(final TimeSeriesInstance inst, int instIndexInTrainData, List<Integer> partitionIndicesIterator) {
+        public int findPartitionIndexIndexFor(TimeSeriesInstance inst, int instIndexInSplitData, List<Integer> partitionIndicesIterator) {
+            // replace inst with transformed version (i.e. apply the multivariate strategy)
+            if(instIndexInSplitData >= 0) {
+                inst = transformedDataAtSplit.get(instIndexInSplitData);
+            } else {
+                inst = pipeline.transform(inst);
+            }
             // a map to maintain the closest partition indices
             final PrunedMap<Double, Integer> filter = PrunedMap.asc(1);
             // maintain a limit on distance computation
@@ -1047,22 +1076,17 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 final Integer partitionIndex = partitionIndicesIterator.get(i);
                 final Partition partition = partitions.get(partitionIndex);
                 final TimeSeriesInstances exemplars = partition.getExemplars();
-                final List<Integer> exemplarIndicesInTrainData = partition.getExemplarIndicesInTrainData();
-                final TimeSeriesInstances transformedExemplars = partition.getTransformedExemplars();
+                final List<Integer> exemplarIndicesInSplitData = partition.getExemplarIndicesInSplitData();
                 for(int j = 0; j < exemplars.numInstances(); j++) {
                     // for each exemplar
                     final TimeSeriesInstance exemplar = exemplars.get(j);
-                    final Integer exemplarIndexInTrainData = exemplarIndicesInTrainData.get(j);
+                    final Integer exemplarIndexInSplitData = exemplarIndicesInSplitData.get(j);
                     // check the instance isn't an exemplar
-                    if(!earlyExemplarCheck && instIndexInTrainData == exemplarIndexInTrainData) {
+                    if(!earlyExemplarCheck && instIndexInSplitData == exemplarIndexInSplitData) {
                         return i;
                     }
-                    // get the stripped version of the inst and exemplar. This optionally trims down the dimensions 
-                    // depending on the strategy in the multivariate case
-                    final TimeSeriesInstance transformedExemplar = transformedExemplars.get(j);
-                    final TimeSeriesInstance transformedInstance = transformInst(inst);
                     // find the distance
-                    final double distance = distanceMeasure.distance(transformedInstance, transformedExemplar, limit);
+                    final double distance = distanceMeasure.distance(exemplar, inst, limit);
                     // add the distance and partition to the map
                     if(filter.add(distance, i)) {
                         // new min dist
@@ -1087,67 +1111,18 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             return findPartitionIndexFor(inst, -1, partitionIndices);
         }
 
-        public TimeSeriesInstances getInsts() {
-            return insts;
+        public TimeSeriesInstances getDataAtSplit() {
+            return dataAtSplit;
         }
 
         public void setData(TimeSeriesInstances data, List<Integer> dataIndices) {
             this.instIndicesInTrainData = Objects.requireNonNull(dataIndices);
-            this.insts = Objects.requireNonNull(data);
+            this.dataAtSplit = Objects.requireNonNull(data);
             Assert.assertEquals(data.numInstances(), dataIndices.size());
         }
 
         public List<Integer> getInstIndicesInTrainData() {
             return instIndicesInTrainData;
-        }
-        
-        private TimeSeriesInstance transformInst(TimeSeriesInstance inst) {
-            
-            // only need to transform mv data
-            if(!inst.isMultivariate()) {
-                return inst;
-            }
-            
-            // sample the dimensions as required
-            if(dimensionIndices != null) {
-                inst = inst.getHSlice(dimensionIndices);
-            }
-            
-            // convert the dimensions into a different form
-            if(dimensionConversionMode.equals(DimensionConversionMode.CONCAT)) {
-                
-                final LinkedList<Double> values = new LinkedList<>();
-                for(TimeSeries series : inst) {
-                    for(Double value : series) {
-                        values.add(value);
-                    }
-                }
-                inst =  new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex());
-                
-            } else if(dimensionConversionMode.equals(DimensionConversionMode.STRATIFY)) {
-                
-                final LinkedList<Double> values = new LinkedList<>();
-                for(int j = 0; j < inst.getMaxLength(); j++) {
-                    for(int i = 0; i < inst.getNumDimensions(); i++) {
-                        values.add(inst.get(i).get(j));
-                    }
-                }
-                inst = new TimeSeriesInstance(Collections.singletonList(values), inst.getLabelIndex());
-                
-            } else if(dimensionConversionMode.equals(DimensionConversionMode.NONE)) {
-                // do nothing
-            } else {
-                throw new UnsupportedOperationException("unknown conversion method " + dimensionConversionMode);
-            }
-            
-            return inst;
-        }
-        
-        private TimeSeriesInstances transformInsts(TimeSeriesInstances data) {
-            if(!data.isMultivariate()) {
-                return data;
-            }
-            return new TimeSeriesInstances(data.stream().map(this::transformInst).collect(Collectors.toList()));
         }
         
         @Override
