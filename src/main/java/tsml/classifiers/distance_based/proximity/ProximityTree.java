@@ -82,7 +82,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //        System.out.println(CONFIGS);
         for(int i = 0; i < 1; i++) {
             int seed = i;
-            ProximityTree classifier = CONFIGS.get("PT_R5_S_SS_I").build();
+            ProximityTree classifier = CONFIGS.get("PT_R5").build();
             classifier.setSeed(seed);
 //            classifier.setCheckpointDirPath("checkpoints");
             classifier.setLogLevel(Level.ALL);
@@ -98,7 +98,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 //            classifier.setCheckpointPath("checkpoints");
 //            classifier.setCheckpointInterval(10, TimeUnit.SECONDS);
 //            classifier.setTrainTimeLimit(5, TimeUnit.SECONDS);
-            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleBasicMotions(seed), seed);
+            ClassifierTools.trainTestPrint(classifier, DatasetLoading.sampleItalyPowerDemand(seed), seed);
         }
     }
     
@@ -762,15 +762,15 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         @Override public boolean hasNext() {
             return instIndexInSplitData + 1 < dataAtSplit.numInstances();
         }
+        
+        public void setup() {
+            setupTransform();
+            setupDistanceMeasure();
+            setupExemplars();
+            setupMisc();
+        }
 
         @Override public Integer next() {
-
-            if(transformedDataAtSplit == null) {
-                setupTransform();
-                setupDistanceMeasure();
-                setupExemplars();
-                setupMisc();
-            }
             
             // go through every instance and find which partition it should go into. This should be the partition
             // with the closest exemplar associate
@@ -838,13 +838,12 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                                                             instIndicesInTrainData);
                 }
             }
-
-            if(instIndexInTrainData == dataAtSplit.numInstances()) {
-                // done, free up the transformed copy of the data
-                transformedDataAtSplit = null;
-            }
             
             return closestPartitionIndex;
+        }
+        
+        public void cleanup() {
+            transformedDataAtSplit = null;
         }
 
         /**
@@ -998,8 +997,7 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                         // find the index of the exemplar in the dataIndices (i.e. the exemplar may be the 5th instance 
                         // in the data but the 5th instance may have index 33 in the train data)
                         TimeSeriesInstance exemplar = transformedDataAtSplit.get(exemplarIndexInSplitData);
-                        final Integer exemplarIndexInTrainData = instIndicesInTrainData.get(exemplarIndexInSplitData);
-                        partition.addExemplar(exemplar, exemplarIndexInTrainData);
+                        partition.addExemplar(exemplar, exemplarIndexInSplitData);
                     }
                     // add the partition to list of partitions
                     partitions.add(partition);
@@ -1039,9 +1037,11 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
          * Partition the data and derive score for this split.
          */
         public void buildSplit() {
+            setup();
             while(hasNext()) {
                 next();
             }
+            cleanup();
         }
 
         public DistanceMeasure getDistanceMeasure() {
