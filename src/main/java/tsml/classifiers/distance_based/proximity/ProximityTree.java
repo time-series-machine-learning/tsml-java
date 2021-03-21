@@ -519,21 +519,19 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 insideTestTimeLimit(testTimer.elapsedTime() + longestPredictTime)
         ) {
             testStageTimer.resetAndStart();
-            // get the split at that node
-            split = node.getValue();
             // work out which branch to go to next
             index = split.findPartitionIndexFor(instance);
             // make this the next node to visit
             node = node.get(index);
+            // get the split at that node
+            split = node.getValue();
+            // finish up this test stage
             testStageTimer.stop();
             longestPredictTime = testStageTimer.elapsedTime();
         }
         // hit a leaf node
-        // get the parent of the leaf node to work out distribution
-        node = node.getParent();
-        split = node.getValue();
-        // use the partition index to get the partition and then the distribution for instance for that partition
-        double[] distribution = split.getPartitions().get(index).distributionForInstance(instance);
+        // the split defines the distribution for this test inst. If the split is pure, this will be a one-hot dist.
+        double[] distribution = split.distributionForInstance(instance);
         // disable the resource monitors
         testTimer.stop();
         return distribution;
@@ -721,7 +719,21 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         private DistanceMode distanceMode;
         private TransformPipeline pipeline;
         private TimeSeriesInstances transformedDataAtSplit;
-
+        
+        private double[] distribution;
+        
+        public double[] distributionForInstance(TimeSeriesInstance testInst) {
+            // report the prediction as the same as the data distribution at this split
+            if(distribution == null) {
+                distribution = new double[dataAtSplit.numClasses()];
+                for(TimeSeriesInstance inst : dataAtSplit) {
+                    distribution[inst.getLabelIndex()]++;
+                }
+                ArrayUtilities.normalise(distribution);
+            }
+            return distribution;
+        }
+        
         public List<Integer> getPartitionIndices() {
             return partitionIndices;
         }
