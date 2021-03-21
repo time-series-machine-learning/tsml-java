@@ -610,8 +610,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
 
     private class Split implements Serializable, Iterator<Integer> {
 
-        public Split() {}
-
         public Split(TimeSeriesInstances data, List<Integer> dataIndicesInTrainData) {
             setData(data, dataIndicesInTrainData);
         }
@@ -722,7 +720,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
             findScore = true;
             // get the inst to be partitioned
             final TimeSeriesInstance inst = data.get(instIndexInSplitData);
-            final Integer instIndexInTrainData = dataIndicesInTrainData.get(instIndexInSplitData);
             Integer closestPartitionIndex = null;
             if(earlyExemplarCheck) {
                 // check for exemplars. If the inst is an exemplar, we already know what partition it represents and therefore belongs to
@@ -1017,8 +1014,6 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
                 if(!earlyExemplarCheck && instIndexInSplitData == exemplarIndexInSplitData) {
                     return i;
                 }
-                final Integer partitionIndex = partitionIndicesIterator.get(i);
-                final List<Integer> partitionDataIndicesInSplitData = partitionedDataIndicesInSplitData.get(i);
                 final TimeSeriesInstance exemplar = exemplars.get(i);
                 // find the distance
                 final double distance = distanceMeasure.distance(exemplar, inst, limit);
@@ -1062,14 +1057,13 @@ public class ProximityTree extends BaseClassifier implements ContractedTest, Con
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder();
-            sb.append(getClass().getSimpleName()).append("{");
-            sb.append("dataIndices=").append(dataIndicesInTrainData);
             if(distanceMeasure != null) {
                 // then split has been built
-                sb.append("partitionedDataIndices=").append(getPartitionedDataIndicesInTrainData());
-                sb.append(", df=").append(distanceMeasure);
+                sb.append("df=").append(distanceMeasure);
+                sb.append(", partitionedDataIndices=").append(getPartitionedDataIndicesInTrainData());
+                sb.append(", ");
             }
-            sb.append("}");
+            sb.append("dataIndices=").append(dataIndicesInTrainData);
                     
             return sb.toString();
         }
