@@ -85,6 +85,7 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
 
     @Override public void start() {
         addListener();
+        MemoryWatchable.gc(); // do a gc sweep to try and prompt memory readings at start
         super.start();
     }
 
