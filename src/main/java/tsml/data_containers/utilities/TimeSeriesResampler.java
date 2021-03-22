@@ -63,8 +63,22 @@ public class TimeSeriesResampler {
             new_test.addAll(bin.subList(occurences, bin.size()));//copy the remaining portion of the bin into the test set.
         }
 
-        return new TrainTest(new TimeSeriesInstances(new_train, train.getClassLabels()), 
-                             new TimeSeriesInstances(new_test, train.getClassLabels()));
+        TimeSeriesInstances newTrain = new TimeSeriesInstances(new_train, train.getClassLabels());
+        TimeSeriesInstances newTest = new TimeSeriesInstances(new_test, test.getClassLabels());
+
+        // set problem name
+        newTrain.setProblemName(train.getProblemName());
+        newTest.setProblemName(test.getProblemName());
+
+        // set description
+        newTrain.setDescription(train.getDescription());
+        newTest.setDescription(test.getDescription());
+
+        // set class counts
+        train.getClassCounts();
+        test.getClassCounts();
+
+        return new TrainTest(newTrain, newTest);
     }
 
     //this function is the one from Instances, want to mirror there shuffling algorithm.
