@@ -513,65 +513,83 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
      * dimensions passed. e.g. '[0, 1]' would return the values for every instance
      * at the first and second dimensions.
      *
-     * @param dimensionToKeep to get
+     * @param dimensionsToKeep to get
      * @return 3d list of values
      */
-    public List<List<List<Double>>> getHSliceList(int[] dimensionToKeep) {
-        return getHSliceList(Arrays.stream(dimensionToKeep).boxed().collect(Collectors.toList()));
+    public List<List<List<Double>>> getHSliceList(int[] dimensionsToKeep) {
+        return getHSliceList(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
     /**
-     * @param indexesToKeep
-     * @return List<List < List < Double>>>
+     * Returns a 3d list containing the values for each instance, at the
+     * dimensions passed. e.g. '[0, 1]' would return the values for every instance
+     * at the first and second dimensions.
+     *
+     * @param dimensionsToKeep to get
+     * @return 3d list of values
      */
-    public List<List<List<Double>>> getHSliceList(List<Integer> indexesToKeep) {
+    public List<List<List<Double>>> getHSliceList(List<Integer> dimensionsToKeep) {
         List<List<List<Double>>> out = new ArrayList<>(numInstances());
         for (TimeSeriesInstance inst : seriesCollection) {
-            out.add(inst.getHSliceList(indexesToKeep));
+            out.add(inst.getHSliceList(dimensionsToKeep));
         }
 
         return out;
     }
 
     /**
-     * @param indexesToKeep
-     * @return double[][][]
+     * Returns a 3d array containing the values for each instance, at the
+     * dimensions passed. e.g. '[0, 1]' would return the values for every instance
+     * at the first and second dimensions.
+     *
+     * @param dimensionsToKeep to get
+     * @return 3d array of values
      */
-    public double[][][] getHSliceArray(int[] indexesToKeep) {
-        return getHSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public double[][][] getHSliceArray(int[] dimensionsToKeep) {
+        return getHSliceArray(Arrays.stream(dimensionsToKeep).boxed().collect(Collectors.toList()));
     }
 
     /**
-     * @param indexesToKeep
-     * @return double[][][]
+     * Returns a 3d array containing the values for each instance, at the
+     * dimensions passed. e.g. '[0, 1]' would return the values for every instance
+     * at the first and second dimensions.
+     *
+     * @param dimensionsToKeep to get
+     * @return 3d array of values
      */
-    public double[][][] getHSliceArray(List<Integer> indexesToKeep) {
+    public double[][][] getHSliceArray(List<Integer> dimensionsToKeep) {
         double[][][] out = new double[numInstances()][][];
         int i = 0;
         for (TimeSeriesInstance inst : seriesCollection) {
-            out[i++] = inst.getHSliceArray(indexesToKeep);
+            out[i++] = inst.getHSliceArray(dimensionsToKeep);
         }
 
         return out;
     }
 
     /**
-     * @param i
-     * @return TimeSeriesInstance
+     * Returns the TimeSeriesInstance at the index given.
+     *
+     * @param index to get
+     * @return TimeSeriesInstance at index
      */
-    public TimeSeriesInstance get(final int i) {
-        return seriesCollection.get(i);
+    public TimeSeriesInstance get(final int index) {
+        return seriesCollection.get(index);
     }
 
     /**
-     * @return List<TimeSeriesInstance>
+     * Returns all of the TimeSeriesInstance objects inside.
+     *
+     * @return list of TimeSeriesInstance
      */
     public List<TimeSeriesInstance> getAll() {
         return seriesCollection;
     }
 
     /**
-     * @return int
+     * Returns the number of instances inside.
+     *
+     * @return number of instances.
      */
     public int numInstances() {
         return seriesCollection.size();
@@ -588,19 +606,45 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
+    /**
+     * Returns an iterator, iterating over the each instance.
+     *
+     * @return instance iterator
+     */
     @Override
     public Iterator<TimeSeriesInstance> iterator() {
         return seriesCollection.iterator();
     }
 
+    /**
+     * Returns a Stream of TimeSeriesInstance objects.
+     *
+     * @return Stream of TimeSeries.
+     */
     public Stream<TimeSeriesInstance> stream() {
         return seriesCollection.stream();
     }
 
+    /**
+     * Returns a 3d List containing the values, for each instance, for each dimension,
+     * between the start (inclusive) and end (exclusive).
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return 3d list of values
+     */
     public List<List<List<Double>>> getVSliceList(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getVSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
 
+    /**
+     * Returns a TimeSeriesInstances object containing instances with values,
+     * between the start (inclusive) and end (exclusive).
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return TimeSeriesInstances object
+     */
     public TimeSeriesInstances getVSlice(int startInclusive, int endExclusive) {
         final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
         tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
@@ -608,18 +652,50 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return tsi;
     }
 
+    /**
+     * Returns a 3d array containing the values, for each instance, for each dimension,
+     * between the start (inclusive) and end (exclusive).
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return 3d array of values
+     */
     public double[][][] getVSliceArray(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getVSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
 
+    /**
+     * Returns a 3d list containing the values, for each instance, from the start
+     * dimension (inclusive) and end dimension (exclusive) given.
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return 3d list of values
+     */
     public List<List<List<Double>>> getHSliceList(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getHSliceList(startInclusive, endExclusive)).collect(Collectors.toList());
     }
 
+    /**
+     * Returns a 3d array containing the values, for each instance, from the start
+     * dimension (inclusive) and end dimension (exclusive) given.
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return 3d array of values
+     */
     public double[][][] getHSliceArray(int startInclusive, int endExclusive) {
         return seriesCollection.stream().map(inst -> inst.getHSliceArray(startInclusive, endExclusive)).toArray(double[][][]::new);
     }
 
+    /**
+     * Returns a TimeSeriesInstances object containing instances with values,
+     * from the start dimension (inclusive) and end dimension (exclusive)
+     *
+     * @param startInclusive to start at (inclusive)
+     * @param endExclusive to end at (exclusive)
+     * @return TimeSeriesInstances object
+     */
     public TimeSeriesInstances getHSlice(int startInclusive, int endExclusive) {
         final TimeSeriesInstances tsi = new TimeSeriesInstances(classLabels);
         tsi.seriesCollection = seriesCollection.stream().map(inst -> inst.getHSlice(startInclusive, endExclusive)).collect(Collectors.toList());
@@ -627,25 +703,49 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return tsi;
     }
 
+    /**
+     * Returns whether a TimeSeriesInstances object is equal to another based if
+     * series collection is the exact same and the class labels are the exact same.
+     *
+     * @param other object
+     * @return true if equal, false if not
+     */
     @Override
-    public boolean equals(final Object o) {
-        if (!(o instanceof TimeSeriesInstances)) {
+    public boolean equals(final Object other) {
+        if (!(other instanceof TimeSeriesInstances)) {
             return false;
         }
-        final TimeSeriesInstances that = (TimeSeriesInstances) o;
-        return Objects.equals(seriesCollection, that.seriesCollection) && Arrays.equals(classLabels, that.classLabels);
+        final TimeSeriesInstances that = (TimeSeriesInstances) other;
+        return Objects.equals(seriesCollection, that.seriesCollection) &&
+                Arrays.equals(classLabels, that.classLabels);
     }
 
+    /**
+     * Returns an int of the hash code based on the series collection and class
+     * labels.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(seriesCollection, classLabels);
     }
 
+    /**
+     * Returns whether data is for a classification problem.
+     *
+     * @return true if classification problem, false if not
+     */
     public boolean isClassificationProblem() {
         // if a set of class labels are set then it's a classification problem
         return classLabels.length >= 0;
     }
 
+    /**
+     * Returns whether data is for a regression problem.
+     *
+     * @return true if regression problem, false if not
+     */
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
     }
