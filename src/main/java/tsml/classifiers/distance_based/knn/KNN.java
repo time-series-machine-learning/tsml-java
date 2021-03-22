@@ -25,19 +25,7 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.TrainEstimateTimeable;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
-import tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceFullWindowSpace;
-import tsml.classifiers.distance_based.distances.dtw.spaces.DDTWDistanceSpace;
-import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceFullWindowSpace;
-import tsml.classifiers.distance_based.distances.dtw.spaces.DTWDistanceSpace;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
-import tsml.classifiers.distance_based.distances.ed.spaces.EDistanceSpace;
-import tsml.classifiers.distance_based.distances.erp.spaces.ERPDistanceSpace;
-import tsml.classifiers.distance_based.distances.lcss.spaces.LCSSDistanceSpace;
-import tsml.classifiers.distance_based.distances.msm.spaces.MSMDistanceSpace;
-import tsml.classifiers.distance_based.distances.twed.spaces.TWEDistanceSpace;
-import tsml.classifiers.distance_based.distances.wdtw.spaces.WDDTWDistanceSpace;
-import tsml.classifiers.distance_based.distances.wdtw.spaces.WDTWDistanceSpace;
-import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
 import tsml.classifiers.distance_based.utils.collections.pruned.PrunedMap;
 import tsml.classifiers.distance_based.utils.classifiers.BaseClassifier;
@@ -58,8 +46,6 @@ import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import utilities.ArrayUtilities;
 import utilities.ClassifierTools;
-
-import static tsml.classifiers.distance_based.utils.collections.CollectionUtils.newArrayList;
 
 public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, ContractedTrain, TrainEstimateTimeable,
                                                          ContractedTest {
@@ -302,7 +288,7 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
         
         // set the last checkpoint time to now (as we've either loaded from a checkpoint, started from scratch or
         // already had some work done, all of which should already be saved in a checkpoint)
-        checkpointConfig.setLastCheckpointTimeStamp(System.nanoTime());
+        checkpointConfig.setLastCheckpointRunTime(System.nanoTime());
         if(getEstimateOwnPerformance()) {
             estimatePerformance();
         }

@@ -6,7 +6,7 @@ import com.beust.jcommander.Parameter;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.system.copy.Copier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import utilities.FileUtils;
+import tsml.classifiers.distance_based.utils.system.memory.MemoryAmount;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,26 +41,31 @@ public class ExperimentConfig implements Copier {
     @Parameter(names = {"--rcp", "--removeCheckpoint"}, description = "Remove any checkpoints upon completion of a train time contract. The assumption here is that once the classifier has built in the given time limit, no further work will be done and the checkpoint can be safely removed. In other words, the assumption is that the checkpoint is only useful if the classifier gets stoppped mid-build and must be restarted. When the classifier finishes building, the checkpoint files are redundant, therefore. Note this does not affect multiple contracts as the checkpoint files are copied before removal. I.e. a contract of 1h completes and leaves behind some checkpoint files. These are copied over to the subsequent 2h contract before removal from the 1h contract working area. Default: off")
     private boolean removeCheckpoint = false;
 
-    @Parameter(names = {"--cpi", "--checkpointInterval"}, description = "The minimum interval between checkpoints. Classifiers may not produce checkpoints within the checkpoint interval time from the last checkpoint. Therefore, classifiers may produce checkpoints with (much) larger intervals inbetween, depending on their checkpoint frequency. Default: 1h")
-    private String checkpointInterval = "1h";
+    @Parameter(names = {"--cpi", "--checkpointInterval"}, description = "The minimum interval between checkpoints. Classifiers may not produce checkpoints within the checkpoint interval time from the last checkpoint. Therefore, classifiers may produce checkpoints with (much) larger intervals inbetween, depending on their checkpoint frequency.", converter = TimeSpanConverter.class)
+    private TimeSpan checkpointInterval = new TimeSpan("4h");
 
-    @Parameter(names = {"--scp", "--snapshotCheckpoints"}, description = "Keep every checkpoint as a snapshot of the classifier model at that point in time. When disabled, classifiers overwrite their last checkpoint. When enabled, classifiers will write checkpoints with a time stamp rather than overwriting previous checkpoints. Default: off")
-    private boolean snapshotCheckpoints = false;
+    @Parameter(names = {"--kcp", "--keepCheckpoints"}, description = "Keep every checkpoint as a snapshot of the classifier model at that point in time. When disabled, classifiers overwrite their last checkpoint. When enabled, classifiers will write checkpoints with a time stamp rather than overwriting previous checkpoints. Default: off")
+    private boolean keepCheckpoints = false;
 
-    public String getMemory() {
+    public MemoryAmount getMemory() {
         return memory;
     }
-
-
+    
     private static class TimeSpanConverter implements IStringConverter<TimeSpan> {
 
         @Override public TimeSpan convert(final String s) {
             return new TimeSpan(s);
         }
     }
+
+    private static class MemoryAmountConverter implements IStringConverter<MemoryAmount> {
+
+        @Override public MemoryAmount convert(final String s) {
+            return new MemoryAmount(s);
+        }
+    }
     
     @Parameter(names = {"--ttl", "--trainTimeLimit"}, description = "Contract the classifier to build in a set time period. Give this option two arguments in the form of '--contractTrain <amount> <units>', e.g. '--contractTrain 5 minutes'", converter = TimeSpanConverter.class)
-//    private List<String> trainTimeLimitStrs = new ArrayList<>();
     private List<TimeSpan> trainTimeLimits = new ArrayList<>();
 
     @Parameter(names = {"-e", "--evaluate"}, description = "Estimate the train error. Default: false")
@@ -69,8 +74,8 @@ public class ExperimentConfig implements Copier {
     @Parameter(names = {"-t", "--threads"}, description = "The number of threads to use. Set to 0 or less for all available processors at runtime. Default: 1")
     private int numThreads = 1;
     
-    @Parameter(names = {"-m", "--memory"}, description = "The amount of memory allocated at maximum during the runtime of this program. Default: no limit")
-    private String memory;
+    @Parameter(names = {"-m", "--memory"}, description = "The amount of memory allocated at maximum during the runtime of this program. Default: no limit", converter = MemoryAmountConverter.class)
+    private MemoryAmount memory = null;
 
     @Parameter(names = {"--trainOnly"}, description = "Only train the classifier, do not test.")
     private boolean trainOnly = false;
@@ -151,12 +156,12 @@ public class ExperimentConfig implements Copier {
         return removeCheckpoint;
     }
 
-    public String getCheckpointInterval() {
+    public TimeSpan getCheckpointInterval() {
         return checkpointInterval;
     }
 
-    public boolean isSnapshotCheckpoints() {
-        return snapshotCheckpoints;
+    public boolean isKeepCheckpoints() {
+        return keepCheckpoints;
     }
 
     public List<TimeSpan> getTrainTimeLimits() {
@@ -211,12 +216,12 @@ public class ExperimentConfig implements Copier {
         this.removeCheckpoint = removeCheckpoint;
     }
 
-    public void setCheckpointInterval(final String checkpointInterval) {
+    public void setCheckpointInterval(final TimeSpan checkpointInterval) {
         this.checkpointInterval = checkpointInterval;
     }
 
-    public void setSnapshotCheckpoints(final boolean snapshotCheckpoints) {
-        this.snapshotCheckpoints = snapshotCheckpoints;
+    public void setKeepCheckpoints(final boolean keepCheckpoints) {
+        this.keepCheckpoints = keepCheckpoints;
     }
 
     public void setTrainTimeLimits(final List<TimeSpan> trainTimeLimits) {
@@ -270,5 +275,9 @@ public class ExperimentConfig implements Copier {
 
     public String getCheckpointDirPath() {
         return StrUtils.joinPath( getResultsDirPath(), getClassifierNameInResults(), "Workspace", getProblemName(), "fold" + getSeed());
+    }
+
+    public void setMemory(final MemoryAmount memory) {
+        this.memory = memory;
     }
 }

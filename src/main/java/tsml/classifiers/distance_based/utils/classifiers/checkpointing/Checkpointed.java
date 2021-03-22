@@ -18,6 +18,8 @@
 package tsml.classifiers.distance_based.utils.classifiers.checkpointing;
 
 import tsml.classifiers.Checkpointable;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTrain;
+import tsml.classifiers.distance_based.utils.experiment.TimeSpan;
 import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import utilities.FileUtils;
 
@@ -27,7 +29,7 @@ import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public interface Checkpointed extends Checkpointable {
+public interface Checkpointed extends Checkpointable, TimedTrain {
 
     String CHECKPOINT_EXTENSION = "tar.gz";
     String CHECKPOINT_EXTENSION_WITH_DOT = "." + CHECKPOINT_EXTENSION;
@@ -39,9 +41,14 @@ public interface Checkpointed extends Checkpointable {
     default String getCheckpointPath() {
         return getCheckpointConfig().getCheckpointPath();
     }
-    
-    default long getLastCheckpointTimeStamp() {
-        return getCheckpointConfig().getLastCheckpointTimeStamp();
+
+    /**
+     * Get the run time at the last checkpoint. We use this to work out whether the checkpoint interval has expired /
+     * allocate checkpoints to intervals in the case where checkpoints do not land exactly in the interval time points.
+     * @return
+     */
+    default long getLastCheckpointRunTime() {
+        return getCheckpointConfig().getLastCheckpointRunTime();
     }
 
     /**
@@ -69,6 +76,10 @@ public interface Checkpointed extends Checkpointable {
     default void setCheckpointInterval(final long amount, final TimeUnit unit) {
         setCheckpointInterval(TimeUnit.NANOSECONDS.convert(amount, unit));
     }
+    
+    default void setCheckpointInterval(final TimeSpan timeSpan) {
+        setCheckpointInterval(timeSpan.inNanos());
+    }
 
     default boolean isCheckpointPathSet() {
         return getCheckpointConfig().getCheckpointPath() != null;
@@ -83,12 +94,12 @@ public interface Checkpointed extends Checkpointable {
         return getCheckpointLoadTime() + getCheckpointSaveTime();
     }
     
-    default boolean isKeepPastCheckpoints() {
-        return getCheckpointConfig().isKeepPastCheckpoints();
+    default boolean isKeepCheckpoints() {
+        return getCheckpointConfig().isKeepCheckpoints();
     }
     
-    default void setKeepPastCheckpoints(boolean state) {
-        getCheckpointConfig().setKeepPastCheckpoints(state);
+    default void setKeepCheckpoints(boolean state) {
+        getCheckpointConfig().setKeepCheckpoints(state);
     }
 
     /**
@@ -128,7 +139,7 @@ public interface Checkpointed extends Checkpointable {
         CheckpointConfig config = getCheckpointConfig();
         // set the last checkpoint time to now to avoid saveCheckpoint calls after this saving a new checkpoint when
         // less than interval time has passed
-        config.setLastCheckpointTimeStamp(System.nanoTime());
+        config.setLastCheckpointRunTime(getRunTime());
         config.addLoadTime(System.nanoTime() - startTimeStamp);
         return loaded;
     }
@@ -155,7 +166,8 @@ public interface Checkpointed extends Checkpointable {
                 final String path = getCheckpointPath();
                 final String[] files = new File(path).list();
                 // save this checkpoint
-                final String checkpointPath = path + "/" + CHECKPOINT_PREFIX_WITH_UNDERSCORE + System.nanoTime() + CHECKPOINT_EXTENSION_WITH_DOT;
+                final long runTime = getRunTime();
+                final String checkpointPath = path + "/" + CHECKPOINT_PREFIX_WITH_UNDERSCORE + runTime + CHECKPOINT_EXTENSION_WITH_DOT;
                 final long timeStampBeforeSave = System.nanoTime();
                 // take snapshot of timings
                 getCheckpointConfig().addSaveTime(timeStampBeforeSave - timeStamp);
@@ -163,7 +175,7 @@ public interface Checkpointed extends Checkpointable {
                 timeStamp = timeStampBeforeSave;
                 saveToFile(checkpointPath);
                 // remove any previous checkpoints
-                if(!isKeepPastCheckpoints()) {
+                if(!isKeepCheckpoints()) {
                     if(files != null) {
                         for(String file : files) {
                             final File f = new File(path + "/" + file);
@@ -178,7 +190,7 @@ public interface Checkpointed extends Checkpointable {
                 }
                 getCheckpointConfig().getLogger().info("saved checkpoint to " + checkpointPath);
                 // update the checkpoint time stamp
-                getCheckpointConfig().setLastCheckpointTimeStamp(System.nanoTime());
+                getCheckpointConfig().setLastCheckpointRunTime(runTime);
             }
         }
         getCheckpointConfig().addSaveTime(System.nanoTime() - timeStamp);
@@ -201,6 +213,15 @@ public interface Checkpointed extends Checkpointable {
 
 
     default boolean isCheckpointIntervalExpired() {
-        return System.nanoTime() >= getLastCheckpointTimeStamp() + getCheckpointInterval();
+        // need to work out what interval we're in. E.g. say the last checkpoint was at 11hrs and we've got an interval
+        // of 3hrs. The checkpoint should have occurred at 9hrs, but was missed due to processing / when checkpoints can
+        // be taken. Therefore, the checkpoint occurred at 11hrs. We still want to checkpoint at 12hrs, otherwise the
+        // pattern of intervals is ever changing. I.e. we want 3hrs, 6hrs, 9hrs, 12hrs, ... or as close to that as
+        // possible. Therefore, we'll work out what interval the last checkpoint time corresponds to (e.g. 11hr
+        // corresponding to the 9hr interval point) and find the next interval point from there (e.g. 9hr + 3hr = 12hr)
+        final long lastCheckpointTimeStamp = getLastCheckpointRunTime();
+        final long checkpointInterval = getCheckpointInterval();
+        final long startTimeStampForMostRecentInterval =  lastCheckpointTimeStamp - lastCheckpointTimeStamp % checkpointInterval;
+        return getRunTime() >= startTimeStampForMostRecentInterval + checkpointInterval;
     }
 }

@@ -9,32 +9,32 @@ import java.util.logging.Logger;
 public class CheckpointConfig implements Serializable, Loggable {
     public CheckpointConfig() {
         setCheckpointInterval(TimeUnit.NANOSECONDS.convert(4, TimeUnit.HOURS));
-        setKeepPastCheckpoints(false);
+        setKeepCheckpoints(false);
         setCheckpointPath(null);
         setLogger(null);
         clear();
     }
 
-    private boolean keepPastCheckpoints;
+    private boolean keepCheckpoints;
     private String checkpointPath;
     private long checkpointInterval;
-    private long lastCheckpointTimeStamp;
+    private long lastCheckpointRunTime;
     private long checkpointLoadTime;
     private long checkpointSaveTime;
     private transient Logger logger;
     
     public void clear() {
-        lastCheckpointTimeStamp = 0;
+        lastCheckpointRunTime = 0;
         checkpointLoadTime = 0;
         checkpointSaveTime = 0;
     }
     
-    public boolean isKeepPastCheckpoints() {
-        return keepPastCheckpoints;
+    public boolean isKeepCheckpoints() {
+        return keepCheckpoints;
     }
 
-    public void setKeepPastCheckpoints(final boolean keepPastCheckpoints) {
-        this.keepPastCheckpoints = keepPastCheckpoints;
+    public void setKeepCheckpoints(final boolean keepCheckpoints) {
+        this.keepCheckpoints = keepCheckpoints;
     }
 
     public String getCheckpointPath() {
@@ -54,12 +54,12 @@ public class CheckpointConfig implements Serializable, Loggable {
         this.checkpointInterval = checkpointInterval;
     }
     
-    public long getLastCheckpointTimeStamp() {
-        return lastCheckpointTimeStamp;
+    public long getLastCheckpointRunTime() {
+        return lastCheckpointRunTime;
     }
 
-    public void setLastCheckpointTimeStamp(final long lastCheckpointTimeStamp) {
-        this.lastCheckpointTimeStamp = lastCheckpointTimeStamp;
+    public void setLastCheckpointRunTime(final long lastCheckpointRunTime) {
+        this.lastCheckpointRunTime = lastCheckpointRunTime;
     }
 
     public long getCheckpointLoadTime() {
