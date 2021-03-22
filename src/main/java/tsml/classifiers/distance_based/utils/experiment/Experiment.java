@@ -17,9 +17,11 @@ import tsml.classifiers.distance_based.utils.system.logging.LogUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import utilities.ClassifierTools;
-import utilities.FileUtils;
 import weka.classifiers.Classifier;
+import weka.core.Instances;
 import weka.core.Randomizable;
 
 import java.io.File;
@@ -31,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static tsml.classifiers.distance_based.utils.system.SysUtils.hostName;
+import static utilities.FileUtils.*;
 import static weka.core.Debug.OFF;
 
 public class Experiment implements Copier {
@@ -61,7 +63,8 @@ public class Experiment implements Copier {
         configs.forEach((Consumer<Config<? extends Classifier>>) this::addClassifierConfig);
     }
     
-    private void benchmark() {
+    private void benchmarkHardware() {
+        log.info("benchmarking hardware");
         // delegate to the benchmarking system from main experiments code. This maintains consistency across benchmarks, but it substantially quicker and therefore less reliable of a benchmark. todo talks to james about merging these
         Experiments.ExperimentalArguments args = new Experiments.ExperimentalArguments();
         args.performTimingBenchmark = true;
@@ -84,18 +87,19 @@ public class Experiment implements Copier {
         new Experiment(args).run();
     }
 
-    private Classifier newClassifier() {
+    private TSClassifier newClassifier() {
         log.info("creating new instance of " + config.getClassifierName());
         final Builder<? extends Classifier> builder = classifierLookup.get(config.getClassifierName());
         if(builder == null) {
             throw new NoSuchElementException(config.getClassifierName() + " not found");
         }
-        return builder.build();
+        return TSClassifier.wrapClassifier(builder.build());
     }
     
     private final Map<String, Builder<? extends Classifier>> classifierLookup = new TreeMap<>();
-    private DatasetSplit split;
-    private Classifier classifier;
+    private TimeSeriesInstances trainData;
+    private TimeSeriesInstances testData;
+    private TSClassifier classifier;
     private final StopWatch timer = new StopWatch();
     private final StopWatch experimentTimer = new StopWatch();
     private final MemoryWatcher memoryWatcher = new MemoryWatcher();
@@ -104,52 +108,85 @@ public class Experiment implements Copier {
     private final Logger log = LogUtils.getLogger(this);
     private ExperimentConfig config;
     private ExperimentConfig previousConfig;
+    private Map<String, FileLock> locks;
+    
+    private void loadData() throws Exception {
+        final Instances[] instances =
+                DatasetLoading.sampleDataset(config.getDataDirPath(), config.getProblemName(), config.getSeed());
+        trainData = Converter.fromArff(instances[0]);
+        testData = Converter.fromArff(instances[1]);
+        // load the data
+        log.info("loading " + config.getProblemName() + " dataset ");
+    }
+    
+    private FileLock getLock(String path) throws FileLock.LockException {
+        FileLock lock = locks.get(path);
+        if(lock == null) {
+            lock = new FileLock(path, false);
+            locks.put(path, lock);
+        }
+        return lock;
+    }
     
     /**
      * Runs the experiment. Make sure all fields have been set prior to this call otherwise Exceptions will be thrown accordingly.
      */
     public void run() throws Exception {
+        locks = new HashMap<>();
         // build the classifier
         classifier = newClassifier();
         // configure the classifier with experiment settings as necessary
         configureClassifier();
-        // load the data
-        log.info("loading " + config.getProblemName() + " dataset ");
-        split = new DatasetSplit(DatasetLoading.sampleDataset(config.getDataDirPath(), config.getProblemName(), config.getSeed()));
-        log.info("benchmarking hardware");
-        benchmark();
+        loadData();
+        benchmarkHardware();
         // reset the memory watchers
         experimentTimer.resetAndStart();
         experimentMemoryWatcher.resetAndStart();
-        for(TimeSpan trainTimeLimit : config.getTrainTimeLimits()) {
+        // iterate over every train time limit
+        final List<TimeSpan> trainTimeLimits = config.getTrainTimeLimits();
+        for(int trainTimeLimitIndex = 0; trainTimeLimitIndex < trainTimeLimits.size(); trainTimeLimitIndex++) {
+            final TimeSpan trainTimeLimit = trainTimeLimits.get(trainTimeLimitIndex);
             config.setTrainTimeLimit(trainTimeLimit);
-            log.info("locking " + config.getLockFilePath());
-            try(FileUtils.FileLock lock = new FileUtils.FileLock(config.getLockFilePath())) {
-                checks();
-                // setup the contract
-                setupTrainTimeContract();
-                // setup checkpointing config
-                setupCheckpointing();
-                // optionally remove the checkpoint now it's copied to a new location
-                optionallyRemoveCheckpoint(previousConfig);
-                // train the classifier
-                train();
-                // test the classifier
-                test();
-                // stop the classifier from rebuilding on next buildClassifier call
-                if(classifier instanceof Rebuildable) {
-                    ((Rebuildable) classifier).setRebuild(false);
-                } else if(config.getTrainTimeLimits().size() > 1) {
-                    log.warning("cannot disable rebuild on " + config.getClassifierNameInResults() + ", therefore it will be rebuilt entirely for every train time contract");
-                }
-                // update the most recent experiment config
-                previousConfig = config.deepCopy();
-            } catch(FileUtils.FileLock.LockException e) {
-                log.severe("failed to lock " + config.getLockFilePath() + ", skipping " + config.getClassifierNameInResults());
+            // attempt to lock the current config and maintain lock on previous
+            final FileLock lock = getLock(config.getResultsDirPath());
+            lock.lock();
+            // run checks to see if files are in order (e.g. results don't exist / can be overwritten)
+            checkTestResultsExistence();
+            checkTrainResultsExistence();
+            // setup the contract
+            setupTrainTimeContract();
+            // setup checkpointing config
+            setupCheckpointing();
+            // copy over any previous checkpoints from previous contracts (and optionally remove previous checkpoint post copy)
+            copyMostRecentCheckpoint(trainTimeLimitIndex);
+            // train the classifier
+            train();
+            // test the classifier
+            test();
+            // stop the classifier from rebuilding on next buildClassifier call
+            if(classifier instanceof Rebuildable) {
+                ((Rebuildable) classifier).setRebuild(false);
+            } else if(config.getTrainTimeLimits().size() > 1) {
+                log.warning("cannot disable rebuild on " + config.getClassifierNameInResults() +
+                                    ", therefore it will be rebuilt entirely for every train time contract");
             }
+            if(trainTimeLimitIndex == trainTimeLimits.size()) {
+                // optionally remove the checkpoint as it's the last one
+                optionallyRemoveCheckpoint(config);
+            }
+            if(config.getTrainTimeLimit() == null) {
+                log.info(config.getClassifierNameInResults() + " experiment complete");
+            } else {
+                log.info(config.getClassifierNameInResults() + " experiment complete under train time contract " + config.getTrainTimeLimit().label());
+            }
+            // release lock
+            lock.unlock();
+            previousConfig = config;
         }
-        // optionally remove the checkpoint now it's copied to a new location
-        optionallyRemoveCheckpoint(config);
+        // clear any previously held locks
+        locks.forEach((k, v) -> v.unlock());
+        locks = null;
+        // experiment complete
         experimentTimer.stop();
         experimentMemoryWatcher.stop();
         log.info("experiment time: " + experimentTimer.toTimeSpan());
@@ -158,10 +195,9 @@ public class Experiment implements Copier {
 
     /**
      * I.e. if we're currently preparing to run a 3h contract and previously a 1h and 2h have been run, we should check the 1h and 2h workspace for checkpoint files. If there are no checkpoint files for 2h but there are for 1h, copy them into the checkpoint dir folder to resume from the 1h contract end point.
-     * @throws FileUtils.FileLock.LockException
      * @throws IOException
      */
-    private void copyMostRecentCheckpoint() throws FileUtils.FileLock.LockException, IOException {
+    private void copyMostRecentCheckpoint(int trainTimeLimitIndex) throws IOException {
         if(isModelFullyBuiltFromPreviousRun()) {
             log.info("skipping setup recent checkpoints for " + config.getClassifierNameInResults() + " as model fully built");
             return;
@@ -173,48 +209,27 @@ public class Experiment implements Copier {
                 return;
             }
             // check whether the checkpoint dir is empty. If not, then we already have a checkpoint to work from, i.e. no need to copy a checkpoint from a lesser contract.
-            if(!FileUtils.isEmptyDir(config.getCheckpointDirPath())) {
-                log.info("checkpoint dir found but empty");
+            if(!isEmptyDir(config.getCheckpointDirPath())) {
+                log.info("checkpoint already exists in " + config.getCheckpointDirPath() + " , not copying from previous train time limit runs");
                 return;
             }
-            // the target train time limit we'll be running next
-            TimeSpan target = config.getTrainTimeLimit();
-            // the nearest traim time limit WITH a checkpoint
-            TimeSpan mostRecentTrainTimeContract = null;
-            // copy this experiment to reconfigure for other contracts
-            final ExperimentConfig otherConfig = config.shallowCopy();
-            // for every train time limit which is less than the target
-            final List<TimeSpan>
-                    timeSpans = config.getTrainTimeLimits().stream().filter(timeSpan -> target.compareTo(timeSpan) > 0).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-            // examine the times in descending order, attempting to locate the most recent checkpoint
-            for(TimeSpan timeSpan : timeSpans) {
-                // set the dummy experiment's ttl
-                otherConfig.setTrainTimeLimit(timeSpan);
-                // lock the checkpoints to ensure we're the only user
-                try(FileUtils.FileLock lock = new FileUtils.FileLock(otherConfig.getLockFilePath())) {
-                    // if the checkpoint dir is empty then there's no usable checkpoints
-                    if(!FileUtils.isEmptyDir(otherConfig.getCheckpointDirPath())) {
-                        // otherwise this is the most recent usable checkpoint, no need to keep searching
-                        mostRecentTrainTimeContract = timeSpan;
-                        break;
-                    }
-                } catch(Exception e) {
-                    // failed to lock the checkpoint dir, in use by another process.Continue looking for other checkpoints
-                }
-            }
-            // if a previous checkpoint has been located, copy the contents into the checkpoint dir for this contract time run
-            if(mostRecentTrainTimeContract != null) {
-                log.info("checkpoint found in " + otherConfig.getClassifierNameInResults() + " workspace");
-                final String src = otherConfig.getCheckpointDirPath();
+            // if the checkpoint dir is empty then there's no usable checkpoints
+            final FileLock lock = getLock(previousConfig.getResultsDirPath());
+            lock.lock();
+            if(!isEmptyDir(previousConfig.getCheckpointDirPath())) {
+                // if a previous checkpoint has been located, copy the contents into the checkpoint dir for this contract time run
+                log.info("checkpoint found in " + previousConfig.getClassifierNameInResults() + " workspace");
+                final String src = previousConfig.getCheckpointDirPath();
                 final String dest = config.getCheckpointDirPath();
-                log.info("coping checkpoint contents from " + src + " to " + dest);
-                FileUtils.makeDir(config.getCheckpointDirPath());
-                FileUtils.copy(src, dest);
+                log.info("copying checkpoint contents from " + src + " to " + dest);
+                makeDir(config.getCheckpointDirPath());
+                copy(src, dest);
                 // optionally remove the checkpoint now it's copied to a new location
-                optionallyRemoveCheckpoint(otherConfig);
+                optionallyRemoveCheckpoint(previousConfig);
             } else {
                 log.info("no checkpoints found from previous contracts");
             }
+            lock.unlock();
         }
     }
     
@@ -349,7 +364,7 @@ public class Experiment implements Copier {
             String dest = config.getTrainFilePath();
             if(Files.exists(Paths.get(src))) {
                 log.info("copying " + src + " to " + dest);
-                FileUtils.copy(src, dest);
+                copy(src, dest);
             }
             return;
         }
@@ -358,14 +373,8 @@ public class Experiment implements Copier {
         timer.start();
         memoryWatcher.start();
         // prompt garbage collection to provide a clean slate before building
-        System.gc();
-        if(classifier instanceof TSClassifier) {
-            ((TSClassifier) classifier).buildClassifier(split.getTrainDataTS());
-        } else {
-            classifier.buildClassifier(split.getTrainDataArff());
-        }
+        classifier.buildClassifier(trainData);
         // prompt garbage collection to obtain at least one memory usage reading during training
-        System.gc();
         timer.stop();
         memoryWatcher.stop();
         log.info("train time: " + timer.toTimeSpan());
@@ -373,7 +382,7 @@ public class Experiment implements Copier {
         // if estimating the train error then write out train results
         if(config.isEvaluateClassifier()) {
             final ClassifierResults trainResults = ((TrainEstimateable) classifier).getTrainResults();
-            ResultUtils.setInfo(trainResults, classifier, split.getTrainDataArff()); // todo change to ts
+            ResultUtils.setInfo(trainResults, classifier, trainData);
             setResultInfo(trainResults);
             setTrainTime(trainResults, timer);
             setMemory(trainResults, memoryWatcher);
@@ -395,7 +404,7 @@ public class Experiment implements Copier {
             String src = previousConfig.getTestFilePath();
             String dest = config.getTestFilePath();
             log.info("copying " + src + " to " + dest);
-            FileUtils.copy(src, dest);
+            copy(src, dest);
             return;
         }
         // test the classifier
@@ -403,40 +412,24 @@ public class Experiment implements Copier {
         timer.resetAndStart();
         memoryWatcher.resetAndStart();
         final ClassifierResults testResults = new ClassifierResults();
-        // todo change to ts
-        //            if(classifier instanceof TSClassifier) {
-        //                ClassifierTools.addPredictions((TSClassifier) classifier, split.getTestDataTS(), testResults, new Random(seed));
-        //            } else {
-        ClassifierTools.addPredictions(classifier, split.getTestDataArff(), testResults, new Random(config.getSeed()));
-        //            }
+        ClassifierTools.addPredictions(classifier, testData, testResults, new Random(config.getSeed()));
         timer.stop();
         memoryWatcher.stop();
         log.info("test time: " + timer.toTimeSpan());
         log.info("test mem: " + memoryWatcher.getMaxMemoryUsage());
-        ResultUtils.setInfo(testResults, classifier, split.getTrainDataArff()); // todo ts version
+        ResultUtils.setInfo(testResults, classifier, trainData);
         setResultInfo(testResults);
         setTrainTime(testResults, timer);
         setMemory(testResults, memoryWatcher);
         log.info("test results: ");
         log.info(testResults.writeSummaryResultsToString());
         writeResults("test", testResults, config.getTestFilePath());
-        if(config.getTrainTimeLimit() == null) {
-            log.info(config.getClassifierNameInResults() + " experiment complete");
-        } else {
-            log.info(config.getClassifierNameInResults() + " experiment complete under train time contract " + config.getTrainTimeLimit().label());
-        }
     }
     
-    private void checks() {
-        checkTestResultsExistence();
-        checkTrainResultsExistence();
-    }
-    
-    private void setupCheckpointing() throws FileUtils.FileLock.LockException, IOException {
+    private void setupCheckpointing() throws IOException {
         if(config.isCheckpoint()) {
             if(classifier instanceof Checkpointable) {
                 // the copy over the most suitable checkpoint from another run if exists
-                copyMostRecentCheckpoint();
                 log.info("setting checkpoint path for " + config.getClassifierName() + " to " + config.getCheckpointDirPath());
                 ((Checkpointable) classifier).setCheckpointPath(config.getCheckpointDirPath());
             } else {
@@ -464,12 +457,11 @@ public class Experiment implements Copier {
         if(config.isCheckpoint()) {
             // optionally remove the checkpoint
             if(config.isRemoveCheckpoint()) {
-                try(FileUtils.FileLock lock = new FileUtils.FileLock(config.getLockFilePath())) {
-                    log.info("deleting checkpoint at " + config.getCheckpointDirPath());
-                    FileUtils.delete(config.getCheckpointDirPath());
-                } catch(Exception e) {
-                    throw new IllegalStateException(e);
-                }
+                log.info("deleting checkpoint at " + config.getCheckpointDirPath());
+                final FileLock lock = getLock(config.getCheckpointDirPath());
+                lock.lock();
+                delete(config.getCheckpointDirPath());
+                lock.unlock();
             }
         }
     }

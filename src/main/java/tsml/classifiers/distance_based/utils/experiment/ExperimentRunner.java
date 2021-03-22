@@ -13,7 +13,7 @@ public class ExperimentRunner {
 //        );
 
         String cmd =
-                " -d /bench/phd/data/all_2019 -p GunPoint -r results -c PF_R5_OOB -s 0 -m 4000 -t 1  -l ALL -e --cp --rcp";
+                " -d /bench/phd/data/all_2019 -p Phoneme -r results -c PF_R5_OOB -s 0 -m 8000 -t 1  -l ALL -e --cp --rcp";
         cmd = cmd.trim();
         args = cmd.split(" ");
         Experiment.main(args);

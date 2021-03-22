@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameter;
 import org.junit.Assert;
 import tsml.classifiers.distance_based.utils.system.copy.Copier;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import utilities.FileUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +46,10 @@ public class ExperimentConfig implements Copier {
 
     @Parameter(names = {"--scp", "--snapshotCheckpoints"}, description = "Keep every checkpoint as a snapshot of the classifier model at that point in time. When disabled, classifiers overwrite their last checkpoint. When enabled, classifiers will write checkpoints with a time stamp rather than overwriting previous checkpoints. Default: off")
     private boolean snapshotCheckpoints = false;
+
+    public String getMemory() {
+        return memory;
+    }
 
 
     private static class TimeSpanConverter implements IStringConverter<TimeSpan> {
@@ -117,7 +122,7 @@ public class ExperimentConfig implements Copier {
         }
         Assert.assertFalse(trainTimeLimits.isEmpty());
     }
-
+    
     public String getClassifierName() {
         return classifierName;
     }
