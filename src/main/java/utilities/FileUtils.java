@@ -198,6 +198,7 @@ public class FileUtils {
                         thread = new Thread(this::watch);
                         thread.setDaemon(true);
                         thread.start();
+                        lockCount++;
                         return this;
                     } else {
                         long lastModified = lockFile.lastModified();
