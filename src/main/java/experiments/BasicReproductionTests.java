@@ -354,11 +354,8 @@ public class BasicReproductionTests {
         System.out.println("--confirmAllExpectedResultReproductions()");
 
         File[] expectedResults = FileHandlingTools.listFiles(reproductionDirectory);
-        if (expectedResults == null) {
+        if (expectedResults == null)
             throw new Exception("No expected results saved to compare to, dir="+reproductionDirectory);
-        }
-
-        Arrays.sort(expectedResults, Comparator.comparingLong(File::lastModified).reversed());
         
         List<String> failedClassifiers = new ArrayList<>();
         
