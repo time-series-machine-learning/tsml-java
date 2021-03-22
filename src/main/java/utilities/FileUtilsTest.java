@@ -27,7 +27,7 @@ public class FileUtilsTest {
         Assert.assertTrue(lock.getLockFile().exists());
         Assert.assertEquals(1, lock.getLockCount());
         lock.unlock();
-        Assert.assertTrue(lock.getLockFile().exists());
+        Assert.assertFalse(lock.getLockFile().exists());
         Assert.assertEquals(0, lock.getLockCount());
     }
 }
