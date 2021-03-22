@@ -135,7 +135,7 @@ public class FileUtils {
     }
 
     public static class FileLock implements AutoCloseable {
-        public static class LockException extends Exception {
+        public static class LockException extends RuntimeException {
 
             public LockException(String s) {
                 super(s);
@@ -148,6 +148,11 @@ public class FileUtils {
         private static final long interval = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
         private static final long expiredInterval = interval + TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
         private final AtomicBoolean unlocked = new AtomicBoolean(true);
+        private int lockCount = 0;
+
+        public int getLockCount() {
+            return lockCount;
+        }
 
         public File getFile() {
             return file;
@@ -157,7 +162,11 @@ public class FileUtils {
             return lockFile;
         }
 
-        private FileLock(File file, boolean lock) throws LockException {
+        public FileLock(String path, boolean lock) {
+            this(new File(path), lock);
+        }
+        
+        public FileLock(File file, boolean lock) {
             this.file = file;
             this.lockFile = new File(file.getPath() + ".lock");
             if(lock) {
@@ -165,16 +174,16 @@ public class FileUtils {
             }
         }
 
-        public FileLock(File file) throws LockException {
+        public FileLock(File file) {
             // assume we want to lock the file asap
             this(file, true);
         }
 
-        public FileLock(String path) throws LockException {
+        public FileLock(String path) {
             this(new File(path));
         }
 
-        private FileLock lock() throws LockException {
+        public FileLock lock() {
             if(isUnlocked()) {
                 makeParentDir(lockFile);
                 boolean stop = false;
@@ -201,6 +210,7 @@ public class FileUtils {
                 }
                 throw new LockException("failed to lock file: " + file.getPath());
             }
+            lockCount++;
             return this;
         }
 
@@ -222,17 +232,22 @@ public class FileUtils {
         }
 
         public FileLock unlock() {
-            unlocked.set(true);
-            if(thread != null) {
-                thread.interrupt();
-                do {
-                    try {
-                        thread.join();
-                    } catch(InterruptedException ignored) {
+            lockCount--;
+            if(lockCount == 0) {
+                unlocked.set(true);
+                if(thread != null) {
+                    thread.interrupt();
+                    do {
+                        try {
+                            thread.join();
+                        } catch(InterruptedException ignored) {
 
-                    }
-                } while(thread.isAlive());
-                thread = null;
+                        }
+                    } while(thread.isAlive());
+                    thread = null;
+                }
+            } else if(lockCount < 0) {
+                throw new LockException(file.getPath() + " already unlocked");
             }
             return this;
         }
