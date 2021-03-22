@@ -135,21 +135,27 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @param problemName
+     * Sets the problem name to the one passed.
+     *
+     * @param problemName to set
      */
     public void setProblemName(String problemName) {
         this.problemName = problemName;
     }
 
     /**
-     * @return String
+     * Returns the description of the data if set, or null if not.
+     *
+     * @return description of data
      */
     public String getDescription() {
         return description;
     }
 
     /**
-     * @param description
+     * Sets the description of the data.
+     *
+     * @param description of data
      */
     public void setDescription(String description) {
         this.description = description;
@@ -296,24 +302,32 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @return String[]
+     * Returns a String array containing the class labels.
+     *
+     * @return array containing class labels
      */
     public String[] getClassLabels() {
         return classLabels;
     }
 
     /**
-     * @return String
+     * Returns a string containing all of the class labels separated by a space.
+     *
+     * @return class labels formatted
      */
     public String getClassLabelsFormatted() {
-        String output = " ";
+        StringBuilder output = new StringBuilder(" ");
+
         for (String s : classLabels)
-            output += s + " ";
-        return output;
+            output.append(s).append(" ");
+
+        return output.toString();
     }
 
     /**
-     * @return int[]
+     * Returns an array containing the counter of each class.
+     *
+     * @return an array of class counts
      */
     public int[] getClassCounts() {
         calculateClassCounts();
@@ -321,7 +335,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @param newSeries
+     * Adds a new TimeSeriesInstance to the data.
+     *
+     * @param newSeries to add
      */
     public void add(final TimeSeriesInstance newSeries) {
         seriesCollection.add(newSeries);
@@ -368,7 +384,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @return double[][][]
+     * Returns a 3d array, first index is which instance, 2nd index is which
+     * dimension in the instance, 3rd index is the array of values in that dimension.
+     *
+     * @return values in 3d array format
      */
     public double[][][] toValueArray() {
         final double[][][] output = new double[seriesCollection.size()][][];
@@ -380,7 +399,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @return int[]
+     * Returns an array containing each class index.
+     *
+     * @return array of class indexes
      */
     public int[] getClassIndexes() {
         int[] out = new int[numInstances()];
@@ -392,10 +413,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @param index
-     * @return double[]
+     * Returns an array containing the value(s) from each instance at the index
+     * passed.
+     *
+     * Assumes equal number of dimensions.
+     *
+     * @param index to get data from
+     * @return array of values at index
      */
-    //assumes equal numbers of channels
     public double[] getVSliceArray(int index) {
         double[] out = new double[numInstances() * seriesCollection.get(0).getNumDimensions()];
         int i = 0;
@@ -408,19 +433,23 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-
     /**
-     * @param indexesToKeep
-     * @return List<List < List < Double>>>
+     * Returns a 3d List containing the values at the indexes passes from each
+     * instance, including all dimensions within each instance.
+     *
+     * @param indexesToKeep to get
+     * @return 3d list of values at indexes passed
      */
     public List<List<List<Double>>> getVSliceList(int[] indexesToKeep) {
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-
     /**
-     * @param indexesToKeep
-     * @return List<List < List < Double>>>
+     * Returns a 3d List containing the values at the indexes passes from each
+     * instance, including all dimensions within each instance.
+     *
+     * @param indexesToKeep to get
+     * @return 3d list of values at indexes passed
      */
     public List<List<List<Double>>> getVSliceList(List<Integer> indexesToKeep) {
         List<List<List<Double>>> out = new ArrayList<>(numInstances());
@@ -431,19 +460,23 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-
     /**
-     * @param indexesToKeep
-     * @return double[][][]
+     * Returns a 3d array containing the values at the indexes passes from each
+     * instance, including all dimensions within each instance.
+     *
+     * @param indexesToKeep to get
+     * @return 3d array of values at indexes passed
      */
     public double[][][] getVSliceArray(int[] indexesToKeep) {
         return getVSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
 
-
     /**
-     * @param indexesToKeep
-     * @return double[][][]
+     * Returns a 3d array containing the values at the indexes passes from each
+     * instance, including all dimensions within each instance.
+     *
+     * @param indexesToKeep to get
+     * @return 3d array of values at indexes passed
      */
     public double[][][] getVSliceArray(List<Integer> indexesToKeep) {
         double[][][] out = new double[numInstances()][][];
@@ -455,22 +488,25 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-
     /**
-     * @param dim
-     * @return double[][]
+     * Returns a 2d array containing the values at each instance at the dimension
+     * passed. e.g. passing '2' will give the values from each instance at the 3rd
+     * dimension.
+     *
+     * Assumes equal number of dimensions.
+     *
+     * @param dimensionToKeep to get
+     * @return 2d array of values
      */
-    //assumes equal numbers of channels
-    public double[][] getHSliceArray(int dim) {
+    public double[][] getHSliceArray(int dimensionToKeep) {
         double[][] out = new double[numInstances()][];
         int i = 0;
         for (TimeSeriesInstance inst : seriesCollection) {
             // if the index isn't always valid, populate with NaN values.
-            out[i++] = inst.getHSliceArray(dim);
+            out[i++] = inst.getHSliceArray(dimensionToKeep);
         }
         return out;
     }
-
 
     /**
      * @param indexesToKeep
@@ -479,7 +515,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public List<List<List<Double>>> getHSliceList(int[] indexesToKeep) {
         return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
-
 
     /**
      * @param indexesToKeep
@@ -494,7 +529,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-
     /**
      * @param indexesToKeep
      * @return double[][][]
@@ -502,7 +536,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     public double[][][] getHSliceArray(int[] indexesToKeep) {
         return getHSliceArray(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
     }
-
 
     /**
      * @param indexesToKeep
@@ -518,7 +551,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return out;
     }
 
-
     /**
      * @param i
      * @return TimeSeriesInstance
@@ -527,14 +559,12 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return seriesCollection.get(i);
     }
 
-
     /**
      * @return List<TimeSeriesInstance>
      */
     public List<TimeSeriesInstance> getAll() {
         return seriesCollection;
     }
-
 
     /**
      * @return int
