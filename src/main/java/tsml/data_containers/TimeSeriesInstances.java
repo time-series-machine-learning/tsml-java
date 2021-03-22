@@ -509,11 +509,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     /**
-     * @param indexesToKeep
-     * @return List<List < List < Double>>>
+     * Returns a 3d list containing the values for each instance, at the
+     * dimensions passed. e.g. '[0, 1]' would return the values for every instance
+     * at the first and second dimensions.
+     *
+     * @param dimensionToKeep to get
+     * @return 3d list of values
      */
-    public List<List<List<Double>>> getHSliceList(int[] indexesToKeep) {
-        return getVSliceList(Arrays.stream(indexesToKeep).boxed().collect(Collectors.toList()));
+    public List<List<List<Double>>> getHSliceList(int[] dimensionToKeep) {
+        return getHSliceList(Arrays.stream(dimensionToKeep).boxed().collect(Collectors.toList()));
     }
 
     /**
