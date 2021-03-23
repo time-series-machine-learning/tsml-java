@@ -18,6 +18,7 @@
 package tsml.classifiers.distance_based.distances.dtw;
 
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
@@ -48,7 +49,7 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
     private double window = 1;
 
     @Override public void setWindow(final double window) {
-        this.window = Utilities.requirePercentage(window);
+        this.window = Checks.requireUnitInterval(window);
     }
 
     @Override public double getWindow() {

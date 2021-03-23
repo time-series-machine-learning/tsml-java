@@ -456,9 +456,6 @@ public class Experiments  {
         //Build/make the directory to write the train and/or testFold files to
         // [writeLoc]/[classifier]/Predictions/[dataset]/
         String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
-        if(expSettings.embedContractInClassifierName) {
-            fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "_" + expSettings.contractTrainTimeString + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
-        }
         File f = new File(fullWriteLocation);
         if (!f.exists())
             f.mkdirs();
@@ -478,13 +475,8 @@ public class Experiments  {
         // user sets a supporting path for the 'master' exp, each generated exp to be run threaded inherits that path,
         // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
         // going to be the case; supply a path and everything will be written there
-        if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals("")) {
+        if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
             expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
-            if(expSettings.embedContractInClassifierName) {
-                expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "_" + expSettings.contractTrainTimeString + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
-            }
-
-        }
 
         f = new File(expSettings.supportingFilePath);
         if (!f.exists())
@@ -1017,17 +1009,6 @@ public class Experiments  {
 
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
-        
-        @Parameter(names={"-threads"}, arity = 1, description = "The number of threads to run on")
-        public int threads = 1;
-
-        @Parameter(names={"-mem"}, arity = 1, description = "The amount of mem to run on")
-        public String mem = null;
-
-
-        @Parameter(names={"-ectr"}, arity = 1, description = "Embed the train contract time string into the classifer name in the results dir")
-        public boolean embedContractInClassifierName = false;
-        
         //REQUIRED PARAMETERS
         @Parameter(names={"-dp","--dataPath"}, required=true, order=0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
                 + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
@@ -1313,7 +1294,7 @@ public class Experiments  {
             }
 
             if(logLevelStr != null) {
-                logLevel = Level.parse(logLevelStr.toUpperCase());
+                logLevel = Level.parse(logLevelStr);
             }
         }
 

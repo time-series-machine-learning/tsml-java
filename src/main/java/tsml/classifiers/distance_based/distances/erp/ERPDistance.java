@@ -19,6 +19,7 @@ package tsml.classifiers.distance_based.distances.erp;
 
 import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.dtw.DTW;
+import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
@@ -185,6 +186,6 @@ public class ERPDistance extends MatrixBasedDistanceMeasure {
     }
 
     public void setWindow(final double window) {
-        this.window = Utilities.requirePercentage(window);
+        this.window = Checks.requireUnitInterval(window);
     }
 }
