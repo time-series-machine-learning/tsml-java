@@ -47,7 +47,6 @@ public class StopWatchTest {
         busyWait(delay);
         stopWatch.stop();
         final long l = stopWatch.elapsedTime();
-        System.out.println(l);
         // should be at least delay of time elapsed
         Assert.assertTrue(l >= delay);
         // should be somewhere less than delay*2 elapsed. This varies from machine to machine, so the test is not very
