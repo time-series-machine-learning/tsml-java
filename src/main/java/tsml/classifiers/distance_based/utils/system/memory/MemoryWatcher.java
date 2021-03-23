@@ -51,7 +51,7 @@ public class MemoryWatcher extends Stated implements MemoryWatchable {
         int i = 0;
         while(true) {
             i++;
-            Utilities.sleep(1);
+            Utilities.busyWait(1000000);
             list.add(new double[1000]);
 //            System.out.println(list.size());
             if(i % 10 == 0) {

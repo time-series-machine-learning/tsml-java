@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 
-import static utilities.Utilities.sleep;
+import static utilities.Utilities.busyWait;
 
 public class StopWatchTest {
 
@@ -44,12 +44,15 @@ public class StopWatchTest {
     @Test
     public void testElapsedTime() {
         stopWatch.start();
-        sleep(delayMillis);
+        busyWait(delay);
         stopWatch.stop();
         final long l = stopWatch.elapsedTime();
         System.out.println(l);
+        // should be at least delay of time elapsed
         Assert.assertTrue(l >= delay);
-        Assert.assertTrue(l <= delay + tolerance);
+        // should be somewhere less than delay*2 elapsed. This varies from machine to machine, so the test is not very
+        // stringent on tolerance
+        Assert.assertTrue(l <= delay * 2);
     }
     
     @Test
@@ -64,7 +67,7 @@ public class StopWatchTest {
 
 
         stopWatch.resetAndStart();
-        sleep(delayMillis);
+        busyWait(delay);
         stopWatch.stop();
         timeStamp = stopWatch.timeStamp();
         other = CopierUtils.deserialise(CopierUtils.serialise(stopWatch));
@@ -104,7 +107,7 @@ public class StopWatchTest {
     @Test
     public void testResetTime() {
         stopWatch.start();
-        sleep(delayMillis);
+        busyWait(delay);
         Assert.assertNotEquals(stopWatch.elapsedTime(), 0);
         stopWatch.stop();
         stopWatch.resetElapsedTime();
@@ -124,7 +127,7 @@ public class StopWatchTest {
     public void testStop() {
         stopWatch.start();
         long startTime = stopWatch.elapsedTime();
-        sleep(delayMillis);
+        busyWait(delay);
         Assert.assertTrue(stopWatch.isStarted());
         stopWatch.stop();
         long stopTime = stopWatch.elapsedTime();
@@ -184,6 +187,5 @@ public class StopWatchTest {
     
     private final long tolerance = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS);
     
-    private final long delayMillis = 100;
-    private final long delay = TimeUnit.NANOSECONDS.convert(delayMillis, TimeUnit.MILLISECONDS);
+    private final long delay = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
 }

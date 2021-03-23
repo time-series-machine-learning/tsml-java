@@ -36,11 +36,10 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
-    public static void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch(InterruptedException e) {
-            throw new IllegalStateException(e);
+    public static void busyWait(long nanos) {
+        final long timeStamp = System.nanoTime();
+        while(System.nanoTime() - timeStamp < nanos) {
+            // busy wait
         }
     }
     
