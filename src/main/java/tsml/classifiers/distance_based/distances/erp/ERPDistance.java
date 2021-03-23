@@ -51,8 +51,8 @@ public class ERPDistance extends MatrixBasedDistanceMeasure {
         double sum = 0;
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final TimeSeries aDim = a.get(i);
-            final Double aValue = aDim.get(aIndex);
-            final double sqDiff = Math.pow(aValue - g, 2);
+            final double aValue = aDim.get(aIndex);
+            final double sqDiff = StrictMath.pow(aValue - g, 2);
             sum += sqDiff;
         }
         return sum;
@@ -63,9 +63,9 @@ public class ERPDistance extends MatrixBasedDistanceMeasure {
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final TimeSeries aDim = a.get(i);
             final TimeSeries bDim = b.get(i);
-            final Double aValue = aDim.get(aIndex);
-            final Double bValue = bDim.get(bIndex);
-            final double sqDiff = Math.pow(aValue - bValue, 2);
+            final double aValue = aDim.get(aIndex);
+            final double bValue = bDim.get(bIndex);
+            final double sqDiff = StrictMath.pow(aValue - bValue, 2);
             sum += sqDiff;
         }
         return sum;

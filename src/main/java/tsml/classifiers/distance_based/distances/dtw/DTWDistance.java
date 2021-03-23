@@ -40,7 +40,7 @@ public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
             final TimeSeries bDim = b.get(i);
             final double aValue = aDim.get(aIndex);
             final double bValue = bDim.get(bIndex);
-            final double sqDiff = Math.pow(aValue - bValue, 2);
+            final double sqDiff = StrictMath.pow(aValue - bValue, 2);
             sum += sqDiff;
         }
         return sum;
