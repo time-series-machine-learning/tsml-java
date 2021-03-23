@@ -27,6 +27,8 @@ import utilities.Utilities;
 
 import java.util.Arrays;
 
+import static utilities.Utilities.pow;
+
 /**
  * ERP distance measure.
  * <p>

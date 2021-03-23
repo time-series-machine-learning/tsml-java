@@ -25,6 +25,8 @@ import utilities.ArrayUtilities;
 
 import java.util.Arrays;
 
+import static utilities.Utilities.pow;
+
 /**
  * TWED distance measure.
  * <p>
