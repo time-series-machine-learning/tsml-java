@@ -25,6 +25,8 @@ import utilities.ArrayUtilities;
 
 import java.util.Arrays;
 
+import static utilities.Utilities.pow;
+
 /**
  * TWED distance measure.
  * <p>
@@ -44,9 +46,9 @@ public class TWEDistance
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final TimeSeries aDim = a.get(i);
             final TimeSeries bDim = b.get(i);
-            final Double aValue = aDim.get(aIndex);
-            final Double bValue = bDim.get(bIndex);
-            final double sqDiff = Math.pow(aValue - bValue, 2);
+            final double aValue = aDim.get(aIndex);
+            final double bValue = bDim.get(bIndex);
+            final double sqDiff = StrictMath.pow(aValue - bValue, 2);
             sum += sqDiff;
         }
         return sum;
@@ -56,8 +58,8 @@ public class TWEDistance
         double sum = 0;
         for(int i = 0; i < a.getNumDimensions(); i++) {
             final TimeSeries aDim = a.get(i);
-            final Double aValue = aDim.get(aIndex);
-            final double sq = Math.pow(aValue, 2);
+            final double aValue = aDim.get(aIndex);
+            final double sq = StrictMath.pow(aValue, 2);
             sum += sq;
         }
         return sum;
