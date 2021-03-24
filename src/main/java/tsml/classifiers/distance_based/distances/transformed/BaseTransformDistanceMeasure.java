@@ -24,91 +24,103 @@ Contributors: goastler
     
 */
 
-import org.junit.Assert;
 import tsml.classifiers.distance_based.distances.BaseDistanceMeasure;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.distances.DistanceMeasure;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import tsml.transformers.TrainableTransformer;
+import tsml.data_containers.TimeSeriesInstance;
 import tsml.transformers.Transformer;
-import weka.core.DistanceFunction;
 import weka.core.Instance;
-import weka.core.Instances;
+
+import java.util.Objects;
 
 public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements TransformDistanceMeasure {
 
     public BaseTransformDistanceMeasure(String name, Transformer transformer,
-                                        DistanceFunction distanceFunction) {
-        setName(name);
-        setDistanceFunction(distanceFunction);
+                                        DistanceMeasure distanceMeasure) {
+        setDistanceMeasure(distanceMeasure);
         setTransformer(transformer);
+        setName(name);
     }
 
     public BaseTransformDistanceMeasure() {
-        this("", null, new EDistance());
-        setName(getClass().getSimpleName());
+        this(null, null, new EDistance());
+    }
+    
+    public BaseTransformDistanceMeasure(String name) {
+        this(name, null, new EDistance());
     }
 
     public static final String TRANSFORMER_FLAG = "t";
-    private DistanceFunction distanceFunction;
+    private DistanceMeasure distanceMeasure;
     private Transformer transformer;
+    private String name;
+
+    @Override public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        if(name == null) {
+            name = distanceMeasure.getName();
+            if(transformer != null) {
+                name = transformer.getClass().getSimpleName() + "_" + name;
+            }
+        }
+        this.name = name;
+    }
 
     @Override public boolean isSymmetric() {
-        return (distanceFunction instanceof DistanceMeasure && ((DistanceMeasure) distanceFunction).isSymmetric());
+        return distanceMeasure.isSymmetric();
     }
-
-    private static Instance transform(Transformer transformer, Instance instance) {
-        if(transformer == null) {
-            return instance;
-        } else {
-            return transformer.transform(instance);
+    
+    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        return transform(inst, true);
+    }
+    
+    public TimeSeriesInstance transform(TimeSeriesInstance inst, boolean transform) {
+        if(transform) {
+            if(transformer != null) {
+                inst = transformer.transform(inst);
+            }
         }
+        return inst;
     }
-
-    @Override
-    public double findDistance(final Instance a, final Instance b, final double limit) {
+    
+    public double distance(final TimeSeriesInstance a, final boolean transformA, final TimeSeriesInstance b, final boolean transformB, final double limit) {
         try {
-            final Instance at = transform(transformer, a);
+            // users must call fit method on transformer if required before calling distance
+            final TimeSeriesInstance at = transform(a, transformA);
             // need to take the interval here, before the transform
-            final Instance bt = transform(transformer, b);
-            return distanceFunction.distance(at, bt, limit);
+            final TimeSeriesInstance bt = transform(b, transformB);
+            return distanceMeasure.distance(at, bt, limit);
         } catch(Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
-    @Override
-    public void setInstances(Instances data) {
-        super.setInstances(data);
-        distanceFunction.setInstances(data);
-        if(transformer != null) {
-            if(transformer instanceof TrainableTransformer) {
-                ((TrainableTransformer) transformer).fit(data);
-            }
-        }
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
     }
 
-    public DistanceFunction getDistanceFunction() {
-        return distanceFunction;
-    }
-
-    public void setDistanceFunction(DistanceFunction distanceFunction) {
-        Assert.assertNotNull(distanceFunction);
-        this.distanceFunction = distanceFunction;
+    public void setDistanceMeasure(DistanceMeasure distanceMeasure) {
+        this.distanceMeasure = Objects.requireNonNull(distanceMeasure);
     }
 
     @Override public ParamSet getParams() {
         final ParamSet paramSet = super.getParams();
         paramSet.add(TRANSFORMER_FLAG, transformer);
-        paramSet.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceFunction);
+        paramSet.add(DistanceMeasure.DISTANCE_MEASURE_FLAG, distanceMeasure);
         return paramSet;
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, TRANSFORMER_FLAG, this::setTransformer, Transformer.class);
-        ParamHandlerUtils.setParam(param, DISTANCE_MEASURE_FLAG, this::setDistanceFunction, DistanceFunction.class);
+        setTransformer(param.get(TRANSFORMER_FLAG, transformer));
+        setDistanceMeasure(param.get(DISTANCE_MEASURE_FLAG, distanceMeasure));
         super.setParams(param);
     }
 
@@ -120,4 +132,7 @@ public class BaseTransformDistanceMeasure extends BaseDistanceMeasure implements
         transformer = a;
     }
 
+    @Override public String toString() {
+        return getName() + " " + distanceMeasure.getParams();
+    }
 }

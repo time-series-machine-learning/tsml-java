@@ -29,7 +29,6 @@ import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
-import tsml.classifiers.distance_based.knn.KNNLOOCV;
 import tsml.classifiers.early_classification.*;
 import tsml.classifiers.hybrids.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
@@ -116,7 +115,7 @@ public class ClassifierLists {
         switch(classifier) {
             case "1NN-ED":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new EDistance());
+                ((KNN) c).setDistanceMeasure(new EDistance());
                 break;
             case "1NN-DTW":
                 c = new DTW_kNN();
@@ -128,38 +127,35 @@ public class ClassifierLists {
                 break;
             case "1NN-DTW_New":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new DTWDistance());
+                ((KNN) c).setDistanceMeasure(new DTWDistance());
                 break;
             case "1NN-MSM":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new MSMDistance());
+                ((KNN) c).setDistanceMeasure(new MSMDistance());
                 break;
             case "1NN-ERP":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new ERPDistance());
+                ((KNN) c).setDistanceMeasure(new ERPDistance());
                 break;
             case "1NN-LCSS":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new LCSSDistance());
+                ((KNN) c).setDistanceMeasure(new LCSSDistance());
                 break;
             case "1NN-WDTW":
                 c = new KNN();
-                ((KNN) c).setDistanceFunction(new WDTWDistance());
+                ((KNN) c).setDistanceMeasure(new WDTWDistance());
                 break;
             case "1NN-DTWCV":
                 c = new DTWCV();
                 break;
             case "EE":
-                c = ElasticEnsemble.FACTORY.EE_V2.build();
+                c = ElasticEnsemble.CONFIGS.get(classifier).build();
                 break;
             case "LEE":
-                c = ElasticEnsemble.FACTORY.LEE.build();
+                c = ElasticEnsemble.CONFIGS.get(classifier).build();
                 break;
             case "ApproxElasticEnsemble":
                 c = new ApproxElasticEnsemble();
-                break;
-            case "ProximityForest": case "PF":
-                c = new ProximityForestWrapper();
                 break;
             case "FastElasticEnsemble":
                 c=new FastElasticEnsemble();
@@ -620,7 +616,7 @@ public class ClassifierLists {
                 c = new BayesNet();
                 break;
             case "ED":
-                c= KNNLOOCV.FACTORY.ED_1NN_V1.build();
+                c= KNN.CONFIGS.get(classifier).build();
                 break;
             case "C45":
                 c=new J48();

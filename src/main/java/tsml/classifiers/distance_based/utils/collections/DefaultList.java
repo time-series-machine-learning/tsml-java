@@ -40,8 +40,19 @@ public interface DefaultList<A>
     }
 
     @Override default Iterator<A> iterator() {
+        return new Iterator<A>() {
+            
+            private int i = 0;
+            private int size = size();
+            
+            @Override public boolean hasNext() {
+                return i < size;
+            }
 
-        throw new UnsupportedOperationException("default method not implemented");
+            @Override public A next() {
+                return get(i++);
+            }
+        };
     }
 
     @Override default Object[] toArray() {
@@ -65,7 +76,10 @@ public interface DefaultList<A>
     }
 
     @Override default boolean addAll(final Collection<? extends A> collection) {
-        throw new UnsupportedOperationException("default method not implemented");
+        for(A item : collection) {
+            add(item);
+        }
+        return true;
     }
 
     @Override default boolean addAll(final int i, final Collection<? extends A> collection) {

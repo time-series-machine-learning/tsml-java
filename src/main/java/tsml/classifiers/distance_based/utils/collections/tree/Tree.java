@@ -18,23 +18,57 @@
 package tsml.classifiers.distance_based.utils.collections.tree;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.List;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ *
+ *  Purpose: a tree data structure. Imposes no ideology regarding context of nodes, e.g. sorted / balanced, etc. 
+ *  This solely provide structural implementation and leave the responsibility of maintaining a coherent context to 
+ *  an implementing class.
  * <p>
  * Contributors: goastler
  */
 
-public interface Tree<A> extends Serializable, Collection<TreeNode<A>> {
+public interface Tree<A> extends Serializable, List<A> {
 
     TreeNode<A> getRoot();
 
     void setRoot(TreeNode<A> root);
 
-    int size();
+    /**
+     * Return the number of nodes in the tree
+     * @return
+     */
+    default int size() {
+        TreeNode<A> root = getRoot();
+        if(root == null) {
+            return 0;
+        }
+        return root.size();
+    }
+    
+    /**
+     * Return the max depth. This is measured with root node == height 0.
+     * @return
+     */
+    default int height() {
+        TreeNode<A> root = getRoot();
+        if(root == null) {
+            return 0;
+        }
+        return root.height();
+    }
 
-    int height();
+    default void clear() {
+        setRoot(null);
+    }
 
-    void clear();
+    default int nodeCount() {
+        TreeNode<A> root = getRoot();
+        if(root == null) {
+            return 0;
+        }
+        return root.numNodes();
+    }
+    
 }

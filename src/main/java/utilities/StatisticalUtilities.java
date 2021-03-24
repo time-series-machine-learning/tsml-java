@@ -17,6 +17,9 @@
  
 package utilities;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -47,7 +50,25 @@ public class StatisticalUtilities {
         return sum / (double) (values.length - offset);
     }
 
-
+    public static double pStdDev(TimeSeriesInstances insts) {
+        double sumx = 0;
+        double sumx2 = 0;
+        int n = 0;
+        for(int i = 0; i < insts.numInstances(); i++){
+            final TimeSeriesInstance inst = insts.get(i);
+            for(int j = 0; j < inst.getNumDimensions(); j++){
+                final TimeSeries dim = inst.get(j);
+                for(int k = 0; k < inst.getMaxLength(); k++) {
+                    final Double value = dim.get(k);
+                    sumx+= value;
+                    sumx2+= value * value;
+                    n++;
+                }
+            }
+        }
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+    }
     
 
     public static double pStdDev(Instances input){

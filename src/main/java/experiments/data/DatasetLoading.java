@@ -127,6 +127,12 @@ public class DatasetLoading {
         return instances[0];
     }
 
+    public static Instances loadBasicMotions() throws Exception {
+        final Instances[] instances = sampleBasicMotions(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
+    }
+
     public static Instances[] sampleGunPoint(int seed) throws Exception {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "GunPoint", seed);
     }

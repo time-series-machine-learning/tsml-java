@@ -17,10 +17,11 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import tsml.classifiers.distance_based.utils.classifiers.Copier;
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
+import tsml.classifiers.TSClassifier;
+import tsml.classifiers.distance_based.utils.system.copy.CopierUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
-import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -116,7 +117,13 @@ public abstract class Evaluator implements Randomizable, ParamHandler, Serializa
         this.setClassMissing = setClassMissing;
     }
     
-    public abstract ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception;
+    public ClassifierResults evaluate(Classifier classifier, Instances dataset) throws Exception {
+        return evaluate(TSClassifier.wrapClassifier(classifier), Converter.fromArff(dataset));
+    }
+    
+    public ClassifierResults evaluate(TSClassifier classifier, TimeSeriesInstances data) throws Exception {
+        return evaluate(classifier.getClassifier(), Converter.toArff(data));
+    }
     
     public Evaluator cloneEvaluator() {
         try {

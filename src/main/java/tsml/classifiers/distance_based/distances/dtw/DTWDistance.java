@@ -17,159 +17,152 @@
  
 package tsml.classifiers.distance_based.distances.dtw;
 
-
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.utils.collections.checks.Checks;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Instance;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import utilities.Utilities;
+
+import java.util.Arrays;
 
 /**
  * DTW distance measure.
  * <p>
- * Contributors: goastler circa 2019
- *
- * some comments from Tony, 2021
- * DTW distance function that defaults to full window
- * This replaces legacy.elastic_ensemble.distance_functions variants of DTW
- *
- * It defaults to full window warping. To set the window size, either
- * */
-public class DTWDistance extends DoubleMatrixBasedDistanceMeasure implements DTW {
+ * Contributors: goastler
+ */
+public class DTWDistance extends MatrixBasedDistanceMeasure implements DTW {
 
-    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
-    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
-    private final WarpingParameter warpingParameter = new WarpingParameter();
+    public static double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final TimeSeries bDim = b.get(i);
+            final double aValue = aDim.get(aIndex);
+            final double bValue = bDim.get(bIndex);
+            final double sqDiff = StrictMath.pow(aValue - bValue, 2);
+            sum += sqDiff;
+        }
+        return sum;
+    }
 
-    @Override protected double findDistance(final Instance a, final Instance b, final double limit) {
+    private double window = 1;
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+    @Override public void setWindow(final double window) {
+        this.window = Checks.requireUnitInterval(window);
+    }
 
-        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
+    @Override public double getWindow() {
+        return window;
+    }
 
-        // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
-        // Full DTW
-        final int windowSize = findWindowSize(aLength);
+    public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
-        double[] row = new double[bLength];
-        double[] prevRow = new double[bLength];
-        // top left cell of matrix will simply be the sq diff
-        // min can be init'd to the top left cell
-        double min = Math.pow(a.value(0) - b.value(0), 2);
-        row[0] = min;
+        // make a the longest time series
+        if(a.getMaxLength() < b.getMaxLength()) {
+            TimeSeriesInstance tmp = a;
+            a = b;
+            b = tmp;
+        }
+        
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
+        setup(aLength, bLength, true);
+        
+        // step is the increment of the mid point for each row
+        final double step = (double) (bLength - 1) / (aLength - 1);
+        final double windowSize = this.window * bLength;
+
+        // row index
+        int i = 0;
+        
         // start and end of window
-        // start at the next cell of the first row
-        int start = 1;
-        // end at window or bLength, whichever smallest
-        int end = Math.min(bLength - 1, windowSize);
-        // must set the value before and after the window to inf if available as the following row will use these
-        // in top / left / top-left comparisons
-        if(end + 1 < bLength) {
-            row[end + 1] = Double.POSITIVE_INFINITY;
+        int start = 0;
+        double mid = 0;
+        int end = Math.min(bLength - 1, (int) Math.floor(windowSize));
+        int prevEnd; // store end of window from previous row to fill in shifted space with inf
+        double[] row = getRow(i);
+        double[] prevRow;
+
+        // col index
+        int j = start;
+        // process the first row (can only warp left - not top/topLeft)
+        double min = row[j++] = cost(a, 0, b, 0); // process top left sqaure of mat
+        // compute the first row
+        for(; j <= end; j++) {
+            row[j] = row[j - 1] + cost(a, i, b, j);
+            min = Math.min(min, row[j]);
         }
-        // the first row is populated from the sq diff + the cell before
-        for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + Math.pow(a.value(0) - b.value(j), 2);
-            row[j] = cost;
-            min = Math.min(min, cost);
-        }
-        if(generateDistanceMatrix) {
-            System.arraycopy(row, 0, matrix[0], 0, row.length);
-        }
-        // early abandon if work has been done populating the first row for >1 entry
-        if(min > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
-        for(int i = 1; i < aLength; i++) {
-            // Swap current and prevRow arrays. We'll just overwrite the new row.
-            {
-                double[] temp = prevRow;
-                prevRow = row;
-                row = temp;
-            }
-            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
+        i++;
+
+        // process remaining rows
+        for(; i < aLength; i++) {
+            // reset min for the row
             min = Double.POSITIVE_INFINITY;
-            // start and end of window
-            start = Math.max(0, i - windowSize);
-            end = Math.min(bLength - 1, i + windowSize);
-            // must set the value before and after the window to inf if available as the following row will use these
-            // in top / left / top-left comparisons
-            if(start - 1 >= 0) {
-                row[start - 1] = Double.POSITIVE_INFINITY;
+            // change rows
+            prevRow = row;
+            row = getRow(i);
+
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * step;
+            // if using variable length time series and window size is fractional then the window may part cover an 
+            // element. Any part covered element is truncated from the window. I.e. mid point of 5.5 with window of 2.3
+            // would produce a start point of 2.2. The window would start from index 3 as it does not fully cover index
+            // 2. The same thing happens at the end, 5.5 + 2.3 = 7.8, so the end index is 7 as it does not fully cover 8
+            start = Math.max(0, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength - 1, (int) Math.floor(mid + windowSize));
+            j = start;
+            
+            // set the values above the current row and outside of previous window to inf
+            Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
+            // set the value left of the window to inf
+            if(j > 0) row[j - 1] = Double.POSITIVE_INFINITY;
+
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(j == 0) {
+                row[j] = prevRow[j] + cost(a, i, b, j);
+                min = Math.min(min, row[j++]);
             }
-            if(end + 1 < bLength) {
-                row[end + 1] = Double.POSITIVE_INFINITY;
+
+            // compute the distance for each cell in the row
+            for(; j <= end; j++) {
+                row[j] = Math.min(prevRow[j], Math.min(row[j - 1], prevRow[j - 1])) + cost(a, i, b, j);
+                min = Math.min(min, row[j]);
             }
-            // if assessing the left most column then only top is the option - not left or left-top
-            if(start == 0) {
-                final double cost = prevRow[start] + Math.pow(a.value(i) - b.value(0), 2);
-                row[start] = cost;
-                min = Math.min(min, cost);
-                // shift to next cell
-                start++;
-            }
-            for(int j = start; j <= end; j++) {
-                // compute squared distance of feature vectors
-                final double topLeft = prevRow[j - 1];
-                final double left = row[j - 1];
-                final double top = prevRow[j];
-                final double cost = Math.min(top, Math.min(left, topLeft)) + Math.pow(a.value(i) - b.value(j), 2);
-                row[j] = cost;
-                min = Math.min(min, cost);
-            }
-            if(generateDistanceMatrix) {
-                System.arraycopy(row, 0, matrix[i], 0, row.length);
-            }
-            if(min > limit) {
-                return Double.POSITIVE_INFINITY;
-            }
+            
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
-        //Find the minimum distance at the end points, within the warping window.
-        return row[bLength - 1];
-    }
 
-    @Override public int getWindowSize() {
-        return warpingParameter.getWindowSize();
-    }
-
-    /**
-     * Sets the window size in WarpingParameter object as an absolute maximum number of time points, and sets
-     * warpingParameter.windowSizeInPercentage to false. Set to -1 for full window.
-     * @param windowSize integer, negative indicates full window, otherwise between 0 (Euclidean distance) and
-     *                   seriesLength (full warp)
-     */
-    @Override public void setWindowSize(final int windowSize) {
-        warpingParameter.setWindowSize(windowSize);
-    }
-
-    @Override public double getWindowSizePercentage() {
-        return warpingParameter.getWindowSizePercentage();
-    }
-
-    /**
-     *  * Sets the window size in WarpingParameter object as a proportion of the full length.
-     *  Need to clarify if it
-     * @param windowSizePercentage
-     */
-    @Override public void setWindowSizePercentage(final double windowSizePercentage) {
-        warpingParameter.setWindowSizePercentage(windowSizePercentage);
-    }
-
-    @Override public boolean isWindowSizeInPercentage() {
-        return warpingParameter.isWindowSizeInPercentage();
-    }
-
-    @Override public void setParams(final ParamSet param) throws Exception {
-        warpingParameter.setParams(param);
+        // last value in the current row is the distance
+        final double distance = row[row.length - 1];
+        teardown();
+        return distance;
     }
 
     @Override public ParamSet getParams() {
-        return warpingParameter.getParams();
+        return new ParamSet().add(WINDOW_FLAG, window);
     }
 
-    @Override public int findWindowSize(final int length) {
-        return warpingParameter.findWindowSize(length);
+    @Override public void setParams(final ParamSet paramSet) throws Exception {
+        setWindow(paramSet.get(WINDOW_FLAG, window));
+    }
+
+    public static void main(String[] args) {
+        final DTWDistance dm = new DTWDistance();
+        dm.setWindow(0.2);
+        dm.setRecordCostMatrix(true);
+        final double a = dm.distanceUnivariate(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, new double[]{1, 2, 3});
+        System.out.println();
+        System.out.println("-----");
+        System.out.println();
+        final double b = dm.distanceUnivariate(new double[]{1, 2, 3}, new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        System.out.println(a);
+        System.out.println(b);
+        if(a != b) {
+            System.out.println("not eq");
+            System.out.println();
+        }
     }
 }

@@ -36,6 +36,24 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
+    public static void busyWait(long nanos) {
+        final long timeStamp = System.nanoTime();
+        while(System.nanoTime() - timeStamp < nanos) {
+            // busy wait
+        }
+    }
+    
+    public static <A, B, C extends Collection<B>> C apply(Collection<A> src, Function<A, B> func, C dest) {
+        for(A item : src) {
+            dest.add(func.apply(item));
+        }
+        return dest;
+    }
+
+    public static <A, B> ArrayList<B> apply(Collection<A> src, Function<A, B> func) {
+        return apply(src, func, new ArrayList<>(src.size()));
+    }
+    
     public static <A> int sum(Iterator<A> iterator, Function<A, Integer> func) {
         int sum = 0;
         while(iterator.hasNext()) {

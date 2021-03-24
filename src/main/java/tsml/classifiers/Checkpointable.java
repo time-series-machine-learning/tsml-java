@@ -17,7 +17,6 @@
  
 package tsml.classifiers;
 
-import tsml.classifiers.distance_based.utils.classifiers.CopierUtils;
 import utilities.FileUtils;
 
 import java.io.*;
