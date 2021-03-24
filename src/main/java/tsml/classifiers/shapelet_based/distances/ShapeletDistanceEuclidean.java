@@ -2,6 +2,9 @@ package tsml.classifiers.shapelet_based.distances;
 
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
     @Override
     public double calculate(ShapeletMV shapelet, double[][] instance) {
@@ -37,7 +40,7 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
 
             for(int i=0; i< a.length; i++){
 
-                for (int j = 0; j < a[i].length; j++)
+                for (int j = 0; j < shapeletLength; j++)
                 {
                     temp = b[i][j] - a[i][j];
                     sum = sum + (temp * temp);

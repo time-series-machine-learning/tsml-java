@@ -7,10 +7,21 @@ public abstract class ShapeletMV implements Comparable<ShapeletMV>{
     protected int instanceIndex;
     protected double quality;
 
-    public ShapeletMV(int start, int length, int instanceIndex){
+    public double getClassIndex() {
+        return classIndex;
+    }
+
+    public void setClassIndex(double classIndex) {
+        this.classIndex = classIndex;
+    }
+
+    protected double classIndex;
+
+    public ShapeletMV(int start, int length, int instanceIndex, double classIndex){
         this.start = start;
         this.length = length;
         this.instanceIndex = instanceIndex;
+        this.classIndex = classIndex;
     }
 
     protected abstract void setData(double[][] instance);

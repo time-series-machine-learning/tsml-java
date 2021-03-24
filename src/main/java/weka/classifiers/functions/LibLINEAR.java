@@ -15,7 +15,7 @@
  */
 
 /*
- * LibLINEAR.java
+ * LibLINEARN.java
  * Copyright (C) Benedikt Waldvogel 
  */
 package weka.classifiers.functions;

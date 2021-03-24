@@ -6,8 +6,8 @@ public  class ShapeletDependentMV extends ShapeletMV{
 
     private double[][] data;
 
-    public ShapeletDependentMV(int start, int length, int instanceIndex, double[][] instance){
-        super(start,length,instanceIndex);
+    public ShapeletDependentMV(int start, int length, int instanceIndex, double classIndex, double[][] instance){
+        super(start,length,instanceIndex,classIndex);
         this.setData(instance);
     }
 

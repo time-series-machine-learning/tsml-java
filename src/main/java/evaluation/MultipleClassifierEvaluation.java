@@ -554,48 +554,54 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     public static void main(String[] args) throws Exception {
-//        String basePath = "C:/JamesLPHD/HESCA/UCI/UCIResults/";
-////            String basePath = "Z:/Results/FinalisedUCIContinuous/";
-//
-//        MultipleClassifierEvaluation mcc = 
-//            new MultipleClassifierEvaluation("C:/JamesLPHD/analysisTest/", "testrunPWS10", 30);
-//        
-//        mcc.setTestResultsOnly(true); //as is default
-//        mcc.setBuildMatlabDiagrams(true); //as is default
-//        mcc.setCleanResults(true); //as is default
-//        mcc.setDebugPrinting(true);
-//        
-//        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-////        mcc.setUseAccuracyOnly();
-////        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
-////        mcc.setUseAllStatistics();
-//        
-//        mcc.setDatasets(development.experiments.DataSets.UCIContinuousFileNames);
-//        
-//        //general rule of thumb: set/add/read the classifiers as the last thing before running
-//        mcc.readInClassifiers(new String[] {"NN", "C4.5", "RotF", "RandF"}, basePath); 
-////        mcc.readInClassifier("RandF", basePath); //
-//
-//        mcc.runComparison();  
+        String basePath = "C:/Users/fbu19zru/code/results/";
+//            String basePath = "Z:/Results/FinalisedUCIContinuous/";
+
+        MultipleClassifierEvaluation mcc =
+            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "analysis", 1);
+
+        mcc.setTestResultsOnly(true); //as is default
+        mcc.setBuildMatlabDiagrams(true); //as is default
+        mcc.setCleanResults(true); //as is default
+        mcc.setDebugPrinting(true);
+
+        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
+//        mcc.setUseAccuracyOnly();
+//        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
+//        mcc.setUseAllStatistics();
+
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
+
+        //general rule of thumb: set/add/read the classifiers as the last thing before running
+        mcc.readInClassifiers(new String[] {"HIVE-COTE", "ROCKET", "DTW_D", "STC",
+                "Shapelet-ROT_D"
+        }, basePath);
+      /*  mcc.readInClassifiers(new String[] {"HC 1.0","RISE","STC","TSF","cBOSS"
+                ,"Shapelet-ROT_D", "Shapelet-ROT_I","Shapelet-ROT-C_D", "Shapelet-ROT-C_I"
+        }, basePath);*/
+//        mcc.readInClassifier("RandF", basePath); //
+
+        mcc.runComparison();
 
         
-//        new MultipleClassifierEvaluation("Z:/Results/FinalisedUCIContinuousAnalysis/", "testy_mctestface", 30).
-//            setTestResultsOnly(false).
-//            setDatasets(development.experiments.DataSets.UCIContinuousFileNames).
-//            readInClassifiers(new String[] {"1NN", "C4.5"}, "Z:/Results/FinalisedUCIContinuous/").
-//            runComparison(); 
-//        new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
-////            setBuildMatlabDiagrams(true).
-////            setUseAllStatistics().
-////            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
-////            setDatasets("C:/Temp/dsets.txt").
-//            setDatasets("C:/Temp/dsets.txt"). 
-//            setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups"). 
-//            setPerformPostHocDsetResultsClustering(true).
-//            readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
-//            runComparison(); 
+   //     new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/analysis/", "analysis", 1).
+   //         setTestResultsOnly(false).
+  //          setDatasets(DataSetLists.mtscProblems2018).
+   //         readInClassifiers(new String[] {"1NN", "C4.5"}, "C:/Users/fbu19zru/code/results/").
+   //             buildMatlabDiagrams(true)
+   //         runComparison();
+       // new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
+//            setBuildMatlabDiagrams(true).
+//            setUseAllStatistics().
+//            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
+//            setDatasets("C:/Temp/dsets.txt").
+  //          setDatasets("C:/Temp/dsets.txt").
+     //       setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups").
+        //    setPerformPostHocDsetResultsClustering(true).
+      //      readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
+       //     runComparison();
 
-        workingExampleCodeRunnableOnTSCServerMachine();
+    //    workingExampleCodeRunnableOnTSCServerMachine();
     }
     
     public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {

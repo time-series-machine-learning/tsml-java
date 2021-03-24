@@ -14,7 +14,6 @@ import java.util.Collections;
 public class ExhaustiveFilter implements ShapeletFilterMV {
 
 
-    private double MIN_DIST = 0.01;
     public ArrayList<ShapeletMV> findShapelets(MultivariateShapelet.ShapeletParams params, TimeSeriesInstances instances) {
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
         double[][][] instancesArray = instances.toValueArray();
@@ -30,11 +29,11 @@ public class ExhaustiveFilter implements ShapeletFilterMV {
             }
             for (int shapeletSize=params.min;shapeletSize<=params.max;shapeletSize++) {  // For each shapelet size
 
-                ShapeletMV[] candidates = type.getShapeletsOverInstance(shapeletSize,index,instancesArray[index]);
+                ShapeletMV[] candidates = type.getShapeletsOverInstance(shapeletSize,index,classesArray[index],instancesArray[index]);
 
                 for (int candidate = 0 ; candidate < candidates.length; candidate++){
 
-                     if (isSimilar(shapelets, candidates[candidate],params.distance.createShapeletDistance())) continue;
+                     if (isSimilar(shapelets, candidates[candidate],params.distance.createShapeletDistance(),params.minDist)) continue;
                     double q = quality.calculate (candidates[candidate]);
                     candidates[candidate].setQuality(q);
                     shapelets.add(candidates[candidate]);
@@ -47,13 +46,10 @@ public class ExhaustiveFilter implements ShapeletFilterMV {
         return shapelets;
     }
 
-    private boolean isSimilar(ArrayList<ShapeletMV> shapelets, ShapeletMV candidate, ShapeletDistanceMV distance){
-
-        for (ShapeletMV shapelet: shapelets){
-            if (distance.calculate(shapelet.toDoubleArray(), candidate.toDoubleArray(),candidate.getLength())<MIN_DIST)
-                return true;
-        }
-        return false;
+    private  long time;
+    @Override
+    public void setTrainTimeLimit(long time) {
+        this.time = time;
     }
 
 

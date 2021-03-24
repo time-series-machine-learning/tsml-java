@@ -34,6 +34,10 @@ public abstract class ShapeletQualityMV {
 
     }
 
+    public ShapeletQualityMV() {
+
+    }
+
     public abstract double calculate(ShapeletMV candidate);
 
 

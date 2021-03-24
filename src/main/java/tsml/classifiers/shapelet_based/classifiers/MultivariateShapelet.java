@@ -4,10 +4,13 @@ import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.TSClassifier;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.distances.ShapeletDistanceEuclidean;
 import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
 import tsml.classifiers.shapelet_based.filter.*;
-import tsml.classifiers.shapelet_based.quality.OrderlineQualityMV;
+import tsml.classifiers.shapelet_based.quality.GainRatioBinaryQualityMV;
+import tsml.classifiers.shapelet_based.quality.OrderlineQualityAaronMV;
+import tsml.classifiers.shapelet_based.quality.GainRatioQualityMV;
 import tsml.classifiers.shapelet_based.quality.ShapeletQualityMV;
 import tsml.classifiers.shapelet_based.transform.ShapeletTransformMV;
 import tsml.classifiers.shapelet_based.type.ShapeletFactoryDependant;
@@ -21,6 +24,7 @@ import tsml.transformers.shapelet_tools.Shapelet;
 import utilities.ClusteringUtilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.functions.LibLINEAR;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.lazy.IBk;
@@ -56,7 +60,9 @@ public class MultivariateShapelet implements TSClassifier {
 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
-        shapelets = this.params.filter.createFilter().findShapelets(params, data);
+        ShapeletFilterMV filter =  this.params.filter.createFilter();
+        filter.setOneHourLimit();
+        shapelets =filter.findShapelets(params, data);
         transformData = buildTansformedDataset( data);
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
@@ -151,6 +157,8 @@ public class MultivariateShapelet implements TSClassifier {
         return result;
     }
 
+
+
     public enum ShapeletFilters {
         EXHAUSTIVE {
             @Override
@@ -163,30 +171,46 @@ public class MultivariateShapelet implements TSClassifier {
             public ShapeletFilterMV createFilter() {
                 return new RandomFilter();
             }
-        };
+        },
+        RANDOM_BY_CLASS {
+            @Override
+            public ShapeletFilterMV createFilter() {
+                return new RandomFilterByClass();
+            }
+        };;
 
         public abstract ShapeletFilterMV createFilter();
     }
 
     public enum ShapeletQualities {
-        ORDER_LINE {
+        GAIN_RATIO {
             @Override
             public ShapeletQualityMV createShapeletQuality(double[][][] instancesArray,
                                                            int[] classIndexes,
                                                            String[] classNames,
                                                            int[] classCounts,
                                                            ShapeletDistanceMV distance) {
-                return new OrderlineQualityMV(instancesArray,classIndexes,classNames,classCounts,distance);
+                return new GainRatioQualityMV(instancesArray,classIndexes,classNames,classCounts,distance);
             }
         },
-        NEW {
+        ORDER_LINE_AARON {
             @Override
             public ShapeletQualityMV createShapeletQuality(double[][][] instancesArray,
                                                            int[] classIndexes,
                                                            String[] classNames,
                                                            int[] classCounts,
                                                            ShapeletDistanceMV distance) {
-                return new OrderlineQualityMV(instancesArray,classIndexes,classNames,classCounts,distance);
+                return new OrderlineQualityAaronMV(instancesArray,classIndexes,classNames,classCounts,distance);
+            }
+        },
+        BINARY{
+            @Override
+            public ShapeletQualityMV createShapeletQuality(double[][][] instancesArray,
+                                                           int[] classIndexes,
+                                                           String[] classNames,
+                                                           int[] classCounts,
+                                                           ShapeletDistanceMV distance) {
+                return new GainRatioBinaryQualityMV(instancesArray,classIndexes,classNames,classCounts,distance);
             }
         };
 
@@ -284,6 +308,13 @@ public class MultivariateShapelet implements TSClassifier {
         LINEAR {
             @Override
             public Classifier createClassifier() {
+                return new LibLINEARN();
+
+            }
+        },
+        SVM {
+            @Override
+            public Classifier createClassifier() {
                 SMO svml = new SMO();
                 svml.turnChecksOff();
                 svml.setBuildLogisticModels(true);
@@ -310,19 +341,23 @@ public class MultivariateShapelet implements TSClassifier {
         public int k;
         public int min;
         public int max;
+        public int maxIterations;
+        public double minDist;
         public ShapeletFilters filter;
         public ShapeletQualities quality;
         public ShapeletDistances distance;
         public ShapeletFactories type;
         public AuxClassifiers classifier;
 
-        public ShapeletParams(int k, int min, int max,
+        public ShapeletParams(int k, int min, int max, int maxIterations, double minDist,
                               ShapeletFilters filter, ShapeletQualities quality,
                               ShapeletDistances distance, ShapeletFactories type,
                               AuxClassifiers classifier){
             this.k = k ;
             this.min = min;
             this.max = max;
+            this.maxIterations = maxIterations;
+            this.minDist = minDist;
             this.filter = filter;
             this.quality = quality;
             this.distance = distance;
@@ -345,10 +380,11 @@ public class MultivariateShapelet implements TSClassifier {
 
             ts_reader = new TSReader(new FileReader(new File(filepath + "_TEST" + ".ts")));
             TimeSeriesInstances ts_test_data = ts_reader.GetInstances();
-            int f = ts_train_data.numInstances()*ts_test_data.getMaxLength()*ts_train_data.getMaxNumChannels();
+            int f = ts_train_data.numInstances()*ts_train_data.getMaxLength()*ts_train_data.getMaxNumChannels();
             System.out.println( "f= " + f);
-            ShapeletParams params = new ShapeletParams(100,10,23,
-                    ShapeletFilters.RANDOM, ShapeletQualities.ORDER_LINE, ShapeletDistances.EUCLIDEAN,
+            ShapeletParams params = new ShapeletParams(f,3,ts_train_data.getMaxLength()/2,
+                    10000,0.01,
+                    ShapeletFilters.RANDOM, ShapeletQualities.GAIN_RATIO, ShapeletDistances.EUCLIDEAN,
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);
 

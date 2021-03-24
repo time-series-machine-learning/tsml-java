@@ -213,22 +213,39 @@ public class ExperimentsTS {
 
         TimeSeriesInstances[] data = DatasetLoadingTS.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
-        int f = Math.max(500,(int)Math.sqrt(data[0].numInstances()*data[0].getMaxLength()*data[0].getMaxNumChannels()));
-
+        int f = Math.min(10000,Math.max(500,(int)Math.sqrt(data[0].numInstances()*data[0].getMaxLength()*data[0].getMaxNumChannels())));
+        System.out.println("Shapelets " + f);
         // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
         // represented as different classifiers, e.g. ST_1day, ST_2day
         // The set classifier call is therefore made before defining paths that are dependent on the classifier name
-        int min = Math.min(data[0].getMaxLength(),10);
-        int max = Math.min(data[0].getMaxLength()-1,30);
+        int min = Math.min(data[0].getMaxLength(),5);
+        int max = Math.min(50,data[0].getMaxLength()-2);
         MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(f,min,max,
-                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.ORDER_LINE,
+                100000,0.01,
+                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.ORDER_LINE_AARON,
                 MultivariateShapelet.ShapeletDistances.EUCLIDEAN,
                 MultivariateShapelet.ShapeletFactories.DEPENDANT,
-                MultivariateShapelet.AuxClassifiers.ROT);
+                MultivariateShapelet.AuxClassifiers.LINEAR);
 
-        if (expSettings.classifierName.equals("Shapelet_I")){
+        if (expSettings.classifierName.contains("_I")){
             params.type =  MultivariateShapelet.ShapeletFactories.INDEPENDENT;
         }
+
+        if (expSettings.classifierName.contains("ROT")){
+            params.classifier =  MultivariateShapelet.AuxClassifiers.ROT;
+        }
+        if (expSettings.classifierName.contains("BIN")){
+            params.quality =  MultivariateShapelet.ShapeletQualities.BINARY;
+        }
+
+        if (expSettings.classifierName.contains("GAIN")){
+            params.quality =  MultivariateShapelet.ShapeletQualities.GAIN_RATIO;
+        }
+
+        if (expSettings.classifierName.contains("BY_CLASS")){
+            params.filter =  MultivariateShapelet.ShapeletFilters.RANDOM_BY_CLASS;
+        }
+
 
         TSClassifier classifier = new MultivariateShapelet(params);
 

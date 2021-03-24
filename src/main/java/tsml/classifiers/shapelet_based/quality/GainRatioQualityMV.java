@@ -6,13 +6,13 @@ import weka.attributeSelection.GainRatioAttributeEval;
 import weka.core.DenseInstance;
 import weka.core.Instances;
 
-public class OrderlineQualityMV extends ShapeletQualityMV {
+public class GainRatioQualityMV extends ShapeletQualityMV {
 
-    public OrderlineQualityMV(double[][][] instancesArray,
-                             int[] classIndexes,
-                             String[] classNames,
-                             int[] classCounts,
-                             ShapeletDistanceMV distance){
+    public GainRatioQualityMV(double[][][] instancesArray,
+                              int[] classIndexes,
+                              String[] classNames,
+                              int[] classCounts,
+                              ShapeletDistanceMV distance){
        super(instancesArray,classIndexes,classNames,classCounts,distance);
     }
 

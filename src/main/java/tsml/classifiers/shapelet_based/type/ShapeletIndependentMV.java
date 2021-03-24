@@ -7,8 +7,8 @@ public class ShapeletIndependentMV extends ShapeletMV{
     private int seriesIndex;
     private double[] data;
 
-    public ShapeletIndependentMV(int start, int length, int instanceIndex, int seriesIndex, double[][] instance){
-        super(start, length, instanceIndex);
+    public ShapeletIndependentMV(int start, int length, int instanceIndex, double classIndex,  int seriesIndex, double[][] instance){
+        super(start, length, instanceIndex, classIndex);
         this.seriesIndex = seriesIndex;
         this.setData(instance);
     }
@@ -41,7 +41,7 @@ public class ShapeletIndependentMV extends ShapeletMV{
     @Override
     public String toString(){
         return "Start: " + start + " Length: " + length + " Instance Index: " + instanceIndex
-                + " Channel Index: " + seriesIndex + Arrays.toString(data);
+                + " Channel Index: " + seriesIndex + " Quality: " + quality + "Class "  + classIndex +  "\n";//->" + Arrays.toString(data) ;
     }
 
 }
