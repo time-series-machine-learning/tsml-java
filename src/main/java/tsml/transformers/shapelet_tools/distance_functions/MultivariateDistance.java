@@ -1,22 +1,26 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers.shapelet_tools.distance_functions;
 
 import java.io.Serializable;
 
 import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.shapelet_tools.ShapeletCandidate;
 import static utilities.multivariate_tools.MultivariateInstanceTools.convertMultiInstanceToArrays;
 import static utilities.multivariate_tools.MultivariateInstanceTools.splitMultivariateInstance;
@@ -39,7 +43,14 @@ public class MultivariateDistance extends ShapeletDistance implements Serializab
         seriesLength = utilities.multivariate_tools.MultivariateInstanceTools.channelLength(data);
         
     }
-    
+
+    public void init(TimeSeriesInstances data)
+    {
+        count =0;
+        numChannels = data.getMaxNumDimensions();
+        seriesLength = data.getMaxLength();
+    }
+
     protected double[][] candidateArray2;
     
     @Override
@@ -78,7 +89,7 @@ public class MultivariateDistance extends ShapeletDistance implements Serializab
         }
         
         for(int i=0; i< numChannels; i++){
-            double[] temp = inst.get(dimension).getSlidingWindowArray(start, start+length);
+            double[] temp = inst.get(dimension).getVSliceArray(start, start+length);
             temp = seriesRescaler.rescaleSeries(temp, false); //normalise each series.
             cand.setShapeletContent(i, temp);
         } 

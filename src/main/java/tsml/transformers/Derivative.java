@@ -1,17 +1,20 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.transformers;
 
 import java.io.Serializable;
@@ -47,6 +50,14 @@ public class Derivative implements Transformer, Serializable {
             GLOBAL_CACHE = new CachedTransformer(getGlobalInstance());
         }
         return GLOBAL_CACHE;
+    }
+
+    @Override public boolean equals(final Object o) {
+        return super.equals(o) && o instanceof Derivative; // no internal state, so always equal
+    }
+
+    @Override public int hashCode() {
+        return 0; // no internal state, so all derivative objects are equal and have same hash
     }
 
     public static double[] getDerivative(double[] input, boolean classValOn) {
@@ -97,7 +108,7 @@ public class Derivative implements Transformer, Serializable {
             out[i++] = getDerivative(ts.toValueArray(), false);
         }
 
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(out, inst.getLabelIndex());
     }
 
 

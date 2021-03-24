@@ -1,3 +1,20 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.transformers;
 import experiments.data.DatasetLists;
 import tsml.data_containers.TimeSeries;
@@ -74,7 +91,7 @@ public class Fast_FFT implements Transformer {
         return instances;
     }
 
-    private void nearestPowerOF2(int x) {
+    public void nearestPowerOF2(int x) {
         float power = (float) (Math.log(x) / Math.log(2));
         int m = (int) Math.ceil(power);
         nfft = (int) Math.pow(2.0, (double) m);
@@ -127,7 +144,7 @@ public class Fast_FFT implements Transformer {
             //TODO: make this NaN Safe. Mean is NaN safe but toArray isnt.
             out[i++] = calculate_FFT(ts.toValueArray(), TimeSeriesSummaryStatistics.mean(ts));
         }
-        return new TimeSeriesInstance(out, inst.getLabelIndex(), inst.getClassLabels()); 
+        return new TimeSeriesInstance(out, inst.getLabelIndex()); 
     }
 
     private double[] calculate_FFT(double[] data, double mean) {

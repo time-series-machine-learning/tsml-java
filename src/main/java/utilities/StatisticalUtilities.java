@@ -1,19 +1,25 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities;
 
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -44,7 +50,25 @@ public class StatisticalUtilities {
         return sum / (double) (values.length - offset);
     }
 
-
+    public static double pStdDev(TimeSeriesInstances insts) {
+        double sumx = 0;
+        double sumx2 = 0;
+        int n = 0;
+        for(int i = 0; i < insts.numInstances(); i++){
+            final TimeSeriesInstance inst = insts.get(i);
+            for(int j = 0; j < inst.getNumDimensions(); j++){
+                final TimeSeries dim = inst.get(j);
+                for(int k = 0; k < inst.getMaxLength(); k++) {
+                    final Double value = dim.get(k);
+                    sumx+= value;
+                    sumx2+= value * value;
+                    n++;
+                }
+            }
+        }
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+    }
     
 
     public static double pStdDev(Instances input){

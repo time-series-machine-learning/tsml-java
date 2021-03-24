@@ -1,3 +1,20 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.transformers;
 
 import java.util.ArrayList;
@@ -112,11 +129,16 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
             output[0] = transformRocket(inst.toValueArray());
         }
 
-        return new TimeSeriesInstance(output, inst.getLabelIndex(), inst.getClassLabels());
+        return new TimeSeriesInstance(output, inst.getLabelIndex());
     }
 
     @Override
     public Instance transform(Instance inst) {
+        if (!fit) {
+            System.err.println("Must fit ROCKET prior to tranformation.");
+            return null;
+        }
+
         double[][] data;
         if (inst.dataset().checkForAttributeType(Attribute.RELATIONAL)) {
             data = convertMultiInstanceToArrays(splitMultivariateInstance(inst));
@@ -141,7 +163,7 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
         return new DenseInstance(1, output);
     }
 
-    private double[] transformRocket(double[][] inst){
+    private double[] transformRocket(double[][] inst) {
         if (normalise){
             for (double[] dim : inst) {
                 zNormalise(dim);
@@ -240,6 +262,8 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
         else{
             fitRocket(inputLength, numDimensions);
         }
+
+        fit = true;
     }
 
     private void fitRocket(int inputLength, int numDimensions){
@@ -311,8 +335,6 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
 
             paddings[i] = random.nextInt(2) == 1 ? Math.floorDiv((lengths[i] - 1) * dilations[i], 2) : 0;
         }
-
-        fit = true;
     }
 
     private void fitRocketMultithread(int inputLength, int numDimensions) {
@@ -370,7 +392,7 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
         int outputLength = (inputLength + (2 * padding)) - ((length - 1) * dilation);
 
         double _ppv = 0;
-        double _max = Double.MIN_VALUE;
+        double _max = -99999999;
         int end = (inputLength + padding) - ((length - 1) * dilation);
 
         for (int i = -padding; i < end; i++) {
@@ -475,7 +497,7 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
             int outputLength = (inputLength + (2 * k.padding)) - ((k.length - 1) * k.dilation);
 
             double _ppv = 0;
-            double _max = Double.MIN_VALUE;
+            double _max = -99999999;
             int end = (inputLength + k.padding) - ((k.length - 1) * k.dilation);
 
             for (int i = -k.padding; i < end; i++) {

@@ -1,3 +1,20 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.utils.collections.params;
 
 import weka.core.OptionHandler;
@@ -15,7 +32,7 @@ import java.util.*;
  */
 public interface ParamHandler
     extends OptionHandler {
-
+    
     /**
      * get the options array
      * @return
@@ -38,10 +55,10 @@ public interface ParamHandler
      * @param options
      * @throws Exception
      */
-    default void setOptionsList(List<String> options) throws
+    default void setOptions(List<String> options) throws
                                                       Exception {
         ParamSet params = new ParamSet();
-        params.setOptionsList(options);
+        params.setOptions(options);
         setParams(params);
     }
 
@@ -53,7 +70,7 @@ public interface ParamHandler
     @Override
     default void setOptions(String[] options) throws
                                       Exception {
-        setOptionsList(new ArrayList<>(Arrays.asList(options)));
+        setOptions(Arrays.asList(options));
     }
 
     @Override
@@ -75,23 +92,4 @@ public interface ParamHandler
         throw new UnsupportedOperationException("param list not specified");
     }
 
-    /**
-     * set a parameter to a ParamSet. Parameters are propogated through that object to children, if any parameters
-     * are specified for the children.
-     * @param object
-     * @param paramSet
-     */
-    static void setParams(Object object, ParamSet paramSet) {
-        try {
-            if(object instanceof ParamHandler) {
-                ((ParamHandler) object).setParams(paramSet);
-            } else if(object instanceof OptionHandler) {
-                ((OptionHandler) object).setOptions(paramSet.getOptions());
-            } else {
-                throw new IllegalArgumentException("params not settable");
-            }
-        } catch(Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
 }

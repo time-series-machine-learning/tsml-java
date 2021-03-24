@@ -1,3 +1,20 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.transformers;
 
 import experiments.data.DatasetLists;
@@ -7,6 +24,7 @@ import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 
@@ -97,7 +115,7 @@ public class Truncator implements TrainableTransformer{
         throw new IllegalArgumentException(" determine Output Format is not implemented for Truncator, there is no need");
     }
 
-    public static void testTruncateUnivariateData(String problemPath) {
+    public static void testTruncateUnivariateData(String problemPath) throws IOException {
         Instances train = DatasetLoading.loadData(problemPath+"AllGestureWiimoteX/AllGestureWiimoteX_TRAIN");
         Instances test = DatasetLoading.loadData(problemPath+"AllGestureWiimoteX/AllGestureWiimoteX_TEST");
         System.out.println(" Test on unequal length series AllGestureWiimoteX: Min series length should be 11 in train and 2 in test ");
@@ -135,7 +153,7 @@ public class Truncator implements TrainableTransformer{
     }
 
 
-    public static int[] univariateSeriesLengths(String problemPath){
+    public static int[] univariateSeriesLengths(String problemPath) throws IOException {
         String[] probs=DatasetLists.variableLengthUnivariate;
         System.out.println(" Total number of problesm = "+probs.length);
         int[][] minMax=new int[probs.length][4];
@@ -185,7 +203,7 @@ public class Truncator implements TrainableTransformer{
 
 
 
-    public static int[] multivariateSeriesLengths(String problemPath){
+    public static int[] multivariateSeriesLengths(String problemPath) throws IOException {
         String[] probs=DatasetLists.variableLengthMultivariate;
         ArrayList<String> names=new ArrayList<>();
         int[][] minMax=new int[probs.length][4];
@@ -246,10 +264,9 @@ public class Truncator implements TrainableTransformer{
 
 
 
-    public static void main(String[] args) {
-
-        String path="Z:\\ArchiveData\\Univariate_arff\\";
-        String path2="Z:\\ArchiveData\\Multivariate_arff\\";
+    public static void main(String[] args) throws IOException {
+        String path = "src/main/java/experiments/data/tsc/"; //  path for testing.
+        String path2="src/main/java/experiments/data/mtsc/";
 
 //        String path="Z:\\ArchiveData\\Univariate_arff\\";
         multivariateSeriesLengths(path2);

@@ -1,22 +1,37 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.utils.collections.tree;
 
 import java.util.*;
-
-import org.junit.Assert;
-import org.junit.Test;
 
 /**
  * Purpose: node of a tree data structure.
  *
  * Contributors: goastler
  */
-public class BaseTreeNode<A> implements TreeNode<A> {
+public class BaseTreeNode<A> extends AbstractList<TreeNode<A>> implements TreeNode<A> {
 
-    private List<TreeNode<A>> children = new ArrayList<>();
+    private final List<TreeNode<A>> children = new ArrayList<>();
     private A element;
-    private int level = 0;
     private TreeNode<A> parent;
-
+    // skip is a utility to skip calling recursive calls when handling the parent/child relationship of nodes
+    private boolean skip;
+    
     public BaseTreeNode() {}
 
     public BaseTreeNode(A element) {
@@ -24,12 +39,12 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     }
 
     public BaseTreeNode(A element, TreeNode<A> parent) {
-        setElement(element);
+        setValue(element);
         setParent(parent);
     }
 
-    public BaseTreeNode(TreeNode<A> parent) {
-        this(null, parent);
+    @Override public boolean equals(final Object o) {
+        return this == o;
     }
 
     @Override
@@ -38,53 +53,30 @@ public class BaseTreeNode<A> implements TreeNode<A> {
     }
 
     @Override
-    public void setParent(TreeNode<A> parent) {
-        if(parent != null && (this.parent == null || !this.parent.equals(parent))) {
-            parent.getChildren().add(this);
-            setLevel(parent.getLevel() + 1);
+    public void setParent(TreeNode<A> nextParent) {
+        if(parent == nextParent) {
+            // do nothing
+            return;
         }
-        this.parent = parent;
+        if(parent != null && !skip) {
+            // remove this child from the parent
+            parent.remove(this);
+        }
+        if(nextParent != null) {
+            // add this child to the new parent
+            nextParent.add(this);
+        }
+        this.parent = nextParent;
     }
 
     @Override
-    public List<TreeNode<A>> getChildren() {
-        return children;
-    }
-
-    protected void setChildren(List<TreeNode<A>> children) {
-        if(children == null) {
-            children = new ArrayList<>();
-        }
-        this.children = children;
-    }
-
-    @Override
-    public A getElement() {
+    public A getValue() {
         return element;
     }
 
     @Override
-    public void setElement(A element) {
+    public void setValue(A element) {
         this.element = element;
-    }
-
-    @Override
-    public boolean hasElement() {
-        return element != null;
-    }
-
-    @Override
-    public boolean isRoot() {
-        return parent == null;
-    }
-
-    /**
-     * the number of children branching from this node
-     * @return
-     */
-    @Override
-    public int numChildren() {
-        return children.size();
     }
 
     /**
@@ -93,136 +85,81 @@ public class BaseTreeNode<A> implements TreeNode<A> {
      */
     @Override
     public int size() {
-        LinkedList<TreeNode<?>> backlog = new LinkedList<>();
-        int count = 0;
-        backlog.add(this);
-        while(!backlog.isEmpty()) {
-            TreeNode<?> node = backlog.pollFirst();
-            count++;
-            backlog.addAll(node.getChildren());
+        return children.size();
+    }
+
+    @Override public void add(final int i, final TreeNode<A> node) {
+        if(skip) return;
+        if(node.getParent() == this) {
+            throw new IllegalArgumentException("already a child");
         }
-        return count;
+        // node is not a child yet
+        // add the node to the children
+        children.add(i, node);
+        // set this node as the parent
+        skip = true;
+        node.setParent(this);
+        skip = false;
     }
 
-    @Override public boolean isEmpty() {
-        return numChildren() == 0;
+    @Override public boolean add(final TreeNode<A> node) {
+        int size = children.size();
+        add(children.size(), node);
+        return size != children.size();
     }
 
-    @Override public boolean contains(final Object o) {
-        for(TreeNode<A> child : children) {
-            if(child.contains(o)) {
-                return true;
-            }
+    @Override public TreeNode<A> get(final int i) {
+        return children.get(i);
+    }
+
+    @Override public TreeNode<A> set(final int i, final TreeNode<A> child) {
+        if(skip) return null;
+        if(child.getParent() == this) {
+            // already a child - cannot house multiple children
+            throw new IllegalArgumentException("already a child: " + child);
         }
-        return false;
+        // get the previous
+        TreeNode<A> previous = children.get(i);
+        // overwrite the previous
+        children.set(i, child);
+        skip = true;
+        // remove this as the parent of the overwritten
+        previous.removeParent();
+        // setup the new node as a child
+        child.setParent(this);
+        skip = false;
+        return previous;
     }
 
-    @Override public Iterator<TreeNode<A>> iterator() {
-        return children.iterator();
+    @Override public TreeNode<A> remove(final int i) {
+        if(skip) return null;
+        // remove the child
+        TreeNode<A> child = children.remove(i);
+        // discard the parent
+        skip = true;
+        child.removeParent();
+        skip = false;
+        return child;
     }
 
-    @Override public Object[] toArray() {
-        return children.toArray();
-    }
-
-    @Override public <T> T[] toArray(final T[] ts) {
-        return children.toArray(ts);
-    }
-
-    @Override public boolean add(final TreeNode<A> aTreeNode) {
-        return children.add(aTreeNode);
-    }
-
-    @Override public boolean remove(final Object o) {
-        return children.remove(o);
-    }
-
-    @Override public boolean containsAll(final Collection<?> collection) {
-        return children.containsAll(collection);
-    }
-
-    @Override public boolean addAll(final Collection<? extends TreeNode<A>> collection) {
-        return children.addAll(collection);
-    }
-
-    @Override public boolean removeAll(final Collection<?> collection) {
-        return children.removeAll(collection);
-    }
-
-    @Override public boolean retainAll(final Collection<?> collection) {
-        return children.retainAll(collection);
+    @Override public String toString() {
+        if(children.isEmpty()) {
+            return "BaseTreeNode{" +
+                           "location=" + getLocation() +
+                           ", element=" + element + "}";
+        }
+        return "BaseTreeNode{" +
+                       "location=" + getLocation() +
+                       ", element=" + element +
+                       ", children=" + children +
+                       '}';
     }
 
     @Override public void clear() {
-        children.clear();
-    }
-
-    @Override
-    public boolean isLeaf() {
-        return children.isEmpty();
-    }
-
-    /**
-     * the height downwards from this node
-     * @return
-     */
-    @Override
-    public int height() { // todo test this out as first version so may contain bugs
-        int height = 1; // start at 1 because this node is 1 level itself
-        int maxHeight = 1;
-        LinkedList<TreeNode<?>> nodeStack = new LinkedList<>();
-        LinkedList<Iterator<? extends TreeNode<?>>> childrenIteratorStack = new LinkedList<>();
-        nodeStack.add(this);
-        childrenIteratorStack.add(this.getChildren().iterator());
-        while (!nodeStack.isEmpty()) {
-            TreeNode<?> node = nodeStack.peekLast();
-            Iterator<? extends TreeNode<?>> iterator = childrenIteratorStack.peekLast();
-            if(iterator.hasNext()) {
-                // descend down to next child
-                height++;
-                node = iterator.next();
-                iterator = node.getChildren().iterator();
-                nodeStack.add(node);
-                childrenIteratorStack.add(iterator);
-            } else {
-                // ascend up to parent
-                maxHeight = Math.max(height, maxHeight);
-                height--;
-                nodeStack.pollLast();
-                childrenIteratorStack.pollLast();
-            }
+        // remove all the children
+        for(int i = children.size() - 1; i >= 0; i--) {
+            final TreeNode<A> child = children.get(i);
+            child.removeParent();
         }
-        return maxHeight;
-    }
-
-    @Override
-    public int getLevel() {
-        return level;
-    }
-
-    protected void setLevel(int level) {
-        this.level = level;
-    }
-
-    @Override
-    public boolean addChild(TreeNode<A> child) {
-        child.setParent(this);
-        return true;
-    }
-
-    @Override
-    public boolean removeChild(TreeNode<A> child) {
-        boolean result = children.remove(child);
-        if(result) {
-            if(child.getParent().equals(this)) {
-                child.setParent(null);
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return element.toString();
     }
 }

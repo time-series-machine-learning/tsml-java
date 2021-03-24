@@ -1,17 +1,20 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities.multivariate_tools;
 
 import utilities.InstanceTools;
@@ -19,6 +22,7 @@ import utilities.class_counts.TreeSetClassCounts;
 import weka.core.*;
 import tsml.transformers.RowNormalizer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -299,11 +303,11 @@ public class MultivariateInstanceTools {
     }
     
 
-    public static void main(String[] args){
-        String local_path = "D:\\Work\\Data\\Multivariate_arff\\"; //Aarons local path for testing.
-        String dataset_name = "EigenWorms";
-        Instances train = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TRAIN.arff");
-        Instances test  = experiments.data.DatasetLoading.loadData(local_path + dataset_name + java.io.File.separator + dataset_name+"_TEST.arff");
+    public static void main(String[] args) throws IOException {
+        String localPath="src/main/java/experiments/data/mtsc/";
+        String datasetName = "BasicMotions";
+        Instances train = experiments.data.DatasetLoading.loadData(localPath + datasetName + java.io.File.separator + datasetName+"_TRAIN.arff");
+        Instances test  = experiments.data.DatasetLoading.loadData(localPath + datasetName + java.io.File.separator + datasetName+"_TEST.arff");
         Instances[] resampled = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(train, test, 1);
         //Instances[] resampled_old = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(train, test, 1);
 

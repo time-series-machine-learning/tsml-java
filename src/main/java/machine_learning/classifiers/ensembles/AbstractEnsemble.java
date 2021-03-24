@@ -1,18 +1,20 @@
 /*
  * Copyright (C) 2019 xmw13bzu
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package machine_learning.classifiers.ensembles;
@@ -28,11 +30,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.Checkpointable;
-import tsml.classifiers.MultiThreadable;
-import tsml.classifiers.TestTimeContractable;
-import tsml.classifiers.TrainTimeContractable;
+
+import tsml.classifiers.*;
 import tsml.transformers.Transformer;
 import utilities.DebugPrinting;
 import utilities.ErrorReport;
@@ -248,6 +247,24 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         }
 
         public String getParameters() {
+
+            //priority of parameter info:
+            // 1) directly provided by setParameters or in the constructor (it's not already empty)
+            // 2) from the classifier itself
+            // 3) from existing train results (if read in from file e.g.)
+            // 4) from existing test results (if only test results read from file)
+
+            if (parameters == null || parameters == "") {
+                if (classifier instanceof SaveParameterInfo)
+                    parameters = ((SaveParameterInfo) classifier).getParameters();
+                else if (trainResults != null)
+                    parameters = trainResults.getParas();
+                else if (testResults != null)
+                    parameters = testResults.getParas();
+                else
+                    parameters = "NoParaInfoFound";
+            }
+
             return parameters;
         }
 
@@ -555,10 +572,6 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
 
         this.readResultsFilesDirectories = individualResultsFilesDirectories;
         this.datasetName = datasetName;
-
-        if (this.seedClassifier && this.seed != resampleIdentifier)
-            System.out.println("**************WARNING: have set the seed via setSeed() already, but now setting up to build the ensemble" +
-                    " from file with a different fold id identifier. Using the new value for future seeding operations");
         setSeed(resampleIdentifier);
     }
 
@@ -811,12 +824,17 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         StringBuilder out = new StringBuilder();
         out.append(weightingScheme.toString()).append(",").append(votingScheme.toString()).append(",");
 
-        for(int m = 0; m < modules.length; m++){
-            out.append(modules[m].getModuleName()).append("(").append(modules[m].priorWeight);
-            for (int j = 0; j < modules[m].posteriorWeights.length; ++j)
-                out.append("/").append(modules[m].posteriorWeights[j]);
+        for (EnsembleModule module : modules) {
+            out.append(module.getModuleName()).append("(").append(module.priorWeight);
+
+            for (double weight : module.posteriorWeights)
+                out.append("/").append(weight);
+            
             out.append("),");
         }
+
+        for (EnsembleModule module : modules)
+            out.append(module.getParameters()).append(",,");
 
         return out.toString();
     }
@@ -896,17 +914,18 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             //we need to sum the modules' reported build time as well as the weight
             //and voting definition time
             for (EnsembleModule module : modules) {
-                if (weightingScheme.needTrainPreds || votingScheme.needTrainPreds) {
+                if (needIndividualTrainPreds()) {
                     if (module.trainResults.getBuildPlusEstimateTime() == -1){
                         //assumes estimate time is not included in the total build time
-                        buildTime += module.trainResults.getBuildTime() + module.trainResults.getErrorEstimateTime();
+                        buildTime += module.trainResults.getBuildTimeInNanos()
+                                + module.trainResults.getErrorEstimateTimeInNanos();
                     }
                     else{   
-                        buildTime += module.trainResults.getBuildPlusEstimateTime();
+                        buildTime += module.trainResults.getBuildPlusEstimateTimeInNanos();
                     }
                 }
                 else{
-                    buildTime += module.trainResults.getBuildTime();
+                    buildTime += module.trainResults.getBuildTimeInNanos();
                 }
             }
         }

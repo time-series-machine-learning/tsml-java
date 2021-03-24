@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.distance_based;
 
 import experiments.data.DatasetLists;
@@ -190,7 +193,7 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
     
     
     @Override
-    public void buildClassifier(Instances train){      
+    public void buildClassifier(Instances train) throws Exception {
         long startTime=System.nanoTime();
         this.setDistanceFunction(cid);
 //        cid.setInstances(train);
@@ -295,8 +298,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             k2.useDTW();
             Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
             Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
-            k.buildClassifier(train);
-            k2.buildClassifier(train);
+            try {
+                k.buildClassifier(train);
+                k2.buildClassifier(train);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             double a1=ClassifierTools.accuracy(test, k);
             double a2=ClassifierTools.accuracy(test, k2);
             System.out.println(s+","+a1+","+a2);
@@ -313,8 +320,12 @@ public class NN_CID  extends kNN implements SaveParameterInfo{
             NN_CID k2= new NN_CID();
             Instances train=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TRAIN");
             Instances test=DatasetLoading.loadDataNullable(problemPath+s+"\\"+s+"_TEST");
-            k.buildClassifier(train);
-            k2.buildClassifier(train);
+            try {
+                k.buildClassifier(train);
+                k2.buildClassifier(train);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             double a1=ClassifierTools.accuracy(test, k);
             double a2=ClassifierTools.accuracy(test, k2);
             System.out.println(s+","+a1+","+a2);

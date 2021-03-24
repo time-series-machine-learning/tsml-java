@@ -1,3 +1,20 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.utils.system.random;
 
 import java.util.Random;
@@ -19,138 +36,62 @@ public class DebuggingRandom extends Random {
         super(l);
     }
 
+    private int i = 0;
+    
     @Override
     public double nextDouble() {
         double v = super.nextDouble();
-        System.out.println("nextDouble: " + v);
+        System.out.println(i++ + ": nextDouble: " + v);
         return v;
     }
 
     @Override
     public int nextInt() {
-        System.out.println("nextInt()");
+        System.out.println(i++ + ": nextInt()");
         return super.nextInt();
     }
 
     @Override
     public int nextInt(final int i) {
         int v = super.nextInt(i);
-        System.out.println("nextInt(" + i + "): " + v);
+        System.out.println(this.i++ + ": nextInt(" + i + "): " + v);
         return v;
     }
 
     @Override
     public synchronized void setSeed(final long l) {
-        System.out.println("setSeed(" + l + ")");
+        System.out.println(i++ + ": setSeed(" + l + ")");
         super.setSeed(l);
     }
 
     @Override
-    protected int next(final int i) {
-//        System.out.println("next(" + i + ")");
-        return super.next(i);
-    }
-
-    @Override
     public void nextBytes(final byte[] bytes) {
-        System.out.println("nextBytes");
+        System.out.println(i++ + ": nextBytes");
         super.nextBytes(bytes);
     }
 
     @Override
     public long nextLong() {
-        System.out.println("nextLong()");
+        System.out.println(i++ + ": nextLong()");
         return super.nextLong();
     }
 
     @Override
     public boolean nextBoolean() {
-        System.out.println("nextLong()");
+        System.out.println(i++ + ": nextLong()");
         return super.nextBoolean();
     }
 
     @Override
     public float nextFloat() {
-        System.out.println("nextFloat()");
+        System.out.println(i++ + ": nextFloat()");
         return super.nextFloat();
     }
 
     @Override
     public synchronized double nextGaussian() {
-        System.out.println("nextGaussian()");
+        System.out.println(i++ + ": nextGaussian()");
         return super.nextGaussian();
-    }
-
-    @Override
-    public IntStream ints(final long l) {
-        System.out.println("ints(" + l + ")");
-        return super.ints(l);
-    }
-
-    @Override
-    public IntStream ints() {
-        System.out.println("ints()");
-        return super.ints();
-    }
-
-    @Override
-    public IntStream ints(final long l, final int i, final int i1) {
-        System.out.println("ints(" + l + "," + i + "," + i1 + ")");
-        return super.ints(l, i, i1);
-    }
-
-    @Override
-    public IntStream ints(final int i, final int i1) {
-        System.out.println("ints(" + i + "," + i1 + ")");
-        return super.ints(i, i1);
-    }
-
-    @Override
-    public LongStream longs(final long l) {
-        System.out.println("longs(" + l + ")");
-        return super.longs(l);
-    }
-
-    @Override
-    public LongStream longs() {
-        System.out.println("longs()");
-        return super.longs();
-    }
-
-    @Override
-    public LongStream longs(final long l, final long l1, final long l2) {
-        System.out.println("longs(" + l + "," + l1 + "," + l2 + ")");
-        return super.longs(l, l1, l2);
-    }
-
-    @Override
-    public LongStream longs(final long l, final long l1) {
-        System.out.println("longs(" + l + "," + l1 + ")");
-        return super.longs(l, l1);
-    }
-
-    @Override
-    public DoubleStream doubles(final long l) {
-        System.out.println("doubles(" + l + ")");
-        return super.doubles(l);
-    }
-
-    @Override
-    public DoubleStream doubles() {
-        System.out.println("doubles()");
-        return super.doubles();
-    }
-
-    @Override
-    public DoubleStream doubles(final long l, final double v, final double v1) {
-        System.out.println("ints(" + v + "," + v + "," + v1 + ")");
-        return super.doubles(l, v, v1);
-    }
-
-    @Override
-    public DoubleStream doubles(final double v, final double v1) {
-        System.out.println("ints(" + v + "," + v1 + ")");
-        return super.doubles(v, v1);
     }
 
 }

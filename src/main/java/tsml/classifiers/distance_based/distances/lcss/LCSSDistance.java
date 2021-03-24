@@ -1,32 +1,45 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.distances.lcss;
 
-import tsml.classifiers.distance_based.distances.IntMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Instance;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+
+import java.util.Arrays;
 
 /**
  * LCSS distance measure.
  * <p>
  * Contributors: goastler
  */
-public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
-
-    public static final String WINDOW_SIZE_FLAG = WarpingParameter.WINDOW_SIZE_FLAG;
-    public static final String WINDOW_SIZE_PERCENTAGE_FLAG = WarpingParameter.WINDOW_SIZE_PERCENTAGE_FLAG;
-
-    private final WarpingParameter warpingParameter = new WarpingParameter();
+public class LCSSDistance extends MatrixBasedDistanceMeasure {
+    
     // delta === warp
     // epsilon === diff between two values before they're considered the same AKA tolerance
-
+    
     private double epsilon = 0.01;
+    private double window = 1;
 
     public static final String EPSILON_FLAG = "e";
-
-    private static boolean approxEqual(double a, double b, double epsilon) {
-        return Math.abs(a - b) <= epsilon;
-    }
+    public static final String WINDOW_FLAG = DTW.WINDOW_FLAG;
 
     public double getEpsilon() {
         return epsilon;
@@ -36,154 +49,156 @@ public class LCSSDistance extends IntMatrixBasedDistanceMeasure {
         this.epsilon = epsilon;
     }
 
+    private boolean approxEqual(TimeSeriesInstance a, int aIndex, TimeSeriesInstance b, int bIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final TimeSeries bDim = b.get(i);
+            final Double aValue = aDim.get(aIndex);
+            final Double bValue = bDim.get(bIndex);
+            if(Math.abs(aValue - bValue) > epsilon) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
-    public double findDistance(final Instance a, final Instance b, double limit) {
-
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
-
-
-        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final int[][] matrix = generateDistanceMatrix ? new int[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
-
-        // window should be somewhere from 0..len-1. window of 0 is ED, len-1 is Full DTW. Anything above is just
-        // Full DTW
-        final int windowSize = findWindowSize(aLength);
-
+    public double distance(TimeSeriesInstance a, TimeSeriesInstance b, double limit) {
+        
+        // make a the longest time series
+        if(a.getMaxLength() < b.getMaxLength()) {
+            TimeSeriesInstance tmp = a;
+            a = b;
+            b = tmp;
+        }
+        
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
+        setup(aLength, bLength, true);
+        
         // 22/10/19 goastler - limit LCSS such that if any value in the current window is larger than the limit then we can stop here, no point in doing the extra work
         if(limit != Double.POSITIVE_INFINITY) { // check if there's a limit set
             // if so then reverse engineer the max LCSS distance and replace the limit
             // this is just the inverse of the return value integer rounded to an LCSS distance
-            limit = (int) ((1 - limit) * aLength) + 1; // must have plus 1 due to int rounding. Otherwise the value
+            limit = (1 - limit) * Math.min(aLength, bLength);
             // is potentially slightly too low, causing *early* early abandon
         }
+        
+        // step is the increment of the mid point for each row
+        final double step = (double) (bLength - 1) / (aLength - 1);
+        final double windowSize = this.window * bLength;
 
-        int[] row = new int[bLength];
-        int[] prevRow = new int[bLength];
-        // init min to top left cell
-        double min = approxEqual(a.value(0), b.value(0), epsilon) ? 1 : 0;
-        // top left cell of matrix will simply be the sq diff
-        row[0] = (int) min;
+        // row index
+        int i = 0;
+
         // start and end of window
-        // start at the next cell of the first row
-        int start = 1;
-        // end at window or bLength, whichever smallest
-        int end = Math.min(bLength - 1, windowSize);
-        // must set the value before and after the window to inf if available as the following row will use these
-        // in top / left / top-left comparisons
-        if(end + 1 < bLength) {
-            row[end + 1] = Integer.MIN_VALUE;
-        }
-        // the first row is populated from the cell before
-        for(int j = start; j <= end; j++) {
-            final int cost;
-            if(approxEqual(a.value(0), b.value(j), epsilon)) {
-                cost = 1;
+        int start = 0;
+        double mid = 0;
+        int end = Math.min(bLength - 1, (int) Math.floor(windowSize));
+        int prevEnd; // store end of window from previous row to fill in shifted space with inf
+        double[] row = getRow(i);
+        double[] prevRow;
+
+        // col index
+        int j = start;
+        // process top left sqaure of mat
+        double min = row[j] = approxEqual(a, i, b, j) ? 1 : 0;
+        j++;
+        // compute the first row
+        for(; j <= end; j++) {
+            if(approxEqual(a, i, b, j)) {
+                row[j] = 1;
             } else {
-                cost = row[j - 1];
+                row[j] = row[j - 1];
             }
-            row[j] = cost;
-            min = Math.min(min, cost);
+            min = Math.min(min, row[j]);
         }
-        if(generateDistanceMatrix) {
-            System.arraycopy(row, 0, matrix[0], 0, row.length);
-        }
-        // early abandon if work has been done populating the first row for >1 entry
-        if(min > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
-        for(int i = 1; i < aLength; i++) {
-            // Swap current and prevRow arrays. We'll just overwrite the new row.
-            {
-                int[] temp = prevRow;
-                prevRow = row;
-                row = temp;
-            }
-            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
+        i++;
+        
+        // process remaining rows
+        for(; i < aLength; i++) {
+            // reset min for the row
             min = Double.POSITIVE_INFINITY;
-            // start and end of window
-            start = Math.max(0, i - windowSize);
-            end = Math.min(bLength - 1, i + windowSize);
-            // must set the value before and after the window to inf if available as the following row will use these
-            // in top / left / top-left comparisons
-            if(start - 1 >= 0) {
-                row[start - 1] = Integer.MIN_VALUE;
-            }
-            if(end + 1 < bLength) {
-                row[end + 1] = Integer.MIN_VALUE;
-            }
-            // if assessing the left most column then only top is the option - not left or left-top
-            if(start == 0) {
-                final int cost;
-                if(approxEqual(a.value(i), b.value(start), epsilon)) {
-                    cost = 1;
+            // change rows
+            prevRow = row;
+            row = getRow(i);
+
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * step;
+            // if using variable length time series and window size is fractional then the window may part cover an 
+            // element. Any part covered element is truncated from the window. I.e. mid point of 5.5 with window of 2.3
+            // would produce a start point of 2.2. The window would start from index 3 as it does not fully cover index
+            // 2. The same thing happens at the end, 5.5 + 2.3 = 7.8, so the end index is 7 as it does not fully cover 8
+            start = Math.max(0, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength - 1, (int) Math.floor(mid + windowSize));
+            j = start;
+
+            // set the values above the current row and outside of previous window to inf
+            Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.NEGATIVE_INFINITY);
+            // set the value left of the window to inf
+            if(j > 0) row[j - 1] = Double.NEGATIVE_INFINITY;
+            
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(j == 0) {
+                if(approxEqual(a, i, b, j)) {
+                    row[j] = 1;
                 } else {
-                    cost = prevRow[start];
+                    row[j] = prevRow[start];
                 }
-                row[start] = cost;
-                min = Math.min(min, cost);
-                // shift to next cell
-                start++;
+                min = Math.min(min, row[j++]);
             }
-            for(int j = start; j <= end; j++) {
-                final int cost;
-                final int topLeft = prevRow[j - 1];
-                if(approxEqual(a.value(i), b.value(j), epsilon)) {
-                    cost = topLeft + 1;
+            
+            // compute the distance for each cell in the row
+            for(; j <= end; j++) {
+                if(approxEqual(a, i, b, j)) {
+                    row[j] = prevRow[j - 1] + 1;
                 } else {
-                    final int top = prevRow[j];
-                    final int left = row[j - 1];
-                    // max of top / left / top left
-                    cost = Math.max(top, Math.max(left, topLeft));
+                    // note that the below is an edge case fix. LCSS algorithmically doesn't consider the topLeft cell
+                    // when computing the max sequence. However, when a harsh enough window is applied the top and left
+                    // cell become neg inf, causing issues as the max of neg inf and neg inf is neg inf. Therefore, we
+                    // include topLeft in the max sequence candidates. In the case of a harsh window, this finds the
+                    // value in the topLeft cell as max rather than neg inf in left or top. In non-harsh window cases,
+                    // the topLeft value is always the same as left or topLeft (because they were not approx equal) or 
+                    // -1 less (because they were approx equal, hence a +1 occurred. As it's always equal to or less, it
+                    // has no effect upon the max operation under non-harsh window circumstances.
+                    row[j] = Math.max(row[j - 1], Math.max(prevRow[j], prevRow[j - 1]));
                 }
-                row[j] = cost;
-                min = Math.min(min, cost);
+                min = Math.min(min, row[j]);
             }
-            if(generateDistanceMatrix) {
-                System.arraycopy(row, 0, matrix[i], 0, row.length);
-            }
-            if(min > limit) {
-                return Double.POSITIVE_INFINITY;
-            }
+            
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
-        //Find the minimum distance at the end points, within the warping window.
-        return 1d - (double) row[bLength - 1] / aLength;
+        
+        // last value in the current row is the distance
+        final double distance = 1d - row[row.length - 1] / Math.min(aLength, bLength);
+        teardown();
+        return distance;
+    }
+
+    @Override protected double getFillerValue() {
+        return Double.NEGATIVE_INFINITY; // LCSS maximises the subsequence count, so fill cost matrix with neg inf to begin with
     }
 
     @Override
     public ParamSet getParams() {
-        return super.getParams().addAll(warpingParameter.getParams()).add(EPSILON_FLAG, epsilon);
+        return super.getParams().add(WINDOW_FLAG, window).add(EPSILON_FLAG, epsilon);
     }
 
     @Override
     public void setParams(final ParamSet param) throws Exception {
-        ParamHandlerUtils.setParam(param, EPSILON_FLAG, this::setEpsilon, Double.class);
-        warpingParameter.setParams(param);
         super.setParams(param);
+        setEpsilon(param.get(EPSILON_FLAG, getEpsilon()));
+        setWindow(param.get(WINDOW_FLAG, getWindow()));
     }
 
-    public int findWindowSize(final int aLength) {
-        return warpingParameter.findWindowSize(aLength);
+    public double getWindow() {
+        return window;
     }
 
-    public int getWindowSize() {
-        return warpingParameter.getWindowSize();
-    }
-
-    public void setWindowSize(final int windowSize) {
-        warpingParameter.setWindowSize(windowSize);
-    }
-
-    public double getWindowSizePercentage() {
-        return warpingParameter.getWindowSizePercentage();
-    }
-
-    public void setWindowSizePercentage(final double windowSizePercentage) {
-        warpingParameter.setWindowSizePercentage(windowSizePercentage);
-    }
-
-    public boolean isWindowSizeInPercentage() {
-        return warpingParameter.isWindowSizeInPercentage();
+    public void setWindow(final double window) {
+        this.window = window;
     }
 }

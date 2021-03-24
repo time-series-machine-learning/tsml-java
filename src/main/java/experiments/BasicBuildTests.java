@@ -9,6 +9,8 @@ import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
+import java.io.IOException;
+
 /**
  * Does basic sanity check builds for all listed classifiers and transformers. Does not guarantee correctness,
  * just checks they all build and produce output
@@ -18,7 +20,7 @@ import weka.core.Instances;
 public class BasicBuildTests {
 
 
-    public static void buildAllClassifiers(String[] problems, String[] classifiers, String path) {
+    public static void buildAllClassifiers(String[] problems, String[] classifiers, String path) throws IOException {
         for(String str:problems){
             System.out.println("Building all for problem "+str);
             Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN.arff");
@@ -38,7 +40,7 @@ public class BasicBuildTests {
             }
         }
     }
-    public static void buildAllTransforms(String[] problems, String[] transforms, String path) {
+    public static void buildAllTransforms(String[] problems, String[] transforms, String path) throws IOException {
         for(String str:problems){
             System.out.println("Transforming all all for problem "+str);
             Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN.arff");
@@ -62,7 +64,7 @@ public class BasicBuildTests {
 
 
 
-    public static void main(String[] args)  {
+    public static void main(String[] args) throws IOException {
         System.out.println("Testing all SimpleBatch filters do not crash");
         String dataPath="src\\main\\java\\experiments\\data\\tsc\\";
         String[] problems={"ItalyPowerDemand","Chinatown","Beef"};

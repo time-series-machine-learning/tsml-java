@@ -1,8 +1,23 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.transformers;
 
 import java.io.Serializable;
-
-import org.apache.commons.lang3.NotImplementedException;
 
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 import tsml.data_containers.TSCapabilities;
@@ -56,7 +71,9 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      * @param Instance inst
      * @return transformed Instance
      */
-    Instance transform(Instance inst);
+    default Instance transform(Instance inst){
+        throw new UnsupportedOperationException("Legacy: In general this function should be used or implemented.");
+    }
 
     /**
      * Method that constructs a holding Instances for transformed data, without doing the transform
@@ -74,7 +91,7 @@ public interface Transformer extends TSCapabilitiesHandler, ParamHandler, Serial
      * @throws Exception
      */
     default void setOptions(String[] options) throws Exception{
-        throw new NotImplementedException("calling default method of setOptions in Transformer interface, it has not been implemented for class "+this.getClass().getSimpleName());
+        throw new UnsupportedOperationException("calling default method of setOptions in Transformer interface, it has not been implemented for class "+this.getClass().getSimpleName());
     }
 
     /**

@@ -1,16 +1,18 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation;
 
@@ -82,13 +84,15 @@ public class ClassifierResultsAnalysis {
 
     //    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.additionalTimeForEstimate;
     //    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.additionalTimeForEstimateBenchmarked;
-    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.fromScratchEstimateTime;
-    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.fromScratchEstimateTimeBenchmarked;
+//    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.fromScratchEstimateTime;
+//    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.fromScratchEstimateTimeBenchmarked;
 
     public static PerformanceMetric memoryMaxMetric = PerformanceMetric.memory;
 
     public static List<PerformanceMetric> allComputationalMetrics = Arrays.asList(trainTimeMetric, benchmarkedTrainTimeMetric, testTimeMetric,
-            benchmarkedTestTimeMetric, memoryMaxMetric, estimateTimeMetric, benchmarkedEstimateTimeMetric);
+            benchmarkedTestTimeMetric, memoryMaxMetric, PerformanceMetric.totalBuildPlusEstimateTime, PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked,
+            PerformanceMetric.extraTimeForEstimate, PerformanceMetric.extraTimeForEstimateBenchmarked, PerformanceMetric.extraTimeForEstimate,
+            PerformanceMetric.extraTimeForEstimateBenchmarked);
 
 
     //final id's and path suffixes
@@ -249,7 +253,12 @@ public class ClassifierResultsAnalysis {
             compMetrics.add(memoryMaxMetric);
             compMetrics.add(PerformanceMetric.buildTimeBenchmarked);
             compMetrics.add(benchmarkedTestTimeMetric);
-//            compMetrics.add(estimateTimeMetric);
+
+            compMetrics.add(PerformanceMetric.totalBuildPlusEstimateTime);
+            compMetrics.add(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked);
+            compMetrics.add(PerformanceMetric.extraTimeForEstimate);
+            compMetrics.add(PerformanceMetric.extraTimeForEstimateBenchmarked);
+
             for (int j = compResourceSummaries.size()-1; j >= 0; j--) {
                 String label = compMetrics.get(j).name;
                 if (compResourceSummaries.get(j) != null) {
@@ -863,21 +872,29 @@ public class ClassifierResultsAnalysis {
         // NOTE: getting train timings from test files intentionally ( train.. = ..sliceSplit("test")..), avoids check for whether we're actually loading in
         // train files in comparison set up. build times should be same in both trainFoldX and testFoldX file anyway
 
+
         double[][][] trainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
         String[] trainResStr = null;
         if (trainTimes != null)
             trainResStr = eval_metricOnSplit(timingsOutPath, filename, null, trainLabel, trainTimeMetric, trainTimes, cnames, dsets, dsetGroupings);
+
 
         double[][][] testTimes = results.sliceSplit("test").retrieveDoubles(testTimeMetric.getter)[0];
         String[] testResStr = null;
         if (testTimes != null)
             testResStr = eval_metricOnSplit(timingsOutPath, filename, null, testLabel, testTimeMetric, testTimes, cnames, dsets, dsetGroupings);
 
-//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
-//        String[] estimateResStr = null;
-//        if (estimateTimes != null)
-//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
+        double[][][] estimateTimes1 = results.sliceSplit("test").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTime.getter)[0];
+        String[] estimateResStr1 = null;
+        if (estimateTimes1 != null)
+            estimateResStr1 = eval_metricOnSplit(timingsOutPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTime, estimateTimes1, cnames, dsets, dsetGroupings);
+
+
+        double[][][] estimateTimes2 = results.sliceSplit("test").retrieveDoubles(PerformanceMetric.extraTimeForEstimate.getter)[0];
+        String[] estimateResStr2 = null;
+        if (estimateTimes2 != null)
+            estimateResStr2 = eval_metricOnSplit(timingsOutPath, filename, null, estimateLabel, PerformanceMetric.extraTimeForEstimate, estimateTimes2, cnames, dsets, dsetGroupings);
 
         String memoryOutPath = outPath + "MaxMemory/"; //special case for timings
         new File(memoryOutPath).mkdirs();
@@ -890,8 +907,7 @@ public class ClassifierResultsAnalysis {
             memoryResStr = eval_metricOnSplit(memoryOutPath, filename, null, testLabel, memoryMaxMetric, memoryMax, cnames, dsets, dsetGroupings);
 
 
-
-        return new String[][] { trainResStr, testResStr, memoryResStr };
+        return new String[][] { trainResStr, testResStr, estimateResStr1, estimateResStr2, memoryResStr };
 //        return new String[][] { trainResStr, testResStr, estimateResStr };
     }
 
@@ -910,28 +926,33 @@ public class ClassifierResultsAnalysis {
         // train files in comparison set up. build times should be same in both trainFoldX and testFoldX file anyway
 
         double[][][] benchmarkedTrainTimes = results.sliceSplit("test").retrieveDoubles(trainTimeMetric.getter)[0];
-
         String[] trainResStr = null;
         if (benchmarkedTrainTimes != null) {
             trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, benchmarkedTrainTimes, cnames, dsets, dsetGroupings);
             writeTableFile_ClassifierDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkedTrainTimes, cnames, dsets);
         }
 
-        double[][][] benchmarkedTestTimes = results.sliceSplit("test").retrieveDoubles(benchmarkedTestTimeMetric.getter)[0];
 
+        double[][][] benchmarkedTestTimes = results.sliceSplit("test").retrieveDoubles(benchmarkedTestTimeMetric.getter)[0];
         String[] testResStr = null;
         if (benchmarkedTestTimes != null) {
             testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, benchmarkedTestTimeMetric, benchmarkedTestTimes, cnames, dsets, dsetGroupings);
             writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
         }
 
-//        double[][][] estimateTimes = results.sliceSplit("test").retrieveDoubles(estimateTimeMetric.getter)[0];
-//        String[] estimateResStr = null;
-//        if (estimateTimes != null)
-//            estimateResStr = eval_metricOnSplit(outPath, filename, null, estimateLabel, estimateTimeMetric, estimateTimes, cnames, dsets, dsetGroupings);
 
-        return new String[][] { trainResStr, testResStr };
-//        return new String[][] { trainResStr, testResStr, estimateResStr };
+        double[][][] estimateTimes1 = results.sliceSplit("test").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked.getter)[0];
+        String[] estimateResStr1 = null;
+        if (estimateTimes1 != null)
+            estimateResStr1 = eval_metricOnSplit(outPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked, estimateTimes1, cnames, dsets, dsetGroupings);
+
+
+        double[][][] estimateTimes2 = results.sliceSplit("test").retrieveDoubles(PerformanceMetric.extraTimeForEstimateBenchmarked.getter)[0];
+        String[] estimateResStr2 = null;
+        if (estimateTimes2 != null)
+            estimateResStr2 = eval_metricOnSplit(outPath, filename, null, estimateLabel, PerformanceMetric.extraTimeForEstimateBenchmarked, estimateTimes2, cnames, dsets, dsetGroupings);
+
+        return new String[][] { trainResStr, testResStr, estimateResStr1, estimateResStr2 };
     }
 
     protected static void writeCliqueHelperFiles(String cdCSVpath, String expname, PerformanceMetric metric, String cliques) {
@@ -1546,10 +1567,18 @@ public class ClassifierResultsAnalysis {
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel, "RAW");
             else if (metrics.get(i).equals(testTimeMetric))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel, "RAW");
+            else if (metrics.get(i).equals(PerformanceMetric.extraTimeForEstimate))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, estimateLabel, "RAW");
+            else if (metrics.get(i).equals(PerformanceMetric.totalBuildPlusEstimateTime))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, estimateLabel, "RAW");
             else if (metrics.get(i).equals(PerformanceMetric.buildTimeBenchmarked))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, trainLabel, "BENCHMARKED");
             else if (metrics.get(i).equals(benchmarkedTestTimeMetric))
                 jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, testLabel, "BENCHMARKED");
+            else if (metrics.get(i).equals(PerformanceMetric.extraTimeForEstimateBenchmarked))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, estimateLabel, "BENCHMARKED");
+            else if (metrics.get(i).equals(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked))
+                jxl_buildStatSheets_timings(wb, basePath, metrics.get(i), i, estimateLabel, "BENCHMARKED");
             else
                 jxl_buildStatSheets(wb, basePath, metrics.get(i), i);
         }

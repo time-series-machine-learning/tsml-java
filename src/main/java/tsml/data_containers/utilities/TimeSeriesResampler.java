@@ -1,3 +1,20 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.data_containers.utilities;
 
 import java.util.ArrayList;
@@ -46,8 +63,22 @@ public class TimeSeriesResampler {
             new_test.addAll(bin.subList(occurences, bin.size()));//copy the remaining portion of the bin into the test set.
         }
 
-        return new TrainTest(new TimeSeriesInstances(new_train, train.getClassLabels()), 
-                             new TimeSeriesInstances(new_test, train.getClassLabels()));
+        TimeSeriesInstances newTrain = new TimeSeriesInstances(new_train, train.getClassLabels());
+        TimeSeriesInstances newTest = new TimeSeriesInstances(new_test, test.getClassLabels());
+
+        // set problem name
+        newTrain.setProblemName(train.getProblemName());
+        newTest.setProblemName(test.getProblemName());
+
+        // set description
+        newTrain.setDescription(train.getDescription());
+        newTest.setDescription(test.getDescription());
+
+        // set class counts
+        train.getClassCounts();
+        test.getClassCounts();
+
+        return new TrainTest(newTrain, newTest);
     }
 
     //this function is the one from Instances, want to mirror there shuffling algorithm.

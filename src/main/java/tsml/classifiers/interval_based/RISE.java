@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.interval_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -695,8 +698,9 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
             //Add independent variable to model (length of interval).
             timer.makePrediciton(intervalInstances.numAttributes() - 1);
-            timer.independantVariables.add(intervalInstances.numAttributes() - 1);
+            timer.independentVariables.add(intervalInstances.numAttributes() - 1);
 
+            //Build classifier with intervalInstances.
             //Build classifier with intervalInstances.
             if(classifier instanceof RandomTree){
                 ((RandomTree)classifier).setKValue(intervalInstances.numAttributes() - 1);
@@ -704,8 +708,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             baseClassifiers.add(AbstractClassifier.makeCopy(classifier));
             baseClassifiers.get(baseClassifiers.size()-1).buildClassifier(intervalInstances);
 
-            //Add dependant variable to model (time taken).
-            timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
+            //Add dependent variable to model (time taken).
+            timer.dependentVariables.add(System.nanoTime() - timer.treeStartTime);
 
             //Serialise every 100 trees by default (if set to checkpoint).
             if (checkpoint){
@@ -755,7 +759,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setClassifierName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
-        if(estimator==EstimatorMethod.OOB) {
+        if(trainEstimateMethod == TrainEstimateMethod.OOB) {
             trainResults.setFoldID(seed);
             int numTrees = 500;
             int bagProp = 100;
@@ -789,7 +793,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
                 //Add independent variable to model (length of interval).
                 timer.makePrediciton(intervalInstances.numAttributes() - 1);
-                timer.independantVariables.add(intervalInstances.numAttributes() - 1);
+                timer.independentVariables.add(intervalInstances.numAttributes() - 1);
 
                 Instances trainHeader = new Instances(intervalInstances, 0);
                 Instances testHeader = new Instances(intervalInstances, 0);
@@ -825,7 +829,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 bagAccuracies[treeCount] /= testHeader.size();
                 trainHeader.clear();
                 testHeader.clear();
-                timer.dependantVariables.add(System.nanoTime() - timer.treeStartTime);
+                timer.dependentVariables.add(System.nanoTime() - timer.treeStartTime);
             }
 
             for (int i = 0; i < bags.length; i++) {
@@ -854,7 +858,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             trainResults.setClassifierName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
-        else if(estimator==EstimatorMethod.CV || estimator==EstimatorMethod.NONE) {
+        else if(trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
             /** Defaults to 10 or numInstances, whichever is smaller.
              * Interface TrainAccuracyEstimate
              * Could this be handled better? */
@@ -1153,8 +1157,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         }
         result+=",EstimateOwnPerformance,"+getEstimateOwnPerformance();
         if(getEstimateOwnPerformance()) {
-            result += ",trainEstimateMethod," + estimator;
-            if (estimator == EstimatorMethod.OOB && trainTimeContract)
+            result += ",trainEstimateMethod," + trainEstimateMethod;
+            if (trainEstimateMethod == TrainEstimateMethod.OOB && trainTimeContract)
                 result += ", Percentage contract for OOB, " + perForBag;
         }
         return result;
@@ -1176,6 +1180,12 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         else
             trainTimeContract = false;
     }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
+
 
     /**
      * for interface TechnicalInformationHandler
@@ -1284,7 +1294,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     /**
      * Private inner class containing all logic pertaining to timing.
-     * CRISE is contracted via updating a linear regression model (y = a * x^2 + b * x + c) in which the dependant
+     * CRISE is contracted via updating a linear regression model (y = a * x^2 + b * x + c) in which the dependent
  variable (y) is time taken and the independent variable (x) is interval length.
  The equation is then reordered to solve for positive x, providing the upper bound on the interval space.
  Dividing this by minNumtrees - treeCount gives the maximum space such that in the worse case the contract is met.
@@ -1296,8 +1306,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
         protected long treeStartTime = 0;
         protected long forestElapsedTime = 0;
 
-        protected ArrayList<Integer> independantVariables = null;
-        protected ArrayList<Long> dependantVariables = null;
+        protected ArrayList<Integer> independentVariables = null;
+        protected ArrayList<Long> dependentVariables = null;
         protected ArrayList<Double> predictions = null;
         private ArrayList<Double> aValues = null;
         private ArrayList<Double> bValues = null;
@@ -1313,8 +1323,8 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
          * Called in CRISE.initialise in order to reset timer.
          */
         protected void reset(){
-            independantVariables = new ArrayList<>();
-            dependantVariables = new ArrayList<>();
+            independentVariables = new ArrayList<>();
+            dependentVariables = new ArrayList<>();
             predictions = new ArrayList<>();
             aValues = new ArrayList<>();
             bValues = new ArrayList<>();
@@ -1329,7 +1339,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             a = 0.0;
             b = 0.0;
             c = 0.0;
-            double numberOfVals = (double) independantVariables.size();
+            double numberOfVals = (double) independentVariables.size();
             double smFrstScrs = 0.0;
             double smScndScrs = 0.0;
             double smSqrFrstScrs = 0.0;
@@ -1338,14 +1348,14 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             double smPrdtFrstScndScrs = 0.0;
             double smSqrFrstScrsScndScrs = 0.0;
 
-            for (int i = 0; i < independantVariables.size(); i++) {
-                smFrstScrs += independantVariables.get(i);
-                smScndScrs += dependantVariables.get(i);
-                smSqrFrstScrs += Math.pow(independantVariables.get(i), 2);
-                smCbFrstScrs += Math.pow(independantVariables.get(i), 3);
-                smPwrFrFrstScrs += Math.pow(independantVariables.get(i), 4);
-                smPrdtFrstScndScrs += independantVariables.get(i) * dependantVariables.get(i);
-                smSqrFrstScrsScndScrs += Math.pow(independantVariables.get(i), 2) * dependantVariables.get(i);
+            for (int i = 0; i < independentVariables.size(); i++) {
+                smFrstScrs += independentVariables.get(i);
+                smScndScrs += dependentVariables.get(i);
+                smSqrFrstScrs += Math.pow(independentVariables.get(i), 2);
+                smCbFrstScrs += Math.pow(independentVariables.get(i), 3);
+                smPwrFrFrstScrs += Math.pow(independentVariables.get(i), 4);
+                smPrdtFrstScndScrs += independentVariables.get(i) * dependentVariables.get(i);
+                smSqrFrstScrsScndScrs += Math.pow(independentVariables.get(i), 2) * dependentVariables.get(i);
             }
 
             double valOne = smSqrFrstScrs - (Math.pow(smFrstScrs, 2) / numberOfVals);
@@ -1413,17 +1423,17 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
         protected void printModel(){
 
-            for (int i = 0; i < independantVariables.size(); i++) {
-                System.out.println(Double.toString(independantVariables.get(i)) + "," + Double.toString(dependantVariables.get(i)) + "," + Double.toString(predictions.get(i)));
+            for (int i = 0; i < independentVariables.size(); i++) {
+                System.out.println(Double.toString(independentVariables.get(i)) + "," + Double.toString(dependentVariables.get(i)) + "," + Double.toString(predictions.get(i)));
             }
         }
 
         protected void saveModelToCSV(String problemName){
             try{
                 FullAccessOutFile outFile = new FullAccessOutFile((modelOutPath.isEmpty() ? "timingModel" + (int) seed + ".csv" : modelOutPath + "/" + problemName + "/" + "/timingModel" + (int) seed + ".csv"));
-                for (int i = 0; i < independantVariables.size(); i++) {
-                    outFile.writeLine(Double.toString(independantVariables.get(i)) + ","
-                            + Double.toString(dependantVariables.get(i)) + ","
+                for (int i = 0; i < independentVariables.size(); i++) {
+                    outFile.writeLine(Double.toString(independentVariables.get(i)) + ","
+                            + Double.toString(dependentVariables.get(i)) + ","
                             + Double.toString(predictions.get(i)) + ","
                             + Double.toString(timer.aValues.get(i)) + ","
                             + Double.toString(timer.bValues.get(i)) + ","

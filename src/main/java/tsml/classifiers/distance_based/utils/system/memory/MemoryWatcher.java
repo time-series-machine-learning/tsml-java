@@ -1,20 +1,38 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.utils.system.memory;
 
-import com.google.common.testing.GcFinalization;
 import com.sun.management.GarbageCollectionNotificationInfo;
 
+import javax.management.ListenerNotFoundException;
+import javax.management.Notification;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
+import org.nd4j.linalg.io.Assert;
 import tsml.classifiers.distance_based.utils.system.timing.Stated;
+import utilities.Utilities;
 
 /**
  * Purpose: watch the memory whilst enabled, tracking the mean, std dev, count, gc time and max mem usage.
@@ -26,281 +44,135 @@ import tsml.classifiers.distance_based.utils.system.timing.Stated;
  */
 public class MemoryWatcher extends Stated implements MemoryWatchable {
 
+    public static void main(String[] args) {
+        final MemoryWatcher memoryWatcher = new MemoryWatcher();
+        memoryWatcher.start();
+        final LinkedList<double[]> list = new LinkedList<>();
+        int i = 0;
+        while(true) {
+            i++;
+            Utilities.busyWait(1000000);
+            list.add(new double[1000]);
+//            System.out.println(list.size());
+            if(i % 10 == 0) {
+                list.remove(0);
+            }
+            if(i % 10000 == 0) {
+                System.out.println(memoryWatcher.getMaxMemoryUsage());
+            }
+        }
+    }
+    
+    public synchronized void update() {
+        // deliberately update memory usage using the used memory AT THE TIME OF INVOCATION. I.e. not necessarily the time of max memory usage!
+        // we do this to work around the cases where the gc hasn't run, therefore we don't know the max memory over time
+        // instead, we poll the memory usage at the current time
+        if(maxMemoryUsage < 0) {
+            maxMemoryUsage = Math.max(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), maxMemoryUsage);
+        }
+    }
+    
     public synchronized long getMaxMemoryUsage() {
+        update();
         return maxMemoryUsage;
     }
 
     private long maxMemoryUsage = -1;
-    private long count = 0;
-    // must store the squared diff from the mean as big decimal as this number gets reallyyyyyyy big over time.
-    // Downside is of course computation time, but given the updates are done on another thread this shouldn't impact
-    // the main thread performance.
-    private BigDecimal sqDiffFromMean = BigDecimal.ZERO;
-    private double mean = 0;
-    private long garbageCollectionTime = 0;
-    private transient boolean setup = false;
-    private boolean trackMean = false;
-    private boolean trackMax = true;
-    private boolean trackCount = false;
-    private boolean trackVariance = false;
-    private boolean trackGarbageCollectionTime = false;
+    private transient NotificationListener listener = this::handleNotification;
+    private boolean activeListener = false;
+    
+    public MemoryWatcher() {}
 
-    public MemoryWatcher() {
-        setupEmitters();
+    @Override public void start() {
+        addListener();
+        MemoryWatchable.gc(); // do a gc sweep to try and prompt memory readings at start
+        super.start();
     }
 
-    public synchronized void checkStopped() {
-        super.checkStopped();
+    @Override public void stop() {
+        MemoryWatchable.gc(); // clean up memory before stopping
+        removeListener();
+        super.stop();
     }
 
-    public synchronized void checkStarted() {
-        super.checkStarted();
-    }
-
-    public synchronized void start(boolean check) {
-        super.start(check);
-    }
-
-    public synchronized void stop(boolean check) {
-        super.stop(check);
-    }
-
-    public synchronized boolean isStarted() {
-        return super.isStarted();
-    }
-
-    /**
-     * emitters are used to listen to each memory pool (usually young / old gen). This function sets up the emitters
-     * if not already
-     */
-    private synchronized void setupEmitters() {
-        if(!setup) {
-            // garbage collector for old and young gen
-            List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
-            for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-                // to log
-                // listen to notification from the emitter
-                NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
-                emitter.addNotificationListener(listener, null, null);
-            }
-            setup = true;
+    private void addListener() {
+        // emitters are used to listen to each memory pool (usually young / old gen).
+        // garbage collector for old and young gen
+        listener = this::handleNotification;
+        List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
+        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
+            // to log
+            // listen to notification from the emitter
+            NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
+            /**
+             * the memory update listener
+             */
+            emitter.addNotificationListener(listener, null, null);
         }
+        
+        if(activeListener) throw new IllegalStateException("listener already active");
+        activeListener = true;
     }
-
-    public boolean isTrackMean() {
-        return trackMean;
-    }
-
-    public void setTrackMean(final boolean trackMean) {
-        this.trackMean = trackMean;
-    }
-
-    public boolean isTrackMax() {
-        return trackMax;
-    }
-
-    public void setTrackMax(final boolean trackMax) {
-        this.trackMax = trackMax;
-    }
-
-    public boolean isTrackCount() {
-        return trackCount;
-    }
-
-    public void setTrackCount(final boolean trackCount) {
-        this.trackCount = trackCount;
-    }
-
-    public boolean isTrackVariance() {
-        return trackVariance;
-    }
-
-    public void setTrackVariance(final boolean trackVariance) {
-        this.trackVariance = trackVariance;
-    }
-
-    private interface SerNotificationListener extends NotificationListener, Serializable {}
-
-    /**
-     * the memory update listener
-     */
-    private final SerNotificationListener listener = (notification, handback) -> {
-        synchronized(MemoryWatcher.this) {
-            if(isStarted()) {
-                if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
-                    GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
-                    if(trackGarbageCollectionTime) {
-                        long duration = TimeUnit.NANOSECONDS.convert(info.getGcInfo().getDuration(), TimeUnit.MILLISECONDS);
-                        garbageCollectionTime += duration;
-                    }
-                    Map<String, MemoryUsage> memoryUsageInfo = info.getGcInfo().getMemoryUsageAfterGc();
-                    for (Map.Entry<String, MemoryUsage> entry : memoryUsageInfo.entrySet()) {
-                        MemoryUsage memoryUsageSnapshot = entry.getValue();
-                        long memoryUsage = memoryUsageSnapshot.getUsed();
-                        addMemoryUsageReading(memoryUsage);
-                    }
-                }
+    
+    private void removeListener() {
+        // emitters are used to listen to each memory pool (usually young / old gen).
+        // garbage collector for old and young gen
+        List<GarbageCollectorMXBean> garbageCollectorBeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
+        for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
+            // to log
+            // listen to notification from the emitter
+            NotificationEmitter emitter = (NotificationEmitter) garbageCollectorBean;
+            try {
+                emitter.removeNotificationListener(listener);
+            } catch(ListenerNotFoundException ignored) {
+                // nevermind, already been removed
+                System.out.println("failed to remove listener");
             }
         }
-    };
 
-    public boolean hasReadings() {
-        return count > 0;
+        if(!activeListener) throw new IllegalStateException("listener already inactive");
+        activeListener = false;
     }
-
-    /**
-     * update the stats by adding stats from another instance
-     * @param other
-     */
-    public synchronized void add(MemoryWatchable other) { // todo put these online std / mean algos in a util class
-        maxMemoryUsage = other.getMaxMemoryUsage();
-        garbageCollectionTime += other.getGarbageCollectionTime();
-        if(hasReadings() && other.hasMemoryReadings()) {
-            BigDecimal thisMean = BigDecimal.valueOf(this.mean);
-            BigDecimal thisCount = BigDecimal.valueOf(this.count);
-            BigDecimal otherMean = BigDecimal.valueOf(other.getMeanMemoryUsage());
-            BigDecimal otherCount = BigDecimal.valueOf(other.getMemoryReadingCount());
-            BigDecimal overallCount = thisCount.add(otherCount);
-            BigDecimal thisTotal = thisMean.multiply(thisCount);
-            BigDecimal otherTotal = otherMean.multiply(otherCount);
-            BigDecimal overallMean = thisTotal.add(otherTotal).divide(overallCount, RoundingMode.HALF_UP);
-            // error sum of squares
-            BigDecimal thisEss = BigDecimal.valueOf(getStdDevMemoryUsage()).pow(2).multiply(thisCount);
-            BigDecimal otherEss = BigDecimal.valueOf(other.getStdDevMemoryUsage()).pow(2).multiply(otherCount);
-            BigDecimal totalEss = thisEss.add(otherEss);
-            // total group sum of squares
-            BigDecimal thisTgss = thisMean.subtract(overallMean).pow(2).multiply(thisCount);
-            BigDecimal otherTgss = otherMean.subtract(overallMean).pow(2).multiply(otherCount);
-            BigDecimal totalTgss = thisTgss.add(otherTgss);
-            // std as root of overall variance
-            BigDecimal totalSqDiffFromMean = totalTgss.add(totalEss);
-            if(trackMean) mean = overallMean.doubleValue();
-            if(trackMean || trackCount) count = overallCount.intValue();
-            if(trackVariance) sqDiffFromMean = totalSqDiffFromMean;
-        } else if(!hasReadings() && other.hasMemoryReadings()) {
-            if(trackMean) mean = other.getMeanMemoryUsage();
-            if(trackMean || trackCount) count = other.getMemoryReadingCount();
-            BigDecimal ess =
-                BigDecimal.valueOf(other.getStdDevMemoryUsage()).pow(2).multiply(BigDecimal.valueOf(count));
-            if(trackVariance) sqDiffFromMean = ess;
-        } else if(hasReadings() && !other.hasMemoryReadings()) {
-            // don't do anything, all our readings are already in here
-        } else {
-            // don't do anything here, both this and the other memory watcher have no readings
-        }
-    }
-
-    /**
-     * update stats from a usage reading. Beware, this is unchecked so will ignore state requirements
-     * @param usage
-     */
-    private synchronized void addMemoryUsageReadingUnchecked(double usage) {
-        if(trackMax) {
-            maxMemoryUsage = (long) Math.ceil(Math.max(maxMemoryUsage, usage));
-        }
-        if(trackCount || trackMean || trackVariance) {
-            count++;
-        }
-        if(trackMean || trackVariance) {
-            // Welford's online algo for mean and variance
-            if(count == 1) {
-                mean = usage;
-            } else {
-                double deltaBefore = usage - mean;
-                mean += deltaBefore / count;
-                if(trackVariance) {
-                    double deltaAfter = usage - mean; // note the mean has changed so this isn't the same as deltaBefore
-                    BigDecimal bigDeltaBefore = BigDecimal.valueOf(deltaBefore);
-                    BigDecimal bigDeltaAfter = BigDecimal.valueOf(deltaAfter);
-                    BigDecimal sqDiff = bigDeltaBefore.multiply(bigDeltaAfter); // square diff from the mean
-                    sqDiffFromMean = sqDiffFromMean.add(sqDiff);
-                }
-            }
-        }
-    }
-
-    /**
-     * checked reading
-     * @param usage
-     */
-    private synchronized void addMemoryUsageReading(double usage) {
+    
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        // default deserialization
+        ois.defaultReadObject();
+        
+        // stop if already started. Any memory watcher read from serialization should default to being stopped, like StopWatch
         if(isStarted()) {
-            addMemoryUsageReadingUnchecked(usage);
+            super.stop();
+            activeListener = false;
+        }
+        Assert.isNull(listener);
+
+    }
+
+    private synchronized void handleNotification(final Notification notification, final Object handback) {
+        if(notification.getType()
+                   .equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+            GarbageCollectionNotificationInfo info =
+                    GarbageCollectionNotificationInfo
+                            .from((CompositeData) notification.getUserData());
+            for(Map.Entry<String, MemoryUsage> entry : info.getGcInfo().getMemoryUsageAfterGc().entrySet()) {
+                MemoryUsage memoryUsageSnapshot = entry.getValue();
+                long memoryUsage = memoryUsageSnapshot.getUsed();
+                maxMemoryUsage = Math.max(memoryUsage, maxMemoryUsage);
+            }
+            for(Map.Entry<String, MemoryUsage> entry : info.getGcInfo().getMemoryUsageAfterGc().entrySet()) {
+                MemoryUsage memoryUsageSnapshot = entry.getValue();
+                long memoryUsage = memoryUsageSnapshot.getUsed();
+                maxMemoryUsage = Math.max(memoryUsage, maxMemoryUsage);
+            }
         }
     }
-
-    public synchronized double getMeanMemoryUsage() {
-        if(count == 0) {
-            return -1;
-        }
-        return mean;
-    }
-
-    public synchronized double getVarianceMemoryUsage() {
-        if(count == 0) {
-            return -1;
-        }  else {
-            return sqDiffFromMean.divide(BigDecimal.valueOf(count), BigDecimal.ROUND_HALF_UP).doubleValue(); // population variance as we see all the readings of memory usage;
-        }
-    }
-
-    public synchronized long getMemoryReadingCount() {
-        return count;
-    }
-
-    public double getStdDevMemoryUsage() {
-        double varianceMemoryUsageInBytes = getVarianceMemoryUsage();
-        if(varianceMemoryUsageInBytes < 0) {
-            return varianceMemoryUsageInBytes;
-        } else {
-            return Math.sqrt(varianceMemoryUsageInBytes);
-        }
-    }
-
-    public synchronized long getGarbageCollectionTime() {
-        return garbageCollectionTime;
-    }
-
+    
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append("MemoryWatcher{");
-        if(trackMax) sb.append("maxMemoryUsageBytes=").append(maxMemoryUsage).append(",");
-        if(trackCount) sb.append("count=").append(count).append(",");
-        if(trackMean) sb.append("mean=").append(mean).append(",");
-        if(trackVariance) sb.append("variance=").append(getVarianceMemoryUsage()).append(",");
-        if(trackGarbageCollectionTime) sb.append(", garbageCollectionTime=").append(garbageCollectionTime);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    @Override
-    public synchronized void reset() {
-        super.reset();
+        return "maxMemory: " + getMaxMemoryUsage();
     }
 
     public synchronized void onReset() {
-        count = 0;
-        mean = 0;
-        garbageCollectionTime = 0;
-        maxMemoryUsage = 0;
-        sqDiffFromMean = BigDecimal.ZERO;
+        maxMemoryUsage = -1;
     }
 
-    /**
-     * this cleans the memory by forcing the garbage collector invokation. Guava's finalization tools not only invoke
-     * the gc but also create a weak ref and continue to invoke the gc until said weak ref is cleaned up. The theory
-     * here is if the most recently created weak ref has been cleaned up, all older memory should have already been
-     * dealt with / cleaned up as matter of priority over the latest memory allocation.
-     */
-    public void cleanup() {
-        GcFinalization.awaitFullGc();
-    }
-
-    public boolean isTrackGarbageCollectionTime() {
-        return trackGarbageCollectionTime;
-    }
-
-    public void setTrackGarbageCollectionTime(final boolean trackGarbageCollectionTime) {
-        this.trackGarbageCollectionTime = trackGarbageCollectionTime;
-    }
 }

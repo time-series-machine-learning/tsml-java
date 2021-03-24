@@ -1,3 +1,20 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers;
 
 import tsml.data_containers.TimeSeriesInstance;
@@ -10,17 +27,20 @@ public interface TSClassifier{
     
 
     public Classifier getClassifier();
+    public TimeSeriesInstances getTSTrainData();
+    public void setTSTrainData(TimeSeriesInstances train);
 
     public default void buildClassifier(TimeSeriesInstances data) throws Exception{
+        setTSTrainData(data);
         getClassifier().buildClassifier(Converter.toArff(data));
     }
 
     public default double[] distributionForInstance(TimeSeriesInstance inst) throws Exception{
-        return getClassifier().distributionForInstance(Converter.toArff(inst));
+        return getClassifier().distributionForInstance(Converter.toArff(inst, getTSTrainData().getClassLabels()));
     }
 
     public default double classifyInstance(TimeSeriesInstance inst) throws Exception{
-        return getClassifier().classifyInstance(Converter.toArff(inst));
+        return getClassifier().classifyInstance(Converter.toArff(inst, getTSTrainData().getClassLabels()));
     }
 
     public default double[][] distributionForInstances(TimeSeriesInstances data) throws Exception {
@@ -41,5 +61,27 @@ public interface TSClassifier{
         for(Instance inst : data_inst)
             out[i++] = getClassifier().classifyInstance(inst);
         return out;
+    }
+    
+    static TSClassifier wrapClassifier(Classifier classifier) {
+        return new TSClassifier() {
+            private TimeSeriesInstances trainData;
+            
+            @Override public Classifier getClassifier() {
+                return classifier;
+            }
+
+            @Override public TimeSeriesInstances getTSTrainData() {
+                return trainData;
+            }
+
+            @Override public void setTSTrainData(final TimeSeriesInstances train) {
+                this.trainData = train;
+            }
+        };
+    }
+    
+    static TSClassifier wrapClassifier(TSClassifier classifier) {
+        return classifier;
     }
 }

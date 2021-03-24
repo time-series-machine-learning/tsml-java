@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package machine_learning.classifiers.tuned;
 
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -108,6 +111,13 @@ public class TunedClassifier extends EnhancedAbstractClassifier
         this.classifier = classifier;
         this.space = space;
         this.tuner = tuner;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                classifier.getClass().getSimpleName() +
+                (bestParas != null ? "_"+bestParas.toString() : "");
     }
 
     /**
@@ -319,10 +329,16 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     
     @Override
     public String getParameters() {
-        String str=classifier.getClass().getSimpleName();
-        if(classifier instanceof EnhancedAbstractClassifier)
-            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
-        return str;
+        StringBuilder sb = new StringBuilder(classifier.getClass().getSimpleName());
+
+        if (bestParas != null)
+            sb.append(",BESTPARAS:").append(bestParas.toString().replace("\n", ","));
+
+        sb.append(",SPACE:").append(space.toString().replace("\n", ","));
+
+//        if(classifier instanceof EnhancedAbstractClassifier)
+//            str+=","+((EnhancedAbstractClassifier)classifier).getParameters();
+        return sb.toString();
     }
 
     @Override //SaveEachParameter
@@ -373,6 +389,10 @@ public class TunedClassifier extends EnhancedAbstractClassifier
     public void setTrainTimeLimit(long amount) {
         trainContractTimeNanos =amount;
         trainTimeContract = true;
+    }
+    @Override
+    public boolean withinTrainContract(long start) {
+        return tuner.withinTrainContract(start);
     }
 
     

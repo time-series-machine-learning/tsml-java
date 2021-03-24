@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.distance_based;
 import machine_learning.classifiers.kNN;
 
@@ -24,7 +27,7 @@ import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
  * The reason for specialising is this class has the option of searching for the optimal window length
  * through a grid search of values.
  * 
- * By default this class does a search. 
+ * By default this class does not do a search (optimiseWindow=false).
  * To search for the window size call
  * optimiseWindow(true);
  * By default, this does a leave one out cross validation on every possible window size, then sets the 
@@ -37,7 +40,7 @@ import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
  * setIncrementSize(int s) where s is on range 1...trainSetSize 
  * 
  * This is a basic brute force implementation,
- * 
+ * @author Tony Bagnall, circa 2012?
  */
 
 public class DTW_kNN extends kNN {
@@ -70,7 +73,7 @@ public class DTW_kNN extends kNN {
             optimiseWindow=true;
             setDistanceFunction(dtw);
     }
-    public void buildClassifier(Instances d){
+    public void buildClassifier(Instances d) throws Exception {
         dist.setInstances(d);
         train=d;
         trainSize=d.numInstances();

@@ -1,3 +1,21 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
+
 /** Class NormalizeAttribute.java
  * 
  * @author AJB
@@ -43,11 +61,10 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 public class ColumnNormalizer implements TrainableTransformer {
-	enum NormType {
+	public enum NormType {
 		INTERVAL, STD_NORMAL
 	};
 
-	Instances trainData;
 	double[] min;
 	double[] max;
 	double[] mean;
@@ -60,7 +77,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 	}
 
 	public ColumnNormalizer(Instances data) {
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);
@@ -96,7 +112,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 				sum += x;
 				sumSq += x * x;
 			}
-			stdev[j] = sumSq / r.numInstances() - sum * sum;
+			stdev[j] = (sumSq - (sum * sum) / r.numInstances()) / (r.numInstances()-1);
 			mean[j] = sum / r.numInstances();
 			stdev[j] = Math.sqrt(stdev[j]);
 		}
@@ -141,7 +157,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 	}
 
 	public void setTrainData(Instances data) { // Same as the constructor
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);
@@ -236,7 +251,7 @@ public class ColumnNormalizer implements TrainableTransformer {
 			if (j != classIndex) {
 				for (int i = 0; i < r.numInstances(); i++) {
 					double x = r.instance(i).value(j);
-					r.instance(i).setValue(i, (x - mean[j]) / (stdev[j]));
+					r.instance(i).setValue(j, (x - mean[j]) / (stdev[j]));
 				}
 			}
 		}
@@ -249,7 +264,6 @@ public class ColumnNormalizer implements TrainableTransformer {
 
 	@Override
 	public void fit(Instances data) {
-		trainData = data;
 		classIndex = data.classIndex();
 		// Finds all the stats, doesnt cost much more really
 		findStats(data);

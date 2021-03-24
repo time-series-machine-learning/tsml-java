@@ -1,17 +1,20 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package tsml.classifiers.dictionary_based;
 
 import evaluation.storage.ClassifierResults;
@@ -33,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static utilities.InstanceTools.resampleTrainAndTestInstances;
+import static utilities.Utilities.argMax;
 import static utilities.multivariate_tools.MultivariateInstanceTools.*;
 
 /**
@@ -448,7 +452,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             indiv.buildClassifier(data);
 
             double accuracy = individualTrainAcc(indiv, data, classifiers.size() < maxEnsembleSize
-                    ? Double.MIN_VALUE : lowestAcc);
+                    ? -99999999 : lowestAcc);
             indiv.setAccuracy(accuracy);
             if (accuracy == 0) indiv.setWeight(Double.MIN_VALUE);
             else indiv.setWeight(Math.pow(accuracy, 4));
@@ -772,7 +776,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      */
     private double individualTrainAcc(IndividualTDE indiv, TimeSeriesInstances series, double lowestAcc)
             throws Exception {
-        if (getEstimateOwnPerformance() && estimator == EstimatorMethod.NONE) {
+        if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.NONE) {
             indiv.setTrainPreds(new ArrayList<>());
         }
 
@@ -796,7 +800,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 }
                 idx++;
 
-                if (getEstimateOwnPerformance() && estimator == EstimatorMethod.NONE) {
+                if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.NONE) {
                     indiv.getTrainPreds().add(f.get().intValue());
                 }
             }
@@ -811,7 +815,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     ++correct;
                 }
 
-                if (getEstimateOwnPerformance() && estimator == EstimatorMethod.NONE) {
+                if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.NONE) {
                     indiv.getTrainPreds().add((int) c);
                 }
             }
@@ -829,7 +833,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
      * @throws Exception unable to obtain estimate
      */
     private void findEnsembleTrainEstimate() throws Exception {
-        if (estimator == EstimatorMethod.OOB && trainProportion < 1){
+        if (trainEstimateMethod == TrainEstimateMethod.OOB && trainProportion < 1){
             for (int i = 0; i < train.numInstances(); ++i) {
                 double[] probs = new double[train.numClasses()];
                 double sum = 0;
@@ -862,7 +866,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             double[][] trainDistributions = new double[train.numInstances()][train.numClasses()];
             int[] idxSubsampleCount = new int[train.numInstances()];
 
-            if (estimator == EstimatorMethod.NONE) {
+            if (trainEstimateMethod == TrainEstimateMethod.NONE) {
                 for (int i = 0; i < classifiers.size(); i++) {
                     ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
                     ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
@@ -892,7 +896,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             for (int i = 0; i < train.numInstances(); ++i) {
                 double[] probs;
 
-                if (idxSubsampleCount[i] > 0 && estimator == EstimatorMethod.NONE) {
+                if (idxSubsampleCount[i] > 0 && trainEstimateMethod == TrainEstimateMethod.NONE) {
                     probs = trainDistributions[i];
                 } else {
                     probs = distributionForInstance(i);
@@ -912,7 +916,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of a training instance using the trained model, removing said instance if present.
      *
-     * @param ins train instance index
+     * @param test train instance index
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -931,7 +935,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             else if (classifier.getSubsampleIndices().contains(test)){
                 classification = classifier.classifyInstance(classifier.getSubsampleIndices().indexOf(test));
             }
-            else if (estimator == EstimatorMethod.CV) {
+            else if (trainEstimateMethod == TrainEstimateMethod.CV) {
                 TimeSeriesInstance series = train.get(test);
                 classification = classifier.classifyInstance(series);
             }
@@ -957,7 +961,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1012,7 +1016,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Find class probabilities of an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return array of doubles: probability of each class
      * @throws Exception failure to classify
      */
@@ -1024,7 +1028,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins TimeSeriesInstance object
+     * @param instance TimeSeriesInstance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1037,7 +1041,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Classify an instance using the trained model.
      *
-     * @param ins weka Instance object
+     * @param instance weka Instance object
      * @return predicted class value
      * @throws Exception failure to classify
      */
@@ -1152,7 +1156,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         seed = saved.seed;
         rand = saved.rand;
         estimateOwnPerformance = saved.estimateOwnPerformance;
-        estimator = saved.estimator;
+        trainEstimateMethod = saved.trainEstimateMethod;
 
         //load in each serisalised classifier
         classifiers = new LinkedList<>();
@@ -1196,7 +1200,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     /**
      * Development tests for the TDE classifier.
      *
-     * @param arg arguments, unused
+     * @param args arguments, unused
      * @throws Exception if tests fail
      */
     public static void main(String[] args) throws Exception{

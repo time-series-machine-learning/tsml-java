@@ -1,14 +1,37 @@
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package utilities;
 
-import weka.core.Instance;
-import weka.core.Instances;
-
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static String toString(double[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
+    public static String toString(int[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
     public static double[][] transposeMatrix(double [][] m){
         double[][] temp = new double[m[0].length][m.length];
         for (int i = 0; i < m.length; i++)
@@ -48,11 +71,52 @@ public class ArrayUtilities {
         }
     }
 
-    public static void subtract(double[] a, double[] b) {
+    public static double[] subtract(double[] a, double[] b) {
         int length = Math.min(a.length, b.length);
         for(int i = 0; i < length; i++) {
             a[i] -= b[i];
         }
+        return a;
+    }
+    
+    public static double[] subtract(double[] a, double amount) {
+        int length = a.length;
+        for(int i = 0; i < length; i++) {
+            a[i] -= amount;
+        }
+        return a;
+    }
+    
+    public static double[] abs(double[] array) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.abs(array[i]);
+        }
+        return array;
+    }
+    
+    public static boolean[] mask(double[] array, Predicate<Double> condition) {
+        final boolean[] result = new boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            result[i] = condition.test(array[i]);
+        }
+        return result;
+    }
+    
+    public static int count(boolean[] array) {
+        int sum = 0;
+        for(final boolean b : array) {
+            if(b) {
+                sum++;
+            }
+        }
+        return sum;
+    }
+    
+    public static double[] pow(double[] array, double degree) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.pow(array[i], degree);
+        }
+        return array;
     }
 
     public static double sum(double[] array) {
@@ -122,9 +186,10 @@ public class ArrayUtilities {
     public static List<Double> normalise(List<Double> list) {
         double sum = sum(list);
         if(sum == 0) {
-            throw new IllegalArgumentException("sum zero");
+            sum = 1;
         }
-        return list.stream().map(element -> element / sum).collect(Collectors.toList());
+        final double finalSum = sum;
+        return list.stream().map(element -> element / finalSum).collect(Collectors.toList());
     }
 
     public static List<Double> normalise(Iterable<Double> iterable) {
@@ -360,6 +425,24 @@ public class ArrayUtilities {
         return boxed;
     }
 
+    public static String toString(double[][] matrix, String horizontalSeparator, String verticalSeparator) {
+        StringBuilder builder = new StringBuilder();
+        for(int i = 0; i < matrix.length; i++) {
+            for(int j = 0; j < matrix[i].length; j++) {
+                //                builder.append(new BigDecimal(matrix[i][j]).setScale(2, RoundingMode.HALF_UP).doubleValue());
+                builder.append(matrix[i][j]);
+                if(j != matrix[i].length - 1) {
+                    builder.append(horizontalSeparator);
+                }
+            }
+            if(i != matrix.length - 1) {
+                builder.append(verticalSeparator);
+            }
+        }
+        builder.append(System.lineSeparator());
+        return builder.toString();
+    }
+    
     public static String toString(int[][] matrix, String horizontalSeparator, String verticalSeparator) {
         StringBuilder builder = new StringBuilder();
         for(int i = 0; i < matrix.length; i++) {

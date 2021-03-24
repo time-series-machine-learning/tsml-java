@@ -1,8 +1,23 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.utils.collections.intervals;
 
-import experiments.data.DatasetLoading;
 import weka.core.Attribute;
-import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -10,11 +25,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 
 public class IntervalInstance implements Instance {
-    public IntervalInstance(Interval interval, Instance instance) {
+    public IntervalInstance(IntInterval interval, Instance instance) {
         this(instance, interval);
     }
 
-    public IntervalInstance(final Instance instance, Interval interval) {
+    public IntervalInstance(final Instance instance, IntInterval interval) {
         setDataset(instance.dataset());
         setInterval(interval);
         setInstance(instance);
@@ -26,14 +41,14 @@ public class IntervalInstance implements Instance {
     }
 
     private Instance instance;
-    private Interval interval;
+    private IntInterval interval;
     private Instances dataset;
 
-    public Interval getInterval() {
+    public IntInterval getInterval() {
         return interval;
     }
 
-    public void setInterval(final Interval interval) {
+    public void setInterval(final IntInterval interval) {
         this.interval = interval;
     }
 

@@ -1,9 +1,29 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 package tsml.classifiers.distance_based.distances.twed;
 
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
-import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Instance;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import utilities.ArrayUtilities;
+
+import java.util.Arrays;
 
 /**
  * TWED distance measure.
@@ -11,148 +31,149 @@ import weka.core.Instance;
  * Contributors: goastler
  */
 public class TWEDistance
-    extends DoubleMatrixBasedDistanceMeasure {
+    extends MatrixBasedDistanceMeasure {
 
-    private double lambda;
-    private double nu;
+    private double lambda = 1;
+    private double nu = 1;
 
     public static final String NU_FLAG = "n";
     public static final String LAMBDA_FLAG = "l";
 
-    @Override
-    public double findDistance(final Instance a, final Instance b, final double limit) {
-
-        final int aLength = a.numAttributes() - 1;
-        final int bLength = b.numAttributes() - 1;
-
-        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
-
-        final int windowSize = aLength + 1;
-
-        double[] jCosts = new double[bLength + 1];
-        double[] row = new double[bLength + 1];
-        double[] prevRow = new double[bLength + 1];
-        double dist, htrans, top, left, topLeft, cost, iCost;
-        // border of the cost matrix initialization
-        // top left is already 0 so don't bother checking for early abandon
-        row[0] = 0;
-        jCosts[1] = Math.pow(b.value(0), 2);
-        row[1] = jCosts[1];
-        // start at the next cell
-        int start = 2;
-        // end at window or bLength, whichever smallest
-        int end = Math.min(bLength, windowSize);
-        // must set the value before and after the window to inf if available as the following row will use these
-        // in top / left / top-left comparisons
-        if(end + 1 < bLength + 1) {
-            row[end + 1] = Double.POSITIVE_INFINITY;
+    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final TimeSeries bDim = b.get(i);
+            final double aValue = aDim.get(aIndex);
+            final double bValue = bDim.get(bIndex);
+            final double sqDiff = StrictMath.pow(aValue - bValue, 2);
+            sum += sqDiff;
         }
-        for(int j = start; j <= end; j++) {
-            //CHANGE AJB 8/1/16: Only use power of 2 for speed up,
-            cost = Math.pow(b.value(j - 2) - b.value(j - 1), 2);
-            jCosts[j] = cost;
+        return sum;
+    }
+    
+    private double cellCost(final TimeSeriesInstance a, final int aIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final double aValue = aDim.get(aIndex);
+            final double sq = StrictMath.pow(aValue, 2);
+            sum += sq;
+        }
+        return sum;
+    }
+    
+    @Override
+    public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
+
+        // make a the longest time series
+        if(a.getMaxLength() < b.getMaxLength()) {
+            TimeSeriesInstance tmp = a;
+            a = b;
+            b = tmp;
+        }
+
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
+        setup(aLength + 1, bLength + 1, true);
+
+        // step is the increment of the mid point for each row
+        final double step = (double) (bLength) / (aLength);
+        final double windowSize = 1d * bLength + 1; // +1 because of padding col
+
+        // row index
+        int i = 0;
+
+        // start and end of window
+        int start = 0;
+        double mid = 0;
+        int end = Math.min(bLength, (int) Math.floor(windowSize)); // +1 as matrix padded by 1 row and 1 col
+        int prevEnd; // store end of window from previous row to fill in shifted space with inf
+        double[] row = getRow(i);
+        double[] prevRow;
+        double[] jCosts = new double[bLength + 1];
+        double min, iCost;
+
+        // col index
+        int j = start;
+
+        // border of the cost matrix initialization
+        row[j++] = 0;
+        row[j] = jCosts[j] = cellCost(b, i);
+        j++;
+        // compute the first padded row
+        for(; j <= end; j++) {
+            //CHANGE AJB 8/1/16: Only use power of 2 for speed up
+            jCosts[j] = cost(b, j - 2, b, j - 1);
             row[j] = row[j - 1] + jCosts[j];
         }
-        if(generateDistanceMatrix) {
-            System.arraycopy(row, 0, matrix[0], 0, row.length);
-        }
-        {
-            double[] tmp = row;
-            row = prevRow;
-            prevRow = tmp;
-        }
-        // start and end of window
-        start = Math.max(0, 1 - windowSize);
-        end = Math.min(bLength, 1 + windowSize);
-        // must set the value before and after the window to inf if available as the following row will use these
-        // in top / left / top-left comparisons
-        if(start - 1 >= 0) {
-            row[start - 1] = Double.POSITIVE_INFINITY;
-        }
-        if(end + 1 < bLength + 1) {
-            row[end + 1] = Double.POSITIVE_INFINITY;
-        }
-        iCost = Math.pow(a.value(0), 2);
-        double min = Double.POSITIVE_INFINITY;
-        if(start == 0) {
-            row[0] = prevRow[0] + iCost;
-            min = row[0];
-            start++;
-        }
-        for(int j = start; j <= end; j++) {
-            dist = Math.pow(a.value(0) - b.value(j - 1), 2);
-            htrans = Math.abs((1 - j));
-            left = prevRow[j - 1] + nu * htrans + dist;
-            top = iCost + prevRow[j] + lambda + nu;
-            topLeft = jCosts[j] + row[j - 1] + lambda + nu;
-            cost = Math.min(left, Math.min(top, topLeft));
-            row[j] = cost;
-            min = Math.min(min, cost);
-        }
-        if(generateDistanceMatrix) {
-            System.arraycopy(row, 0, matrix[1], 0, row.length);
-        }
-        if(end > start && min > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
-        for(int i = 2; i <= aLength; i++) {
-            {
-                double[] tmp = row;
-                row = prevRow;
-                prevRow = tmp;
-            }
+        i++;
+
+        // process remaining rows
+        for(; i < aLength + 1; i++) {
+
+            // reset min for the row
             min = Double.POSITIVE_INFINITY;
-            // start and end of window
-            start = Math.max(0, 1 - windowSize);
-            end = Math.min(bLength, 1 + windowSize);
-            // must set the value before and after the window to inf if available as the following row will use these
-            // in top / left / top-left comparisons
-            if(start - 1 >= 0) {
-                row[start - 1] = Double.POSITIVE_INFINITY;
+            // change rows
+            prevRow = row;
+            row = getRow(i);
+
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * step;
+            // if using variable length time series and window size is fractional then the window may part cover an 
+            // element. Any part covered element is truncated from the window. I.e. mid point of 5.5 with window of 2.3
+            // would produce a start point of 2.2. The window would start from index 3 as it does not fully cover index
+            // 2. The same thing happens at the end, 5.5 + 2.3 = 7.8, so the end index is 7 as it does not fully cover 8
+            start = Math.max(0, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength, (int) Math.floor(mid + windowSize));
+            j = start;
+
+            // set the values above the current row and outside of previous window to inf
+            Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
+            // set the value left of the window to inf
+            if(j > 0) row[j - 1] = Double.POSITIVE_INFINITY; // >1 as matrix padded with 1 row and 1 col
+
+            // fill any jCosts which have not yet been visited
+            for(int x = prevEnd + 1; x <= end; x++) {
+                jCosts[x] = cost(b, x - 2, b, x - 1);
             }
-            if(end + 1 < bLength + 1) {
-                row[end + 1] = Double.POSITIVE_INFINITY;
+
+            // the ith cost for this row
+            if(i > 1) {
+                iCost = cost(a, i - 2, a, i - 1);
+            } else {
+                iCost = cellCost(a, i - 1);
             }
-            iCost = Math.pow(a.value(i - 2) - a.value(i - 1), 2);
-            if(start == 0) {
-                cost = prevRow[0] + iCost;
-                row[0] = cost;
-                min = Math.min(min, cost);
-                start++;
+
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(j == 0) {
+                row[j] = prevRow[j] + iCost;
+                min = Math.min(min, row[j++]);
             }
-            if(start == 1) {
-                dist = Math.pow(a.value(i - 1) - b.value(0), 2);
-                htrans = i - 1;
-                left = prevRow[0] + nu * htrans + dist;
-                top = iCost + prevRow[1] + lambda + nu;
-                topLeft = jCosts[1] + row[0] + lambda + nu;
-                cost = Math.min(left, Math.min(top, topLeft));
-                row[1] = cost;
-                min = Math.min(min, cost);
-                start++;
+
+            // compute the distance for each cell in the row
+            for(; j <= end; j++) {
+                double dist = cost(a, i - 1, b, j - 1);
+                double htrans = Math.abs(i - j);
+                if(i > 1 && j > 1) {
+                    dist += cost(a, i - 2, b, j - 2);
+                    htrans *= 2;
+                }
+                final double topLeft = prevRow[j - 1] + nu * htrans + dist;
+                final double top = iCost + prevRow[j] + lambda + nu;
+                final double left = jCosts[j] + row[j - 1] + lambda + nu;
+                row[j] = Math.min(topLeft, Math.min(top, left));
+                min = Math.min(min, row[j]);
             }
-            for(int j = start; j <= end; j++) {
-                dist = Math.pow(a.value(i - 1) - b.value(j - 1), 2) + Math.pow(a.value(i - 2) - b.value(j - 2), 2);
-                htrans = Math.abs(i - j) * 2;
-                left = prevRow[j - 1] + nu * htrans + dist;
-                top = iCost + prevRow[j] + lambda + nu;
-                topLeft = jCosts[j] + row[j - 1] + lambda + nu;
-                cost = Math.min(left, Math.min(top, topLeft));
-                row[j] = cost;
-                min = Math.min(min, cost);
-            }
-            if(generateDistanceMatrix) {
-                System.arraycopy(row, 0, matrix[i], 0, row.length);
-            }
-            if(min > limit) {
-                return Double.POSITIVE_INFINITY;
-            }
+            
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
-
-        return row[bLength];
-
+        
+        // last value in the current row is the distance
+        final double distance = row[row.length - 1];
+        teardown();
+        return distance;
     }
 
     public double getLambda() {
@@ -179,8 +200,15 @@ public class TWEDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, NU_FLAG, this::setNu, Double.class);
-        ParamHandlerUtils.setParam(param, LAMBDA_FLAG, this::setLambda, Double.class);
+        setLambda(param.get(LAMBDA_FLAG, getLambda()));
+        setNu(param.get(NU_FLAG, getNu()));
+    }
+
+    public static void main(String[] args) {
+        final TWEDistance dm = new TWEDistance();
+        dm.setRecordCostMatrix(true);
+        System.out.println(dm.distance(new TimeSeriesInstance(new double[][]{{1,2,3,3,2,4,5,2}}), new TimeSeriesInstance(new double[][] {{2,3,4,5,6,2,2,2}})));
+        System.out.println(ArrayUtilities.toString(dm.costMatrix()));
     }
 
 }

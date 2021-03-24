@@ -65,3 +65,10 @@ settings.json
 .classpath
 
 out/
+src/main/java/local_code/test_distances.java
+src/main/java/local/localCollateResults.java
+src/main/java/local/LocalExperiments.java
+src/main/java/local_code/HashCodeExamples.java
+src/main/java/local_code/Prog2ParseSheets.java
+src/main/java/local/LocalHiveCote.java
+project_jar/tsml.jar
