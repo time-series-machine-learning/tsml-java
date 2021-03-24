@@ -32,6 +32,9 @@ import weka.core.TechnicalInformation.Type;
 import java.util.Enumeration;
 
 /**
+
+* Adaptation of the Id3 Weka classifier for use in machine learning coursework (6002B)
+
  <!-- globalinfo-start -->
  * Class for constructing an unpruned decision tree based on the ID3 algorithm. Can only deal with nominal attributes. No missing values allowed. Empty leaves may result in unclassified instances. For more information see: <br/>
  * <br/>
