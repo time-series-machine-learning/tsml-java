@@ -595,6 +595,11 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         return seriesCollection.size();
     }
 
+    /**
+     * // TODO: JavaDoc
+     *
+     * @return
+     */
     public Map<Integer, Integer> getHistogramOfLengths() {
         Map<Integer, Integer> out = new TreeMap<>();
         for (TimeSeriesInstance inst : seriesCollection) {
