@@ -47,9 +47,11 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
+
+
 	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
-	public static String[] newUnivariate= {
+	public static String[] newFor2021= {
 			"AsphaltObstacles",
 			"AsphaltPavementType",
 			"AsphaltRegularity",
@@ -65,6 +67,7 @@ public class DatasetLists {
 			"InsectSound",
 			"MosquitoSound",
 			"ElectricDeviceDetection"
+			"AconityMINIPrinter"//Needs formatting from github
 	};
 	//</editor-fold>
 
@@ -1550,7 +1553,10 @@ tiianic
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
-  public static void processUCRData(String problemPath){
+
+
+
+	public static void processUCRData(String problemPath){
       System.out.println(" nos files ="+tscProblems46.length);
       String s;
       for(int str=39;str<43;str++){
