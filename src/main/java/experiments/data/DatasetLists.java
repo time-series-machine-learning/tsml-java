@@ -66,7 +66,7 @@ public class DatasetLists {
 			"BinaryHeartbeat",
 			"InsectSound",
 			"MosquitoSound",
-			"ElectricDeviceDetection"
+			"ElectricDeviceDetection",
 			"AconityMINIPrinter"//Needs formatting from github
 	};
 	//</editor-fold>
@@ -272,6 +272,9 @@ public class DatasetLists {
 
 	//<editor-fold defaultstate="collapsed" desc="Variable length univariate datasets">
 	public static String[] variableLengthUnivariate ={
+			"AsphaltObstacles",
+			"AsphaltPavementType",
+			"AsphaltRegularity",
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -286,7 +289,8 @@ public class DatasetLists {
    };
 	//</editor-fold>
 
-	int[][] minMaxUnivariate={{11,385,2,369},
+	int[][] minMaxUnivariate={
+			{11,385,2,369},
 	{8,369,2,385},
 	{33,326,2,385},
 	{80,360,80,360},

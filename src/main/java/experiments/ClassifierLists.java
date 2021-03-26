@@ -44,7 +44,7 @@ import tsml.classifiers.legacy.COTE.FlatCote;
 import tsml.classifiers.legacy.COTE.HiveCote;
 import tsml.classifiers.legacy.elastic_ensemble.DTW1NN;
 import tsml.classifiers.multivariate.*;
-import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.classifiers.shapelet_based.*;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
