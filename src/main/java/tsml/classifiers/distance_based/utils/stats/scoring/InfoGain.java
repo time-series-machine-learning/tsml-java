@@ -17,14 +17,11 @@
  
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
-import weka.core.Instances;
-
 import java.util.List;
 
-public class InfoGain implements PartitionScorer {
+public class InfoGain implements SplitScorer {
 
-    @Override
-    public double findScore(final Instances parent, final List<Instances> children) {
-        return ScoreUtils.infoGain(parent, children);
+    @Override public <A> double score(final Labels<A> parent, final List<Labels<A>> children) {
+        return GiniGain.gain(parent, children, new InfoEntropy());
     }
 }

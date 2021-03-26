@@ -17,23 +17,41 @@
  
 package tsml.transformers;
 
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import weka.core.Instance;
 import weka.core.Instances;
 
 public abstract class BaseTrainableTransformer implements TrainableTransformer {
 
-    private boolean isFit;
+    private boolean fitted;
+    private String[] labels;
 
-    @Override public void fit(final Instances data) {
-        isFit = true;
+    @Override public void fit(final TimeSeriesInstances data) {
+        fitted = true;
+        labels = data.getClassLabels();
     }
 
     public void reset() {
-        isFit = false;
+        fitted = false;
     }
-
+    
+    protected String[] getLabels() {
+        return labels;
+    }
+    
     @Override public boolean isFit() {
-        return isFit;
+        return fitted;
     }
 
+    @Override public Instance transform(final Instance inst) {
+        if(!isFit()) {
+            throw new IllegalStateException("not fitted");
+        }
+        return Converter.toArff(transform(Converter.fromArff(inst)), labels);
+    }
+
+    @Override public void fit(final Instances data) {
+        fit(Converter.fromArff(data));
+    }
 }

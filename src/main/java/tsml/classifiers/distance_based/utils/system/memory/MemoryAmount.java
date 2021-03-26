@@ -26,27 +26,6 @@ import tsml.classifiers.distance_based.utils.strings.StrUtils;
  */
 public class MemoryAmount implements Comparable<MemoryAmount> {
 
-    public enum ShortMemoryUnit {
-        B(MemoryUnit.BYTES),
-        KB(MemoryUnit.KIBIBYTES),
-        K(MemoryUnit.KIBIBYTES),
-        MB(MemoryUnit.MEBIBYTES),
-        M(MemoryUnit.MEBIBYTES),
-        GB(MemoryUnit.GIBIBYTES),
-        G(MemoryUnit.GIBIBYTES),
-        ;
-
-        private final MemoryUnit alias;
-
-        ShortMemoryUnit(final MemoryUnit alias) {
-            this.alias = alias;
-        }
-
-        public MemoryUnit getAlias() {
-            return alias;
-        }
-    }
-
     private long amount;
     private MemoryUnit unit;
 
@@ -58,24 +37,13 @@ public class MemoryAmount implements Comparable<MemoryAmount> {
         setAmount(amount);
         setUnit(unit);
     }
-
-    public static MemoryAmount parse(String amount, String unit) {
-        unit = unit.trim();
-        amount = amount.trim();
-        unit = unit.toUpperCase();
-        unit = StrUtils.depluralise(unit);
-        MemoryUnit memoryUnit;
-        try {
-            memoryUnit = ShortMemoryUnit.valueOf(unit).getAlias();
-        } catch(Exception e) {
-            memoryUnit = MemoryUnit.valueOf(unit);
-        }
-        return new MemoryAmount(Long.parseLong(amount), memoryUnit);
+    
+    public MemoryAmount(String str) {
+        this(StrUtils.extractAmountAndUnit(str));
     }
-
-    public static MemoryAmount parse(String str) {
-        String[] parts = StrUtils.extractAmountAndUnit(str);
-        return parse(parts[0], parts[1]);
+    
+    private MemoryAmount(String[] parts) {
+        this(Long.parseLong(parts[0].trim()), MemoryUnit.valueOf(parts[1].trim()));
     }
 
     @Override

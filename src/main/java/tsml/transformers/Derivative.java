@@ -52,6 +52,14 @@ public class Derivative implements Transformer, Serializable {
         return GLOBAL_CACHE;
     }
 
+    @Override public boolean equals(final Object o) {
+        return super.equals(o) && o instanceof Derivative; // no internal state, so always equal
+    }
+
+    @Override public int hashCode() {
+        return 0; // no internal state, so all derivative objects are equal and have same hash
+    }
+
     public static double[] getDerivative(double[] input, boolean classValOn) {
 
         int classPenalty = 0;

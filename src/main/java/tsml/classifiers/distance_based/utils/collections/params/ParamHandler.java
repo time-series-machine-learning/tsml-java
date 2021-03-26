@@ -32,7 +32,7 @@ import java.util.*;
  */
 public interface ParamHandler
     extends OptionHandler {
-
+    
     /**
      * get the options array
      * @return
@@ -55,10 +55,10 @@ public interface ParamHandler
      * @param options
      * @throws Exception
      */
-    default void setOptionsList(List<String> options) throws
+    default void setOptions(List<String> options) throws
                                                       Exception {
         ParamSet params = new ParamSet();
-        params.setOptionsList(options);
+        params.setOptions(options);
         setParams(params);
     }
 
@@ -70,7 +70,7 @@ public interface ParamHandler
     @Override
     default void setOptions(String[] options) throws
                                       Exception {
-        setOptionsList(new ArrayList<>(Arrays.asList(options)));
+        setOptions(Arrays.asList(options));
     }
 
     @Override
@@ -92,23 +92,4 @@ public interface ParamHandler
         throw new UnsupportedOperationException("param list not specified");
     }
 
-    /**
-     * set a parameter to a ParamSet. Parameters are propogated through that object to children, if any parameters
-     * are specified for the children.
-     * @param object
-     * @param paramSet
-     */
-    static void setParams(Object object, ParamSet paramSet) {
-        try {
-            if(object instanceof ParamHandler) {
-                ((ParamHandler) object).setParams(paramSet);
-            } else if(object instanceof OptionHandler) {
-                ((OptionHandler) object).setOptions(paramSet.getOptions());
-            } else {
-                throw new IllegalArgumentException("params not settable");
-            }
-        } catch(Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
 }

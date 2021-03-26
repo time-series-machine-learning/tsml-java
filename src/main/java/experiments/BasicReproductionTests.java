@@ -22,11 +22,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,6 +67,7 @@ public class BasicReproductionTests {
             tsClassifiers + "dictionary_based.TDE",
 
             tsClassifiers + "distance_based.DTWCV",
+            tsClassifiers + "distance_based.proximity.ProximityForest",
             tsClassifiers + "distance_based.ProximityForestWrapper",
             tsClassifiers + "distance_based.SlowDTW_1NN",
 
@@ -357,7 +354,7 @@ public class BasicReproductionTests {
         System.out.println("--confirmAllExpectedResultReproductions()");
 
         File[] expectedResults = FileHandlingTools.listFiles(reproductionDirectory);
-        if (expectedResults == null) 
+        if (expectedResults == null)
             throw new Exception("No expected results saved to compare to, dir="+reproductionDirectory);
         
         List<String> failedClassifiers = new ArrayList<>();
