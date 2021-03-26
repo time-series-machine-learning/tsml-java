@@ -24,9 +24,13 @@ Contributors: goastler
     
 */
 
-import tsml.classifiers.distance_based.distances.WarpingDistanceMeasure;
-import tsml.classifiers.distance_based.distances.WarpingParameter;
+import tsml.classifiers.distance_based.distances.DistanceMeasure;
+import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
 
-public interface DTW extends WarpingDistanceMeasure {
+public interface DTW extends DistanceMeasure {
+    String WINDOW_FLAG = "w";
 
+    double getWindow();
+    
+    void setWindow(double window);
 }

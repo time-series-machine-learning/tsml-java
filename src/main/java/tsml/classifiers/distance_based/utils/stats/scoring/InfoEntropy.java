@@ -17,14 +17,10 @@
  
 package tsml.classifiers.distance_based.utils.stats.scoring;
 
-import weka.core.Instances;
+import utilities.Utilities;
 
-import java.util.List;
-
-public class InfoEntropy implements PartitionScorer {
-
-    @Override
-    public double findScore(final Instances parent, final List<Instances> children) {
-        return ScoreUtils.infoScore(children);
+public class InfoEntropy implements PartitionEntropy {
+    public <A> double entropy(Labels<A> labels) {
+        return labels.getDistribution().stream().mapToDouble(d -> d * Utilities.log(d, 2)).sum() * -1;
     }
 }

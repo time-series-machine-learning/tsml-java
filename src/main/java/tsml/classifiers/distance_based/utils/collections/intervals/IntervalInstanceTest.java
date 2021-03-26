@@ -32,7 +32,7 @@ public class IntervalInstanceTest {
         final DenseInstance instance = new DenseInstance(1, attributes);
         int start = 5;
         int length = 4;
-        final IntervalInstance intervalInstance = new IntervalInstance(new Interval(start, length), instance);
+        final IntervalInstance intervalInstance = new IntervalInstance(new IntInterval(start, length), instance);
         for(int i = 0; i < intervalInstance.numAttributes() - 1; i++) {
             final double intervalValue = intervalInstance.value(i);
             final double instanceValue = instance.value(i + start);

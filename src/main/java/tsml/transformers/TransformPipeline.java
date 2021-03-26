@@ -19,9 +19,9 @@ package tsml.transformers;
 
 import org.junit.Assert;
 
+import scala.collection.mutable.StringBuilder$;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
@@ -52,61 +52,33 @@ public class TransformPipeline extends BaseTrainableTransformer {
         Assert.assertNotNull(transformers);
         this.transformers = transformers;
     }
-
-    @Override
-    public void fit(Instances data) {
+    
+    public void fit(TimeSeriesInstances data) {
         super.fit(data);
-        // to avoid doing needless transforms, find which of the transformers (if any)
-        // need fitting and record their indices
-        List<Integer> indices = new ArrayList<>();
-        for (int i = 0; i < transformers.size(); i++) {
+        
+        int lastFitIndex = 0; // the index of the transformer last fitted
+        for(int i = 0; i < transformers.size(); i++) {
             final Transformer transformer = transformers.get(i);
-            if (transformer instanceof TrainableTransformer) {
-                indices.add(i);
-            }
-        }
-        // if there are transformers which need fitting
-        if (!indices.isEmpty()) {
-            int prevIndex = -1;
-            for (int j = 0; j < indices.size(); j++) {
-                // find the index of the next transformer which needs fitting
-                final Integer index = indices.get(j);
-                // fitTransform all transformers before that
-                for (int i = prevIndex + 1; i <= index; i++) {
-                    final Transformer transformer = transformers.get(i);
-                    // if the transformer requires fitting then fitTransform it
-                    if (transformer instanceof TrainableTransformer) {
-                        // unless it's the last transformer, in which case the data will not be used
-                        // afterwards so no need to transform after the fit operation
-                        if (j == indices.size() - 1) {
-                            ((TrainableTransformer) transformer).fit(data);
-                        } else {
-                            data = ((TrainableTransformer) transformer).fitTransform(data);
-                        }
-                    } else {
-                        // the transformer cannot be fitted, so just transform the data
-                        data = transformer.transform(data);
-                    }
+            if(transformer instanceof TrainableTransformer) {
+                // in order to fit the transformer, we need to transform the data up to the point of the fittable
+                // transformer
+                // so transform the data from the previous transform up to this transformer
+                for(int j = lastFitIndex; j < i; j++) {
+                    final Transformer previous = transformers.get(j);
+                    // replace the data with the data from applying a previous transform
+                    data = previous.transform(data);
                 }
-                prevIndex = index;
+                // this is now the most recently fit transformer in the pipeline
+                lastFitIndex = i;
             }
         }
     }
 
-    @Override
-    public Instance transform(Instance inst) {
-        for (Transformer transformer : transformers) {
+    @Override public TimeSeriesInstance transform(TimeSeriesInstance inst) {
+        for(Transformer transformer : transformers) {
             inst = transformer.transform(inst);
         }
         return inst;
-    }
-
-    @Override
-    public Instances transform(Instances data) {
-        for (Transformer transformer : transformers) {
-            data = transformer.transform(data);
-        }
-        return data;
     }
 
     @Override
@@ -117,7 +89,7 @@ public class TransformPipeline extends BaseTrainableTransformer {
         return data;
     }
 
-    public boolean append(Transformer transformer) {
+    public boolean add(Transformer transformer) {
         return transformers.add(transformer);
     }
 
@@ -130,7 +102,7 @@ public class TransformPipeline extends BaseTrainableTransformer {
      * @param b
      * @return
      */
-    public static Transformer append(Transformer a, Transformer b) {
+    public static Transformer add(Transformer a, Transformer b) {
         if (a == null) {
             return b;
         }
@@ -138,22 +110,21 @@ public class TransformPipeline extends BaseTrainableTransformer {
             return a;
         }
         if (a instanceof TransformPipeline) {
-            ((TransformPipeline) a).append(b);
+            ((TransformPipeline) a).add(b);
             return a;
         } else {
             return new TransformPipeline(a, b);
         }
     }
 
-    @Override
-    public void fit(TimeSeriesInstances data) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public TimeSeriesInstance transform(TimeSeriesInstance inst) {
-        // TODO Auto-generated method stub
-        return null;
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < transformers.size() - 1; i++) {
+            final Transformer transformer = transformers.get(i);
+            sb.append(transformer);
+            sb.append("_");
+        }
+        sb.append(transformers.get(transformers.size() - 1));
+        return sb.toString();
     }
 }
