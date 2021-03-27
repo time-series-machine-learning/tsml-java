@@ -29,6 +29,7 @@ import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
+import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.early_classification.*;
 import tsml.classifiers.shapelet_based.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
@@ -172,6 +173,10 @@ public class ClassifierLists {
                 break;
             case "NN_CID":
                 c = new NN_CID();
+                break;
+
+            case "ProximityForest":
+                c = new ProximityForest();
                 break;
             case "NN_ShapeDTW_Raw":
                 c=new ShapeDTW_1NN(30,null,false,null);
