@@ -153,7 +153,7 @@ public class Experiments  {
             ArrayList<String> parameters= new ArrayList<>();
             parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
 //            parameters.add("-rp=C:\\Results Working Area\\HC2 Results\\OOB\\"); //Where to write results
-            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-rp=Z:/temp"); //Where to write results
             parameters.add("-gtf=true"); //Whether to generate train files or not
             parameters.add("-cn="+classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
@@ -171,8 +171,8 @@ public class Experiments  {
 
 
 //            String[] probFiles= univariate; //Problem name(s)
-//            String[] probFiles= univariate; //{"ArrowHead"}; //Problem name(s)
-            String[] probFiles= {"ChinaTown"}; //Problem name(s)
+            String[] probFiles= {"ArrowHead"}; //Problem name(s)
+ //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
 //            String[] probFiles= DatasetLists.equalLengthProblems;
 //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             /*

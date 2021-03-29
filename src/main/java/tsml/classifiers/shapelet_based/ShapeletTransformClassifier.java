@@ -32,6 +32,8 @@ import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import tsml.classifiers.Tuneable;
+import tsml.transformers.shapelet_tools.DefaultShapeletOptions;
+import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
 import utilities.InstanceTools;
 import weka.core.*;
 import weka.classifiers.Classifier;
@@ -111,6 +113,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     private long transformBuildTime=0;
     transient private long finalBuildtrainContractTimeNanos = 0;
 
+
+    private boolean multivariate=false;     //Quick hack to test if I can get it to work.
+
     public void setTransformTime(long t){
         transformContractTime=t;
     }
@@ -159,6 +164,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         numPCAFeatures=numberEigenvectorsToRetain;
         pca=new PCA(numPCAFeatures);
     }
+    @Override
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        return result;
+    }
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
@@ -166,6 +177,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         getCapabilities().testWithFail(data);
     //Add the requirement to test if there are at least one of each class
         long startTime=System.nanoTime();
+
+//Temp to test multivariate
+        if(data.attribute(0).isRelationValued())
+            multivariate=true;
+
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
 //All in nanos
         printDebug("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
@@ -201,6 +217,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Put this in the options rather than here
         transform.setPruneMatchingShapelets(pruneMatchingShapelets);
 
+        //REMOVE!!
+//        transform.setNumberOfShapelets(500);
+        System.out.println(" num shapelets in transform ="+transform.getNumberOfShapelets());
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
         printLineDebug("SECONDS:Transform contract =" +(transformContractTime /1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/ transformContractTime)));
@@ -361,6 +380,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
     public ShapeletTransform constructShapeletTransform(Instances data){
         //**** Builds the transform using transformOptions and a search builder ****/
+//        ShapeletSearchOptions.Builder searchBuilder;
+
+//            searchBuilder= DefaultShapeletOptions.TIMED_FACTORY_OPTIONS.get("SHAPELET_D").apply(data, ShapeletTransformTimingUtilities.dayNano,(long)seed).getSearchOptions();
+//        else
         ShapeletSearchOptions.Builder searchBuilder = new ShapeletSearchOptions.Builder();
         if(seedClassifier)
             searchBuilder.setSeed(2*seed);
@@ -374,7 +397,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         searchBuilder.setNumShapeletsToEvaluate(numShapeletsToEvaluate/data.numInstances());//This is ignored if full search is performed
         transformOptions.setSearchOptions(searchBuilder.build());
         //Finally, get the transform from a Factory with the options set by the builder
-        ShapeletTransform st = new ShapeletTransformFactory(transformOptions.build()).getTransform();
+        if(multivariate){
+            System.out.println(" MUTIVARIATE TRUE");
+            transformOptions.setDistanceType(ShapeletDistance.DistanceType.DEPENDENT);
+        }
+
+        ShapeletTransformFactoryOptions options=transformOptions.build();
+
+        ShapeletTransform st = new ShapeletTransformFactory(options).getTransform();
         if(saveShapelets && shapeletOutputPath != null)
             st.setLogOutputFile(shapeletOutputPath+"Workspace/"+data.relationName()+"/shapelets"+seed+".csv");
         return st;
@@ -392,6 +422,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
       */
     public void configureDefaultShapeletTransform(){
     searchType=ShapeletSearch.SearchType.FULL;
+
     transformOptions.setDistanceType(ShapeletDistance.DistanceType.IMPROVED_ONLINE);
     transformOptions.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
     transformOptions.setRescalerType(ShapeletDistance.RescalerType.NORMALISATION);
@@ -479,7 +510,13 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         //Configure the search options if a contract has been ser
         // else
         int n = train.numInstances();
-        int m = train.numAttributes() - 1;
+        int m;
+        if(multivariate){
+            int length=train.instance(0).relationalValue(0).instance(0).numAttributes();
+            int dimensions=train.instance(0).relationalValue(0).numInstances();
+            m=length;
+        }else
+            m=train.numAttributes() - 1;
         if(time>0){
             searchType = SearchType.RANDOM;
             printLineDebug("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
