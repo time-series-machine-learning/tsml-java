@@ -48,6 +48,10 @@ public class Converter {
         List<List<List<Double>>> raw_data = new ArrayList<>(data.numInstances());
         List<Double> label_indexes =  new ArrayList<>(data.numInstances());
 
+        //if no class attribute set, set it to the last one.
+        if(data.classIndex() == -1)
+            data.setClassIndex(data.numAttributes()-1);
+
         //we multivariate
         if(isMultivariate(data)){
             for(int i=0; i<data.numInstances(); i++){
@@ -81,6 +85,8 @@ public class Converter {
 
         // construct the output TimeSeriesInstances obj from raw data and labels
         final TimeSeriesInstances output;
+
+
         if(data.classAttribute().isNumeric()) {
             // regression problem. Assume label indices are regression target values
             output = new TimeSeriesInstances(raw_data, label_indexes);
