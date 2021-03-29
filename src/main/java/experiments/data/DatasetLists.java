@@ -47,27 +47,36 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
-
-
 	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
-	public static String[] newFor2021= {
+	public static String[] newForHC2Paper= {
+			"AconityMINIPrinter"//Needs formatting from github
+			"AbnormalHeartbeat",
 			"AsphaltObstacles",
 			"AsphaltPavementType",
 			"AsphaltRegularity",
-			"Colposcopy",
-			"SharePriceIncrease",
-			"RightWhaleCalls",
-			"CatsDogs",
-			"AbnormalHeartbeat",
-			"DucksAndGeese",
-			"UrbanSound",
-			"FruitFlies",
+			"AllGestureWiimoteX",
+			"AllGestureWiimoteY",
+			"AllGestureWiimoteZ",
 			"BinaryHeartbeat",
+			"CatsDogs",
+			"Colposcopy",
+			"DucksAndGeese",
+			"ElectricDeviceDetection",
+			"FruitFlies",
+			"GestureMidAirD1",
+			"GestureMidAirD2",
+			"GestureMidAirD3",
+			"GesturePebbleZ1",
+			"GesturePebbleZ2",
 			"InsectSound",
 			"MosquitoSound",
-			"ElectricDeviceDetection",
-			"AconityMINIPrinter"//Needs formatting from github
+			"PickupGestureWiimoteZ",
+			"PLAID",
+			"ShakeGestureWiimoteZ"
+			"SharePriceIncrease",
+			"RightWhaleCalls",
+			"UrbanSound",
 	};
 	//</editor-fold>
 

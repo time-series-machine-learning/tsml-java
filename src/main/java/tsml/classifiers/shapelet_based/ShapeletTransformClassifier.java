@@ -217,8 +217,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Put this in the options rather than here
         transform.setPruneMatchingShapelets(pruneMatchingShapelets);
 
-        //REMOVE!!
-//        transform.setNumberOfShapelets(500);
         System.out.println(" num shapelets in transform ="+transform.getNumberOfShapelets());
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
@@ -437,8 +435,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
         int n = train.numInstances();
         int m = train.numAttributes()-1;
+        if(multivariate)
+            m = utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train);
         transformOptions.setMinLength(3);
         transformOptions.setMaxLength(m);
+
+
+
+
 //DEtermine balanced or not,
         if(train.numClasses() > 2) {
             transformOptions.setBinaryClassValue(true);
