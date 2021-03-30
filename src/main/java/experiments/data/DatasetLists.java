@@ -50,7 +50,7 @@ public class DatasetLists {
 	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
 	public static String[] newForHC2Paper= {
-			"AconityMINIPrinter"//Needs formatting from github
+			"AconityMINIPrinter",//Needs formatting from github
 			"AbnormalHeartbeat",
 			"AsphaltObstacles",
 			"AsphaltPavementType",
@@ -73,11 +73,13 @@ public class DatasetLists {
 			"MosquitoSound",
 			"PickupGestureWiimoteZ",
 			"PLAID",
-			"ShakeGestureWiimoteZ"
+			"ShakeGestureWiimoteZ",
 			"SharePriceIncrease",
 			"RightWhaleCalls",
-			"UrbanSound",
+			"UrbanSound"
 	};
+
+
 	//</editor-fold>
 
 
