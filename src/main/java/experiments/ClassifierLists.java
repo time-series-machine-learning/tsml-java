@@ -263,6 +263,7 @@ public class ClassifierLists {
             case "TDE":
                 c = new TDE();
                 break;
+
             default:
                 System.out.println("Unknown dictionary based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array dictionary and the switch statement ");
@@ -270,6 +271,44 @@ public class ClassifierLists {
                         + "There is a mismatch between array dictionary and the switch statement ");
 
         }
+        return c;
+    }
+
+
+    /**
+     * Jason for HC2 on Kraken
+     */
+    public static String[] jasonsHC2 = {"TDE-OOB","STC-OOB","DrCIF-OOB","PF-OOB","Arsenal-OOB"};
+    public static HashSet<String> jasonHC2Based=new HashSet<String>( Arrays.asList(jasonsHC2));
+    private static Classifier setJasonHC2Based(Experiments.ExperimentalArguments exp){
+        String classifier=exp.classifierName;
+        EnhancedAbstractClassifier c;
+        int fold=exp.foldId;
+        switch(classifier) {
+            case "Arsenal-OOB":
+                c = new Arsenal();
+                break;
+            case "TDE-OOB":
+                c = new TDE();
+                break;
+            case "STC-OOB":
+                c = new ShapeletTransformClassifier();
+                break;
+            case "DrCIF-OOB":
+                c = new DrCIF();
+                break;
+            case "PF-OOB":
+                c = new  ProximityForest();
+                break;
+
+            default:
+                System.out.println("Unknown Jason based classifier "+classifier+" should not be able to get here ");
+                System.out.println("There is a mismatch between array dictionary and the switch statement ");
+                throw new UnsupportedOperationException("Unknown dictionary based  classifier "+classifier+" should not be able to get here."
+                        + "There is a mismatch between array dictionary and the switch statement ");
+
+        }
+        c.setTrainEstimateMethod("OOB");
         return c;
     }
 
@@ -343,6 +382,10 @@ public class ClassifierLists {
                 break;
             case "ARSENAL":
                 c = new Arsenal();
+                break;
+            case "ARSENAL-OOB":
+                c = new Arsenal();
+                ((Arsenal)c).setBagging(true);
                 break;
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
@@ -1154,6 +1197,8 @@ public class ClassifierLists {
             c=setBespokeClassifiers(exp);
         else if(earlyClassifiers.contains(classifier))
             c=setEarlyClassifiers(exp);
+        else if(jasonHC2Based.contains(classifier))
+            c=setJasonHC2Based(exp);
         else{
             System.out.println("Unknown classifier "+classifier+" it is not in any of the sublists ");
             throw new UnsupportedOperationException("Unknown classifier "+classifier+" it is not in any of the sublists on ClassifierLists ");

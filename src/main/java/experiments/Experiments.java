@@ -143,62 +143,60 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds = 1;
+            int folds=1;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
-            int[] hc={1,2,3,5,6,8,11,12,14,17,21};
-
-            String[] classifier = {"STC-D"};// "RotF",Classifier name: See ClassifierLists for valid options
-            ArrayList<String> parameters = new ArrayList<>();
-//            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
-            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
-            parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
-            //           parameters.add("-rp=C:\\temp\\"); //Where to write results
-            parameters.add("-gtf=false"); //Whether to generate train files or not
-            parameters.add("-cn=" + classifier[0]); //Classifier name
+            String[] classifier={"ProximityForest"};// "RotF",Classifier name: See ClassifierLists for valid options
+            ArrayList<String> parameters= new ArrayList<>();
+            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
+//            parameters.add("-rp=C:\\Results Working Area\\HC2 Results\\OOB\\"); //Where to write results
+            parameters.add("-rp=Z:/temp"); //Where to write results
+            parameters.add("-gtf=true"); //Whether to generate train files or not
+            parameters.add("-cn="+classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("--force=false"); //Overwrites existing results if true, otherwise set to false
-            //            parameters.add("-ctr=3m"); //contract time, default in hours
+            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
+//            parameters.add("-ctr=3m"); //contract time, default in hours
 
 
-            String[] settings = new String[parameters.size()];
-            int count = 0;
-            for (String str : parameters)
-                settings[count++] = str;
+            String[] settings=new String[parameters.size()];
+            int count=0;
+            for(String str:parameters)
+                settings[count++]=str;
 
 
-            //            String[] probFiles= univariate; //Problem name(s)
-            //            String[] probFiles= univariate; //{"ArrowHead"}; //Problem name(s)
-//           String[] probFiles= {"ChinaTown"}; //Problem name(s)
-            //           String[] probFiles = DatasetLists.equalLengthProblems;
-            //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"RacketSports"};
+
+//            String[] probFiles= univariate; //Problem name(s)
+            String[] probFiles= {"ArrowHead"}; //Problem name(s)
+ //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
+//            String[] probFiles= DatasetLists.equalLengthProblems;
+//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             /*
              * END OF SETTINGS
              */
             System.out.println("Manually set args:");
             for (String str : settings)
-                System.out.println("\t" + str);
+                System.out.println("\t"+str);
             System.out.println("");
 
-            boolean threaded = false;
+            boolean threaded=false;
             if (threaded) {
                 Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with " + expSettings);
+                System.out.println("Threaded experiment with "+expSettings);
                 //             setupAndRunMultipleExperimentsThreaded(expSettings, classifier,probFiles,0,folds);
-                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier, null, probFiles, 0, folds);
-            } else {//Local run without args, mainly for debugging
-                for (String prob : probFiles) {
-                    settings[4] = "-dn=" + prob;
-                    for (int i = 1; i <= folds; i++) {
-                        settings[5] = "-f=" + i;
+                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier,null,probFiles,0,folds);
+            }
+            else {//Local run without args, mainly for debugging
+                for (String prob:probFiles) {
+                    settings[4]="-dn="+prob;
+                    for(int i=1;i<=folds;i++) {
+                        settings[5]="-f="+i;
                         Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
-                        //                      System.out.println("Sequential experiment with "+expSettings);
+//                      System.out.println("Sequential experiment with "+expSettings);
                         Experiments.setupAndRunExperiment(expSettings);
                     }
                 }
@@ -551,10 +549,8 @@ public class Experiments  {
 
         //todo just enforce nanos everywhere, this is ridiculous. this needs overhaul
 
-        long estimateToUpdateWith = 0; // no estimate by default
-        long timingToUpdateWith = buildTime; //the timing that experiments measured by default
-
         if (exp.generateErrorEstimateOnTrainSet) { //want timings and full predictions
+            long timingToUpdateWith = buildTime; //the timing that experiments measured by default
             TimeUnit timeUnitToUpdateWith = expTimeUnit;
             String paras = "No parameter info";
 
@@ -575,7 +571,7 @@ public class Experiments  {
             }
 
             timingToUpdateWith = trainResults.getTimeUnit().convert(timingToUpdateWith, timeUnitToUpdateWith);
-            estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
+            long estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
 
             //update the externally produced results with the appropriate timing
             trainResults.setBuildTime(timingToUpdateWith);
@@ -942,7 +938,7 @@ public class Experiments  {
      *       -  classifierGenerators = Arrays.asList(() -> {return setClassifierClassic("TSF",0)});
      */
     public static void setupAndRunMultipleExperimentsThreaded(ExperimentalArguments standardArgs, String[] classifierNames, List<Supplier<Classifier>> classifierGenerators, String[] datasetNames, int minFolds, int maxFolds) throws Exception{
-        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, classifierGenerators, datasetNames, minFolds, maxFolds, 0);
+        setupAndRunMultipleExperimentsThreaded(standardArgs, classifierNames, classifierGenerators, datasetNames, minFolds, maxFolds,0 );
 
 
         /*
