@@ -49,23 +49,37 @@ public class DatasetLists {
 
 	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
-	public static String[] newUnivariate= {
+	public static String[] newForHC2Paper= {
+			"AconityMINIPrinter",//Needs formatting from github
+			"AbnormalHeartbeat",
 			"AsphaltObstacles",
 			"AsphaltPavementType",
 			"AsphaltRegularity",
-			"Colposcopy",
-			"SharePriceIncrease",
-			"RightWhaleCalls",
-			"CatsDogs",
-			"AbnormalHeartbeat",
-			"DucksAndGeese",
-			"UrbanSound",
-			"FruitFlies",
+			"AllGestureWiimoteX",
+			"AllGestureWiimoteY",
+			"AllGestureWiimoteZ",
 			"BinaryHeartbeat",
+			"CatsDogs",
+			"Colposcopy",
+			"DucksAndGeese",
+			"ElectricDeviceDetection",
+			"FruitFlies",
+			"GestureMidAirD1",
+			"GestureMidAirD2",
+			"GestureMidAirD3",
+			"GesturePebbleZ1",
+			"GesturePebbleZ2",
 			"InsectSound",
 			"MosquitoSound",
-			"ElectricDeviceDetection"
+			"PickupGestureWiimoteZ",
+			"PLAID",
+			"ShakeGestureWiimoteZ",
+			"SharePriceIncrease",
+			"RightWhaleCalls",
+			"UrbanSound"
 	};
+
+
 	//</editor-fold>
 
 
@@ -269,6 +283,9 @@ public class DatasetLists {
 
 	//<editor-fold defaultstate="collapsed" desc="Variable length univariate datasets">
 	public static String[] variableLengthUnivariate ={
+			"AsphaltObstacles",
+			"AsphaltPavementType",
+			"AsphaltRegularity",
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -283,7 +300,8 @@ public class DatasetLists {
    };
 	//</editor-fold>
 
-	int[][] minMaxUnivariate={{11,385,2,369},
+	int[][] minMaxUnivariate={
+			{11,385,2,369},
 	{8,369,2,385},
 	{33,326,2,385},
 	{80,360,80,360},
@@ -1550,7 +1568,10 @@ tiianic
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
-  public static void processUCRData(String problemPath){
+
+
+
+	public static void processUCRData(String problemPath){
       System.out.println(" nos files ="+tscProblems46.length);
       String s;
       for(int str=39;str<43;str++){

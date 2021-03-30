@@ -17,9 +17,9 @@
  
 package tsml.data_containers;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 /**
@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  *
  */
-public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
+public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serializable {
 
     /* Meta Information */
     private String description = "";
@@ -277,8 +277,8 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
     }
 
     private void calculateLengthBounds() {
-        minLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMinLength).min().getAsInt();
-        maxLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMaxLength).max().getAsInt();
+        minLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMinLength).min().orElse(-1);
+        maxLength = seriesCollection.stream().mapToInt(TimeSeriesInstance::getMaxLength).max().orElse(-1);
         isEqualLength = minLength == maxLength;
     }
 
@@ -333,7 +333,13 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
         //guard for if we're going to force update classCounts after.
         if(classCounts != null && newSeries.getLabelIndex() < classCounts.length)
             classCounts[newSeries.getLabelIndex()]++;
-
+        
+        if(seriesCollection.size() == 1) {
+            // was empty / this is the first inst being added to the list
+            // therefore metadata is set to -1's
+            // need to change minLength to a very large number else the -1 invalid value is always the minimum length
+            minLength = Integer.MAX_VALUE;
+        }
         minLength = Math.min(newSeries.getMinLength(), minLength);
         maxLength = Math.max(newSeries.getMaxLength(), maxLength);
         maxNumDimensions = Math.max(newSeries.getNumDimensions(), maxNumDimensions);
@@ -612,5 +618,33 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance> {
 
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
+    }
+
+    /**
+     * Get inst index binned by class. I.e. class 1 contains {3,5,6} and class 2 contains {1,2,4}
+     * @return
+     */
+    public List<List<Integer>> getInstIndicesByClass() {
+        final List<List<Integer>> bins = new ArrayList<>(numClasses());
+        for(int i = 0; i < numClasses(); i++) {
+            bins.add(new ArrayList<>());
+        }
+        for(int i = 0; i < numInstances(); i++) {
+            final TimeSeriesInstance inst = get(i);
+            final int labelIndex = inst.getLabelIndex();
+            final List<Integer> bin = bins.get(labelIndex);
+            bin.add(i);
+        }
+        return bins;
+    }
+    
+    public List<TimeSeriesInstances> getInstsByClass() {
+        return getInstIndicesByClass().stream().map(indices -> new TimeSeriesInstances(indices.stream().map(this::get).collect(Collectors.toList()), getClassLabels())).collect(Collectors.toList());
+    }
+    
+    public void addAll(Iterable<TimeSeriesInstance> insts) {
+        for(TimeSeriesInstance inst : insts) {
+            add(inst);
+        }
     }
 }

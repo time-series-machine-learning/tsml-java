@@ -18,10 +18,16 @@
 package tsml.classifiers.distance_based.utils.collections.iteration;
 
 /**
- * Purpose: // todo - docs - type the purpose of the code here
+ * Reset this class to uninitialised / default state.
  * <p>
  * Contributors: goastler
  */
 public interface Resetable {
-    boolean reset();
+    void reset();
+    
+    static void reset(Object object) {
+        if(object instanceof tsml.classifiers.distance_based.utils.collections.iteration.Resetable) {
+            ((tsml.classifiers.distance_based.utils.collections.iteration.Resetable) object).reset();
+        }
+    }
 }

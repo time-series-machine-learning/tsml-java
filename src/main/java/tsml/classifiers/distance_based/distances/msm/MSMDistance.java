@@ -17,20 +17,21 @@
  
 package tsml.classifiers.distance_based.distances.msm;
 
-import tsml.classifiers.distance_based.distances.DoubleMatrixBasedDistanceMeasure;
+import tsml.classifiers.distance_based.distances.MatrixBasedDistanceMeasure;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandlerUtils;
 import tsml.classifiers.distance_based.utils.collections.params.ParamSet;
-import weka.core.Instance;
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+
+import java.util.Arrays;
 
 /**
  * MSM distance measure.
  * <p>
  * Contributors: goastler
  */
-public class MSMDistance
-    extends DoubleMatrixBasedDistanceMeasure {
-
-
+public class MSMDistance extends MatrixBasedDistanceMeasure {
+    
     private double c = 1;
 
     public MSMDistance() {
@@ -47,6 +48,13 @@ public class MSMDistance
         this.c = c;
     }
 
+    /**
+     * Find the cost for doing a move / split / merge for the univariate case.
+     * @param newPoint
+     * @param x
+     * @param y
+     * @return
+     */
     private double findCost(double newPoint, double x, double y) {
         double dist = 0;
 
@@ -60,97 +68,138 @@ public class MSMDistance
         return dist;
     }
 
+    /**
+     * Find the cost for doing a move / split / merge on the multivariate case.
+     * @param a
+     * @param aIndex
+     * @param b
+     * @param bIndex
+     * @param c
+     * @param cIndex
+     * @return
+     */
+    private double cost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex, final TimeSeriesInstance c, final int cIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final TimeSeries bDim = b.get(i);
+            final TimeSeries cDim = c.get(i);
+            final Double aValue = aDim.get(aIndex);
+            final Double bValue = bDim.get(bIndex);
+            final Double cValue = cDim.get(cIndex);
+            sum += findCost(aValue, bValue, cValue);
+        }
+        return sum;
+    }
+
+    /**
+     * Find the cost for a individual cell. This is used when there's no alignment change and values are mapping directly to another.
+     * @param a
+     * @param aIndex
+     * @param b
+     * @param bIndex
+     * @return
+     */
+    private double directCost(final TimeSeriesInstance a, final int aIndex, final TimeSeriesInstance b, final int bIndex) {
+        double sum = 0;
+        for(int i = 0; i < a.getNumDimensions(); i++) {
+            final TimeSeries aDim = a.get(i);
+            final TimeSeries bDim = b.get(i);
+            final Double aValue = aDim.get(aIndex);
+            final Double bValue = bDim.get(bIndex);
+            sum += Math.abs(aValue - bValue);
+        }
+        return sum;
+    }
+
     @Override
-    public double findDistance(Instance a, Instance b, final double limit) {
+    public double distance(TimeSeriesInstance a, TimeSeriesInstance b, final double limit) {
 
-        int aLength = a.numAttributes() - 1;
-        int bLength = b.numAttributes() - 1;
+        // make a the longest time series
+        if(a.getMaxLength() < b.getMaxLength()) {
+            TimeSeriesInstance tmp = a;
+            a = b;
+            b = tmp;
+        }
 
-        final boolean generateDistanceMatrix = isGenerateDistanceMatrix();
-        final double[][] matrix = generateDistanceMatrix ? new double[aLength][bLength] : null;
-        setDistanceMatrix(matrix);
+        final int aLength = a.getMaxLength();
+        final int bLength = b.getMaxLength();
+        setup(aLength, bLength, true);
 
-        final int windowSize = aLength;
+        // step is the increment of the mid point for each row
+        final double step = (double) (bLength - 1) / (aLength - 1);
+        final double windowSize = 1d * bLength;
 
-        double[] row = new double[bLength];
-        double[] prevRow = new double[bLength];
-        // top left cell of matrix will simply be the sq diff
-        double min = Math.abs(a.value(0) - b.value(0));
-        row[0] = min;
+        // row index
+        int i = 0;
+
         // start and end of window
-        // start at the next cell of the first row
-        int start = 1;
-        // end at window or bLength, whichever smallest
-        int end = Math.min(bLength - 1, windowSize);
-        // must set the value before and after the window to inf if available as the following row will use these
-        // in top / left / top-left comparisons
-        if(end + 1 < bLength) {
-            row[end + 1] = Double.POSITIVE_INFINITY;
+        int start = 0;
+        double mid = 0;
+        int end = Math.min(bLength - 1, (int) Math.floor(windowSize));
+        int prevEnd; // store end of window from previous row to fill in shifted space with inf
+        double[] row = getRow(i);
+        double[] prevRow;
+
+        // col index
+        int j = start;
+        // process top left sqaure of mat
+        double min = row[j] = directCost(a, i, b, j);
+        j++;
+        // compute the first row
+        for(; j <= end; j++) {
+            row[j] = row[j - 1] + cost(b, j, a, i, b, j - 1);
+            min = Math.min(min, row[j]);
         }
-        // the first row is populated from the sq diff + the cell before
-        for(int j = start; j <= end; j++) {
-            double cost = row[j - 1] + findCost(b.value(j), a.value(0), b.value(j - 1));
-            row[j] = cost;
-            min = Math.min(min, cost);
-        }
-        if(generateDistanceMatrix) {
-            System.arraycopy(row, 0, matrix[0], 0, row.length);
-        }
-        // early abandon if work has been done populating the first row for >1 entry
-        if(min > limit) {
-            return Double.POSITIVE_INFINITY;
-        }
-        for(int i = 1; i < aLength; i++) {
-            // Swap current and prevRow arrays. We'll just overwrite the new row.
-            {
-                double[] temp = prevRow;
-                prevRow = row;
-                row = temp;
-            }
-            // reset the insideLimit var each row. if all values for a row are above the limit then early abandon
+        if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
+        i++;
+        
+        // process remaining rows
+        for(; i < aLength; i++) {
+            // reset min for the row
             min = Double.POSITIVE_INFINITY;
-            // start and end of window
-            start = Math.max(0, i - windowSize);
-            end = Math.min(bLength - 1, i + windowSize);
-            // must set the value before and after the window to inf if available as the following row will use these
-            // in top / left / top-left comparisons
-            if(start - 1 >= 0) {
-                row[start - 1] = Double.POSITIVE_INFINITY;
-            }
-            if(end + 1 < bLength) {
-                row[end + 1] = Double.POSITIVE_INFINITY;
-            }
-            // if assessing the left most column then only top is the option - not left or left-top
-            final double ai = a.value(i);
-            final double aiPrev = a.value(i - 1);
-            if(start == 0) {
-                final double cost = prevRow[start] + findCost(ai, aiPrev, b.value(start));
-                row[start] = cost;
-                min = Math.min(min, cost);
-                // shift to next cell
-                start++;
-            }
-            for(int j = start; j <= end; j++) {
-                final double bj = b.value(j);
-                // compute squared distance of feature vectors
-                final double topLeft = prevRow[j - 1] + Math.abs(ai - bj);
-                final double top = prevRow[j] + findCost(ai, aiPrev, bj);
-                final double left = row[j - 1] + findCost(bj, ai, b.value(j - 1));
-                final double cost = Math.min(top, Math.min(left, topLeft));
+            // change rows
+            prevRow = row;
+            row = getRow(i);
 
-                row[j] = cost;
-                min = Math.min(min, cost);
+            // start, end and mid of window
+            prevEnd = end;
+            mid = i * step;
+            // if using variable length time series and window size is fractional then the window may part cover an 
+            // element. Any part covered element is truncated from the window. I.e. mid point of 5.5 with window of 2.3
+            // would produce a start point of 2.2. The window would start from index 3 as it does not fully cover index
+            // 2. The same thing happens at the end, 5.5 + 2.3 = 7.8, so the end index is 7 as it does not fully cover 8
+            start = Math.max(0, (int) Math.ceil(mid - windowSize));
+            end = Math.min(bLength - 1, (int) Math.floor(mid + windowSize));
+            j = start;
+
+            // set the values above the current row and outside of previous window to inf
+            Arrays.fill(prevRow, prevEnd + 1, end + 1, Double.POSITIVE_INFINITY);
+            // set the value left of the window to inf
+            if(j > 0) row[j - 1] = Double.POSITIVE_INFINITY;
+            
+            // if assessing the left most column then only mapping option is top - not left or topleft
+            if(j == 0) {
+                row[j] = prevRow[j] + cost(a, i, a, i - 1, b, j);
+                min = Math.min(min, row[j++]);
             }
-            if(generateDistanceMatrix) {
-                System.arraycopy(row, 0, matrix[i], 0, row.length);
+            
+            // compute the distance for each cell in the row
+            for(; j <= end; j++) {
+                final double topLeft = prevRow[j - 1] + directCost(a, i, b, j);
+                final double top = prevRow[j] + cost(a, i, a, i - 1, b, j);
+                final double left = row[j - 1] + cost(b, j, a, i, b, j - 1);
+                row[j] = Math.min(top, Math.min(left, topLeft));
+                min = Math.min(min, row[j]);
             }
-            if(min > limit) {
-                return Double.POSITIVE_INFINITY;
-            }
+            
+            if(min > limit) return Double.POSITIVE_INFINITY; // quit if beyond limit
         }
-        //Find the minimum distance at the end points, within the warping window.
-        return row[bLength - 1];
-
+        
+        // last value in the current row is the distance
+        final double distance = row[row.length - 1];
+        teardown();
+        return distance;
     }
 
     @Override
@@ -161,6 +210,6 @@ public class MSMDistance
     @Override
     public void setParams(final ParamSet param) throws Exception {
         super.setParams(param);
-        ParamHandlerUtils.setParam(param, C_FLAG, this::setC, Double.class);
+        setC(param.get(C_FLAG, getC()));
     }
 }

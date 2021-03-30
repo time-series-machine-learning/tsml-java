@@ -26,8 +26,19 @@ import java.io.Serializable;
  */
 public class Stated implements Serializable {
 
-    private transient boolean started = false;
+    private boolean started;
 
+    public Stated() {
+        this(false);
+    }
+    
+    public Stated(boolean start) {
+        reset();
+        if(start) {
+            start();
+        }
+    }
+    
     public boolean isStarted() {
         return started;
     }
@@ -36,71 +47,46 @@ public class Stated implements Serializable {
         return !started;
     }
 
-    public void start(boolean check) {
+    public void start() {
         if(!started) {
-            beforeStart();
             started = true;
-            afterStart();
-        } else if(check) {
+        } else {
             throw new IllegalStateException("already started");
         }
     }
-
-    protected void beforeStart() {
-
+    
+    public void optionalStart() {
+        if(!isStarted()) {
+            start();
+        }
     }
-
-    protected void afterStart() {
-
+    
+    public void optionalStop() {
+        if(!isStopped()) {
+            stop();
+        }
     }
-
-    public void start() {
-        start(true);
-    }
-
-    public void stop(boolean check) {
+    
+    public void stop() {
         if(started) {
-            beforeStop();
             started = false;
-            afterStop();
-        } else if(check) {
+        } else {
             throw new IllegalStateException("already stopped");
         }
     }
 
-    protected void beforeStop() {
-
-    }
-
-    protected void afterStop() {
-
-    }
-
-    public void stop() {
-        stop(true);
-    }
-
     public void reset() {
-        final boolean wasStarted = started;
-        stop(false);
-        onReset();
-        if(wasStarted) {
-            start();
-        }
+        
     }
 
     public void resetAndStart() {
         reset();
-        start(false);
+        optionalStart();
     }
 
-    public void resetAndStop() {
+    public void stopAndReset() {
+        optionalStop();
         reset();
-        stop(false);
-    }
-
-    protected void onReset() {
-
     }
 
     public void checkStopped() {

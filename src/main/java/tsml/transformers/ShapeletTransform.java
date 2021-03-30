@@ -251,7 +251,6 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
     @Override
     public void fit(Instances data) {
         inputData = data;
-
         totalShapeletsPerSeries = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(1,
                 data.numAttributes() - 1, searchFunction.getMinShapeletLength(), searchFunction.getMaxShapeletLength());
 
