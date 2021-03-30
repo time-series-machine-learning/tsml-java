@@ -299,7 +299,7 @@ public class Resizer implements TrainableTransformer {
         
     }
 
-    public static void test1() throws IOException{
+    public static void test1() throws Exception{
         String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
         String dataset_name = "PLAID";
         Instances train = DatasetLoading
