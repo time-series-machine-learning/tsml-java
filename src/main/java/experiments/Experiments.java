@@ -143,60 +143,62 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=1;
+            int folds = 1;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
-            String[] classifier={"ProximityForest"};// "RotF",Classifier name: See ClassifierLists for valid options
-            ArrayList<String> parameters= new ArrayList<>();
-            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
-//            parameters.add("-rp=C:\\Results Working Area\\HC2 Results\\OOB\\"); //Where to write results
-            parameters.add("-rp=Z:/temp"); //Where to write results
-            parameters.add("-gtf=true"); //Whether to generate train files or not
-            parameters.add("-cn="+classifier[0]); //Classifier name
+            int[] hc={1,2,3,5,6,8,11,12,14,17,21};
+
+            String[] classifier = {"STC-D"};// "RotF",Classifier name: See ClassifierLists for valid options
+            ArrayList<String> parameters = new ArrayList<>();
+//            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
+            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
+            parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
+            //           parameters.add("-rp=C:\\temp\\"); //Where to write results
+            parameters.add("-gtf=false"); //Whether to generate train files or not
+            parameters.add("-cn=" + classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
-//            parameters.add("-ctr=3m"); //contract time, default in hours
+            parameters.add("--force=false"); //Overwrites existing results if true, otherwise set to false
+            //            parameters.add("-ctr=3m"); //contract time, default in hours
 
 
-            String[] settings=new String[parameters.size()];
-            int count=0;
-            for(String str:parameters)
-                settings[count++]=str;
+            String[] settings = new String[parameters.size()];
+            int count = 0;
+            for (String str : parameters)
+                settings[count++] = str;
 
 
-
-//            String[] probFiles= univariate; //Problem name(s)
-            String[] probFiles= {"ArrowHead"}; //Problem name(s)
- //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
-//            String[] probFiles= DatasetLists.equalLengthProblems;
-//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            //            String[] probFiles= univariate; //Problem name(s)
+            //            String[] probFiles= univariate; //{"ArrowHead"}; //Problem name(s)
+//           String[] probFiles= {"ChinaTown"}; //Problem name(s)
+            //           String[] probFiles = DatasetLists.equalLengthProblems;
+            //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            String[] probFiles ={"RacketSports"};
             /*
              * END OF SETTINGS
              */
             System.out.println("Manually set args:");
             for (String str : settings)
-                System.out.println("\t"+str);
+                System.out.println("\t" + str);
             System.out.println("");
 
-            boolean threaded=false;
+            boolean threaded = false;
             if (threaded) {
                 Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with "+expSettings);
+                System.out.println("Threaded experiment with " + expSettings);
                 //             setupAndRunMultipleExperimentsThreaded(expSettings, classifier,probFiles,0,folds);
-                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier,null,probFiles,0,folds);
-            }
-            else {//Local run without args, mainly for debugging
-                for (String prob:probFiles) {
-                    settings[4]="-dn="+prob;
-                    for(int i=1;i<=folds;i++) {
-                        settings[5]="-f="+i;
+                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier, null, probFiles, 0, folds);
+            } else {//Local run without args, mainly for debugging
+                for (String prob : probFiles) {
+                    settings[4] = "-dn=" + prob;
+                    for (int i = 1; i <= folds; i++) {
+                        settings[5] = "-f=" + i;
                         Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
-//                      System.out.println("Sequential experiment with "+expSettings);
+                        //                      System.out.println("Sequential experiment with "+expSettings);
                         Experiments.setupAndRunExperiment(expSettings);
                     }
                 }
