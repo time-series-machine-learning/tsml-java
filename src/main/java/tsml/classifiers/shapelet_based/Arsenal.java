@@ -149,7 +149,6 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         int numFolds = -1;
         if (getEstimateOwnPerformance()) {
             trainDistributions = new double[numInstances][numClasses];
-            ;
             if (bagging) {
                 oobCounts = new int[numInstances];
             } else {
