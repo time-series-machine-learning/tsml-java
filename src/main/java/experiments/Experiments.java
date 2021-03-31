@@ -551,8 +551,10 @@ public class Experiments  {
 
         //todo just enforce nanos everywhere, this is ridiculous. this needs overhaul
 
+        long estimateToUpdateWith = 0; // no estimate by default
+        long timingToUpdateWith = buildTime; //the timing that experiments measured by default
+
         if (exp.generateErrorEstimateOnTrainSet) { //want timings and full predictions
-            long timingToUpdateWith = buildTime; //the timing that experiments measured by default
             TimeUnit timeUnitToUpdateWith = expTimeUnit;
             String paras = "No parameter info";
 
@@ -573,7 +575,7 @@ public class Experiments  {
             }
 
             timingToUpdateWith = trainResults.getTimeUnit().convert(timingToUpdateWith, timeUnitToUpdateWith);
-            long estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
+            estimateToUpdateWith = trainResults.getTimeUnit().convert(trainResults.getErrorEstimateTime(), timeUnitToUpdateWith);
 
             //update the externally produced results with the appropriate timing
             trainResults.setBuildTime(timingToUpdateWith);

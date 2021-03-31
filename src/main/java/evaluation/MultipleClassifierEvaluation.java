@@ -16,10 +16,9 @@
  */
 package evaluation;
 
-import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import evaluation.storage.ClassifierResultsCollection;
-import experiments.data.DatasetLists;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -29,11 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.function.Consumer;
-import java.util.function.Function;
+
 import utilities.DebugPrinting;
-import utilities.ErrorReport;
-import utilities.generic_storage.Pair;
 
 /**
  * This essentially just wraps ClassifierResultsAnalysis.performFullEvaluation(...) in a nicer to use way. Will be updated over time
@@ -76,7 +72,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private Map<String, Map<String, String[]>> datasetGroupings; // Map<GroupingMethodTitle(e.g "ByNumAtts"), Map<GroupTitle(e.g "<100"), dsetsInGroup(must be subset of datasets)>>
     private ClassifierResultsCollection resultsCollection;
     private int numFolds;
-    private ArrayList<PerformanceMetric> metrics;
+    private List<PerformanceMetric> metrics;
     
     /**
      * if true, the relevant .m files must be located in the netbeans project directory
@@ -381,7 +377,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
     
     public MultipleClassifierEvaluation setUseAllStatistics() {
-        metrics = PerformanceMetric.getAllStatistics();
+        metrics = PerformanceMetric.getAllPredictionStatistics();
         return this;
     }
 
