@@ -368,7 +368,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
-            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
+//            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
             Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions

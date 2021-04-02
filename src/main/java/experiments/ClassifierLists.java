@@ -357,7 +357,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha", "FlatCote", "HIVE-COTEv1", "catch22", "HC-oob", "HC-cv","HC-cv-pf-stc", "HC-cv-stc", "HCV2-cv",
+    public static String[] hybrids= {"HiveCoteAlpha", "FlatCote", "HIVE-COTEv1","HIVE-COTEv2", "catch22", "HC-oob", "HC-cv","HC-cv-pf-stc", "HC-cv-stc", "HCV2-cv",
 //HC 2 variants
             "HC-1", "HC-2", "HC-3", "HC-4", "HC-5", "HC-6", "HC-7", "HC-8", "HC-9", "HC-10", "HC-11", "HC-12",
             "HC-13", "HC-14", "HC-15", "HC-16", "HC-17", "HC-18", "HC-19", "HC-20", "HC-21", "HC-22", "HC-23", "HC-24", "HC-25", "HC-26"
@@ -397,6 +397,16 @@ public class ClassifierLists {
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
                 classifiers=new String[]{"Arsenal-cv","DrCIF-cv","TDE-cv","STC-cv"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HIVE-COTEv2":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"Arsenal-oob","DrCIF-oob","TDE-cv","STC-I"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;

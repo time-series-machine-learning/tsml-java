@@ -251,8 +251,12 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
     @Override
     public void fit(Instances data) {
         inputData = data;
+        int length=data.numAttributes() - 1;
+        if(data.attribute(0).isRelationValued())
+            length=data.instance(0).relationalValue(0).numInstances();
+
         totalShapeletsPerSeries = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(1,
-                data.numAttributes() - 1, searchFunction.getMinShapeletLength(), searchFunction.getMaxShapeletLength());
+                length, searchFunction.getMinShapeletLength(), searchFunction.getMaxShapeletLength());
 
         // check the input data is correct and assess whether the filter has been setup
         // correctly.
@@ -334,9 +338,10 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         shapeletDistance.init(inputData);
         // setup classValue
         classValue.init(inputData);
-        outputPrint("num shapelets before search " + numShapelets);
+        outputPrint("num shapelets to find " + numShapelets);
         // Contract is controlled by restricting number of shapelets per series.
         shapeletsSearchedPerSeries = searchFunction.getNumShapeletsPerSeries();
+        outputPrint("num shapelets per series " + shapeletsSearchedPerSeries+" input data length = "+inputData.numInstances());
         shapelets = findBestKShapelets(inputData); // get k shapelets
         outputPrint(shapelets.size() + " Shapelets have been generated num shapelets now " + numShapelets);
 
@@ -636,6 +641,7 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         // series, we will revert to full search
         ShapeletSearch full = new ShapeletSearch(searchFunction.getOptions());
         ShapeletSearch current = searchFunction;
+        full.init(data);
         boolean contracted = true;
         boolean keepGoing = true;
         if (contractTime == 0) {
@@ -665,9 +671,7 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
 
         // continue processing series until we run out of time (if contracted)
         while (casesSoFar < numSeriesToUse && keepGoing) {
-            // outputPrint("BALANCED: "+casesSoFar +" Cumulative time (secs) =
-            // "+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+"
-            // contracted = "+contracted+" search type = "+searchFunction.getSearchType());
+             outputPrint("BALANCED: "+casesSoFar +" num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
             // get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
             // we only want to pass in the worstKShapelet if we've found K shapelets. but we
@@ -683,15 +687,20 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
             long t1 = System.nanoTime();
             seriesShapelets = current.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
             long t2 = System.nanoTime();
+            System.out.println(" Num shapelets = "+seriesShapelets.size());
             numShapeletsEvaluated += seriesShapelets.size();
-
+            System.out.println(" Series length in transform = "+current.getSeriesLength());
             if (adaptiveTiming && contracted && passes == 0) {
                 long tempEA = numEarlyAbandons - prevEarlyAbandons;
                 prevEarlyAbandons = numEarlyAbandons;
                 double newTimePerShapelet = (double) (t2 - t1) / (seriesShapelets.size() + tempEA);
                 if (totalShapeletsPerSeries < (seriesShapelets.size() + tempEA))// Switch to full enum for next
                                                                                 // iteration
+                {
                     current = full;
+
+                    System.out.println(" SET FULL eries length in transform = "+current.getSeriesLength());
+                }
                 else
                     current = searchFunction;
 

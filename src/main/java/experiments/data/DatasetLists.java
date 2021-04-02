@@ -2095,12 +2095,12 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
+	String problemPath="Z:\\ArchiveData\\Univariate_arff\\";
+	dataDescription(DatasetLists.tscProblems2018,problemPath);
+	System.exit(0);
   	for(String str:newProblems27)
 		System.out.println(str);
 
-	System.exit(0);
-    String problemPath="E:\\Data\\ConcatenatedMTSC\\";
-    dataDescription(mtscProblems2018,problemPath);
     String path="E:\\Data\\TSCProblems2018\\";
     makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
     OutFile of = new OutFile("C:\\temp\\TSCNoMissing.txt");
