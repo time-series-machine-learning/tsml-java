@@ -209,11 +209,6 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
         dataChecks();
     }
 
-    /**
-     * @param rawData
-     * @param labelIndices
-     * @param labels
-     */
     public TimeSeriesInstances(double[][][] rawData, double[] labelIndices, String[] labels) {
         this(rawData, Arrays.stream(labelIndices).mapToInt(TimeSeriesInstance::discretiseLabelIndex).toArray(), labels);
     }
@@ -603,9 +598,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
     }
 
     /**
-     * // TODO: JavaDoc
+     * Creates a Histogram of lengths of the time series
      *
-     * @return
+     * @return Histogram of lengths
      */
     public Map<Integer, Integer> getHistogramOfLengths() {
         Map<Integer, Integer> out = new TreeMap<>();
@@ -763,7 +758,9 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
     }
 
     /**
-     * Get inst index binned by class. I.e. class 1 contains {3,5,6} and class 2 contains {1,2,4}
+     * Get inst index binned by class.
+     * I.e. class 1 contains {3,5,6} and class 2 contains {1,2,4}
+     *
      * @return
      */
     public List<List<Integer>> getInstIndicesByClass() {
@@ -781,7 +778,10 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
     }
     
     public List<TimeSeriesInstances> getInstsByClass() {
-        return getInstIndicesByClass().stream().map(indices -> new TimeSeriesInstances(indices.stream().map(this::get).collect(Collectors.toList()), getClassLabels())).collect(Collectors.toList());
+        return getInstIndicesByClass().stream().map(
+                indices -> new TimeSeriesInstances(
+                        indices.stream().map(this::get).collect(Collectors.toList()),
+                        getClassLabels())).collect(Collectors.toList());
     }
     
     public void addAll(Iterable<TimeSeriesInstance> insts) {
