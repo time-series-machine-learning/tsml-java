@@ -945,6 +945,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         //time unit has been set in estimateEnsemblePerformance(data);
         trainResults.turnOffZeroTimingsErrors();
         trainResults.setBuildTime(buildTime);
+        trainResults.setBuildPlusEstimateTime(buildTime + trainResults.getErrorEstimateTime());
         trainResults.turnOnZeroTimingsErrors();
                 
         this.testInstCounter = 0; //prep for start of testing
