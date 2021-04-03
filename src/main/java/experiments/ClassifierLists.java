@@ -177,6 +177,8 @@ public class ClassifierLists {
 
             case "ProximityForest":
                 c = new ProximityForest();
+                ((ProximityForest)c).setTrainEstimateMethod("OOB");
+
                 break;
             case "NN_ShapeDTW_Raw":
                 c=new ShapeDTW_1NN(30,null,false,null);

@@ -47,10 +47,11 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
-	//TSC data sets added since 2018 release
+    //TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
 	public static String[] newForHC2Paper= {
-			"AconityMINIPrinter",//Needs formatting from github
+			"AconityMINIPrinterLarge",//Needs formatting from github
+            "AconityMINIPrinterSmall",//Needs formatting from github
 			"AbnormalHeartbeat",
 			"AsphaltObstacles",
 			"AsphaltPavementType",
