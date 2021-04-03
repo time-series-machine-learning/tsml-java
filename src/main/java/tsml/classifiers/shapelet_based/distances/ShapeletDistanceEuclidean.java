@@ -1,13 +1,11 @@
 package tsml.classifiers.shapelet_based.distances;
 
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
+import tsml.data_containers.TimeSeriesInstance;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-
-public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
+public class ShapeletDistanceEuclidean implements ShapeletDistanceFunction {
     @Override
-    public double calculate(ShapeletMV shapelet, double[][] instance) {
+    public double calculate(ShapeletMV shapelet, TimeSeriesInstance instance) {
         double bestSum = Double.MAX_VALUE;
         double sum;
         double[] subseq;
@@ -15,10 +13,8 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
         int shapeletLength = shapelet.getLength();
         //m-l+1
         //multivariate instances that are split dont have a class value on them.
-        int minLength = Integer.MAX_VALUE;
-        for(int i=0;i<instance.length;i++){
-            minLength = Math.min(minLength,instance[i].length);
-        }
+        int minLength = instance.getMinLength();
+
         for (int i = 0; i < minLength - shapeletLength + 1; i++)
         {
             sum = shapelet.getDistanceToInstance(i,instance);
@@ -33,25 +29,6 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceMV {
         double dist = (bestSum == 0.0) ? 0.0 : (1.0 / shapeletLength * bestSum);
         return dist;
     }
-
-    public double calculate(double[][] a, double[][] b, double shapeletLength) {
-
-            double temp,sum=0;
-
-            for(int i=0; i< a.length; i++){
-
-                for (int j = 0; j < shapeletLength; j++)
-                {
-                    temp = b[i][j] - a[i][j];
-                    sum = sum + (temp * temp);
-                }
-            }
-
-
-        double dist = (sum == 0.0) ? 0.0 : (1.0 / shapeletLength * sum);
-        return dist;
-    }
-
 
 
 }

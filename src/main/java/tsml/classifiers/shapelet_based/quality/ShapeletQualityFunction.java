@@ -1,32 +1,30 @@
 package tsml.classifiers.shapelet_based.quality;
 
+import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
-import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.core.Attribute;
 import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class ShapeletQualityMV {
+public abstract class ShapeletQualityFunction {
 
-    protected double[][][] instancesArray;
+    protected TimeSeriesInstances trainInstances;
     protected int[] classIndexes;
     protected String[] classNames;
     protected int[] classCounts;
-    protected ShapeletDistanceMV distance;
+    protected ShapeletDistanceFunction distance;
     protected ArrayList<Attribute> atts;
     protected Instances instances;
 
-    public ShapeletQualityMV(double[][][] instancesArray,
-                              int[] classIndexes,
-                              String[] classNames,
-                              int[] classCounts,
-                              ShapeletDistanceMV distance){
-        this.instancesArray = instancesArray;
-        this.classIndexes = classIndexes;
-        this.classNames = classNames;
-        this.classCounts = classCounts;
+    public ShapeletQualityFunction(TimeSeriesInstances instances,
+                                   ShapeletDistanceFunction distance){
+        this.trainInstances = instances;
+        this.classIndexes = instances.getClassIndexes();
+        this.classNames = instances.getClassLabels();
+        this.classCounts = instances.getClassCounts();
         this.distance = distance;
         this.atts = new ArrayList<Attribute>(2);
         this.atts.add(new Attribute("distance"));
@@ -34,7 +32,7 @@ public abstract class ShapeletQualityMV {
 
     }
 
-    public ShapeletQualityMV() {
+    public ShapeletQualityFunction() {
 
     }
 

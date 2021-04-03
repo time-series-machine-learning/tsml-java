@@ -1,7 +1,8 @@
 package tsml.classifiers.shapelet_based.quality;
 
-import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
+import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.attributeSelection.GainRatioAttributeEval;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -9,22 +10,18 @@ import weka.core.FastVector;
 import weka.core.Instances;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-public class GainRatioBinaryQualityMV extends ShapeletQualityMV {
+public class GainRatioBinaryQuality extends ShapeletQualityFunction {
 
-    public GainRatioBinaryQualityMV(double[][][] instancesArray,
-                                    int[] classIndexes,
-                                    String[] classNames,
-                                    int[] classCounts,
-                                    ShapeletDistanceMV distance){
+    public GainRatioBinaryQuality(TimeSeriesInstances instances,
+                                  ShapeletDistanceFunction distance){
         super();
-        this.instancesArray = instancesArray;
-        this.classIndexes = classIndexes;
-        this.classNames = classNames;
-        this.classCounts = classCounts;
+        this.trainInstances = instances;
+        this.classIndexes = instances.getClassIndexes();
+        this.classNames = instances.getClassLabels();
+        this.classCounts = instances.getClassCounts();
         this.distance = distance;
+
         this.atts = new ArrayList<Attribute>(2);
 
 
@@ -44,13 +41,13 @@ public class GainRatioBinaryQualityMV extends ShapeletQualityMV {
         this.instances.setClassIndex(1);
 
         double cl = 0;
-        for (int i=0;i< instancesArray.length;i++){
+        for (int i=0;i< trainInstances.numInstances();i++){
             if (classIndexes[i]==candidate.getClassIndex()){
                 cl = 0;
             }else{
                 cl = 1;
             }
-            double dist = distance.calculate(candidate,instancesArray[i]);
+            double dist = distance.calculate(candidate,trainInstances.get(i));
             instances.add(new DenseInstance(1,new double[]{dist,cl}));
 
         }

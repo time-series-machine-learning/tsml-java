@@ -1,12 +1,14 @@
 package tsml.classifiers.shapelet_based.quality;
 
+import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
-import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
+import tsml.data_containers.TimeSeriesInstances;
 
-public class FStat extends ShapeletQualityMV{
+public class FStat extends ShapeletQualityFunction {
 
-    public FStat(double[][][] instancesArray, int[] classIndexes, String[] classNames, int[] classCounts, ShapeletDistanceMV distance) {
-        super(instancesArray, classIndexes, classNames, classCounts, distance);
+    public FStat(TimeSeriesInstances instances,
+                 ShapeletDistanceFunction distance){
+        super(instances,distance);
     }
 
     @Override

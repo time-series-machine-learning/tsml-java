@@ -19,18 +19,19 @@ import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.testing.GcFinalization;
-import evaluation.evaluators.*;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluatorTS;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import experiments.data.DatasetLoadingTS;
-import machine_learning.classifiers.SaveEachParameter;
-import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import machine_learning.classifiers.tuned.TunedRandomForest;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.shapelet_based.classifiers.MultivariateShapelet;
-import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.ts_fileIO.TSReader;
+import tsml.data_containers.utilities.TimeSeriesResampler;
+import utilities.ClusteringUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
@@ -183,6 +184,21 @@ public class ExperimentsTS {
         }
     }
 
+    public static TimeSeriesResampler.TrainTest sampleDataset(String parentFolder, String problem, int fold) throws Exception {
+        parentFolder = StrUtils.asDirPath(parentFolder + "/" + problem);
+        TSReader ts_reader_train = new TSReader(new FileReader(new File(parentFolder + "/" + problem  + "_TRAIN" + ".ts")));
+        TSReader ts_reader_test = new TSReader(new FileReader(new File(parentFolder + "/" + problem  + "_TEST" + ".ts")));
+
+
+        if (fold>0){
+            return TimeSeriesResampler.resampleTrainTest(ts_reader_train.GetInstances(), ts_reader_test.GetInstances(), fold);
+        }else{
+            return new TimeSeriesResampler.TrainTest(ts_reader_train.GetInstances(), ts_reader_test.GetInstances() );
+        }
+
+    }
+
+
     /**
      * Runs an experiment with the given settings. For the more direct method in case e.g
      * you have a bespoke classifier not handled by ClassifierList or dataset that
@@ -211,18 +227,35 @@ public class ExperimentsTS {
         //if (quitEarlyDueToResultsExistence(expSettings))
         //   return null;
 
-        TimeSeriesInstances[] data = DatasetLoadingTS.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+        TimeSeriesResampler.TrainTest data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
-        int f = Math.min(10000,Math.max(500,(int)Math.sqrt(data[0].numInstances()*data[0].getMaxLength()*data[0].getMaxNumChannels())));
+        double[][][] trainInstancesArray = data.train.toValueArray();
+        for (int index=0;index<trainInstancesArray.length;index++) { // For each instance
+            for (int channel = 0; channel < trainInstancesArray[index].length; channel++) { // For each channel
+                ClusteringUtilities.zNormalise(trainInstancesArray[index][channel]);
+            }
+        }
+
+        double[][][] testInstancesArray = data.test.toValueArray();
+        for (int index=0;index<testInstancesArray.length;index++) { // For each instance
+            for (int channel = 0; channel < testInstancesArray[index].length; channel++) { // For each channel
+                ClusteringUtilities.zNormalise(testInstancesArray[index][channel]);
+            }
+        }
+
+        data.train = new TimeSeriesInstances(trainInstancesArray, data.train.getClassIndexes(), data.train.getClassLabels());
+        data.test = new TimeSeriesInstances(testInstancesArray, data.test.getClassIndexes(), data.test.getClassLabels());
+
+
+
+        int f = Math.min(10000,Math.max(500,(int)Math.sqrt(data.train.numInstances()*data.train.getMaxLength()*data.train.getMaxNumChannels())));
         System.out.println("Shapelets " + f);
-        // Cases in the classifierlist can now change the classifier name to reflect particular parameters wanting to be
-        // represented as different classifiers, e.g. ST_1day, ST_2day
-        // The set classifier call is therefore made before defining paths that are dependent on the classifier name
-        int min = Math.min(data[0].getMaxLength(),5);
-        int max = Math.min(50,data[0].getMaxLength()-2);
-        MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(f,min,max,
+
+
+        MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(f,
+                5,data.train.getMaxLength()-1,
                 100000,0.01,
-                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.ORDER_LINE_AARON,
+                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.GAIN_RATIO,
                 MultivariateShapelet.ShapeletDistances.EUCLIDEAN,
                 MultivariateShapelet.ShapeletFactories.DEPENDANT,
                 MultivariateShapelet.AuxClassifiers.LINEAR);
@@ -250,8 +283,8 @@ public class ExperimentsTS {
         TSClassifier classifier = new MultivariateShapelet(params);
 
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
-        setupClassifierExperimentalOptions(expSettings, classifier, data[0]);
-        ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], classifier);
+        setupClassifierExperimentalOptions(expSettings, classifier, data.train);
+        ClassifierResults[] results = runExperiment(expSettings, data.train, data.test, classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
         return results;

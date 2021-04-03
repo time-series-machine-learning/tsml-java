@@ -1,7 +1,8 @@
 package tsml.classifiers.shapelet_based.quality;
 
-import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
+import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.shapelet_tools.OrderLineObj;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
@@ -11,14 +12,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public class OrderlineQualityAaronMV extends ShapeletQualityMV {
+public class OrderlineQuality extends ShapeletQualityFunction {
 
-    public OrderlineQualityAaronMV(double[][][] instancesArray,
-                              int[] classIndexes,
-                              String[] classNames,
-                              int[] classCounts,
-                              ShapeletDistanceMV distance){
-        super(instancesArray,classIndexes,classNames,classCounts,distance);
+    public OrderlineQuality(TimeSeriesInstances instances,
+                            ShapeletDistanceFunction distance){
+        super(instances,distance);
     }
 
     @Override
@@ -30,13 +28,13 @@ public class OrderlineQualityAaronMV extends ShapeletQualityMV {
         // distance from candidate to all data, inserting in order.
         ArrayList<OrderLineObj> orderline = new ArrayList<>();
 
-        int dataSize = instancesArray.length;
+        int dataSize = trainInstances.numInstances();
 
         for (int i = 0; i < dataSize; i++) {
 
 
 
-            double d = distance.calculate(candidate,instancesArray[i]);
+            double d = distance.calculate(candidate,trainInstances.get(i));
 
             //this could be binarised or normal.
             double classVal = classIndexes[i];

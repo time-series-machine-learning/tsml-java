@@ -16,24 +16,15 @@
  */
 package evaluation;
 
-import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import evaluation.storage.ClassifierResultsCollection;
 import experiments.data.DatasetLists;
+import utilities.DebugPrinting;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import utilities.DebugPrinting;
-import utilities.ErrorReport;
-import utilities.generic_storage.Pair;
+import java.util.*;
 
 /**
  * This essentially just wraps ClassifierResultsAnalysis.performFullEvaluation(...) in a nicer to use way. Will be updated over time
@@ -575,8 +566,9 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         mcc.setDatasets(DatasetLists.mtscProblems2018);
 
         //general rule of thumb: set/add/read the classifiers as the last thing before running
-        mcc.readInClassifiers(new String[] {"HIVE-COTE", "ROCKET", "DTW_D", "STC",
-                "Shapelet-ROT_D"
+        mcc.readInClassifiers(new String[] {"HIVE-COTE", "ROCKET", "DTW_D", "STC"
+                ,"Shapelet-ROT-N_D", "Shapelet-ROT-N_I"
+                ,"Shapelet-ROT-GAIN-N_D", "Shapelet-ROT-GAIN-N_I"
         }, basePath);
       /*  mcc.readInClassifiers(new String[] {"HC 1.0","RISE","STC","TSF","cBOSS"
                 ,"Shapelet-ROT_D", "Shapelet-ROT_I","Shapelet-ROT-C_D", "Shapelet-ROT-C_I"

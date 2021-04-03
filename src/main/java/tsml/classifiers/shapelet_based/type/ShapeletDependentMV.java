@@ -1,10 +1,12 @@
 package tsml.classifiers.shapelet_based.type;
 
+import tsml.data_containers.TimeSeriesInstance;
+
 import java.util.Arrays;
 
 public  class ShapeletDependentMV extends ShapeletMV{
 
-    private double[][] data;
+     double[][] data;
 
     public ShapeletDependentMV(int start, int length, int instanceIndex, double classIndex, double[][] instance){
         super(start,length,instanceIndex,classIndex);
@@ -21,24 +23,22 @@ public  class ShapeletDependentMV extends ShapeletMV{
     }
 
     @Override
-    public double getDistanceToInstance(int start, double[][] instance) {
+    public double getDistanceToInstance(int start, TimeSeriesInstance instance) {
         double sum = 0;
         double temp = 0;
-        for(int channel=0;channel< instance.length; channel++){
+        for(int channel=0;channel< instance.getNumDimensions(); channel++){
 
             for (int index = 0; index < length; index++)
             {
-                temp = data[channel][index] - instance[channel][start+index];
+                temp = data[channel][index] - instance.get(channel).get(start+index);
                 sum = sum + (temp * temp);
             }
         }
-        return sum;
+        return sum/data.length;
     }
 
-    @Override
-    public double[][] toDoubleArray() {
-        return data;
-    }
+
+
 
     @Override
     public String toString(){

@@ -1,12 +1,10 @@
 package tsml.classifiers.shapelet_based.filter;
 
 import tsml.classifiers.shapelet_based.classifiers.MultivariateShapelet;
+import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
+import tsml.classifiers.shapelet_based.type.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
-import tsml.classifiers.shapelet_based.distances.ShapeletDistanceMV;
-import tsml.classifiers.shapelet_based.quality.ShapeletQualityMV;
-import tsml.classifiers.shapelet_based.type.ShapeletFactoryMV;
 import tsml.data_containers.TimeSeriesInstances;
-import utilities.ClusteringUtilities;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,26 +12,26 @@ import java.util.Collections;
 public class ExhaustiveFilter implements ShapeletFilterMV {
 
 
-    public ArrayList<ShapeletMV> findShapelets(MultivariateShapelet.ShapeletParams params, TimeSeriesInstances instances) {
+    public ArrayList<ShapeletMV> findShapelets(MultivariateShapelet.ShapeletParams params,
+                                               TimeSeriesInstances instances) {
+
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
-        double[][][] instancesArray = instances.toValueArray();
+
         int[] classesArray  = instances.getClassIndexes();
-        ShapeletFactoryMV type = params.type.createShapeletType();
-        ShapeletQualityMV quality = params.quality.createShapeletQuality(instancesArray,
-                instances.getClassIndexes(),instances.getClassLabels(),instances.getClassCounts(),
+
+        ShapeletFunctions type = params.type.createShapeletType();
+        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances,
                 params.distance.createShapeletDistance());
 
-        for (int index=0;index<instancesArray.length;index++){ // For each instance
-            for (int channel=0;channel<instancesArray[index].length;channel++){
-                ClusteringUtilities.zNormalise(instancesArray[index][channel]);
-            }
+
+        for (int index=0;index<instances.numInstances();index++){ // For each instance
             for (int shapeletSize=params.min;shapeletSize<=params.max;shapeletSize++) {  // For each shapelet size
 
-                ShapeletMV[] candidates = type.getShapeletsOverInstance(shapeletSize,index,classesArray[index],instancesArray[index]);
+                ShapeletMV[] candidates = type.getShapeletsOverInstance(shapeletSize,index,classesArray[index],instances.get(index));
 
                 for (int candidate = 0 ; candidate < candidates.length; candidate++){
 
-                     if (isSimilar(shapelets, candidates[candidate],params.distance.createShapeletDistance(),params.minDist)) continue;
+                     if (isSimilar(shapelets, candidates[candidate],type,params.minDist)) continue;
                     double q = quality.calculate (candidates[candidate]);
                     candidates[candidate].setQuality(q);
                     shapelets.add(candidates[candidate]);
@@ -52,7 +50,10 @@ public class ExhaustiveFilter implements ShapeletFilterMV {
         this.time = time;
     }
 
-
+    @Override
+    public boolean withinTrainContract(long start) {
+        return false;
+    }
 
 
 }

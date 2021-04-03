@@ -1,5 +1,7 @@
 package tsml.classifiers.shapelet_based.type;
 
+import tsml.data_containers.TimeSeriesInstance;
+
 public abstract class ShapeletMV implements Comparable<ShapeletMV>{
 
     protected int start;
@@ -26,8 +28,8 @@ public abstract class ShapeletMV implements Comparable<ShapeletMV>{
 
     protected abstract void setData(double[][] instance);
 
-    public abstract double getDistanceToInstance(int start, double[][] instance);
-    public abstract double[][] toDoubleArray();
+    public abstract double getDistanceToInstance(int start, TimeSeriesInstance instance);
+
 
     public void setQuality(double quality){
         this.quality = quality;

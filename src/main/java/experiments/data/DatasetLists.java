@@ -96,12 +96,12 @@ public class DatasetLists {
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
 		"ArticularyWordRecognition", //Index 0
-		"AsphaltObstaclesCoordinates",
-		"AsphaltPavementTypeCoordinates",
-		"AsphaltRegularityCoordinates",
+	//	"AsphaltObstaclesCoordinates",
+	//	"AsphaltPavementTypeCoordinates",
+	//	"AsphaltRegularityCoordinates",
         "AtrialFibrillation",
         "BasicMotions",
-        "CharacterTrajectories",
+    //    "CharacterTrajectories",
         "Cricket",
         "DuckDuckGeese",
         "EigenWorms",
@@ -113,9 +113,9 @@ public class DatasetLists {
         "HandMovementDirection",
         "Handwriting",
         "Heartbeat",
-        "InsectWingbeat",
+     //   "InsectWingbeat",
 //        "KickVsPunch", Poorly formatted and very small train size
-        "JapaneseVowels",
+     //   "JapaneseVowels",
         "Libras",
         "LSST",
         "MotorImagery",
@@ -126,7 +126,7 @@ public class DatasetLists {
         "RacketSports",
         "SelfRegulationSCP1",
         "SelfRegulationSCP2",
-        "SpokenArabicDigits",
+     //   "SpokenArabicDigits",
         "StandWalkJump",        
         "UWaveGestureLibrary"
 };
