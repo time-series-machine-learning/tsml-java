@@ -838,8 +838,11 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
             for (int j = 0; j < data.numInstances(); j++) {
                 long predTime = System.nanoTime();
-                for (int k = 0; k < trainDistributions[j].length; k++)
-                    trainDistributions[j][k] /= oobCounts[j];
+                if (oobCounts[j] == 0)
+                    Arrays.fill(trainDistributions[j], 1.0 / trainDistributions[j].length);
+                else
+                    for (int k = 0; k < trainDistributions[j].length; k++)
+                        trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
                 actuals[j] = data.get(j).getLabelIndex();
                 predTimes[j] = System.nanoTime() - predTime;

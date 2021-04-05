@@ -876,9 +876,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 double[] probs = new double[train.numClasses()];
                 double sum = 0;
 
-                for (int j = 0; j < classifiers.size(); j++) {
-                    IndividualTDE classifier = classifiers.get(j);
-
+                for (IndividualTDE classifier : classifiers) {
                     if (!classifier.getSubsampleIndices().contains(i)) {
                         probs[(int) classifier.classifyInstance(train.get(i))] += classifier.getWeight();
                         sum += classifier.getWeight();
@@ -903,10 +901,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             int[] idxSubsampleCount = new int[train.numInstances()];
 
             if (trainEstimateMethod == TrainEstimateMethod.NONE || trainEstimateMethod == TrainEstimateMethod.TRAIN) {
-                for (int i = 0; i < classifiers.size(); i++) {
-                    ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
-                    ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
-                    double weight = classifiers.get(i).getWeight();
+                for (IndividualTDE classifier : classifiers) {
+                    ArrayList<Integer> trainIdx = classifier.getSubsampleIndices();
+                    ArrayList<Integer> trainPreds = classifier.getTrainPreds();
+                    double weight = classifier.getWeight();
                     for (int g = 0; g < trainIdx.size(); g++) { //todo fix when train prop == 1, oob?
                         idxSubsampleCount[trainIdx.get(g)] += weight;
                         trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;

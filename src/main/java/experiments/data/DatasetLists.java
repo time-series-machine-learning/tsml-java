@@ -47,10 +47,11 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
-	//TSC data sets added since 2018 release
+    //TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
 	public static String[] newForHC2Paper= {
-			"AconityMINIPrinter",//Needs formatting from github
+			"AconityMINIPrinterLarge",//Needs formatting from github
+            "AconityMINIPrinterSmall",//Needs formatting from github
 			"AbnormalHeartbeat",
 			"AsphaltObstacles",
 			"AsphaltPavementType",
@@ -2095,12 +2096,12 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
+	String problemPath="Z:\\ArchiveData\\Univariate_arff\\";
+	dataDescription(DatasetLists.tscProblems2018,problemPath);
+	System.exit(0);
   	for(String str:newProblems27)
 		System.out.println(str);
 
-	System.exit(0);
-    String problemPath="E:\\Data\\ConcatenatedMTSC\\";
-    dataDescription(mtscProblems2018,problemPath);
     String path="E:\\Data\\TSCProblems2018\\";
     makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
     OutFile of = new OutFile("C:\\temp\\TSCNoMissing.txt");

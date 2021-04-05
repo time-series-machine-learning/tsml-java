@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.ensembles.ContractRotationForest;
 import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import tsml.classifiers.Tuneable;
 import tsml.transformers.shapelet_tools.DefaultShapeletOptions;
@@ -211,7 +210,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             transform.setContractTime(transformContractTime);
             transform.setAdaptiveTiming(true);
             transform.setTimePerShapelet(timePerShapelet);
-            printLineDebug(" Time per shapelet = "+timePerShapelet);
+            printLineDebug(" Time per shapelet = "+timePerShapelet+" numShapeletsToEvaluate  = "+numShapeletsToEvaluate);
 //            transform.setProportionToEvaluate(proportionToEvaluate);
         }
 //Put this in the options rather than here

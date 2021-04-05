@@ -155,14 +155,14 @@ public class Experiments  {
             ArrayList<String> parameters = new ArrayList<>();
 //            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
             parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
-            parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
-            //           parameters.add("-rp=C:\\temp\\"); //Where to write results
+            //parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
+            parameters.add("-rp=C:\\temp\\"); //Where to write results
             parameters.add("-gtf=false"); //Whether to generate train files or not
             parameters.add("-cn=" + classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("--force=false"); //Overwrites existing results if true, otherwise set to false
+            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
             //            parameters.add("-ctr=3m"); //contract time, default in hours
 
 
