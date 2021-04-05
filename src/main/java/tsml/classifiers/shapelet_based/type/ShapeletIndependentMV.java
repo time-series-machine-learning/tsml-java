@@ -38,8 +38,8 @@ public class ShapeletIndependentMV extends ShapeletMV {
 
     @Override
     public String toString(){
-        return "Start: " + start + " Length: " + length + " Instance Index: " + instanceIndex
-                + " Channel Index: " + seriesIndex + " Quality: " + quality + " Class "  + classIndex +  "\n";//->" + Arrays.toString(data) ;
+        return "Instance: " + instanceIndex + " Series: " + seriesIndex + " Start: " + start + " Length: " + length +
+                 " Quality: " + quality + " Class "  + classIndex +  "\n";//->" + Arrays.toString(data) ;
     }
 
 

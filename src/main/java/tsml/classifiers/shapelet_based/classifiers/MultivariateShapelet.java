@@ -70,7 +70,7 @@ public class MultivariateShapelet implements TSClassifier {
         ShapeletFilterMV filter =  this.params.filter.createFilter();
         filter.setHourLimit(4);
         shapelets =filter.findShapelets(params, data);
-        System.out.println(shapelets);
+       // System.out.println(shapelets);
         transformData = buildTansformedDataset(data);
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
