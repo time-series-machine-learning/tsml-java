@@ -907,7 +907,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     ArrayList<Integer> trainIdx = classifiers.get(i).getSubsampleIndices();
                     ArrayList<Integer> trainPreds = classifiers.get(i).getTrainPreds();
                     double weight = classifiers.get(i).getWeight();
-                    for (int g = 0; g < trainIdx.size(); g++) {
+                    for (int g = 0; g < trainIdx.size(); g++) { //todo fix when train prop == 1, oob?
                         idxSubsampleCount[trainIdx.get(g)] += weight;
                         trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
                     }
