@@ -361,6 +361,7 @@ public class ClassifierLists {
      */
     public static String[] hybrids= {"HiveCoteAlpha", "FlatCote", "HIVE-COTEv1","HIVE-COTEv2", "catch22", "HC-oob", "HC-cv","HC-cv-pf-stc", "HC-cv-stc", "HCV2-cv",
 //HC 2 variants
+            "HIVE-COTE","HC2","HiveCote",
             "HC-1", "HC-2", "HC-3", "HC-4", "HC-5", "HC-6", "HC-7", "HC-8", "HC-9", "HC-10", "HC-11", "HC-12",
             "HC-13", "HC-14", "HC-15", "HC-16", "HC-17", "HC-18", "HC-19", "HC-20", "HC-21", "HC-22", "HC-23", "HC-24", "HC-25", "HC-26"
     };
@@ -373,17 +374,22 @@ public class ClassifierLists {
             case "FlatCote":
                 c=new FlatCote();
                 break;
-            case "HiveCote":
-                c=new HiveCote();
-                ((HiveCote)c).setContract(48);
-                break;
             case "HIVE-COTEv1":
-                c=new HIVE_COTE();
-                ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
-                ((HIVE_COTE)c).setSeed(fold);
+                HIVE_COTE hc=new HIVE_COTE();
+                hc.setFillMissingDistsWithOneHotVectors(true);
+                hc.setSeed(fold);
+                hc.setupHIVE_COTE_1_0();
+                c=hc;
+
+                break;
+            case "HIVE-COTEv2": case "HiveCote": case "HC2": case "HIVE-COTE":
+                hc=new HIVE_COTE();
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                c=hc;
                 break;
             case "HC-cv-pf-stc":
-                HIVE_COTE hc=new HIVE_COTE();
+                 hc=new HIVE_COTE();
                 hc.setBuildIndividualsFromResultsFiles(true);
                 hc.setSeed(fold);
                 hc.setDebug(false);
@@ -399,16 +405,6 @@ public class ClassifierLists {
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
                 classifiers=new String[]{"Arsenal-cv","DrCIF-cv","TDE-cv","STC-cv"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HIVE-COTEv2":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","DrCIF-oob","TDE-cv","STC-I"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -440,7 +436,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob"};
+                classifiers=new String[]{"DrCIF","Arsenal"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -450,7 +446,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","STC-oob"};
+                classifiers=new String[]{"DrCIF","STC"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -460,7 +456,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","TDE-oob"};
+                classifiers=new String[]{"DrCIF","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -470,7 +466,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","PF-oob"};
+                classifiers=new String[]{"Arsenal","STC"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -480,7 +476,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","STC-oob"};
+                classifiers=new String[]{"Arsenal","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -490,7 +486,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"TDE-oob","Arsenal-oob"};
+                classifiers=new String[]{"STC","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -500,7 +496,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","PF-oob"};
+                classifiers=new String[]{"DrCIF","Arsenal","STC"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -510,7 +506,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"STC-oob","TDE-oob"};
+                classifiers=new String[]{"DrCIF","Arsenal","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -520,17 +516,18 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"STC-oob","PF-oob"};
+                classifiers=new String[]{"DrCIF","STC","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
+
             case "HC-10":
                 hc=new HIVE_COTE();
                 hc.setBuildIndividualsFromResultsFiles(true);
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"TDE-oob","PF-oob"};
+                classifiers=new String[]{"Arsenal","STC","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
@@ -540,117 +537,7 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob","STC-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-12":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob","TDE-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-13":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-14":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","STC-oob","TDE-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-15":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","STC-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-16":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","TDE-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-17":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","STC-oob","TDE-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-18":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","STC-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-19":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"Arsenal-oob","TDE-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-20":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"TDE-oob","STC-oob","PF-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-21":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob","STC-oob","TDE-oob"};
-                hc.setClassifiersNamesForFileRead(classifiers);
-                c=hc;
-                break;
-            case "HC-26":
-                hc=new HIVE_COTE();
-                hc.setBuildIndividualsFromResultsFiles(true);
-                hc.setSeed(fold);
-                hc.setDebug(false);
-                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                classifiers=new String[]{"DrCIF-oob","Arsenal-oob","STC-oob","TDE-oob","PF-oob"};
+                classifiers=new String[]{"DrCIF","Arsenal","STC","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;

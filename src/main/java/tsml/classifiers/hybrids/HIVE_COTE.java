@@ -97,6 +97,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public HIVE_COTE() { 
         super();
+        setupHIVE_COTE_2_0();
     }
     @Override
     public void setupDefaultEnsembleSettings() {
@@ -212,46 +213,28 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setupHIVE_COTE_2_0() {
         this.ensembleName = "HIVE-COTE 2.0";
-
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
-
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
         this.trainEstimator = cv;
-
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         DrCIF cif= new DrCIF();
-        ProximityForest pf=new ProximityForest();
         Arsenal afc = new Arsenal();
         TDE tde= new TDE();
-
-        String[] classifierNames = new String[5];
+        String[] classifierNames = new String[4];
         classifierNames[0] = "STC";
         classifierNames[1] = "DrCIF";
-        classifierNames[2] = "PF";
-        classifierNames[3] = "Arsenal";
-        classifierNames[4] = "TDE";
-        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[5];
+        classifierNames[2] = "Arsenal";
+        classifierNames[3] = "TDE";
+        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[4];
         classifiers[0]=stc;
         classifiers[1]=cif;
-        classifiers[2]=pf;
-        classifiers[3]=afc;
-        classifiers[4]=tde;
-
-
-        stc.setEstimateOwnPerformance(true);
-
-        cBOSS boss = new cBOSS();
-        boss.setEstimateOwnPerformance(true);
-        classifiers[2] = boss;
-
-        TSF tsf = new TSF();
-        classifiers[3] = tsf;
-        classifierNames[3] = "TSF";
-        tsf.setEstimateOwnPerformance(true);
-
+        classifiers[2]=afc;
+        classifiers[3]=tde;
+        for(EnhancedAbstractClassifier cls:classifiers)
+            cls.setEstimateOwnPerformance(true);
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
@@ -259,9 +242,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                     + "be fixed before continuing");
             System.exit(1);
         }
-
         setSeed(seed);
-
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
