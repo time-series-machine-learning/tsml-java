@@ -87,6 +87,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpointing
 
+
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos =0;
     double contractHours=0;    //Defaults to no contract
@@ -467,7 +468,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Contract RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+//        printLineDebug("*************** Finished Contract RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 
     }
 

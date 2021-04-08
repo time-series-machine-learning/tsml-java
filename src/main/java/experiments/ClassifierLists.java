@@ -382,12 +382,19 @@ public class ClassifierLists {
                 c=hc;
 
                 break;
-            case "HIVE-COTEv2": case "HiveCote": case "HC2": case "HIVE-COTE":
+            case "HIVE-COTEv2": case "HiveCote": case "HIVE-COTE":
                 hc=new HIVE_COTE();
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 c=hc;
                 break;
+            case "HC2":
+                hc=new HIVE_COTE();
+                hc.setSeed(fold);
+                hc.enableMultiThreading();
+                c=hc;
+                break;
+
             case "HC-cv-pf-stc":
                  hc=new HIVE_COTE();
                 hc.setBuildIndividualsFromResultsFiles(true);

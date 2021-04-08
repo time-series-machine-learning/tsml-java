@@ -437,6 +437,9 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         if (checkpoint && cleanupCheckpointFiles) {
             checkpointCleanup();
         }
+        printLineDebug("*************** Finished TDE Build with in " +
+                trainResults.getBuildTime() / 1000000000 + " Seconds  ***************");
+
     }
 
     /**

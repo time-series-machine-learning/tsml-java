@@ -416,7 +416,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         }
 
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+//        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 
     }
 
@@ -427,7 +427,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         if (bagging) {
             // Bagging used to build the final model, so use bag data, counts normalised to probabilities
-            printLineDebug("Finding the OOB estimates");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
@@ -437,10 +436,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     for (int k = 0; k < trainDistributions[j].length; k++)
                         trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
-                if(debug && j<3){
-                    for(int m=0;m<trainDistributions[j].length;m++)
-                        System.out.println("Class  "+m+" Prob = "+trainDistributions[j][m]);
-                }
 
                 actuals[j] = data.instance(j).classValue();
                 predTimes[j] = System.nanoTime() - predTime;
@@ -512,7 +507,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             rotf.setBagging(true);
 //            rotf.setRemovedPercentage(10);
 //            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
-            printLineDebug(" Doing Bagging estimate performance with " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold  and with min trees = "+rotf.minNumTrees);
             rotf.buildClassifier(data);
             long buildTime = trainResults.getBuildTime();
             trainResults = rotf.trainResults;
@@ -950,8 +944,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
      */
     @Override
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" Setting EnhancedRotationForest contract to be "+amount);
-
         if(amount>0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
