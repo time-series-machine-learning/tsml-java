@@ -318,7 +318,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * In results files made before 19/2/2019, which only stored build times and
      * milliseconds was assumed, there will be no unit of measurement for the time.
      */
-    private TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    private TimeUnit timeUnit = TimeUnit.NANOSECONDS;
 
 
     //self-management flags
