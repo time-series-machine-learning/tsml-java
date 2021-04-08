@@ -385,7 +385,6 @@ public class ClassifierLists {
             case "HIVE-COTEv2": case "HiveCote": case "HIVE-COTE":
                 hc=new HIVE_COTE();
                 hc.setSeed(fold);
-                hc.setDebug(false);
                 c=hc;
                 break;
             case "HC2":

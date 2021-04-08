@@ -143,14 +143,14 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds = 1;
+            int folds = 10;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"HIVE-COTEv2"};// "RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"HC2"};// "RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
             parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
 //            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
@@ -176,7 +176,7 @@ public class Experiments  {
 //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
             //           String[] probFiles = DatasetLists.equalLengthProblems;
             //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"Chinatown"};
+            String[] probFiles ={"ACSF1"};
             /*
              * END OF SETTINGS
              */

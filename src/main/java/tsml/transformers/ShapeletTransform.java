@@ -661,14 +661,12 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         // found out how many shapelets we want from each class, split evenly.
         int proportion = numShapelets / kShapeletsMap.keySet().size();
 
-        outputPrint("Processing data for numShapelets " + numShapelets + " with proportion per class = " + proportion);
-        outputPrint("in contract balanced: Contract (secs)" + contractTime / 1000000000.0);
         long prevEarlyAbandons = 0;
         int passes = 0;
 
         // continue processing series until we run out of time (if contracted)
         while (casesSoFar < numSeriesToUse && keepGoing) {
-             outputPrint("BALANCED: "+casesSoFar +" num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
+//             outputPrint("BALANCED: "+casesSoFar +" num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
             // get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
             // we only want to pass in the worstKShapelet if we've found K shapelets. but we
