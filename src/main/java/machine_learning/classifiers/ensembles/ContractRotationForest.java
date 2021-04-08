@@ -265,6 +265,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     // only allow real valued series and classification. To be adjusted
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
     //Set up the results file
         super.buildClassifier(data);
         String relationName=data.relationName();

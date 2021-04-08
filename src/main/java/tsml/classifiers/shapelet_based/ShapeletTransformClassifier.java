@@ -176,6 +176,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         getCapabilities().testWithFail(data);
     //Add the requirement to test if there are at least one of each class
         long startTime=System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
 
 //Temp to test multivariate
         if(data.attribute(0).isRelationValued())
@@ -253,22 +254,19 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
                 eac.setEstimateOwnPerformance(true);
         }
         classifier.buildClassifier(shapeletData);
-        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         long endTime=System.nanoTime();
+        trainResults.setBuildTime(endTime - startTime);
         if(getEstimateOwnPerformance()){
             estimateOwnPerformance(data);
         }
         if(classifier instanceof EnhancedAbstractClassifier) {
             trainResults.setErrorEstimateTime(((EnhancedAbstractClassifier) classifier).getTrainResults().getErrorEstimateTime());
-            trainResults.setBuildTime(endTime - startTime-trainResults.getErrorEstimateTime());
         }
-        else
-            trainResults.setBuildTime(endTime - startTime);
 
-        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
         //To help garbage collection
         shapeletData=new Instances(data,0);
+        trainResults.setBuildPlusEstimateTime(System.nanoTime() - startTime);
     }
 
     @Override
