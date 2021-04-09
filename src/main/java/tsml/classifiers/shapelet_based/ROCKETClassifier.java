@@ -113,7 +113,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     @Override
     public boolean withinTrainContract(long start) {
         if (trainContractTimeNanos <= 0) return true; //Not contracted
-        return System.nanoTime() - start < trainContractTimeNanos;
+        return System.nanoTime() - start < trainContractTimeNanos/5*4;
     }
 
     @Override
@@ -141,7 +141,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
             if (seedClassifier) rocket.setSeed(seed);
 
             int l = 0;
-            while (withinTrainContract(trainResults.getBuildTime()) || rocket.getNumKernels() < maxKernels) {
+            while (withinTrainContract(trainResults.getBuildTime()) && rocket.getNumKernels() < maxKernels) {
                 ROCKET tempRocket = new ROCKET();
                 tempRocket.setNumKernels(numKernelsStep);
                 tempRocket.setNormalise(normalise);
@@ -172,6 +172,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
                 }
                 arr[arr.length - 1] = data.get(i).classValue();
                 transformedData.add(new DenseInstance(1, arr));
+            }
+
+            if (cls instanceof Randomizable) {
+                ((Randomizable) cls).setSeed(seed);
             }
 
             cls.buildClassifier(transformedData);
