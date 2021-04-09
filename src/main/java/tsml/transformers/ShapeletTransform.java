@@ -338,12 +338,9 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         shapeletDistance.init(inputData);
         // setup classValue
         classValue.init(inputData);
-        outputPrint("num shapelets to find " + numShapelets);
         // Contract is controlled by restricting number of shapelets per series.
         shapeletsSearchedPerSeries = searchFunction.getNumShapeletsPerSeries();
-        outputPrint("num shapelets per series " + shapeletsSearchedPerSeries+" input data length = "+inputData.numInstances());
         shapelets = findBestKShapelets(inputData); // get k shapelets
-        outputPrint(shapelets.size() + " Shapelets have been generated num shapelets now " + numShapelets);
 
     }
 
@@ -664,14 +661,12 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         // found out how many shapelets we want from each class, split evenly.
         int proportion = numShapelets / kShapeletsMap.keySet().size();
 
-        outputPrint("Processing data for numShapelets " + numShapelets + " with proportion per class = " + proportion);
-        outputPrint("in contract balanced: Contract (secs)" + contractTime / 1000000000.0);
         long prevEarlyAbandons = 0;
         int passes = 0;
 
         // continue processing series until we run out of time (if contracted)
         while (casesSoFar < numSeriesToUse && keepGoing) {
-             outputPrint("BALANCED: "+casesSoFar +" num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
+//             outputPrint("BALANCED: "+casesSoFar +" num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
             // get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
             // we only want to pass in the worstKShapelet if we've found K shapelets. but we
@@ -687,9 +682,7 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
             long t1 = System.nanoTime();
             seriesShapelets = current.searchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
             long t2 = System.nanoTime();
-            System.out.println(" Num shapelets = "+seriesShapelets.size());
             numShapeletsEvaluated += seriesShapelets.size();
-            System.out.println(" Series length in transform = "+current.getSeriesLength());
             if (adaptiveTiming && contracted && passes == 0) {
                 long tempEA = numEarlyAbandons - prevEarlyAbandons;
                 prevEarlyAbandons = numEarlyAbandons;
@@ -698,8 +691,6 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
                                                                                 // iteration
                 {
                     current = full;
-
-                    System.out.println(" SET FULL eries length in transform = "+current.getSeriesLength());
                 }
                 else
                     current = searchFunction;
@@ -815,18 +806,9 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
                 long tempEA = numEarlyAbandons - prevEarlyAbandons;
                 prevEarlyAbandons = numEarlyAbandons;
                 double newTimePerShapelet = (double) (t2 - t1) / (seriesShapelets.size() + tempEA);
-                outputPrint(" time for case " + casesSoFar + " evaluate  " + seriesShapelets.size()
-                        + " but what about early ones?");
-                outputPrint(" Est time per shapelet  " + timePerShapelet / 1000000000 + " actual "
-                        + newTimePerShapelet / 1000000000);
                 shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
                         newTimePerShapelet);
-                outputPrint("Changing number of shapelets sampled from " + searchFunction.getNumShapeletsPerSeries()
-                        + " to " + shapeletsSearchedPerSeries);
                 searchFunction.setNumShapeletsPerSeries(shapeletsSearchedPerSeries);
-                outputPrint("data : " + casesSoFar + " has " + seriesShapelets.size() + " candidates"
-                        + " cumulative early abandons " + numEarlyAbandons + " worst so far =" + worstShapelet
-                        + " evaluated this series = " + (seriesShapelets.size() + tempEA));
             }
             if (seriesShapelets != null) {
                 Collections.sort(seriesShapelets, shapeletComparator);
@@ -903,18 +885,9 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
                 long tempEA = numEarlyAbandons - prevEarlyAbandons;
                 prevEarlyAbandons = numEarlyAbandons;
                 double newTimePerShapelet = (double) (t2 - t1) / (seriesShapelets.size() + tempEA);
-                outputPrint(" time for case " + casesSoFar + " evaluate  " + seriesShapelets.size()
-                        + " but what about early ones?");
-                outputPrint(" Est time per shapelet  " + timePerShapelet / 1000000000 + " actual "
-                        + newTimePerShapelet / 1000000000);
                 shapeletsSearchedPerSeries = adjustNumberPerSeries(contractTime - usedTime, numSeriesToUse - casesSoFar,
                         newTimePerShapelet);
-                outputPrint("Changing number of shapelets sampled from " + searchFunction.getNumShapeletsPerSeries()
-                        + " to " + shapeletsSearchedPerSeries);
                 searchFunction.setNumShapeletsPerSeries(shapeletsSearchedPerSeries);
-                outputPrint("data : " + casesSoFar + " has " + seriesShapelets.size() + " candidates"
-                        + " cumulative early abandons " + numEarlyAbandons + " worst so far =" + worstShapelet
-                        + " evaluated this series = " + (seriesShapelets.size() + tempEA));
             }
             if (seriesShapelets != null) {
                 Collections.sort(seriesShapelets, shapeletComparator);

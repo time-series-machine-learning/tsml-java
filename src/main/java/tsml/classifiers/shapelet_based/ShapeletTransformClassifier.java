@@ -183,7 +183,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 //Give 2/3 time for transform, 1/3 for classifier. Need to only do this if its set to have one.
 //All in nanos
-        printDebug("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
+//        printDebug("Are we contracting? "+trainTimeContract+" transform contract time ="+trainContractTimeNanos);
         if(trainTimeContract) {//Always switch to OOB if contracting
             trainEstimateMethod=TrainEstimateMethod.OOB;
             transformContractTime = trainContractTimeNanos/2;
@@ -199,34 +199,27 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         //It would be better to just search until the time limit is up, but the whole search structure is series
         //by series, so this is hopefully just an interim measure
         if(transformContractTime >0) {
-            printLineDebug(" Contract time limit = "+ transformContractTime);
+ //           printLineDebug(" Contract time limit = "+ transformContractTime);
             configureTrainTimeContract(data, transformContractTime);
         }
         transform= constructShapeletTransform(data);
         transform.setSuppressOutput(debug);
         if(transformContractTime >0) {
             double timePerShapelet= transformContractTime /numShapeletsToEvaluate;
-            printLineDebug("Total shapelets per series "+numShapeletsInProblem/data.numInstances()+" num to eval = "+numShapeletsToEvaluate/data.numInstances());
             transform.setContractTime(transformContractTime);
             transform.setAdaptiveTiming(true);
             transform.setTimePerShapelet(timePerShapelet);
-            printLineDebug(" Time per shapelet = "+timePerShapelet+" numShapeletsToEvaluate  = "+numShapeletsToEvaluate);
-//            transform.setProportionToEvaluate(proportionToEvaluate);
         }
 //Put this in the options rather than here
         transform.setPruneMatchingShapelets(pruneMatchingShapelets);
 
-        System.out.println(" num shapelets in transform ="+transform.getNumberOfShapelets());
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
-        printLineDebug("SECONDS:Transform contract =" +(transformContractTime /1000000000L)+" Actual transform time taken = " + (transformBuildTime / 1000000000L+" Proportion of contract used ="+((double)transformBuildTime/ transformContractTime)));
-        printLineDebug(" Transform getParas  ="+transform.getParameters());
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets)
             saveShapeletData(data);
 
 
-        printLineDebug("Starting STC build classifier after "+(System.nanoTime()-startTime)/1000000000+" ......");
 //Change to interface method
         if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
             ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
@@ -244,8 +237,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 //Here get the train estimate directly from classifier
         if(classifier instanceof EnhancedAbstractClassifier)
             ((EnhancedAbstractClassifier)classifier).setDebug(debug);
-        printLineDebug(" Shapelets evaluated = "+transform.getShapeletCounts());
-        printLineDebug("Entering build classifier with classifier contract = "+classifierContractTime);
         if(getEstimateOwnPerformance()) {
             EnhancedAbstractClassifier eac=((EnhancedAbstractClassifier) classifier);
             eac.setTrainEstimateMethod(trainEstimateMethod);
@@ -265,10 +256,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         else
             trainResults.setBuildTime(endTime - startTime);
 
-        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
         //To help garbage collection
         shapeletData=new Instances(data,0);
+        printLineDebug("************** Finished STC Build with " + transform.getCount() + " shaplets searched, "+transform.getNumberOfShapelets()+" retained in "+ trainResults.getBuildTime()/1000000000+" Seconds  ***************");
+        trainResults.setBuildPlusEstimateTime(System.nanoTime()-startTime);
+
     }
 
     @Override
@@ -523,7 +516,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             m=train.numAttributes() - 1;
         if(time>0){
             searchType = SearchType.RANDOM;
-            printLineDebug("Number in transform ="+numShapeletsInTransform+" number to evaluate = "+numShapeletsToEvaluate+" contract time (secs) = "+ time/1000000000);
             numShapeletsInProblem = ShapeletTransformTimingUtilities.calculateNumberOfShapelets(n, m, 3, m);
 //This is aarons way of doing it based on hard coded estimate of the time for a single operation
             proportionToEvaluate= estimatePropOfFullSearchAaron(n,m,time);
@@ -535,9 +527,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             }
             else
                 numShapeletsToEvaluate = (long)(numShapeletsInProblem*proportionToEvaluate);
-            printLineDebug(" Total number of shapelets = " + numShapeletsInProblem);
-            printLineDebug(" Proportion to evaluate = " + proportionToEvaluate);
-            printLineDebug(" Number to evaluate = " + numShapeletsToEvaluate);
             if(numShapeletsToEvaluate<n)//Got to do 1 per series. Really should reduce if we do this.
                 numShapeletsToEvaluate=n;
             numShapeletsInTransform =  numShapeletsToEvaluate > numShapeletsInTransform ? numShapeletsInTransform : (int) numShapeletsToEvaluate;
