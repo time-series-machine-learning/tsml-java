@@ -52,6 +52,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
     private int numKernelsStep = 50;
+    public int maxKernels = 100000;
 
     private boolean multithreading = false;
     private int threads;
@@ -137,10 +138,10 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
             rocket = new ROCKET();
             rocket.setNumKernels(0);
             rocket.setNormalise(normalise);
-            rocket.setSeed(seed);
+            if (seedClassifier) rocket.setSeed(seed);
 
             int l = 0;
-            while (withinTrainContract(trainResults.getBuildTime())) {
+            while (withinTrainContract(trainResults.getBuildTime()) || rocket.getNumKernels() < maxKernels) {
                 ROCKET tempRocket = new ROCKET();
                 tempRocket.setNumKernels(numKernelsStep);
                 tempRocket.setNormalise(normalise);
@@ -182,7 +183,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
             rocket = new ROCKET();
             rocket.setNumKernels(numKernels);
             rocket.setNormalise(normalise);
-            rocket.setSeed(seed);
+            if (seedClassifier) rocket.setSeed(seed);
 
             if (multithreading) {
                 rocket.enableMultiThreading(threads);
@@ -245,23 +246,16 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
     public static void main(String[] args) throws Exception {
         int fold = 0;
 
+        //Minimum working example
         String dataset = "ItalyPowerDemand";
-        Instances train = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
-                + "\\" + dataset + "_TRAIN.arff");
-        Instances test = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset
-                + "\\" + dataset + "_TEST.arff");
-        Instances[] data = resampleTrainAndTestInstances(train, test, fold);
-        train = data[0];
-        test = data[1];
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
+        Instances train = data[0];
+        Instances test = data[1];
 
         String dataset2 = "ERing";
-        Instances train2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\" + dataset2 +
-                "\\" + dataset2 + "_TRAIN.arff");
-        Instances test2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Multivariate_arff\\" + dataset2 +
-                "\\" + dataset2 + "_TEST.arff");
-        Instances[] data2 = resampleMultivariateTrainAndTestInstances(train2, test2, fold);
-        train2 = data2[0];
-        test2 = data2[1];
+        Instances[] data2 = DatasetLoading.sampleERing(fold);
+        Instances train2 = data2[0];
+        Instances test2 = data2[1];
 
         ROCKETClassifier c;
         double accuracy;
