@@ -983,7 +983,10 @@ public class ClassifierResultsAnalysis {
 
         for (PerformanceMetric metric : metrics) {
 
-            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains(PerformanceMetric.benchmarkSuffix) ? computationalDiaFolderName_benchmark : computationalDiaFolderName_raw) + "/";
+            String diaFolder = expRootDirectory + "/" + (metric.name.toLowerCase().contains(PerformanceMetric.benchmarkSuffix.toLowerCase()) ?
+                    computationalDiaFolderName_benchmark :
+                    computationalDiaFolderName_raw)
+                + "/";
 
             String evalSet = metric.defaultSplit;
             String filenameNoExtension = fileNameBuild_avgsFile(evalSet, metric).replace(".csv", "");
