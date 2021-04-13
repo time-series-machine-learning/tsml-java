@@ -143,21 +143,21 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds = 1;
+            int start=2;
+            int folds = 3;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
-            int[] hc={1,2,3,5,6,8,11,12,14,17,21};
 
-            String[] classifier = {"STC-D"};// "RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"HIVE-COTEv2"};// "RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
-//            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
-            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
+            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
+//            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
             //parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
-            parameters.add("-rp=C:\\temp\\"); //Where to write results
-            parameters.add("-gtf=false"); //Whether to generate train files or not
+            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-gtf=true"); //Whether to generate train files or not
             parameters.add("-cn=" + classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
@@ -177,7 +177,7 @@ public class Experiments  {
 //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
             //           String[] probFiles = DatasetLists.equalLengthProblems;
             //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"RacketSports"};
+            String[] probFiles ={"Chinatown"};
             /*
              * END OF SETTINGS
              */
@@ -195,7 +195,7 @@ public class Experiments  {
             } else {//Local run without args, mainly for debugging
                 for (String prob : probFiles) {
                     settings[4] = "-dn=" + prob;
-                    for (int i = 1; i <= folds; i++) {
+                    for (int i = start; i <= folds; i++) {
                         settings[5] = "-f=" + i;
                         Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
                         //                      System.out.println("Sequential experiment with "+expSettings);

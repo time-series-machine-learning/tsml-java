@@ -50,34 +50,28 @@ public class DatasetLists {
     //TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
 	public static String[] newForHC2Paper= {
-			"AconityMINIPrinterLarge",//Needs formatting from github
-            "AconityMINIPrinterSmall",//Needs formatting from github
-			"AbnormalHeartbeat",
-			"AsphaltObstacles",
-			"AsphaltPavementType",
-			"AsphaltRegularity",
 			"AllGestureWiimoteX",
 			"AllGestureWiimoteY",
 			"AllGestureWiimoteZ",
-			"BinaryHeartbeat",
-			"CatsDogs",
+            "AsphaltObstacles",
+            "AsphaltPavementType",
+            "AsphaltRegularity",
 			"Colposcopy",
-			"DucksAndGeese",
 			"ElectricDeviceDetection",
-			"FruitFlies",
 			"GestureMidAirD1",
 			"GestureMidAirD2",
 			"GestureMidAirD3",
 			"GesturePebbleZ1",
 			"GesturePebbleZ2",
-			"InsectSound",
-			"MosquitoSound",
+            "MITBIH-Heartbeat",
 			"PickupGestureWiimoteZ",
 			"PLAID",
+            "AconityMINIPrinterLarge",
+            "AconityMINIPrinterSmall",
+            "PyrometerLaserScanLarge",
+            "PyrometerLaserScanSmall",
 			"ShakeGestureWiimoteZ",
-			"SharePriceIncrease",
-			"RightWhaleCalls",
-			"UrbanSound"
+			"SharePriceIncrease"
 	};
 
 
@@ -2096,8 +2090,8 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
-	String problemPath="Z:\\ArchiveData\\Univariate_arff\\";
-	dataDescription(DatasetLists.tscProblems2018,problemPath);
+	String problemPath="Z:\\Results Working Area\\HIVE-COTE\\New Univariate Datasets\\";
+	dataDescription(DatasetLists.newForHC2Paper,problemPath);
 	System.exit(0);
   	for(String str:newProblems27)
 		System.out.println(str);
