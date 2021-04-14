@@ -1071,7 +1071,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     @Override //TrainTimeContractable
     public boolean withinTrainContract(long start) {
         if (contractTime <= 0) return true; //Not contracted
-        return System.nanoTime() - start - checkpointTimeDiff < contractTime;
+        int d = getEstimateOwnPerformance() && trainEstimateMethod != TrainEstimateMethod.TRAIN ? 2 : 1;
+        return System.nanoTime() - start - checkpointTimeDiff < contractTime / d;
     }
 
     /**

@@ -125,7 +125,8 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
     @Override
     public boolean withinTrainContract(long start) {
         if (trainContractTimeNanos <= 0) return true; //Not contracted
-        return System.nanoTime() - start < trainContractTimeNanos;
+        int d = getEstimateOwnPerformance() ? 2 : 1;
+        return System.nanoTime() - start < trainContractTimeNanos / d;
     }
 
     @Override
@@ -364,6 +365,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
 
         c = new Arsenal();
         c.seed = fold;
+        c.setTrainEstimateMethod(TrainEstimateMethod.OOB);
         c.setEstimateOwnPerformance(true);
         c.buildClassifier(train);
         accuracy = ClassifierTools.accuracy(test, c);
@@ -371,7 +373,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         System.out.println("Arsenal accuracy on ItalyPowerDemand fold " + fold + " = " + accuracy);
         System.out.println("Train accuracy on ItalyPowerDemand fold " + fold + " = " + c.trainResults.getAcc());
         System.out.println("Build time on ItalyPowerDemand fold " + fold + " = " +
-                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildPlusEstimateTime(), TimeUnit.NANOSECONDS) + " seconds");
 
         c = new Arsenal();
         c.seed = fold;
