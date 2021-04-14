@@ -224,15 +224,15 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         Arsenal afc = new Arsenal();
         TDE tde= new TDE();
         String[] classifierNames = new String[4];
-        classifierNames[0] = "STC";
+        classifierNames[0] = "TDE";
         classifierNames[1] = "DrCIF";
         classifierNames[2] = "Arsenal";
-        classifierNames[3] = "TDE";
+        classifierNames[3] = "STC";
         EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[4];
-        classifiers[0]=stc;
+        classifiers[0]=tde;
         classifiers[1]=cif;
         classifiers[2]=afc;
-        classifiers[3]=tde;
+        classifiers[3]=stc;
         for(EnhancedAbstractClassifier cls:classifiers)
             cls.setEstimateOwnPerformance(true);
         try {
@@ -307,7 +307,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     /**
      * Overriding TrainTimeContract methods
-     * @param nanos
+     * @param amount of time in nanos
      */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
@@ -350,7 +350,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
         long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
         long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
-        printLineDebug(" Setting up contract\nTotal Contract = "+trainContractTimeNanos/1000000000+" Secs");
+        printLineDebug(" Setting up contract\nTotal Contract = "+(trainContractTimeNanos/1000000000)+" Secs");
         printLineDebug(" Per Classifier = "+highFidelityTimePerClassifier+" Nanos");
         for (EnsembleModule module : modules)
             if(module.isTrainTimeContractable())

@@ -338,6 +338,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     break;
                 case OOB:   //Split in half
                     trainContractTimeNanos /=2;
+                    printLineDebug(" TRAIN TIME SPLIT IN HALF FOR ESTIMATION  = "+trainContractTimeNanos/1000000000+" secs ");
                     trainEstimateContractTimeNanos = trainContractTimeNanos;
                     break;
                 case CV: //Split 1/4 full and 3/4 Train
@@ -347,6 +348,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
         }
         long singleTreeTime;
+        long currentTime=System.nanoTime()-startTime;
         do{//Always build at least one tree
 //Formed bag data set if bagging
             singleTreeTime=System.nanoTime();
@@ -368,7 +370,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
-//            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
+            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current total build time = "+currentTime/1000000000+" seconds");
             Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
@@ -397,8 +399,8 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             //Not used yet
             long endTreeTime=System.nanoTime();
             singleTreeTime=endTreeTime-singleTreeTime;
-
-        }while((!trainTimeContract || withinTrainContract(trainResults.getBuildTime())) && classifiers.size() < minNumTrees);
+            currentTime=System.nanoTime()-startTime;
+        }while((!trainTimeContract || withinTrainContract(currentTime)) && classifiers.size() < minNumTrees);
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());

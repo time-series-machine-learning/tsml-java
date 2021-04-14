@@ -363,7 +363,7 @@ public class ClassifierLists {
 //HC 2 variants
             "HIVE-COTE","HC2","HiveCote",
             "HC-1", "HC-2", "HC-3", "HC-4", "HC-5", "HC-6", "HC-7", "HC-8", "HC-9", "HC-10", "HC-11", "HC-12",
-            "HC-13", "HC-14", "HC-15", "HC-16", "HC-17", "HC-18", "HC-19", "HC-20", "HC-21", "HC-22", "HC-23", "HC-24", "HC-25", "HC-26"
+            "HC-13", "HC-14", "HC-15", "HC-16", "HC-17", "HC-18", "HC-19", "HC-20", "HC-21", "HC-22", "HC-23", "HC-24", "HC-25", "HC-26", "HC2-FromFile"
     };
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
@@ -390,17 +390,17 @@ public class ClassifierLists {
             case "HC2":
                 hc=new HIVE_COTE();
                 hc.setSeed(fold);
-                hc.enableMultiThreading();
+                hc.enableMultiThreading(4);
                 c=hc;
                 break;
 
-            case "HC-cv-pf-stc":
+            case "HC2-FromFile":
                  hc=new HIVE_COTE();
                 hc.setBuildIndividualsFromResultsFiles(true);
                 hc.setSeed(fold);
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
-                String[] classifiers={"Arsenal-cv","DrCIF-cv","TDE-cv","PF-cv","STC-cv"};
+                String[] classifiers={"Arsenal","DrCIF","TDE","STC-D"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;
