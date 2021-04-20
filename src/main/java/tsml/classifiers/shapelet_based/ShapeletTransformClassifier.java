@@ -191,10 +191,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             trainEstimateMethod=TrainEstimateMethod.OOB;
             transformContractTime = trainContractTimeNanos/2;
 
-            classifierContractTime = trainContractTimeNanos - transformContractTime;
+                    classifierContractTime = trainContractTimeNanos - transformContractTime;
             //HACK: Allow 1/3 for the final transform
             transformContractTime =2*transformContractTime/3;
-
+            printLineDebug(" Contracting with "+trainEstimateMethod);
         }
         else{
             classifierContractTime=0;
@@ -213,7 +213,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         transform.setSuppressOutput(true);
         if(transformContractTime >0) {
             printLineDebug(" Shapelet search contract = "+transformContractTime/1000000000.0);
-            printLineDebug(" Classifier contract = "+classifierContractTime/1000000000.0);
+            printLineDebug(" Classifier  contract = "+classifierContractTime/1000000000.0);
             double timePerShapelet= transformContractTime /numShapeletsToEvaluate;
             transform.setContractTime(transformContractTime);
             transform.setAdaptiveTiming(true);
@@ -240,9 +240,10 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             if(eac.ableToEstimateOwnPerformance())
                 eac.setEstimateOwnPerformance(true);
         }
-        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable){
-            //HERE CHANGE TO ACTUAL TIME LEFT
-            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
+//Change to interface method
+        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
+            if(getEstimateOwnPerformance())
+                ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
         }
 
 

@@ -370,7 +370,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
-            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current total build time = "+currentTime/1000000000+" seconds contract time = "+trainContractTimeNanos/1000000000);
+            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current total build time = "+currentTime/1000000000+" seconds");
             Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
@@ -390,7 +390,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                                 System.out.println(" instance k "+k+" prediction = "+c.classifyInstance(data.instance(k)));
                             }
                             System.exit(1);
-                        }
+                    }
                     }
                 }
             }
@@ -404,9 +404,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug(" Finished train build ");
         if (getEstimateOwnPerformance()) {
-            printLineDebug(" Estimating own performance with contract estimate train build = "+trainEstimateContractTimeNanos/1000000001);
             long est1 = System.nanoTime();
             estimateOwnPerformance(data);
             long est2 = System.nanoTime();

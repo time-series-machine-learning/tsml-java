@@ -151,7 +151,7 @@ public class Experiments  {
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"STC"};// "RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"HIVE-COTEv2"};// "RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
             parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
 //            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
@@ -162,7 +162,6 @@ public class Experiments  {
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("-ctr=10M"); //Whether to generate train files or not
             parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
             //            parameters.add("-ctr=3m"); //contract time, default in hours
 
@@ -178,7 +177,7 @@ public class Experiments  {
 //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
             //           String[] probFiles = DatasetLists.equalLengthProblems;
             //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"Crop"};
+            String[] probFiles ={"Chinatown"};
             /*
              * END OF SETTINGS
              */
