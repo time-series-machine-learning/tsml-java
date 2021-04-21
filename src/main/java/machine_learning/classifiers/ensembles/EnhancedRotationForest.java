@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 
 public class EnhancedRotationForest extends EnhancedAbstractClassifier
@@ -419,6 +420,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
 //        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 
