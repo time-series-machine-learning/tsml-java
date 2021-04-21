@@ -143,15 +143,15 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int start=2;
-            int folds = 3;
+            int start=1;
+            int folds = 1;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"STC"};// "RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"Arsenal","STC"};// "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
             parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
 //            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
@@ -162,8 +162,8 @@ public class Experiments  {
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("-ctr=10M"); //Whether to generate train files or not
-            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
+            parameters.add("-ctr=1h"); //Whether to generate train files or not
+            parameters.add("--force=false"); //Overwrites existing results if true, otherwise set to false
             //            parameters.add("-ctr=3m"); //contract time, default in hours
 
 
