@@ -854,7 +854,7 @@ public class ClassifierLists {
                 break;
             case "HIVE-COTE 2.0":
                 if(canLoadFromFile){
-                    String[] cls={"DrCIF","TDE","ARSENAL","STC","PF"};//RotF for ST
+                    String[] cls={"DrCIF","TDE","ARSENAL","STC"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
