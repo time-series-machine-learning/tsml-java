@@ -233,8 +233,10 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         classifiers[1]=cif;
         classifiers[2]=afc;
         classifiers[3]=tde;
-        for(EnhancedAbstractClassifier cls:classifiers)
+        for(EnhancedAbstractClassifier cls:classifiers) {
             cls.setEstimateOwnPerformance(true);
+            cls.setTrainEstimateMethod(TrainEstimateMethod.OOB);
+        }
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
@@ -307,7 +309,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     /**
      * Overriding TrainTimeContract methods
-     * @param nanos
+     * @param amount
      */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {

@@ -903,12 +903,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             double[][] trainDistributions = new double[train.numInstances()][train.numClasses()];
             int[] idxSubsampleCount = new int[train.numInstances()];
 
-            if (trainEstimateMethod == TrainEstimateMethod.NONE || trainEstimateMethod == TrainEstimateMethod.TRAIN) {
+            if ((trainEstimateMethod == TrainEstimateMethod.NONE || trainEstimateMethod == TrainEstimateMethod.TRAIN)
+                    && trainProportion < 1) {
                 for (IndividualTDE classifier : classifiers) {
                     ArrayList<Integer> trainIdx = classifier.getSubsampleIndices();
                     ArrayList<Integer> trainPreds = classifier.getTrainPreds();
                     double weight = classifier.getWeight();
-                    for (int g = 0; g < trainIdx.size(); g++) { //todo fix when train prop == 1, oob?
+                    for (int g = 0; g < trainIdx.size(); g++) {
                         idxSubsampleCount[trainIdx.get(g)] += weight;
                         trainDistributions[trainIdx.get(g)][trainPreds.get(g)] += weight;
                     }
@@ -932,7 +933,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             for (int i = 0; i < train.numInstances(); ++i) {
                 double[] probs;
 
-                if (idxSubsampleCount[i] > 0 && trainEstimateMethod == TrainEstimateMethod.NONE) {
+                if (idxSubsampleCount[i] > 0 && (trainEstimateMethod == TrainEstimateMethod.NONE
+                        || trainEstimateMethod == TrainEstimateMethod.TRAIN)) {
                     probs = trainDistributions[i];
                 } else {
                     probs = distributionForInstance(i);
