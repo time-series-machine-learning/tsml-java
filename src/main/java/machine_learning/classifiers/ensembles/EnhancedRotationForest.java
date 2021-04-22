@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 
 public class EnhancedRotationForest extends EnhancedAbstractClassifier
@@ -338,6 +339,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     break;
                 case OOB:   //Split in half
                     trainContractTimeNanos /=2;
+                    printLineDebug(" TRAIN TIME SPLIT IN HALF FOR ESTIMATION  = "+trainContractTimeNanos/1000000000+" secs ");
                     trainEstimateContractTimeNanos = trainContractTimeNanos;
                     break;
                 case CV: //Split 1/4 full and 3/4 Train
@@ -347,6 +349,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
         }
         long singleTreeTime;
+        long currentTime=System.nanoTime()-startTime;
         do{//Always build at least one tree
 //Formed bag data set if bagging
             singleTreeTime=System.nanoTime();
@@ -368,7 +371,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
-//            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
+            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current total build time = "+currentTime/1000000000+" seconds contract time = "+trainContractTimeNanos/1000000000);
             Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
@@ -388,7 +391,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                                 System.out.println(" instance k "+k+" prediction = "+c.classifyInstance(data.instance(k)));
                             }
                             System.exit(1);
-                    }
+                        }
                     }
                 }
             }
@@ -397,12 +400,14 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             //Not used yet
             long endTreeTime=System.nanoTime();
             singleTreeTime=endTreeTime-singleTreeTime;
-
-        }while((!trainTimeContract || withinTrainContract(trainResults.getBuildTime())) && classifiers.size() < minNumTrees);
+            currentTime=System.nanoTime()-startTime;
+        }while((!trainTimeContract || withinTrainContract(currentTime)) && classifiers.size() < minNumTrees);
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
+        printLineDebug(" Finished train build ");
         if (getEstimateOwnPerformance()) {
+            printLineDebug(" Estimating own performance with contract estimate train build = "+trainEstimateContractTimeNanos/1000000001);
             long est1 = System.nanoTime();
             estimateOwnPerformance(data);
             long est2 = System.nanoTime();
@@ -415,6 +420,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
 //        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 

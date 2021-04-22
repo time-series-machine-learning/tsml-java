@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
@@ -97,10 +98,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     through setNumberOfShapeletsToEvaluate, or, if a contract time is set, it is estimated from the contract.
       */
     private boolean trainTimeContract =false;
-    private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
     private int transformContractHours =1;// Hours contract for ST, defaults to 1 hour.
     //Time limit assigned to transform, this is considered a parameter, as too long results in over fitting
     //however, if the classifier is contracted, then it is set as 50% of the contract time.
+    private long trainContractTimeNanos = 0; //Time limit for transform + classifier, fixed by user. If <=0, no contract
+    //TO DO: REFACTOR TO SPLIT CONTRACT train=search+transform+classifier
+    private long searchContractTime = TimeUnit.NANOSECONDS.convert(transformContractHours, TimeUnit.HOURS);
     private long transformContractTime = TimeUnit.NANOSECONDS.convert(transformContractHours, TimeUnit.HOURS);
     private long classifierContractTime = 0;//Time limit assigned to classifier, based on contractTime, but fixed in buildClassifier in an adhoc way
 
@@ -187,7 +190,11 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         if(trainTimeContract) {//Always switch to OOB if contracting
             trainEstimateMethod=TrainEstimateMethod.OOB;
             transformContractTime = trainContractTimeNanos/2;
+
             classifierContractTime = trainContractTimeNanos - transformContractTime;
+            //HACK: Allow 1/3 for the final transform
+            transformContractTime =2*transformContractTime/3;
+
         }
         else{
             classifierContractTime=0;
@@ -203,38 +210,28 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             configureTrainTimeContract(data, transformContractTime);
         }
         transform= constructShapeletTransform(data);
-        transform.setSuppressOutput(debug);
+        transform.setSuppressOutput(true);
         if(transformContractTime >0) {
+            printLineDebug(" Shapelet search contract = "+transformContractTime/1000000000.0);
+            printLineDebug(" Classifier contract = "+classifierContractTime/1000000000.0);
             double timePerShapelet= transformContractTime /numShapeletsToEvaluate;
             transform.setContractTime(transformContractTime);
             transform.setAdaptiveTiming(true);
             transform.setTimePerShapelet(timePerShapelet);
+            printLineDebug(" time per shapelet =   contract = "+timePerShapelet);
         }
 //Put this in the options rather than here
         transform.setPruneMatchingShapelets(pruneMatchingShapelets);
-
+        printLineDebug(" Begin Transform  with "+transform.getClass().getSimpleName()+" Use balanced classes = "+transform.getUseBalancedClass());
         shapeletData = transform.fitTransform(data);
         transformBuildTime=System.nanoTime()-startTime; //Need to store this
+        printLineDebug(" Transform build time = "+transformBuildTime/1000000000.0);
         redundantFeatures=InstanceTools.removeRedundantTrainAttributes(shapeletData);
         if(saveShapelets)
             saveShapeletData(data);
 
 
-//Change to interface method
-        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable) {
-            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
-        }
-/*        //Do a PCA to reduce dimensionality. Not an option currently, needs proper testing and evaluation
-        if(performPCA){
-            printLineDebug("Do a PCA");
-            printLineDebug(" before num features "+(shapeletData.numAttributes()-1));
-            setPCA(performPCA, Math.min(shapeletData.numAttributes()-1, numPCAFeatures)); //update eigen values to reflect min (this will override old PCA)
-            pca.fit(shapeletData);
-            shapeletData=pca.transform(shapeletData);
-            printLineDebug(" after "+(shapeletData.numAttributes()-1));
-        }
-*/
-//Here get the train estimate directly from classifier
+
         if(classifier instanceof EnhancedAbstractClassifier)
             ((EnhancedAbstractClassifier)classifier).setDebug(debug);
         if(getEstimateOwnPerformance()) {
@@ -243,6 +240,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             if(eac.ableToEstimateOwnPerformance())
                 eac.setEstimateOwnPerformance(true);
         }
+        if(classifierContractTime>0 && classifier instanceof TrainTimeContractable){
+            //HERE CHANGE TO ACTUAL TIME LEFT
+            ((TrainTimeContractable) classifier).setTrainTimeLimit(classifierContractTime);
+        }
+
+
         classifier.buildClassifier(shapeletData);
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         long endTime=System.nanoTime();
@@ -432,9 +435,6 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
             m = utilities.multivariate_tools.MultivariateInstanceTools.channelLength(train);
         transformOptions.setMinLength(3);
         transformOptions.setMaxLength(m);
-
-
-
 
 //DEtermine balanced or not,
         if(train.numClasses() > 2) {

@@ -345,7 +345,8 @@ import weka.core.Instances;
         }
         public static void makeSingleDimensionFiles() throws IOException {
             String path="Z:\\Results Working Area\\HIVE-COTE\\New Multivariate Datasets\\";
-            for(String prob: DatasetLists.newMultivariate){
+            String[] probs={"CounterMovementJump"};//DatasetLists.newMultivariate
+            for(String prob: probs){
 
                 File f= new File(path+prob+"\\"+prob+"Dimension"+(1)+"_TRAIN.arff");
                 File f2= new File(path+prob+"\\"+prob+"Dimension"+(1)+"_TEST.arff");
