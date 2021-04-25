@@ -901,7 +901,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             trainResults.setErrorEstimateMethod("OOB");
         } else {
             double[][] trainDistributions = new double[train.numInstances()][train.numClasses()];
-            int[] idxSubsampleCount = new int[train.numInstances()];
+            double[] idxSubsampleCount = new double[train.numInstances()];
 
             if ((trainEstimateMethod == TrainEstimateMethod.NONE || trainEstimateMethod == TrainEstimateMethod.TRAIN)
                     && trainProportion < 1) {
