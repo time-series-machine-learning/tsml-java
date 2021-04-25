@@ -503,15 +503,6 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
             }
         }
 
-/*        if (memoryContract) {
-            try {
-                SizeOf.deepSizeOf("test");
-            } catch (IllegalStateException e) {
-                throw new Exception("Unable to contract memory with SizeOf unavailable, " +
-                            "enable by linking to SizeOf.jar in VM options i.e. -javaagent:lib/SizeOf.jar");
-            }
-        }
-*/
         train = data;
 
         if (multiThread) {
