@@ -150,6 +150,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
      */
     private boolean trainTimeContract = false;
     private long contractTime = 0;
+    private boolean underContractTime = true;
     private int maxClassifiers = 500;
 
     /**
@@ -529,7 +530,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             }
         }
 
-        while (withinTrainContract(trainResults.getBuildTime()) && trees.size() < numClassifiers) {
+        while (underContractTime && trees.size() < numClassifiers) {
             int i = trees.size();
 
             //1. Select random intervals for tree i
@@ -759,6 +760,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                     || trees.size() % 100 == 0)) {
                 saveToFile(checkpointPath);
             }
+
+            underContractTime = withinTrainContract(trainResults.getBuildTime());
         }
     }
 
@@ -1162,6 +1165,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             //internalContractCheckpointHandling = saved.internalContractCheckpointHandling;
             trainTimeContract = saved.trainTimeContract;
             if (internalContractCheckpointHandling) contractTime = saved.contractTime;
+            if (internalContractCheckpointHandling) underContractTime = saved.underContractTime;
             maxClassifiers = saved.maxClassifiers;
             //numThreads = saved.numThreads;
             //multiThread = saved.multiThread;

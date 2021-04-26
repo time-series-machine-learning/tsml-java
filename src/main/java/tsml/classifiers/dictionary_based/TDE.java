@@ -1185,7 +1185,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         //loadAndFinish = saved.loadAndFinish;
         if (internalContractCheckpointHandling) trainContractTimeNanos = saved.trainContractTimeNanos;
         trainTimeContract = saved.trainTimeContract;
-        underContractTime = saved.underContractTime;
+        if (internalContractCheckpointHandling) underContractTime = saved.underContractTime;
         paramAccuracy = saved.paramAccuracy;
         paramTime = saved.paramTime;
         //train = saved.train;
