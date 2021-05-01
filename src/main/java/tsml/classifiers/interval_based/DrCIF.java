@@ -496,8 +496,8 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished DrCIF Build with " + trees.size() + " Trees built in " +
-                trainResults.getBuildTime() / 1000000000 + " Seconds  ***************");
+        printLineDebug("*************** Finished DrCIF Build with " + trees.size() + "trees,  train time = " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
     }
 
     /**

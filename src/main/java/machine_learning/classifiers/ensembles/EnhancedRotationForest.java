@@ -339,7 +339,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     break;
                 case OOB:   //Split in half
                     trainContractTimeNanos /=2;
-                    printLineDebug(" TRAIN TIME SPLIT IN HALF FOR ESTIMATION  = "+trainContractTimeNanos/1000000000+" secs ");
+                    printLineDebug(" TRAIN TIME SPLIT IN HALF FOR ESTIMATION  In EnhancedRotationForest = "+trainContractTimeNanos/1000000000+" secs ");
                     trainEstimateContractTimeNanos = trainContractTimeNanos;
                     break;
                 case CV: //Split 1/4 full and 3/4 Train
@@ -433,6 +433,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         if (bagging) {
             // Bagging used to build the final model, so use bag data, counts normalised to probabilities
+            printLineDebug(" Ussing OOB estimates from a model already constructed");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
@@ -456,7 +457,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         }
         else if(trainEstimateMethod == TrainEstimateMethod.TRAIN|| trainEstimateMethod == TrainEstimateMethod.NONE){      //Just use the final
-            printLineDebug("Finding the  train set estimates");
+            printLineDebug("Finding the  train set estimates from the full train model ");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
@@ -502,6 +503,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         }
         else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
+            printLineDebug(" Estimating with a separate OOB classifier");
             EnhancedRotationForest rotf = new EnhancedRotationForest();
 //            rotf.setTrainTimeLimit();
             rotf.copyParameters(this);
