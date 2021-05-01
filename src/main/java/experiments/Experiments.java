@@ -143,8 +143,8 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int start=1;
-            int folds = 1;
+            int start=2;
+            int folds = 2;
 
             /*
              * Change these settings for your experiment:

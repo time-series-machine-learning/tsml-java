@@ -262,6 +262,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             }
             printDebug(" \n ");
         }
+        printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
+
         if (trainTimeContract)
             setupContracting();
 
@@ -335,7 +337,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         
         //in future, the number of classifiers we need to separately eval and custom-contract for
         int numNonTrainEstimatingClassifiers = 0; 
-        
+        printLineDebug(" Setting up contracting. Number of modules  = "+modules.length);
         for (EnsembleModule module : modules) {
             if(module.isTrainTimeContractable())
                 numContractableClassifiers++;
@@ -355,7 +357,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
         long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
         long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
-        printLineDebug(" Setting up contract\nTotal Contract = "+(trainContractTimeNanos/1000000000)+" Secs");
+        printLineDebug(" Setting up contract\nTotal Contract = "+(trainContractTimeNanos/1000000000/60/60)+" hours");
         printLineDebug(" Per Classifier = "+highFidelityTimePerClassifier+" Nanos");
         for (EnsembleModule module : modules)
             if(module.isTrainTimeContractable())
