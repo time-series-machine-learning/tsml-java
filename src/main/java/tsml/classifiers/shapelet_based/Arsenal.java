@@ -255,8 +255,8 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         }
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Arsenal Build with in " +
-                trainResults.getBuildTime() / 1000000000 + " Seconds  ***************");
+        printLineDebug("*************** Finished Arsenal Build with "+rockets+" rockets in " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
 
     }
 

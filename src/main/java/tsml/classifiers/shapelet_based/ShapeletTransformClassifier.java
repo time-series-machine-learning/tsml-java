@@ -262,8 +262,9 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         trainResults.setParas(getParameters());
         //To help garbage collection
         shapeletData=new Instances(data,0);
-        printLineDebug("************** Finished STC Build with " + transform.getCount() + " shaplets searched, "+transform.getNumberOfShapelets()+" retained in "+ trainResults.getBuildTime()/1000000000+" Seconds  ***************");
         trainResults.setBuildPlusEstimateTime(System.nanoTime()-startTime);
+        printLineDebug("************** Finished STC Build with " + transform.getCount() + " shaplets searched, "+transform.getNumberOfShapelets()+" retained, in train time = "+
+        (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
 
     }
 

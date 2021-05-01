@@ -267,6 +267,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
         super.buildClassifier(data);
         trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished HIVE-COTE Build with train time " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
+
     }
     /**
      * Returns default capabilities of the classifier. These are that the

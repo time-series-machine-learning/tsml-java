@@ -671,7 +671,8 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
 
         // continue processing series until we run out of time (if contracted)
         while (casesSoFar < numSeriesToUse && keepGoing) {
-             outputPrint("BALANCED: "+casesSoFar +" used so far, num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
+            if(casesSoFar%50==0)
+                 outputPrint("BALANCED: "+casesSoFar +" used so far, num series to use ="+numSeriesToUse+" Cumulative time (secs) ="+usedTime/1000000000.0+" Contract time (secs) ="+contractTime/1000000000.0+" contracted = "+contracted+" search type = "+searchFunction.getSearchType());
             // get the Shapelets list based on the classValue of our current time series.
             kShapelets = kShapeletsMap.get(data.get(casesSoFar).classValue());
             // we only want to pass in the worstKShapelet if we've found K shapelets. but we
