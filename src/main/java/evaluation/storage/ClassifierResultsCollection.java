@@ -533,15 +533,17 @@ public class ClassifierResultsCollection implements DebugPrinting {
     private static String buildFileName(String baseReadPath, String classifier, String dataset, String split, int fold) { 
         return baseReadPath + classifier + "/Predictions/" + dataset + "/" + split + "Fold" + fold + ".csv";
     }
-    
-    private static void throwSliceError(String str, String[] arr, String key) throws Exception {
-        throw new Exception("SLICE ERROR: Attempted to slice " + str + " by " + key + " but that does not exist in " + Arrays.toString(arr));
+
+    public class SliceException extends Exception {
+        public SliceException(String str, String[] arr, String key) {
+            super("SLICE ERROR: Attempted to slice " + str + " by " + key + " but that does not exist in " + Arrays.toString(arr));
+        }
+
+        public SliceException(String str, int[] arr, int key) {
+            super("SLICE ERROR: Attempted to slice " + str + " by " + key + " but that does not exist in " + Arrays.toString(arr));
+        }
+
     }
-    
-    private static void throwSliceError(String str, int[] arr, int key) throws Exception {
-        throw new Exception("SLICE ERROR: Attempted to slice " + str + " by " + key + " but that does not exist in " + Arrays.toString(arr));
-    }
-    
     
     /**
      * Loads the splits, classifiers, datasets, and folds specified from disk into memory
@@ -766,7 +768,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         //perform existence checks before allocating the mem
         for (String split : splitsToSlice)
             if (find(splits, split) == -1)
-                throwSliceError("splits", splits, split);
+                throw new SliceException("splits", splits, split);
         
         //copy across the results, for splits it's nice and easy
         ClassifierResults[][][][] subResults = new ClassifierResults[splitsToSlice.length][][][];
@@ -816,7 +818,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
             String classifier = classifiersToSlice[i];
             origClassifierIds[i] = find(classifierNamesInStorage, classifier);
             if (origClassifierIds[i] == -1)
-                throwSliceError("classifiers", classifierNamesInStorage, classifier);
+                throw new SliceException("classifiers", classifierNamesInStorage, classifier);
             else {
                 keptNamesStorage[i] = classifierNamesInStorage[origClassifierIds[i]];
                 keptNamesOutput[i] = classifierNamesInOutput[origClassifierIds[i]];
@@ -864,7 +866,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         //perform existence checks before allocating the mem
         for (String dataset : datasetsToSlice)
             if (find(datasetNamesInStorage, dataset) == -1)
-                throwSliceError("datasets", datasetNamesInStorage, dataset);
+                throw new SliceException("datasets", datasetNamesInStorage, dataset);
                 
         //copy across the results
         ClassifierResults[][][][] subResults = new ClassifierResults[numSplits][numClassifiers][datasetsToSlice.length][];
@@ -920,7 +922,7 @@ public class ClassifierResultsCollection implements DebugPrinting {
         //perform existence checks before allocating the mem
         for (int fold : foldsToSlice)
             if (find(folds, fold) == -1)
-                throwSliceError("folds", folds, fold);
+                throw new SliceException("folds", folds, fold);
                 
         //copy across the results
         ClassifierResults[][][][] subResults = new ClassifierResults[numSplits][numClassifiers][numDatasets][foldsToSlice.length];

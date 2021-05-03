@@ -457,9 +457,9 @@ public class ShapeletTransform implements Serializable, TechnicalInformationHand
         Instances output = determineOutputFormat(data);
 
         // init out data for transforming.
-        shapeletDistance.init(inputData);
+        shapeletDistance.init(data);
         // setup classsValue
-        classValue.init(inputData);
+        classValue.init(data);
 
         Shapelet s;
         // for each data, get distance to each shapelet and create new instance

@@ -18,23 +18,40 @@
 package tsml.transformers;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
+import com.beust.jcommander.internal.Lists;
+
+import org.apache.commons.lang3.ArrayUtils;
+
+import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
+import scala.collection.immutable.Stream;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
+import utilities.generic_storage.Pair;
+import utilities.generic_storage.Triple;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.converters.ArffSaver;
 
 interface IResizeMetric {
     public int calculateResizeValue(Map<Integer, Integer> counts);
@@ -90,11 +107,47 @@ class MedianResizeMetric implements IResizeMetric {
 }
 
 
+class MaxResizeMetric implements IResizeMetric{
+
+    @Override
+    public int calculateResizeValue(Map<Integer, Integer> counts) {
+        return counts.keySet().stream().max(Integer::compareTo).get();
+    }
+
+}
+
+
 class MeanPadMetric implements IPadMetric{
 
     @Override
     public double calculatePadValue(double[] data) {
         return TimeSeriesSummaryStatistics.mean(data);
+    }
+
+}
+
+class MeanNoisePadMetric implements IPadMetric{
+
+
+    Map<Integer, Triple<Double, Double, Double>> cache = new HashMap<>();
+    Random random = new Random();
+
+    @Override
+    public double calculatePadValue(double[] data) {
+        int hash = data.hashCode();
+
+        Triple<Double,Double, Double> stats = cache.get(hash);
+        if(stats == null){
+            stats = new Triple<Double,Double,Double>(TimeSeriesSummaryStatistics.max(data), TimeSeriesSummaryStatistics.min(data), 
+                                                     TimeSeriesSummaryStatistics.mean(Arrays.asList(ArrayUtils.toObject(data))));
+            cache.put(hash, stats);
+        }
+
+        double scaledMax = stats.var1 / 100.0;
+        double scaledMin = stats.var2 / 100.0;
+
+        //mean + some noise between scaled min and max.
+        return  stats.var3 + (random.nextDouble() * (scaledMax - scaledMin)) + scaledMin;
     }
 
 }
@@ -123,53 +176,6 @@ public class Resizer implements TrainableTransformer {
         padMetric = pad;
     }
 
-
-
-    @Override
-    public Instance transform(Instance inst) {
-
-        if (inst.attribute(0).isRelationValued()) { // Multivariate
-            /*
-             * for(Instance ins:data){
-             * 
-             * }
-             */
-            System.out.println("not implented multivariate yet");
-            return null;
-        } else {
-
-            int length = Truncator.findLength(inst, true);
-
-            int diff = resizeLength - length;
-
-            double[] data = InstanceTools.ConvertInstanceToArrayRemovingClassValue(inst);
-            double[] output = new double[resizeLength];
-
-            // just need to copy data across, if we're the same or longer. truncate the
-            // first values.
-            if (diff <= 0) {
-                System.arraycopy(data, 0, output, 0, resizeLength);
-            }
-            // we're shorter than the average
-            else {
-                // pad with mean.
-                double pad = padMetric.calculatePadValue(data);
-
-                System.arraycopy(data, 0, output, 0, length);
-                for (int i = length; i < resizeLength; i++)
-                    output[i] = pad;
-            }
-
-            DenseInstance out = new DenseInstance(resizeLength + 1);
-            for (int i = 0; i < resizeLength; i++) {
-                out.setValue(i, output[i]);
-            }
-            out.setValue(resizeLength, inst.classValue());
-
-            return out;
-        }
-    }
-
     @Override
     public Instances determineOutputFormat(Instances inputFormat) {
         ArrayList<Attribute> atts = new ArrayList<>();
@@ -194,15 +200,6 @@ public class Resizer implements TrainableTransformer {
     }
 
     @Override
-    public void fit(Instances data) {
-        lengthCounts = calculateLengthHistogram(data);
-
-        resizeLength = lengthMetric.calculateResizeValue(lengthCounts);
-
-        isFit = true;
-    }
-
-    @Override
     public TimeSeriesInstance transform(TimeSeriesInstance inst) {
         double[][] out = new double[inst.getNumDimensions()][resizeLength];
 
@@ -218,13 +215,18 @@ public class Resizer implements TrainableTransformer {
             }
             // we're shorter than the average
             else {
-                // pad with mean.
-                double pad = padMetric.calculatePadValue(data);
-
                 System.arraycopy(data, 0, out[i], 0, data.length);
                 for (int j = data.length; j < resizeLength; j++)
-                    out[i][j] = pad;
+                    out[i][j] = padMetric.calculatePadValue(data);
             }
+
+            //check if any NaNs exist as we want to overwrite those too.
+            for (int j = 0; j < out[i].length; j++)
+                if(Double.isNaN(out[i][j])){
+                    out[i][j] = padMetric.calculatePadValue(data);
+                }
+
+            //System.out.println(Arrays.toString(out[i]));
 
             i++;
         }
@@ -268,6 +270,36 @@ public class Resizer implements TrainableTransformer {
     }
 
     public static void main(String[] args) throws Exception {
+        //String local_path = "D:\\Work\\Data\\Multivariate_ts\\"; // Aarons local path for testing.
+        String local_path = "Z:\\ArchiveData\\Univariate_arff\\";
+
+        String output_dir = "Z:\\Personal Spaces\\Aaron's - safe space\\UnivariateUnequalPaddedProblems\\";
+        
+        //String dataset_name = "PLAID";
+        for(String dataset_name : DatasetLists.variableLengthUnivariate)
+        {
+            System.out.println(dataset_name);
+            TimeSeriesInstances train = DatasetLoading
+                    .loadTSData(local_path + dataset_name + File.separator + dataset_name + "_TRAIN.arff");
+            TimeSeriesInstances test = DatasetLoading
+                    .loadTSData(local_path + dataset_name + File.separator + dataset_name + "_TEST.arff");
+
+            if(train.hasMissing() || !train.isEqualLength()){
+                Resizer rs = new Resizer(new MaxResizeMetric(), new MeanNoisePadMetric());
+                Instances transformed_train = Converter.toArff(rs.fitTransform(train));
+                Instances transformed_test = Converter.toArff(rs.transform(test));
+                //System.out.println(transformed_train.get(0));
+                //System.out.println(transformed_test);
+                DatasetLoading.saveDataset(transformed_train, output_dir + dataset_name + "\\" + dataset_name +"_TRAIN.arff");
+                DatasetLoading.saveDataset(transformed_test, output_dir + dataset_name + "\\" + dataset_name +"_TEST.arff");
+            }
+
+        }
+
+        
+    }
+
+    public static void test1() throws Exception{
         String local_path = "D:\\Work\\Data\\Univariate_ts\\"; // Aarons local path for testing.
         String dataset_name = "PLAID";
         Instances train = DatasetLoading
@@ -297,6 +329,12 @@ public class Resizer implements TrainableTransformer {
         double acc = ClassifierTools.accuracy(resized_test, stc);
 
         System.out.println(acc);
+    }
+
+    @Override
+    public void fit(Instances data) {
+        // TODO Auto-generated method stub
+        
     }
 
 

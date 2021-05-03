@@ -288,6 +288,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     }
      @Override
     public double[] distributionForInstance(Instance ins) throws Exception{
+        shapeletData = new Instances(ins.dataset(),0);
         shapeletData.add(ins);
         
         Instances temp  = transform.transform(shapeletData);
