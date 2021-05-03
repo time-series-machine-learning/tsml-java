@@ -7,13 +7,10 @@ import tsml.classifiers.TSClassifier;
 import tsml.classifiers.shapelet_based.distances.ShapeletDistanceEuclidean;
 import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.filter.*;
-import tsml.classifiers.shapelet_based.quality.GainRatioBinaryQuality;
-import tsml.classifiers.shapelet_based.quality.OrderlineQuality;
-import tsml.classifiers.shapelet_based.quality.GainRatioQuality;
-import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
-import tsml.classifiers.shapelet_based.type.ShapeletFunctionsDependant;
-import tsml.classifiers.shapelet_based.type.ShapeletFunctionsIndependent;
-import tsml.classifiers.shapelet_based.type.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.quality.*;
+import tsml.classifiers.shapelet_based.functions.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.functions.ShapeletFunctionsDependant;
+import tsml.classifiers.shapelet_based.functions.ShapeletFunctionsIndependent;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -35,7 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class MultivariateShapelet implements TSClassifier {
+public class MSTC implements TSClassifier {
 
     private ShapeletParams params;
     private Classifier classifier;
@@ -44,7 +41,7 @@ public class MultivariateShapelet implements TSClassifier {
 
     public static Random RAND = new Random();
 
-    public MultivariateShapelet(ShapeletParams params){
+    public MSTC(ShapeletParams params){
         this.params = params;
     }
 
@@ -70,7 +67,7 @@ public class MultivariateShapelet implements TSClassifier {
         ShapeletFilterMV filter =  this.params.filter.createFilter();
         filter.setHourLimit(4);
         shapelets =filter.findShapelets(params, data);
-       // System.out.println(shapelets);
+        System.out.println(shapelets);
         transformData = buildTansformedDataset(data);
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
@@ -173,6 +170,12 @@ public class MultivariateShapelet implements TSClassifier {
                 return new RandomFilter();
             }
         },
+        RANDOM_BY_SERIES {
+            @Override
+            public ShapeletFilterMV createFilter() {
+                return new RandomFilterBySeries();
+            }
+        },
         RANDOM_BY_CLASS {
             @Override
             public ShapeletFilterMV createFilter() {
@@ -191,7 +194,7 @@ public class MultivariateShapelet implements TSClassifier {
                 return new GainRatioQuality(instances,distance);
             }
         },
-        ORDER_LINE_AARON {
+        ORDER_LINE {
             @Override
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances,
                                                                  ShapeletDistanceFunction distance) {
@@ -202,6 +205,13 @@ public class MultivariateShapelet implements TSClassifier {
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances,
                                                                  ShapeletDistanceFunction distance) {
                 return new GainRatioBinaryQuality(instances,distance);
+            }
+        },
+
+        CLASSIFICATION{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances,
+                    ShapeletDistanceFunction distance) {
+                return new ClassificationQuality(instances,distance);
             }
         };
 
@@ -297,7 +307,7 @@ public class MultivariateShapelet implements TSClassifier {
         LINEAR {
             @Override
             public Classifier createClassifier() {
-                return new LibLINEARN();
+                return new LibLinearTS();
 
             }
         },
@@ -378,7 +388,7 @@ public class MultivariateShapelet implements TSClassifier {
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);
 
-            MultivariateShapelet shapelet = new MultivariateShapelet(params);
+            MSTC shapelet = new MSTC(params);
             shapelet.buildClassifier(ts_train_data);
 
             double ok=0, wrong=0;

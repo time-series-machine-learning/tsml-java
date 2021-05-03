@@ -1,8 +1,8 @@
 package tsml.classifiers.shapelet_based.filter;
 
-import tsml.classifiers.shapelet_based.classifiers.MultivariateShapelet;
+import tsml.classifiers.shapelet_based.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
-import tsml.classifiers.shapelet_based.type.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
 
@@ -12,7 +12,7 @@ import java.util.Collections;
 public class ExhaustiveFilter implements ShapeletFilterMV {
 
 
-    public ArrayList<ShapeletMV> findShapelets(MultivariateShapelet.ShapeletParams params,
+    public ArrayList<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances) {
 
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();

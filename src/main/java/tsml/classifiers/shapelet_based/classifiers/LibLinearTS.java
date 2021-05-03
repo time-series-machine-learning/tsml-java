@@ -140,7 +140,7 @@ import de.bwaldvogel.liblinear.SolverType;
  * @author  Benedikt Waldvogel (mail at bwaldvogel.de)
  * @version 1.9.0
  */
-public class LibLINEARN extends AbstractClassifier implements TechnicalInformationHandler {
+public class LibLinearTS extends AbstractClassifier implements TechnicalInformationHandler {
 
     public static final String  REVISION         = "1.9.0";
 
@@ -988,6 +988,6 @@ public class LibLINEARN extends AbstractClassifier implements TechnicalInformati
      * @param args the options
      */
     public static void main(String[] args) {
-        runClassifier(new LibLINEARN(), args);
+        runClassifier(new LibLinearTS(), args);
     }
 }

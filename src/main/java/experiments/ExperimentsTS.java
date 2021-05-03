@@ -27,7 +27,8 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import tsml.classifiers.shapelet_based.classifiers.MultivariateShapelet;
+import tsml.classifiers.shapelet_based.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.classifiers.ensemble.EnsembleMSTC;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
@@ -212,23 +213,13 @@ public class ExperimentsTS {
      * 6) If we're good to go, runs the experiment.
      */
     public static ClassifierResults[] setupAndRunExperiment(ExperimentalArguments expSettings) throws Exception {
-        if (beQuiet)
-            LOGGER.setLevel(Level.SEVERE); // only print severe things
-        else {
-            if (debug) LOGGER.setLevel(Level.FINEST); // print everything
-            else       LOGGER.setLevel(Level.INFO); // print warnings, useful info etc, but not simple progress messages, e.g. 'training started'
-
-            DatasetLoading.setDebug(debug); //TODO when we go full enterprise and figure out how to properly do logging, clean this up
-        }
+        LOGGER.setLevel(Level.INFO); // print warnings, useful info etc, but not simple progress messages, e.g. 'training started'
         LOGGER.log(Level.FINE, expSettings.toString());
 
-
-        //Check whether results already exists, if so and force evaluation is false: just quit
-        //if (quitEarlyDueToResultsExistence(expSettings))
-        //   return null;
-
+        //Load data
         TimeSeriesResampler.TrainTest data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
+        //Normalize
         double[][][] trainInstancesArray = data.train.toValueArray();
         for (int index=0;index<trainInstancesArray.length;index++) { // For each instance
             for (int channel = 0; channel < trainInstancesArray[index].length; channel++) { // For each channel
@@ -247,47 +238,72 @@ public class ExperimentsTS {
         data.test = new TimeSeriesInstances(testInstancesArray, data.test.getClassIndexes(), data.test.getClassLabels());
 
 
+        // Get classifier
+        TSClassifier classifier;
 
-        int f = Math.min(10000,Math.max(500,(int)Math.sqrt(data.train.numInstances()*data.train.getMaxLength()*data.train.getMaxNumChannels())));
-        System.out.println("Shapelets " + f);
-
-
-        MultivariateShapelet.ShapeletParams params = new MultivariateShapelet.ShapeletParams(f,
-                5,data.train.getMaxLength()-1,
-                100000,0.01,
-                MultivariateShapelet.ShapeletFilters.RANDOM, MultivariateShapelet.ShapeletQualities.GAIN_RATIO,
-                MultivariateShapelet.ShapeletDistances.EUCLIDEAN,
-                MultivariateShapelet.ShapeletFactories.DEPENDANT,
-                MultivariateShapelet.AuxClassifiers.LINEAR);
-
-        if (expSettings.classifierName.contains("_I")){
-            params.type =  MultivariateShapelet.ShapeletFactories.INDEPENDENT;
+        if (expSettings.classifierName.contains("ENS-MSTC")){
+            classifier = new EnsembleMSTC();
+        }else {
+            classifier = getMSTCClassifier(expSettings,data);
         }
 
-        if (expSettings.classifierName.contains("ROT")){
-            params.classifier =  MultivariateShapelet.AuxClassifiers.ROT;
-        }
-        if (expSettings.classifierName.contains("BIN")){
-            params.quality =  MultivariateShapelet.ShapeletQualities.BINARY;
-        }
-
-        if (expSettings.classifierName.contains("GAIN")){
-            params.quality =  MultivariateShapelet.ShapeletQualities.GAIN_RATIO;
-        }
-
-        if (expSettings.classifierName.contains("BY_CLASS")){
-            params.filter =  MultivariateShapelet.ShapeletFilters.RANDOM_BY_CLASS;
-        }
-
-
-        TSClassifier classifier = new MultivariateShapelet(params);
-
+        // Execute experiments
         buildExperimentDirectoriesAndFilenames(expSettings, classifier);
         setupClassifierExperimentalOptions(expSettings, classifier, data.train);
         ClassifierResults[] results = runExperiment(expSettings, data.train, data.test, classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
 
         return results;
+    }
+
+    private static TSClassifier getMSTCClassifier(ExperimentalArguments expSettings, TimeSeriesResampler.TrainTest data){
+        int f = Math.min(10000,Math.max(1000,(int)Math.sqrt(data.train.numInstances()*data.train.getMaxLength()*data.train.getMaxNumChannels())));
+        System.out.println("Shapelets " + f);
+
+
+        MSTC.ShapeletParams params = new MSTC.ShapeletParams(f,
+                5,data.train.getMinLength()-1,
+                100000,0.01,
+                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.BINARY,
+                MSTC.ShapeletDistances.EUCLIDEAN,
+                MSTC.ShapeletFactories.INDEPENDENT,
+                MSTC.AuxClassifiers.LINEAR);
+
+        // Shapelet dependant
+        if (expSettings.classifierName.contains("_D")){
+            params.type =  MSTC.ShapeletFactories.DEPENDANT;
+        }
+
+        // Binary quality
+        if (expSettings.classifierName.contains("BIN")){
+            params.quality =  MSTC.ShapeletQualities.BINARY;
+        }
+
+        // Original STC orderline code
+        if (expSettings.classifierName.contains("OL")){
+            params.quality =  MSTC.ShapeletQualities.ORDER_LINE;
+        }
+
+        // Split shapelets by class
+        if (expSettings.classifierName.contains("CLASS")){
+            params.filter =  MSTC.ShapeletFilters.RANDOM_BY_CLASS;
+            params.maxIterations = 1000000*data.train.numClasses();
+        }
+
+        // Split shapelets by class and series (only for independent)
+        if (expSettings.classifierName.contains("SER")){
+            params.filter =  MSTC.ShapeletFilters.RANDOM_BY_SERIES;
+            //params.maxIterations = 10000*data.train.numClasses()*data.train.getMaxNumDimensions();
+        }
+
+        // Use rotational forest for classification
+        if (expSettings.classifierName.contains("ROT")){
+            params.classifier =  MSTC.AuxClassifiers.ROT;
+        }
+
+
+
+        return new MSTC(params);
     }
 
     /**

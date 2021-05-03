@@ -104,7 +104,7 @@ public class DatasetLists {
     //    "CharacterTrajectories",
         "Cricket",
         "DuckDuckGeese",
-        "EigenWorms",
+  //      "EigenWorms",
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
@@ -126,8 +126,8 @@ public class DatasetLists {
         "RacketSports",
         "SelfRegulationSCP1",
         "SelfRegulationSCP2",
-     //   "SpokenArabicDigits",
-        "StandWalkJump",        
+    //    "SpokenArabicDigits",
+        "StandWalkJump",
         "UWaveGestureLibrary"
 };
        //</editor-fold>       
@@ -798,16 +798,16 @@ public class DatasetLists {
 		 "ECG5000",  //4500, 500,140
 		 "ECGFiveDays", // 23,861,136,2
 		 "ElectricDevices", // 8926,7711,96,7
-		 "EOGHorizontalSignal",
-		 "EOGVerticalSignal",
-		 "EthanolLevel",
+	//	 "EOGHorizontalSignal",
+	//	 "EOGVerticalSignal",
+	//	 "EthanolLevel",
 		 "FaceAll", // 560,1690,131,14
 		 "FaceFour", // 24,88,350,4
 		 "FacesUCR", // 200,2050,131,14
 		 "FiftyWords", // 450,455,270,50
 		 "Fish", // 175,175,463,7
-		 "FordA", // 3601,1320,500,2
-		 "FordB", // 3636,810,500,2
+	//	 "FordA", // 3601,1320,500,2
+	//	 "FordB", // 3636,810,500,2
 		 "FreezerRegularTrain",
 		 "FreezerSmallTrain",
 		 "GunPoint", // 50,150,150,2
@@ -815,11 +815,11 @@ public class DatasetLists {
 		 "GunPointMaleVersusFemale",
 		 "GunPointOldVersusYoung",
 		 "Ham",      //105,109,431
-		 "HandOutlines", // 1000,370,2709,2
+	//	 "HandOutlines", // 1000,370,2709,2
 		 "Haptics", // 155,308,1092,5
 		 "Herring", // 64,64,512,2
 		 "HouseTwenty",
-		 "InlineSkate", // 100,550,1882,7
+	//	 "InlineSkate", // 100,550,1882,7
 		 "InsectEPGRegularTrain",
 		 "InsectEPGSmallTrain",
 		 "InsectWingbeatSound",//1980,220,256
@@ -833,18 +833,18 @@ public class DatasetLists {
 		 "MiddlePhalanxOutlineAgeGroup", // 400,154,80,3
 		 "MiddlePhalanxOutlineCorrect", // 600,291,80,2
 		 "MiddlePhalanxTW", // 399,154,80,6
-		 "MixedShapesRegularTrain",
+	//	 "MixedShapesRegularTrain",
 		 "MixedShapesSmallTrain",
 		 "MoteStrain", // 20,1252,84,2
-		 "NonInvasiveFetalECGThorax1", // 1800,1965,750,42
-		 "NonInvasiveFetalECGThorax2", // 1800,1965,750,42
+	//	 "NonInvasiveFetalECGThorax1", // 1800,1965,750,42
+	//	 "NonInvasiveFetalECGThorax2", // 1800,1965,750,42
 		 "OliveOil", // 30,30,570,4
 		 "OSULeaf", // 200,242,427,6
 		 "PhalangesOutlinesCorrect", // 1800,858,80,2
 		 "Phoneme",//1896,214, 1024
-		 "PigAirwayPressure",
-		 "PigArtPressure",
-		 "PigCVP",
+	//	 "PigAirwayPressure",
+	//	 "PigArtPressure",
+	//	 "PigCVP",
 		 "Plane", // 105,105,144,7
 		 "PowerCons",
 		 "ProximalPhalanxOutlineAgeGroup", // 400,205,80,3
@@ -853,16 +853,16 @@ public class DatasetLists {
 		 "RefrigerationDevices", // 375,375,720,3
 		 "Rock",
 		 "ScreenType", // 375,375,720,3
-		 "SemgHandGenderCh2",
-		 "SemgHandMovementCh2",
-		 "SemgHandSubjectCh2",
+	//	 "SemgHandGenderCh2",
+	//	 "SemgHandMovementCh2",
+	//	 "SemgHandSubjectCh2",
 		 "ShapeletSim", // 20,180,500,2
 		 "ShapesAll", // 600,600,512,60
 		 "SmallKitchenAppliances", // 375,375,720,3
 		 "SmoothSubspace",
 		 "SonyAIBORobotSurface1", // 20,601,70,2
 		 "SonyAIBORobotSurface2", // 27,953,65,2
-		 "StarLightCurves", // 1000,8236,1024,3
+	//	 "StarLightCurves", // 1000,8236,1024,3
 		 "Strawberry",//370,613,235
 		 "SwedishLeaf", // 500,625,128,15
 		 "Symbols", // 25,995,398,6
@@ -873,7 +873,7 @@ public class DatasetLists {
 		 "TwoLeadECG", // 23,1139,82,2
 		 "TwoPatterns", // 1000,4000,128,4
 		 "UMD",
-		 "UWaveGestureLibraryAll", // 896,3582,945,8
+	//	 "UWaveGestureLibraryAll", // 896,3582,945,8
 		 "UWaveGestureLibraryX", // 896,3582,315,8
 		 "UWaveGestureLibraryY", // 896,3582,315,8
 		 "UWaveGestureLibraryZ", // 896,3582,315,8

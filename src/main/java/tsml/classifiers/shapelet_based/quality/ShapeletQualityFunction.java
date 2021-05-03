@@ -39,4 +39,5 @@ public abstract class ShapeletQualityFunction {
     public abstract double calculate(ShapeletMV candidate);
 
 
+
 }

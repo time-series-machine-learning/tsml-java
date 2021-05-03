@@ -1,5 +1,6 @@
-package tsml.classifiers.shapelet_based.type;
+package tsml.classifiers.shapelet_based.functions;
 
+import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstance;
 
 public interface ShapeletFunctions<T extends ShapeletMV> {

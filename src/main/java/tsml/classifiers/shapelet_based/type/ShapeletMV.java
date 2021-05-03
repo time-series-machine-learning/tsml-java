@@ -4,30 +4,18 @@ import tsml.data_containers.TimeSeriesInstance;
 
 public abstract class ShapeletMV implements Comparable<ShapeletMV>{
 
-    protected int start;
     protected int length;
-    protected int instanceIndex;
+    protected double classIndex;
     protected double quality;
 
-    public double getClassIndex() {
-        return classIndex;
-    }
 
-    public void setClassIndex(double classIndex) {
-        this.classIndex = classIndex;
-    }
 
-    protected double classIndex;
-
-    public ShapeletMV(int start, int length, int instanceIndex, double classIndex){
-        this.start = start;
+    public ShapeletMV(int length, double classIndex){
         this.length = length;
-        this.instanceIndex = instanceIndex;
         this.classIndex = classIndex;
     }
 
-    protected abstract void setData(double[][] instance);
-
+    protected abstract void setData(TimeSeriesInstance instance);
     public abstract double getDistanceToInstance(int start, TimeSeriesInstance instance);
 
 
@@ -37,10 +25,17 @@ public abstract class ShapeletMV implements Comparable<ShapeletMV>{
     public double getQuality(){
         return this.quality;
     }
+    public double getClassIndex() {
+        return classIndex;
+    }
+    public void setClassIndex(double classIndex) {
+        this.classIndex = classIndex;
+    }
 
     public int getLength(){
         return length;
     }
+
 
     @Override
     public int compareTo(ShapeletMV shapeletMV) {

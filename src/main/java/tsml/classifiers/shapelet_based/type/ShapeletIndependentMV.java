@@ -2,23 +2,31 @@ package tsml.classifiers.shapelet_based.type;
 
 import tsml.data_containers.TimeSeriesInstance;
 
-public class ShapeletIndependentMV extends ShapeletMV {
+public class ShapeletIndependentMV extends ShapeletSingle {
 
     private int seriesIndex;
-     double[] data;
+    private double[] data;
 
-    public ShapeletIndependentMV(int start, int length, int instanceIndex, double classIndex,  int seriesIndex, double[][] instance){
+    public ShapeletIndependentMV(int start, int length, int instanceIndex, double classIndex,  int seriesIndex, TimeSeriesInstance instance){
         super(start, length, instanceIndex, classIndex);
         this.seriesIndex = seriesIndex;
         this.setData(instance);
     }
 
-    public void setData(double[][] instance) {
+    public int getSeriesIndex(){
+        return seriesIndex;
+    }
+
+    public void setData(TimeSeriesInstance instance) {
             this.data = new double[length];
             for (int i=0;i<length;i++){
-                    this.data[i] = instance[this.seriesIndex][start+i];
+                    this.data[i] = instance.get(this.seriesIndex).get(start+i);
             }
 
+    }
+
+    public double[] getData(){
+        return this.data;
     }
 
     @Override
