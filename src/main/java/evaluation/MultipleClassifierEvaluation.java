@@ -18,27 +18,14 @@ package evaluation;
 
 import ResultsProcessing.MatlabController;
 import evaluation.storage.ClassifierResultsCollection;
-<<<<<<< HEAD
 import experiments.data.DatasetLists;
 import utilities.DebugPrinting;
-=======
->>>>>>> master
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-<<<<<<< HEAD
 import java.util.*;
-=======
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 
-import utilities.DebugPrinting;
->>>>>>> master
 
 /**
  * This essentially just wraps ClassifierResultsAnalysis.performFullEvaluation(...) in a nicer to use way. Will be updated over time
@@ -587,7 +574,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                , "MSTC_D", "MSTC_I", "MSTC-CLASS-BIN_I", "ENS-MSTC_I"
         }, basePath);*/
         mcc.readInClassifiers(new String[] {"HC 1.0","RISE","STC","TSF","cBOSS"
-                ,"MSTC_I"  //,"MSTC-ENS_I"
+                ,"MSTC_I"  ,"MSTC-ENS_I"
         }, basePath);
 //        mcc.readInClassifier("RandF", basePath); //
 
