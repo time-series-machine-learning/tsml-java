@@ -353,6 +353,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         numClasses = data.numClasses();
         trainResults.setClassifierName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
+        long tempRemove = System.nanoTime();
         // can classifier handle the data?
         getTSCapabilities().test(data);
 
@@ -366,7 +367,8 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         double maxWindowSearches = data.getMaxLength() * maxWinSearchProportion;
         int winInc = (int) ((maxWindow - minWindow) / maxWindowSearches);
         if (winInc < 1) winInc = 1;
-
+        printLineDebug("TDE Classifier: Total contract time limit = "+ trainContractTimeNanos+" nanos");
+        printLineDebug("maxWindow = "+maxWindow+" window increment = "+winInc);
         //path checkpoint files will be saved to
         checkpointPath = checkpointPath + "/" + checkpointName(data.getProblemName()) + "/";
         File f = new File(checkpointPath + "TDE.ser");
@@ -377,8 +379,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                 System.out.println("Loading from checkpoint file");
             long time = System.nanoTime();
             loadFromFile(checkpointPath + "TDE.ser");
-            if (debug)
-                System.out.println("Spent " + (System.nanoTime() - time) + "nanoseconds loading ser files");
+            printLineDebug("Spent " + (System.nanoTime() - time) + "nanoseconds loading ser files");
         }
         //initialise variables
         else {
@@ -422,7 +423,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         //end train time in nanoseconds
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
-
+        printLineDebug(" Build time = "+(System.nanoTime()-tempRemove)+" nanos ");
         //Estimate train accuracy
         if (getEstimateOwnPerformance()) {
             long start = System.nanoTime();
@@ -545,7 +546,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
 
             classifiersBuilt++;
-
+            System.out.print("Classifiers built = "+classifiersBuilt);
             if (checkpoint) {
                 checkpoint(indiv, checkpointChange);
             }
@@ -1117,9 +1118,13 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override //TrainTimeContractable
     public boolean withinTrainContract(long start) {
         if (trainContractTimeNanos <= 0) return true; //Not contracted
+        printLineDebug(" Time taken so far = "+(System.nanoTime() - start));
+        printLineDebug(" Total contract  = "+trainContractTimeNanos);
+        printLineDebug(" num classifiers = "+classifiers.size());
+        printLineDebug(" Adjustment = "+(20000000l*train.numInstances() * (long)classifiers.size()));
         if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.OOB)
             return System.nanoTime() - start - checkpointTimeDiff < trainContractTimeNanos -
-                    (20000000*train.numInstances() * classifiers.size());
+                    (20000000l*(long)train.numInstances() * (long)classifiers.size());
         return System.nanoTime() - start - checkpointTimeDiff < trainContractTimeNanos;
     }
 
