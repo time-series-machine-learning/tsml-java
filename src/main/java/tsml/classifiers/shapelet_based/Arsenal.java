@@ -216,7 +216,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
                         for (int j = 0; j < newProbs.length; j++)
                             trainDistributions[n][j] += newProbs[j];
                     }
-                } else {
+                } else if (trainEstimateMethod != TrainEstimateMethod.OOB) {
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
                     if (seedClassifier)
                         cv.setSeed(seed + (i + 1) * 67);
@@ -255,7 +255,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         }
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Arsenal Build with "+rockets+" rockets in " +
+        printLineDebug("*************** Finished Arsenal Build with "+rockets.length+" rockets in " +
                 (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
 
     }
