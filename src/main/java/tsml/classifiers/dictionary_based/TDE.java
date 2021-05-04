@@ -353,7 +353,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         numClasses = data.numClasses();
         trainResults.setClassifierName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
-        long tempRemove = System.nanoTime();
         // can classifier handle the data?
         getTSCapabilities().test(data);
 
@@ -423,7 +422,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         //end train time in nanoseconds
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime() - checkpointTimeDiff);
-        printLineDebug(" Build time = "+(System.nanoTime()-tempRemove)+" nanos ");
+        printLineDebug(" Build time = "+(System.nanoTime()-trainResults.getBuildTime())+" nanos ");
         //Estimate train accuracy
         if (getEstimateOwnPerformance()) {
             long start = System.nanoTime();
@@ -546,7 +545,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             }
 
             classifiersBuilt++;
-            System.out.print("Classifiers built = "+classifiersBuilt);
+            printLineDebug("Classifiers built = "+classifiersBuilt);
             if (checkpoint) {
                 checkpoint(indiv, checkpointChange);
             }
