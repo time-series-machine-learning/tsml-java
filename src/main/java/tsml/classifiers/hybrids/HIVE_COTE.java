@@ -356,7 +356,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
         long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
-        long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
+        long highFidelityTimePerClassifier;
+        if(multiThread)
+            highFidelityTimePerClassifier= (conservativeBaseClassifierContract);
+        else
+            highFidelityTimePerClassifier= (conservativeBaseClassifierContract) / numContractableClassifiers;
         printLineDebug(" Setting up contract\nTotal Contract = "+(trainContractTimeNanos/1000000000/60/60)+" hours");
         printLineDebug(" Per Classifier = "+highFidelityTimePerClassifier+" Nanos");
         for (EnsembleModule module : modules)
