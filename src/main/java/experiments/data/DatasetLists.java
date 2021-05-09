@@ -63,7 +63,7 @@ public class DatasetLists {
 			"FordA",
 			"FordB",
 			"NonInvasiveFetalECGThorax1",
-			"NonInvasiveFetalECGThorax2
+			"NonInvasiveFetalECGThorax2"
 	};
 
 
