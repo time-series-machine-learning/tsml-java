@@ -143,8 +143,8 @@ public class Experiments  {
             Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int start=2;
-            int folds = 2;
+            int start=3;
+            int folds = 3;
 
             /*
              * Change these settings for your experiment:
@@ -162,7 +162,7 @@ public class Experiments  {
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
-            parameters.add("-ctr=12h"); //Whether to generate train files or not
+            parameters.add("-ctr=1h"); //Whether to generate train files or not
             parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
             //            parameters.add("-ctr=3m"); //contract time, default in hours
 

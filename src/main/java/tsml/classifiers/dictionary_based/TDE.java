@@ -1117,10 +1117,6 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
     @Override //TrainTimeContractable
     public boolean withinTrainContract(long start) {
         if (trainContractTimeNanos <= 0) return true; //Not contracted
-        printLineDebug(" Time taken so far = "+(System.nanoTime() - start));
-        printLineDebug(" Total contract  = "+trainContractTimeNanos);
-        printLineDebug(" num classifiers = "+classifiers.size());
-        printLineDebug(" Adjustment = "+(20000000l*train.numInstances() * (long)classifiers.size()));
         if (getEstimateOwnPerformance() && trainEstimateMethod == TrainEstimateMethod.OOB)
             return System.nanoTime() - start - checkpointTimeDiff < trainContractTimeNanos -
                     (20000000l*(long)train.numInstances() * (long)classifiers.size());
