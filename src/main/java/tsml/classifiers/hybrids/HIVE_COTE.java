@@ -108,7 +108,6 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //TODO jay/tony review
         this.ensembleName = "HIVE-COTE 0.1";
-
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
@@ -164,8 +163,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setupHIVE_COTE_1_0() {
         this.ensembleName = "HIVE-COTE 1.0";
-        
-        this.weightingScheme = new TrainAcc(4);
+        alpha=4.0;
+
+        this.weightingScheme = new TrainAcc(alpha);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
         
@@ -212,7 +212,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setupHIVE_COTE_2_0() {
         this.ensembleName = "HIVE-COTE 2.0";
-        this.weightingScheme = new TrainAcc(4);
+        alpha=4.0;
+        this.weightingScheme = new TrainAcc(alpha);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
@@ -383,7 +384,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //        System.out.print("\n");
         String a = Utils.getOption('A', options);
         alpha=Double.parseDouble(a);
-        this.weightingScheme = new TrainAcc(a);
+        this.weightingScheme = new TrainAcc(alpha);
 
     }
     /**
