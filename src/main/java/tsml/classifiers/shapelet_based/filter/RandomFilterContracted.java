@@ -3,8 +3,8 @@ package tsml.classifiers.shapelet_based.filter;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.distances.ShapeletDistanceFunction;
-import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.functions.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
 
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.PriorityQueue;
 
-public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
+public class RandomFilterContracted implements ShapeletFilterMV, TrainTimeContractable {
 
     @Override
     public ArrayList<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
@@ -29,11 +29,14 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
 
         int[] classesArray  = instances.getClassIndexes();
+        int r=0;
 
-        for (int r=0;r<params.maxIterations  ;r++){ // Iterate
 
-            if (r % (params.maxIterations/10) == 0){
+        while (!withinTrainContract(start)){ // Iterate
+
+            if (r%1000000 == 0){
                 System.out.println("Iteration: "+ r);
+
             }
 
             //Get random shapelet
@@ -45,12 +48,12 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
                     classesArray[instanceIndex],
                     instances.get(instanceIndex));
 
-            if (!params.compareSimilar || !isSimilar(shapelets, candidate,type,params.minDist)) {
+            if (!isSimilar(shapelets, candidate,type,params.minDist)) {
                 double q = quality.calculate (candidate);
                 candidate.setQuality(q);
                 shapelets.add(candidate);
             }
-            if (r % 1000 == 0){
+            if (r % 10000 == 0){
                 Collections.sort(shapelets);
                 if ( shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
                 //  System.out.println(shapelets);
@@ -60,7 +63,7 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
                 }
 
             }
-
+            r++;
         }
         Collections.sort(shapelets);
         if ( shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
@@ -96,7 +99,7 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
 
             double q = quality.calculate (candidate);
             if (q>0){
-                if (!params.compareSimilar  || !isSimilar(shapelets, candidate,type,params.minDist)) {
+                if (!isSimilar(shapelets, candidate,type,params.minDist)) {
                     candidate.setQuality(q);
                     shapelets.add(candidate);
                 }

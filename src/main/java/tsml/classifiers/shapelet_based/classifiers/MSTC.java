@@ -65,7 +65,7 @@ public class MSTC implements TSClassifier {
 
 
         ShapeletFilterMV filter =  this.params.filter.createFilter();
-        filter.setHourLimit(4);
+        filter.setHourLimit(this.params.contractTimeHours);
         shapelets =filter.findShapelets(params, data);
         System.out.println(shapelets);
         transformData = buildTansformedDataset(data);
@@ -174,6 +174,12 @@ public class MSTC implements TSClassifier {
             @Override
             public ShapeletFilterMV createFilter() {
                 return new RandomFilterBySeries();
+            }
+        },
+        RANDOM_CONTRACTED {
+            @Override
+            public ShapeletFilterMV createFilter() {
+                return new RandomFilterContracted();
             }
         },
         RANDOM_BY_CLASS {
@@ -343,6 +349,9 @@ public class MSTC implements TSClassifier {
         public int max;
         public int maxIterations;
         public double minDist;
+        public int contractTimeHours;
+        public boolean compareSimilar;
+
         public ShapeletFilters filter;
         public ShapeletQualities quality;
         public ShapeletDistances distance;
@@ -350,6 +359,7 @@ public class MSTC implements TSClassifier {
         public AuxClassifiers classifier;
 
         public ShapeletParams(int k, int min, int max, int maxIterations, double minDist,
+                              int contractTimeHours, boolean compareSimilar,
                               ShapeletFilters filter, ShapeletQualities quality,
                               ShapeletDistances distance, ShapeletFactories type,
                               AuxClassifiers classifier){
@@ -358,6 +368,8 @@ public class MSTC implements TSClassifier {
             this.max = max;
             this.maxIterations = maxIterations;
             this.minDist = minDist;
+            this.contractTimeHours = contractTimeHours;
+            this.compareSimilar = compareSimilar;
             this.filter = filter;
             this.quality = quality;
             this.distance = distance;
@@ -383,7 +395,7 @@ public class MSTC implements TSClassifier {
             int f = ts_train_data.numInstances()*ts_train_data.getMaxLength()*ts_train_data.getMaxNumChannels();
             System.out.println( "f= " + f);
             ShapeletParams params = new ShapeletParams(f,3,ts_train_data.getMaxLength()/2,
-                    10000,0.01,
+                    10000,0.01,4,true,
                     ShapeletFilters.RANDOM, ShapeletQualities.GAIN_RATIO, ShapeletDistances.EUCLIDEAN,
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);

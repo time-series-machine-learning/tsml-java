@@ -8,31 +8,27 @@ import weka.classifiers.Classifier;
 public class EnsembleMSTC extends AbstractEnsembleTS  {
 
 
+    MSTC.ShapeletParams params;
 
 
-    public EnsembleMSTC() {
+    public EnsembleMSTC(MSTC.ShapeletParams params) {
         super();
+        this.params = params;
     }
 
 
     @Override //Abstract Ensemble
     public final void setupDefaultEnsembleSettings(TimeSeriesInstances data) {
-        this.ensembleName = "CAWPE";
+        this.ensembleName = "ENS-MSTC";
 
         this.weightingScheme = new EqualWeightingTS();
         this.votingScheme = new MajorityConfidenceTS();
 
         this.numEnsembles = 100;
         TSClassifier[] classifiers = new MSTC[numEnsembles];
-        MSTC.ShapeletParams params = new MSTC.ShapeletParams(500,
-                5,data.getMinLength()-1,
-                100000,0.01,
-                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_RATIO,
-                MSTC.ShapeletDistances.EUCLIDEAN,
-                MSTC.ShapeletFactories.DEPENDANT,
-                MSTC.AuxClassifiers.LINEAR);
+
         for (int i=0;i<numEnsembles;i++){
-            classifiers[i] = new MSTC(params);
+            classifiers[i] = new MSTC(this.params);
         }
 
 

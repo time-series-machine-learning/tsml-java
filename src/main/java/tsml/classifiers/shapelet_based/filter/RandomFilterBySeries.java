@@ -1,14 +1,14 @@
 package tsml.classifiers.shapelet_based.filter;
 
 import tsml.classifiers.shapelet_based.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.functions.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.type.ShapeletIndependentMV;
 import tsml.classifiers.shapelet_based.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.ArrayList;
-import java.util.PriorityQueue;
+import java.util.Collections;
 
 public class RandomFilterBySeries extends RandomFilter {
 
@@ -17,11 +17,11 @@ public class RandomFilterBySeries extends RandomFilter {
     public ArrayList<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances) {
 
-        PriorityQueue[][] queues = new PriorityQueue[instances.getMaxNumDimensions()][instances.numClasses()];
+        ArrayList[][] queues = new ArrayList[instances.getMaxNumDimensions()][instances.numClasses()];
 
         for (int i=0;i<queues.length;i++){
             for (int j=0;j<queues[i].length;j++)
-                queues[i][j] = new PriorityQueue<ShapeletIndependentMV>(ShapeletIndependentMV::compareTo);
+                queues[i][j] = new ArrayList<ShapeletIndependentMV>();
         }
         int k_local = params.k / (instances.getMaxNumDimensions()*instances.numClasses());
 
@@ -54,36 +54,38 @@ public class RandomFilterBySeries extends RandomFilter {
             double q = quality.calculate (candidate);
              if (q>0 ){
                 candidate.setQuality(q);
-                queues[curSeries][curClass].offer(candidate);
-                if (queues[curSeries][curClass].size() > k_local)
-                   queues[curSeries][curClass].poll();
+                queues[curSeries][curClass].add(candidate);
              }
-            if (r % 1000 == 0){
-                //    Collections.sort(shapelets);
-                //    if ( shapelets.size()>k) shapelets.subList(k,shapelets.size()).clear();
-                //    System.out.println(shapelets);
+            if (r % 10000 == 0){
+                for (int i=0;i<queues.length;i++){
+                    for (int j=0;j<queues[i].length;j++){
+                        Collections.sort(queues[i][j]);
+                        if ( queues[i][j].size()>k_local) queues[i][j].subList(k_local,queues[i][j].size()).clear();
+                    }
+                }
                 if (withinTrainContract(start)){
                     System.out.println("Contract time reached");
                     return getResults(queues);
                 }
 
             }
-
         }
-        //Collections.sort(shapelets);
-        // if ( shapelets.size()>k) shapelets.subList(k,shapelets.size()).clear();
+        for (int i=0;i<queues.length;i++){
+            for (int j=0;j<queues[i].length;j++){
+                Collections.sort(queues[i][j]);
+                if ( queues[i][j].size()>k_local) queues[i][j].subList(k_local,queues[i][j].size()).clear();
+            }
+        }
         return getResults(queues);
 
     }
 
-    protected ArrayList<ShapeletMV> getResults(PriorityQueue<ShapeletMV>[][] s){
+    protected ArrayList<ShapeletMV> getResults(ArrayList<ShapeletMV>[][] s){
         ArrayList<ShapeletMV> result = new ArrayList<ShapeletMV>();
         for (int i=0;i<s.length;i++){
             for (int j=0;j<s[i].length;j++){
-                System.out.println("Series: " + i + " Class " + j + " Size " + s[i][j].size());
-                while (s[i][j].size() > 0) {
-                    result.add(s[i][j].poll());
-                }
+
+                result.addAll(s[i][j]);
             }
         }
 

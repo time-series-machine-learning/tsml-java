@@ -242,9 +242,9 @@ public class ExperimentsTS {
         TSClassifier classifier;
 
         if (expSettings.classifierName.contains("ENS-MSTC")){
-            classifier = new EnsembleMSTC();
+            classifier = new EnsembleMSTC(getMSTCParams(expSettings, data));
         }else {
-            classifier = getMSTCClassifier(expSettings,data);
+            classifier = new MSTC(getMSTCParams(expSettings, data));
         }
 
         // Execute experiments
@@ -256,15 +256,14 @@ public class ExperimentsTS {
         return results;
     }
 
-    private static TSClassifier getMSTCClassifier(ExperimentalArguments expSettings, TimeSeriesResampler.TrainTest data){
+    private static MSTC.ShapeletParams getMSTCParams(ExperimentalArguments expSettings, TimeSeriesResampler.TrainTest data){
         int f = Math.min(10000,Math.max(1000,(int)Math.sqrt(data.train.numInstances()*data.train.getMaxLength()*data.train.getMaxNumChannels())));
         System.out.println("Shapelets " + f);
 
-
         MSTC.ShapeletParams params = new MSTC.ShapeletParams(f,
                 5,data.train.getMinLength()-1,
-                100000,0.01,
-                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.BINARY,
+                100000,0.01,4, true,
+                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_RATIO,
                 MSTC.ShapeletDistances.EUCLIDEAN,
                 MSTC.ShapeletFactories.INDEPENDENT,
                 MSTC.AuxClassifiers.LINEAR);
@@ -272,6 +271,7 @@ public class ExperimentsTS {
         // Shapelet dependant
         if (expSettings.classifierName.contains("_D")){
             params.type =  MSTC.ShapeletFactories.DEPENDANT;
+            params.compareSimilar = false;
         }
 
         // Binary quality
@@ -293,7 +293,7 @@ public class ExperimentsTS {
         // Split shapelets by class and series (only for independent)
         if (expSettings.classifierName.contains("SER")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_SERIES;
-            //params.maxIterations = 10000*data.train.numClasses()*data.train.getMaxNumDimensions();
+            params.maxIterations = 100000*data.train.numClasses()*data.train.getMaxNumDimensions();
         }
 
         // Use rotational forest for classification
@@ -301,9 +301,14 @@ public class ExperimentsTS {
             params.classifier =  MSTC.AuxClassifiers.ROT;
         }
 
+        if (expSettings.classifierName.contains("CON")){
+            params.filter =  MSTC.ShapeletFilters.RANDOM_CONTRACTED;
+            params.contractTimeHours = 72;
+        }
 
 
-        return new MSTC(params);
+
+        return params;
     }
 
     /**

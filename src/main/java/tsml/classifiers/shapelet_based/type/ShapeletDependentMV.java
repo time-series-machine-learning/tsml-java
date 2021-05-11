@@ -2,8 +2,6 @@ package tsml.classifiers.shapelet_based.type;
 
 import tsml.data_containers.TimeSeriesInstance;
 
-import java.util.Arrays;
-
 public  class ShapeletDependentMV extends ShapeletSingle{
 
      double[][] data;
@@ -47,7 +45,7 @@ public  class ShapeletDependentMV extends ShapeletSingle{
     @Override
     public String toString(){
         return "Start: " + start + " Length: " + length + " Instance Index: " + instanceIndex
-                 + " Quality: " + quality +  " " + Arrays.deepToString(data) + "\n";
+                 + " Quality: " + quality + "\n";//+  " " + Arrays.deepToString(data) + "\n";
     }
 
 

@@ -548,12 +548,12 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     public static void main(String[] args) throws Exception {
-   //     String basePath = "C:/Users/fbu19zru/code/results/";
-        String basePath = "C:/Users/fbu19zru/code/results_univariate_ts/";
+       String basePath = "C:/Users/fbu19zru/code/results/";
+    //    String basePath = "C:/Users/fbu19zru/code/results_univariate_ts/";
 //            String basePath = "Z:/Results/FinalisedUCIContinuous/";
 
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "analysisTSC", 1);
+            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "analysis30g", 30);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -565,17 +565,17 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
 //        mcc.setUseAllStatistics();
 
-    //    mcc.setDatasets(DatasetLists.mtscProblems2018);
-        mcc.setDatasets(DatasetLists.tscProblems112);
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
+    //    mcc.setDatasets(DatasetLists.tscProblems112);
 
         //general rule of thumb: set/add/read the classifiers as the last thing before running
-      /*  mcc.readInClassifiers(new String[] {//"HIVE-COTE", "ROCKET", "DTW_D"
+        mcc.readInClassifiers(new String[] {//"HIVE-COTE", "ROCKET", "DTW_D"
                  "STC"
-               , "MSTC_D", "MSTC_I", "MSTC-CLASS-BIN_I", "ENS-MSTC_I"
-        }, basePath);*/
-        mcc.readInClassifiers(new String[] {"HC 1.0","RISE","STC","TSF","cBOSS"
-                ,"MSTC_I"  ,"MSTC-ENS_I"
+               , "MSTC_D", "MSTC_I", "MSTC-SER", "ENS-MSTC_I"
         }, basePath);
+      /*  mcc.readInClassifiers(new String[] {"HC 1.0","RISE","STC","TSF","cBOSS"
+                ,"MSTC_I"  ,"ENS-MSTC_I"
+        }, basePath);*/
 //        mcc.readInClassifier("RandF", basePath); //
 
         mcc.runComparison();
