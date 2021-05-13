@@ -3,7 +3,7 @@ package tests;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
-import machine_learning.classifiers.ensembles.EnhancedRotationForest;
+import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
 import tsml.classifiers.Checkpointable;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;

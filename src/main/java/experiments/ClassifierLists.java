@@ -18,7 +18,7 @@ package experiments;
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
-import machine_learning.classifiers.ensembles.EnhancedRotationForest;
+import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;

@@ -27,7 +27,7 @@
  */
 
 
-package machine_learning.classifiers.ensembles;
+package machine_learning.classifiers.ensembles.legacy;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import tsml.classifiers.Checkpointable;
