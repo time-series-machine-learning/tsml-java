@@ -15,7 +15,7 @@
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package tsml.classifiers.shapelet_based;
+package tsml.classifiers.kernel_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
@@ -31,9 +31,6 @@ import weka.core.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
-import static utilities.multivariate_tools.MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances;
 
 /**
  * Contractable classifier making use of the ROCKET transformer.
