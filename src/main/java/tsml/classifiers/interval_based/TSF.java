@@ -356,6 +356,30 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if (!canHandle)
             throw new Exception("TSF cannot handle this type of data");
 
+        // check if unequal length
+        if (!data.isEqualLength()) {
+            // pad with 0s
+            double[][][] temp = new double[data.numInstances()][data.getMaxNumDimensions()][data.getMaxLength()];
+
+            // for each instance, each dimension, each value: copy value over
+            for (int i = 0; i < data.numInstances(); i++) {
+                TimeSeriesInstance tsi = data.get(i);
+
+                for (int j = 0; j < tsi.getNumDimensions(); j++) {
+                    TimeSeries ts = tsi.get(j);
+
+                    for (int k = 0; k < ts.getSeriesLength(); k++) {
+                        temp[i][j][k] = ts.getValue(k);
+                    }
+                }
+            }
+
+            TimeSeriesInstances zeroPadded = new TimeSeriesInstances(temp, data.getClassIndexes(), data.getClassLabels());
+            zeroPadded.setProblemName(data.getProblemName());
+            zeroPadded.setDescription(data.getDescription());
+            data = zeroPadded;
+        }
+
         // set the classifier data
         setTSTrainData(data);
 
@@ -846,6 +870,24 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
+        // check if unequal length
+        if (trainData.getMaxLength() != ins.getMaxLength()) {
+            // pad with 0s
+            double[][] temp = new double[ins.getNumDimensions()][seriesLength];
+
+            // for each dimension, each value: copy value over
+            for (int i = 0; i < ins.getNumDimensions(); i++) {
+                TimeSeries ts = ins.get(i);
+
+                for (int j = 0; j < ts.getSeriesLength(); j++) {
+                    temp[i][j] = ts.getValue(j);
+                }
+            }
+
+            TimeSeriesInstance zeroPadded = new TimeSeriesInstance(temp, ins.getLabelIndex());
+            ins = zeroPadded;
+        }
+
         double[] classProbability = new double[getTSTrainData().getClassLabels().length]; // length of class variables
         double[] statsData = new double[numIntervals * 3];
 
