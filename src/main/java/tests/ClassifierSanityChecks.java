@@ -9,7 +9,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
-import tsml.classifiers.hybrids.Arsenal;
+import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
@@ -105,12 +105,11 @@ public class ClassifierSanityChecks {
     }
 
 
-    public static void contractRotationForestTest()throws Exception
-    {
+    public static void contractRotationForestTest()throws Exception {
  //       String path="src/main/java/experiments/data/tsc/";
 //        String problem="";
         String path="Z:\\ArchiveData\\Univariate_arff\\";
-        String problem="ChinaTown";
+        String problem="ArrowHead";
 
         Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
         Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
@@ -151,12 +150,15 @@ public class ClassifierSanityChecks {
         ((TrainTimeContractable) c2).setMinuteLimit(3);
         c2.setDebug(true);
 
-        ((EnhancedRotationForest)c2).setRemovedPercentage(0);
-        ((EnhancedRotationForest)c2).setBagging(false);
+//        ((EnhancedRotationForest)c2).setRemovedPercentage(10);
+//        ((EnhancedRotationForest)c2).setProbabilityClassSelection(1);
+
+
+        ((EnhancedRotationForest)c2).setBagging(true);
         c2.setEstimateOwnPerformance(true);
-        c2.setTrainEstimateMethod("TRAIN");
+        c2.setTrainEstimateMethod("OOB");
         c2.buildClassifier(train);
-        c2.setDebug(true);
+        c2.setDebug(false);
         t2= System.nanoTime();
         trainTime = (t2-t1)/1000000000;
         correct=0;
@@ -207,6 +209,50 @@ public class ClassifierSanityChecks {
             count++;
         }
         System.out.println("\n Default RotF finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
+
+
+    }
+
+
+
+    public static void shapeletTransformClassifiertTest()throws Exception {
+        //       String path="src/main/java/experiments/data/tsc/";
+//        String problem="";
+        String path="Z:\\ArchiveData\\Univariate_arff\\";
+        String problem="ElectricDevices";
+
+        Instances train= DatasetLoading.loadData(path+problem+"/"+problem+"_TRAIN.arff");
+        Instances test= DatasetLoading.loadData(path+problem+"/"+problem+"_TEST.arff");
+        long t1,t2, trainTime;
+        int correct=0;
+
+        EnhancedAbstractClassifier c = new ShapeletTransformClassifier();
+        TrainTimeContractable x=( TrainTimeContractable) c;
+        ((TrainTimeContractable) c).setMinuteLimit(2);
+        t1= System.nanoTime();
+        c.setDebug(true);
+        c.setEstimateOwnPerformance(true);
+        int count=0;
+        ClassifierResults trainRes;
+        c.buildClassifier(train);
+        t2= System.nanoTime();
+        trainTime = (t2-t1)/1000000000;
+        trainRes = c.getTrainResults();
+        System.out.println(" CONTRACT Train Acc = "+trainRes.getAcc()+" results = "+trainRes);
+        for(Instance ins:test){
+            double pred=c.classifyInstance(ins);
+            double[] d = c.distributionForInstance(ins);
+            if(pred==ins.classValue())
+                correct++;
+            if(count<2) {
+                for (double dd : d)
+                    System.out.print(dd + ", ");
+                System.out.println(" PREDICTION = " + pred+ " actual = "+ins.classValue());
+            }
+            count++;
+
+        }
+        System.out.println("\n STC finished in "+trainTime+" secs, test num correct = "+correct+" acc = "+correct/(double)test.numInstances());
 
 
     }
@@ -386,7 +432,8 @@ public class ClassifierSanityChecks {
 //        basicUsageTest();
 //        shortContractTest();
 //        mediumContractTest();
-        contractRotationForestTest();
+//        contractRotationForestTest();
+        shapeletTransformClassifiertTest();
     }
 
 }

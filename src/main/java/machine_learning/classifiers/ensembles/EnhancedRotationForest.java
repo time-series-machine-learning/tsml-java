@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 
 public class EnhancedRotationForest extends EnhancedAbstractClassifier
@@ -62,6 +63,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
     /** The percentage of instances to be removed */
     protected int removedPercentage = 50;
     /** The attributes of each group */
+    protected double probPerClass =0.5;
     ArrayList< int[][]> groups;
     /** The type of projection filter */
     protected Filter projectionFilter;
@@ -79,6 +81,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos =0;
+    transient private long trainEstimateContractTimeNanos =0;
     //Added features
     private double estSingleTree;
     //Stores the actual number of trees after the build, may vary with contract
@@ -123,7 +126,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         return filter;
     }
 
-
+    public boolean isContracted(){ return trainTimeContract;}
     /**
      * Sets the minimum size of a group.
      *
@@ -195,6 +198,18 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         this.removedPercentage = removedPercentage;
     }
+
+    public void setProbabilityClassSelection( double p ) throws IllegalArgumentException {
+
+        if( p <= 0 )
+            throw new IllegalArgumentException( "Probability of class selection has to be >0." );
+        if( p > 1 )
+            throw new IllegalArgumentException( "Probability of class selection has to be <=1." );
+
+        this.probPerClass = p;
+    }
+
+
 
     /**
      * Gets the percentage of instances to be removed
@@ -271,7 +286,11 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             loadFromFile(checkpointPath + "RotF" + seed + ".ser");
             //               checkpointTimeElapsed -= System.nanoTime()-t1;
         }
-        else{   //Initialise:
+        else{
+            //Initialise
+            if (baseClassifier == null) {
+                throw new Exception("A base classifier has not been specified!");
+            }//Initialise:
             groups=new ArrayList<>();
             // These arrays keep the information of the transformed data set
             headers =new ArrayList<>();
@@ -313,9 +332,27 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                 instancesOfClass[c].add( instance );
             }
         }
-
+        if(isContracted()&& getEstimateOwnPerformance() && !bagging){ //Split the contract to train and estimate time
+            //Split in half if OOB
+            switch(trainEstimateMethod){
+                case NONE: case TRAIN:  //do nothing, the overhead is none or minimal
+                    break;
+                case OOB:   //Split in half
+                    trainContractTimeNanos /=2;
+                    printLineDebug(" TRAIN TIME SPLIT IN HALF FOR ESTIMATION  In EnhancedRotationForest = "+trainContractTimeNanos/1000000000+" secs ");
+                    trainEstimateContractTimeNanos = trainContractTimeNanos;
+                    break;
+                case CV: //Split 1/4 full and 3/4 Train
+                    trainEstimateContractTimeNanos = 3*trainContractTimeNanos/4;
+                    trainContractTimeNanos /=4;
+                    break;
+            }
+        }
+        long singleTreeTime;
+        long currentTime=System.nanoTime()-startTime;
         do{//Always build at least one tree
 //Formed bag data set if bagging
+            singleTreeTime=System.nanoTime();
             Instances trainD=data;
             boolean[] inBag=null;
             if(bagging){
@@ -334,16 +371,16 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             }
 //TO DO: Alter the num attributes or cases for very big data
             int numAtts=trainD.numAttributes()-1;
-            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current build time = "+trainResults.getBuildTime()/1000000000+" seconds");
-            Classifier c= buildTree(trainData,instancesOfClass,numTrees, numAtts);
-            printLineDebug(" Train cases = "+trainData.numInstances()+ " number of classes = "+trainData.numClasses()+" should be "+numInstances+" cases and "+numClasses+" classes");
+            printLineDebug(" Building tree "+(numTrees+1)+" with "+numAtts+" attributes current total build time = "+currentTime/1000000000+" seconds contract time = "+trainContractTimeNanos/1000000000);
+            Classifier c= buildTree(trainD,instancesOfClass,numTrees, numAtts);
             classifiers.add(c);
             if(bagging) { // Get bagged distributions
-                for(int i=0;i<trainData.numInstances();i++){
+                for(int i=0;i<data.numInstances();i++){
                     if(!inBag[i]){
                         oobCounts[i]++;
                         try {
-                            double[] dist = c.distributionForInstance(trainData.instance(i));
+                            Instance convertedInstance = convertInstance(data.instance(i), numTrees);
+                            double[] dist = c.distributionForInstance(convertedInstance);
                             for(int j=0;j<dist.length;j++)
                                 trainDistributions[i][j]+=dist[j];
                         }catch(Exception e){
@@ -354,18 +391,23 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                                 System.out.println(" instance k "+k+" prediction = "+c.classifyInstance(data.instance(k)));
                             }
                             System.exit(1);
-                    }
+                        }
                     }
                 }
             }
-//If the first one takes too long, adjust length parameter
             numTrees++;
-            trainResults.setBuildTime(System.nanoTime()-startTime);
-        }while((!trainTimeContract || withinTrainContract(trainResults.getBuildTime())) && classifiers.size() < minNumTrees);
+            //If the first one takes too long, adjust length parameter
+            //Not used yet
+            long endTreeTime=System.nanoTime();
+            singleTreeTime=endTreeTime-singleTreeTime;
+            currentTime=System.nanoTime()-startTime;
+        }while((!trainTimeContract || withinTrainContract(currentTime)) && classifiers.size() < minNumTrees);
         //Build the classifier
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
+        printLineDebug(" Finished train build ");
         if (getEstimateOwnPerformance()) {
+            printLineDebug(" Estimating own performance with contract estimate train build = "+trainEstimateContractTimeNanos/1000000001);
             long est1 = System.nanoTime();
             estimateOwnPerformance(data);
             long est2 = System.nanoTime();
@@ -378,8 +420,9 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         }
 
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+//        printLineDebug("*************** Finished Enhanced RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 
     }
 
@@ -390,7 +433,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         if (bagging) {
             // Bagging used to build the final model, so use bag data, counts normalised to probabilities
-            printLineDebug("Finding the OOB estimates");
+            printLineDebug(" Ussing OOB estimates from a model already constructed");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
@@ -400,10 +443,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                     for (int k = 0; k < trainDistributions[j].length; k++)
                         trainDistributions[j][k] /= oobCounts[j];
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
-                if(debug && j<3){
-                    for(int m=0;m<trainDistributions[j].length;m++)
-                        System.out.println("Class  "+m+" Prob = "+trainDistributions[j][m]);
-                }
 
                 actuals[j] = data.instance(j).classValue();
                 predTimes[j] = System.nanoTime() - predTime;
@@ -418,7 +457,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
         }
         else if(trainEstimateMethod == TrainEstimateMethod.TRAIN|| trainEstimateMethod == TrainEstimateMethod.NONE){      //Just use the final
-            printLineDebug("Finding the  train set estimates");
+            printLineDebug("Finding the  train set estimates from the full train model ");
             double[] preds = new double[data.numInstances()];
             double[] actuals = new double[data.numInstances()];
             long[] predTimes = new long[data.numInstances()];//Dummy variable, need something
@@ -452,6 +491,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             if (seedClassifier)
                 rotf.setSeed(seed * 100);
             rotf.setEstimateOwnPerformance(false);
+            rotf.setTrainTimeLimit(trainEstimateContractTimeNanos/10);
 //            if (trainTimeContract)//Need to split the contract time, will give time/(numFolds+2) to each fio
 //                rotf.setTrainTimeLimit(buildtrainContractTimeNanos / numFolds);
             printLineDebug(" Doing CV evaluation estimate performance with  " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold.");
@@ -463,6 +503,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         }
         else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             // Build a single new TSF using Bagging, and extract the estimate from this
+            printLineDebug(" Estimating with a separate OOB classifier");
             EnhancedRotationForest rotf = new EnhancedRotationForest();
 //            rotf.setTrainTimeLimit();
             rotf.copyParameters(this);
@@ -470,10 +511,10 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             rotf.setSeed(seed*33);
 
             rotf.setEstimateOwnPerformance(true);
+            rotf.setTrainTimeLimit(trainEstimateContractTimeNanos);
             rotf.setBagging(true);
-            rotf.setRemovedPercentage(10);
+//            rotf.setRemovedPercentage(10);
 //            tsf.setTrainTimeLimit(finalBuildtrainContractTimeNanos);
-            printLineDebug(" Doing Bagging estimate performance with " + rotf.getTrainContractTimeNanos() / 1000000000 + " secs per fold  and with min trees = "+rotf.minNumTrees);
             rotf.buildClassifier(data);
             long buildTime = trainResults.getBuildTime();
             trainResults = rotf.trainResults;
@@ -656,7 +697,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
         boolean selected[] = new boolean[ numClasses ];
 
         for( int i = 0; i < selected.length; i++ ) {
-            if(random.nextBoolean()) {
+            if(random.nextDouble()<probPerClass) {
                 selected[i] = true;
                 numSelected++;
             }
@@ -856,7 +897,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
 
     @Override
     public String getParameters() {
-        String result="BuildTime,"+trainResults.getBuildTime()+",RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
+        String result="RemovePercent,"+this.getRemovedPercentage()+",NumFeatures,"+this.getMaxGroup();
         result+=",numTrees,"+numTrees;
         return result;
     }
@@ -911,8 +952,6 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
      */
     @Override
     public void setTrainTimeLimit(long amount) {
-        printLineDebug(" Setting EnhancedRotationForest contract to be "+amount);
-
         if(amount>0) {
             trainContractTimeNanos = amount;
             trainTimeContract = true;
