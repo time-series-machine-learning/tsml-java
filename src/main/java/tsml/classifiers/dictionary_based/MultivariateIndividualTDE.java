@@ -606,8 +606,8 @@ public class MultivariateIndividualTDE extends IndividualTDE {
         double[][][] split = data.toValueArray();
         seriesLength = data.getMaxLength();
 
-        breakpointDFT = new double[data.getMaxNumChannels()][][][];
-        breakpoints = new double[data.getMaxNumChannels()][][];
+        breakpointDFT = new double[data.getMaxNumDimensions()][][][];
+        breakpoints = new double[data.getMaxNumDimensions()][][];
         for (int d = 0; d < breakpoints.length; d++) {
             if (IGB) breakpoints[d] = IGB(split, d, data.getClassIndexes());
             else breakpoints[d] = MCB(split, d); //breakpoints to be used for making sfa words for train
@@ -616,7 +616,7 @@ public class MultivariateIndividualTDE extends IndividualTDE {
 
         selectDimensions(data, split);
 
-        SFAwords = new BitWord[data.getMaxNumChannels()][data.numInstances()][];
+        SFAwords = new BitWord[data.getMaxNumDimensions()][data.numInstances()][];
         bags = new ArrayList<>(data.numInstances());
         rand = new Random(seed);
 
