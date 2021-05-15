@@ -292,9 +292,9 @@ public class DatasetLoading {
                 if (fold != 0)
 //                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
 //                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
-                    if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
-//                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
-                        data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(data[0], data[1], fold);
+                if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
+                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+//                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(data[0], data[1], fold);
 
                     }
                     else {
@@ -654,18 +654,18 @@ public class DatasetLoading {
         }
         else {
             //have not been given a specific extension
-            //look for arff or ts formats
-            //arbitrarily looking for arff first
-            File newtarget = new File(targetFile.getAbsolutePath() + ARFF);
+            //look for ts or arff formats
+            //arbitrarily looking for ts first
+            File newtarget = new File(targetFile.getAbsolutePath() + TS);
             if (newtarget.exists()) {
                 targetFile = newtarget;
-                extension = ARFF;
+                extension = TS;
             }
             else {
-                newtarget = new File(targetFile.getAbsolutePath() + TS);
+                newtarget = new File(targetFile.getAbsolutePath() + ARFF);
                 if (newtarget.exists()) {
                     targetFile = newtarget;
-                    extension = TS;
+                    extension = ARFF;
                 }
                 else
                     throw new IOException("Cannot find file " + targetFile.getAbsolutePath() + " with either .arff or .ts extensions.");
@@ -675,13 +675,14 @@ public class DatasetLoading {
         TimeSeriesInstances inst = null;
         FileReader reader = new FileReader(targetFile);
 
-        if (extension.equalsIgnoreCase(ARFF)) {
-            inst = Converter.fromArff(new Instances(reader));
-        }
-        else if (extension.equalsIgnoreCase(TS)) {
+        if (extension.equalsIgnoreCase(TS)) {
             tsml.data_containers.ts_fileIO.TSReader tsReader = new tsml.data_containers.ts_fileIO.TSReader(reader);
             inst = tsReader.GetInstances();
         }
+        else if (extension.equalsIgnoreCase(ARFF)) {
+            inst = Converter.fromArff(new Instances(reader));
+        }
+
         reader.close();
 
         return inst;
@@ -744,35 +745,35 @@ public class DatasetLoading {
 
         //should handle both with/without extension
         String dataPath = BAKED_IN_UCI_DATA_PATH + "iris/iris";
-        System.out.println("Testing: testARFFLoad(" + dataPath + ")");
+        System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
-            System.out.println("Passed: testARFFLoad(" + dataPath + ")\n");
+            System.out.println("Passed: testARFFLoad("+dataPath+")\n");
 
         dataPath += ".arff";
-        System.out.println("Testing: testARFFLoad(" + dataPath + ")");
+        System.out.println("Testing: testARFFLoad("+dataPath+")");
         if (testARFFLoad(dataPath))
-            System.out.println("Passed: testARFFLoad(" + dataPath + ")\n");
+            System.out.println("Passed: testARFFLoad("+dataPath+")\n");
 
         System.out.println("Testing: testUCILoad()");
         if (testUCILoad())
             System.out.println("Passed: testUCILoad()\n");
 
         // 0 loads default split, 1 will resample
-        System.out.println("Testing: testTSCLoad(" + 0 + ")");
+        System.out.println("Testing: testTSCLoad("+0+")");
         if (testTSCLoad(0))
-            System.out.println("Passed: testTSCLoad(" + 0 + ")\n");
+            System.out.println("Passed: testTSCLoad("+0+")\n");
 
-        System.out.println("Testing: testTSCLoad(" + 1 + ")");
+        System.out.println("Testing: testTSCLoad("+1+")");
         if (testTSCLoad(1))
-            System.out.println("Passed: testTSCLoad(" + 1 + ")\n");
+            System.out.println("Passed: testTSCLoad("+1+")\n");
 
-        System.out.println("Testing: testMTSCLoad(" + 0 + ")");
+        System.out.println("Testing: testMTSCLoad("+0+")");
         if (testMTSCLoad(0))
-            System.out.println("Passed: testMTSCLoad(" + 0 + ")\n");
+            System.out.println("Passed: testMTSCLoad("+0+")\n");
 
-        System.out.println("Testing: testMTSCLoad(" + 1 + ")");
+        System.out.println("Testing: testMTSCLoad("+1+")");
         if (testMTSCLoad(1))
-            System.out.println("Passed: testMTSCLoad(" + 1 + ")\n");
+            System.out.println("Passed: testMTSCLoad("+1+")\n");
     }
 
     private static boolean testARFFLoad(String dataPath) throws Exception {

@@ -21,7 +21,6 @@ package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import evaluation.tuning.ParameterSpace;
@@ -33,10 +32,10 @@ import tsml.classifiers.dictionary_based.BOSS;
 import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
-import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
+import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -67,8 +66,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     protected boolean trainTimeContract = false;
     protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(5); // if contracting with no time limit given, default to 7 days.
     protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
-    
-    
+
     /**
      * Utility if we want to be conservative while contracting with the overhead 
      * of the ensemble and any variance with the base classifiers' abilities to adhere 
@@ -77,7 +75,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      * potential threading overhead, etc
      */
     protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
-    
+    protected double alpha=4.0; // Weighting parameter for voting method
     
     
     @Override
@@ -97,6 +95,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public HIVE_COTE() { 
         super();
+        setupHIVE_COTE_2_0();
     }
     @Override
     public void setupDefaultEnsembleSettings() {
@@ -108,7 +107,6 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //TODO jay/tony review
         this.ensembleName = "HIVE-COTE 0.1";
-
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
@@ -164,8 +162,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setupHIVE_COTE_1_0() {
         this.ensembleName = "HIVE-COTE 1.0";
-        
-        this.weightingScheme = new TrainAcc(4);
+        alpha=4.0;
+
+        this.weightingScheme = new TrainAcc(alpha);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
         
@@ -212,46 +211,31 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setupHIVE_COTE_2_0() {
         this.ensembleName = "HIVE-COTE 2.0";
-
-        this.weightingScheme = new TrainAcc(4);
+        alpha=4.0;
+        this.weightingScheme = new TrainAcc(alpha);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
-
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
         this.trainEstimator = cv;
-
         ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
         DrCIF cif= new DrCIF();
-        ProximityForest pf=new ProximityForest();
         Arsenal afc = new Arsenal();
         TDE tde= new TDE();
-
-        String[] classifierNames = new String[5];
+        String[] classifierNames = new String[4];
         classifierNames[0] = "STC";
         classifierNames[1] = "DrCIF";
-        classifierNames[2] = "PF";
-        classifierNames[3] = "Arsenal";
-        classifierNames[4] = "TDE";
-        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[5];
+        classifierNames[2] = "Arsenal";
+        classifierNames[3] = "TDE";
+        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[4];
         classifiers[0]=stc;
         classifiers[1]=cif;
-        classifiers[2]=pf;
-        classifiers[3]=afc;
-        classifiers[4]=tde;
-
-
-        stc.setEstimateOwnPerformance(true);
-
-        cBOSS boss = new cBOSS();
-        boss.setEstimateOwnPerformance(true);
-        classifiers[2] = boss;
-
-        TSF tsf = new TSF();
-        classifiers[3] = tsf;
-        classifierNames[3] = "TSF";
-        tsf.setEstimateOwnPerformance(true);
-
+        classifiers[2]=afc;
+        classifiers[3]=tde;
+        for(EnhancedAbstractClassifier cls:classifiers) {
+            cls.setEstimateOwnPerformance(true);
+            cls.setTrainEstimateMethod(TrainEstimateMethod.OOB);
+        }
         try {
             setClassifiers(classifiers, classifierNames, null);
         } catch (Exception e) {
@@ -259,9 +243,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                     + "be fixed before continuing");
             System.exit(1);
         }
-
         setSeed(seed);
-
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
@@ -279,11 +261,16 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             }
             printDebug(" \n ");
         }
+        printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
+
         if (trainTimeContract)
             setupContracting();
 
         super.buildClassifier(data);
         trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished HIVE-COTE Build with train time " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
+
     }
     /**
      * Returns default capabilities of the classifier. These are that the
@@ -326,7 +313,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     /**
      * Overriding TrainTimeContract methods
-     * @param nanos
+     * @param amount of time in nanos
      */
     @Override //TrainTimeContractable
     public void setTrainTimeLimit(long amount) {
@@ -349,7 +336,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         
         //in future, the number of classifiers we need to separately eval and custom-contract for
         int numNonTrainEstimatingClassifiers = 0; 
-        
+        printLineDebug(" Setting up contracting. Number of modules  = "+modules.length);
         for (EnsembleModule module : modules) {
             if(module.isTrainTimeContractable())
                 numContractableClassifiers++;
@@ -368,8 +355,12 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         //force nanos in setting base classifier contracts in case e.g. 1 hour was passed, 1/5 = 0...
         TimeUnit highFidelityUnit = TimeUnit.NANOSECONDS;
         long conservativeBaseClassifierContract = (long) (BASE_CLASSIFIER_CONTRACT_PROP * highFidelityUnit.convert(trainContractTimeNanos, contractTrainTimeUnit));
-        long highFidelityTimePerClassifier = (conservativeBaseClassifierContract) / numContractableClassifiers;
-        printLineDebug(" Setting up contract\nTotal Contract = "+trainContractTimeNanos/1000000000+" Secs");
+        long highFidelityTimePerClassifier;
+        if(multiThread)
+            highFidelityTimePerClassifier= (conservativeBaseClassifierContract);
+        else
+            highFidelityTimePerClassifier= (conservativeBaseClassifierContract) / numContractableClassifiers;
+        printLineDebug(" Setting up contract\nTotal Contract = "+(trainContractTimeNanos/1000000000/60/60)+" hours");
         printLineDebug(" Per Classifier = "+highFidelityTimePerClassifier+" Nanos");
         for (EnsembleModule module : modules)
             if(module.isTrainTimeContractable())
@@ -390,8 +381,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 //        for (String str:options)
 //             System.out.print(","+str);
 //        System.out.print("\n");
-        String alpha = Utils.getOption('A', options);
-        this.weightingScheme = new TrainAcc(Double.parseDouble(alpha));
+        String a = Utils.getOption('A', options);
+        alpha=Double.parseDouble(a);
+        this.weightingScheme = new TrainAcc(alpha);
 
     }
     /**
@@ -406,15 +398,16 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     @Override //Tuneable
     public ParameterSpace getDefaultParameterSearchSpace(){
         ParameterSpace ps=new ParameterSpace();
-        String[] alpha={"1","2","3","4","5","6","7","8","9","10"};
-        ps.addParameter("A", alpha);
+        String[] alphaRange={"1.0","2.0","3.0","4.0","5.0","6.0","7.0","8.0","9.0","10.0"};
+        ps.addParameter("A", alphaRange);
 
         return ps;
     }
 
     @Override
     public String getParameters() {
-        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",";//+alpha;
+        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",alpha,"+alpha+
+                ",contractTime(hrs),"+trainContractTimeNanos/1000000000/60/60.0;
 
         for (EnsembleModule module : modules)
             str+=module.getModuleName()+","+module.posteriorWeights[0]+",";
