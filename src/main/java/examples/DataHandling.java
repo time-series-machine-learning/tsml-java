@@ -69,7 +69,7 @@ public class DataHandling {
         test = trainTest[1];
 
         DatasetLoading.saveDataset(train,dest+ problem + "/" + problem +"_"+resample+ "_TRAIN"+".arff");
-        DatasetLoading.saveDataset(test,dest+ problem + "/" + problem +"_"+resample+ "_TEST"+resample+".arff");
+        DatasetLoading.saveDataset(test,dest+ problem + "/" + problem +"_"+resample+ "_TEST"+".arff");
 
     }
 
