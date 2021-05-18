@@ -1576,7 +1576,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             fileType = FileType.valueOf(parts[5]);
 
         if (parts.length > 6)
-            description = parts[6];
+            description = parts[6]; //todo duplicating with for loop?
 
         //nothing stopping the description from having its own commas in it, jsut read until end of line
         for (int i = 6; i < parts.length; i++)

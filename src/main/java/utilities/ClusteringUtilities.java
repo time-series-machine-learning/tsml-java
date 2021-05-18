@@ -17,23 +17,30 @@
  
 package utilities;
 
+import evaluation.storage.ClustererResults;
+import tsml.clusterers.EnhancedAbstractClusterer;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static utilities.ArrayUtilities.oneHot;
+
 public class ClusteringUtilities {
-    public static double randIndex(int[] predicted, int[] actual){
+    public static double randIndex(double[] predicted, double[] actual){
         double A = 0, B = 0, C = 0, D = 0;
 
         for (int i = 0; i < predicted.length; i++){
             for (int n = 0; n < actual.length; n++){
-                if ((predicted[i] == predicted[n]) && (actual[i] == actual[n])){
+                if (i == n)
+                    continue;
+
+                if (predicted[i] == predicted[n] && actual[i] == actual[n]){
                     A++;
                 }
-                else if ((predicted[i] != predicted[n]) && (actual[i] != actual[n])){
+                else if (predicted[i] != predicted[n] && actual[i] != actual[n]){
                     B++;
                 }
-                else if ((predicted[i] == predicted[n]) && (actual[i] != actual[n])){
+                else if (predicted[i] == predicted[n] && actual[i] != actual[n]){
                     C++;
                 }
                 else{
@@ -45,20 +52,23 @@ public class ClusteringUtilities {
         return (A + B)/(A + B + C + D);
     }
 
-    public static double randIndex(int[] predicted, Instances inst){
+    public static double randIndex(double[] predicted, Instances inst){
         double[] actual = inst.attributeToDoubleArray(inst.classIndex());
 
         double A = 0, B = 0, C = 0, D = 0;
 
         for (int i = 0; i < predicted.length; i++){
             for (int n = 0; n < actual.length; n++){
-                if ((predicted[i] == predicted[n]) && (actual[i] == actual[n])){
+                if (i == n)
+                    continue;
+
+                if (predicted[i] == predicted[n] && actual[i] == actual[n]){
                     A++;
                 }
-                else if ((predicted[i] != predicted[n]) && (actual[i] != actual[n])){
+                else if (predicted[i] != predicted[n] && actual[i] != actual[n]){
                     B++;
                 }
-                else if ((predicted[i] == predicted[n]) && (actual[i] != actual[n])){
+                else if (predicted[i] == predicted[n] && actual[i] != actual[n]){
                     C++;
                 }
                 else{
@@ -188,5 +198,13 @@ public class ClusteringUtilities {
         }
 
         return distMatrix;
+    }
+
+    public static ClustererResults getClusteringResults(EnhancedAbstractClusterer clusterer, Instances inst)
+            throws Exception {
+        ClustererResults cr = new ClustererResults(inst.numClasses(), inst.attributeToDoubleArray(inst.classIndex()),
+                clusterer.getAssignments(), oneHot(clusterer.numberOfClusters(), clusterer.getAssignments()),
+                null);
+        return cr;
     }
 }

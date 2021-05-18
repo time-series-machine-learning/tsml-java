@@ -1,9 +1,9 @@
-/* 
+/*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
@@ -36,7 +36,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class TTC extends AbstractTimeSeriesClusterer {
+public class TTC extends EnhancedAbstractClusterer {
 
     //Aghabozorgi, Saeed, et al.
     //"A hybrid algorithm for clustering of time series data based on affinity search technique."
@@ -44,23 +44,25 @@ public class TTC extends AbstractTimeSeriesClusterer {
 
     private double affinityThreshold = 0.01;
     private int k = 2;
-    private int seed = Integer.MIN_VALUE;
 
     private double[][] distanceMatrix;
     private ArrayList<Integer>[] subclusters;
 
-    public TTC(){}
+    public TTC() {
+    }
 
     @Override
-    public int numberOfClusters() throws Exception { return k; }
+    public int numberOfClusters() throws Exception {
+        return k;
+    }
 
-    public void setNumberOfClusters(int n){ k = n; }
-
-    public void setSeed(int seed){ this.seed = seed; }
+    public void setNumberOfClusters(int n) {
+        k = n;
+    }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances){
+        if (copyInstances) {
             data = new Instances(data);
         }
 
@@ -81,10 +83,10 @@ public class TTC extends AbstractTimeSeriesClusterer {
         double[][] prototypes = new double[subclusters.length][data.numAttributes()];
 
         //Take average of each cluster
-        for (int i = 0; i < subclusters.length; i++){
-            for (int n = 0; n < data.numAttributes(); n++){
-                for (int g = 0; g < subclusters[i].size(); g++){
-                    prototypes[i][n] += data.get(subclusters[i].get(g)).value(n) * (1-affinities.get(i)[g]);
+        for (int i = 0; i < subclusters.length; i++) {
+            for (int n = 0; n < data.numAttributes(); n++) {
+                for (int g = 0; g < subclusters[i].size(); g++) {
+                    prototypes[i][n] += data.get(subclusters[i].get(g)).value(n) * (1 - affinities.get(i)[g]);
                 }
 
                 prototypes[i][n] /= subclusters[i].size();
@@ -92,7 +94,7 @@ public class TTC extends AbstractTimeSeriesClusterer {
         }
 
         Instances cl = new Instances(data, subclusters.length);
-        for (int i = 0; i < subclusters.length; i++){
+        for (int i = 0; i < subclusters.length; i++) {
             cl.add(new DenseInstance(1, prototypes[i]));
         }
 
@@ -105,14 +107,14 @@ public class TTC extends AbstractTimeSeriesClusterer {
         pam.buildClusterer(cl);
 
         ArrayList<Integer>[] ptClusters = pam.getClusters();
-        assignments = new int[data.size()];
+        assignments = new double[data.size()];
 
         //Assign each instance to the cluster assigned it its subcluster using PAM
-        for (int i = 1; i < k; i++){
-            for (int n = 0; n < ptClusters[i].size(); n++){
+        for (int i = 1; i < k; i++) {
+            for (int n = 0; n < ptClusters[i].size(); n++) {
                 ArrayList<Integer> subcluster = subclusters[ptClusters[i].get(n)];
 
-                for (int g = 0; g < subcluster.size(); g++){
+                for (int g = 0; g < subcluster.size(); g++) {
                     assignments[subcluster.get(g)] = i;
                 }
             }
@@ -120,13 +122,13 @@ public class TTC extends AbstractTimeSeriesClusterer {
 
         clusters = new ArrayList[k];
 
-        for (int i = 0; i < k; i++){
+        for (int i = 0; i < k; i++) {
             clusters[i] = new ArrayList();
         }
 
-        for (int i = 0; i < data.size(); i++){
-            for (int n = 0; n < k; n++){
-                if(n == assignments[i]){
+        for (int i = 0; i < data.size(); i++) {
+            for (int n = 0; n < k; n++) {
+                if (n == assignments[i]) {
                     clusters[n].add(i);
                     break;
                 }
@@ -134,13 +136,13 @@ public class TTC extends AbstractTimeSeriesClusterer {
         }
     }
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         String dataset = "Trace";
         Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
                 dataset + "_TEST.arff");
-        inst.setClassIndex(inst.numAttributes()-1);
+        inst.setClassIndex(inst.numAttributes() - 1);
         inst.addAll(inst2);
 
         TTC k = new TTC();

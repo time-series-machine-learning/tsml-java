@@ -62,6 +62,22 @@ public class ArrayUtilities {
         return array;
     }
 
+    public static double[][] oneHot(int length, int[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][indicies[i]] = 1;
+        }
+        return array;
+    }
+
+    public static double[][] oneHot(int length, double[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][(int) indicies[i]] = 1;
+        }
+        return array;
+    }
+
     public static void add(double[] src, double[] addend) {
         if(src.length < addend.length) {
             throw new IllegalArgumentException();
