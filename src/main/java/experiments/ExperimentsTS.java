@@ -27,8 +27,9 @@ import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import tsml.classifiers.shapelet_based.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.classifiers.ensemble.EnsembleMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.EnsembleMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.RandomEnsembleMSTC;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
@@ -243,7 +244,9 @@ public class ExperimentsTS {
 
         if (expSettings.classifierName.contains("ENS-MSTC")){
             classifier = new EnsembleMSTC(getMSTCParams(expSettings, data));
-        }else {
+        }else if  (expSettings.classifierName.contains("ENS-COMB-MSTC")) {
+            classifier = new RandomEnsembleMSTC(getMSTCParams(expSettings, data));
+        }else{
             classifier = new MSTC(getMSTCParams(expSettings, data));
         }
 
@@ -257,21 +260,48 @@ public class ExperimentsTS {
     }
 
     private static MSTC.ShapeletParams getMSTCParams(ExperimentalArguments expSettings, TimeSeriesResampler.TrainTest data){
-        int f = Math.min(10000,Math.max(1000,(int)Math.sqrt(data.train.numInstances()*data.train.getMaxLength()*data.train.getMaxNumChannels())));
-        System.out.println("Shapelets " + f);
 
-        MSTC.ShapeletParams params = new MSTC.ShapeletParams(f,
-                5,data.train.getMinLength()-1,
-                100000,0.01,4, true,
-                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_RATIO,
+
+        int n = data.train.numInstances();
+        int m = data.train.getMinLength()-1;
+        int c = data.train.getMaxNumChannels();
+        int numShapelets = Math.min(10000,Math.max(1000,(int)Math.sqrt(n*m*c)));
+
+
+        System.out.println("Shapelets " + numShapelets);
+
+        MSTC.ShapeletParams params = new MSTC.ShapeletParams(numShapelets,
+                3,m-1,
+                1000000,0.001,4, true,
+                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI,
                 MSTC.ShapeletDistances.EUCLIDEAN,
                 MSTC.ShapeletFactories.INDEPENDENT,
                 MSTC.AuxClassifiers.LINEAR);
 
+        if (expSettings.classifierName.contains("PAR")){
+            if(data.train.numClasses() > 2) {
+                params.quality = MSTC.ShapeletQualities.ORDER_LINE_BINARY;
+                params.filter = MSTC.ShapeletFilters.RANDOM_BY_CLASS;
+                params.maxIterations = 1000000*data.train.numClasses();
+
+            }else {
+                params.quality = MSTC.ShapeletQualities.ORDER_LINE;
+            }
+            params.k =  10*n < 1000 ? 10*n: 1000;
+            params.contractTimeHours =  4;
+            params.classifier =  MSTC.AuxClassifiers.ROT;
+        }
+
+        if (expSettings.classifierName.contains("EXH")){
+            params.filter = MSTC.ShapeletFilters.EXHAUSTIVE;
+            params.quality = MSTC.ShapeletQualities.ORDER_LINE_BINARY;
+            params.classifier =  MSTC.AuxClassifiers.ROT;
+        }
+
+
         // Shapelet dependant
         if (expSettings.classifierName.contains("_D")){
             params.type =  MSTC.ShapeletFactories.DEPENDANT;
-            params.compareSimilar = false;
         }
 
         // Binary quality
@@ -284,10 +314,15 @@ public class ExperimentsTS {
             params.quality =  MSTC.ShapeletQualities.ORDER_LINE;
         }
 
+        if (expSettings.classifierName.contains("OLB")){
+            params.quality =  MSTC.ShapeletQualities.ORDER_LINE_BINARY;
+        }
+
+
         // Split shapelets by class
         if (expSettings.classifierName.contains("CLASS")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_CLASS;
-            params.maxIterations = 1000000*data.train.numClasses();
+            params.maxIterations = 100000*data.train.numClasses();
         }
 
         // Split shapelets by class and series (only for independent)

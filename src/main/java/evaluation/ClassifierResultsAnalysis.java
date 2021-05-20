@@ -293,6 +293,8 @@ public class ClassifierResultsAnalysis {
         String[] statCliquesForCDDiasArr = statCliquesForCDDias.toArray(new String[] { });
         if(buildMatlabDiagrams) {
             MatlabController proxy = MatlabController.getInstance();
+
+
             proxy.eval("addpath(genpath('"+matlabFilePath+"'))");
             matlab_buildCompResourcesDias(compMetrics);
             matlab_buildCDDias(expname, statCliquesForCDDiasArr);
