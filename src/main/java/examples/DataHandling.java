@@ -216,7 +216,7 @@ public class DataHandling {
          * Because ItalyPowerDemand is distributed with the codebase, there's a wrapper
          * to sample it directly for quick testing
          */
-        trainTestSplit = DatasetLoading.sampleTSItalyPowerDemand(seed);
+        trainTestSplit = DatasetLoading.sampleItalyPowerDemandTS(seed);
         train = trainTestSplit[0];
         test = trainTestSplit[1];
 
