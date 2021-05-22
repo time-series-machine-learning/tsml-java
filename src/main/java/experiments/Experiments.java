@@ -151,7 +151,7 @@ public class Experiments  {
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"HIVE-COTEv2"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"HC2"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
             parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
 //            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
