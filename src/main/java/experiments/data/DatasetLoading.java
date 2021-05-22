@@ -449,18 +449,18 @@ public class DatasetLoading {
         }
         else {
             //have not been given a specific extension
-            //look for arff or ts formats
-            //arbitrarily looking for arff first
-            File newtarget = new File(targetFile.getAbsolutePath() + ARFF);
+            //look for ts or arff formats
+            //arbitrarily looking for ts first
+            File newtarget = new File(targetFile.getAbsolutePath() + TS);
             if (newtarget.exists()) {
                 targetFile = newtarget;
-                extension = ARFF;
+                extension = TS;
             }
             else {
-                newtarget = new File(targetFile.getAbsolutePath() + TS);
+                newtarget = new File(targetFile.getAbsolutePath() + ARFF);
                 if (newtarget.exists()) {
                     targetFile = newtarget;
-                    extension = TS;
+                    extension = ARFF;
                 }
                 else
                     throw new IOException("Cannot find file " + targetFile.getAbsolutePath() + " with either .arff or .ts extensions.");
@@ -470,13 +470,14 @@ public class DatasetLoading {
         TimeSeriesInstances inst = null;
         FileReader reader = new FileReader(targetFile);
 
-        if (extension.equalsIgnoreCase(ARFF)) {
-            inst = Converter.fromArff(new Instances(reader));
-        }
-        else if (extension.equalsIgnoreCase(TS)) {
+        if (extension.equalsIgnoreCase(TS)) {
             tsml.data_containers.ts_fileIO.TSReader tsReader = new tsml.data_containers.ts_fileIO.TSReader(reader);
             inst = tsReader.GetInstances();
         }
+        else if (extension.equalsIgnoreCase(ARFF)) {
+            inst = Converter.fromArff(new Instances(reader));
+        }
+
         reader.close();
 
         return inst;
