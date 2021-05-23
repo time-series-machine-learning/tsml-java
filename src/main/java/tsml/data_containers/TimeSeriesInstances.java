@@ -599,6 +599,45 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
         return tsi;
     }
 
+    /**
+     * Function to pad data up (inclusive) maxLength with '0' or '?' values.
+     *
+     * @param newMaxLength the length to pad to
+     * @param padWithZeros true: pad with 0s, false: pad with missing vals
+     * @return padded TimeSeriesInstances object
+     */
+    public TimeSeriesInstances padWithZerosOrMissing(final int newMaxLength, final boolean padWithZeros) {
+        double[][][] temp = new double[numInstances()][getMaxNumDimensions()][newMaxLength];
+
+        // for each instance
+        for (int i = 0; i < temp.length; i++) {
+            // for each dimension
+            for (int j = 0; j < temp[i].length; j++) {
+                // for each time series
+                for (int k = 0; k < temp[i][j].length; k++) {
+                    double value;
+
+                    // try and get val
+                    try {
+                        value = seriesCollection.get(i).get(j).getValue(k);
+                    }
+                    // if out of bounds, replace with '0' or '?'
+                    catch (IndexOutOfBoundsException e) {
+                        value = padWithZeros ? 0 : Double.NaN;
+                    }
+
+                    temp[i][j][k] = value;
+                }
+            }
+        }
+
+        TimeSeriesInstances padded = new TimeSeriesInstances(temp, getClassIndexes(), getClassLabels());
+        padded.setProblemName(getProblemName());
+        padded.setDescription(getDescription());
+
+        return padded;
+    }
+
     @Override public boolean equals(final Object o) {
         if(!(o instanceof TimeSeriesInstances)) {
             return false;
