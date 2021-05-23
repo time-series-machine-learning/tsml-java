@@ -356,28 +356,10 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         if (!canHandle)
             throw new Exception("TSF cannot handle this type of data");
 
-        // check if unequal length
         if (!data.isEqualLength()) {
             // pad with 0s
-            double[][][] temp = new double[data.numInstances()][data.getMaxNumDimensions()][data.getMaxLength()];
-
-            // for each instance, each dimension, each value: copy value over
-            for (int i = 0; i < data.numInstances(); i++) {
-                TimeSeriesInstance tsi = data.get(i);
-
-                for (int j = 0; j < tsi.getNumDimensions(); j++) {
-                    TimeSeries ts = tsi.get(j);
-
-                    for (int k = 0; k < ts.getSeriesLength(); k++) {
-                        temp[i][j][k] = ts.getValue(k);
-                    }
-                }
-            }
-
-            TimeSeriesInstances zeroPadded = new TimeSeriesInstances(temp, data.getClassIndexes(), data.getClassLabels());
-            zeroPadded.setProblemName(data.getProblemName());
-            zeroPadded.setDescription(data.getDescription());
-            data = zeroPadded;
+            TimeSeriesInstances padded = data.padWithZerosOrMissing(data.getMaxLength(), true);
+            data = padded;
         }
 
         // set the classifier data
@@ -871,20 +853,9 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
         // check if unequal length
-        if (trainData.getMaxLength() != ins.getMaxLength()) {
+        if (seriesLength > ins.getMaxLength()) {
             // pad with 0s
-            double[][] temp = new double[ins.getNumDimensions()][seriesLength];
-
-            // for each dimension, each value: copy value over
-            for (int i = 0; i < ins.getNumDimensions(); i++) {
-                TimeSeries ts = ins.get(i);
-
-                for (int j = 0; j < ts.getSeriesLength(); j++) {
-                    temp[i][j] = ts.getValue(j);
-                }
-            }
-
-            TimeSeriesInstance zeroPadded = new TimeSeriesInstance(temp, ins.getLabelIndex());
+            TimeSeriesInstance zeroPadded = ins.padWithZerosOrMissing(seriesLength, true);
             ins = zeroPadded;
         }
 
@@ -1146,7 +1117,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public TSCapabilities getTSCapabilities() {
         TSCapabilities tsCapabilities = new TSCapabilities();
-        tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+        tsCapabilities.enable(TSCapabilities.EQUAL_OR_UNEQUAL_LENGTH)
                 .enable(TSCapabilities.UNIVARIATE)
                 .enable(TSCapabilities.NO_MISSING_VALUES)
                 .enable(TSCapabilities.MIN_LENGTH(2));
