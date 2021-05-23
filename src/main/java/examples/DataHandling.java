@@ -19,6 +19,7 @@
 
 package examples;
 
+import experiments.data.DatasetLists;
 import experiments.data.DatasetLoading;
 import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
@@ -42,10 +43,34 @@ public class DataHandling {
         /*
          * Uncomment which function is needed depending on data file type.
          */
+        String whereTheDataIs =DatasetLoading.BAKED_IN_TSC_DATA_PATH;
+        String whereToPutTheData ="C:\\Temp\\";
+        String[] problems=DatasetLists.tscProblems112;
+        problems=new String[]{"Chinatown"};
+        int resamples=30;
+        for(String str: problems){
+            for(int i=0;i<30;i++)
+                resamplingData(whereTheDataIs,whereToPutTheData,str,i);
 
-        dataHandlingWithARFF(); // .arff
+        }
+
+//        dataHandlingWithARFF(); // .arff
 
         //dataHandlingWithTS(); // .ts
+    }
+    public static void resamplingData(String source, String dest, String problem, int resample) throws IOException {
+        Instances train = DatasetLoading.loadData(source + problem + "/" + problem + "_TRAIN.arff");
+        Instances test = DatasetLoading.loadData(source + problem + "/" + problem + "_TEST.arff");
+
+        // We could then resample these, while maintaining train/test distributions, using this
+
+        Instances[] trainTest = InstanceTools.resampleTrainAndTestInstances(train, test, resample);
+        train = trainTest[0];
+        test = trainTest[1];
+
+        DatasetLoading.saveDataset(train,dest+ problem + "/" + problem +"_"+resample+ "_TRAIN"+".arff");
+        DatasetLoading.saveDataset(test,dest+ problem + "/" + problem +"_"+resample+ "_TEST"+".arff");
+
     }
 
     private static void dataHandlingWithARFF() throws Exception {
@@ -191,7 +216,7 @@ public class DataHandling {
          * Because ItalyPowerDemand is distributed with the codebase, there's a wrapper
          * to sample it directly for quick testing
          */
-        trainTestSplit = DatasetLoading.sampleTSItalyPowerDemand(seed);
+        trainTestSplit = DatasetLoading.sampleItalyPowerDemandTS(seed);
         train = trainTestSplit[0];
         test = trainTestSplit[1];
 

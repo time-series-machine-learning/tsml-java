@@ -34,7 +34,6 @@ import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 
 import static utilities.ArrayUtilities.mean;
-import static utilities.ArrayUtilities.sum;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.GenericTools.*;
 import static utilities.StatisticalUtilities.median;
@@ -68,6 +67,7 @@ public class Catch22 implements Transformer {
     private double idxMean;
     private Complex[] idxFFT;
     private double[] idxAC;
+    private int idxACFZ;
     private double[] idxOutlierSeries;
     private double[] idxSeries;
 
@@ -169,6 +169,8 @@ public class Catch22 implements Transformer {
 
         double[] ac = autoCorr(arr, fft);
 
+        int acfz = acFirstZero(ac);
+
         featureSet[0] = histMode5DN(arr, min, max);
         featureSet[1] = histMode10DN(arr, min, max);
         featureSet[2] = binaryStatsMeanLongstretch1SB(arr, mean);
@@ -185,11 +187,11 @@ public class Catch22 implements Transformer {
         featureSet[13] = hrvClassicPnn40MD(arr);
         featureSet[14] = binaryStatsDiffLongstretch0SB(arr);
         featureSet[15] = motifThreeQuantileHhSB(arr);
-        featureSet[16] = localSimpleMean1TauresratFC(arr, ac);
-        featureSet[17] = embed2DistTauDExpfitMeandiffCO(arr, ac);
+        featureSet[16] = localSimpleMean1TauresratFC(arr, acfz);
+        featureSet[17] = embed2DistTauDExpfitMeandiffCO(arr, acfz);
         featureSet[18] = fluctAnal2Dfa5012LogiPropR1SC(arr);
         featureSet[19] = fluctAnal2Rsrangefit501LogiPropR1SC(arr);
-        featureSet[20] = transitionMatrix3acSumdiagcovSB(arr, ac);
+        featureSet[20] = transitionMatrix3acSumdiagcovSB(arr, acfz);
         featureSet[21] = periodicityWangTh001PD(arr);
 
         if (classValue > Double.MIN_VALUE) featureSet[22] = classValue;
@@ -211,6 +213,7 @@ public class Catch22 implements Transformer {
             idxMean = Double.MIN_VALUE;
             idxFFT = null;
             idxAC = null;
+            idxACFZ = -1;
             idxOutlierSeries = null;
 
             if (norm) {
@@ -277,9 +280,6 @@ public class Catch22 implements Transformer {
             case 5:
             case 6:
             case 12:
-            case 16:
-            case 17:
-            case 20:
                 if (idxAC == null) {
                     if (idxFFT == null) {
                         if (idxMean == Double.MIN_VALUE) {
@@ -300,6 +300,34 @@ public class Catch22 implements Transformer {
                     }
 
                     idxAC = autoCorr(idxSeries, idxFFT);
+                }
+                break;
+            case 16:
+            case 17:
+            case 20:
+                if (idxACFZ == -1){
+                    if (idxAC == null) {
+                        if (idxFFT == null) {
+                            if (idxMean == Double.MIN_VALUE) {
+                                idxMean = mean(idxSeries);
+                            }
+
+                            int nfft = (int) Math.pow(2.0, (int) Math.ceil(Math.log(idxSeries.length) / Math.log(2)));
+                            idxFFT = new Complex[nfft];
+                            for (int j = 0; j < nfft; j++) {
+                                if (j < idxSeries.length)
+                                    idxFFT[j] = new Complex(idxSeries[j] - idxMean, 0);
+                                else
+                                    idxFFT[j] = new Complex(0, 0);
+                            }
+
+                            FastFourierTransformer f = new FastFourierTransformer(DftNormalization.STANDARD);
+                            idxFFT = f.transform(idxFFT, TransformType.FORWARD);
+                        }
+
+                        idxAC = autoCorr(idxSeries, idxFFT);
+                    }
+                    idxACFZ = acFirstZero(idxAC);
                 }
                 break;
         }
@@ -355,10 +383,10 @@ public class Catch22 implements Transformer {
                 feature = motifThreeQuantileHhSB(idxSeries);
                 break;
             case 16:
-                feature = localSimpleMean1TauresratFC(idxSeries, idxAC);
+                feature = localSimpleMean1TauresratFC(idxSeries, idxACFZ);
                 break;
             case 17:
-                feature = embed2DistTauDExpfitMeandiffCO(idxSeries, idxAC);
+                feature = embed2DistTauDExpfitMeandiffCO(idxSeries, idxACFZ);
                 break;
             case 18:
                 feature = fluctAnal2Dfa5012LogiPropR1SC(idxSeries);
@@ -367,7 +395,7 @@ public class Catch22 implements Transformer {
                 feature = fluctAnal2Rsrangefit501LogiPropR1SC(idxSeries);
                 break;
             case 20:
-                feature = transitionMatrix3acSumdiagcovSB(idxSeries, idxAC);
+                feature = transitionMatrix3acSumdiagcovSB(idxSeries, idxACFZ);
                 break;
             case 21:
                 feature = periodicityWangTh001PD(idxSeries);
@@ -389,6 +417,7 @@ public class Catch22 implements Transformer {
         double mean = Double.MIN_VALUE;
         Complex[] fft = null;
         double[] ac = null;
+        int acfz = -1;
         double[] newSeries = series;
 
         if (summaryStatIndex < 0 || summaryStatIndex > 21){
@@ -439,9 +468,6 @@ public class Catch22 implements Transformer {
             case 5:
             case 6:
             case 12:
-            case 16:
-            case 17:
-            case 20:
                 mean = mean(newSeries);
 
                 int nfft2 = (int) Math.pow(2.0, (int) Math.ceil(Math.log(newSeries.length) / Math.log(2)));
@@ -457,6 +483,27 @@ public class Catch22 implements Transformer {
                 fft = f2.transform(fft, TransformType.FORWARD);
 
                 ac = autoCorr(newSeries, fft);
+                break;
+            case 16:
+            case 17:
+            case 20:
+                mean = mean(newSeries);
+
+                int nfft3 = (int) Math.pow(2.0, (int) Math.ceil(Math.log(newSeries.length) / Math.log(2)));
+                fft = new Complex[nfft3];
+                for (int j = 0; j < nfft3; j++) {
+                    if (j < newSeries.length)
+                        fft[j] = new Complex(newSeries[j] - mean, 0);
+                    else
+                        fft[j] = new Complex(0, 0);
+                }
+
+                FastFourierTransformer f3 = new FastFourierTransformer(DftNormalization.STANDARD);
+                fft = f3.transform(fft, TransformType.FORWARD);
+
+                ac = autoCorr(newSeries, fft);
+
+                acfz = acFirstZero(ac);
                 break;
         }
 
@@ -512,10 +559,10 @@ public class Catch22 implements Transformer {
                 feature = motifThreeQuantileHhSB(newSeries);
                 break;
             case 16:
-                feature = localSimpleMean1TauresratFC(newSeries, ac);
+                feature = localSimpleMean1TauresratFC(newSeries, acfz);
                 break;
             case 17:
-                feature = embed2DistTauDExpfitMeandiffCO(newSeries, ac);
+                feature = embed2DistTauDExpfitMeandiffCO(newSeries, acfz);
                 break;
             case 18:
                 feature = fluctAnal2Dfa5012LogiPropR1SC(newSeries);
@@ -524,7 +571,7 @@ public class Catch22 implements Transformer {
                 feature = fluctAnal2Rsrangefit501LogiPropR1SC(newSeries);
                 break;
             case 20:
-                feature = transitionMatrix3acSumdiagcovSB(newSeries, ac);
+                feature = transitionMatrix3acSumdiagcovSB(newSeries, acfz);
                 break;
             case 21:
                 feature = periodicityWangTh001PD(newSeries);
@@ -749,26 +796,24 @@ public class Catch22 implements Transformer {
 
         ArrayList<ArrayList<Integer>> p = new ArrayList<>();
         int[] bins = new int[arr.length];
-        double q1 = arr.length / 3;
-        double q2 = q1 * 2;
+        int q1 = arr.length / 3;
+        int q2 = q1 * 2;
         p.add(new ArrayList<>());
         for (int i = 0; i <= q1; i++) {
-            bins[indicies[i]] = 0;
             p.get(0).add(indicies[i]);
         }
         p.add(new ArrayList<>());
-        for (int i = (int) Math.ceil(q1 + 0.1); i <= q2; i++) {
+        for (int i = q1 + 1; i <= q2; i++) {
             bins[indicies[i]] = 1;
             p.get(1).add(indicies[i]);
         }
         p.add(new ArrayList<>());
-        for (int i = (int) Math.ceil(q2 + 0.1); i < indicies.length; i++) {
+        for (int i = q2 + 1; i < indicies.length; i++) {
             bins[indicies[i]] = 2;
             p.get(2).add(indicies[i]);
         }
 
         double sum = 0;
-
         for (int i = 0; i < 3; i++) {
             ArrayList<Integer> o = p.get(i);
             o.remove((Integer) (arr.length - 1));
@@ -793,7 +838,7 @@ public class Catch22 implements Transformer {
     }
 
     // Change in correlation length after iterative differencing
-    private static double localSimpleMean1TauresratFC(double[] arr, double[] ac) {
+    private static double localSimpleMean1TauresratFC(double[] arr, int acfz) {
         if (arr.length - 1 < 1)
             return 0;
         double[] res = localSimpleMean(arr, 1);
@@ -813,12 +858,12 @@ public class Catch22 implements Transformer {
 
         double[] resAc = autoCorr(res, fft);
 
-        return (double) acFirstZero(resAc) / acFirstZero(ac);
+        return (double) acFirstZero(resAc) / acfz;
     }
 
     // Exponential fit to successive distances in 2-d embedding space
-    private static double embed2DistTauDExpfitMeandiffCO(double[] arr, double[] ac) {
-        int tau = acFirstZero(ac);
+    private static double embed2DistTauDExpfitMeandiffCO(double[] arr, int acfz) {
+        int tau = acfz;
         if (tau > arr.length / 10) {
             tau = arr.length / 10;
         }
@@ -835,12 +880,18 @@ public class Catch22 implements Transformer {
         double min = min(d);
         double max = max(d);
         double range = max - min;
-        int numBins = (int) Math.ceil(range / (3.5 * standardDeviation(d, false, dMean) /
+        double std = standardDeviation(d, false, dMean);
+
+        if (std == 0)
+            return Double.NaN;
+
+        int numBins = (int) Math.ceil(range / (3.5 * std /
                 Math.pow(d.length, 0.3333333333333333)));
         double binWidth = range / numBins;
 
-        if (numBins == 0)
-            return Double.NaN; // check this out
+        if (numBins == 0) {
+            return Double.NaN;
+        }
 
         double[] histogram = new double[numBins];
         for (double val : d) {
@@ -852,8 +903,8 @@ public class Catch22 implements Transformer {
 
         double sum = 0;
         for (int i = 0; i < numBins; i++) {
-            double center = ((min + binWidth * (i)) * 2 + binWidth) / 2;
-            double n = Math.exp((-center) / dMean) / dMean;
+            double center = ((min + binWidth * i) * 2 + binWidth) / 2;
+            double n = Math.exp(-center / dMean) / dMean;
             if (n < 0)
                 n = 0;
 
@@ -888,13 +939,11 @@ public class Catch22 implements Transformer {
     }
 
     // Trace of covariance of transition matrix between symbols in 3-letter alphabet
-    private static double transitionMatrix3acSumdiagcovSB(double[] arr, double[] ac) {
+    private static double transitionMatrix3acSumdiagcovSB(double[] arr, int acfz) {
         // int numGroups = 3;
-        int tau = acFirstZero(ac);
-        int dsSize = (arr.length - 1) / tau + 1;
-        double[] ds = new double[dsSize];
-        for (int i = 0; i < dsSize; i++) {
-            ds[i] = arr[i * tau];
+        double[] ds = new double[(arr.length - 1) / acfz + 1];
+        for (int i = 0; i < ds.length; i++) {
+            ds[i] = arr[i * acfz];
         }
 
         GenericTools.SortIndexAscending sort = new GenericTools.SortIndexAscending(ds);
@@ -902,26 +951,23 @@ public class Catch22 implements Transformer {
         Arrays.sort(indicies, sort);
 
         int[] bins = new int[ds.length];
-        double q1 = ds.length / 3;
-        double q2 = q1 * 2;
-        for (int i = 0; i <= q1; i++) {
-            bins[indicies[i]] = 0;
-        }
-        for (int i = (int) Math.ceil(q1 + 0.1); i <= q2; i++) {
+        int q1 = ds.length / 3;
+        int q2 = q1 * 2;
+        for (int i = q1 + 1; i <= q2; i++) {
             bins[indicies[i]] = 1;
         }
-        for (int i = (int) Math.ceil(q2 + 0.1); i < indicies.length; i++) {
+        for (int i = q2 + 1; i < indicies.length; i++) {
             bins[indicies[i]] = 2;
         }
 
         double[][] t = new double[3][3];
-        for (int i = 0; i < dsSize - 1; i++) {
+        for (int i = 0; i < ds.length - 1; i++) {
             t[bins[i + 1]][bins[i]] += 1;
         }
 
         for (int i = 0; i < 3; i++) {
             for (int n = 0; n < 3; n++) {
-                t[i][n] /= (dsSize - 1);
+                t[i][n] /= (ds.length - 1);
             }
         }
 
@@ -980,10 +1026,10 @@ public class Catch22 implements Transformer {
             double slopeIn = acf[i] - acf[i - 1];
             double slopeOut = acf[i + 1] - acf[i];
 
-            if (slopeIn < 0 & slopeOut > 0) {
+            if (slopeIn < 0 && slopeOut > 0) {
                 troughs[nTroughs] = i;
                 nTroughs += 1;
-            } else if (slopeIn > 0 & slopeOut < 0) {
+            } else if (slopeIn > 0 && slopeOut < 0) {
                 peaks[nPeaks] = i;
                 nPeaks += 1;
             }
@@ -991,27 +1037,15 @@ public class Catch22 implements Transformer {
 
         int out = 0;
         for (int i = 0; i < nPeaks; i++) {
-            int iPeak = peaks[i];
-            double thePeak = acf[iPeak];
-
             int j = -1;
-            while (troughs[j + 1] < iPeak && j + 1 < nTroughs) {
+            while (troughs[j + 1] < peaks[i] && j + 1 < nTroughs) {
                 j++;
             }
-            if (j == -1) {
-                continue;
-            }
 
-            int iTrough = troughs[j];
-            double theTrough = acf[iTrough];
-
-            if (thePeak - theTrough < 0.01)
+            if (j == -1 || acf[peaks[i]] - acf[troughs[j]] < 0.01 || acf[peaks[i]] < 0)
                 continue;
 
-            if (thePeak < 0)
-                continue;
-
-            out = iPeak;
+            out = peaks[i];
             break;
         }
 
@@ -1020,6 +1054,11 @@ public class Catch22 implements Transformer {
 
     private static double histogramMode(double[] arr, int numBins, double min, double max) {
         double binWidth = (max - min) / numBins;
+
+        if (binWidth == 0) {
+            return Double.NaN;
+        }
+
         double[] histogram = new double[numBins];
         for (double val : arr) {
             int idx = (int) ((val - min) / binWidth);
@@ -1037,13 +1076,14 @@ public class Catch22 implements Transformer {
         int numMaxs = 1;
         double maxSum = 0;
         for (int i = 0; i < numBins; i++) {
+            double v = (edges[i] + edges[i + 1]) / 2;
             if (histogram[i] > maxCount) {
                 maxCount = histogram[i];
                 numMaxs = 1;
-                maxSum = (edges[i] + edges[i + 1]) * 0.5;
+                maxSum = v;
             } else if (histogram[i] == maxCount) {
                 numMaxs += 1;
-                maxSum += (edges[i] + edges[i + 1]) * 0.5;
+                maxSum += v;
             }
         }
 
@@ -1069,7 +1109,6 @@ public class Catch22 implements Transformer {
     private static double outlierInclude(double[] arr) {
         double total = 0;
         double threshold = 0;
-
         for (double v : arr) {
             if (v >= 0) {
                 total++;
@@ -1106,7 +1145,6 @@ public class Catch22 implements Transformer {
 
             means[i] = mean(diff);
             dists[i] = diff.length * 100.0 / total;
-
             medians[i] = median(r, false) / (arr.length / 2.0) - 1;
         }
 
@@ -1137,8 +1175,10 @@ public class Catch22 implements Transformer {
 
         double[] acf = new double[arr.length];
         double d = c[0].getReal();
-        for (int i = 0; i < arr.length; i++) {
-            acf[i] = c[i].getReal() / d;
+        if (d != 0) {
+            for (int i = 0; i < arr.length; i++) {
+                acf[i] = c[i].getReal() / d;
+            }
         }
 
         return acf;
@@ -1147,15 +1187,17 @@ public class Catch22 implements Transformer {
     private static double summariesWelchRect(double[] arr, boolean centroid, Complex[] fft) {
         int newLength = fft.length / 2 + 1;
         double[] p = new double[newLength];
-        p[0] = (Math.pow(complexMagnitude(fft[0]), 2) / arr.length) / (2 * Math.PI);
+        double pi2 = 2 * Math.PI;
+        p[0] = (Math.pow(complexMagnitude(fft[0]), 2) / arr.length) / pi2;
         for (int i = 1; i < newLength - 1; i++) {
-            p[i] = ((Math.pow(complexMagnitude(fft[i]), 2) / arr.length) * 2) / (2 * Math.PI);
+            p[i] = ((Math.pow(complexMagnitude(fft[i]), 2) / arr.length) * 2) / pi2;
         }
-        p[newLength - 1] = (Math.pow(complexMagnitude(fft[newLength - 1]), 2) / arr.length) / (2 * Math.PI);
+        p[newLength - 1] = (Math.pow(complexMagnitude(fft[newLength - 1]), 2) / arr.length) / pi2;
 
         double[] w = new double[newLength];
+        double a = 1.0 / fft.length;
         for (int i = 0; i < newLength; i++) {
-            w[i] = i * (1.0 / fft.length) * Math.PI * 2;
+            w[i] = i * a * Math.PI * 2;
         }
 
         if (centroid) {
@@ -1183,6 +1225,10 @@ public class Catch22 implements Transformer {
         }
     }
 
+    private static double complexMagnitude(Complex c){
+        return Math.sqrt(c.getReal() * c.getReal() + c.getImaginary() * c.getImaginary());
+    }
+
     private static double[] localSimpleMean(double[] arr, int trainLength) {
         double[] res = new double[arr.length - trainLength];
         for (int i = 0; i < res.length; i++) {
@@ -1197,7 +1243,7 @@ public class Catch22 implements Transformer {
 
     private static int acFirstZero(double[] ac) {
         for (int i = 1; i < ac.length; i++) {
-            if (ac[i] < 0) {
+            if (ac[i] <= 0) {
                 return i;
             }
         }
@@ -1225,7 +1271,6 @@ public class Catch22 implements Transformer {
             return Double.NaN;
 
         double[] f = new double[nTau];
-
         for (int i = 0; i < nTau; i++) {
             int tau = a.get(i);
             int buffSize = arr.length / tau;
@@ -1315,7 +1360,7 @@ public class Catch22 implements Transformer {
             sumy += y[i];
         }
 
-        double denom = (n * sumx2 - sumx * sumx);
+        double denom = n * sumx2 - sumx * sumx;
         if (denom != 0) {
             co[0] = (n * sumxy - sumx * sumy) / denom;
             co[1] = (sumy * sumx2 - sumx * sumxy) / denom;
@@ -1335,6 +1380,7 @@ public class Catch22 implements Transformer {
         int[] h0 = { breaks[1] - breaks[0], breaks[2] - breaks[1] };
         int[] hCopy = { h0[0], h0[1], h0[0], h0[1] };
         int[] hl = { hCopy[3], hCopy[2], hCopy[1] };
+        int[] hr = { hCopy[0], hCopy[1], hCopy[2] };
 
         int[] hlCS = new int[3];
         hlCS[0] = hl[0];
@@ -1346,8 +1392,6 @@ public class Catch22 implements Transformer {
         for (int i = 0; i < 3; i++) {
             bl[i] = breaks[0] - hlCS[i];
         }
-
-        int[] hr = { hCopy[0], hCopy[1], hCopy[2] };
 
         int[] hrCS = new int[3];
         hrCS[0] = hr[0];
@@ -1379,7 +1423,7 @@ public class Catch22 implements Transformer {
 
         int[][] ii = new int[4][8];
         for (int i = 0; i < 8; i++) {
-            ii[0][i] = Math.min(i, 7);
+            ii[0][i] = i;
             ii[1][i] = Math.min(1 + i, 7);
             ii[2][i] = Math.min(2 + i, 7);
             ii[3][i] = Math.min(3 + i, 7);
@@ -1434,6 +1478,7 @@ public class Catch22 implements Transformer {
                     coeffs[i][j] -= coeffs[3 + i][j];
                 }
             }
+
             for (int i = 0; i < 32; i += 4) {
                 coeffs[i][k] = 0;
             }
@@ -1444,11 +1489,11 @@ public class Catch22 implements Transformer {
             scale[i] = 1;
         }
         for (int k = 0; k < 3; k++) {
-            for (int i = 0; i < (32); i++) {
+            for (int i = 0; i < 32; i++) {
                 scale[i] /= H[i];
             }
-            for (int i = 0; i < (32); i++) {
-                coeffs[i][(3) - (k + 1)] *= scale[i];
+            for (int i = 0; i < 32; i++) {
+                coeffs[i][3 - (k + 1)] *= scale[i];
             }
         }
 
@@ -1470,17 +1515,16 @@ public class Catch22 implements Transformer {
 
         double[][] coeffsOut = new double[8][4];
         for (int i = 0; i < 8; i++) {
-            int jj_flat = jj[i % 4][i / 4] - 1;
-            System.arraycopy(coeffs[jj_flat], 0, coeffsOut[i], 0, 4);
+            coeffsOut[i] = coeffs[jj[i % 4][i / 4] - 1];
         }
 
         int[] xsB = new int[arr.length * 4];
         int[] indexB = new int[xsB.length];
-
         int breakInd = 1;
         for (int i = 0; i < arr.length; i++) {
             if (i >= breaks[1] & breakInd < 2)
-                breakInd += 1;
+                breakInd++;
+
             for (int j = 0; j < 4; j++) {
                 xsB[i * 4 + j] = i - breaks[breakInd - 1];
                 indexB[i * 4 + j] = j + (breakInd - 1) * 4;
@@ -1506,8 +1550,6 @@ public class Catch22 implements Transformer {
             A[(i % 4) + breakInd + (i / 4) * 5] = vB[i];
         }
 
-        double[] x = new double[5];
-
         double[] AT = new double[A.length];
         double[] ATA = new double[25];
         double[] ATb = new double[5];
@@ -1532,19 +1574,14 @@ public class Catch22 implements Transformer {
         }
 
         double[][] AElim = new double[5][5];
-        double[] bElim = new double[5];
-
         for (int i = 0; i < 5; i++) {
             System.arraycopy(ATA, i * 5, AElim[i], 0, 5);
-
-            bElim[i] = ATb[i];
         }
 
         for (int i = 0; i < 5; i++) {
             for (int j = i + 1; j < 5; j++) {
                 double factor = AElim[j][i] / AElim[i][i];
-
-                bElim[j] = bElim[j] - factor * bElim[i];
+                ATb[j] = ATb[j] - factor * ATb[i];
 
                 for (int k = i; k < 5; k++) {
                     AElim[j][k] = AElim[j][k] - factor * AElim[i][k];
@@ -1552,8 +1589,9 @@ public class Catch22 implements Transformer {
             }
         }
 
+        double[] x = new double[5];
         for (int i = 4; i >= 0; i--) {
-            double bMinusATemp = bElim[i];
+            double bMinusATemp = ATb[i];
             for (int j = i + 1; j < 5; j++) {
                 bMinusATemp -= x[j] * AElim[i][j];
             }
@@ -1563,20 +1601,13 @@ public class Catch22 implements Transformer {
 
         double[][] C = new double[5][8];
         for (int i = 0; i < 32; i++) {
-            int CRow = i % 4 + (i / 4) % 2;
-            int CCol = i / 4;
-
-            int coefRow = i % (8);
-            int coefCol = i / (8);
-
-            C[CRow][CCol] = coeffsOut[coefRow][coefCol];
+            C[i % 4 + (i / 4) % 2][i / 4] = coeffsOut[i % 8][i / 8];
         }
 
         double[][] coeffsSpline = new double[2][4];
         for (int j = 0; j < 8; j++) {
             int coefCol = j / 2;
             int coefRow = j % 2;
-
             for (int i = 0; i < 5; i++) {
                 coeffsSpline[coefRow][coefCol] += C[i][j] * x[i];
             }
@@ -1596,9 +1627,5 @@ public class Catch22 implements Transformer {
         }
 
         return yOut;
-    }
-
-    private static double complexMagnitude(Complex c){
-        return Math.sqrt(c.getReal() * c.getReal() + c.getImaginary() * c.getImaginary());
     }
 }

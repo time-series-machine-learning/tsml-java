@@ -174,6 +174,10 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
      */
     public enum TrainEstimateMethod {CV,OOB,TRAIN,NONE}
     protected TrainEstimateMethod trainEstimateMethod = TrainEstimateMethod.NONE;
+    public void setTrainEstimateMethod(TrainEstimateMethod t){
+        trainEstimateMethod=t;
+    }
+
     public void setTrainEstimateMethod(String str){
         String s=str.toUpperCase();
         if(s.equals("CV"))

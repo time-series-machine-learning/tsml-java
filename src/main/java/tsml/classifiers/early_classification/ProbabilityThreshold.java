@@ -14,6 +14,7 @@
  */
 package tsml.classifiers.early_classification;
 
+import com.carrotsearch.hppc.IntIntHashMap;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.Randomizable;
@@ -31,7 +32,9 @@ import static utilities.Utilities.argMax;
 public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomizable {
 
     private double threshold = 0.85;
+    private int consecutivePredictions = 1;
 
+    private IntIntHashMap predCounts;
     private int finalIndex;
 
     private int seed = 0;
@@ -40,6 +43,8 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
     public ProbabilityThreshold() { }
 
     public void setThreshold(double d) { threshold = d; }
+
+    public void setConsecutivePredictions(int i) { consecutivePredictions = i; }
 
     public void setSeed(int i) { seed = i; }
 
@@ -54,6 +59,31 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
 
     @Override
     public boolean decide(int thresholdIndex, double[] probabilities) {
-        return (thresholdIndex == finalIndex || probabilities[argMax(probabilities, rand)] > threshold);
+        if (thresholdIndex == finalIndex) return true;
+        if (thresholdIndex == 0) predCounts = new IntIntHashMap();
+
+        int pred = argMax(probabilities, rand);
+        if (probabilities[pred] > threshold) {
+            if (consecutivePredictions < 2){
+                return true;
+            }
+
+            int count = predCounts.get(pred);
+            if (count == 0) {
+                predCounts.clear();
+                predCounts.put(pred, 1);
+            } else {
+                count++;
+                if (count >= consecutivePredictions) {
+                    predCounts.clear();
+                    return true;
+                } else {
+                    predCounts.put(pred, count);
+                    return false;
+                }
+            }
+        }
+
+        return false;
     }
 }

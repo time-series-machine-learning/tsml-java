@@ -137,65 +137,70 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {
         //even if all else fails, print the args as a sanity check for cluster.
-        if (!beQuiet) {
-            System.out.println("Raw args:");
-            for (String str : args)
-                System.out.println("\t"+str);
-            System.out.println("");
-        }
 
         if (args.length > 0) {
-            ExperimentalArguments expSettings = new ExperimentalArguments(args);
-            setupAndRunExperiment(expSettings);
+            Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(args);
+            Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=30;
-            String[] settings=new String[9];
+            int start=3;
+            int folds = 3;
 
             /*
              * Change these settings for your experiment:
              */
-//            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
-//            String classifier=classifiers[2];
-            String classifier="STC";//Classifier name: See ClassifierLists for valid options
+            //Experiment Parameters, see
 
-            settings[0]="-dp=C:\\Data Working Area\\Datasets"; //Where to get datasets
-            settings[1]="-rp=C:\\Experiments\\Results\\"; //Where to write results
-            settings[2]="-gtf=false"; //Whether to generate train files or not
-            settings[3]="-cn="+classifier; //Classifier name
-            settings[4]="-dn="; //Problem name, don't change here as it is overwritten by probFiles
-            settings[5]="-f=1"; //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[6]="-ctr=600s"; //Time contract
-            settings[7]="-d=true"; //Debugging
-            settings[8]="--force=true"; //Overwrites existing results if true, otherwise set to false
+            String[] classifier = {"HIVE-COTEv2"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
+            ArrayList<String> parameters = new ArrayList<>();
+            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
+//            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
+            //parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
+            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-gtf=true"); //Whether to generate train files or not
+            parameters.add("-cn=" + classifier[0]); //Classifier name
+            parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
+            parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            parameters.add("-d=true"); //Debugging
+            parameters.add("-ctr=1h"); //Whether to generate train files or not
+            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
+            //            parameters.add("-ctr=3m"); //contract time, default in hours
 
-            String[] probFiles= {"ItalyPowerDemand"}; //Problem name(s)
-//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+
+            String[] settings = new String[parameters.size()];
+            int count = 0;
+            for (String str : parameters)
+                settings[count++] = str;
+
+
+            //            String[] probFiles= univariate; //Problem name(s)
+            //            String[] probFiles= univariate; //{"ArrowHead"}; //Problem name(s)
+//           String[] probFiles= {"ChinaTown"}; //Problem name(s)
+            //           String[] probFiles = DatasetLists.equalLengthProblems;
+            //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            String[] probFiles ={"ElectricDevices"};
             /*
              * END OF SETTINGS
              */
-
             System.out.println("Manually set args:");
             for (String str : settings)
-                System.out.println("\t"+str);
+                System.out.println("\t" + str);
             System.out.println("");
 
-            boolean threaded=true;
+            boolean threaded = false;
             if (threaded) {
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with "+expSettings);
-//              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},null,probFiles,0,folds);
-            }
-            else {//Local run without args, mainly for debugging
-                for (String prob:probFiles) {
-                    settings[4]="-dn="+prob;
-
-                    for(int i=1;i<=folds;i++) {
-                        settings[5]="-f="+i;
-                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-//                      System.out.println("Sequential experiment with "+expSettings);
-                        setupAndRunExperiment(expSettings);
+                Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                System.out.println("Threaded experiment with " + expSettings);
+                //             setupAndRunMultipleExperimentsThreaded(expSettings, classifier,probFiles,0,folds);
+                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier, null, probFiles, 0, folds);
+            } else {//Local run without args, mainly for debugging
+                for (String prob : probFiles) {
+                    settings[4] = "-dn=" + prob;
+                    for (int i = start; i <= folds; i++) {
+                        settings[5] = "-f=" + i;
+                        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                        //                      System.out.println("Sequential experiment with "+expSettings);
+                        Experiments.setupAndRunExperiment(expSettings);
                     }
                 }
             }

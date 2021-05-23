@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package tsml.classifiers;
 
 import java.io.File;
@@ -55,11 +55,11 @@ public interface Interpretable {
      * @param path String directory path
      * @return true if folder is created successfully, false otherwise
      */
-    default boolean createInterpretabilityDirectories(String path){
+    default boolean createInterpretabilityDirectories(String path) {
         File f = new File(path);
-        boolean success=true;
-        if(!f.isDirectory())
-            success=f.mkdirs();
+        boolean success = true;
+        if (!f.isDirectory())
+            success = f.mkdirs();
         return success;
     }
 }

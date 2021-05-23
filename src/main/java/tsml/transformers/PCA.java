@@ -200,7 +200,7 @@ public class PCA implements TrainableTransformer {
         attributesToKeep_dims = new int[split.size()];
         trainLabels = data.getClassLabels();
 
-        for(int i=0; i<data.getMaxNumChannels(); i++){
+        for(int i=0; i<data.getMaxNumDimensions(); i++){
             pca_transforms[i] = new PrincipalComponents();
             pca = pca_transforms[i]; //set the ref.
 
