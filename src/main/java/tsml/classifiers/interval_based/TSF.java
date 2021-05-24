@@ -213,36 +213,44 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * Primary parameters potentially tunable
      */
+
     private int numClassifiers = DEFAULT_NUM_CLASSIFIERS;
+
     /**
      * numIntervalsFinder sets numIntervals in buildClassifier.
      */
     private int numIntervals = 0;
     private transient Function<Integer, Integer> numIntervalsFinder;
+
     /**
      * Secondary parameter, mainly there to avoid single item intervals,
      * which have no slope or std dev
      */
     private int minIntervalLength = 3;
+
     /**
      * Ensemble members of base classifier, default to random forest RandomTree
      */
     private ArrayList<Classifier> trees;
     private Classifier classifier = new ContinuousIntervalTree();
+
     /**
      * for each classifier [i]  interval j  starts at intervals[i][j][0] and
      * ends  at  intervals[i][j][1]
      */
     private ArrayList<int[][]> intervals;
+
     /**
      * Holding variable for test classification in order to retain the header info
      */
     private Instances testHolder;
+
     /**
      * voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting
      */
     private boolean voteEnsemble = true;
+
     /**
      * Flags and data required if Bagging
      **/
@@ -250,6 +258,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private ArrayList<boolean[]> inBag;
     private int[] oobCounts;
     private double[][] trainDistributions;
+
     /**** Checkpointing variables *****/
     private boolean checkpoint = false;
     private String checkpointPath = null;
@@ -358,7 +367,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         if (!data.isEqualLength()) {
             // pad with 0s
-            TimeSeriesInstances padded = data.padWithZerosOrMissing(data.getMaxLength(), true);
+            TimeSeriesInstances padded = data.padWithZerosOrMissing(data.getMaxLength());
             data = padded;
         }
 
@@ -857,7 +866,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         // check if unequal length
         if (seriesLength > ins.getMaxLength()) {
             // pad with 0s
-            TimeSeriesInstance zeroPadded = ins.padWithZerosOrMissing(seriesLength, true);
+            TimeSeriesInstance zeroPadded = ins.padWithZerosOrMissing(seriesLength);
             ins = zeroPadded;
         }
 

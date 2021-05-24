@@ -816,10 +816,9 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
      * Function to pad data up (inclusive) maxLength with '0' or '?' values.
      *
      * @param newMaxLength the length to pad to
-     * @param padWithZeros true: pad with 0s, false: pad with missing vals
      * @return padded TimeSeriesInstance object
      */
-    public TimeSeriesInstance padWithZerosOrMissing(final int newMaxLength, boolean padWithZeros) {
+    public TimeSeriesInstance padWithZerosOrMissing(final int newMaxLength) {
         double[][] temp = new double[getNumDimensions()][newMaxLength];
 
         // for each dimension
@@ -834,7 +833,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
                 }
                 // if out of bounds, replace with '0' or '?'
                 catch (IndexOutOfBoundsException e) {
-                    value = padWithZeros ? 0 : Double.NaN;
+                    value = 0;
                 }
 
                 temp[i][j] = value;
