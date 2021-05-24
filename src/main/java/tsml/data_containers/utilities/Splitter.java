@@ -68,7 +68,7 @@ public class Splitter{
     //horizontally slice into univariate TimeSeriesInstances.
     //can slice {{0},{1,2}}
     public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst, int[][] slicingIndexes){
-        List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumChannels());
+        List<TimeSeriesInstances> output = new ArrayList<>(inst.getMaxNumDimensions());
 
         for(int[] i : slicingIndexes){
             TimeSeriesInstances temp = new TimeSeriesInstances(inst.getHSliceArray(i), inst.getClassIndexes(), inst.getClassLabels());
@@ -79,7 +79,7 @@ public class Splitter{
     }
 
     public static List<TimeSeriesInstances> splitTimeSeriesInstances(TimeSeriesInstances inst){
-        int[][] indexes = new int[inst.getMaxNumChannels()][];
+        int[][] indexes = new int[inst.getMaxNumDimensions()][];
         for(int i=0; i< indexes.length; i++)
             indexes[i] = new int[]{i};
         return splitTimeSeriesInstances(inst, indexes);

@@ -9,7 +9,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
-import tsml.classifiers.shapelet_based.Arsenal;
+import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;

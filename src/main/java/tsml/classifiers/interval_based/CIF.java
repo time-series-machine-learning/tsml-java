@@ -373,7 +373,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         else {
             seriesLength = data.getMaxLength();
             numInstances = data.numInstances();
-            numDimensions = data.getMaxNumChannels();
+            numDimensions = data.getMaxNumDimensions();
 
             if (numIntervalsFinder == null) {
                 numIntervals = (int) (Math.sqrt(seriesLength) * Math.sqrt(numDimensions));

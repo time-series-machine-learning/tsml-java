@@ -370,7 +370,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         //initialise variables
         else {
             numInstances = data.numInstances();
-            numDimensions = data.getMaxNumChannels();
+            numDimensions = data.getMaxNumDimensions();
 
             numIntervals = new int[representations.length];
             minIntervalLength = new int[representations.length];

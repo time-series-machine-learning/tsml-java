@@ -15,7 +15,7 @@
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package tsml.classifiers.shapelet_based;
+package tsml.classifiers.kernel_based;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;

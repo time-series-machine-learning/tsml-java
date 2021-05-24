@@ -47,7 +47,27 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
-    //TSC data sets added since 2018 release
+	//Slow problems for contract testing
+	String[] slowProblems={
+			"StarLightCurves",
+			"FaceAll",
+			"UWaveGestureLibraryAll",
+			"UWaveGestureLibraryX",
+			"UWaveGestureLibraryZ",
+			"UWaveGestureLibraryY",
+			"HandOutlines",
+			"ShapesAll",
+			"PhalangesOutlinesCorrect",
+			"Crop",
+			"ElectricDevices",
+			"FordA",
+			"FordB",
+			"NonInvasiveFetalECGThorax1",
+			"NonInvasiveFetalECGThorax2"
+	};
+
+
+	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
 	public static String[] newForHC2Paper= {
 			"AllGestureWiimoteX",
