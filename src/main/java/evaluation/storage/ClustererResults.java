@@ -847,12 +847,12 @@ public class ClustererResults implements DebugPrinting, Serializable {
 
     public String statsToString() {
         String s = "";
-        s += "Clustering Accuracy:" + accuracy;
-        s += "\nRand Index:" + ri;
-        s += "\nAdjusted Rand Index:" + ari;
-        s += "\nMutual Information:" + mi;
-        s += "\nNormalised Mutual Information:" + nmi;
-        s += "\nAdjusted Mutual Information:" + ami;
+        s += "Clustering Accuracy: " + accuracy;
+        s += "\nRand Index: " + ri;
+        s += "\nAdjusted Rand Index: " + ari;
+        s += "\nMutual Information: " + mi;
+        s += "\nNormalised Mutual Information: " + nmi;
+        s += "\nAdjusted Mutual Information: " + ami;
         return s;
     }
 
