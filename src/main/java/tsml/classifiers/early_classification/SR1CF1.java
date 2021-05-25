@@ -126,7 +126,7 @@ public class SR1CF1 extends EarlyDecisionMaker implements Randomizable, Loadable
     }
 
     private void findP(){
-        double[] pVals = linSpace(numParamValues, -1, 1);
+        double[] pVals = linSpace(numParamValues, -1.0, 1.0);
         double bestGain = 0;
         double[] bestP = null;
         for (double v : pVals) {

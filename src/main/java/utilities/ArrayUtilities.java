@@ -223,6 +223,29 @@ public class ArrayUtilities {
         return sum(array) / array.length;
     }
 
+    public static double std(double[] array){
+        double mean = mean(array);
+        double squareSum = 0;
+
+        for (double v : array) {
+            double temp = v - mean;
+            squareSum += temp * temp;
+        }
+
+        return Math.sqrt(squareSum/(array.length-1));
+    }
+
+    public static double std(double[] array, double mean){
+        double squareSum = 0;
+
+        for (double v : array) {
+            double temp = v - mean;
+            squareSum += temp * temp;
+        }
+
+        return Math.sqrt(squareSum/(array.length-1));
+    }
+
     public static void divide(int[] array, int divisor) {
         for(int i = 0; i < array.length; i++) {
             array[i] /= divisor;

@@ -162,9 +162,6 @@ public class ShapeletSearch implements Serializable{
         //we need to detect whether it's multivariate or univariate.
         //this feels like a hack. BOO.
         //one relational and a class att.
-        //TODO: Tony says: this is both a hack and incorrect: it is counting the class value.
-        //TODO: Aaron says: it doesn't count class Value. as we do the calculation seriesLength - Length + 1 for no. shapelets.
-        //but because we do -1 for the class value +1 and -1 cancel out. leaving seriesLength - Length... See line 172...
         seriesLength = setSeriesLength();
     }
 
@@ -184,7 +181,6 @@ public class ShapeletSearch implements Serializable{
     //given a series and a function to find a shapelet 
     public ArrayList<Shapelet> searchForShapeletsInSeries(TimeSeriesInstance timeSeries, ProcessCandidateTS checkCandidate){
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
-        
         //for univariate this will just evaluate all shapelets
         for (int length = minShapeletLength; length <= maxShapeletLength; length+=lengthIncrement) {
             //for all possible starting positions of that length. -1 to remove classValue but would be +1 (m-l+1) so cancel.
@@ -208,12 +204,12 @@ public class ShapeletSearch implements Serializable{
     //given a series and a function to find a shapelet 
     public ArrayList<Shapelet> searchForShapeletsInSeries(Instance timeSeries, ProcessCandidate checkCandidate){
         ArrayList<Shapelet> seriesShapelets = new ArrayList<>();
-        
+
         //for univariate this will just evaluate all shapelets
         for (int length = minShapeletLength; length <= maxShapeletLength; length+=lengthIncrement) {
             //for all possible starting positions of that length. -1 to remove classValue but would be +1 (m-l+1) so cancel.
             for (int start = 0; start < seriesLength - length; start+=positionIncrement) {
-                //for univariate this will be just once.
+                //for univariate OR MULTIVARIATE DEPENDENT this will be just once.
                 for(int dim = 0; dim < numDimensions; dim++)   {
                     Shapelet shapelet = checkCandidate.process(getTimeSeries(timeSeries,dim), start, length, dim);
                     if (shapelet != null) {
@@ -223,8 +219,10 @@ public class ShapeletSearch implements Serializable{
                 }
             }
         }
-        
+
         seriesCount++;
+//        System.out.println("HERE: shapelet count = "+seriesShapelets.size()+" series count = "+seriesCount);
+//        System.out.println("HERE:min  = "+minShapeletLength+" max =  = "+maxShapeletLength+" increment = "+lengthIncrement+" series length = "+seriesLength);
         return seriesShapelets;
     }
     public int getMinShapeletLength(){

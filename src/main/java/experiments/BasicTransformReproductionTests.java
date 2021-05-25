@@ -64,6 +64,7 @@ public class BasicTransformReproductionTests {
         tsTransformers + "Differences",
         tsTransformers + "PowerSpectrum",
         tsTransformers + "ROCKET",
+        tsTransformers + "Fast_FFT",
 
     };
 

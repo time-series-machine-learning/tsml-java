@@ -67,7 +67,6 @@ public interface TrainableTransformer extends Transformer {
     default Instances transform(Instances data){
         if(!isFit())
             fit(data);
-
         return Transformer.super.transform(data);
     }
 
