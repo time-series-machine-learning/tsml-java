@@ -876,7 +876,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         for (int i = 0; i < trees.size(); i++) {
             for (int j = 0; j < numIntervals; j++) {
                 // get sliced series
-                TimeSeries tsAtInterval = ins.get(0).getVSlice(intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                double[] tsAtInterval = ins.get(0).getVSliceArray(intervals.get(i)[j][0], intervals.get(i)[j][1]);
 
                 // get stats about data
                 double mean = TimeSeriesSummaryStatistics.mean(tsAtInterval);
