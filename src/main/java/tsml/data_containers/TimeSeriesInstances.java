@@ -719,25 +719,15 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
     public TimeSeriesInstances padWithZerosOrMissing(final int newMaxLength) {
         double[][][] temp = new double[numInstances()][getMaxNumDimensions()][newMaxLength];
 
-        // for each instance
-        for (int i = 0; i < temp.length; i++) {
-            // for each dimension
-            for (int j = 0; j < temp[i].length; j++) {
-                // for each time series
-                for (int k = 0; k < temp[i][j].length; k++) {
-                    double value;
+        // for each TimeSeriesInstance
+        for (int i = 0; i < seriesCollection.size(); i++) {
+            TimeSeriesInstance tsi = seriesCollection.get(i);
 
-                    // try and get val
-                    try {
-                        value = seriesCollection.get(i).get(j).getValue(k);
-                    }
-                    // if out of bounds, replace with '0' or '?'
-                    catch (IndexOutOfBoundsException e) {
-                        value = 0;
-                    }
-
-                    temp[i][j][k] = value;
-                }
+            // for each dimension within the TimeSeriesInstance
+            for (int j = 0; j < tsi.getNumDimensions(); j++) {
+                // copy over values from series
+                double[] series = tsi.get(j).toValueArray();
+                System.arraycopy(series, 0, temp[i][j], 0, series.length);
             }
         }
 

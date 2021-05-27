@@ -822,22 +822,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
         double[][] temp = new double[getNumDimensions()][newMaxLength];
 
         // for each dimension
-        for (int i = 0; i < temp.length; i++) {
-            // for each series
-            for (int j = 0; j < temp[i].length; j++) {
-                double value;
-
-                // try and get val
-                try {
-                    value = seriesDimensions.get(i).getValue(j);
-                }
-                // if out of bounds, replace with '0' or '?'
-                catch (IndexOutOfBoundsException e) {
-                    value = 0;
-                }
-
-                temp[i][j] = value;
-            }
+        for (int i = 0; i < getNumDimensions(); i++) {
+            // copy over values from series
+            double[] series = seriesDimensions.get(i).toValueArray();
+            System.arraycopy(series, 0, temp[i], series.length - 1, series.length);
         }
 
         TimeSeriesInstance padded = new TimeSeriesInstance(temp, getLabelIndex());
