@@ -357,7 +357,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
     public static void main(String[] args) throws Exception {
         int fold = 0;
 
-        Instances[] data = DatasetLoading.sampleDataset("E:\\Datasets\\Univariate_arff\\", "Adiac", fold);
+        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
         Instances train = data[0];
         Instances test = data[1];
 
@@ -382,13 +382,13 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         System.out.println("Estimate time on ItalyPowerDemand fold " + fold + " = " +
                 TimeUnit.SECONDS.convert(c.trainResults.getErrorEstimateTime(), TimeUnit.NANOSECONDS) + " seconds");
 
-//        c = new Arsenal();
-//        c.seed = fold;
-//        c.buildClassifier(train2);
-//        accuracy = ClassifierTools.accuracy(test2, c);
-//
-//        System.out.println("Arsenal accuracy on ERing fold " + fold + " = " + accuracy);
-//        System.out.println("Build time on ERing fold " + fold + " = " +
-//                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
+        c = new Arsenal();
+        c.seed = fold;
+        c.buildClassifier(train2);
+        accuracy = ClassifierTools.accuracy(test2, c);
+
+        System.out.println("Arsenal accuracy on ERing fold " + fold + " = " + accuracy);
+        System.out.println("Build time on ERing fold " + fold + " = " +
+                TimeUnit.SECONDS.convert(c.trainResults.getBuildTime(), TimeUnit.NANOSECONDS) + " seconds");
     }
 }
