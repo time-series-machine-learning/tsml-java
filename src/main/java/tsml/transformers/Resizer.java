@@ -366,10 +366,6 @@ public class Resizer implements TrainableTransformer {
     public static class FlatPadMetric implements IPadMetric {
         private final int padValue;
 
-        public FlatPadMetric() {
-            this.padValue = 0;
-        }
-
         public FlatPadMetric(int value) {
             this.padValue = value;
         }
