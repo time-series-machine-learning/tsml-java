@@ -1,22 +1,19 @@
-name: Build and test using gradle
+name: gradle build and test
 on: [push]
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
     steps:
+      # print all github info (e.g. branch name, commit id, etc)
       - run: |
-          echo "trigger: ${{ github.event_name }}"
+          echo "github: ${{ toJSON(github) }}"
+      # print all runner (host pc) info (e.g. os, etc)
       - run: |
-          echo "os: ${{ runner.os }}"
-      - run: |
-          echo "repo: ${{ github.repository }}"
-      - run: |
-          echo "branch: ${{ github.ref }}"
-      - run: |
-          echo "info: ${{ github }}"
+          echo "runner: ${{ toJSON(runner) }}"
       - name: gradle build and test
         uses: actions/checkout@v2
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - run: |
+          echo "job completed: ${{ job.status }}."
