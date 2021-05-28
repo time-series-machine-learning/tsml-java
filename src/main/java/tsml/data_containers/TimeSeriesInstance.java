@@ -813,26 +813,6 @@ public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
     }
 
     /**
-     * Function to pad data up (inclusive) maxLength with '0' or '?' values.
-     *
-     * @param newMaxLength the length to pad to
-     * @return padded TimeSeriesInstance object
-     */
-    public TimeSeriesInstance padWithZerosOrMissing(final int newMaxLength) {
-        double[][] temp = new double[getNumDimensions()][newMaxLength];
-
-        // for each dimension
-        for (int i = 0; i < getNumDimensions(); i++) {
-            // copy over values from series
-            double[] series = seriesDimensions.get(i).toValueArray();
-            System.arraycopy(series, 0, temp[i], 0, series.length);
-        }
-
-        TimeSeriesInstance padded = new TimeSeriesInstance(temp, getLabelIndex());
-        return padded;
-    }
-
-    /**
      * Returns whether a TimeSeriesInstance object is equal to another based if
      * label index is equal, target value is equal and series are equal.
      *
