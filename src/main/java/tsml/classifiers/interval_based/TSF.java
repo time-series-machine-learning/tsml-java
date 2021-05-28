@@ -27,6 +27,7 @@ import tsml.classifiers.*;
 import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
+import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -252,6 +253,11 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private boolean voteEnsemble = true;
 
     /**
+     * Resizer to transform data if unequal length
+     */
+    private Resizer resizer;
+
+    /**
      * Flags and data required if Bagging
      **/
     private boolean bagging = false; //Use if we want an OOB estimate
@@ -367,7 +373,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
 
         if (!data.isEqualLength()) {
             // pad with 0s
-            TimeSeriesInstances padded = data.padWithZerosOrMissing(data.getMaxLength());
+            resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
+            TimeSeriesInstances padded = resizer.fitTransform(data);
             data = padded;
         }
 
@@ -866,8 +873,8 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         // check if unequal length
         if (seriesLength > ins.getMaxLength()) {
             // pad with 0s
-            TimeSeriesInstance zeroPadded = ins.padWithZerosOrMissing(seriesLength);
-            ins = zeroPadded;
+            TimeSeriesInstance padded = resizer.transform(ins);
+            ins = padded;
         }
 
         double[] classProbability = new double[getTSTrainData().getClassLabels().length]; // length of class variables
