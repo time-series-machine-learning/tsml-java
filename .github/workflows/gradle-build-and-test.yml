@@ -12,38 +12,9 @@ jobs:
       - name: runner info
         run: |
           echo "${{ toJSON(runner) }}"
-      # use github actions
-      - uses: actions/checkout@v2
-      # setup AdoptOpenJDK v8
-      - name: set up jdk
-        uses: actions/setup-java@v2
-        with:
-          java-version: '8'
-          distribution: 'adopt'
-      # add a cache for the gradle pkgs (speeds up build times by avoiding redownloading jars / libs)
-      - name: cache gradle packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      # build the project
-      - name: build with gradle
-        run: ./gradlew build
-      # test the project
-      - name: test with gradle
-        run: ./gradlew test
-      # cleanup the cache so multiple jobs don't interfere with each other (but can use the same cache / pkgs in cache)
-      - name: cleanup gradle cache
-        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-        run: |
-          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-          rm -f ~/.gradle/caches/modules-2/gc.properties
-        uses: actions/checkout@v2
+
+      
+
       # what's the outcome?
       - run: |
           echo "job completed: ${{ job.status }}."
