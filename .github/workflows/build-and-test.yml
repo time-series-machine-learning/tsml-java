@@ -1,0 +1,22 @@
+name: Build and test using gradle
+on: [push]
+jobs:
+  buildAndTest:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "trigger: ${{ github.event_name }}"
+      - run: |
+          echo "os: ${{ runner.os }}"
+      - run: |
+          echo "repo: ${{ github.repository }}"
+      - run: |
+          echo "branch: ${{ github.ref }}"
+      - run: |
+          echo "info: ${{ github }}"
+      - name: gradle build and test
+        uses: actions/checkout@v2
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
