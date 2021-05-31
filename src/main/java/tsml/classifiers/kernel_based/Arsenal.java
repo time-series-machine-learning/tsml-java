@@ -53,7 +53,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
     private Classifier cls = new RidgeClassifierCV();
 
     private boolean bagging = false;
-    private int[] oobCounts;
+    private double[] oobCounts;
     private double[][] trainDistributions;
 
     private long trainContractTimeNanos = 0;
@@ -65,6 +65,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
 
     private Classifier[] classifiers;
     private ROCKET[] rockets;
+    private double weightSum;
     private Instances header;
 
     public Arsenal() {
@@ -152,7 +153,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
         if (getEstimateOwnPerformance()) {
             trainDistributions = new double[numInstances][numClasses];
             if (bagging) {
-                oobCounts = new int[numInstances];
+                oobCounts = new double[numInstances];
             } else {
                 numFolds = Math.min(data.numInstances(), 10);
             }
@@ -160,6 +161,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
 
         ArrayList<Classifier> tempCls = new ArrayList<>();
         ArrayList<ROCKET> tempROCKET = new ArrayList<>();
+        weightSum = 0;
 
         int i = 0;
         while (i < ensembleSize && withinTrainContract(trainResults.getBuildTime())) {
@@ -201,6 +203,9 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             tempCls.add(c);
             tempROCKET.add(r);
 
+            double w = cls instanceof RidgeClassifierCV ? Math.pow(((RidgeClassifierCV) c).getBestScore(), 4) : 1;
+            weightSum += w;
+
             if (getEstimateOwnPerformance()) {
                 long t1 = System.nanoTime();
 
@@ -212,9 +217,9 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
                         Instance inst = r.transform(data.get(n));
                         inst.setDataset(transformedData);
                         double[] newProbs = c.distributionForInstance(inst);
-                        oobCounts[n]++;
+                        oobCounts[n] += w;
                         for (int j = 0; j < newProbs.length; j++)
-                            trainDistributions[n][j] += newProbs[j];
+                            trainDistributions[n][j] += newProbs[j] * w;
                     }
                 } else if (trainEstimateMethod != TrainEstimateMethod.OOB) {
                     CrossValidationEvaluator cv = new CrossValidationEvaluator();
@@ -230,7 +235,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
                     for (int n = 0; n < numInstances; n++) {
                         double[] dist = results.getProbabilityDistribution(n);
                         for (int j = 0; j < trainDistributions[n].length; j++)
-                            trainDistributions[n][j] += dist[j];
+                            trainDistributions[n][j] += dist[j] * w;
                     }
                 }
 
@@ -290,7 +295,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             for (int j = 0; j < data.numInstances(); j++) {
                 long predTime = System.nanoTime();
                 for (int k = 0; k < trainDistributions[j].length; k++)
-                    trainDistributions[j][k] /= data.numInstances();
+                    trainDistributions[j][k] /= weightSum;
                 preds[j] = findIndexOfMax(trainDistributions[j], rand);
                 actuals[j] = data.get(j).classValue();
                 predTimes[j] = System.nanoTime() - predTime;
@@ -300,7 +305,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
             trainResults.setClassifierName("ArsenalCV");
-            trainResults.setErrorEstimateMethod("CV_10"); //numfolds
+            trainResults.setErrorEstimateMethod("CV_10");
         } else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             Arsenal ar = new Arsenal();
             ar.copyParameters(this);
@@ -326,18 +331,16 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
 
     public double[] distributionForInstance(Instance instance) throws Exception {
         double[] probs = new double[header.numClasses()];
-        double sum = 0;
         for (int i = 0; i < classifiers.length; i++) {
             Instance transformedInst = rockets[i].transform(instance);
             transformedInst.setDataset(header);
-            double pls = classifiers[i].classifyInstance(transformedInst);
-            double s = cls instanceof RidgeClassifierCV ?
+            double pred = classifiers[i].classifyInstance(transformedInst);
+            double w = cls instanceof RidgeClassifierCV ?
                     Math.pow(((RidgeClassifierCV) classifiers[i]).getBestScore(), 4) : 1;
-            probs[(int) pls] += s;
-            sum += s;
+            probs[(int) pred] += w;
         }
 
-        for (int i = 0; i < probs.length; i++) probs[i] /= sum;
+        for (int i = 0; i < probs.length; i++) probs[i] /= weightSum;
         return probs;
     }
 

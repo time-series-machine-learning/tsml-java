@@ -1212,7 +1212,7 @@ public class Experiments  {
                         exp.foldId = fold;
 
                         // enforce that if a classifier instance has been provided, it's nulled to avoid
-                        // the same instance being accessed across multipel threads
+                        // the same instance being accessed across multiple threads
                         exp.classifier = null;
 
                         if (classifierGenerators != null && classifierGenerators.get(i) != null)
