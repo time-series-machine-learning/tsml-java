@@ -275,6 +275,11 @@ public class DatasetLoading {
         File trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.arff");
         File testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.arff");
         boolean predefinedSplitsExist = trainFile.exists() && testFile.exists();
+        if (!predefinedSplitsExist){ //.arff files dont exist, look for .ts
+            trainFile = new File(parentFolder + problem + "/" + problem + fold + "_TRAIN.ts");
+            testFile = new File(parentFolder + problem + "/" + problem + fold + "_TEST.ts");
+            predefinedSplitsExist = trainFile.exists() && testFile.exists();
+        }
         if (predefinedSplitsExist) {
             // CASE 1)
             data[0] = loadDataThrowable(trainFile);
@@ -285,6 +290,11 @@ public class DatasetLoading {
             trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.arff");
             testFile = new File(parentFolder + problem + "/" + problem + "_TEST.arff");
             boolean predefinedFold0Exists = trainFile.exists() && testFile.exists();
+            if (!predefinedFold0Exists){ //.arff files dont exist, look for .ts
+                trainFile = new File(parentFolder + problem + "/" + problem + "_TRAIN.ts");
+                testFile = new File(parentFolder + problem + "/" + problem + "_TEST.ts");
+                predefinedFold0Exists = trainFile.exists() && testFile.exists();
+            }
             if (predefinedFold0Exists) {
                 // CASE 2)
                 data[0] = loadDataThrowable(trainFile);
