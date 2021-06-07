@@ -47,25 +47,54 @@ import java.util.zip.ZipOutputStream;
  */
 public class DatasetLists {
 
+	//Slow problems for contract testing
+	String[] slowProblems={
+			"StarLightCurves",
+			"FaceAll",
+			"UWaveGestureLibraryAll",
+			"UWaveGestureLibraryX",
+			"UWaveGestureLibraryZ",
+			"UWaveGestureLibraryY",
+			"HandOutlines",
+			"ShapesAll",
+			"PhalangesOutlinesCorrect",
+			"Crop",
+			"ElectricDevices",
+			"FordA",
+			"FordB",
+			"NonInvasiveFetalECGThorax1",
+			"NonInvasiveFetalECGThorax2"
+	};
+
+
 	//TSC data sets added since 2018 release
 	//<editor-fold defaultstate="collapsed" desc=" new univariate tsc Problems">
-	public static String[] newUnivariate= {
-			"AsphaltObstacles",
-			"AsphaltPavementType",
-			"AsphaltRegularity",
+	public static String[] newForHC2Paper= {
+			"AllGestureWiimoteX",
+			"AllGestureWiimoteY",
+			"AllGestureWiimoteZ",
+            "AsphaltObstacles",
+            "AsphaltPavementType",
+            "AsphaltRegularity",
 			"Colposcopy",
-			"SharePriceIncrease",
-			"RightWhaleCalls",
-			"CatsDogs",
-			"AbnormalHeartbeat",
-			"DucksAndGeese",
-			"UrbanSound",
-			"FruitFlies",
-			"BinaryHeartbeat",
-			"InsectSound",
-			"MosquitoSound",
-			"ElectricDeviceDetection"
+			"ElectricDeviceDetection",
+			"GestureMidAirD1",
+			"GestureMidAirD2",
+			"GestureMidAirD3",
+			"GesturePebbleZ1",
+			"GesturePebbleZ2",
+            "MITBIH-Heartbeat",
+			"PickupGestureWiimoteZ",
+			"PLAID",
+            "AconityMINIPrinterLarge",
+            "AconityMINIPrinterSmall",
+            "PyrometerLaserScanLarge",
+            "PyrometerLaserScanSmall",
+			"ShakeGestureWiimoteZ",
+			"SharePriceIncrease"
 	};
+
+
 	//</editor-fold>
 
 
@@ -269,6 +298,9 @@ public class DatasetLists {
 
 	//<editor-fold defaultstate="collapsed" desc="Variable length univariate datasets">
 	public static String[] variableLengthUnivariate ={
+			"AsphaltObstacles",
+			"AsphaltPavementType",
+			"AsphaltRegularity",
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
         "AllGestureWiimoteZ",
@@ -283,7 +315,8 @@ public class DatasetLists {
    };
 	//</editor-fold>
 
-	int[][] minMaxUnivariate={{11,385,2,369},
+	int[][] minMaxUnivariate={
+			{11,385,2,369},
 	{8,369,2,385},
 	{33,326,2,385},
 	{80,360,80,360},
@@ -1550,7 +1583,10 @@ tiianic
 
 public static String[] notNormalised={"ArrowHead","Beef","BeetleFly","BirdChicken","Coffee","Computers","Cricket_X","Cricket_Y","Cricket_Z","DistalPhalanxOutlineAgeGroup","DistalPhalanxOutlineCorrect","DistalPhalanxTW","ECG200","Earthquakes","ElectricDevices","FordA","FordB","Ham","Herring","LargeKitchenAppliances","Meat","MiddlePhalanxOutlineAgeGroup","MiddlePhalanxOutlineCorrect","MiddlePhalanxTW","OliveOil","PhalangesOutlinesCorrect","Plane","ProximalPhalanxOutlineAgeGroup","ProximalPhalanxOutlineCorrect","ProximalPhalanxTW","RefrigerationDevices","ScreenType","ShapeletSim","ShapesAll","SmallKitchenAppliances","Strawberry","ToeSegmentation1","ToeSegmentation2","UWaveGestureLibraryAll","UWaveGestureLibrary_Z","Wine","Worms","WormsTwoClass","fish"};
 
-  public static void processUCRData(String problemPath){
+
+
+
+	public static void processUCRData(String problemPath){
       System.out.println(" nos files ="+tscProblems46.length);
       String s;
       for(int str=39;str<43;str++){
@@ -2074,12 +2110,12 @@ public static void describeTextFiles(){
    
    
 public static void main(String[] args) throws Exception{
+	String problemPath="Z:\\Results Working Area\\HIVE-COTE\\New Univariate Datasets\\";
+	dataDescription(DatasetLists.newForHC2Paper,problemPath);
+	System.exit(0);
   	for(String str:newProblems27)
 		System.out.println(str);
 
-	System.exit(0);
-    String problemPath="E:\\Data\\ConcatenatedMTSC\\";
-    dataDescription(mtscProblems2018,problemPath);
     String path="E:\\Data\\TSCProblems2018\\";
     makeUpLoadFile("Z:\\Data\\MultivariateTSCProblems\\formattedUpload.csv","Z:\\Data\\MultivariateTSCProblems\\upload.csv");
     OutFile of = new OutFile("C:\\temp\\TSCNoMissing.txt");

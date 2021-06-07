@@ -85,7 +85,8 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     /** Filter that normalized the attributes */
     protected Normalize normalize = null;
 
-    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
+    protected static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpointing
+
 
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos =0;
@@ -265,6 +266,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
     // only allow real valued series and classification. To be adjusted
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
     //Set up the results file
         super.buildClassifier(data);
         String relationName=data.relationName();
@@ -467,7 +469,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
         }
         trainResults.setBuildTime(System.nanoTime()-startTime);
         trainResults.setParas(getParameters());
-        printLineDebug("*************** Finished Contract RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
+//        printLineDebug("*************** Finished Contract RotF Build with " + numTrees + " Trees built in " + (System.nanoTime() - startTime) / 1000000000 + " Seconds  ***************");
 
     }
 

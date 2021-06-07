@@ -16,53 +16,43 @@
  */
 package experiments;
 
-import com.google.common.testing.GcFinalization;
-import machine_learning.classifiers.SaveEachParameter;
-import machine_learning.classifiers.tuned.TunedRandomForest;
-import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import tsml.classifiers.*;
+import com.google.common.testing.GcFinalization;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
-import tsml.classifiers.early_classification.AbstractEarlyClassifier;
-import weka.classifiers.Classifier;
-import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.evaluators.StratifiedResamplesEvaluator;
+import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
+import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.tuned.TunedRandomForest;
+import tsml.classifiers.*;
+import tsml.classifiers.distance_based.utils.strings.StrUtils;
+import tsml.classifiers.early_classification.AbstractEarlyClassifier;
+import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Randomizable;
 
+import java.io.*;
+import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static utilities.GenericTools.indexOfMax;
-import static utilities.InstanceTools.*;
+import static utilities.InstanceTools.truncateInstance;
+import static utilities.InstanceTools.truncateInstances;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -137,65 +127,70 @@ public class Experiments  {
      */
     public static void main(String[] args) throws Exception {
         //even if all else fails, print the args as a sanity check for cluster.
-        if (!beQuiet) {
-            System.out.println("Raw args:");
-            for (String str : args)
-                System.out.println("\t"+str);
-            System.out.println("");
-        }
 
         if (args.length > 0) {
-            ExperimentalArguments expSettings = new ExperimentalArguments(args);
-            setupAndRunExperiment(expSettings);
+            Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(args);
+            Experiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=30;
-            String[] settings=new String[9];
+            int start=3;
+            int folds = 3;
 
             /*
              * Change these settings for your experiment:
              */
-//            String[] classifiers={"TSF_I","RISE_I","STC_I","CBOSS_I","HIVE-COTEn_I"};
-//            String classifier=classifiers[2];
-            String classifier="STC";//Classifier name: See ClassifierLists for valid options
+            //Experiment Parameters, see
 
-            settings[0]="-dp=C:\\Data Working Area\\Datasets"; //Where to get datasets
-            settings[1]="-rp=C:\\Experiments\\Results\\"; //Where to write results
-            settings[2]="-gtf=false"; //Whether to generate train files or not
-            settings[3]="-cn="+classifier; //Classifier name
-            settings[4]="-dn="; //Problem name, don't change here as it is overwritten by probFiles
-            settings[5]="-f=1"; //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
-            settings[6]="-ctr=600s"; //Time contract
-            settings[7]="-d=true"; //Debugging
-            settings[8]="--force=true"; //Overwrites existing results if true, otherwise set to false
+            String[] classifier = {"HC2"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
+            ArrayList<String> parameters = new ArrayList<>();
+            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
+//            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
+            //parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
+            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-gtf=true"); //Whether to generate train files or not
+            parameters.add("-cn=" + classifier[0]); //Classifier name
+            parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
+            parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            parameters.add("-d=true"); //Debugging
+            parameters.add("-ctr=1h"); //Whether to generate train files or not
+            parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
+            //            parameters.add("-ctr=3m"); //contract time, default in hours
 
-            String[] probFiles= {"ItalyPowerDemand"}; //Problem name(s)
-//            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+
+            String[] settings = new String[parameters.size()];
+            int count = 0;
+            for (String str : parameters)
+                settings[count++] = str;
+
+
+            //            String[] probFiles= univariate; //Problem name(s)
+            //            String[] probFiles= univariate; //{"ArrowHead"}; //Problem name(s)
+//           String[] probFiles= {"ChinaTown"}; //Problem name(s)
+            //           String[] probFiles = DatasetLists.equalLengthProblems;
+            //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
+            String[] probFiles ={"ElectricDevices"};
             /*
              * END OF SETTINGS
              */
-
             System.out.println("Manually set args:");
             for (String str : settings)
-                System.out.println("\t"+str);
+                System.out.println("\t" + str);
             System.out.println("");
 
-            boolean threaded=true;
+            boolean threaded = false;
             if (threaded) {
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with "+expSettings);
-//              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},null,probFiles,0,folds);
-            }
-            else {//Local run without args, mainly for debugging
-                for (String prob:probFiles) {
-                    settings[4]="-dn="+prob;
-
-                    for(int i=1;i<=folds;i++) {
-                        settings[5]="-f="+i;
-                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-//                      System.out.println("Sequential experiment with "+expSettings);
-                        setupAndRunExperiment(expSettings);
+                Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                System.out.println("Threaded experiment with " + expSettings);
+                //             setupAndRunMultipleExperimentsThreaded(expSettings, classifier,probFiles,0,folds);
+                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, classifier, null, probFiles, 0, folds);
+            } else {//Local run without args, mainly for debugging
+                for (String prob : probFiles) {
+                    settings[4] = "-dn=" + prob;
+                    for (int i = start; i <= folds; i++) {
+                        settings[5] = "-f=" + i;
+                        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                        //                      System.out.println("Sequential experiment with "+expSettings);
+                        Experiments.setupAndRunExperiment(expSettings);
                     }
                 }
             }
@@ -602,11 +597,23 @@ public class Experiments  {
      *      otherwise null.
      *
      */
-    private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) {
+    private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Classifier classifier, Instances train) throws Exception {
         String parameterFileName = null;
 
-        if (classifier instanceof Randomizable)
-            ((Randomizable)classifier).setSeed(expSettings.foldId);
+        if (classifier instanceof Randomizable && expSettings.useSeed)
+            if (expSettings.seed > Integer.MIN_VALUE)
+                ((Randomizable)classifier).setSeed(expSettings.seed);
+            else
+                ((Randomizable)classifier).setSeed(expSettings.foldId);
+
+        if (classifier instanceof MultiThreadable && expSettings.numberOfThreads != 1)
+            if (expSettings.numberOfThreads < 1)
+                ((MultiThreadable)classifier).enableMultiThreading();
+            else
+                ((MultiThreadable)classifier).enableMultiThreading(expSettings.numberOfThreads);
+
+        if (classifier instanceof AbstractClassifier && expSettings.classifierOptions != null)
+            ((AbstractClassifier)classifier).setOptions(expSettings.classifierOptions);
 
         // Parameter/thread/job splitting and checkpointing are treated as mutually exclusive, thus if/else
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
@@ -1040,6 +1047,13 @@ public class Experiments  {
         @Parameter(names={"-d","--debug"}, arity=1, description = "(boolean) Increases verbosity and turns on the printing of debug statements")
         public boolean debug = false;
 
+        @Parameter(names={"-s","--seed"}, arity=1, description = "(int) seed for the classifier. If not set the foldId is used as the seed unless --useSeed is set to false.")
+        public int seed = Integer.MIN_VALUE;
+
+        @Parameter(names={"-us","--useSeed"}, arity=1, description = "(boolean) Whether to use the foldId or seed (if set) for the classifier, defaults to true. If false "
+                + "prevents the classifiers setSeed() from being called.")
+        public boolean useSeed = true;
+
         @Parameter(names={"-gtf","--genTrainFiles"}, arity=1, description = "(boolean) Turns on the production of trainFold[fold].csv files, the results of which are calculate either via a cross validation of "
                 + "the train data, or if a classifier implements the TrainAccuracyEstimate interface, the classifier will write its own estimate via its own means of evaluation.")
         public boolean generateErrorEstimateOnTrainSet = false;
@@ -1053,12 +1067,12 @@ public class Experiments  {
         public boolean checkpointing = false;
         public long checkpointInterval = 0;
 
-        @Parameter(names={"-vis","--visualisation"}, description = "(boolean) Turns on the production of visualisation files, if the classifier implements the Visualisable interface. "
+        @Parameter(names={"-vis","--visualisation"}, arity=1, description = "(boolean) Turns on the production of visualisation files, if the classifier implements the Visualisable interface. "
                 + "Figures are created using Python. Exact requirements are to be determined, but a a Python 3.7 installation is the current recommendation with the numpy and matplotlib packages installed on the global environment. "
                 + "The classifier by default will write its visualisation files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         public boolean visualise = false;
 
-        @Parameter(names={"-int","--interpretability"}, description = "(boolean) Turns on the production of interpretability files, if the classifier implements the Interpretable interface. "
+        @Parameter(names={"-int","--interpretability"}, arity=1, description = "(boolean) Turns on the production of interpretability files, if the classifier implements the Interpretable interface. "
                 + "The classifier by default will write its interpretability files to workspace path parallel to the --resultsPath, unless another path is optionally supplied to --supportingFilePath.")
         public boolean interpret = false;
 
@@ -1084,6 +1098,15 @@ public class Experiments  {
                 + "as well as the full prediction information, and requires the most disk space. 1 writes the first three lines and a list of the performance metrics calculated from the prediction info. 2 writes the first three lines only, and "
                 + "requires the least space. Use options other than 0 if generating too many files with too much prediction information for the disk space available, however be aware that there is of course a loss of information.")
         public int classifierResultsFileFormat = 0;
+
+        @Parameter(names={"-nt","--numberOfThreads"}, arity=1, description = "(int) Number of threads to be set for MultiThreadable classifiers, defaults to 1. If set to"
+                + " < 1, Runtime.getRuntime().availableProcessors()-1 threads are used.")
+        public int numberOfThreads = 1;
+
+        @Parameter(names={"-co","--classifierOptions"}, arity=1, description = "(String) Classifier specific comma delimited options string to be split and passed to a"
+                + " classifiers setOptions() method. Each option should have the parameter name/tag, a comma and then the parameter value for each options i.e. T,500,I,0.5")
+        private String classifierOptionsStr = null;
+        public String[] classifierOptions = null;
 
         @Parameter(names={"-ctr","--contractTrain"}, description = "(String) Defines a time limit for the training of the classifier if it implements the TrainTimeContractClassifier interface. Defaults to "
                 + "no contract time. If an integral value is given, it is assumed to be in HOURS. Otherwise, a string of the form [int][char] can be supplied, with the [char] defining the time unit. "
@@ -1189,7 +1212,7 @@ public class Experiments  {
                         exp.foldId = fold;
 
                         // enforce that if a classifier instance has been provided, it's nulled to avoid
-                        // the same instance being accessed across multipel threads
+                        // the same instance being accessed across multiple threads
                         exp.classifier = null;
 
                         if (classifierGenerators != null && classifierGenerators.get(i) != null)
@@ -1241,7 +1264,7 @@ public class Experiments  {
                     System.err.println("Parsing of arguments failed, parameter information follows after the error. Parameters that require values should have the flag and value separated by '='.");
                     System.err.println("For example: java -jar TimeSeriesClassification.jar -dp=data/path/ -rp=results/path/ -cn=someClassifier -dn=someDataset -f=0");
                     System.err.println("Parameters prefixed by a * are REQUIRED. These are the first five parameters, which are needed to run a basic experiment.");
-                    System.err.println("Error: \n\t"+e+"\n\n");
+                    System.err.println("Error: \n\t" + e + "\n\n");
                 }
                 jc.usage();
 //                Thread.sleep(1000); //usage can take a second to print for some reason?... no idea what it's actually doing
@@ -1259,13 +1282,16 @@ public class Experiments  {
                 // is it simply "true"?
 
                 checkpointing = Boolean.parseBoolean(checkpointingStr.toLowerCase());
-                if(!checkpointing){
+                if (!checkpointing) {
                     //it's not. must be a timing string
                     checkpointing = true;
                     checkpointInterval = parseTiming(checkpointingStr);
 
                 }
-          }
+            }
+
+            if (classifierOptionsStr != null)
+                classifierOptions = classifierOptionsStr.split(",");
 
             //populating the contract times if present
             if (contractTrainTimeString != null)
@@ -1273,30 +1299,30 @@ public class Experiments  {
             if (contractTestTimeString != null)
                 contractTestTimeNanos = parseTiming(contractTestTimeString);
 
-            if(contractTrainTimeNanos > 0) {
+            if (contractTrainTimeNanos > 0) {
                 trainContracts.add(String.valueOf(contractTrainTimeNanos));
                 trainContracts.add(TimeUnit.NANOSECONDS.toString());
             }
 
             // check the contracts are in ascending order // todo sort them
-            for(int i = 1; i < trainContracts.size(); i += 2) {
+            for (int i = 1; i < trainContracts.size(); i += 2) {
                 trainContracts.set(i, trainContracts.get(i).toUpperCase());
             }
             long prev = -1;
-            for(int i = 0; i < trainContracts.size(); i += 2) {
+            for (int i = 0; i < trainContracts.size(); i += 2) {
                 long nanos = TimeUnit.NANOSECONDS.convert(Long.parseLong(trainContracts.get(i)),
                         TimeUnit.valueOf(trainContracts.get(i + 1)));
-                if(prev > nanos) {
+                if (prev > nanos) {
                     throw new IllegalArgumentException("contracts not in asc order");
                 }
                 prev = nanos;
             }
 
-            if(trainContracts.size() % 2 != 0) {
+            if (trainContracts.size() % 2 != 0) {
                 throw new IllegalStateException("illegal number of args for time");
             }
 
-            if(logLevelStr != null) {
+            if (logLevelStr != null) {
                 logLevel = Level.parse(logLevelStr);
             }
         }
