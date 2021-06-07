@@ -187,7 +187,9 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
                 }
             }
 
+            int noFolds = Math.min(probData.numInstances(), 10);
             probData.randomize(rand);
+            probData.stratify(noFolds);
 
             double bestAccuracy = -1;
             for (double svmGamma : SVM_GAMMAS) {
@@ -200,9 +202,9 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
                 svmCandidate.setCacheSize(40);
 
                 double correct = 0;
-                for (int n = 0; n < 10; n++){
-                    Instances cvTrain = probData.trainCV(10, n);
-                    Instances cvTest = probData.testCV(10, n);
+                for (int n = 0; n < noFolds; n++){
+                    Instances cvTrain = probData.trainCV(noFolds, n);
+                    Instances cvTest = probData.testCV(noFolds, n);
                     LibSVM svmCV = (LibSVM)AbstractClassifier.makeCopy(svmCandidate);
                     svmCV.buildClassifier(cvTrain);
 

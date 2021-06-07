@@ -50,7 +50,7 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
     private String loadPath;
     private ClassifierResults[] loadedResults;
     private int testInstanceCounter = 0;
-    private int lastIdx = -1;
+    private int lastIdx = Integer.MIN_VALUE;
 
     public EarlyDecisionMakerClassifier(Classifier classifier, EarlyDecisionMaker decisionMaker){
         this.classifier = classifier;
@@ -94,13 +94,6 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         else {
             int length = data.numAttributes() - 1;
             for (int i = 0; i < thresholds.length; i++) {
-                if (thresholds[i] < 3) {
-                    thresholds = Arrays.copyOfRange(thresholds, 1, thresholds.length);
-                    classifiers = new Classifier[thresholds.length];
-                    i--;
-                    continue;
-                }
-
                 Instances newData = truncateInstances(data, length, thresholds[i]);
                 if (normalise) newData = zNormaliseWithClass(newData);
 
@@ -139,10 +132,11 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         Instance newData = instance;
         if (normalise) newData = zNormaliseWithClass(instance);
 
-        if (loadFromFile){
+        if (loadFromFile) {
+            if (idx <= lastIdx)
+                testInstanceCounter++;
             probs = loadedResults[idx].getProbabilityDistribution(testInstanceCounter);
             decision = decisionMaker.decide(idx, probs);
-            if (idx <= lastIdx) testInstanceCounter++;
             lastIdx = idx;
         }
         else {

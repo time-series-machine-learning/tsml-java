@@ -991,7 +991,13 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] earlyClassification= {"TEASER","eSTC"};
+    public static String[] earlyClassification= {"TEASER","eSTC",
+            "P85-CIF","TEASER-CIF","SR1CF1-CIF","P85-DrCIF","TEASER-DrCIF","SR1CF1-DrCIF","P85-TDE","TEASER-TDE",
+            "SR1CF1-TDE","P85-STC","TEASER-STC","SR1CF1-STC","P85-ROCKET","TEASER-ROCKET","SR1CF1-ROCKET",
+            "P85-catch22","TEASER-catch22","SR1CF1-catch22","P85-TSF","TEASER-TSF","SR1CF1-TSF","P85-RISE",
+            "TEASER-RISE","SR1CF1-RISE","P85-Arsenal","TEASER-Arsenal","SR1CF1-Arsenal","P85-cBOSS","TEASER-cBOSS",
+            "SR1CF1-cBOSS", "P85-HC1","TEASER-HC1","SR1CF1-HC1","P85-HC2","TEASER-HC2","SR1CF1-HC2"
+    };
     public static HashSet<String> earlyClassifiers=new HashSet<String>( Arrays.asList(earlyClassification));
     private static Classifier setEarlyClassifiers(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -1012,6 +1018,154 @@ public class ClassifierLists {
             case "eSTC":
                 c = new ShapeletTransformEarlyClassifier();
                 break;
+
+            case "P85-CIF":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "CIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-DrCIF":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "DrCIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-TDE":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TDE\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-STC":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "STC\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-ROCKET":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "ROCKET\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-catch22":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "catch22\\vPredictions\\" + dataset + "\\");
+                break;
+            case "P85-TSF":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TSF\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-RISE":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "RISE\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-Arsenal":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "Arsenal\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-cBOSS":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "cBOSS\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-HC1":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC1\\Predictions\\" + dataset + "\\");
+                break;
+            case "P85-HC2":
+                c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC2\\Predictions\\" + dataset + "\\");
+                break;
+
+            case "TEASER-CIF":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "CIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-DrCIF":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "DrCIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-TDE":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TDE\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-STC":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "STC\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-ROCKET":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "ROCKET\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-catch22":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "catch22\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-TSF":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TSF\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-RISE":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "RISE\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-Arsenal":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "Arsenal\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-cBOSS":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "cBOSS\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-HC1":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC1\\Predictions\\" + dataset + "\\");
+                break;
+            case "TEASER-HC2":
+                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC2\\Predictions\\" + dataset + "\\");
+                break;
+
+            case "SR1CF1-CIF":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "CIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-DrCIF":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "DrCIF\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-TDE":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TDE\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-STC":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "STC\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-ROCKET":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "ROCKET\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-catch22":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "catch22\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-TSF":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "TSF\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-RISE":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "RISE\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-Arsenal":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "Arsenal\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-cBOSS":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "cBOSS\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-HC1":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC1\\Predictions\\" + dataset + "\\");
+                break;
+            case "SR1CF1-HC2":
+                c = new EarlyDecisionMakerClassifier(null, new SR1CF1());
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC2\\Predictions\\" + dataset + "\\");
+                break;
+
 
             default:
                 System.out.println("Unknown bespoke classifier, should not be able to get here ");
