@@ -135,6 +135,7 @@ Lead: Anthony Bagnall (@TonyBagnall, `@tony_bagnall <https://twitter.com/tony_ba
 * Patrick Schäfer (@patrickzib)
 * Chang Wei Tan (@ChangWeiTan)
 * Alejandro Pasos Ruiz (a.pasos-ruiz@uea.ac.uk)
+* Conor Egan (@c-eg)
 
 We welcome anyone who would like to contribute their algorithms! 
 
