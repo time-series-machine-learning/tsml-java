@@ -407,7 +407,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public String getParameters() {
-        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",alpha,"+alpha;
+        String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",alpha,"+alpha+
+                ",seedClassifier,"+seedClassifier+",seed,"+seed;
         if (trainTimeContract) str += ",contractTime(hrs),"+trainContractTimeNanos/1000000000/60/60.0;
 
         for (EnsembleModule module : modules)
