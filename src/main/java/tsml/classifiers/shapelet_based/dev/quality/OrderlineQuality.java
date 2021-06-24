@@ -14,15 +14,16 @@ import java.util.List;
 
 public class OrderlineQuality extends ShapeletQualityFunction {
 
-    public OrderlineQuality(TimeSeriesInstances instances,
-                            ShapeletDistanceFunction distance){
-        super(instances,distance);
+    public OrderlineQuality(TimeSeriesInstances instances){
+        super(instances);
     }
 
     @Override
-    public double calculate(ShapeletMV candidate) {
+    public double calculate(ShapeletDistanceFunction distance, ShapeletMV candidate) {
 
 
+        int[] classIndexes = trainInstances.getClassIndexes();
+        int[] classCounts = trainInstances.getClassCounts();
 
         // create orderline by looping through data set and calculating the subsequence
         // distance from candidate to all data, inserting in order.
@@ -34,7 +35,7 @@ public class OrderlineQuality extends ShapeletQualityFunction {
 
 
 
-            double d = distance.calculate(candidate,trainInstances.get(i));
+            double d = distance.calculate(candidate, trainInstances.get(i));
 
             //this could be binarised or normal.
             double classVal = classIndexes[i];

@@ -1,7 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.type;
 
 import tsml.data_containers.TimeSeriesInstance;
-import utilities.ClusteringUtilities;
 
 public class ShapeletIndependentMV extends ShapeletSingle {
 
@@ -21,12 +20,11 @@ public class ShapeletIndependentMV extends ShapeletSingle {
 
 
     public void setData(TimeSeriesInstance instance) {
-            this.data = new double[length];
-            for (int i=0;i<length;i++){
-                    this.data[i] = instance.get(this.seriesIndex).get(start+i);
-            }
-        ClusteringUtilities.zNormalise(this.data);
-
+        this.data = new double[length];
+        for (int i=0;i<length;i++){
+            this.data[i] = instance.get(this.seriesIndex).get(start+i);
+        }
+        this.data = NORMALIZE.rescaleSeries(this.data);
     }
 
     public double[] getData(){
@@ -37,14 +35,18 @@ public class ShapeletIndependentMV extends ShapeletSingle {
     public double getDistanceToInstance(int start, TimeSeriesInstance instance) {
         double sum = 0;
         double temp = 0;
-        double a,b,ab;
+        double a=0,b=0,ab=0 ;
         for (int i = 0; i < length; i++)
         {
             temp = data[i] - instance.get(seriesIndex).get(start+i);
+            ab +=  (data[i] * instance.get(seriesIndex).get(start+i));
+            a += (data[i]*data[i]);
+            b += (instance.get(seriesIndex).get(start+i)*instance.get(seriesIndex).get(start+i));
 
             sum = sum + (temp * temp);
         }
-        return sum;
+        return Math.sqrt(sum);
+    //    return ab / (Math.sqrt(a)*Math.sqrt(b));
     }
 
 

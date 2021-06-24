@@ -552,7 +552,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 //            String basePath = "Z:/Results/FinalisedUCIContinuous/";
 
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "analysisTSC2", 1);
+            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-TSC", 1);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -572,8 +572,13 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                  "STC"
                , "MSTC_D", "MSTC_I", "MSTC-SER", "ENS-MSTC_I"
         }, basePath);*/
-        mcc.readInClassifiers(new String[] {/*"HC 1.0","RISE","TSF","cBOSS" */"STC"
-               ,"ENS-MSTC_I" ,"MSTC-PAR4-OL_I"
+        mcc.readInClassifiers(new String[] {/*"HC 1.0","RISE","TSF","cBOSS" */
+                "STC"
+               ,"MSTC_I"
+                ,"MSTC-OL_I"
+                ,"MSTC-BIN_I"
+                ,"MSTC-CLASS_I"
+         //      ,"ENS-MSTC_I"
 
         }, basePath);
 //        mcc.readInClassifier("RandF", basePath); //

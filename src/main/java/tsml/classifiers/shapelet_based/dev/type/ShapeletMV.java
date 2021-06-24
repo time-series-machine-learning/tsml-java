@@ -40,6 +40,12 @@ public abstract class ShapeletMV implements Comparable<ShapeletMV>{
 
     @Override
     public int compareTo(ShapeletMV shapeletMV) {
-        return (this.getQuality()>shapeletMV.getQuality()?-1:(this.getQuality()<shapeletMV.getQuality()?1:0));
+        return (this.getQuality()>shapeletMV.getQuality()?
+                -1:
+                (this.getQuality()<shapeletMV.getQuality()?
+                        1:
+                        (this.getLength()>shapeletMV.getLength()?
+                                1:
+                                (this.getLength()<shapeletMV.getLength()?-1:0))));
     }
 }

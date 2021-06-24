@@ -33,7 +33,7 @@ import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.RandomEnsembleMS
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
-import utilities.ClusteringUtilities;
+import utilities.rescalers.ZNormalisation;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
@@ -221,17 +221,21 @@ public class ExperimentsTS {
         TimeSeriesResampler.TrainTest data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
 
         //Normalize
+        ZNormalisation NORMALIZE = new ZNormalisation();
         double[][][] trainInstancesArray = data.train.toValueArray();
         for (int index=0;index<trainInstancesArray.length;index++) { // For each instance
             for (int channel = 0; channel < trainInstancesArray[index].length; channel++) { // For each channel
-                ClusteringUtilities.zNormalise(trainInstancesArray[index][channel]);
+                //ClusteringUtilities.zNormalise(trainInstancesArray[index][channel]);
+                trainInstancesArray[index][channel] = NORMALIZE.rescaleSeries(trainInstancesArray[index][channel]);
             }
         }
 
         double[][][] testInstancesArray = data.test.toValueArray();
         for (int index=0;index<testInstancesArray.length;index++) { // For each instance
             for (int channel = 0; channel < testInstancesArray[index].length; channel++) { // For each channel
-                ClusteringUtilities.zNormalise(testInstancesArray[index][channel]);
+                //ClusteringUtilities.zNormalise(testInstancesArray[index][channel]);
+                testInstancesArray[index][channel] = NORMALIZE.rescaleSeries(testInstancesArray[index][channel]);
+
             }
         }
 
@@ -264,20 +268,19 @@ public class ExperimentsTS {
 
         int n = data.train.numInstances();
         int m = data.train.getMinLength()-1;
-        int c = data.train.getMaxNumChannels();
-        int numShapelets = Math.min(10000,Math.max(1000,(int)Math.sqrt(n*m*c)));
-
+        int c = data.train.getMaxNumDimensions();
+       // int numShapelets = Math.min(10000,Math.max(500,(int)Math.sqrt(n*m*c)));
+        int numShapelets = 10*n < 1000 ? 10*n: 1000;
 
         System.out.println("Shapelets " + numShapelets);
 
         MSTC.ShapeletParams params = new MSTC.ShapeletParams(numShapelets,
                 3,m-1,
-                1000000,0.001,4, true,
-                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI,
+                100000,0.1,4, true,
+                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN,
                 MSTC.ShapeletDistances.EUCLIDEAN,
                 MSTC.ShapeletFactories.INDEPENDENT,
-                MSTC.AuxClassifiers.LINEAR);
-
+                MSTC.AuxClassifiers.ROT);
         if (expSettings.classifierName.contains("PAR")){
             if(data.train.numClasses() > 2) {
                 params.quality = MSTC.ShapeletQualities.ORDER_LINE_BINARY;
@@ -294,10 +297,15 @@ public class ExperimentsTS {
 
         if (expSettings.classifierName.contains("EXH")){
             params.filter = MSTC.ShapeletFilters.EXHAUSTIVE;
-            params.quality = MSTC.ShapeletQualities.ORDER_LINE_BINARY;
+            params.quality = MSTC.ShapeletQualities.BINARY;
             params.classifier =  MSTC.AuxClassifiers.ROT;
         }
 
+        if (expSettings.classifierName.contains("ENS")){
+            params.classifier =  MSTC.AuxClassifiers.LINEAR;
+            params.maxIterations = 10000;
+            params.contractTimeHours = 1;
+        }
 
         // Shapelet dependant
         if (expSettings.classifierName.contains("_D")){
@@ -306,7 +314,7 @@ public class ExperimentsTS {
 
         // Binary quality
         if (expSettings.classifierName.contains("BIN")){
-            params.quality =  MSTC.ShapeletQualities.BINARY;
+            params.quality =  MSTC.ShapeletQualities.GAIN_BINARY;
         }
 
         // Original STC orderline code
@@ -322,7 +330,7 @@ public class ExperimentsTS {
         // Split shapelets by class
         if (expSettings.classifierName.contains("CLASS")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_CLASS;
-            params.maxIterations = 100000*data.train.numClasses();
+            params.maxIterations = 10000*data.train.numClasses();
         }
 
         // Split shapelets by class and series (only for independent)
@@ -336,10 +344,7 @@ public class ExperimentsTS {
             params.classifier =  MSTC.AuxClassifiers.ROT;
         }
 
-        if (expSettings.classifierName.contains("CON")){
-            params.filter =  MSTC.ShapeletFilters.RANDOM_CONTRACTED;
-            params.contractTimeHours = 72;
-        }
+
 
 
 

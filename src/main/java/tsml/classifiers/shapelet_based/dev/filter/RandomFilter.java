@@ -1,6 +1,5 @@
 package tsml.classifiers.shapelet_based.dev.filter;
 
-import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
@@ -10,33 +9,55 @@ import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
-public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
+public class RandomFilter extends ShapeletFilterMV {
+
+    int iteration;
+    double averageQuality;
+    MSTC.ShapeletParams params;
+    StopCriteria stopCriteria;
+    ArrayList<ShapeletMV> shapelets;
 
     @Override
-    public ArrayList<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
+    public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances) {
 
-        long start = System.nanoTime();
+        this.start = System.nanoTime();
+        this.params = params;
+
+
+
+        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
+
+        return findShapelets(params,quality,instances);
+
+
+    }
+
+    @Override
+    public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params, ShapeletQualityFunction quality,
+                                               TimeSeriesInstances instances) {
 
         ShapeletFunctions type = params.type.createShapeletType();
+        ShapeletDistanceFunction dist = params.distance.createShapeletDistance(type);
 
-        ShapeletDistanceFunction distFunction = params.distance.createShapeletDistance();
-        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances,
-                distFunction);
-
-        ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
+        this.shapelets = new ArrayList<ShapeletMV>();
 
         int[] classesArray  = instances.getClassIndexes();
 
-        for (int r=0;r<params.maxIterations  ;r++){ // Iterate
+        this.stopCriteria = new Combined();
+        this.params = params;
+        this.start = System.nanoTime();
+        iteration = 0;
+        while (true){ // Iterate
 
-            if (r % (params.maxIterations/10) == 0){
-                System.out.println("Iteration: "+ r);
+            if (iteration % (params.maxIterations/10) == 0){
+                System.out.println("Iteration: "+ iteration);
             }
 
             //Get random shapelet
-            int shapeletSize = params.min + MSTC.RAND.nextInt(params.max-params.min);
+            int shapeletSize = params.min + (int)(MSTC.RAND.nextInt(params.max-params.min));
             int instanceIndex =  MSTC.RAND.nextInt(instances.numInstances());
             ShapeletMV candidate = type.getRandomShapelet(
                     shapeletSize,
@@ -44,114 +65,30 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
                     classesArray[instanceIndex],
                     instances.get(instanceIndex));
 
-            if (!params.compareSimilar || !isSimilar(shapelets, candidate,type,params.minDist)) {
-                double q = quality.calculate (candidate);
-                candidate.setQuality(q);
-                shapelets.add(candidate);
-            }
-            if (r % 1000 == 0){
-             //   shapelets = removeSelfSimilar(type, shapelets);
+                double q = quality.calculate (dist, candidate);
+           //     if (!isSimilar(shapelets,candidate,type,params.minDist)){
+                    candidate.setQuality(q);
+                    shapelets.add(candidate);
+
+             //  }
+
+            if (iteration % 1000 == 0){
                 Collections.sort(shapelets);
                 if ( shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
-                //  System.out.println(shapelets);
-                if (withinTrainContract(start)){
-                    System.out.println("Contract time reached");
+                this.shapelets = removeSelfSimilar(type,this.shapelets);
+
+                averageQuality = shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
+                System.out.println(averageQuality);
+                if (this.stopCriteria.stop()){
                     return shapelets;
                 }
 
             }
-
+            iteration++;
         }
-      //  shapelets = removeSelfSimilar(type, shapelets);
-        Collections.sort(shapelets);
-        if ( shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
-        return shapelets;
-
-
     }
 
-    protected ArrayList<ShapeletMV> randomShapelets(MSTC.ShapeletParams params,
-                                                    TimeSeriesInstances instances,
-                                                    long start,
-                                                    ShapeletFunctions fun, ShapeletQualityFunction quality,
-                                                    int max_iterations, int k){
-
-
-
-
-        ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
-        double oldAvg = 0;
-        int noChange = 0;
-        int[] classesArray  = instances.getClassIndexes();
-
-        for (int r=0;r<max_iterations  ;r++){ // Iterate
-
-            if (r % (max_iterations/10) == 0){
-                System.out.println("Iteration: "+ r);
-            }
-
-            //Get random shapelet
-            int shapeletSize = params.min + MSTC.RAND.nextInt(params.max-params.min);
-            int instanceIndex =  MSTC.RAND.nextInt(instances.numInstances());
-            ShapeletMV candidate = fun.getRandomShapelet(
-                    shapeletSize,
-                    instanceIndex,
-                    classesArray[instanceIndex],
-                    instances.get(instanceIndex));
-
-
-            if (!params.compareSimilar || !isSimilar(shapelets, candidate,fun,params.minDist)) {
-                double q = quality.calculate (candidate);
-                candidate.setQuality(q);
-                shapelets.add(candidate);
-            }
-
-            if (r % 1000 == 0){
-                Collections.sort(shapelets);
-                if ( shapelets.size()>k) shapelets.subList(k,shapelets.size()).clear();
-
-                //  System.out.println(shapelets);
-                if (withinTrainContract(start)){
-                    System.out.println("Contract time reached");
-                    return shapelets;
-                }
-
-                double avg = shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
-                System.out.println("Size " + shapelets.size() +
-                        " Avg: " + avg);
-
-                if (shapelets.size() == k && avg > 0.999){
-                    System.out.println("Perfect shapelets found");
-                    return shapelets;
-                }
-                if (oldAvg == avg){
-                    noChange++;
-                }else{
-                    oldAvg = avg;
-                    noChange=1;
-                }
-
-                if (noChange>=50 && avg >0.1){
-                    System.out.println("No improvement after 50 checks, ending");
-                    return shapelets;
-                }
-
-                if (avg < 0.3){
-                    r=0;
-                    System.out.println("Restart iterations");
-                }
-
-            }
-
-        }
-
-        Collections.sort(shapelets);
-        if ( shapelets.size()>k) shapelets.subList(k,shapelets.size()).clear();
-        return shapelets;
-
-    }
-
-    protected  ArrayList<ShapeletMV> removeSelfSimilar(ShapeletFunctions fun, ArrayList<ShapeletMV> shapelets) {
+    protected static ArrayList<ShapeletMV> removeSelfSimilar(ShapeletFunctions fun, ArrayList<ShapeletMV> shapelets) {
         // return a new pruned array list - more efficient than removing
         // self-similar entries on the fly and constantly reindexing
         ArrayList<ShapeletMV> outputShapelets = new ArrayList<>();
@@ -176,16 +113,58 @@ public class RandomFilter implements ShapeletFilterMV, TrainTimeContractable {
     }
 
 
-    protected   long time;
-    @Override
-    public void setTrainTimeLimit(long time) {
-        this.time = time;
+    interface StopCriteria{
+        public boolean stop();
     }
 
-    @Override
-    public boolean withinTrainContract(long start) {
-        return System.nanoTime()>time+start;
+    class Iterations implements StopCriteria{
+        public boolean stop(){
+            return iteration>=params.maxIterations;
+        }
     }
+
+    class Contracted implements StopCriteria{
+        @Override
+        public boolean stop() {
+            return withinTrainContract(start);
+        }
+    }
+
+    class BestFound implements StopCriteria{
+        @Override
+        public boolean stop() {
+            return averageQuality>0.999;
+        }
+    }
+
+    class NoImprovement implements StopCriteria{
+
+        double prevImprovement = 1;
+        @Override
+        public boolean stop() {
+            if (shapelets.size() >= params.k){
+                if (prevImprovement==averageQuality) return true;
+                else{
+                    prevImprovement = averageQuality;
+                    return  false;
+                }
+
+            }else{
+                return false;
+            }
+        }
+    }
+
+    class Combined implements StopCriteria{
+        @Override
+        public boolean stop() {
+            return shapelets.size() >= params.k/2 && (iteration>=params.maxIterations ||
+                    withinTrainContract(start) ||
+                    averageQuality>0.999);
+        }
+    }
+
+
 
 
 }

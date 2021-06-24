@@ -7,6 +7,7 @@ import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class RandomFilterByClass extends RandomFilter {
 
@@ -14,11 +15,11 @@ public class RandomFilterByClass extends RandomFilter {
     @Override
     public ArrayList<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances) {
-        long start = System.nanoTime();
+        this.start = System.nanoTime();
+
         int numClasses = instances.getClassCounts().length;
         ShapeletFunctions type = params.type.createShapeletType();
-        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances,
-                params.distance.createShapeletDistance());
+        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
 
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
@@ -33,11 +34,17 @@ public class RandomFilterByClass extends RandomFilter {
             instancesArray[instances.get(j).getLabelIndex()].add(instances.get(j));
         }
 
+        RandomFilter filter = new RandomFilter();
+        filter.setHourLimit(params.contractTimeHours);
+        MSTC.ShapeletParams classParams = new MSTC.ShapeletParams(params);
+        classParams.k = params.k / numClasses;
+        classParams.maxIterations = params.maxIterations / numClasses;
         for (int i=0;i<numClasses;i++){
 
               System.out.println("Shapelets for class " + i + "/" + numClasses);
-            ArrayList<ShapeletMV> classShapelets = randomShapelets(params,instancesArray[i],start, type, quality, params.maxIterations/numClasses, params.k/numClasses);
+
         //    System.out.println(classShapelets);
+            List<ShapeletMV> classShapelets = filter.findShapelets(classParams, quality, instancesArray[i]);
             shapelets.addAll(classShapelets);
         }
 

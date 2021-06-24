@@ -69,6 +69,18 @@ public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDep
         return false;
     }
 
+    public double sDist(int start, ShapeletDependentMV shapelet,  TimeSeriesInstance instance) {
+        double sum = 0;
+        double temp = 0;
+        for(int channel=0;channel< instance.getNumDimensions(); channel++){
 
+            for (int index = 0; index < shapelet.getLength(); index++)
+            {
+                temp = shapelet.getData()[channel][index] - instance.get(channel).get(start+index);
+                sum = sum + (temp * temp);
+            }
+        }
+        return sum/shapelet.getData().length;
+    }
 
 }

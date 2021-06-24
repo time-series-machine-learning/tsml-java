@@ -1,6 +1,7 @@
 package tsml.classifiers.shapelet_based.dev.filter;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletIndependentMV;
@@ -28,8 +29,8 @@ public class RandomFilterBySeries extends RandomFilter {
         long start = System.nanoTime();
         int numClasses = instances.getClassCounts().length;
         ShapeletFunctions type = params.type.createShapeletType();
-        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances,
-                params.distance.createShapeletDistance());
+        ShapeletDistanceFunction distanceFunction= params.distance.createShapeletDistance(type);
+        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
         int[] classesArray  = instances.getClassIndexes();
 
@@ -51,7 +52,7 @@ public class RandomFilterBySeries extends RandomFilter {
             int curSeries = candidate.getSeriesIndex();
             int curClass = (int)candidate.getClassIndex();
 
-            double q = quality.calculate (candidate);
+            double q = quality.calculate (distanceFunction, candidate);
              if (q>0 ){
                 candidate.setQuality(q);
                 queues[curSeries][curClass].add(candidate);

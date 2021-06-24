@@ -18,28 +18,19 @@
 package tsml.classifiers.shapelet_based;
 
 
-import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-//import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.tuning.ParameterSpace;
 import experiments.data.DatasetLoading;
-import machine_learning.classifiers.ensembles.EnhancedRotationForest;
+import fileIO.FullAccessOutFile;
+import fileIO.OutFile;
+import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
-import tsml.transformers.shapelet_tools.DefaultShapeletOptions;
-import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
-import utilities.InstanceTools;
-import weka.core.*;
-import weka.classifiers.Classifier;
 import tsml.transformers.PCA;
 import tsml.transformers.ShapeletTransform;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactory;
+import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions;
 import tsml.transformers.shapelet_tools.ShapeletTransformFactoryOptions.ShapeletTransformOptions;
 import tsml.transformers.shapelet_tools.ShapeletTransformTimingUtilities;
 import tsml.transformers.shapelet_tools.distance_functions.ShapeletDistance;
@@ -47,10 +38,20 @@ import tsml.transformers.shapelet_tools.quality_measures.ShapeletQuality;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearch.SearchType;
 import tsml.transformers.shapelet_tools.search_functions.ShapeletSearchOptions;
-import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.TrainTimeContractable;
-import fileIO.FullAccessOutFile;
-import fileIO.OutFile;
+import utilities.InstanceTools;
+import weka.classifiers.Classifier;
+import weka.core.*;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+//import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 
 
 /**

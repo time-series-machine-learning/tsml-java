@@ -1,11 +1,13 @@
 package tsml.classifiers.shapelet_based.dev.type;
 
+import utilities.rescalers.ZNormalisation;
+
 public abstract class ShapeletSingle extends ShapeletMV{
 
     protected int start;
 
     protected int instanceIndex;
-
+    protected static ZNormalisation NORMALIZE = new ZNormalisation();
 
 
 

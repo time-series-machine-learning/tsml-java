@@ -1,14 +1,24 @@
 package tsml.classifiers.shapelet_based.dev.distances;
 
+import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsIndependent;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletIndependentMV;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstance;
 
 public class ShapeletDistanceEuclidean implements ShapeletDistanceFunction {
+
+    protected ShapeletFunctions fun;
+
+    public ShapeletDistanceEuclidean(ShapeletFunctions fun){
+        this.fun = fun;
+    }
+
     @Override
     public double calculate(ShapeletMV shapelet, TimeSeriesInstance instance) {
         double bestSum = Double.MAX_VALUE;
-        double sum;
+
+        double sum=0;
         double[] subseq;
         double temp;
         int shapeletLength = shapelet.getLength();
@@ -18,17 +28,20 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceFunction {
 
         for (int i = 0; i < minLength - shapeletLength + 1; i++)
         {
-            sum = shapelet.getDistanceToInstance(i,instance);
-
+           // sum= shapelet.getDistanceToInstance(i,instance);
+            sum = fun.sDist(i,shapelet,instance);
             if (sum < bestSum)
             {
                 bestSum = sum;
-                //System.out.println(i);
+               //System.out.println(i);
             }
+
+
         }
 
         double dist = (bestSum == 0.0) ? 0.0 : (1.0 / shapeletLength * bestSum);
-        return dist;
+      //    double dist = (sum == 0.0) ? 0.0 : ((1.0 / shapeletLength) * sum);
+        return bestSum;
     }
 
 
@@ -57,7 +70,7 @@ public class ShapeletDistanceEuclidean implements ShapeletDistanceFunction {
         TimeSeriesInstance instance2 = new TimeSeriesInstance(data2,1.0);
         TimeSeriesInstance instance3 = new TimeSeriesInstance(data3,2.0);
 
-        ShapeletDistanceEuclidean sde  = new ShapeletDistanceEuclidean();
+        ShapeletDistanceEuclidean sde  = new ShapeletDistanceEuclidean(new ShapeletFunctionsIndependent());
         ShapeletIndependentMV shapelet = new ShapeletIndependentMV(1, 5, 0, 0.0,  0, instance1);
         System.out.println(sde.calculate(shapelet, instance2));
     }
