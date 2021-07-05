@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
+import org.omg.CosNaming._BindingIteratorImplBase;
+
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 
@@ -145,18 +147,18 @@ public class TSReader {
         // first token should be @problem name. as we skip whitespace and comments.
 
         skipComments();
+        getNextToken();
 
-        do {
-            getNextToken();
+        do {           
             if (currentToken.equalsIgnoreCase(CLASS_LABEL)) {
                 ExtractClassLabels();
             } else {
-                variables.put(currentToken, getNextToken());
+                variables.put(currentToken, getNextToken());    
+                getNextToken(); 
             }
-            
 
         } while (!currentToken.equalsIgnoreCase(DATA));
-
+        
         // these are required.
         problemName = variables.get(PROBLEM_NAME);
         if (problemName == null) {
@@ -212,6 +214,8 @@ public class TSReader {
         //recurse until we find a valid token. 
         if (currentToken.equalsIgnoreCase(","))
             getNextToken(scanner);
+
+        //System.out.println("t: "+currentToken);
         return currentToken;
     }
 
@@ -232,8 +236,11 @@ public class TSReader {
 
     public static void main(String[] args) throws IOException {
 
-        String local_path = "D:\\Work\\Data\\Univariate_ts\\";
-        String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
+        // String local_path = "D:\\Work\\Data\\Univariate_ts\\";
+        // String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
+
+        String local_path = "Z:\\ArchiveData\\Univariate_ts\\";
+        String m_local_path = "Z:\\ArchiveData\\Multivariate_ts\\";
 
         String dataset = "ArrowHead";
         String filepath = local_path + dataset + "\\" + dataset;
