@@ -28,6 +28,7 @@ import java.util.Scanner;
 
 import org.omg.CosNaming._BindingIteratorImplBase;
 
+import experiments.data.DatasetLists;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 
@@ -242,29 +243,17 @@ public class TSReader {
         String local_path = "Z:\\ArchiveData\\Univariate_ts\\";
         String m_local_path = "Z:\\ArchiveData\\Multivariate_ts\\";
 
-        String dataset = "ArrowHead";
-        String filepath = local_path + dataset + "\\" + dataset;
-        File f = new File(filepath + "_TRAIN" + ".ts");
-        long time = System.nanoTime();
-        TSReader ts_reader = new TSReader(new FileReader(f));
-        System.out.println("after: " + (System.nanoTime() - time));
+        String[] paths = {/*local_path,*/ m_local_path};
 
-        TimeSeriesInstances train_data = ts_reader.GetInstances();
-
-        System.out.println(train_data.toString());
-
-
-        String dataset_multi = "FaceDetection";
-        String filepath_multi = m_local_path + dataset_multi + "\\" + dataset_multi;
-        File f1 = new File(filepath_multi + "_TRAIN" + ".ts");
-        System.out.println(f1);
-        time = System.nanoTime();
-        TSReader ts_reader_multi = new TSReader(new FileReader(f1));
-        TimeSeriesInstances train_data_multi = ts_reader_multi.GetInstances();
-        // System.out.println(train_data_multi);
-        System.out.println("after: " + (System.nanoTime() - time));
-
-        System.out.println("Min: " + train_data_multi.getMinLength());
-        System.out.println("Max: " + train_data_multi.getMaxLength());
+        for (String path : paths){
+            File dir = new File(path);
+            for (File file : dir.listFiles()){
+                String filepath = path + file.getName() + "\\" + file.getName();
+                File f = new File(filepath + "_TRAIN" + ".ts");
+                long time = System.nanoTime();
+                TSReader ts_reader = new TSReader(new FileReader(f));
+                System.out.println("after: " + (System.nanoTime() - time));
+            }
+        }
     }
 }
