@@ -54,25 +54,34 @@ The lists of implemented TSC algorithms shall continue to grow over time. These 
 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 
-===============  ================  ==============  =================  ==============  =========
-Distance Based   Dictionary Based  Spectral Based  Shapelet Based     Interval Based  Hybrids
-===============  ================  ==============  =================  ==============  =========
-DD_DTW           BOSS              RISE            LearnShapelets     TSF             HIVE-COTE
-DTD_C            cBOSS             cRISE           ShapeletTransform  TSBF            TS-CHIEF
-ElasticEnsemble  BOP                               FastShapelets      LPS
-NN_CID           WEASEL                                               CIF
-SAX_1NN          SAXVSM
-ProximityForest  SpatialBOSS
-\                TDE
-===============  ================  ==============  =================  ==============  =========
+===============  ================  ==============  =================  ==============  ================
+Distance Based   Dictionary Based  Kernel Based    Shapelet Based     Interval Based  Hybrids
+===============  ================  ==============  =================  ==============  ================
+DD_DTW           BOSS              Arsenal         LearnShapelets     TSF             HIVE-COTE
+DTD_C            cBOSS             ROCKET          ShapeletTransform  TSBF            Catch22
+ElasticEnsemble  TDE                               FastShapelets      LPS
+NN_CID           WEASEL                            ShapeletTree       CIF
+SAX_1NN          SAXVSM                                               DrCIF
+ProximityForest  SpatialBOSS                                          RISE
+DTW_kNN          SAX_1NN                                              STSF
+FastDTW          BafOfPatterns...
+FastElasticEn... BOSSC45
+ShapeDTW_1NN     BoTSWEnsemble
+ShapeDTW_SVM     BOSSSpatialPy...
+SlowDTW_1NN
+KNN
+===============  ================  ==============  =================  ==============  =================
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
 
 ========  =============================
 NN_ED_D   MultivariateShapeletTransform
 NN_ED_I   ConcatenateClassifier
-NN_DTW_D  NN_DTW_A
+NN_DTW_D  MultivariateHiveCote
 NN_DTW_I  WEASEL+MUSE
+STC_D     MultivariateSingleEnsemble
+NN_DTW_A  MultivariateAbstractClassifier
+\         MultivariateAbstractEnsemble
 ========  =============================
 
 Clusterers
@@ -80,10 +89,13 @@ Clusterers
 
 Currently quite limited, aside from those already shipped with Weka.
 
-=====================  =======
+============================
 UnsupervisedShapelets
 K-Shape
-=====================  =======
+DictClusterer
+TTC
+AbstractTimeSeriesCLusterer
+============================
 
 Filters
 ```````````````````````
