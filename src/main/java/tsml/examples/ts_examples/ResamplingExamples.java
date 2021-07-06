@@ -76,7 +76,7 @@ public class ResamplingExamples {
         Instances train_data = DatasetLoading.loadData(filepath_Arff + "_TRAIN" + ".arff");
         Instances test_data = DatasetLoading.loadData(filepath_Arff + "_TEST" + ".arff");
 
-        Instances[] out1 = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(train_data, test_data, 1);
+        Instances[] out1 = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(train_data, test_data, 1);
         System.out.println(out1[0].instance(0));
         System.out.println(out1[1].instance(0));
 
