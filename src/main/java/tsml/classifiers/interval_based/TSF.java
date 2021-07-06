@@ -1207,7 +1207,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " 3 1 3");
 
         if (debug) {
