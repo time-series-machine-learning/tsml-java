@@ -1,5 +1,13 @@
-name: gradle build and test
-on: [push]
+name: Gradle build and test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+      
 jobs:
   buildAndTest:
     runs-on: ubuntu-latest
