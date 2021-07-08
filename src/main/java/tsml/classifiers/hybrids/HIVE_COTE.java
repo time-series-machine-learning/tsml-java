@@ -367,6 +367,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             if(module.isTrainTimeContractable())
                 ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
     }
+
+    public void setAlpha(double alpha){
+        this.alpha = alpha;
+        this.weightingScheme = new TrainAcc(this.alpha);
+    }
     
     @Override   //EnhancedAbstractClassifier
     public void setSeed(int seed) { 

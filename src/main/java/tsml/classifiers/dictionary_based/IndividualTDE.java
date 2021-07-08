@@ -299,7 +299,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     protected double[] normalizeDFT(double[] dft, double std) {
-        double normalisingFactor = (std > 0? 1.0 / std : 1.0) * inverseSqrtWindowSize;
+        double normalisingFactor = (std > 0 ? 1.0 / std : 1.0) * inverseSqrtWindowSize;
         for (int i = 0; i < dft.length; i++)
             dft[i] *= normalisingFactor;
 
@@ -378,7 +378,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
     protected static double complexephi(double u, double M) { return -Math.sin(2 * Math.PI * u / M); }
 
-    protected double[][] disjointWindows(double [] data) {
+    protected double[][] disjointWindows(double[] data) {
         int amount = (int)Math.ceil(data.length/(double)windowSize);
         double[][] subSequences = new double[amount][windowSize];
 
@@ -484,25 +484,23 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         int bestPos = -1;
 
         // class entropy
-        int total = end - start;
         IntIntHashMap cIn = new IntIntHashMap();
         IntIntHashMap cOut = new IntIntHashMap();
         for (int pos = start; pos < end; pos++) {
             cOut.putOrAdd(element.get(pos).var2, 1, 1);
         }
-        double class_entropy = entropy(cOut, total);
+        double class_entropy = entropy(cOut, end - start);
 
-        int i = start;
-        int lastLabel = element.get(i).var2;
-        i += moveElement(element, cIn, cOut, start);
+        int lastLabel = element.get(start).var2;
+        moveElement(element, cIn, cOut, start);
 
         for (int split = start + 1; split < end - 1; split++) {
-            int label = element.get(i).var2;
-            i += moveElement(element, cIn, cOut, split);
+            int label = element.get(split).var2;
+            moveElement(element, cIn, cOut, split);
 
             // only inspect changes of the label
             if (label != lastLabel) {
-                double gain = calculateInformationGain(cIn, cOut, class_entropy, i, total);
+                double gain = calculateInformationGain(cIn, cOut, class_entropy);
                 gain = Math.round(gain * 1000.0) / 1000.0; // round for 4 decimal places
 
                 if (gain >= bestGain) {
@@ -535,7 +533,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
 
     protected double entropy(IntIntHashMap frequency, double total) {
         double entropy = 0;
-        double log2 = 1.0 / Math.log(2.0);
+        double log2 = 0.6931471805599453;
         for (IntCursor element : frequency.values()) {
             double p = element.value / total;
             if (p > 0) {
@@ -546,18 +544,19 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     }
 
     protected double calculateInformationGain(IntIntHashMap cIn, IntIntHashMap cOut,
-                                              double class_entropy, double total_c_in, double total) {
-        double total_c_out = (total - total_c_in);
+                                              double class_entropy) {
+        double total_c_in = cIn.size();
+        double total_c_out = cOut.size();
+        double total = total_c_in + total_c_out;
         return class_entropy
                 - total_c_in / total * entropy(cIn, total_c_in)
                 - total_c_out / total * entropy(cOut, total_c_out);
     }
 
-    protected int moveElement(List<SerialisableComparablePair<Double,Integer>> element, IntIntHashMap cIn,
+    protected void moveElement(List<SerialisableComparablePair<Double,Integer>> element, IntIntHashMap cIn,
                               IntIntHashMap cOut, int pos) {
         cIn.putOrAdd(element.get(pos).var2, 1, 1);
         cOut.putOrAdd(element.get(pos).var2, -1, -1);
-        return 1;
     }
 
     private void trainChiSquared() {
