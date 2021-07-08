@@ -1,7 +1,7 @@
 
 
 UEA Time Series Classification
-===============================
+==============================
 
 .. image:: https://travis-ci.com/uea-machine-learning/tsml.svg?branch=master
     :target: https://travis-ci.com/uea-machine-learning/tsml
@@ -54,23 +54,23 @@ The lists of implemented TSC algorithms shall continue to grow over time. These 
 
 We have implemented the following bespoke classifiers for univariate, equal length time series classification:
 
-===============  ================  ==============  =================  ==============  ================
-Distance Based   Dictionary Based  Kernel Based    Shapelet Based     Interval Based  Hybrids
-===============  ================  ==============  =================  ==============  ================
-DD_DTW           BOSS              Arsenal         LearnShapelets     TSF             HIVE-COTE
-DTD_C            cBOSS             ROCKET          ShapeletTransform  TSBF            Catch22
-ElasticEnsemble  TDE                               FastShapelets      LPS
-NN_CID           WEASEL                            ShapeletTree       CIF
-SAX_1NN          SAXVSM                                               DrCIF
-ProximityForest  SpatialBOSS                                          RISE
-DTW_kNN          SAX_1NN                                              STSF
-FastDTW          BafOfPatterns...
-FastElasticEn... BOSSC45
-ShapeDTW_1NN     BoTSWEnsemble
-ShapeDTW_SVM     BOSSSpatialPy...
+================  ================  ==============  =================  ==============  ================
+Distance Based    Dictionary Based  Kernel Based    Shapelet Based     Interval Based  Hybrids
+================  ================  ==============  =================  ==============  ================
+DD_DTW            BOSS              Arsenal         LearnShapelets     TSF             HIVE-COTE
+DTD_C             cBOSS             ROCKET          ShapeletTransform  TSBF            Catch22
+ElasticEnsemble   TDE                               FastShapelets      LPS
+NN_CID            WEASEL                            ShapeletTree       CIF
+SAX_1NN           SAXVSM                                               DrCIF
+ProximityForest   SpatialBOSS                                          RISE
+DTW_kNN           SAX_1NN                                              STSF
+FastDTW           BafOfPatterns...
+FastElasticEn...  BOSSC45
+ShapeDTW_1NN      BoTSWEnsemble
+ShapeDTW_SVM      BOSSSpatialPy...
 SlowDTW_1NN
 KNN
-===============  ================  ==============  =================  ==============  =================
+================  ================  ==============  =================  ==============  ================
 
 And we have implemented the following bespoke classifiers for multivariate, equal length time series classification:
 
@@ -89,13 +89,13 @@ Clusterers
 
 Currently quite limited, aside from those already shipped with Weka.
 
-============================
+============================ ====
 UnsupervisedShapelets
 K-Shape
 DictClusterer
 TTC
 AbstractTimeSeriesCLusterer
-============================
+============================ ====
 
 Filters
 ```````````````````````
