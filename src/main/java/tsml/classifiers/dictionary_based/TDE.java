@@ -836,6 +836,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
             int idx = 0;
             for (Future<Double> f : futures) {
+                if (correct + series.numInstances() - idx < requiredCorrect) {
+                    return -1;
+                }
+
                 if (f.get() == series.get(idx).getLabelIndex()) {
                     ++correct;
                 }
