@@ -370,6 +370,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public void setAlpha(double alpha){
         this.alpha = alpha;
+        this.weightingScheme = new TrainAcc(this.alpha);
     }
     
     @Override   //EnhancedAbstractClassifier
