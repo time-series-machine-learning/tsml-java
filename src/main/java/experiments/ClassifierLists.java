@@ -31,6 +31,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.early_classification.*;
+import tsml.classifiers.hybrids.TSCHIEFWrapper;
 import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
