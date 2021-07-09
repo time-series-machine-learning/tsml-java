@@ -9,8 +9,8 @@ https://arxiv.org/abs/2104.07551
 Middlehurst, M., Large, J., Flynn, M., Lines, J., Bostrom, A., & Bagnall, A. (2021). HIVE-COTE 2.0: a new meta ensemble
 for time series classification. arXiv preprint arXiv:2104.07551.
 
-Results will differ slightly from the publication due to a few minor bugfixes since submission, but finding should be
-fully reproducible.
+Exact results outputs on the UCR data will differ slightly from the publication due to a few minor bugfixes since
+submission, but our findings should be fully reproducible.
 
 Our published results can be downloaded at: https://timeseriesclassification.com/HC2.php
 
