@@ -358,7 +358,7 @@ public class ClassifierLists {
     /**
      * HYBRIDS: Classifiers that combine two or more of the above approaches
      */
-    public static String[] hybrids= {"HiveCoteAlpha", "FlatCote", "HIVE-COTEv1","HIVE-COTEv2", "catch22", "HC-oob", "HC-cv","HC-cv-pf-stc", "HC-cv-stc", "HCV2-cv",
+    public static String[] hybrids= {"HiveCoteAlpha", "FlatCote", "HIVE-COTEv1","HIVE-COTEv2", "TS-CHIEF","catch22", "HC-oob", "HC-cv","HC-cv-pf-stc", "HC-cv-stc", "HCV2-cv",
 //HC 2 variants
             "HIVE-COTE","HC2","HiveCote",
             "HC-1", "HC-2", "HC-3", "HC-4", "HC-5", "HC-6", "HC-7", "HC-8", "HC-9", "HC-10", "HC-11", "HC-12",
@@ -391,6 +391,11 @@ public class ClassifierLists {
                 hc.setSeed(fold);
                 hc.enableMultiThreading(4);
                 c=hc;
+                break;
+
+            case "TS-CHIEF":
+                c=new TSCHIEFWrapper();
+                ((TSCHIEFWrapper)c).setSeed(fold);
                 break;
 
             case "HC2-FromFile":
