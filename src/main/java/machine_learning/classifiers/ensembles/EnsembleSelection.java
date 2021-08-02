@@ -18,6 +18,7 @@
 package machine_learning.classifiers.ensembles;
 
 import experiments.CollateResults;
+import experiments.ExperimentalArguments;
 import experiments.data.DatasetLists;
 import java.io.File;
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import weka.filters.Filter;
 
 /**
  * Implementation of ensemble selection
@@ -410,7 +410,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setEstimateOwnPerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
-                    Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                    ExperimentalArguments exp = new ExperimentalArguments();
                     exp.classifierName = classifier;
                     exp.datasetName = dset;
                     exp.foldId = fold;

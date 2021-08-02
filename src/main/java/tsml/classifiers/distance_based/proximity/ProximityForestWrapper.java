@@ -24,6 +24,7 @@ import core.AppContext;
 import core.contracts.Dataset;
 import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
+import experiments.ExperimentalArguments;
 import experiments.Experiments;
 import java.util.Random;
 import trees.ProximityForest;
@@ -236,7 +237,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(pf));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(pf, 0.966958211856171, "2019_09_26"));
         
-        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+        ExperimentalArguments exp = new ExperimentalArguments();
 
         exp.dataReadLocation = "Z:/Data/TSCProblems2015/";
         exp.resultsWriteLocation = "C:/Temp/ProximityForestWekaTest/";

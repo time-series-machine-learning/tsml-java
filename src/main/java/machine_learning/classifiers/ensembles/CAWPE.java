@@ -18,6 +18,7 @@
 package machine_learning.classifiers.ensembles;
 
 import experiments.CollateResults;
+import experiments.ExperimentalArguments;
 import experiments.Experiments;
 import evaluation.MultipleClassifierEvaluation;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
@@ -43,7 +44,6 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import weka.classifiers.functions.Logistic;
@@ -598,7 +598,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         c.setEstimateOwnPerformance(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
-                        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                        ExperimentalArguments exp = new ExperimentalArguments();
                         exp.classifierName = ensembleID;
                         exp.datasetName = dset;
                         exp.foldId = fold;

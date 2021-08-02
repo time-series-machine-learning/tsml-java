@@ -20,7 +20,7 @@
 package examples;
 
 import experiments.Experiments;
-import experiments.Experiments.ExperimentalArguments;
+import experiments.ExperimentalArguments;
 
 /**
  * Examples showing how to use the Experiments class

@@ -17,6 +17,7 @@
 
 package examples;
 
+import experiments.ExperimentalArguments;
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
@@ -85,7 +86,7 @@ public class HiveCote1Examples {
         for (String str : settings)
             System.out.println("\t"+str);
         System.out.println("");
-        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
         Experiments.setupAndRunExperiment(expSettings);
         System.out.println(" The output will be in Temp/HIVE-COTE/ChinaTown/Predictions/testFold9.csv");
         System.out.println(" The format of this file is explained in ");
@@ -116,7 +117,7 @@ public class HiveCote1Examples {
         for(String s:components){
             System.out.println("Building "+s);
             settings[3]="-cn="+s; //Classifier name: See ClassifierLists for valid options
-            Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+            ExperimentalArguments expSettings = new ExperimentalArguments(settings);
             Experiments.setupAndRunExperiment(expSettings);
             System.out.println(s+" Finished");
         }
@@ -124,7 +125,7 @@ public class HiveCote1Examples {
                 "HIVE_COTE1.0 ");
         settings[2]="-gtf=false"; //Dont need HC train file
         settings[3]="-cn=HIVE-COTE1.0"; //Classifier name: See ClassifierLists for valid options
-        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
         Experiments.setupAndRunExperiment(expSettings);
         System.out.println("HIVE-COTE Finished. Results will be in C:/Temp/HIVE-COTE1.0/Predictions/Chinatown/");
         System.out.println(" or just run it yourself");
