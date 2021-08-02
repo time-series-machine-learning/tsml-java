@@ -78,7 +78,7 @@ import machine_learning.classifiers.SaveEachParameter;
     * EnhancedAbstractClassifier (in that, it extend RandomForest directly
     * which does not extend that)
     * 
-    * Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
+    * Simple usage with ClassifierExperiments may not be guaranteed to work, especially in trainfile writing
  */
 public class TunedRandomForest extends RandomForest implements SaveParameterInfo,SaveEachParameter,ParameterSplittable{
     boolean tuneParameters=true;

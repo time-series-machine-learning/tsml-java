@@ -22,7 +22,7 @@ package examples;
 import evaluation.MultipleClassifierEvaluation;
 import evaluation.storage.ClassifierResultsCollection;
 import experiments.ExperimentalArguments;
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
 import java.util.Arrays;
 
 /**
@@ -48,7 +48,7 @@ public class ThoroughEvaluation {
         expThreaded.dataReadLocation = "src/main/java/experiments/data/tsc/"; 
         expThreaded.resultsWriteLocation = resultsPath;                      
         
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
+        ClassifierExperiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
         
         

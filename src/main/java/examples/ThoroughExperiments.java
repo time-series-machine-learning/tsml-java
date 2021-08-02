@@ -19,11 +19,11 @@
 
 package examples;
 
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
 import experiments.ExperimentalArguments;
 
 /**
- * Examples showing how to use the Experiments class
+ * Examples showing how to use the ClassifierExperiments class
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -59,7 +59,7 @@ public class ThoroughExperiments {
             "--force=true"
         };
         
-        Experiments.main(exampleMinimalArgs);
+        ClassifierExperiments.main(exampleMinimalArgs);
         // or actually from command line e.g.: 
         // java -jar ueatsc.jar -dp=src/main/java/experiments/data/tsc/ ...
         
@@ -81,7 +81,7 @@ public class ThoroughExperiments {
         exp.foldId = 0;  // note that since we're now setting the fold directly, we can resume zero-indexing
         
         // here, we wont force the evaluation. see the difference
-        Experiments.setupAndRunExperiment(exp);
+        ClassifierExperiments.setupAndRunExperiment(exp);
         
         
         
@@ -105,7 +105,7 @@ public class ThoroughExperiments {
         // classifier, dataset, fold shall be assigned internally across threads
         
         // will use one thread per core by default
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
+        ClassifierExperiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
     }
     

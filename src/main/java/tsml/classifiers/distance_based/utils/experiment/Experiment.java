@@ -2,7 +2,7 @@ package tsml.classifiers.distance_based.utils.experiment;
 
 import evaluation.storage.ClassifierResults;
 import experiments.ExperimentalArguments;
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
@@ -70,7 +70,7 @@ public class Experiment implements Copier {
         // delegate to the benchmarking system from main experiments code. This maintains consistency across benchmarks, but it substantially quicker and therefore less reliable of a benchmark. todo talks to james about merging these
         ExperimentalArguments args = new ExperimentalArguments();
         args.performTimingBenchmark = true;
-        benchmarkScore = Experiments.findBenchmarkTime(args);
+        benchmarkScore = ClassifierExperiments.findBenchmarkTime(args);
 //        long sum = 0;
 //        int repeats = 30;
 //        long startTime = System.nanoTime();

@@ -17,6 +17,7 @@
  
 package machine_learning.classifiers.ensembles;
 
+import experiments.ClassifierExperiments;
 import experiments.CollateResults;
 import experiments.ExperimentalArguments;
 import experiments.data.DatasetLists;
@@ -31,7 +32,6 @@ import java.util.Random;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
-import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.indexOfMax;
@@ -418,7 +418,7 @@ public class EnsembleSelection extends CAWPE {
                     exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
                     exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
 //                        exp.performTimingBenchmark = true;
-                    Experiments.runExperiment(exp,data[0],data[1],c);
+                    ClassifierExperiments.runExperiment(exp,data[0],data[1],c);
                 }
             }
         }

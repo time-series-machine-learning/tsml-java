@@ -49,7 +49,7 @@ import weka.core.WeightedInstancesHandler;
  * <br/>
  * For more information, see<br/>
  * <br/>
- * Yoav Freund, Robert E. Schapire: Experiments with a new boosting algorithm. In: Thirteenth International Conference on Machine Learning, San Francisco, 148-156, 1996.
+ * Yoav Freund, Robert E. Schapire: ClassifierExperiments with a new boosting algorithm. In: Thirteenth International Conference on Machine Learning, San Francisco, 148-156, 1996.
  * <p/>
  * <!-- globalinfo-end -->
  * <p>
@@ -62,7 +62,7 @@ import weka.core.WeightedInstancesHandler;
  *    booktitle = {Thirteenth International Conference on Machine Learning},
  *    pages = {148-156},
  *    publisher = {Morgan Kaufmann},
- *    title = {Experiments with a new boosting algorithm},
+ *    title = {ClassifierExperiments with a new boosting algorithm},
  *    year = {1996}
  * }
  * </pre>
@@ -190,7 +190,7 @@ public class AdaBoostM1
 
         result = new TechnicalInformation(Type.INPROCEEDINGS);
         result.setValue(Field.AUTHOR, "Yoav Freund and Robert E. Schapire");
-        result.setValue(Field.TITLE, "Experiments with a new boosting algorithm");
+        result.setValue(Field.TITLE, "ClassifierExperiments with a new boosting algorithm");
         result.setValue(Field.BOOKTITLE, "Thirteenth International Conference on Machine Learning");
         result.setValue(Field.YEAR, "1996");
         result.setValue(Field.PAGES, "148-156");

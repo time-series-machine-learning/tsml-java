@@ -25,7 +25,7 @@ import core.contracts.Dataset;
 import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
 import experiments.ExperimentalArguments;
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
 import java.util.Random;
 import trees.ProximityForest;
 import tsml.classifiers.distance_based.utils.classifiers.configs.Configs;
@@ -54,7 +54,7 @@ import weka.core.Randomizable;
  * our purposes here.
  * 
  * NOTE2: because of the static AppContext holding e.g random seeds etc, do not run multiple 
- * experiments using ProximityForest in parallel, i.e with Experiments.setupAndRunMultipleExperimentsThreaded(...)
+ * experiments using ProximityForest in parallel, i.e with ClassifierExperiments.setupAndRunMultipleExperimentsThreaded(...)
  * 
  * TODO: weka/tsc interface implementations etc, currently this is simply in a runnable state 
  * for basic experimental runs to compare against. Need: TechnicalInformationHandler, need to do the get/setOptions, 
@@ -104,7 +104,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 
     //from paper, pg18-19: 
     /*
-        4.2 Experiments on the UCR Archive
+        4.2 ClassifierExperiments on the UCR Archive
     
         ...
     
@@ -244,7 +244,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         exp.classifierName = "ProximityForest";
 //        exp.datasetName = "BeetleFly";
 //        exp.foldId = 0;
-//        Experiments.setupAndRunExperiment(exp);
+//        ClassifierExperiments.setupAndRunExperiment(exp);
 
 
         
@@ -278,7 +278,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
             for (int f = 0; f < numFolds; f++) {
                 exp.datasetName = dataset;
                 exp.foldId = f;
-                Experiments.setupAndRunExperiment(exp);
+                ClassifierExperiments.setupAndRunExperiment(exp);
             }
         }
         
