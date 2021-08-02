@@ -1798,7 +1798,7 @@ public class ClassifierResultsAnalysis {
 
         String[] classifiers = new String[]{ "NN", "C45",  "Logistic", "SVML" };
 
-//        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+//        ClassifierExperiments.ExperimentalArguments expSettings = new ClassifierExperiments.ExperimentalArguments(settings);
 //        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
 //        
 

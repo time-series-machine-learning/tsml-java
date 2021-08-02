@@ -18,7 +18,7 @@ public class ExperimentalArguments implements Runnable {
 
     //REQUIRED PARAMETERS
     @Parameter(names = {"-dp", "--dataPath"}, required = true, order = 0, description = "(String) The directory that contains the dataset to be evaluated on, in the form "
-            + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see Experiments.sampleDataset(...).")
+            + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be in different forms, see ClassifierExperiments.sampleDataset(...).")
     public String dataReadLocation = null;
 
     @Parameter(names = {"-rp", "--resultsPath"}, required = true, order = 1, description = "(String) The parent directory to write the results of the evaluation to, in the form "
@@ -29,7 +29,7 @@ public class ExperimentalArguments implements Runnable {
     public String classifierName = null;
 
     @Parameter(names = {"-dn", "--datasetName"}, required = true, order = 3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
-            + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see Experiments.sampleDataset(...).")
+            + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see ClassifierExperiments.sampleDataset(...).")
     public String datasetName = null;
 
     @Parameter(names = {"-f", "--fold"}, required = true, order = 4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
@@ -169,7 +169,7 @@ public class ExperimentalArguments implements Runnable {
     @Override //Runnable
     public void run() {
         try {
-            Experiments.setupAndRunExperiment(this);
+            ClassifierExperiments.setupAndRunExperiment(this);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -251,7 +251,7 @@ public class ExperimentalArguments implements Runnable {
         JCommander.Builder b = JCommander.newBuilder();
         b.addObject(this);
         JCommander jc = b.build();
-        jc.setProgramName("Experiments.java");  //todo maybe add copyright etcetc
+        jc.setProgramName("ClassifierExperiments.java");  //todo maybe add copyright etcetc
         try {
             jc.parse(args);
         } catch (Exception e) {
@@ -268,7 +268,7 @@ public class ExperimentalArguments implements Runnable {
         }
 
         foldId -= 1; //go from one-indexed to zero-indexed
-        Experiments.debug = this.debug;
+        ClassifierExperiments.debug = this.debug;
 
         resultsWriteLocation = StrUtils.asDirPath(resultsWriteLocation);
         dataReadLocation = StrUtils.asDirPath(dataReadLocation);

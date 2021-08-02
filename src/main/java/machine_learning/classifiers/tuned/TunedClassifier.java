@@ -23,6 +23,7 @@ import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
+import experiments.ClassifierExperiments;
 import experiments.ExperimentalArguments;
 import tsml.classifiers.ParameterSplittable;
 import weka.classifiers.AbstractClassifier;
@@ -307,7 +308,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
 //        
 //        exp.singleParameterID = 1;
         
-        experiments.Experiments.setupAndRunExperiment(exp);
+        ClassifierExperiments.setupAndRunExperiment(exp);
     }
 
     
