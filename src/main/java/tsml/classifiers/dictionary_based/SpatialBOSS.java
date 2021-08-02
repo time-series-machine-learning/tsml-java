@@ -546,7 +546,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     }
 
      public static void main(String[] args) throws Exception{
-//         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+//         ClassificationExperiments.ExperimentalArguments exp = new ClassificationExperiments.ExperimentalArguments();
 //         exp.dataReadLocation =  "C:/TSCProblems2018/";
 //         exp.resultsWriteLocation = "C:/Temp/spatialboss/";
 //         exp.classifierName = "SpatialBOSS";
@@ -555,7 +555,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 //         exp.forceEvaluation = true;
 //         exp.foldId = 1;
 //
-//         Experiments.setupAndRunExperiment(exp);
+//         ClassificationExperiments.setupAndRunExperiment(exp);
 
 
         //Minimum working example

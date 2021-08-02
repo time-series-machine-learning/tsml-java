@@ -17,7 +17,6 @@
 package experiments;
 
 import tsml.transformers.*;
-import tsml.filters.shapelet_filters.ShapeletFilter;
 
 /**
  *
@@ -39,8 +38,8 @@ public class TransformLists {
     public static String[] multivariateFilters={"Spectrogram","MFCC"};
     //</editor-fold>
 
-    public static Transformer setTransform(Experiments.ExperimentalArguments exp){
-        return setClassicTransform(exp.classifierName, exp.foldId);
+    public static Transformer setTransform(ExperimentalArguments exp){
+        return setClassicTransform(exp.estimatorName, exp.foldId);
     }
 
 

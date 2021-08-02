@@ -24,8 +24,10 @@ import core.AppContext;
 import core.contracts.Dataset;
 import datasets.ListDataset;
 import evaluation.MultipleClassifierEvaluation;
-import experiments.Experiments;
+import experiments.ClassificationExperiments;
 import java.util.Random;
+
+import experiments.ExperimentalArguments;
 import trees.ProximityForest;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -52,7 +54,7 @@ import weka.core.Randomizable;
  * our purposes here.
  * 
  * NOTE2: because of the static AppContext holding e.g random seeds etc, do not run multiple 
- * experiments using ProximityForest in parallel, i.e with Experiments.setupAndRunMultipleExperimentsThreaded(...)
+ * experiments using ProximityForest in parallel, i.e with ClassificationExperiments.setupAndRunMultipleExperimentsThreaded(...)
  * 
  * TODO: weka/tsc interface implementations etc, currently this is simply in a runnable state 
  * for basic experimental runs to compare against. Need: TechnicalInformationHandler, need to do the get/setOptions, 
@@ -89,7 +91,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 
     //from paper, pg18-19: 
     /*
-        4.2 Experiments on the UCR Archive
+        4.2 ClassificationExperiments on the UCR Archive
     
         ...
     
@@ -218,14 +220,14 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(pf));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(pf, 0.966958211856171, "2019_09_26"));
         
-        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+        ExperimentalArguments exp = new ExperimentalArguments();
 
         exp.dataReadLocation = "Z:/Data/TSCProblems2015/";
         exp.resultsWriteLocation = "C:/Temp/ProximityForestWekaTest/";
-        exp.classifierName = "ProximityForest";
+        exp.estimatorName = "ProximityForest";
 //        exp.datasetName = "BeetleFly";
 //        exp.foldId = 0;
-//        Experiments.setupAndRunExperiment(exp);
+//        ClassificationExperiments.setupAndRunExperiment(exp);
 
 
         
@@ -259,7 +261,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
             for (int f = 0; f < numFolds; f++) {
                 exp.datasetName = dataset;
                 exp.foldId = f;
-                Experiments.setupAndRunExperiment(exp);
+                ClassificationExperiments.setupAndRunExperiment(exp);
             }
         }
         
@@ -268,7 +270,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         mce.setBuildMatlabDiagrams(false);
         mce.setTestResultsOnly(true);
         mce.setDatasets(datasets);
-        mce.readInClassifier(exp.classifierName, exp.resultsWriteLocation);
+        mce.readInClassifier(exp.estimatorName, exp.resultsWriteLocation);
 //        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
         mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
         mce.runComparison();

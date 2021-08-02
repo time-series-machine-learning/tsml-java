@@ -16,10 +16,8 @@ package experiments;
 
 
 import evaluation.tuning.ParameterSpace;
-import experiments.Experiments.ExperimentalArguments;
 import machine_learning.classifiers.tuned.TunedClassifier;
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.distances.dtw.DTW;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
 import tsml.classifiers.distance_based.distances.erp.ERPDistance;
@@ -29,7 +27,6 @@ import tsml.classifiers.distance_based.distances.wdtw.WDTWDistance;
 import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.knn.KNNLOOCV;
-import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import tsml.classifiers.dictionary_based.*;
@@ -110,10 +107,9 @@ public class ClassifierLists {
             "ProximityForest","PF"
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
-    private static Classifier setDistanceBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setDistanceBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c = null;
-        int fold=exp.foldId;
         switch(classifier) {
             case "1NN-ED":
                 c = new KNN();
@@ -228,8 +224,8 @@ public class ClassifierLists {
     public static String[] dictionary= {
         "BOP", "SAXVSM", "SAX_1NN", "BOSS", "cBOSS", "S-BOSS","BoTSWEnsemble","WEASEL","TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
-    private static Classifier setDictionaryBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setDictionaryBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -278,8 +274,8 @@ public class ClassifierLists {
     */
     public static String[] interval= {"LPS","TSF","CIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
-    private static Classifier setIntervalBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setIntervalBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -307,8 +303,8 @@ public class ClassifierLists {
      */
     public static String[] frequency= {"RISE", "RISE_FFT", "RISE_ACF", "RISE_SPEC", "RISE_MFCC", "RISE_AF"};
     public static HashSet<String> frequencyBased=new HashSet<String>( Arrays.asList(frequency));
-    private static Classifier setFrequencyBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setFrequencyBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -350,8 +346,8 @@ public class ClassifierLists {
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier","ShapeletTreeClassifier","STC"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
-    private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setShapeletBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -382,8 +378,8 @@ public class ClassifierLists {
      */
     public static String[] hybrids= {"HiveCoteAlpha","FlatCote","HIVE-COTEv1","catch22","ROCKET"};
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
-    private static Classifier setHybridBased(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setHybridBased(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -422,8 +418,8 @@ public class ClassifierLists {
             "DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I",
             "HIVE-COTEn_I","WEASEL-MUSE"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
-    private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName,resultsPath="",dataset="";
+    private static Classifier setMultivariate(ExperimentalArguments exp){
+        String classifier=exp.estimatorName,resultsPath="",dataset="";
         int fold=exp.foldId;
         Classifier c;
         boolean canLoadFromFile=true;
@@ -542,8 +538,8 @@ public class ClassifierLists {
         "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "PLSNominalClassifier","BayesNet","ED","C45",
             "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
-    private static Classifier setStandardClassifiers(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    private static Classifier setStandardClassifiers(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         int fold=exp.foldId;
         Classifier c;
         switch(classifier) {
@@ -643,8 +639,8 @@ public class ClassifierLists {
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"HIVE-COTE1.0","HIVE-COTEV2","HIVE-COTE","HC-TDE","HC-WEASEL","HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
-    private static Classifier setBespokeClassifiers(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName,resultsPath="",dataset="";
+    private static Classifier setBespokeClassifiers(ExperimentalArguments exp){
+        String classifier=exp.estimatorName,resultsPath="",dataset="";
         int fold=exp.foldId;
         Classifier c;
         boolean canLoadFromFile=true;
@@ -806,8 +802,8 @@ public class ClassifierLists {
      * this can be reproduced with setClassifierClassic below.
      *
      */
-    public static Classifier setClassifier(Experiments.ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+    public static Classifier setClassifier(ExperimentalArguments exp){
+        String classifier=exp.estimatorName;
         Classifier c = null;
         if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
@@ -855,8 +851,8 @@ public class ClassifierLists {
      * @return
      */
     public static Classifier setClassifierClassic(String classifier, int fold){
-        Experiments.ExperimentalArguments exp=new ExperimentalArguments();
-        exp.classifierName=classifier;
+        ExperimentalArguments exp=new ExperimentalArguments();
+        exp.estimatorName =classifier;
         exp.foldId=fold;
         return setClassifier(exp);
     }

@@ -46,7 +46,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassificationExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -84,7 +84,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassificationExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -102,7 +102,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassificationExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 

@@ -20,9 +20,10 @@
 package examples;
 
 import evaluation.MultipleClassifierEvaluation;
-import evaluation.storage.ClassifierResults;
 import evaluation.storage.ClassifierResultsCollection;
-import experiments.Experiments;
+import experiments.ClassificationExperiments;
+import experiments.ExperimentalArguments;
+
 import java.util.Arrays;
 
 /**
@@ -44,11 +45,11 @@ public class Ex05_ThoroughEvaluation {
         String[] datasets = { "ItalyPowerDemand", "Beef" }; 
         int numFolds = 3;
         
-        Experiments.ExperimentalArguments expThreaded = new Experiments.ExperimentalArguments();
+        ExperimentalArguments expThreaded = new ExperimentalArguments();
         expThreaded.dataReadLocation = "src/main/java/experiments/data/tsc/"; 
         expThreaded.resultsWriteLocation = resultsPath;                      
         
-        Experiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
+        ClassificationExperiments.setupAndRunMultipleExperimentsThreaded(expThreaded, classifiers, null, datasets, 0, numFolds);
         
         
         

@@ -18,8 +18,10 @@
 package tsml.classifiers.distance_based.utils.strings;
 
 import experiments.ClassifierLists;
-import experiments.Experiments;
+
 import java.time.Duration;
+
+import experiments.ExperimentalArguments;
 import org.apache.commons.lang3.StringUtils;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.utils.collections.params.ParamHandler;
@@ -235,9 +237,9 @@ public class StrUtils {
 
 
     public static AbstractClassifier classifierFromClassifierLists(String name) {
-        Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments();
+        ExperimentalArguments experimentalArguments = new ExperimentalArguments();
         experimentalArguments.foldId = 0;
-        experimentalArguments.classifierName = name;
+        experimentalArguments.estimatorName = name;
         Classifier classifier = ClassifierLists.setClassifier(experimentalArguments);
         return (AbstractClassifier) classifier;
     }
@@ -272,9 +274,9 @@ public class StrUtils {
 
 
     public static EnhancedAbstractClassifier enhancedClassifierFromClassifierLists(String name) {
-        Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments();
+        ExperimentalArguments experimentalArguments = new ExperimentalArguments();
         experimentalArguments.foldId = 0;
-        experimentalArguments.classifierName = name;
+        experimentalArguments.estimatorName = name;
         Classifier classifier = ClassifierLists.setClassifier(experimentalArguments);
         if(!(classifier instanceof EnhancedAbstractClassifier)) {
             throw new IllegalStateException();

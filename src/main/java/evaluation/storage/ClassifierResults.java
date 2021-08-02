@@ -248,7 +248,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassificationExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     private long errorEstimateTime = -1;
@@ -879,7 +879,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassificationExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     public long getErrorEstimateTime() {
@@ -894,7 +894,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassificationExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     public void setErrorEstimateTime(long errorEstimateTime) {

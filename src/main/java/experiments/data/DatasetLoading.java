@@ -20,7 +20,7 @@
 package experiments.data;
 
 import experiments.ClassifierLists;
-import experiments.Experiments;
+import experiments.ClassificationExperiments;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -46,7 +46,7 @@ import weka.core.converters.ArffSaver;
  */
 public class DatasetLoading {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(ClassificationExperiments.class.getName());
 
     private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
 

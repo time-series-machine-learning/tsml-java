@@ -16,7 +16,6 @@
  */
 package experiments;
 
-import experiments.Experiments.ExperimentalArguments;
 import experiments.data.DatasetLoading;
 import java.io.File;
 import java.math.BigDecimal;
@@ -84,7 +83,7 @@ public class TransformExperiments {
         long hrs = TimeUnit.HOURS.convert(expSettings.contractTrainTimeNanos, TimeUnit.NANOSECONDS);
         
         //Build/make the directory to write the train and/or testFold files to
-        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + hrs + "/";
+        String partialWriteLocation = expSettings.resultsWriteLocation + expSettings.estimatorName + hrs + "/";
         String transformWriteLocation = partialWriteLocation + "Transforms/" + expSettings.datasetName + "/";
         String additionalWriteLocation =  partialWriteLocation + /*expSettings.classifierName*/ "Shapelets" + "/" + expSettings.datasetName + "/";
         
@@ -138,7 +137,7 @@ public class TransformExperiments {
         
         Instances[] out = new Instances[2];
         
-        switch(expSettings.classifierName){
+        switch(expSettings.estimatorName){
             
             case"ST": case "ShapeletTransform":
                 
@@ -205,7 +204,7 @@ public class TransformExperiments {
     private static void writeAdditionalTransformData(ExperimentalArguments expSettings, Transformer transformer, String additionalDataFilePath) {
                     
                     
-        switch(expSettings.classifierName){
+        switch(expSettings.estimatorName){
             
             case"ST": case "ShapeletTransform":
                 ShapeletFilter st = (ShapeletFilter) transformer;

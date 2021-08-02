@@ -1,7 +1,7 @@
 package local;
 
-import experiments.Experiments;
-import experiments.data.DatasetLists;
+import experiments.ClassificationExperiments;
+import experiments.ExperimentalArguments;
 
 import java.util.ArrayList;
 
@@ -10,8 +10,8 @@ public class LocalExperiments {
         //even if all else fails, print the args as a sanity check for cluster.
 
         if (args.length > 0) {
-            Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(args);
-            Experiments.setupAndRunExperiment(expSettings);
+            ExperimentalArguments expSettings = new ExperimentalArguments(args);
+            ClassificationExperiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
             int folds=1;
@@ -23,10 +23,8 @@ public class LocalExperiments {
             //Experiment Parameters, see
             String classifier="1NN-WDTW";//Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters= new ArrayList<>();
-            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
-            parameters.add("-rp=Z:\\Results Working Area\\DistanceBased\\tsml\\"); //Where to write results
-//            parameters.add("-dp=Z:\\temp\\"); //Where to get datasets
-//            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
+            parameters.add("-rp=C:\\temp\\"); //Where to write results
             parameters.add("-gtf=false"); //Whether to generate train files or not
             parameters.add("-cn="+classifier); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
@@ -41,7 +39,7 @@ public class LocalExperiments {
 
 
 //            String[] probFiles= univariate; //Problem name(s)
-            String[] probFiles= {"ArrowHead"}; //Problem name(s)
+            String[] probFiles= {"UnitTest"}; //Problem name(s)
 //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
             /*
              * END OF SETTINGS
@@ -53,10 +51,10 @@ public class LocalExperiments {
 
             boolean threaded=true;
             if (threaded) {
-                Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with "+expSettings);
 //              setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,probFiles,0,folds);
-//                Experiments.setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
+//                ClassificationExperiments.setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{classifier},probFiles,0,folds);
             }
             else {//Local run without args, mainly for debugging
                 for (String prob:probFiles) {
@@ -64,9 +62,9 @@ public class LocalExperiments {
 
                     for(int i=1;i<=folds;i++) {
                         settings[5]="-f="+i;
-                        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments(settings);
+                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
 //                      System.out.println("Sequential experiment with "+expSettings);
-                        Experiments.setupAndRunExperiment(expSettings);
+                        ClassificationExperiments.setupAndRunExperiment(expSettings);
                     }
                 }
             }

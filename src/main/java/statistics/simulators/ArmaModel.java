@@ -234,7 +234,7 @@ public class ArmaModel extends Model{
 
             //			Compare to "anytime" Vas?? and Keogh == ??
             //		Clustering method Implement EM and Hierarchical
-            //		Experiments
+            //		ClassificationExperiments
             //		1: Use Marahajs models
             //		2: if ineffective, find some models it works on
             //		3: Generate a class of random models
