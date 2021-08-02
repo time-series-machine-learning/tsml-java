@@ -1312,12 +1312,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
         Collections.addAll(cr.clusterValues, 0., 1., 1., 0., 0., 1., 0., 3., 3., 3., 2., 2., 2., 2., 2.);
         cr.numInstances = 15;
         cr.numClusters = 4;
-        cr.calculateAcc();
-        System.out.println(cr.accuracy);
-        System.out.println(cr.findRI());
-        System.out.println(cr.findARI());
-        System.out.println(cr.findMI());
-        System.out.println(cr.findNMI());
-        System.out.println(cr.findAMI());
+        cr.findAllStats();
+        System.out.println(cr.statsToString());
     }
 }
