@@ -27,6 +27,7 @@ import tsml.classifiers.*;
 import tsml.data_containers.*;
 import tsml.data_containers.utilities.Converter;
 import tsml.data_containers.utilities.TimeSeriesSummaryStatistics;
+import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -213,36 +214,49 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * Primary parameters potentially tunable
      */
+
     private int numClassifiers = DEFAULT_NUM_CLASSIFIERS;
+
     /**
      * numIntervalsFinder sets numIntervals in buildClassifier.
      */
     private int numIntervals = 0;
     private transient Function<Integer, Integer> numIntervalsFinder;
+
     /**
      * Secondary parameter, mainly there to avoid single item intervals,
      * which have no slope or std dev
      */
     private int minIntervalLength = 3;
+
     /**
      * Ensemble members of base classifier, default to random forest RandomTree
      */
     private ArrayList<Classifier> trees;
     private Classifier classifier = new ContinuousIntervalTree();
+
     /**
      * for each classifier [i]  interval j  starts at intervals[i][j][0] and
      * ends  at  intervals[i][j][1]
      */
     private ArrayList<int[][]> intervals;
+
     /**
      * Holding variable for test classification in order to retain the header info
      */
     private Instances testHolder;
+
     /**
      * voteEnsemble determines whether to aggregate classifications or
      * probabilities when predicting
      */
     private boolean voteEnsemble = true;
+
+    /**
+     * Resizer to transform data if unequal length
+     */
+    private Resizer resizer;
+
     /**
      * Flags and data required if Bagging
      **/
@@ -250,6 +264,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     private ArrayList<boolean[]> inBag;
     private int[] oobCounts;
     private double[][] trainDistributions;
+
     /**** Checkpointing variables *****/
     private boolean checkpoint = false;
     private String checkpointPath = null;
@@ -355,6 +370,13 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         boolean canHandle = getTSCapabilities().test(data);
         if (!canHandle)
             throw new Exception("TSF cannot handle this type of data");
+
+        if (!data.isEqualLength()) {
+            // pad with 0s
+            resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
+            TimeSeriesInstances padded = resizer.fitTransform(data);
+            data = padded;
+        }
 
         // set the classifier data
         setTSTrainData(data);
@@ -848,13 +870,20 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
      */
     @Override
     public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
+        // check if unequal length
+        if (seriesLength > ins.getMaxLength()) {
+            // pad with 0s
+            TimeSeriesInstance padded = resizer.transform(ins);
+            ins = padded;
+        }
+
         double[] classProbability = new double[getTSTrainData().getClassLabels().length]; // length of class variables
         double[] statsData = new double[numIntervals * 3];
 
         for (int i = 0; i < trees.size(); i++) {
             for (int j = 0; j < numIntervals; j++) {
                 // get sliced series
-                TimeSeries tsAtInterval = ins.get(0).getVSlice(intervals.get(i)[j][0], intervals.get(i)[j][1]);
+                double[] tsAtInterval = ins.get(0).getVSliceArray(intervals.get(i)[j][0], intervals.get(i)[j][1]);
 
                 // get stats about data
                 double mean = TimeSeriesSummaryStatistics.mean(tsAtInterval);
@@ -1106,7 +1135,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
     @Override
     public TSCapabilities getTSCapabilities() {
         TSCapabilities tsCapabilities = new TSCapabilities();
-        tsCapabilities.enable(TSCapabilities.EQUAL_LENGTH)
+        tsCapabilities.enable(TSCapabilities.EQUAL_OR_UNEQUAL_LENGTH)
                 .enable(TSCapabilities.UNIVARIATE)
                 .enable(TSCapabilities.NO_MISSING_VALUES)
                 .enable(TSCapabilities.MIN_LENGTH(2));
@@ -1178,7 +1207,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/visCIF.py \"" +
                 visSavePath.replace("\\", "/")+ "\" " + seed + " 3 1 3");
 
         if (debug) {

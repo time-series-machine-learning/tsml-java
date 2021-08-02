@@ -64,7 +64,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     //TrainTimeContractable
     protected boolean trainTimeContract = false;
-    protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(5); // if contracting with no time limit given, default to 7 days.
+    protected long trainContractTimeNanos = TimeUnit.DAYS.toNanos(7); // if contracting with no time limit given, default to 7 days.
     protected TimeUnit contractTrainTimeUnit = TimeUnit.NANOSECONDS;
 
     /**
@@ -261,10 +261,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             }
             printDebug(" \n ");
         }
-        printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
 
-        if (trainTimeContract)
+        if (trainTimeContract){
+            printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
             setupContracting();
+        }
 
         super.buildClassifier(data);
         trainResults.setParas(getParameters());
@@ -366,6 +367,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             if(module.isTrainTimeContractable())
                 ((TrainTimeContractable) module.getClassifier()).setTrainTimeLimit(highFidelityUnit, highFidelityTimePerClassifier);
     }
+
+    public void setAlpha(double alpha){
+        this.alpha = alpha;
+        this.weightingScheme = new TrainAcc(this.alpha);
+    }
     
     @Override   //EnhancedAbstractClassifier
     public void setSeed(int seed) { 
@@ -407,13 +413,16 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     @Override
     public String getParameters() {
         String str="WeightingScheme,"+weightingScheme+","+"VotingScheme,"+votingScheme+",alpha,"+alpha+
-                ",contractTime(hrs),"+trainContractTimeNanos/1000000000/60/60.0+",";
+                ",seedClassifier,"+seedClassifier+",seed,"+seed;
+        if (trainTimeContract) str += ",contractTime(hrs),"+trainContractTimeNanos/1000000000/60/60.0;
 
         for (EnsembleModule module : modules)
-            str+=module.getModuleName()+","+module.posteriorWeights[0]+",";
+            str+=","+module.getModuleName()+","+module.posteriorWeights[0];
 
-        for (EnsembleModule module : modules)
-            str += module.getParameters() + ",,";
+        //This gets really long and it only really used for debugging
+        if (readIndividualsResults)
+            for (EnsembleModule module : modules)
+                str += module.getParameters() + ",,";
 
         return str;
 

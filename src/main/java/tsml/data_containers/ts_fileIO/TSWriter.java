@@ -43,7 +43,7 @@ public class TSWriter {
         data = dat;
     }
 
-    DecimalFormat df = new DecimalFormat();
+    DecimalFormat df = new DecimalFormat(".########");
 
     public void setDestination(OutputStream output) {
         writer = new BufferedWriter(new OutputStreamWriter(output));

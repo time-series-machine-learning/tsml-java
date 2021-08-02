@@ -895,6 +895,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             trainResults.setFoldID(seed);
             trainResults.setErrorEstimateMethod("InternalCV");
             trainResults.finaliseResults(actuals);
+        //todo doubles the transform, make more like STC and test (same with Arsenal)
         } else if (trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE) {
             /** Build a single new DrCIF using Bagging, and extract the estimate from this
              */

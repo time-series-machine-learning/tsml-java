@@ -74,30 +74,30 @@ application {
     mainClassName = 'experiments.Experiments'
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': application.mainClassName,
-                   'Implementation-Title': project.name,
-                   'Implementation-Version': version
-    }
-}
+//jar {
+//    manifest {
+//        attributes 'Main-Class': application.mainClassName,
+//                   'Implementation-Title': project.name,
+//                   'Implementation-Version': version
+//    }
+//}
 
-task copyDepsToBuild(type: Copy) {
-    into "build/libs/lib"
-    from configurations.runtime
-    from 'lib'
-}
+//task copyDepsToBuild(type: Copy) {
+//    into "build/libs/lib"
+//    from configurations.runtime
+//    from 'lib'
+//}
 
-task fatJar(type: Jar) {
-    zip64 true
-    manifest = jar.manifest
-    baseName = project.name + "-all"
-    from sourceSets.main.output
-    dependsOn configurations.runtimeClasspath
-    from {
-        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
-    }
-}
-
-jar.finalizedBy(fatJar)
-jar.finalizedBy(copyDepsToBuild)
+//task fatJar(type: Jar) {
+//    zip64 true
+//    manifest = jar.manifest
+//    baseName = project.name + "-all"
+//    from sourceSets.main.output
+//    dependsOn configurations.runtimeClasspath
+//    from {
+//        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+//    }
+//}
+//
+//jar.finalizedBy(fatJar)
+//jar.finalizedBy(copyDepsToBuild)
