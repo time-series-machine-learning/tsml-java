@@ -18,10 +18,9 @@
 package machine_learning.clusterers;
 
 import tsml.clusterers.EnhancedAbstractClusterer;
-import weka.core.DistanceFunction;
-import weka.core.EuclideanDistance;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
+
+import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Abstract class for vector based clusterers.
@@ -36,6 +35,38 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
     //mean and stdev of each attribute for normalisation.
     protected double[] attributeMeans;
     protected double[] attributeStdDevs;
+
+    @Override
+    public void buildClusterer(Instances data) throws Exception {
+        super.buildClusterer(data);
+
+        if (normaliseData)
+            normaliseData(train);
+
+        distFunc.setInstances(train);
+    }
+
+    //Find the closest train instance and return its cluster
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        if (normaliseData)
+            normaliseData(newInst);
+        double minDist = Double.MAX_VALUE;
+        int closestCluster = 0;
+
+        for (int i = 0; i < train.size(); ++i) {
+            double dist = distFunc.distance(newInst, train.get(i));
+
+            if (dist < minDist) {
+                minDist = dist;
+                closestCluster = (int) assignments[i];
+            }
+        }
+
+        return closestCluster;
+    }
 
     public void setDistanceFunction(DistanceFunction distFunc) {
         this.distFunc = distFunc;
@@ -53,17 +84,25 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
 
         attributeMeans = new double[data.numAttributes() - 1];
         attributeStdDevs = new double[data.numAttributes() - 1];
+        int cls = data.classIndex() >= 0 ? 1 : 0;
 
-        for (int i = 0; i < data.numAttributes() - 1; i++) {
+        for (int i = 0; i < data.numAttributes() - cls; i++) {
             attributeMeans[i] = data.attributeStats(i).numericStats.mean;
             attributeStdDevs[i] = data.attributeStats(i).numericStats
                     .stdDev;
 
             for (int n = 0; n < data.size(); n++) {
                 Instance instance = data.get(n);
-                instance.setValue(i, (instance.value(i) - attributeMeans[i])
-                        / attributeStdDevs[i]);
+                instance.setValue(i, (instance.value(i) - attributeMeans[i]) / attributeStdDevs[i]);
             }
+        }
+    }
+
+    protected void normaliseData(Instance inst){
+        int cls = inst.classIndex() >= 0 ? 1 : 0;
+
+        for (int i = 0; i < inst.numAttributes() - cls; i++) {
+            inst.setValue(i, (inst.value(i) - attributeMeans[i]) / attributeStdDevs[i]);
         }
     }
 }

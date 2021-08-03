@@ -18,11 +18,16 @@
 package tsml.clusterers;
 
 import weka.clusterers.AbstractClusterer;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 
+import static utilities.InstanceTools.deleteClassAttribute;
+
 /**
- * @author pfm15hbu
+ * Enhanced abstract clusterer class for time series and vector clusterers. Extends the Weka AbstractClusterer class.
+ *
+ * @author Matthew Middlehurst
  */
 public abstract class EnhancedAbstractClusterer extends AbstractClusterer {
 
@@ -32,6 +37,14 @@ public abstract class EnhancedAbstractClusterer extends AbstractClusterer {
 
     protected double[] assignments;
     protected ArrayList<Integer>[] clusters;
+
+    protected Instances train;
+
+    @Override
+    public void buildClusterer(Instances data) throws Exception {
+        train = copyInstances ? new Instances(data) : data;
+        deleteClassAttribute(train);
+    }
 
     public double[] getAssignments() {
         return assignments;

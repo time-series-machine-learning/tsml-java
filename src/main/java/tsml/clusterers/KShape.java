@@ -48,6 +48,7 @@ public class KShape extends EnhancedAbstractClusterer {
     //Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data. ACM, 2015.
 
     private int k = 2;
+    private int maxIterations = 100;
 
     private Instances centroids;
 
@@ -63,29 +64,27 @@ public class KShape extends EnhancedAbstractClusterer {
         k = n;
     }
 
+    public void setMaxIterations(int i) {
+        maxIterations = i;
+    }
+
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
+        super.buildClusterer(data);
 
-        deleteClassAttribute(data);
-        zNormalise(data);
+        zNormalise(train);
 
-        ArrayList<Attribute> atts = new ArrayList(data.numAttributes());
-
-        for (int i = 0; i < data.numAttributes(); i++) {
+        ArrayList<Attribute> atts = new ArrayList(train.numAttributes());
+        for (int i = 0; i < train.numAttributes(); i++) {
             atts.add(new Attribute("att" + i));
         }
 
         centroids = new Instances("centroids", atts, k);
-
         for (int i = 0; i < k; i++) {
-            centroids.add(new DenseInstance(1, new double[data.numAttributes()]));
+            centroids.add(new DenseInstance(1, new double[train.numAttributes()]));
         }
 
         Random rand;
-
         if (!seedClusterer) {
             rand = new Random();
         } else {
@@ -93,31 +92,29 @@ public class KShape extends EnhancedAbstractClusterer {
         }
 
         int iterations = 0;
-        assignments = new double[data.numInstances()];
-
+        assignments = new double[train.numInstances()];
         //Randomly assign clusters
         for (int i = 0; i < assignments.length; i++) {
             assignments[i] = (int) Math.ceil(rand.nextDouble() * k) - 1;
         }
 
-        double[] prevCluster = new double[data.numInstances()];
+        double[] prevCluster = new double[train.numInstances()];
         prevCluster[0] = -1;
-
         //While clusters change and less than max iterations
-        while (!Arrays.equals(assignments, prevCluster) && iterations < 100) {
+        while (!Arrays.equals(assignments, prevCluster) && iterations < maxIterations) {
             prevCluster = Arrays.copyOf(assignments, assignments.length);
 
             //Select centroids
             for (int i = 0; i < k; i++) {
-                centroids.set(i, shapeExtraction(data, centroids.get(i), i));
+                centroids.set(i, shapeExtraction(train, centroids.get(i), i));
             }
 
             //Set each instance to the cluster of its closest centroid using shape based distance
-            for (int i = 0; i < data.numInstances(); i++) {
+            for (int i = 0; i < train.numInstances(); i++) {
                 double minDist = Double.MAX_VALUE;
 
                 for (int n = 0; n < k; n++) {
-                    SBD sbd = new SBD(centroids.get(n), data.get(i), false);
+                    SBD sbd = new SBD(centroids.get(n), train.get(i), false);
 
                     if (sbd.dist < minDist) {
                         minDist = sbd.dist;
@@ -137,7 +134,7 @@ public class KShape extends EnhancedAbstractClusterer {
             clusters[i] = new ArrayList();
         }
 
-        for (int i = 0; i < data.numInstances(); i++) {
+        for (int i = 0; i < train.numInstances(); i++) {
             for (int n = 0; n < k; n++) {
                 if (n == assignments[i]) {
                     clusters[n].add(i);
@@ -147,7 +144,27 @@ public class KShape extends EnhancedAbstractClusterer {
         }
     }
 
-    private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum) throws Exception {
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        zNormalise(newInst);
+        double minDist = Double.MAX_VALUE;
+        int closestCluster = 0;
+
+        for (int i = 0; i < centroids.size(); ++i) {
+            SBD sbd = new SBD(newInst, centroids.get(i), false);
+
+            if (sbd.dist < minDist) {
+                minDist = sbd.dist;
+                closestCluster = i;
+            }
+        }
+
+        return closestCluster;
+    }
+
+    private Instance shapeExtraction(Instances data, Instance centroid, int centroidNum) {
         Instances subsample = new Instances(data, 0);
         int seriesSize = centroid.numAttributes();
 
@@ -218,9 +235,9 @@ public class KShape extends EnhancedAbstractClusterer {
 
             //Hack to move to next column if the correct values dont appear on the first one for some reason
             //I have no idea why this happens or which datasets this may happen in
-            if (Math.round(eigSum) == subsample.get(0).numAttributes() && Math.round(eigSumNeg) == subsample.get(0).numAttributes()) {
+            if (Math.round(eigSum) == subsample.get(0).numAttributes() &&
+                    Math.round(eigSumNeg) == subsample.get(0).numAttributes()) {
                 col++;
-                System.err.println("Possible eigenvalue error, moving onto next column. Look into why this happens.");
             } else {
                 break;
             }
@@ -280,7 +297,7 @@ public class KShape extends EnhancedAbstractClusterer {
     }
 
     //Class for calculating Shape Based Distance
-    private class SBD {
+    private static class SBD {
 
         public double dist;
         public Instance yShift;

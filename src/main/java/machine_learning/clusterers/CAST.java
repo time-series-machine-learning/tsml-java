@@ -75,18 +75,10 @@ public class CAST extends DistanceBasedVectorClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
-
-        deleteClassAttribute(data);
-
-        if (normaliseData) {
-            normaliseData(data);
-        }
+        super.buildClusterer(data);
 
         if (!hasDistances) {
-            distanceMatrix = createDistanceMatrix(data, distFunc);
+            distanceMatrix = createDistanceMatrix(train, distFunc);
         }
 
         normaliseDistanceMatrix();
@@ -96,7 +88,7 @@ public class CAST extends DistanceBasedVectorClusterer {
 
         //Create and store an ArrayList for each cluster containing indexes of
         //points inside the cluster
-        assignments = new double[data.size()];
+        assignments = new double[train.size()];
         clusters = new ArrayList[subclusters.size()];
 
         for (int i = 0; i < subclusters.size(); i++) {
@@ -163,8 +155,8 @@ public class CAST extends DistanceBasedVectorClusterer {
                 }
             }
 
-            //Add the cluster and the affinities of each member to itself, items in subcluster removed from indicies
-            //pool
+            //Add the cluster and the affinities of each member to itself.
+            //Items in the subcluster are removed from the indicies pool
             clusterAffinities.add(subclusterAffinities);
             subclusters.add(subcluster);
         }

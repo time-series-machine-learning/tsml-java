@@ -94,18 +94,10 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
+        super.buildClusterer(data);
 
-        deleteClassAttribute(data);
-
-        if (normaliseData) {
-            normaliseData(data);
-        }
-
-        numInstances = data.size();
-        distanceMatrix = createDistanceMatrix(data, distFunc);
+        numInstances = train.size();
+        distanceMatrix = createDistanceMatrix(train, distFunc);
 
         if (distC < 0) {
             distC = getDistCDefault();
@@ -245,18 +237,6 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
             estimates[i] = localDensities[i] * shortestDist[i];
             sum += estimates[i];
         }
-
-        //Matlab commands to plot out the decision graph.
-        //not very sophisticated i know
-//        System.out.println("figure");
-//        System.out.println("b = " + Arrays.toString(localDensities));
-//        System.out.println("v = " + Arrays.toString(shortestDist));
-//        System.out.println("scatter(b,v)");
-
-        //Same as above but for estimates
-//        System.out.println("figure");
-//        System.out.println("e = " + Arrays.toString(estimates));
-//        System.out.println("scatter([1:length(e)],sort(e))");
 
         //Find the indexes of the estimates sorted in ascending order
         Integer[] estIndexes = new Integer[numInstances];

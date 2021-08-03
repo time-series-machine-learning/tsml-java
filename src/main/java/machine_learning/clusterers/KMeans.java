@@ -18,6 +18,7 @@
 package machine_learning.clusterers;
 
 import experiments.data.DatasetLoading;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -94,18 +95,13 @@ public class KMeans extends DistanceBasedVectorClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
+        super.buildClusterer(data);
 
-        deleteClassAttribute(data);
-
-        distFunc.setInstances(data);
-        numInstances = data.size();
+        numInstances = train.size();
         assignments = new double[numInstances];
 
         if (numInstances <= k) {
-            clusterCenters = new Instances(data);
+            clusterCenters = new Instances(train);
 
             for (int i = 0; i < numInstances; i++) {
                 assignments[i] = i;
@@ -129,19 +125,15 @@ public class KMeans extends DistanceBasedVectorClusterer {
             return;
         }
 
-        if (normaliseData) {
-            normaliseData(data);
-        }
-
         if (findBestK) {
             //Builds clusters using multiple values of k and keeps the best one
-            findBestK(data);
+            findBestK(train);
         } else {
             //Pick initial cluster centers.
             if (refinedInitialCenters) {
-                initialClusterCentersRefined(data);
+                initialClusterCentersRefined(train);
             } else if (!hasInitialCenters) {
-                initialClusterCenters(data);
+                initialClusterCenters(train);
             }
 
             boolean finished = false;
@@ -149,18 +141,39 @@ public class KMeans extends DistanceBasedVectorClusterer {
 
             //Change cluster centers until cluster membership no longer changes
             while (!finished) {
-                centerDistances = createCenterDistances(data);
+                centerDistances = createCenterDistances(train);
 
                 //If no clusters changed membership.
                 if (!calculateClusterMembership() || iterations == maxIterations) {
                     finished = true;
                 } else {
-                    selectClusterCenters(data);
+                    selectClusterCenters(train);
                 }
 
                 iterations++;
             }
         }
+    }
+
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        if (normaliseData)
+            normaliseData(newInst);
+        double minDist = Double.MAX_VALUE;
+        int closestCluster = 0;
+
+        for (int i = 0; i < clusterCenters.size(); ++i) {
+            double dist = distFunc.distance(inst, clusterCenters.get(i));
+
+            if (dist < minDist) {
+                minDist = dist;
+                closestCluster = i;
+            }
+        }
+
+        return closestCluster;
     }
 
     //Returns the sum of the squared distance from each point to its cluster
@@ -181,6 +194,7 @@ public class KMeans extends DistanceBasedVectorClusterer {
 
     //Create distances to cluster centers
     private double[][] createCenterDistances(Instances data) {
+        distFunc.setInstances(data);
         double[][] centerDists = new double[k][numInstances];
 
         for (int i = 0; i < numInstances; i++) {

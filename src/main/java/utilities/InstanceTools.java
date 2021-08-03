@@ -748,6 +748,13 @@ public class InstanceTools {
         }
     }
 
+    public static void deleteClassAttribute(Instance data){
+        if (data.classIndex() >= 0){
+            int clsIndex = data.classIndex();
+            data.deleteAttributeAt(clsIndex);
+        }
+    }
+
     public static List<Instances> instancesByClass(Instances instances) {
         List<Instances> instancesByClass = new ArrayList<>();
         int numClasses = instances.get(0).numClasses();

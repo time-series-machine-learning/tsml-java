@@ -23,6 +23,7 @@ import machine_learning.clusterers.PAM;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
@@ -48,6 +49,8 @@ public class TTC extends EnhancedAbstractClusterer {
     private double[][] distanceMatrix;
     private ArrayList<Integer>[] subclusters;
 
+    private PAM pam;
+
     public TTC() {
     }
 
@@ -62,52 +65,51 @@ public class TTC extends EnhancedAbstractClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
+        super.buildClusterer(data);
 
-        deleteClassAttribute(data);
-        zNormalise(data);
+        zNormalise(train);
 
         EuclideanDistance ed = new EuclideanDistance();
         ed.setDontNormalize(true);
-        distanceMatrix = createDistanceMatrix(data, ed);
+        distanceMatrix = createDistanceMatrix(train, ed);
 
         //Cluster using the CAST algorithm
         CAST cast = new CAST(distanceMatrix);
         cast.setAffinityThreshold(affinityThreshold);
-        cast.buildClusterer(data);
+        cast.buildClusterer(train);
         subclusters = cast.getClusters();
         ArrayList<double[]> affinities = cast.getClusterAffinities();
 
-        double[][] prototypes = new double[subclusters.length][data.numAttributes()];
+        double[][] prototypes = new double[subclusters.length][train.numAttributes()];
 
         //Take average of each cluster
         for (int i = 0; i < subclusters.length; i++) {
-            for (int n = 0; n < data.numAttributes(); n++) {
+            for (int n = 0; n < train.numAttributes(); n++) {
                 for (int g = 0; g < subclusters[i].size(); g++) {
-                    prototypes[i][n] += data.get(subclusters[i].get(g)).value(n) * (1 - affinities.get(i)[g]);
+                    prototypes[i][n] += train.get(subclusters[i].get(g)).value(n) * (1 - affinities.get(i)[g]);
                 }
 
                 prototypes[i][n] /= subclusters[i].size();
             }
         }
 
-        Instances cl = new Instances(data, subclusters.length);
+        Instances cl = new Instances(train, subclusters.length);
         for (int i = 0; i < subclusters.length; i++) {
             cl.add(new DenseInstance(1, prototypes[i]));
         }
 
-
         //Use PAM using DTW distance to cluster discretised data
-        PAM pam = new PAM();
+        pam = new PAM();
         pam.setDistanceFunction(new DTW());
         pam.setNumberOfClusters(k);
-        pam.setSeed(seed);
+        pam.setNormaliseData(false);
+        pam.setCopyInstances(false);
+        if (seedClusterer)
+            pam.setSeed(seed);
         pam.buildClusterer(cl);
 
         ArrayList<Integer>[] ptClusters = pam.getClusters();
-        assignments = new double[data.size()];
+        assignments = new double[train.size()];
 
         //Assign each instance to the cluster assigned it its subcluster using PAM
         for (int i = 1; i < k; i++) {
@@ -126,7 +128,7 @@ public class TTC extends EnhancedAbstractClusterer {
             clusters[i] = new ArrayList();
         }
 
-        for (int i = 0; i < data.size(); i++) {
+        for (int i = 0; i < train.size(); i++) {
             for (int n = 0; n < k; n++) {
                 if (n == assignments[i]) {
                     clusters[n].add(i);
@@ -134,6 +136,14 @@ public class TTC extends EnhancedAbstractClusterer {
                 }
             }
         }
+    }
+
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        zNormalise(newInst);
+        return pam.clusterInstance(newInst);
     }
 
     public static void main(String[] args) throws Exception {

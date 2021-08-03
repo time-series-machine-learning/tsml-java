@@ -18,6 +18,8 @@
 package machine_learning.clusterers;
 
 import experiments.data.DatasetLoading;
+import weka.core.DenseInstance;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
@@ -95,13 +97,9 @@ public class PAM extends DistanceBasedVectorClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
-        }
+        super.buildClusterer(train);
 
-        deleteClassAttribute(data);
-
-        numInstances = data.size();
+        numInstances = train.size();
         assignments = new double[numInstances];
 
         if (numInstances <= k) {
@@ -130,22 +128,17 @@ public class PAM extends DistanceBasedVectorClusterer {
             return;
         }
 
-        if (normaliseData) {
-            normaliseData(data);
-        }
-
-
         if (!hasDistances) {
-            distanceMatrix = createDistanceMatrix(data, distFunc);
+            distanceMatrix = createDistanceMatrix(train, distFunc);
         }
 
         if (findBestK) {
             //Build clusters using multiple values of k and uses the best one.
-            findBestK(data);
+            findBestK(train);
         } else {
             //Pick initial medoids.
             if (refinedInitialMedoids) {
-                initialMedoidsRefined(data);
+                initialMedoidsRefined(train);
             } else {
                 initialMedoids();
             }
@@ -169,8 +162,28 @@ public class PAM extends DistanceBasedVectorClusterer {
         }
     }
 
-    //Returns the sum of the squared distance from each point to its cluster
-    //medoid
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        if (normaliseData)
+            normaliseData(newInst);
+        double minDist = Double.MAX_VALUE;
+        int closestCluster = 0;
+
+        for (int i = 0; i < medoids.length; ++i) {
+            double dist = distFunc.distance(inst, train.get(medoids[i]));
+
+            if (dist < minDist) {
+                minDist = dist;
+                closestCluster = i;
+            }
+        }
+
+        return closestCluster;
+    }
+
+    //Returns the sum of the squared distance from each point to its cluster medoid
     public double clusterSquaredDistance() {
         double distSum = 0;
 

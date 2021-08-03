@@ -19,6 +19,7 @@ package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
 import machine_learning.clusterers.KMeans;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -44,6 +45,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
     private int numFolds = 20;
 
     private ArrayList<UShapelet> shapelets;
+    private KMeans shapeletClusterer;
+    private int numShapeletsToUse;
     private int numInstances;
 
     public UnsupervisedShapelets() {
@@ -60,14 +63,23 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances) {
-            data = new Instances(data);
+        super.buildClusterer(data);
+
+        extractUShapelets(train);
+        clusterData(train);
+    }
+
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        deleteClassAttribute(newInst);
+        
+        Instance shapeletDists = new DenseInstance(numShapeletsToUse);
+        for (int i = 0; i < numShapeletsToUse; i++) {
+            shapeletDists.setValue(i, shapelets.get(i).computeDistance(inst));
         }
 
-        deleteClassAttribute(data);
-
-        extractUShapelets(data);
-        clusterData(data);
+        return shapeletClusterer.clusterInstance(shapeletDists);
     }
 
     private void extractUShapelets(Instances data) {
@@ -80,8 +92,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
         shapelets = new ArrayList();
         numInstances = data.size();
         Instance inst = data.firstInstance();
-        boolean finished = false;
 
+        boolean finished = false;
         while (!finished) {
             ArrayList<UShapelet> shapeletCandidates = new ArrayList();
 
@@ -96,7 +108,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
 
             double maxGap = -1;
             int maxGapIndex = -1;
-
             //Finds the shapelet with the highest gap value
             for (int i = 0; i < shapeletCandidates.size(); i++) {
                 if (shapeletCandidates.get(i).gap > maxGap) {
@@ -113,7 +124,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
             ArrayList<Double> lesserDists = new ArrayList();
             double maxDist = -1;
             int maxDistIndex = -1;
-
             //Finds the instance with the max dist to the shapelet and all with a dist lower than the distance used
             //to generate the gap value
             for (int i = 0; i < distances.length; i++) {
@@ -135,7 +145,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
                 double cutoff = mean + standardDeviation(lesserDists, mean);
 
                 Instances newData = new Instances(data, 0);
-
                 for (int i = 0; i < data.numInstances(); i++) {
                     if (distances[i] >= cutoff) {
                         newData.add(data.get(i));
@@ -143,7 +152,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
                 }
 
                 data = newData;
-
                 if (data.size() == 1) {
                     finished = true;
                 }
@@ -153,11 +161,10 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
 
     private void clusterData(Instances data) throws Exception {
         Instances distanceMap;
-
         double[][] foldClusters = new double[shapelets.size()][];
         double[][] distanceMatrix = new double[numInstances][1];
         double minRandIndex = 1;
-        int minIndex = -1;
+        KMeans bestClusterer = null;
 
         //Create a distance matrix by calculating the distance of shapelet i and previous shapelets to each time series
         for (int i = 0; i < shapelets.size(); i++) {
@@ -177,9 +184,9 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
                 KMeans kmeans = new KMeans();
                 kmeans.setNumberOfClusters(k);
                 kmeans.setNormaliseData(false);
-                kmeans.setFindBestK(false);
-                kmeans.setRefinedInitialMedoids(false);
-                kmeans.setSeed(seed + (n + 7) * (i + 7));
+                kmeans.setCopyInstances(false);
+                if (seedClusterer)
+                    kmeans.setSeed(seed + (n + 7) * (i + 7));
                 kmeans.buildClusterer(distanceMap);
 
                 double dist = kmeans.clusterSquaredDistance(distanceMap);
@@ -187,6 +194,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
                 if (dist < minDist) {
                     minDist = dist;
                     foldClusters[i] = kmeans.getAssignments();
+                    bestClusterer = kmeans;
                 }
             }
 
@@ -200,12 +208,12 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
 
             if (randIndex < minRandIndex) {
                 minRandIndex = randIndex;
-                minIndex = i;
+                shapeletClusterer = bestClusterer;
+                numShapeletsToUse = i;
             }
         }
 
-        assignments = foldClusters[minIndex];
-
+        assignments = foldClusters[numShapeletsToUse];
         clusters = new ArrayList[k];
 
         for (int i = 0; i < k; i++) {
@@ -351,6 +359,25 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
             }
 
             return distances;
+        }
+
+        double computeDistance(Instance inst){
+            double minDist = Double.MAX_VALUE;
+
+            double[] shapelet = zNormalise();
+            UShapelet subseries = new UShapelet(0, length, inst);
+
+            //Sliding window calculating distance of each section of the series to the shapelet
+            for (int n = 0; n < inst.numAttributes() - length; n++) {
+                subseries.startPoint = n;
+                double dist = euclideanDistance(shapelet, subseries.zNormalise());
+
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
+
+            return minDist;
         }
 
         //return the shapelet using the series, start point and shapelet length
