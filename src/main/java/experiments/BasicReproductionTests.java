@@ -398,7 +398,7 @@ public class BasicReproductionTests {
     public static boolean testBuildCAWPEPaper_AllResultsForFigure3() throws Exception {
         System.out.println("--buildCAWPEPaper_AllResultsForFigure3()");
         
-        Experiments.beQuiet = true;
+        ClassifierExperiments.beQuiet = true;
         CAWPE.buildCAWPEPaper_AllResultsForFigure3("");
         
         File f = new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/UCICAWPEvsHeteroEnsembles_BasicClassifiers_BIGglobalSummary.csv");

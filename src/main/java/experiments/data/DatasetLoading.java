@@ -19,8 +19,8 @@
 
 package experiments.data;
 
+import experiments.ClassifierExperiments;
 import experiments.ClassifierLists;
-import experiments.Experiments;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSWriter;
@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  */
 public class DatasetLoading {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(ClassifierExperiments.class.getName());
 
     private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
 

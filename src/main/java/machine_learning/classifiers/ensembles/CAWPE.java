@@ -17,8 +17,9 @@
  
 package machine_learning.classifiers.ensembles;
 
+import experiments.ClassifierExperiments;
 import experiments.CollateResults;
-import experiments.Experiments;
+import experiments.ExperimentalArguments;
 import evaluation.MultipleClassifierEvaluation;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.ensembles.weightings.TrainAccByClass;
@@ -43,7 +44,6 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.core.EuclideanDistance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import weka.classifiers.functions.Logistic;
@@ -393,18 +393,18 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * @param dataHeaders e.g { "UCI", "UCR" }
      * @param dataPaths e.g { "C:/Data/UCI/", "C:/Data/UCR/" }
      * @param datasetNames for each datapath, a list of the dataset names located there to be used [archive][dsetnames]
-     * @param classifiers the names of classifiers that can all be found in Experiments.setClassifier(...)
+     * @param classifiers the names of classifiers that can all be found in ClassifierExperiments.setClassifier(...)
      * @param baseWritePath e.g { "C:/Results/" }
      */
     protected static void buildCAWPEPaper_BuildClassifierResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths,
                                                             String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             for (String classifier : classifiers) {
-                if (!Experiments.beQuiet)
+                if (!ClassifierExperiments.beQuiet)
                     System.out.println("\t" + classifier);
 
                 for (String dset : datasetNames[archive]) {
-                    if (!Experiments.beQuiet)
+                    if (!ClassifierExperiments.beQuiet)
                         System.out.println(dset);
                     
                     for (int fold = 0; fold < numFolds; fold++) {
@@ -418,7 +418,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                             7. boolean whether to checkpoint parameter search for applicable tuned classifiers (true/false)
                             8. integer for specific parameter search (0 indicates ignore this)
                             */
-                        Experiments.main(new String[] { "-dp="+dataPaths[archive], "-rp="+baseWritePath+dataHeaders[archive]+"/", "-cn="+classifier, "-dn="+dset, "-f="+(fold+1), "-gtf=true"});
+                        ClassifierExperiments.main(new String[] { "-dp="+dataPaths[archive], "-rp="+baseWritePath+dataHeaders[archive]+"/", "-cn="+classifier, "-dn="+dset, "-f="+(fold+1), "-gtf=true"});
                     }
                 }
             }
@@ -532,7 +532,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
  
     protected static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
                                        String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
-        if (!Experiments.beQuiet)
+        if (!ClassifierExperiments.beQuiet)
             System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
@@ -555,7 +555,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
             String writePath = baseWritePath + dataHeaders[archive] + "/";
 
             for (String dset : datasetNames[archive]) {
-                if (!Experiments.beQuiet)
+                if (!ClassifierExperiments.beQuiet)
                     System.out.println(dset);
 
                 if (dataHeaders[archive].equals("UCI"))
@@ -598,7 +598,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         c.setEstimateOwnPerformance(true);
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
-                        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+                        ExperimentalArguments exp = new ExperimentalArguments();
                         exp.classifierName = ensembleID;
                         exp.datasetName = dset;
                         exp.foldId = fold;
@@ -606,7 +606,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
                         exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
 //                        exp.performTimingBenchmark = true;
-                        Experiments.runExperiment(exp,data[0],data[1],c);
+                        ClassifierExperiments.runExperiment(exp,data[0],data[1],c);
                     }
                 }
             }
