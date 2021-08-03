@@ -93,7 +93,7 @@ public class ClusteringExperiments {
             setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int folds=1;
+            int folds=30;
             /* Change these settings for your experiment:*/
             String clusterer="KMeans";//Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters= new ArrayList<>();
@@ -299,7 +299,7 @@ public class ClusteringExperiments {
         if (!f.exists())
             f.mkdirs();
 
-        expSettings.testFoldFileName = fullWriteLocation + "testResmaple" + expSettings.foldId + ".csv";
+        expSettings.testFoldFileName = fullWriteLocation + "testResample" + expSettings.foldId + ".csv";
         expSettings.trainFoldFileName = fullWriteLocation + "trainResample" + expSettings.foldId + ".csv";
         testFoldExists = CollateResults.validateSingleFoldFile(expSettings.testFoldFileName);
         trainFoldExists = CollateResults.validateSingleFoldFile(expSettings.trainFoldFileName);
