@@ -17,11 +17,11 @@ package experiments;
 
 import machine_learning.clusterers.KMeans;
 import weka.classifiers.Classifier;
-import weka.clusterers.Clusterer;
-import weka.clusterers.SimpleKMeans;
+import weka.clusterers.*;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 
 /**
  *
@@ -53,14 +53,22 @@ public class ClustererLists {
      * this can be reproduced with setClassifierClassic below.
      *
      */
-    public static Clusterer setClusterer(ExperimentalArguments exp){
-        String cls=exp.estimatorName;
+    public static Clusterer setClusterer(ExperimentalArguments exp) throws Exception {
+        String cls=exp.estimatorName.toLowerCase();
         Clusterer c = null;
         switch(cls) {
-            case "KMeans":
+            case "kmeans":
                 c = new SimpleKMeans();
                 break;
+/*            case "dbscan":
+                c = new DBScan();
+                break;
+*/          case "em":
+                c = new EM();
+                break;
         }
+        if(c instanceof NumberOfClustersRequestable)
+            ((NumberOfClustersRequestable)c).setNumClusters(exp.numClassValues);
         return c;
     }
 
@@ -73,7 +81,7 @@ public class ClustererLists {
      * @param fold
      * @return clusterer
      */
-    public static Clusterer setClustererClassic(String clusterer, int fold){
+    public static Clusterer setClustererClassic(String clusterer, int fold) throws Exception {
         ExperimentalArguments exp=new ExperimentalArguments();
         exp.estimatorName =clusterer;
         exp.foldId=fold;

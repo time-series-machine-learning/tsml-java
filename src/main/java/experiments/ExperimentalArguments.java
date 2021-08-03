@@ -159,7 +159,7 @@ public class ExperimentalArguments implements Runnable {
     public Supplier<Classifier> classifierGenerator = null;
     public Classifier classifier = null;
     public Clusterer clusterer = null;
-
+    public int numClassValues = 2;
     public ExperimentalArguments() {
 
     }

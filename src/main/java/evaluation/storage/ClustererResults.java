@@ -910,7 +910,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
     }
 
     private String generateFirstLine() {
-        return datasetName + "," + clustererName + "," + foldID + "," + getTimeUnitAsString() + "," + description;
+        return datasetName + "," + clustererName + "," +split +"," + foldID + "," + getTimeUnitAsString() + "," + description;
     }
 
     private void parseSecondLine(String line) {

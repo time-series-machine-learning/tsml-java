@@ -37,7 +37,9 @@ import weka.filters.SupervisedFilter;
 
 /**
  <!-- globalinfo-start -->
- * Class for running an arbitrary clusterer on data that has been passed through an arbitrary filter. Like the clusterer, the structure of the filter is based exclusively on the training data and test instances will be processed by the filter without changing their structure.
+ * Class for running an arbitrary clusterer on data that has been passed through an arbitrary filter. Like the clusterer,
+ * the structure of the filter is based exclusively on the training data and test instances will be processed by the
+ * filter without changing their structure.
  * <p/>
  <!-- globalinfo-end -->
  *

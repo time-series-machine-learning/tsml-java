@@ -98,11 +98,11 @@ public class ClusteringExperiments {
             String clusterer="KMeans";//Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters= new ArrayList<>();
             parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
-            parameters.add("-rp=C:\\temp\\"); //Where to write results
+            parameters.add("-rp=temp\\"); //Where to write results
             parameters.add("-gtf=false"); //Whether to generate train files or not
-            parameters.add("-cn="+clusterer); //Classifier name
+            parameters.add("-cn="+clusterer); //Clusterer name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
-            parameters.add("-f=1"); //Fold number (fold number 1 is stored as testFold0.csv, its a cluster thing)
+            parameters.add("-f=1"); //Resample number (resample number 1 is stored as testResample0.csv, its a cluster thing)
             parameters.add("-d=true"); //Debugging
             parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
 
@@ -341,7 +341,7 @@ public class ClusteringExperiments {
      */
     private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Clusterer clusterer, Instances train) {
         String parameterFileName = null;
-
+        expSettings.numClassValues = train.numClasses();
         if (clusterer instanceof Randomizable)
             ((Randomizable)clusterer).setSeed(expSettings.foldId);
         return parameterFileName;
