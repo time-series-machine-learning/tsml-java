@@ -411,7 +411,7 @@ public class EnsembleSelection extends CAWPE {
                     c.setResultsFileWritingLocation(resPath);
                                         
                     ExperimentalArguments exp = new ExperimentalArguments();
-                    exp.classifierName = classifier;
+                    exp.estimatorName = classifier;
                     exp.datasetName = dset;
                     exp.foldId = fold;
                     exp.generateErrorEstimateOnTrainSet = true;

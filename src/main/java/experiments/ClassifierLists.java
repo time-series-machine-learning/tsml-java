@@ -108,7 +108,7 @@ public class ClassifierLists {
     };
     public static HashSet<String> distanceBased=new HashSet<String>( Arrays.asList(distance));
     private static Classifier setDistanceBased(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c = null;
         int fold=exp.foldId;
         switch(classifier) {
@@ -229,7 +229,7 @@ public class ClassifierLists {
             "TDE"};
     public static HashSet<String> dictionaryBased=new HashSet<String>( Arrays.asList(dictionary));
     private static Classifier setDictionaryBased(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -279,7 +279,7 @@ public class ClassifierLists {
     public static String[] interval= {"LPS","TSF","RISE","CIF","STSF","DrCIF"};
     public static HashSet<String> intervalBased=new HashSet<String>( Arrays.asList(interval));
     private static Classifier setIntervalBased(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -317,7 +317,7 @@ public class ClassifierLists {
             "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -365,7 +365,7 @@ public class ClassifierLists {
     };
     public static HashSet<String> hybridBased=new HashSet<String>( Arrays.asList(hybrids));
     private static Classifier setHybridBased(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -567,7 +567,7 @@ public class ClassifierLists {
             "HIVE-COTEn_I","WEASEL-MUSE", "STC-D"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(ExperimentalArguments exp){
-        String classifier=exp.classifierName,resultsPath="",dataset="";
+        String classifier=exp.estimatorName,resultsPath="",dataset="";
         int fold=exp.foldId;
         Classifier c;
         boolean canLoadFromFile=true;
@@ -692,7 +692,7 @@ public class ClassifierLists {
             "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         int fold=exp.foldId;
         Classifier c;
         switch(classifier) {
@@ -825,7 +825,7 @@ public class ClassifierLists {
             "HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(ExperimentalArguments exp){
-        String classifier=exp.classifierName,resultsPath="",dataset="";
+        String classifier=exp.estimatorName,resultsPath="",dataset="";
         int fold=exp.foldId;
         Classifier c;
         boolean canLoadFromFile=true;
@@ -993,7 +993,7 @@ public class ClassifierLists {
     public static String[] earlyClassification= {"TEASER","eSTC"};
     public static HashSet<String> earlyClassifiers=new HashSet<String>( Arrays.asList(earlyClassification));
     private static Classifier setEarlyClassifiers(ExperimentalArguments exp){
-        String classifier=exp.classifierName,resultsPath="",dataset="";
+        String classifier=exp.estimatorName,resultsPath="",dataset="";
         int fold=exp.foldId;
         Classifier c;
         boolean canLoadFromFile=true;
@@ -1037,7 +1037,7 @@ public class ClassifierLists {
      *
      */
     public static Classifier setClassifier(ExperimentalArguments exp){
-        String classifier=exp.classifierName;
+        String classifier=exp.estimatorName;
         Classifier c = null;
         if(distanceBased.contains(classifier))
             c=setDistanceBased(exp);
@@ -1086,7 +1086,7 @@ public class ClassifierLists {
      */
     public static Classifier setClassifierClassic(String classifier, int fold){
         ExperimentalArguments exp=new ExperimentalArguments();
-        exp.classifierName=classifier;
+        exp.estimatorName =classifier;
         exp.foldId=fold;
         return setClassifier(exp);
     }

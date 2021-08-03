@@ -241,7 +241,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
 
         exp.dataReadLocation = "Z:/Data/TSCProblems2015/";
         exp.resultsWriteLocation = "C:/Temp/ProximityForestWekaTest/";
-        exp.classifierName = "ProximityForest";
+        exp.estimatorName = "ProximityForest";
 //        exp.datasetName = "BeetleFly";
 //        exp.foldId = 0;
 //        ClassifierExperiments.setupAndRunExperiment(exp);
@@ -287,7 +287,7 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         mce.setBuildMatlabDiagrams(false);
         mce.setTestResultsOnly(true);
         mce.setDatasets(datasets);
-        mce.readInClassifier(exp.classifierName, exp.resultsWriteLocation);
+        mce.readInClassifier(exp.estimatorName, exp.resultsWriteLocation);
 //        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
         mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
         mce.runComparison();

@@ -599,7 +599,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
                         //'custom' classifier built, now put it back in the normal experiments pipeline
                         ExperimentalArguments exp = new ExperimentalArguments();
-                        exp.classifierName = ensembleID;
+                        exp.estimatorName = ensembleID;
                         exp.datasetName = dset;
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;

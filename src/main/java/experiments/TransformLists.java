@@ -39,7 +39,7 @@ public class TransformLists {
     //</editor-fold>
 
     public static Transformer setTransform(ExperimentalArguments exp){
-        return setClassicTransform(exp.classifierName, exp.foldId);
+        return setClassicTransform(exp.estimatorName, exp.foldId);
     }
 
 

@@ -299,7 +299,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
 
         ExperimentalArguments exp = new ExperimentalArguments();
         exp.checkpointing = true;
-        exp.classifierName = "TunedSMO";
+        exp.estimatorName = "TunedSMO";
         exp.datasetName = "hayes-roth";
         exp.foldId = 1;
         exp.generateErrorEstimateOnTrainSet = true;

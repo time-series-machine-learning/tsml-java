@@ -427,7 +427,7 @@ public class ClassifierExperiments {
     public static void buildExperimentDirectoriesAndFilenames(ExperimentalArguments expSettings, Classifier classifier) {
         //Build/make the directory to write the train and/or testFold files to
         // [writeLoc]/[classifier]/Predictions/[dataset]/
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
+        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
         File f = new File(fullWriteLocation);
         if (!f.exists())
             f.mkdirs();
@@ -448,7 +448,7 @@ public class ClassifierExperiments {
         // every classifier/dset/fold writes to same single location. For now, that's up to the user to recognise that's
         // going to be the case; supply a path and everything will be written there
         if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.classifierName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
+            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
 
         f = new File(expSettings.supportingFilePath);
         if (!f.exists())
@@ -713,7 +713,7 @@ public class ClassifierExperiments {
     }
 
     public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws FileNotFoundException, IOException {
-        String filename = expSettings.supportingFilePath + expSettings.classifierName + "_" + expSettings.datasetName + "_" + expSettings.foldId + ".ser";
+        String filename = expSettings.supportingFilePath + expSettings.estimatorName + "_" + expSettings.datasetName + "_" + expSettings.foldId + ".ser";
 
         LOGGER.log(Level.FINE, "Attempting classifier serialisation, to " + filename);
 
@@ -874,7 +874,7 @@ public class ClassifierExperiments {
     }
 
     public static void writeResults(ExperimentalArguments exp, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
-        results.setClassifierName(exp.classifierName);
+        results.setClassifierName(exp.estimatorName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);

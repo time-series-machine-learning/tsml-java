@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import weka.classifiers.Classifier;
+import weka.clusterers.Clusterer;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class ExperimentalArguments implements Runnable {
     public String resultsWriteLocation = "results/";
 
     @Parameter(names = {"-cn", "--classifierName"}, required = true, order = 2, description = "(String) The name of the classifier to evaluate. A case matching this value should exist within the ClassifierLists")
-    public String classifierName = null;
+    public String estimatorName = null;
 
     @Parameter(names = {"-dn", "--datasetName"}, required = true, order = 3, description = "(String) The name of the dataset to be evaluated on, which resides within the dataPath in the form "
             + "[--dataPath]/[--datasetName]/[--datasetname].arff (the actual arff file(s) may be of different forms, see ClassifierExperiments.sampleDataset(...).")
@@ -157,6 +158,7 @@ public class ExperimentalArguments implements Runnable {
     // threaded exps. If not supplied (default), the classifier is instantiated via setClassifier(classifierName)
     public Supplier<Classifier> classifierGenerator = null;
     public Classifier classifier = null;
+    public Clusterer clusterer = null;
 
     public ExperimentalArguments() {
 
@@ -203,7 +205,7 @@ public class ExperimentalArguments implements Runnable {
             for (String dataset : datasetNames) {
                 for (int fold = minFold; fold < maxFold; fold++) {
                     ExperimentalArguments exp = new ExperimentalArguments();
-                    exp.classifierName = classifier;
+                    exp.estimatorName = classifier;
                     exp.datasetName = dataset;
                     exp.foldId = fold;
 
@@ -390,7 +392,7 @@ public class ExperimentalArguments implements Runnable {
     }
 
     public String toShortString() {
-        return "[" + classifierName + "," + datasetName + "," + foldId + "]";
+        return "[" + estimatorName + "," + datasetName + "," + foldId + "]";
     }
 
     @Override

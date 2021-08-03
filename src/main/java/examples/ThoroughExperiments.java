@@ -76,7 +76,7 @@ public class ThoroughExperiments {
         ExperimentalArguments exp = new ExperimentalArguments();
         exp.dataReadLocation = "src/main/java/experiments/data/tsc/";
         exp.resultsWriteLocation = resultsPath;
-        exp.classifierName = "RandF";
+        exp.estimatorName = "RandF";
         exp.datasetName = "ItalyPowerDemand";
         exp.foldId = 0;  // note that since we're now setting the fold directly, we can resume zero-indexing
         
