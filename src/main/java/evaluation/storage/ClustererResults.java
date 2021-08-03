@@ -114,7 +114,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private String datasetName = "";
     private int foldID = -1;
     private String description = ""; //human-friendly optional extra info if wanted.
-
+    private String split = "";
 //LINE 2: clusterer setup/info, parameters. precise format is up to user.
 
     /**
@@ -133,7 +133,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private double accuracy = -1;
 
     /**
-     * Number of clusters, can be infered from the number of distributions
+     * Number of clusters, can be inferred from the number of distributions
      */
     private int numClusters = -1;
 
@@ -353,6 +353,17 @@ public class ClustererResults implements DebugPrinting, Serializable {
     public void setFoldID(int foldID) {
         this.foldID = foldID;
     }
+
+    /**
+     * e.g "train", "test", "validation"
+     */
+    public String getSplit() { return split; }
+
+    /**
+     * e.g "train", "test", "validation"
+     */
+    public void setSplit(String split) { this.split = split; }
+
 
     public TimeUnit getTimeUnit() {
         return timeUnit;

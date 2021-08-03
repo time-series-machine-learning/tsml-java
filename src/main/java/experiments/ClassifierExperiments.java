@@ -118,12 +118,10 @@ public class ClassifierExperiments {
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"HC2"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"TSF"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
-            parameters.add("-dp=Z:\\ArchiveData\\Univariate_arff\\"); //Where to get datasets
-//            parameters.add("-dp=Z:\\ArchiveData\\Multivariate_arff\\"); //Where to get datasets
-            //parameters.add("-rp=Z:\\Results Working Area\\HC2 Results\\Multivariate\\"); //Where to write results
-            parameters.add("-rp=Z:\\temp\\"); //Where to write results
+            parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
+            parameters.add("-rp=temp\\"); //Where to write results
             parameters.add("-gtf=true"); //Whether to generate train files or not
             parameters.add("-cn=" + classifier[0]); //Classifier name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
@@ -145,7 +143,7 @@ public class ClassifierExperiments {
 //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
             //           String[] probFiles = DatasetLists.equalLengthProblems;
             //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"ElectricDevices"};
+            String[] probFiles ={"ChinaTown"};
             /*
              * END OF SETTINGS
              */
