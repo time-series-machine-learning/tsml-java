@@ -110,15 +110,15 @@ public class ClassifierExperiments {
             ClassifierExperiments.setupAndRunExperiment(expSettings);
         }
         else {//Manually set args
-            int start=3;
-            int folds = 3;
+            int start=1;
+            int folds = 1;
 
             /*
              * Change these settings for your experiment:
              */
             //Experiment Parameters, see
 
-            String[] classifier = {"TSF"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
+            String[] classifier = {"1NN-DTW"};//"Arsenal", "TDE","DrCIF","RotF",Classifier name: See ClassifierLists for valid options
             ArrayList<String> parameters = new ArrayList<>();
             parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
             parameters.add("-rp=temp\\"); //Where to write results
@@ -130,6 +130,7 @@ public class ClassifierExperiments {
             parameters.add("-ctr=1h"); //Whether to generate train files or not
             parameters.add("--force=true"); //Overwrites existing results if true, otherwise set to false
             //            parameters.add("-ctr=3m"); //contract time, default in hours
+            String[] probFiles ={"UnitTest"};
 
 
             String[] settings = new String[parameters.size()];
@@ -143,7 +144,6 @@ public class ClassifierExperiments {
 //           String[] probFiles= {"ChinaTown"}; //Problem name(s)
             //           String[] probFiles = DatasetLists.equalLengthProblems;
             //            String[] probFiles= DatasetLists.fixedLengthMultivariate;
-            String[] probFiles ={"ChinaTown"};
             /*
              * END OF SETTINGS
              */
