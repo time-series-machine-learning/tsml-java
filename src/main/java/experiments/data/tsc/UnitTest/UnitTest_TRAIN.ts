@@ -1,4 +1,4 @@
-%# This is a cut down version of the problem ChinaTown, useful for code examples and very slow unit tests
+% This is a cut down version of the problem ChinaTown, useful for code examples and very slow unit tests
 % The Train set is the same as ChinaTown, but the test set is reduced from 345 cases to 22 cases
 %
 @problemName UnitTest

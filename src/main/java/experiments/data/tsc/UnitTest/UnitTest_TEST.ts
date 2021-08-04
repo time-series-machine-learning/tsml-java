@@ -2,7 +2,6 @@
 % The Train set is the same as ChinaTown, but the test set is reduced from 340 cases to 22 cases
 %
 @problemName UnitTest
-@problemName Chinatown
 @timeStamps false
 @missing false
 @univariate true
