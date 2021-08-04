@@ -223,7 +223,7 @@ public class ExperimentalArguments implements Runnable {
                     for (Field field : ExperimentalArguments.class.getFields()) {
 
                         // these are the ones being set individually per exp, skip the copying over
-                        if (field.getName().equals("classifierName") ||
+                        if (field.getName().equals("estimatorName") ||
                                 field.getName().equals("datasetName") ||
                                 field.getName().equals("foldId") ||
                                 field.getName().equals("classifier") ||

@@ -15,13 +15,17 @@
 package experiments;
 
 
+import machine_learning.clusterers.CAST;
+import machine_learning.clusterers.DensityPeaks;
 import machine_learning.clusterers.KMeans;
-import weka.classifiers.Classifier;
+import machine_learning.clusterers.PAM;
+import tsml.clusterers.KShape;
+import tsml.clusterers.TTC;
+import tsml.clusterers.UnsupervisedShapelets;
 import weka.clusterers.*;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Locale;
 
 /**
  *
@@ -54,28 +58,54 @@ public class ClustererLists {
      *
      */
     public static Clusterer setClusterer(ExperimentalArguments exp) throws Exception {
-        String cls=exp.estimatorName.toLowerCase();
+        String cls = exp.estimatorName.toLowerCase();
+
         Clusterer c = null;
         switch(cls) {
-            case "kmeans":
+            case "simplekmeans":
                 c = new SimpleKMeans();
                 break;
-/*            case "dbscan":
-                c = new DBScan();
-                break;
-*/          case "em":
+            case "em":
                 c = new EM();
                 break;
+
+            case "kmeans":
+                c = new KMeans();
+                break;
+            case "pam":
+                c = new PAM();
+                break;
+            case "densitypeaks":
+                c = new DensityPeaks();
+                break;
+            case "cast":
+                c = new CAST();
+                break;
+
+            case "ushapelets":
+                c = new UnsupervisedShapelets();
+                break;
+            case "kshape":
+                c = new KShape();
+                break;
+            case "ttc":
+                c = new TTC();
+                break;
+
+            default:
+                System.out.println("Unknown clusterer " + cls);
         }
-        if(c instanceof NumberOfClustersRequestable)
+
+        if (c instanceof NumberOfClustersRequestable)
             ((NumberOfClustersRequestable)c).setNumClusters(exp.numClassValues);
+
         return c;
     }
 
 
     /**
      * This method redproduces the old usage exactly as it was in old experiments.java.
-     * If you try build any classifier that uses any experimental info other than
+     * If you try build any clusterer that uses any experimental info other than
      * expestimatorName or exp.foldID, an exception will be thrown.
      * @param clusterer
      * @param fold

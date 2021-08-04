@@ -204,7 +204,7 @@ public class ClusteringUtilities {
             throws Exception {
         ClustererResults cr = new ClustererResults(inst.numClasses(), inst.attributeToDoubleArray(inst.classIndex()),
                 clusterer.getAssignments(), oneHot(clusterer.numberOfClusters(), clusterer.getAssignments()),
-                null);
+                new long[inst.numInstances()], null);
         return cr;
     }
 }

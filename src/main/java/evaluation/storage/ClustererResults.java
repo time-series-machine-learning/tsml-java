@@ -48,6 +48,7 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
  * [LINE 1 OF FILE]
  * - get/setDatasetName(String)
  * - get/setClassifierName(String)
+ * - get/setSplit(String)
  * - get/setFoldId(String)
  * - get/setTimeUnit(TimeUnit)
  * - get/setDescription(String)
@@ -56,13 +57,14 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
  * [LINE 3 OF FILE]
  * - getAccuracy() (calculated from predictions, only settable with a suitably annoying message)
  * - get/setBuildTime(long)
+ * - get/setTestTime(long)
  * - get/setBenchmarkTime(long)
  * - get/setMemory(long)
  * - get/setNumClasses(int)
  * - get/setNumClusters(int) (either set by user or indirectly found through predicted probability distributions)
  * <p>
  * [REMAINING LINES: PREDICTIONS]
- * - trueClassVal,predClusterVal,[empty], dist[0], dist[1] ... dist[c],[empty], predDescription
+ * - trueClassVal, predClusterVal, [empty], dist[0], dist[1] ... dist[c], [empty], predTime, [empty], predDescription
  * <p>
  * Supports reading/writing of results from/to file, in the 'ClustererResults file-format'
  * - loadResultsFromFile(String path)
@@ -78,7 +80,7 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
  * //set any meta info you want to keep, e.g classifiername, datasetname...
  * <p>
  * for (Instance inst : test) {
- * res.addPrediction(inst.classValue(), clusterDist, clusterPred, ""); //description is optional
+ *   res.addPrediction(inst.classValue(), clusterDist, clusterPred, 0, ""); //description is optional
  * }
  * <p>
  * res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
@@ -112,9 +114,10 @@ public class ClustererResults implements DebugPrinting, Serializable {
     //LINE 1: meta info, set by user
     private String clustererName = "";
     private String datasetName = "";
+    private String split = "";
     private int foldID = -1;
     private String description = ""; //human-friendly optional extra info if wanted.
-    private String split = "";
+
 //LINE 2: clusterer setup/info, parameters. precise format is up to user.
 
     /**
@@ -145,6 +148,17 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private long buildTime = -1;
 
     /**
+     * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick
+     * helper/summary in case complete prediction information is not stored, and/or for a human reader to quickly
+     * compare times.
+     *
+     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
+     * default nanoseconds.
+     * If no benchmark time is supplied, the default value is -1
+     */
+    private long testTime = -1;
+
+    /**
      * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise)
      * way to measure the general speed of the hardware that these results were made on, such that users
      * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent
@@ -167,10 +181,11 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private long memoryUsage = -1;
 
     //REMAINDER OF THE FILE - 1 case per line
-    //raw performance data. currently just four parallel arrays
+    //raw performance data. currently just five parallel arrays
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> clusterValues;
     private ArrayList<double[]> distributions;
+    private ArrayList<Long> predTimes;
     private ArrayList<String> descriptions;
 
     //inferred/supplied dataset meta info
@@ -252,6 +267,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
         trueClassValues = new ArrayList<>();
         clusterValues = new ArrayList<>();
         distributions = new ArrayList<>();
+        predTimes = new ArrayList<>();
         descriptions = new ArrayList<>();
 
         this.numClasses = numClasses;
@@ -275,15 +291,16 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * All other arguments are required in full, however
      */
     public ClustererResults(int numClasses, double[] trueClassVals, double[] predictions, double[][] distributions,
-                            String[] descriptions) throws Exception {
-        trueClassValues = new ArrayList<>();
-        clusterValues = new ArrayList<>();
+                            long[] predTimes, String[] descriptions) throws Exception {
+        this.trueClassValues = new ArrayList<>();
+        this.clusterValues = new ArrayList<>();
         this.distributions = new ArrayList<>();
+        this.predTimes = new ArrayList<>();
         this.descriptions = new ArrayList<>();
 
         this.numClasses = numClasses;
 
-        addAllPredictions(trueClassVals, predictions, distributions, descriptions);
+        addAllPredictions(trueClassVals, predictions, distributions, predTimes, descriptions);
         finaliseResults();
     }
 
@@ -461,13 +478,19 @@ public class ClustererResults implements DebugPrinting, Serializable {
     public void setBuildTime(long buildTime) {
         if (errorOnTimingOfZero && buildTime < 1)
             throw new RuntimeException("Build time passed has invalid value, " + buildTime + ". If greater resolution" +
-                    " is needed, "
-                    + "use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the classifierResults object to nanoseconds.\n\n"
-                    + "If you are using nanoseconds but STILL getting this error, read the javadoc for and use turnOffZeroTimingsErrors() "
-                    + "for this call");
+                    " is needed, use nano seconds (e.g System.nanoTime()) and set the TimeUnit of the " +
+                    "classifierResults object to nanoseconds.\n\nIf you are using nanoseconds but STILL getting this " +
+                    "error, read the javadoc for and use turnOffZeroTimingsErrors() for this call");
         this.buildTime = buildTime;
     }
 
+    public long getTestTime() { return testTime; }
+
+    public long getTestTimeInNanos() { return timeUnit.toNanos(testTime); }
+
+    public void setTestTime(long testTime) {
+        this.testTime = testTime;
+    }
 
     public long getMemory() {
         return memoryUsage;
@@ -516,9 +539,15 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * The true class is missing, however can be added in one go later with the
      * method finaliseResults(double[] trueClassVals)
      */
-    public void addPrediction(double[] dist, double cluster, String description) throws Exception {
+    public void addPrediction(double[] dist, double cluster, long predictionTime, String description) throws Exception {
         distributions.add(dist);
         clusterValues.add(cluster);
+        predTimes.add(predictionTime);
+
+        if (testTime == -1)
+            testTime = predictionTime;
+        else
+            testTime += predictionTime;
 
         if (description == null)
             descriptions.add("");
@@ -535,8 +564,9 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * <p>
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addPrediction(double trueClassVal, double[] dist, double cluster, String description) throws Exception {
-        addPrediction(dist, cluster, description);
+    public void addPrediction(double trueClassVal, double[] dist, double cluster, long predictionTime,
+                              String description) throws Exception {
+        addPrediction(dist, cluster, predictionTime, description);
         trueClassValues.add(trueClassVal);
     }
 
@@ -547,18 +577,19 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * The description argument may be null, however all other arguments are required in full
      */
     public void addAllPredictions(double[] trueClassVals, double[] predictions, double[][] distributions,
-                                  String[] descriptions) throws Exception {
+                                  long[] predictionTimes, String[] descriptions) throws Exception {
         assert (trueClassVals.length == predictions.length);
         assert (trueClassVals.length == distributions.length);
+        assert (trueClassVals.length == predictionTimes.length);
 
         if (descriptions != null)
             assert (trueClassVals.length == descriptions.length);
 
         for (int i = 0; i < trueClassVals.length; i++) {
             if (descriptions == null)
-                addPrediction(trueClassVals[i], distributions[i], predictions[i], null);
+                addPrediction(trueClassVals[i], distributions[i], predictions[i], predictionTimes[i], null);
             else
-                addPrediction(trueClassVals[i], distributions[i], predictions[i], descriptions[i]);
+                addPrediction(trueClassVals[i], distributions[i], predictions[i], predictionTimes[i], descriptions[i]);
         }
     }
 
@@ -571,18 +602,19 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * <p>
      * The description argument may be null, however all other arguments are required in full
      */
-    public void addAllPredictions(double[] predictions, double[][] distributions, String[] descriptions)
-            throws Exception {
+    public void addAllPredictions(double[] predictions, double[][] distributions, long[] predictionTimes,
+                                  String[] descriptions) throws Exception {
         assert (predictions.length == distributions.length);
+        assert (predictions.length == predictionTimes.length);
 
         if (descriptions != null)
             assert (predictions.length == descriptions.length);
 
         for (int i = 0; i < predictions.length; i++) {
             if (descriptions == null)
-                addPrediction(distributions[i], predictions[i], "");
+                addPrediction(distributions[i], predictions[i], predictionTimes[i], "");
             else
-                addPrediction(distributions[i], predictions[i], descriptions[i]);
+                addPrediction(distributions[i], predictions[i], predictionTimes[i], descriptions[i]);
         }
     }
 
@@ -685,7 +717,6 @@ public class ClustererResults implements DebugPrinting, Serializable {
         return clusterValues.get(index);
     }
 
-
     public ArrayList<double[]> getProbabilityDistributions() {
         return distributions;
     }
@@ -698,6 +729,26 @@ public class ClustererResults implements DebugPrinting, Serializable {
         if (i < distributions.size())
             return distributions.get(i);
         return null;
+    }
+
+    public ArrayList<Long> getPredictionTimes() {
+        return predTimes;
+    }
+
+    public long[] getPredictionTimesAsArray() {
+        long[] l=new long[predTimes.size()];
+        int i=0;
+        for(long x:predTimes)
+            l[i++]=x;
+        return l;
+    }
+
+    public long getPredictionTime(int index) {
+        return predTimes.get(index);
+    }
+
+    public long getPredictionTimeInNanos(int index) {
+        return timeUnit.toNanos(getPredictionTime(index));
     }
 
     public ArrayList<String> getDescriptions() {
@@ -720,6 +771,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
         distributions = null;
         clusterValues = null;
         trueClassValues = null;
+        predTimes = null;
         descriptions = null;
     }
 
@@ -781,9 +833,15 @@ public class ClustererResults implements DebugPrinting, Serializable {
             }
         }
 
+        //collect timings
+        long predTime = -1;
+        final int timingInd = distStartInd + numClusters + 1; //actual, predicted, space, dist, space, timing
+        if (split.length > timingInd)
+            predTime = Long.parseLong(split[timingInd].trim());
+
         //collect description
         String description = "";
-        final int descriptionInd = distStartInd + numClusters + 1; //actual, predicted, space, dist, space, description
+        final int descriptionInd = timingInd + 2; //actual, predicted, space, dist, , space, timing, space, description
         if (split.length > descriptionInd) {
             description = split[descriptionInd];
 
@@ -794,7 +852,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
                 description += "," + split[i];
         }
 
-        addPrediction(trueClassVal, dist, clusterVal, description);
+        addPrediction(trueClassVal, dist, clusterVal, predTime, description);
     }
 
     private void instancePredictionsFromScanner(Scanner in) throws Exception {
@@ -824,6 +882,9 @@ public class ClustererResults implements DebugPrinting, Serializable {
         double[] probs = distributions.get(i);
         for (double d : probs)
             sb.append(",").append(GenericTools.RESULTS_DECIMAL_FORMAT.format(d));
+
+        //timing
+        sb.append(",,").append(predTimes.get(i)); //<empty space>, timing
 
         //description
         sb.append(",,").append(descriptions.get(i)); //<empty space>, description
@@ -899,18 +960,20 @@ public class ClustererResults implements DebugPrinting, Serializable {
         if (parts.length == 0)
             return;
 
-        clustererName = parts[0];
-        datasetName = parts[1];
-        foldID = Integer.parseInt(parts[2]);
-        setTimeUnitFromString(parts[3]);
+        datasetName = parts[0];
+        clustererName = parts[1];
+        split = parts[2];
+        foldID = Integer.parseInt(parts[3]);
+        setTimeUnitFromString(parts[4]);
 
         //nothing stopping the description from having its own commas in it, just read until end of line
-        for (int i = 4; i < parts.length; i++)
+        for (int i = 5; i < parts.length; i++)
             description += "," + parts[i];
     }
 
     private String generateFirstLine() {
-        return datasetName + "," + clustererName + "," +split +"," + foldID + "," + getTimeUnitAsString() + "," + description;
+        return datasetName + "," + clustererName + "," + split + "," + foldID + "," + getTimeUnitAsString() +
+                "," + description;
     }
 
     private void parseSecondLine(String line) {
@@ -932,10 +995,11 @@ public class ClustererResults implements DebugPrinting, Serializable {
 
         accuracy = Double.parseDouble(parts[0]);
         buildTime = Long.parseLong(parts[1]);
-        benchmarkTime = Long.parseLong(parts[2]);
-        memoryUsage = Long.parseLong(parts[3]);
-        numClasses = Integer.parseInt(parts[4]);
-        numClusters = Integer.parseInt(parts[5]);
+        testTime = Long.parseLong(parts[2]);
+        benchmarkTime = Long.parseLong(parts[3]);
+        memoryUsage = Long.parseLong(parts[4]);
+        numClasses = Integer.parseInt(parts[5]);
+        numClusters = Integer.parseInt(parts[6]);
 
         return accuracy;
     }
@@ -943,6 +1007,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private String generateThirdLine() {
         String res = accuracy
                 + "," + buildTime
+                + "," + testTime
                 + "," + benchmarkTime
                 + "," + memoryUsage
                 + "," + getNumClasses()
@@ -965,6 +1030,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
             trueClassValues = new ArrayList<>();
             clusterValues = new ArrayList<>();
             distributions = new ArrayList<>();
+            predTimes = new ArrayList<>();
             descriptions = new ArrayList<>();
             numInstances = 0;
             accuracy = -1;
@@ -1308,7 +1374,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
                     for (int predid = 0; predid < foldCres.numInstances(); predid++) {
                         newCres.addPrediction(foldCres.getTrueClassValue(predid),
                                 foldCres.getProbabilityDistribution(predid), foldCres.getClusterValue(predid),
-                                foldCres.getPredDescription(predid));
+                                foldCres.getPredictionTime(predid), foldCres.getPredDescription(predid));
                     }
                 }
                 concatenatedResults[classifierid] = newCres;

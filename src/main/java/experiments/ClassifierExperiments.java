@@ -785,8 +785,6 @@ public class ClassifierExperiments {
         res.turnOnZeroTimingsErrors();
 
         res.finaliseResults();
-        res.findAllStatsOnce();
-
         return res;
     }
 

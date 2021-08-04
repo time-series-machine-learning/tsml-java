@@ -18,6 +18,7 @@
 package machine_learning.clusterers;
 
 import experiments.data.DatasetLoading;
+import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -36,7 +37,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class KMeans extends DistanceBasedVectorClusterer {
+public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClustersRequestable {
 
     //MacQueen, James.
     //"Some methods for classification and analysis of multivariate observations."
@@ -73,8 +74,9 @@ public class KMeans extends DistanceBasedVectorClusterer {
         return k;
     }
 
-    public void setNumberOfClusters(int n) {
-        k = n;
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
     }
 
     public void setFindBestK(boolean b) {
@@ -285,7 +287,7 @@ public class KMeans extends DistanceBasedVectorClusterer {
 
             while (!finished) {
                 KMeans kmeans = new KMeans(initialClusterCenters);
-                kmeans.setNumberOfClusters(k);
+                kmeans.setNumClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
                 kmeans.setRefinedInitialMedoids(false);
@@ -352,7 +354,7 @@ public class KMeans extends DistanceBasedVectorClusterer {
 
         for (int i = 0; i < numSubsamples; i++) {
             KMeans kmeans = new KMeans(subsampleCenters[i]);
-            kmeans.setNumberOfClusters(k);
+            kmeans.setNumClusters(k);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
             kmeans.setRefinedInitialMedoids(false);
@@ -447,7 +449,7 @@ public class KMeans extends DistanceBasedVectorClusterer {
         //For each value of K
         for (int i = 2; i <= maxK; i++) {
             KMeans kmeans = new KMeans();
-            kmeans.setNumberOfClusters(i);
+            kmeans.setNumClusters(i);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
             kmeans.setRefinedInitialMedoids(refinedInitialCenters);
