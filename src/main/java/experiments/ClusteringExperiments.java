@@ -20,6 +20,8 @@ import com.google.common.testing.GcFinalization;
 import evaluation.storage.ClustererResults;
 import evaluation.storage.ClustererResults;
 import experiments.data.DatasetLoading;
+import tsml.clusterers.EnhancedAbstractClusterer;
+import utilities.ClusteringUtilities;
 import weka.clusterers.Clusterer;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -44,8 +46,8 @@ import static utilities.GenericTools.indexOfMax;
 
  Given an ExperimentalArguments object, which may be parsed from command line arguments
  or constructed in code, (and in the future, perhaps other methods such as JSON files etc),
- will load the classifier and dataset specified, prep the location to write results to,
- train the classifier - potentially generating an error estimate via cross validation on the train set
+ will load the clusterer and dataset specified, prep the location to write results to,
+ train the clusterer - potentially generating an error estimate via cross validation on the train set
  as well - and then predict the cases of the test set.
 
  The primary outputs are the train and/or 'testResampleX.csv' files
@@ -95,7 +97,7 @@ public class ClusteringExperiments {
         else {//Manually set args
             int folds=30;
             /* Change these settings for your experiment:*/
-            String clusterer="KMeans";//Classifier name: See ClassifierLists for valid options
+            String clusterer="KMeans";//Clusterer name: See ClustererLists for valid options
             ArrayList<String> parameters= new ArrayList<>();
             parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
             parameters.add("-rp=temp\\"); //Where to write results
@@ -136,7 +138,7 @@ public class ClusteringExperiments {
 
     /**
      * Runs an experiment with the given settings. For the more direct method in case e.g
-     * you have a bespoke classifier not handled by ClassifierList or dataset that
+     * you have a bespoke clusterer not handled by ClustererList or dataset that
      * is sampled in a bespoke way, use runExperiment
      *
      * 1) Sets up the logger.
@@ -156,19 +158,19 @@ public class ClusteringExperiments {
             DatasetLoading.setDebug(debug);
         }
         LOGGER.log(Level.FINE, expSettings.toString());
-        // if a pre-instantiated clusterer instance hasn't been supplied, generate one here
+
+        // if a pre-instantiated clusterer instance hasn't been supplied, generate one here using setClusterer
         if (expSettings.clusterer == null) {
-            // if a classifier-generating-function has been given (typically in the case of bespoke classifiers wanted in threaded exps),
-            // instantiate the classifier from that
-                expSettings.clusterer = ClustererLists.setClusterer(expSettings);
+            expSettings.clusterer = ClustererLists.setClusterer(expSettings);
         }
+
         buildExperimentDirectoriesAndFilenames(expSettings);
         //Check whether results already exists, if so and force evaluation is false: just quit
         if (quitEarlyDueToResultsExistence(expSettings))
             return null;
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
-        setupClassifierExperimentalOptions(expSettings, expSettings.clusterer, data[0]);
+        setupClustererExperimentalOptions(expSettings, expSettings.clusterer, data[0]);
         ClustererResults[] results = runExperiment(expSettings, data[0], data[1], expSettings.clusterer);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString());
 
@@ -179,8 +181,8 @@ public class ClusteringExperiments {
      * Perform an actual experiment, using the loaded clusterer and resampled dataset given, writing to the specified results location.
      * 1) If needed, set up file paths and flags related to a single parameter evaluation and/or the clusterer's internal parameter saving things
      * 2) If we want to be performing cv to find an estimate of the error on the train set, either do that here or set up the clusterer to do it internally
-     *          during buildClassifier()
-     * 3) Do the actual training, i.e buildClassifier()
+     *          during buildClusterer()
+     * 3) Do the actual training, i.e buildClusterer()
      * 4) Save information needed from the training, e.g. train estimates, serialising the clusterer, etc.
      * 5) Evaluate the trained clusterer on the test set
      * 6) Save test results
@@ -192,13 +194,17 @@ public class ClusteringExperiments {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
+            //Since we are copying train and test data, no need to copy it again
+            if (clusterer instanceof EnhancedAbstractClusterer)
+                ((EnhancedAbstractClusterer)clusterer).setCopyInstances(false);
+
             ClustererResults trainResults = training(expSettings, clusterer, trainSet);
             ClustererResults testResults = testing(expSettings, clusterer, testSet, trainResults);
 
             experimentResults = new ClustererResults[] {trainResults, testResults};
         }
         catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e.toString(), e);
+            LOGGER.log(Level.SEVERE, "Experiment failed. Settings: " + expSettings + "\n\nERROR: " + e, e);
             e.printStackTrace();
             return null; //error state
         }
@@ -217,41 +223,53 @@ public class ClusteringExperiments {
      * results are written to file.
      */
     public static ClustererResults training(ExperimentalArguments expSettings, Clusterer clusterer, Instances trainSet) throws Exception {
-        ClustererResults trainResults = new ClustererResults(trainSet.numClasses());
+        //For now, just cloning the data and removing the class label
+        Instances clsTrain = new Instances(trainSet);
+        clsTrain.setClassIndex(-1);
+        if (trainSet.classIndex() >= 0)
+            clsTrain.deleteAttributeAt(trainSet.classIndex());
 
+        long benchmark = ClassifierExperiments.findBenchmarkTime(expSettings);
 
         MemoryMonitor memoryMonitor = new MemoryMonitor();
         memoryMonitor.installMonitor();
 
         //Build on the full train data here
         long buildTime = System.nanoTime();
-        //For now, just cloning the data and removing the class label
-        Instances clsTrain = new Instances(trainSet);
-        clsTrain.setClassIndex(-1);
-        clsTrain.deleteAttributeAt(trainSet.classIndex());
         clusterer.buildClusterer(clsTrain);
         buildTime = System.nanoTime() - buildTime;
         LOGGER.log(Level.FINE, "Training complete");
+
         // Training done, collect memory monitor results
+        // Need to wait for an update, otherwise very quick clusterers may not experience gc calls during training,
+        // or the monitor may not update in time before collecting the max
         GcFinalization.awaitFullGc();
         long maxMemory = memoryMonitor.getMaxMemoryUsed();
 
+        ClustererResults trainResults;
+
         if (!trainFoldExists || expSettings.forceEvaluation) {
-//            trainResults = findExternalTrainEstimate(expSettings, clusterer, trainSet, expSettings.foldId);
-            trainResults = evaluateClusterer(expSettings, clusterer, clsTrain,trainSet,"train", trainSet.numClasses());
-            trainResults.setParas(trainResults.getParas());
-            trainResults.turnOffZeroTimingsErrors();
-            trainResults.setBenchmarkTime(trainResults.getTimeUnit().convert(trainResults.getBenchmarkTime(), trainResults.getTimeUnit()));
-            trainResults.setBuildTime(trainResults.getTimeUnit().convert(trainResults.getBuildTime(), trainResults.getTimeUnit()));
-            trainResults.turnOnZeroTimingsErrors();
-            trainResults.setMemory(trainResults.getMemory());
+            if (clusterer instanceof EnhancedAbstractClusterer)
+                trainResults = ClusteringUtilities.getClusteringResults((EnhancedAbstractClusterer)clusterer, trainSet);
+            else
+                trainResults = evaluateClusterer(clusterer, clsTrain, trainSet, trainSet.numClasses());
+
+            trainResults.setBenchmarkTime(benchmark);
+            trainResults.setBuildTime(buildTime);
+            trainResults.setMemory(maxMemory);
 
             writeResults(expSettings, trainResults, expSettings.trainFoldFileName, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
         }
+        else{
+            trainResults = new ClustererResults(trainSet.numClasses());
+            trainResults.setBenchmarkTime(benchmark);
+            trainResults.setBuildTime(buildTime);
+            trainResults.setMemory(maxMemory);
+        }
+
         return trainResults;
     }
-
 
     /**
      * Performs all operations related to testing the clusterer, and returns a ClustererResults object holding the results
@@ -265,15 +283,14 @@ public class ClusteringExperiments {
         if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
             Instances clsTest = new Instances(testSet);
             clsTest.setClassIndex(-1);
-            clsTest.deleteAttributeAt(testSet.classIndex());
+            if (testSet.classIndex() >= 0)
+                clsTest.deleteAttributeAt(testSet.classIndex());
 
-            testResults = evaluateClusterer(expSettings, clusterer, clsTest,testSet,"test",testSet.numClasses());
-            testResults.setParas(testResults.getParas());
-            testResults.turnOffZeroTimingsErrors();
-            testResults.setBenchmarkTime(testResults.getTimeUnit().convert(testResults.getBenchmarkTime(), testResults.getTimeUnit()));
-            testResults.setBuildTime(testResults.getTimeUnit().convert(testResults.getBuildTime(), testResults.getTimeUnit()));
-            testResults.turnOnZeroTimingsErrors();
-            testResults.setMemory(testResults.getMemory());
+            testResults = evaluateClusterer(clusterer, clsTest, testSet, testSet.numClasses());
+            trainResults.setBenchmarkTime(trainResults.getBenchmarkTime());
+            trainResults.setBuildTime(trainResults.getBuildTime());
+            trainResults.setMemory(trainResults.getMemory());
+
             LOGGER.log(Level.FINE, "Testing complete");
 
             writeResults(expSettings, testResults, expSettings.testFoldFileName, "test");
@@ -283,6 +300,7 @@ public class ClusteringExperiments {
             LOGGER.log(Level.INFO, "Test file already found, written by another process.");
             testResults = new ClustererResults(expSettings.testFoldFileName);
         }
+
         return testResults;
     }
 
@@ -293,8 +311,9 @@ public class ClusteringExperiments {
      */
     public static void buildExperimentDirectoriesAndFilenames(ExperimentalArguments expSettings) {
         //Build/make the directory to write the train and/or testFold files to
-        // [writeLoc]/[classifier]/Predictions/[dataset]/
-        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"+PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
+        // [writeLoc]/[clusterer]/Predictions/[dataset]/
+        String fullWriteLocation = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"
+                +PREDICTIONS_DIR+"/" + expSettings.datasetName + "/";
         File f = new File(fullWriteLocation);
         if (!f.exists())
             f.mkdirs();
@@ -305,7 +324,8 @@ public class ClusteringExperiments {
         trainFoldExists = CollateResults.validateSingleFoldFile(expSettings.trainFoldFileName);
 
         if (expSettings.supportingFilePath == null || expSettings.supportingFilePath.equals(""))
-            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"+WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
+            expSettings.supportingFilePath = expSettings.resultsWriteLocation + expSettings.estimatorName + "/"
+                    +WORKSPACE_DIR+"/" + expSettings.datasetName + "/";
 
         f = new File(expSettings.supportingFilePath);
         if (!f.exists())
@@ -320,10 +340,8 @@ public class ClusteringExperiments {
     public static boolean quitEarlyDueToResultsExistence(ExperimentalArguments expSettings) {
         boolean quit = false;
 
-        if (!expSettings.forceEvaluation &&
-                ((!expSettings.generateErrorEstimateOnTrainSet && testFoldExists) ||
-                        (expSettings.generateErrorEstimateOnTrainSet && trainFoldExists  && testFoldExists))) {
-            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at " + expSettings.testFoldFileName + ", exiting.");
+        if (!expSettings.forceEvaluation && trainFoldExists && testFoldExists) {
+            LOGGER.log(Level.INFO, expSettings.toShortString() + " already exists at write location, exiting.");
             quit = true;
         }
 
@@ -333,47 +351,31 @@ public class ClusteringExperiments {
 
     /**
      * Based on the experimental settings passed, make any clusterer interface calls that modify how the clusterer is TRAINED here,
-     * e.g. give checkpointable classifiers the location to save, give contractable classifiers their contract, etc.
-     *
-     * @return If the clusterer is set up to evaluate a single parameter set on the train data, a new trainfilename shall be returned,
-     *      otherwise null.
-     *
+     * e.g. give checkpointable clustererss the location to save, give contractable clustererss their contract, etc.
      */
-    private static String setupClassifierExperimentalOptions(ExperimentalArguments expSettings, Clusterer clusterer, Instances train) {
-        String parameterFileName = null;
+    private static void setupClustererExperimentalOptions(ExperimentalArguments expSettings, Clusterer clusterer, Instances train) {
         expSettings.numClassValues = train.numClasses();
+
         if (clusterer instanceof Randomizable)
             ((Randomizable)clusterer).setSeed(expSettings.foldId);
-        return parameterFileName;
     }
 
     /**
      * Meta info shall be set by writeResults(...), just generating the prediction info and
      * any info directly calculable from that here
      */
-    public static ClustererResults evaluateClusterer(ExperimentalArguments exp, Clusterer clusterer, Instances clusterData, Instances fullData, String trainOrTest, int numClasses) throws Exception {
+    public static ClustererResults evaluateClusterer(Clusterer clusterer, Instances clusterData, Instances fullData, int numClasses) throws Exception {
         ClustererResults res = new ClustererResults(numClasses);
-        res.setTimeUnit(TimeUnit.NANOSECONDS);
-        res.setClustererName(clusterer.getClass().getSimpleName());
-        res.setDatasetName(clusterData.relationName());
-        res.setFoldID(exp.foldId);
-//        res.setSplit(trainOrTest);
-        res.turnOffZeroTimingsErrors();
-        for(int i=0;i<clusterData.numInstances();i++) {
-            Instance testinst=clusterData.instance(i);
+
+        for(int i = 0; i < clusterData.numInstances(); i++) {
             double trueClassVal = fullData.instance(i).classValue();
             long startTime = System.nanoTime();
-            double[] dist = clusterer.distributionForInstance(testinst);
+            double[] dist = clusterer.distributionForInstance(clusterData.instance(i));
             long predTime = System.nanoTime() - startTime;
-            res.addPrediction(trueClassVal, dist, indexOfMax(dist), "");
-
-//            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, "");
         }
 
-        res.turnOnZeroTimingsErrors();
         res.finaliseResults();
-//        res.findAllStatsOnce();
-
         return res;
     }
 
@@ -393,11 +395,13 @@ public class ClusteringExperiments {
     }
 
     public static void writeResults(ExperimentalArguments exp, ClustererResults results, String fullTestWritingPath, String split) throws Exception {
+        results.setTimeUnit(TimeUnit.NANOSECONDS);
         results.setClustererName(exp.estimatorName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);
         results.setDescription(buildExperimentDescription());
+
         results.writeFullResultsToFile(fullTestWritingPath);
 
         File f = new File(fullTestWritingPath);

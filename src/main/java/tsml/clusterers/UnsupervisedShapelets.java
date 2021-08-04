@@ -19,6 +19,7 @@ package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
 import machine_learning.clusterers.KMeans;
+import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -35,7 +36,7 @@ import static utilities.InstanceTools.toWekaInstances;
  *
  * @author Matthew Middlehurst
  */
-public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
+public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements NumberOfClustersRequestable {
 
     //Zakaria, Jesin, Abdullah Mueen, and Eamonn Keogh.
     //"Clustering time series using unsupervised-shapelets."
@@ -46,6 +47,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
 
     private ArrayList<UShapelet> shapelets;
     private KMeans shapeletClusterer;
+    private Instances header;
     private int numShapeletsToUse;
     private int numInstances;
 
@@ -57,8 +59,9 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
         return k;
     }
 
-    public void setNumberOfClusters(int n) {
-        k = n;
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
     }
 
     @Override
@@ -78,6 +81,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
         for (int i = 0; i < numShapeletsToUse; i++) {
             shapeletDists.setValue(i, shapelets.get(i).computeDistance(inst));
         }
+        shapeletDists.setDataset(header);
 
         return shapeletClusterer.clusterInstance(shapeletDists);
     }
@@ -182,7 +186,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
             //Build multiple kmeans clusterers using the one with the smallest squared distance
             for (int n = 0; n < numFolds; n++) {
                 KMeans kmeans = new KMeans();
-                kmeans.setNumberOfClusters(k);
+                kmeans.setNumClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setCopyInstances(false);
                 if (seedClusterer)
@@ -209,6 +213,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer {
             if (randIndex < minRandIndex) {
                 minRandIndex = randIndex;
                 shapeletClusterer = bestClusterer;
+                header = new Instances(distanceMap, 0);
                 numShapeletsToUse = i;
             }
         }

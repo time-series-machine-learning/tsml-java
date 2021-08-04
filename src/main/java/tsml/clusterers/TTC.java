@@ -21,6 +21,7 @@ import experiments.data.DatasetLoading;
 import machine_learning.clusterers.CAST;
 import machine_learning.clusterers.PAM;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
+import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
 import weka.core.EuclideanDistance;
 import weka.core.Instance;
@@ -37,7 +38,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class TTC extends EnhancedAbstractClusterer {
+public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRequestable {
 
     //Aghabozorgi, Saeed, et al.
     //"A hybrid algorithm for clustering of time series data based on affinity search technique."
@@ -59,8 +60,9 @@ public class TTC extends EnhancedAbstractClusterer {
         return k;
     }
 
-    public void setNumberOfClusters(int n) {
-        k = n;
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
     }
 
     @Override
@@ -101,7 +103,7 @@ public class TTC extends EnhancedAbstractClusterer {
         //Use PAM using DTW distance to cluster discretised data
         pam = new PAM();
         pam.setDistanceFunction(new DTW());
-        pam.setNumberOfClusters(k);
+        pam.setNumClusters(k);
         pam.setNormaliseData(false);
         pam.setCopyInstances(false);
         if (seedClusterer)

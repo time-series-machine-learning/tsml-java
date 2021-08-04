@@ -18,6 +18,7 @@
 package machine_learning.clusterers;
 
 import experiments.data.DatasetLoading;
+import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -36,7 +37,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class PAM extends DistanceBasedVectorClusterer {
+public class PAM extends DistanceBasedVectorClusterer implements NumberOfClustersRequestable {
 
     //L. Kaufman, P.J. Rousseeuw
     //Finding groups in data: An introduction to cluster analysis
@@ -79,8 +80,9 @@ public class PAM extends DistanceBasedVectorClusterer {
         return k;
     }
 
-    public void setNumberOfClusters(int n) {
-        k = n;
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
     }
 
     public void setFindBestK(boolean b) {
@@ -97,7 +99,7 @@ public class PAM extends DistanceBasedVectorClusterer {
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        super.buildClusterer(train);
+        super.buildClusterer(data);
 
         numInstances = train.size();
         assignments = new double[numInstances];
@@ -270,7 +272,7 @@ public class PAM extends DistanceBasedVectorClusterer {
             }
 
             PAM pam = new PAM();
-            pam.setNumberOfClusters(k);
+            pam.setNumClusters(k);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(false);
             if (seedClusterer)
@@ -303,7 +305,7 @@ public class PAM extends DistanceBasedVectorClusterer {
             }
 
             PAM pam = new PAM(initialMedoids);
-            pam.setNumberOfClusters(k);
+            pam.setNumClusters(k);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(false);
             if (seedClusterer)
@@ -412,7 +414,7 @@ public class PAM extends DistanceBasedVectorClusterer {
         //For each value of K.
         for (int i = 2; i <= maxK; i++) {
             PAM pam = new PAM(distanceMatrix);
-            pam.setNumberOfClusters(i);
+            pam.setNumClusters(i);
             pam.setNormaliseData(false);
             pam.setRefinedInitialMedoids(refinedInitialMedoids);
             if (seedClusterer)

@@ -82,9 +82,9 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
             throw new Exception("Class attribute is available and not the final attribute.");
         }
 
-        attributeMeans = new double[data.numAttributes() - 1];
-        attributeStdDevs = new double[data.numAttributes() - 1];
         int cls = data.classIndex() >= 0 ? 1 : 0;
+        attributeMeans = new double[data.numAttributes() - cls];
+        attributeStdDevs = new double[data.numAttributes() - cls];
 
         for (int i = 0; i < data.numAttributes() - cls; i++) {
             attributeMeans[i] = data.attributeStats(i).numericStats.mean;

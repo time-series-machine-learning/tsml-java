@@ -19,6 +19,7 @@ package tsml.clusterers;
 
 import weka.clusterers.AbstractClusterer;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.util.ArrayList;
 
@@ -29,7 +30,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public abstract class EnhancedAbstractClusterer extends AbstractClusterer {
+public abstract class EnhancedAbstractClusterer extends AbstractClusterer implements Randomizable {
 
     protected int seed = 0;
     protected boolean seedClusterer = false;
@@ -54,6 +55,12 @@ public abstract class EnhancedAbstractClusterer extends AbstractClusterer {
         return clusters;
     }
 
+    @Override
+    public int getSeed(){
+        return seed;
+    }
+
+    @Override
     public void setSeed(int seed) {
         this.seed = seed;
         seedClusterer = true;

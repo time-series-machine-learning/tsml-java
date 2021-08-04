@@ -267,7 +267,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     private long buildPlusEstimateTime = -1;
 
 //REMAINDER OF THE FILE - 1 prediction per line
-    //raw performance data. currently just four parallel arrays
+    //raw performance data. currently just give parallel arrays
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> predClassValues;
     private ArrayList<double[]> predDistributions;

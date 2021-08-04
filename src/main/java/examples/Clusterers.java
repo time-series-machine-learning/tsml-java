@@ -46,7 +46,7 @@ public class Clusterers {
         // Call the buildClusterer method with your data. Most clusters will need the number of clusters k to be set.
         UnsupervisedShapelets us = new UnsupervisedShapelets();
         us.setSeed(0);
-        us.setNumberOfClusters(inst.numClasses());
+        us.setNumClusters(inst.numClasses());
         us.buildClusterer(inst);
 
         // You can find the cluster assignments for each data instance by calling getAssignments() and each cluster
@@ -73,7 +73,7 @@ public class Clusterers {
         // however.
         KMeans km = new KMeans();
         km.setSeed(0);
-        km.setNumberOfClusters(inst.numClasses());
+        km.setNumClusters(inst.numClasses());
         km.buildClusterer(inst);
 
         double[] vAssignments = km.getAssignments();

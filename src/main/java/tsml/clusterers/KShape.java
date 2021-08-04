@@ -20,6 +20,7 @@ package tsml.clusterers;
 import experiments.data.DatasetLoading;
 import tsml.transformers.FFT;
 import tsml.transformers.FFT.Complex;
+import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -41,7 +42,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class KShape extends EnhancedAbstractClusterer {
+public class KShape extends EnhancedAbstractClusterer implements NumberOfClustersRequestable {
 
     //Paparrizos, John, and Luis Gravano.
     //"k-shape: Efficient and accurate clustering of time series."
@@ -60,8 +61,9 @@ public class KShape extends EnhancedAbstractClusterer {
         return k;
     }
 
-    public void setNumberOfClusters(int n) {
-        k = n;
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
     }
 
     public void setMaxIterations(int i) {
