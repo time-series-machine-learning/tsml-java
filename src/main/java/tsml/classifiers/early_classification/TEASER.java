@@ -121,7 +121,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
 
         if (thresholdIndex == 0) predCounts = new IntIntHashMap();
 
-        if (svm[thresholdIndex].distributionForInstance(inst)[0] == 1) {
+        if (svm[thresholdIndex] != null && svm[thresholdIndex].distributionForInstance(inst)[0] == 1) {
             int count = predCounts.get(pred);
             if (count == 0) {
                 predCounts.clear();
@@ -187,42 +187,44 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
                 }
             }
 
-            int noFolds = Math.min(probData.numInstances(), 10);
-            probData.randomize(rand);
-            probData.stratify(noFolds);
+            if (probData.numInstances() > 1) {
+                int noFolds = Math.min(probData.numInstances(), 10);
+                probData.randomize(rand);
+                probData.stratify(noFolds);
 
-            double bestAccuracy = -1;
-            for (double svmGamma : SVM_GAMMAS) {
-                LibSVM svmCandidate = new LibSVM();
-                svmCandidate.setSVMType(new SelectedTag(LibSVM.SVMTYPE_ONE_CLASS_SVM, LibSVM.TAGS_SVMTYPE));
-                svmCandidate.setEps(1e-4);
-                svmCandidate.setGamma(svmGamma);
-                svmCandidate.setNu(0.05);
-                svmCandidate.setKernelType(new SelectedTag(LibSVM.KERNELTYPE_RBF, LibSVM.TAGS_KERNELTYPE));
-                svmCandidate.setCacheSize(40);
+                double bestAccuracy = -1;
+                for (double svmGamma : SVM_GAMMAS) {
+                    LibSVM svmCandidate = new LibSVM();
+                    svmCandidate.setSVMType(new SelectedTag(LibSVM.SVMTYPE_ONE_CLASS_SVM, LibSVM.TAGS_SVMTYPE));
+                    svmCandidate.setEps(1e-4);
+                    svmCandidate.setGamma(svmGamma);
+                    svmCandidate.setNu(0.05);
+                    svmCandidate.setKernelType(new SelectedTag(LibSVM.KERNELTYPE_RBF, LibSVM.TAGS_KERNELTYPE));
+                    svmCandidate.setCacheSize(40);
 
-                double correct = 0;
-                for (int n = 0; n < noFolds; n++){
-                    Instances cvTrain = probData.trainCV(noFolds, n);
-                    Instances cvTest = probData.testCV(noFolds, n);
-                    LibSVM svmCV = (LibSVM)AbstractClassifier.makeCopy(svmCandidate);
-                    svmCV.buildClassifier(cvTrain);
+                    double correct = 0;
+                    for (int n = 0; n < noFolds; n++) {
+                        Instances cvTrain = probData.trainCV(noFolds, n);
+                        Instances cvTest = probData.testCV(noFolds, n);
+                        LibSVM svmCV = (LibSVM) AbstractClassifier.makeCopy(svmCandidate);
+                        svmCV.buildClassifier(cvTrain);
 
-                    for (Instance inst: cvTest){
-                        if (svmCV.distributionForInstance(inst)[0] == 1){
-                            correct++;
+                        for (Instance inst : cvTest) {
+                            if (svmCV.distributionForInstance(inst)[0] == 1) {
+                                correct++;
+                            }
                         }
                     }
-                }
-                double accuracy = correct / probData.numInstances();
+                    double accuracy = correct / probData.numInstances();
 
-                if (accuracy > bestAccuracy){
-                    svm[i] = svmCandidate;
-                    bestAccuracy = accuracy;
+                    if (accuracy > bestAccuracy) {
+                        svm[i] = svmCandidate;
+                        bestAccuracy = accuracy;
+                    }
                 }
+
+                svm[i].buildClassifier(probData);
             }
-
-            svm[i].buildClassifier(probData);
         }
 
         double bestHM = -1;
@@ -232,7 +234,8 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
             for (int n = 0; n < data.numInstances(); n++){
                 IntIntHashMap counts = new IntIntHashMap();
                 for (int i = 0; i < thresholds.length; i++){
-                    if (svm[i].distributionForInstance(trainData[i].get(n))[0] == 1 || i == thresholds.length-1){
+                    if (svm[i] != null &&
+                            (svm[i].distributionForInstance(trainData[i].get(n))[0] == 1 || i == thresholds.length-1)){
                         int count = counts.get(trainPred[i][n]);
                         if (count == 0 && i < thresholds.length-1){
                             counts.clear();

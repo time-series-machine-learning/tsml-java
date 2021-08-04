@@ -1041,7 +1041,7 @@ public class ClassifierLists {
                 break;
             case "P85-catch22":
                 c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
-                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "catch22/vPredictions/" + dataset + "/");
+                ((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "catch22/Predictions/" + dataset + "/");
                 break;
             case "P85-TSF":
                 c = new EarlyDecisionMakerClassifier(null, new ProbabilityThreshold());
