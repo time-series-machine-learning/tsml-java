@@ -159,18 +159,20 @@ public class ClusteringExperiments {
         }
         LOGGER.log(Level.FINE, expSettings.toString());
 
-        // if a pre-instantiated clusterer instance hasn't been supplied, generate one here using setClusterer
-        if (expSettings.clusterer == null) {
-            expSettings.clusterer = ClustererLists.setClusterer(expSettings);
-        }
-
         buildExperimentDirectoriesAndFilenames(expSettings);
         //Check whether results already exists, if so and force evaluation is false: just quit
         if (quitEarlyDueToResultsExistence(expSettings))
             return null;
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
-        setupClustererExperimentalOptions(expSettings, expSettings.clusterer, data[0]);
+        expSettings.numClassValues = data[0].numClasses();
+
+        // if a pre-instantiated clusterer instance hasn't been supplied, generate one here using setClusterer
+        if (expSettings.clusterer == null) {
+            expSettings.clusterer = ClustererLists.setClusterer(expSettings);
+        }
+
+        setupClustererExperimentalOptions(expSettings, expSettings.clusterer);
         ClustererResults[] results = runExperiment(expSettings, data[0], data[1], expSettings.clusterer);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString());
 
@@ -353,9 +355,7 @@ public class ClusteringExperiments {
      * Based on the experimental settings passed, make any clusterer interface calls that modify how the clusterer is TRAINED here,
      * e.g. give checkpointable clustererss the location to save, give contractable clustererss their contract, etc.
      */
-    private static void setupClustererExperimentalOptions(ExperimentalArguments expSettings, Clusterer clusterer, Instances train) {
-        expSettings.numClassValues = train.numClasses();
-
+    private static void setupClustererExperimentalOptions(ExperimentalArguments expSettings, Clusterer clusterer) {
         if (clusterer instanceof Randomizable)
             ((Randomizable)clusterer).setSeed(expSettings.foldId);
     }
