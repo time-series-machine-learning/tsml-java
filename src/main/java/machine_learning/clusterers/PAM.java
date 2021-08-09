@@ -216,7 +216,6 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
         }
 
         Random rand;
-
         if (!seedClusterer) {
             rand = new Random();
         } else {
@@ -252,7 +251,6 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
         }
 
         Random rand;
-
         if (!seedClusterer) {
             rand = new Random();
         } else {

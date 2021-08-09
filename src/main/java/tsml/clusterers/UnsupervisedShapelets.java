@@ -19,6 +19,10 @@ package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
 import machine_learning.clusterers.KMeans;
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
 import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -26,8 +30,12 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
+import static utilities.ArrayUtilities.*;
 import static utilities.ClusteringUtilities.randIndex;
+import static utilities.GenericTools.min;
 import static utilities.InstanceTools.deleteClassAttribute;
 import static utilities.InstanceTools.toWekaInstances;
 
@@ -43,13 +51,18 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     //2012 IEEE 12th International Conference on Data Mining. IEEE, 2012.
 
     private int k = 2;
-    private int numFolds = 20;
+    private int numKMeansFolds = 20;
+    private boolean useKMeans = true;
+    private int[] shapeletLengths = {50};
+    private boolean exhaustiveSearch = false;
+    private double randomSearchProportion = -1;
 
     private ArrayList<UShapelet> shapelets;
     private KMeans shapeletClusterer;
     private Instances header;
     private int numShapeletsToUse;
     private int numInstances;
+    private double firstGap;
 
     public UnsupervisedShapelets() {
     }
@@ -64,6 +77,26 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         k = numClusters;
     }
 
+    public void setNumKMeansFolds(int i) {
+        numKMeansFolds = i;
+    }
+
+    public void setUseKMeans(boolean b){
+        useKMeans = b;
+    }
+
+    public void setShapeletLengths(int[] arr){
+        shapeletLengths = arr;
+    }
+
+    public void setExhaustiveSearch(boolean b){
+        exhaustiveSearch = b;
+    }
+
+    public void setRandomSearchProportion(double d){
+        randomSearchProportion = d;
+    }
+
     @Override
     public void buildClusterer(Instances data) throws Exception {
         super.buildClusterer(data);
@@ -76,21 +109,53 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
         deleteClassAttribute(newInst);
-        
-        Instance shapeletDists = new DenseInstance(numShapeletsToUse);
-        for (int i = 0; i < numShapeletsToUse; i++) {
-            shapeletDists.setValue(i, shapelets.get(i).computeDistance(inst));
-        }
-        shapeletDists.setDataset(header);
 
-        return shapeletClusterer.clusterInstance(shapeletDists);
+        if (useKMeans) {
+            Instance shapeletDists = new DenseInstance(numShapeletsToUse);
+            for (int i = 0; i < numShapeletsToUse; i++) {
+                shapeletDists.setValue(i, shapelets.get(i).computeDistance(inst));
+            }
+            shapeletDists.setDataset(header);
+
+            return shapeletClusterer.clusterInstance(shapeletDists);
+        }
+        else {
+            double minDist = Double.MAX_VALUE;
+            int minIdx = -1;
+
+            for (int i = 0; i < shapelets.size(); i++) {
+                double dist = shapelets.get(i).computeDistance(inst);
+
+                if (dist < minDist){
+                    minDist = dist;
+                    minIdx = i;
+                }
+            }
+
+            return minIdx;
+        }
     }
 
     private void extractUShapelets(Instances data) {
-        int[] shapeletLengths = {25, 50};
-
-        if (data.numAttributes() < 50) {
+        if (data.numAttributes() < min(shapeletLengths)) {
             shapeletLengths = new int[]{data.numAttributes() / 2};
+        }
+
+        ArrayList<Integer> indicies = null;
+        if (!useKMeans) {
+            assignments = new double[data.numInstances()];
+
+            indicies = new ArrayList<>(assignments.length);
+            for (int i = assignments.length - 1; i >= 0; i--){
+                indicies.add(i);
+            }
+        }
+
+        Random rand;
+        if (!seedClusterer) {
+            rand = new Random();
+        } else {
+            rand = new Random(seed);
         }
 
         shapelets = new ArrayList();
@@ -98,15 +163,50 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         Instance inst = data.firstInstance();
 
         boolean finished = false;
+        int iteration = 0;
         while (!finished) {
             ArrayList<UShapelet> shapeletCandidates = new ArrayList();
 
-            //Finds all candidate shapelets on the selected instance
-            for (int i = 0; i < shapeletLengths.length; i++) {
-                for (int n = 0; n < inst.numAttributes() - shapeletLengths[i]; n++) {
-                    UShapelet candidate = new UShapelet(n, shapeletLengths[i], inst);
-                    candidate.computeGap(data);
-                    shapeletCandidates.add(candidate);
+            if (exhaustiveSearch){
+                //Finds all candidate shapelets on all instances
+                for (int shapeletLength : shapeletLengths) {
+                    for (int j = 0; j < data.numInstances(); j++) {
+                        inst = data.get(j);
+                        for (int n = 0; n < inst.numAttributes() - shapeletLength; n++) {
+                            UShapelet candidate = new UShapelet(n, shapeletLength, inst);
+                            candidate.computeGap(data);
+                            shapeletCandidates.add(candidate);
+                        }
+                    }
+                }
+            }
+            else if (randomSearchProportion > 0){
+                //Finds all candidate shapelets on a random selection of instances
+                int seriesToSelect = (int) Math.ceil(data.numInstances() * randomSearchProportion);
+                ArrayList<Integer> randomIndicies = new ArrayList<>(data.numInstances());
+                for (int i = 0; i < data.numInstances(); i++){
+                    randomIndicies.add(i);
+                }
+
+                for (int shapeletLength : shapeletLengths) {
+                    for (int j = 0; j < seriesToSelect; j++) {
+                        inst = data.get(randomIndicies.remove(rand.nextInt(randomIndicies.size())));
+                        for (int n = 0; n < inst.numAttributes() - shapeletLength; n++) {
+                            UShapelet candidate = new UShapelet(n, shapeletLength, inst);
+                            candidate.computeGap(data);
+                            shapeletCandidates.add(candidate);
+                        }
+                    }
+                }
+            }
+            else {
+                //Finds all candidate shapelets on the selected instance
+                for (int shapeletLength : shapeletLengths) {
+                    for (int n = 0; n < inst.numAttributes() - shapeletLength; n++) {
+                        UShapelet candidate = new UShapelet(n, shapeletLength, inst);
+                        candidate.computeGap(data);
+                        shapeletCandidates.add(candidate);
+                    }
                 }
             }
 
@@ -118,6 +218,14 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                     maxGap = shapeletCandidates.get(i).gap;
                     maxGapIndex = i;
                 }
+            }
+
+            if (!useKMeans && iteration == 0){
+                firstGap = maxGap;
+            }
+
+            if (!useKMeans && maxGap < firstGap / 2){
+                break;
             }
 
             //Adds the shapelet with the best gap value to the pool of shapelets
@@ -153,83 +261,115 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                     if (distances[i] >= cutoff) {
                         newData.add(data.get(i));
                     }
+                    else if (!useKMeans){
+                        assignments[indicies.remove(data.numInstances() - i)] = iteration;
+                    }
                 }
 
                 data = newData;
                 if (data.size() == 1) {
                     finished = true;
                 }
+                else{
+                    iteration++;
+                }
+            }
+        }
+
+        if (!useKMeans){
+            for (int idx: indicies){
+                assignments[idx] = -1;
             }
         }
     }
 
     private void clusterData(Instances data) throws Exception {
-        Instances distanceMap;
-        double[][] foldClusters = new double[shapelets.size()][];
-        double[][] distanceMatrix = new double[numInstances][1];
-        double minRandIndex = 1;
-        KMeans bestClusterer = null;
+        if (useKMeans) {
+            Instances distanceMap;
+            double[][] foldClusters = new double[shapelets.size()][];
+            double[][] distanceMatrix = new double[numInstances][1];
+            double minRandIndex = 1;
+            KMeans bestClusterer = null;
 
-        //Create a distance matrix by calculating the distance of shapelet i and previous shapelets to each time series
-        for (int i = 0; i < shapelets.size(); i++) {
-            UShapelet shapelet = shapelets.get(i);
-            double[] distances = shapelet.computeDistances(data);
-            double minDist = Double.MAX_VALUE;
+            //Create a distance matrix by calculating the distance of shapelet i and previous shapelets to each time
+            //series
+            for (int i = 0; i < shapelets.size(); i++) {
+                UShapelet shapelet = shapelets.get(i);
+                double[] distances = shapelet.computeDistances(data);
+                double minDist = Double.MAX_VALUE;
 
-            for (int n = 0; n < numInstances; n++) {
-                distanceMatrix[n] = Arrays.copyOf(distanceMatrix[n], i + 1);
-                distanceMatrix[n][i] = distances[n];
-            }
+                for (int n = 0; n < numInstances; n++) {
+                    distanceMatrix[n] = Arrays.copyOf(distanceMatrix[n], i + 1);
+                    distanceMatrix[n][i] = distances[n];
+                }
 
-            distanceMap = toWekaInstances(distanceMatrix);
+                distanceMap = toWekaInstances(distanceMatrix);
 
-            //Build multiple kmeans clusterers using the one with the smallest squared distance
-            for (int n = 0; n < numFolds; n++) {
-                KMeans kmeans = new KMeans();
-                kmeans.setNumClusters(k);
-                kmeans.setNormaliseData(false);
-                kmeans.setCopyInstances(false);
-                if (seedClusterer)
-                    kmeans.setSeed(seed + (n + 7) * (i + 7));
-                kmeans.buildClusterer(distanceMap);
+                //Build multiple kmeans clusterers using the one with the smallest squared distance
+                for (int n = 0; n < numKMeansFolds; n++) {
+                    KMeans kmeans = new KMeans();
+                    kmeans.setNumClusters(k);
+                    kmeans.setNormaliseData(false);
+                    kmeans.setCopyInstances(false);
+                    if (seedClusterer)
+                        kmeans.setSeed(seed + (n + 7) * (i + 7));
+                    kmeans.buildClusterer(distanceMap);
 
-                double dist = kmeans.clusterSquaredDistance(distanceMap);
+                    double dist = kmeans.clusterSquaredDistance(distanceMap);
 
-                if (dist < minDist) {
-                    minDist = dist;
-                    foldClusters[i] = kmeans.getAssignments();
-                    bestClusterer = kmeans;
+                    if (dist < minDist) {
+                        minDist = dist;
+                        foldClusters[i] = kmeans.getAssignments();
+                        bestClusterer = kmeans;
+                    }
+                }
+
+                double randIndex = 1;
+
+                //If the rand index of this output of clusters compared to the previous one is greater than the current
+                //best use this output of clusters
+                if (i > 0) {
+                    randIndex = 1 - randIndex(foldClusters[i - 1], foldClusters[i]);
+                }
+
+                if (randIndex < minRandIndex) {
+                    minRandIndex = randIndex;
+                    shapeletClusterer = bestClusterer;
+                    header = new Instances(distanceMap, 0);
+                    numShapeletsToUse = i;
                 }
             }
 
-            double randIndex = 1;
+            assignments = foldClusters[numShapeletsToUse];
+            clusters = new ArrayList[k];
 
-            //If the rand index of this output of clusters compared to the previous one is greater than the current best
-            //use this output of clusters
-            if (i > 0) {
-                randIndex = 1 - randIndex(foldClusters[i - 1], foldClusters[i]);
+            for (int i = 0; i < k; i++) {
+                clusters[i] = new ArrayList();
             }
 
-            if (randIndex < minRandIndex) {
-                minRandIndex = randIndex;
-                shapeletClusterer = bestClusterer;
-                header = new Instances(distanceMap, 0);
-                numShapeletsToUse = i;
+            for (int i = 0; i < numInstances; i++) {
+                for (int n = 0; n < k; n++) {
+                    if (n == assignments[i]) {
+                        clusters[n].add(i);
+                        break;
+                    }
+                }
             }
         }
+        else{
+            List<Double> u = unique(assignments);
+            clusters = new ArrayList[u.size()];
 
-        assignments = foldClusters[numShapeletsToUse];
-        clusters = new ArrayList[k];
+            for (int i = 0; i < clusters.length; i++) {
+                clusters[i] = new ArrayList();
+            }
 
-        for (int i = 0; i < k; i++) {
-            clusters[i] = new ArrayList();
-        }
-
-        for (int i = 0; i < numInstances; i++) {
-            for (int n = 0; n < k; n++) {
-                if (n == assignments[i]) {
-                    clusters[n].add(i);
-                    break;
+            for (int i = 0; i < numInstances; i++) {
+                for (int n = 0; n < clusters.length; n++) {
+                    if (n == assignments[i]) {
+                        clusters[n].add(i);
+                        break;
+                    }
                 }
             }
         }
@@ -238,8 +378,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     private double mean(ArrayList<Double> dists) {
         double meanSum = 0;
 
-        for (int i = 0; i < dists.size(); i++) {
-            meanSum += dists.get(i);
+        for (Double dist : dists) {
+            meanSum += dist;
         }
 
         return meanSum / dists.size();
@@ -249,8 +389,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         double sum = 0;
         double temp;
 
-        for (int i = 0; i < dists.size(); i++) {
-            temp = dists.get(i) - mean;
+        for (Double dist : dists) {
+            temp = dist - mean;
             sum += temp * temp;
         }
 
@@ -309,15 +449,15 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                 ArrayList<Double> greaterDists = new ArrayList();
 
                 //separate instance distances based on whether they are greater or less than the current dist
-                for (int n = 0; n < sortedDistances.length; n++) {
-                    if (sortedDistances[n] < dist) {
-                        lesserDists.add(sortedDistances[n]);
+                for (double sortedDistance : sortedDistances) {
+                    if (sortedDistance < dist) {
+                        lesserDists.add(sortedDistance);
                     } else {
-                        greaterDists.add(sortedDistances[n]);
+                        greaterDists.add(sortedDistance);
                     }
                 }
 
-                double ratio = lesserDists.size() / greaterDists.size();
+                double ratio = (double) lesserDists.size() / greaterDists.size();
 
                 if (1.0 / k < ratio) {
                     double lesserMean = mean(lesserDists);
@@ -341,48 +481,84 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             double[] distances = new double[data.numInstances()];
             double[] shapelet = zNormalise();
 
-            for (int i = 0; i < data.numInstances(); i++) {
-                Instance inst = data.get(i);
-                distances[i] = Double.MAX_VALUE;
-                UShapelet subseries = new UShapelet(0, length, inst);
+            double sumy = sum(shapelet);
+            double sumy2 = sumPow2(shapelet);
 
-                //Sliding window calculating distance of each section of the series to the shapelet
-                for (int n = 0; n < inst.numAttributes() - length; n++) {
-                    subseries.startPoint = n;
-                    double dist = euclideanDistance(shapelet, subseries.zNormalise());
-
-                    if (dist < distances[i]) {
-                        distances[i] = dist;
-                    }
-                }
+            int nfft = (int) Math.pow(2.0, (int) Math.ceil(Math.log(data.numAttributes()) / Math.log(2)));
+            Complex[] yfft = new Complex[nfft];
+            for (int n = 0; n < nfft; n++) {
+                if (n < length)
+                    yfft[n] = new Complex(shapelet[length - n - 1], 0);
+                else
+                    yfft[n] = new Complex(0, 0);
             }
 
-            double normaliser = Math.sqrt(length);
+            FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
+            yfft = fft.transform(yfft, TransformType.FORWARD);
 
-            for (int i = 0; i < distances.length; i++) {
-                distances[i] /= normaliser;
+            for (int i = 0; i < data.numInstances(); i++) {
+                distances[i] = computeDistance(data.get(i).toDoubleArray(), sumy, sumy2, nfft, fft, yfft);
             }
 
             return distances;
         }
 
-        double computeDistance(Instance inst){
-            double minDist = Double.MAX_VALUE;
-
+        double computeDistance(Instance data) {
             double[] shapelet = zNormalise();
-            UShapelet subseries = new UShapelet(0, length, inst);
 
-            //Sliding window calculating distance of each section of the series to the shapelet
-            for (int n = 0; n < inst.numAttributes() - length; n++) {
-                subseries.startPoint = n;
-                double dist = euclideanDistance(shapelet, subseries.zNormalise());
+            double sumy = sum(shapelet);
+            double sumy2 = sumPow2(shapelet);
 
-                if (dist < minDist) {
-                    minDist = dist;
-                }
+            int nfft = (int) Math.pow(2.0, (int) Math.ceil(Math.log(data.numAttributes()) / Math.log(2)));
+            Complex[] yfft = new Complex[nfft];
+            for (int n = 0; n < nfft; n++) {
+                if (n < length)
+                    yfft[n] = new Complex(shapelet[length - n - 1], 0);
+                else
+                    yfft[n] = new Complex(0, 0);
             }
 
-            return minDist;
+            FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
+            yfft = fft.transform(yfft, TransformType.FORWARD);
+
+            return computeDistance(data.toDoubleArray(), sumy, sumy2, nfft, fft, yfft);
+        }
+
+        double computeDistance(double[] inst, double sumy, double sumy2, int nfft, FastFourierTransformer fft,
+                               Complex[] yfft) {
+            Complex[] xfft = new Complex[nfft];
+            for (int n = 0; n < nfft; n++) {
+                if (n < inst.length)
+                    xfft[n] = new Complex(inst[n], 0);
+                else
+                    xfft[n] = new Complex(0, 0);
+            }
+
+            xfft = fft.transform(xfft, TransformType.FORWARD);
+
+            Complex[] zfft = new Complex[nfft];
+            for (int n = 0; n < nfft; n++) {
+                zfft[n] = xfft[n].multiply(yfft[n]);
+            }
+
+            zfft = fft.transform(zfft, TransformType.INVERSE);
+
+            double[] cumsumx = cumsum(inst);
+            double[] cumsumx2 = cumsumPow2(inst);
+
+            double[] dists = new double[inst.length - length];
+            for (int i = 0; i < dists.length; i++){
+                double sumx = cumsumx[i + length] - cumsumx[i];
+                double sumx2 = cumsumx2[i + length] - cumsumx2[i];
+                double meanx = sumx / length;
+                double sigmax2 = sumx2 / length - Math.pow(meanx, 2);
+                double sigmax = Math.sqrt(sigmax2);
+
+                dists[i] = (sumx2 - 2 * sumx * meanx + length * Math.pow(meanx, 2)) / sigmax2 - 2 *
+                        (zfft[i + length].getReal() - sumy * meanx) / sigmax + sumy2;
+            }
+
+            return Math.sqrt(min(dists)) / Math.sqrt(length);
         }
 
         //return the shapelet using the series, start point and shapelet length
@@ -414,17 +590,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             }
 
             return output;
-        }
-
-        private double euclideanDistance(double[] series1, double[] series2) {
-            double dist = 0;
-
-            for (int i = 0; i < series1.length; i++) {
-                double n = series1[i] - series2[i];
-                dist += n * n;
-            }
-
-            return Math.sqrt(dist);
         }
     }
 }

@@ -56,9 +56,26 @@ public class GenericTools {
         }
         return minInd;
     }
+
+    public static int indexOfMin(int[] dist) {
+        int min = dist[0];
+        int minInd = 0;
+
+        for (int i = 1; i < dist.length; ++i) {
+            if (dist[i] < min) {
+                min = dist[i];
+                minInd = i;
+            }
+        }
+        return minInd;
+    }
     
     public static double min(double[] array) {
         return array[(int)indexOfMin(array)];
+    }
+
+    public static int min(int[] array) {
+        return array[indexOfMin(array)];
     }
     
     public static double indexOfMax(double[] dist) {

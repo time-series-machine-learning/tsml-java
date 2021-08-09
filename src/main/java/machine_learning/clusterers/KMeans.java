@@ -219,7 +219,6 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         }
 
         Random rand;
-
         if (!seedClusterer) {
             rand = new Random();
         } else {
@@ -256,7 +255,6 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         }
 
         Random rand;
-
         if (!seedClusterer) {
             rand = new Random();
         } else {

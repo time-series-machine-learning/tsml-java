@@ -143,6 +143,32 @@ public class ArrayUtilities {
         return sum;
     }
 
+    public static double sumPow2(double[] array) {
+        double sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += Math.pow(array[i], 2);
+        }
+        return sum;
+    }
+
+    public static double[] cumsum(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = array[0];
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + array[i];
+        }
+        return sum;
+    }
+
+    public static double[] cumsumPow2(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = Math.pow(array[0], 2);
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + Math.pow(array[i], 2);;
+        }
+        return sum;
+    }
+
     public static double[] normalise(double[] array, boolean ignoreZeroSum) {
         double sum = sum(array);
         if(sum == 0) {
