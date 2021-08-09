@@ -51,8 +51,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     //2012 IEEE 12th International Conference on Data Mining. IEEE, 2012.
 
     private int k = 2;
-    private int numKMeansFolds = 20;
     private boolean useKMeans = true;
+    private int numKMeansFolds = 20;
     private int[] shapeletLengths = {50};
     private boolean exhaustiveSearch = false;
     private double randomSearchProportion = -1;
@@ -77,12 +77,12 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         k = numClusters;
     }
 
-    public void setNumKMeansFolds(int i) {
-        numKMeansFolds = i;
-    }
-
     public void setUseKMeans(boolean b){
         useKMeans = b;
+    }
+
+    public void setNumKMeansFolds(int i) {
+        numKMeansFolds = i;
     }
 
     public void setShapeletLengths(int[] arr){
@@ -137,7 +137,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     }
 
     private void extractUShapelets(Instances data) {
-        if (data.numAttributes() < min(shapeletLengths)) {
+        if (data.numAttributes() / 2 < min(shapeletLengths)) {
             shapeletLengths = new int[]{data.numAttributes() / 2};
         }
 
