@@ -17,7 +17,7 @@
 package evaluation;
 
 import ResultsProcessing.MatlabController;
-import evaluation.storage.ClassifierResultsCollection;
+import evaluation.storage.EstimatorResultsCollection;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -70,9 +70,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     private List<String> classifiersInOutput;
     private List<String> readPaths;
     private Map<String, Map<String, String[]>> datasetGroupings; // Map<GroupingMethodTitle(e.g "ByNumAtts"), Map<GroupTitle(e.g "<100"), dsetsInGroup(must be subset of datasets)>>
-    private ClassifierResultsCollection resultsCollection;
+    private EstimatorResultsCollection resultsCollection;
     private int numFolds;
     private List<PerformanceMetric> metrics;
+
+    private EstimatorResultsCollection.ResultsType resultsType = EstimatorResultsCollection.ResultsType.CLASSIFICATION;
     
     /**
      * if true, the relevant .m files must be located in the netbeans project directory
@@ -144,7 +146,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         
         this.datasets = new ArrayList<>();
         this.datasetGroupings = new HashMap<>();
-        this.resultsCollection = new ClassifierResultsCollection();
+        this.resultsCollection = new EstimatorResultsCollection();
         
         this.classifiersInOutput = new ArrayList<>();
         this.classifiersInStorage = new ArrayList<>();
@@ -269,6 +271,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         addDatasetGroupingFromDirectory(groupingDirectory, customGroupingMethodName);
         return this;
     }
+
+    /**
+     * Sets the type of results to load in, i.e. classification or clustering
+     */
+    public void setResultsType(EstimatorResultsCollection.ResultsType resultsType) { this.resultsType = resultsType; }
     
     /**
      * Pass a directory containing a number of DIRECTORIES that define groupings. Each subdirectory contains 
@@ -380,6 +387,12 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         metrics = PerformanceMetric.getAllPredictionStatistics();
         return this;
     }
+
+    public MultipleClassifierEvaluation setUseClusteringStatistics() {
+        metrics = PerformanceMetric.getClusteringStatistics();
+        return this;
+    }
+
 
     /**
      * Read in the results from file classifier by classifier, can be used if results are in different locations 
@@ -518,7 +531,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     
     public void runComparison() throws Exception {
         
-        resultsCollection.setClassifiers(classifiersInStorage.toArray(new String[] { }), 
+        resultsCollection.setEstimators(classifiersInStorage.toArray(new String[] { }),
                 classifiersInOutput.toArray(new String[] { }), 
                 readPaths.toArray(new String[] { }));
         resultsCollection.setDatasets(datasets.toArray(new String[] { }));
@@ -527,6 +540,8 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             resultsCollection.setSplit_Test();
         else 
             resultsCollection.setSplit_TrainTest();
+
+        resultsCollection.setResultsType(resultsType);
         
         resultsCollection.load();
         
@@ -536,15 +551,15 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         if (evaluateDatasetsOverClassifiers) 
             transposeEverything();
         
-        ClassifierResultsAnalysis.buildMatlabDiagrams = buildMatlabDiagrams;
-        ClassifierResultsAnalysis.testResultsOnly = testResultsOnly;
+        EstimatorResultsAnalysis.buildMatlabDiagrams = buildMatlabDiagrams;
+        EstimatorResultsAnalysis.testResultsOnly = testResultsOnly;
         
         //ClassifierResultsAnalysis will find this flag internally as queue to do clustering
         if (performPostHocDsetResultsClustering) 
-            datasetGroupings.put(ClassifierResultsAnalysis.clusterGroupingIdentifier, null); 
+            datasetGroupings.put(EstimatorResultsAnalysis.clusterGroupingIdentifier, null);
         
         printlnDebug("Writing started");
-        ClassifierResultsAnalysis.performFullEvaluation(writePath, experimentName, metrics, resultsCollection, datasetGroupings);
+        EstimatorResultsAnalysis.performFullEvaluation(writePath, experimentName, metrics, resultsCollection, datasetGroupings);
         printlnDebug("Writing finished");
         
         if (buildMatlabDiagrams && closeMatlabConnectionWhenFinished)

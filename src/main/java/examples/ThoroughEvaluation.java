@@ -20,7 +20,7 @@
 package examples;
 
 import evaluation.MultipleClassifierEvaluation;
-import evaluation.storage.ClassifierResultsCollection;
+import evaluation.storage.EstimatorResultsCollection;
 import experiments.ExperimentalArguments;
 import experiments.ClassifierExperiments;
 import java.util.Arrays;
@@ -64,8 +64,8 @@ public class ThoroughEvaluation {
         
         // Let's load back in all the results files we made: 
         
-        ClassifierResultsCollection crc = new ClassifierResultsCollection();
-        crc.addClassifiers(classifiers, resultsPath);
+        EstimatorResultsCollection crc = new EstimatorResultsCollection();
+        crc.addEstimators(classifiers, resultsPath);
         crc.setDatasets(datasets);
         crc.setFolds(numFolds);
         crc.setSplit_Test();
@@ -81,8 +81,8 @@ public class ThoroughEvaluation {
         // slice...() will give you a sub-collection of all results of that particular
         // split/classifier/dataset/fold
         
-        ClassifierResultsCollection subCrc = crc.sliceDataset("ItalyPowerDemand");
-        subCrc = subCrc.sliceClassifier("ED");
+        EstimatorResultsCollection subCrc = crc.sliceDataset("ItalyPowerDemand");
+        subCrc = subCrc.sliceEstimator("ED");
         System.out.println(subCrc);
         
         // retrieve...() will get some piece of information, e.g. an eval metric, 

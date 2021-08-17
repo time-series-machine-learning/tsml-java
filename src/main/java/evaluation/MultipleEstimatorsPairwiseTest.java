@@ -44,7 +44,7 @@ import statistics.tests.TwoSampleTests;
  * 
  * @author ajb
  */
-public class MultipleClassifiersPairwiseTest {
+public class MultipleEstimatorsPairwiseTest {
     public static boolean beQuiet = false;
     
     static double[][] accs; //ROW indicates classifier, for ease of processing

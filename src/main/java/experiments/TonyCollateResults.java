@@ -16,7 +16,7 @@
  */
 package experiments;
 
-import evaluation.MultipleClassifiersPairwiseTest;
+import evaluation.MultipleEstimatorsPairwiseTest;
 import evaluation.MultipleClassifierEvaluation;
 import fileIO.InFile;
 import fileIO.OutFile;
@@ -631,7 +631,7 @@ public static void basicSummaryComparisons(){
             d2[i]=res.get(i);
 
  //2. Do pairwise tests       
-        StringBuilder resultsString= MultipleClassifiersPairwiseTest.runSignRankTest(d2,classifiers);
+        StringBuilder resultsString= MultipleEstimatorsPairwiseTest.runSignRankTest(d2,classifiers);
         s.writeString(resultsString.toString());
         System.out.println(resultsString);
 

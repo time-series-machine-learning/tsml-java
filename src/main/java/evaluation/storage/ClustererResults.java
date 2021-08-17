@@ -100,7 +100,7 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
  *
  * @author Matthew Middlehurst, adapted from ClassifierResults (James Large)
  */
-public class ClustererResults implements DebugPrinting, Serializable {
+public class ClustererResults extends EstimatorResults implements DebugPrinting, Serializable {
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -140,45 +140,13 @@ public class ClustererResults implements DebugPrinting, Serializable {
      */
     private int numClusters = -1;
 
-    /**
-     * The time taken to complete buildClusterer(Instances), aka training. May be cumulative time over many parameter
-     * set builds, etc It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
-     * default nanoseconds. If no benchmark time is supplied, the default value is -1
-     */
-    private long buildTime = -1;
+    // buildTime
 
-    /**
-     * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick
-     * helper/summary in case complete prediction information is not stored, and/or for a human reader to quickly
-     * compare times.
-     *
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
-     * default nanoseconds.
-     * If no benchmark time is supplied, the default value is -1
-     */
-    private long testTime = -1;
+    // testTime
 
-    /**
-     * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise)
-     * way to measure the general speed of the hardware that these results were made on, such that users
-     * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent
-     * relative scale across different results sets. It is up to the user what this benchmark operation is, and how
-     * long it is (roughly) expected to take.
-     * <p>
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default
-     * nanoseconds. If no benchmark time is supplied, the default value is -1
-     */
-    private long benchmarkTime = -1;
+    // benchmarkTime
 
-    /**
-     * It is user dependent on exactly what this field means and how accurate it may be (because of Java's lazy gc).
-     * Intended purpose would be the size of the model at the end of/after buildClusterer, aka the clusterer
-     * has been trained.
-     * <p>
-     * The assumption, for now, is that this is measured in BYTES, but this is not enforced/ensured
-     * If no memoryUsage value is supplied, the default value is -1
-     */
-    private long memoryUsage = -1;
+    // memoryUsage
 
     //REMAINDER OF THE FILE - 1 case per line
     //raw performance data. currently just five parallel arrays
@@ -200,16 +168,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
     private double nmi = -1;
     private double ami = -1;
 
-
-    /**
-     * Consistent time unit ASSUMED across build times. Default to nanoseconds.
-     * <p>
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     */
-    private TimeUnit timeUnit = TimeUnit.NANOSECONDS;
-
+    // timeUnit
 
     //self-management flags
     /**
@@ -228,23 +187,17 @@ public class ClustererResults implements DebugPrinting, Serializable {
      */
     private boolean errorOnTimingOfZero = false;
 
-    //functional getters to retrieve info from a clustererresults object, initialised/stored here for conveniance
-    public static final Function<ClustererResults, Double> GETTER_Accuracy = (ClustererResults cr) -> cr.accuracy;
-    public static final Function<ClustererResults, Double> GETTER_RandIndex = (ClustererResults cr) -> cr.ri;
-    public static final Function<ClustererResults, Double> GETTER_AdjustedRandIndex = (ClustererResults cr) -> cr.ari;
-    public static final Function<ClustererResults, Double> GETTER_MutualInformation = (ClustererResults cr) -> cr.mi;
-    public static final Function<ClustererResults, Double> GETTER_NormalizedMutualInformation = (ClustererResults cr)
-            -> cr.nmi;
-    public static final Function<ClustererResults, Double> GETTER_AdjustedMutualInformation = (ClustererResults cr)
-            -> cr.ami;
-
-    public static final Function<ClustererResults, Long> GETTER_MemoryMB = (ClustererResults cr) ->
-            cr.memoryUsage / 1000000L;
-    public static final Function<ClustererResults, Long> GETTER_buildTime = (ClustererResults cr) -> cr.buildTime;
-    public static final Function<ClustererResults, Long> GETTER_benchmarkTime = (ClustererResults cr) ->
-            cr.benchmarkTime;
-    public static final Function<ClustererResults, Long> GETTER_buildTimeBenchmarked =
-            (ClustererResults cr) -> cr.benchmarkTime <= 0 ? cr.buildTime : cr.buildTime / cr.benchmarkTime;
+    //functional getters to retrieve info from a clustererresults object, initialised/stored here for convenience
+    //these are currently on used in PerformanceMetric.java, can take any results type as a hack to allow other
+    //results in evaluation
+    public static final Function<EstimatorResults, Double> GETTER_Accuracy = (EstimatorResults cr) -> ((ClustererResults)cr).accuracy;
+    public static final Function<EstimatorResults, Double> GETTER_RandIndex = (EstimatorResults cr) -> ((ClustererResults)cr).ri;
+    public static final Function<EstimatorResults, Double> GETTER_AdjustedRandIndex = (EstimatorResults cr) -> ((ClustererResults)cr).ari;
+    public static final Function<EstimatorResults, Double> GETTER_MutualInformation = (EstimatorResults cr) -> ((ClustererResults)cr).mi;
+    public static final Function<EstimatorResults, Double> GETTER_NormalizedMutualInformation = (EstimatorResults cr)
+            -> ((ClustererResults)cr).nmi;
+    public static final Function<EstimatorResults, Double> GETTER_AdjustedMutualInformation = (EstimatorResults cr)
+            -> ((ClustererResults)cr).ami;
 
 
     /*********************************
@@ -421,7 +374,8 @@ public class ClustererResults implements DebugPrinting, Serializable {
      *
      */
 
-    public double getAccuracy() {
+    @Override
+    public double getAcc() {
         if (accuracy < 0)
             calculateAcc();
         return accuracy;
@@ -767,6 +721,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
         return descriptions.get(index);
     }
 
+    @Override
     public void cleanPredictionInfo() {
         distributions = null;
         clusterValues = null;
@@ -1124,6 +1079,8 @@ public class ClustererResults implements DebugPrinting, Serializable {
         nmi = findNMI();
         ami = findAMI();
 
+        medianPredTime = findMedianPredTime(predTimes);
+
         allStatsFound = true;
     }
 
@@ -1327,6 +1284,7 @@ public class ClustererResults implements DebugPrinting, Serializable {
      * <p>
      * In this latter case, this method does nothing.
      */
+    @Override
     public void findAllStatsOnce() {
         if (finalised && allStatsFound) {
             printlnDebug("Stats already found, ignoring findAllStatsOnce()");
