@@ -87,7 +87,7 @@ import weka.estimators.Estimator;
  *      results.setBuildTime(buildTimeInResultsUnit)
  *
  * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy,
- * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
+ * auroc, nll etc.) which are used in the MultipleEstimatorEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them
  * via directly via the public variables. In the future, these metrics will likely be separated out
  * into their own package

@@ -23,7 +23,7 @@ package tsml.classifiers.distance_based.proximity;
 import core.AppContext;
 import core.contracts.Dataset;
 import datasets.ListDataset;
-import evaluation.MultipleClassifierEvaluation;
+import evaluation.MultipleEstimatorEvaluation;
 import experiments.ExperimentalArguments;
 import experiments.ClassifierExperiments;
 import java.util.Random;
@@ -283,13 +283,13 @@ public class ProximityForestWrapper extends AbstractClassifier implements Random
         }
         
         
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(exp.resultsWriteLocation +"ANA/", "sanityCheck", numFolds);
-        mce.setBuildMatlabDiagrams(false);
-        mce.setTestResultsOnly(true);
-        mce.setDatasets(datasets);
-        mce.readInClassifier(exp.estimatorName, exp.resultsWriteLocation);
-//        mce.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it 
-        mce.readInClassifier("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
-        mce.runComparison();
+        MultipleEstimatorEvaluation mee = new MultipleEstimatorEvaluation(exp.resultsWriteLocation +"ANA/", "sanityCheck", numFolds);
+        mee.setBuildMatlabDiagrams(false);
+        mee.setTestResultsOnly(true);
+        mee.setDatasets(datasets);
+        mee.readInEstimator(exp.estimatorName, exp.resultsWriteLocation);
+//        mee.readInClassifier("DTWCV", "Z:/Results_7_2_19/FinalisedRepo/"); //no probs, leaving it
+        mee.readInEstimator("RotF", "Z:/Results_7_2_19/FinalisedRepo/");
+        mee.runComparison();
     }
 }

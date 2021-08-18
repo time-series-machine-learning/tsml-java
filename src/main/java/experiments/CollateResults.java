@@ -15,7 +15,7 @@
 package experiments;
 
 import evaluation.MultipleEstimatorsPairwiseTest;
-import evaluation.MultipleClassifierEvaluation;
+import evaluation.MultipleEstimatorEvaluation;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -35,7 +35,7 @@ import java.util.HashMap;
  * It does not do comparisons between classifiers, and it will build with incomplete
  * data, ignoring incomplete data sets. This can be run on the cluster (see below). 
  * See method individualClassifiersCollate() for example usage
- * 2 (James Large) Using the MultipleClassifierEvaluation class, detailed  
+ * 2 (James Large) Using the MultipleEstimatorEvaluation class, detailed
  * comparisons between classifier can be conducted. This can create matlab driven
  * critical difference diagrams
 
@@ -682,7 +682,7 @@ public static void basicSummaryComparisons(){
 
     
 /**
- * Usage of MultipleClassifierEvaluation. See the class for more info
+ * Usage of MultipleEstimatorEvaluation. See the class for more info
  * @throws Exception 
  */
    public static void multipleClassifierFullStats(String[] args) throws Exception{
@@ -690,12 +690,12 @@ public static void basicSummaryComparisons(){
 //TO DO           
        }
        else{ //Example manual setting
-            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
+            MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
             m.setDatasets(Arrays.copyOfRange(experiments.data.DatasetLists.UCIContinuousWithoutBigFour, 0, 117));
-            m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
+            m.readInEstimators(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"},
                     "E://Results/UCI/Tuned");
             m.runComparison(); 
        }

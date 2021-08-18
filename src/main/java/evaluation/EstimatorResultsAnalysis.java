@@ -47,12 +47,12 @@ import java.util.function.Function;
  * This is a monster of a class, with some bad code and not enough documentation. It's improving over time however.
  If there are any questions about it, best bet would be to email me (see below).
 
- This class is given a much better front end/'api' in MultipleClassifierEvaluation.java. Users should almost always use
+ This class is given a much better front end/'api' in MultipleEstimatorEvaluation.java. Users should almost always use
  that class for their comparative summaries of different estimators.
 
  The two functions from this class in particular a user would actually use in their code might be: 
  performFullEvaluation(...) and performTestAccEvalOnly(...), the former of which is the the 
- function wrapped by MultipleClassifierEvaluation
+ function wrapped by MultipleEstimatorEvaluation
 
  Basically, this is a collection of static functions to analyse/handle COMPLETED (i.e no folds missing out 
  of those expected of the specified estimatorXdatasetXfoldXsplit set) sets of results in EstimatorResults format
@@ -71,6 +71,10 @@ public class EstimatorResultsAnalysis {
     public static String expRootDirectory;
     public static boolean buildMatlabDiagrams = false;
     public static boolean testResultsOnly = false;
+
+    //declares the type of results being processed i.e. classification or clustering. Used to include/exclude certain
+    // metric like estimate timings for classification.
+    public static EstimatorResultsCollection.ResultsType resultsType = EstimatorResultsCollection.ResultsType.CLASSIFICATION;
 
 
 
@@ -139,8 +143,8 @@ public class EstimatorResultsAnalysis {
      *          These metrics will also have indications of how comparisons of this metric should be calculated and represented
      * @param results a EstimatorResultsCollection containing test (and optionally train) results of 1/more estimators on 1/more datasets over 1/more resamples.
      *          Estimator and dataset names are retrieved from this object
-     * @param dsetGroupings Optional, a map { grouping name, groupings } of maps { group name, datasets in groups } that describe different subsets of 
-     *          the data within which to repeat the analysis, e.g one group might be 2class datasets vs multiclass datasets. The analysis would 
+     * @param dsetGroupings Optional, a map { grouping name, groupings } of maps { group name, datasets in groups } that describe different subsets of
+     *          the data within which to repeat the analysis, e.g one group might be 2class datasets vs multiclass datasets. The analysis would
      *          aid in seeing if one estimator has a competitive advantage over the others within different data characteristics/groupings
      */
     public static void performFullEvaluation(
@@ -302,7 +306,7 @@ public class EstimatorResultsAnalysis {
 
     /**
      * Essentially just a wrapper for what eval_metricOnSplit does, in the simple case that we just have a 3d array of test accs and want summaries for it
-     Mostly for legacy results not in the classifier results file format
+     Mostly for legacy classification results not in the classifier results file format
      */
     public static void performTestAccEvalOnly(String outPath, String filename, double[][][] testFolds, String[] cnames, String[] dsets, Map<String, Map<String, String[]>> dsetGroupings) throws FileNotFoundException {
         eval_metricOnSplit(outPath, filename, null, testLabel, PerformanceMetric.acc, testFolds, cnames, dsets, dsetGroupings);
@@ -323,25 +327,25 @@ public class EstimatorResultsAnalysis {
 
 
 
-    protected static void writeTableFile_ClassifierDataset(String filename, String tableName, double[][] scores, String[] cnames, String[] dsets) {
+    protected static void writeTableFile_EstimatorDataset(String filename, String tableName, double[][] scores, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
         out.writeLine(tableName + fileHelper_tabulate(scores, cnames, dsets));
         out.closeFile();
     }
 
-    protected static void writeRawTableFile_ClassifierDataset(String filename, double[][] scores, String[] cnames) {
+    protected static void writeRawTableFile_EstimatorDataset(String filename, double[][] scores, String[] cnames) {
         OutFile out=new OutFile(filename);
         out.writeLine(fileHelper_tabulateRaw(scores, cnames));
         out.closeFile();
     }
 
-    protected static void writeTableFile_ClassifierDatasetFolds(String filename, String tableName, double[][][] scores, String[] cnames, String[] dsets) {
+    protected static void writeTableFile_EstimatorDatasetFolds(String filename, String tableName, double[][][] scores, String[] cnames, String[] dsets) {
         OutFile out=new OutFile(filename);
         out.writeLine(tableName + fileHelper_tabulate(scores, cnames, dsets));
         out.closeFile();
     }
 
-    protected static void writeRawTableFile_ClassifierDatasetFolds(String filename, double[][][] scores, String[] cnames) {
+    protected static void writeRawTableFile_EstimatorDatasetFolds(String filename, double[][][] scores, String[] cnames) {
         OutFile out=new OutFile(filename);
         out.writeLine(fileHelper_tabulateRaw(scores, cnames));
         out.closeFile();
@@ -410,14 +414,14 @@ public class EstimatorResultsAnalysis {
         String avgsFile = outPath + fileNameBuild_avgsFile(evalSet, metric);
         try {
             out.writeLine(MultipleEstimatorsPairwiseTest.runTests(avgsFile).toString());
-//            out.writeLine(MultipleClassifiersPairwiseTest.runTests(outPath+filename+"_"+splitMetricLabal+".csv").toString());
+//            out.writeLine(MultipleEstimatorsPairwiseTest.runTests(outPath+filename+"_"+splitMetricLabal+".csv").toString());
             cliques = MultipleEstimatorsPairwiseTest.printCliques();
             out.writeLine("\n\n" + cliques);
         } catch (Exception e) {
             System.err.println("\n\n");
             System.err.println("*****".replace("*", "*****"));
 
-            System.err.println("MultipleClassifiersPairwiseTest.runTests() failed. Almost certainly this is because there were"
+            System.err.println("MultipleEstimatorsPairwiseTest.runTests() failed. Almost certainly this is because there were"
                     + "too many ties/duplicates within one of the pairwise tests and then an index out of bounds error was thrown. "
                     + "This will be fixed at some point. The analysis will CARRY ON, and everything that is successfully printed out "
                     + "IS CORRECT, however whatever particular table that test would have been summarised as is missing from your files.");
@@ -475,11 +479,11 @@ public class EstimatorResultsAnalysis {
 
         int[] ordering = findOrdering(ranks);
         //ordering is now an array of value referring to the rank-order of the element at each index
-        //e.g [1, 4, 2, 3] means that the first (in index 0) classifier is best, third is next, then fourth, then second
+        //e.g [1, 4, 2, 3] means that the first (in index 0) estimator is best, third is next, then fourth, then second
 
-        //now order all the info (essentially in parallel arrays) we've collected by the classifier's ranks
-        //such that e.g the data referring to the first classifier is still in index 0, the data referring to
-        //the second classifier is moved to index 1, etc
+        //now order all the info (essentially in parallel arrays) we've collected by the estimator's ranks
+        //such that e.g the data referring to the first estimator is still in index 0, the data referring to
+        //the second estimator is moved to index 1, etc
         ranks = util_order(ranks, ordering);
         cnames = util_order(cnames, ordering);
         foldVals = util_order(foldVals, ordering);
@@ -507,9 +511,9 @@ public class EstimatorResultsAnalysis {
                             negatedDsetVals[i][j] = dsetVals[i][j] * -1;
                         }
                     }
-                    writeRawTableFile_ClassifierDataset(cdName, negatedDsetVals, cnames);
+                    writeRawTableFile_EstimatorDataset(cdName, negatedDsetVals, cnames);
                 } else {
-                    writeRawTableFile_ClassifierDataset(cdName, dsetVals, cnames);
+                    writeRawTableFile_EstimatorDataset(cdName, dsetVals, cnames);
                 }
             } //end cd dia qol
 
@@ -517,7 +521,7 @@ public class EstimatorResultsAnalysis {
             String pwsFolder = expRootDirectory + pairwiseScatterDiaPath;
             (new File(pwsFolder)).mkdirs();
             String pwsName = pwsFolder+fileNameBuild_pws(filename,metric.name)+".csv";
-            writeRawTableFile_ClassifierDataset(pwsName, dsetVals, cnames);
+            writeRawTableFile_EstimatorDataset(pwsName, dsetVals, cnames);
             //end pairwisescatter qol
 
             //qol for timing dia creation, make a copy of the avgs files with headers
@@ -525,16 +529,16 @@ public class EstimatorResultsAnalysis {
                 String compDir = expRootDirectory+ computationalDiaFolderName + "/";
                 (new File(compDir)).mkdirs();
                 String fname = compDir+fileNameBuild_avgsFile(evalSet,metric);
-                writeTableFile_ClassifierDataset(fname, evalSet+metric, dsetVals, cnames, dsets);
+                writeTableFile_EstimatorDataset(fname, evalSet+metric, dsetVals, cnames, dsets);
             }
             //end timing dia qol
         }
 
 
-        writeTableFile_ClassifierDataset(outPath + fileNameBuild_ranksFile(evalSet, metric), evalSet+metric+"RANKS", ranks, cnames, dsets);
-        writeTableFile_ClassifierDataset(outPath + fileNameBuild_avgsFile(evalSet, metric), evalSet+metric, dsetVals, cnames, dsets);
-        writeRawTableFile_ClassifierDataset(outPath + fileNameBuild_rawAvgsFile(evalSet, metric), dsetVals, cnames); //for matlab stuff
-        writeTableFile_ClassifierDataset(outPath + fileNameBuild_stddevFile(evalSet, metric), evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
+        writeTableFile_EstimatorDataset(outPath + fileNameBuild_ranksFile(evalSet, metric), evalSet+metric+"RANKS", ranks, cnames, dsets);
+        writeTableFile_EstimatorDataset(outPath + fileNameBuild_avgsFile(evalSet, metric), evalSet+metric, dsetVals, cnames, dsets);
+        writeRawTableFile_EstimatorDataset(outPath + fileNameBuild_rawAvgsFile(evalSet, metric), dsetVals, cnames); //for matlab stuff
+        writeTableFile_EstimatorDataset(outPath + fileNameBuild_stddevFile(evalSet, metric), evalSet+metric+"STDDEVS", stddevsFoldVals, cnames, dsets);
 
         String[] groupingSummary = { "" };
         if (dsetGroupings != null && dsetGroupings.size() != 0)
@@ -643,10 +647,10 @@ public class EstimatorResultsAnalysis {
             int numGroups = dsetGroupingMethod.size();
             String[] groupNames = new String[numGroups];
 
-            //using maps for this because classifiernames could be in different ordering based on rankings
+            //using maps for this because estimatornames could be in different ordering based on rankings
             //within each group. ordering of dataset groups temselves is constant though. jsut skips
             //annoying/bug inducing housekeeping of indices
-            Map<String, double[]> groupWins = new HashMap<>(); //will reflect ties, e.g if 2 classifiers tie for first rank, each will get 'half' a win
+            Map<String, double[]> groupWins = new HashMap<>(); //will reflect ties, e.g if 2 estimators tie for first rank, each will get 'half' a win
             Map<String, double[]> groupAccs = new HashMap<>();
             for (int i = 0; i < cnames.length; i++) {
                 groupWins.put(cnames[i], new double[numGroups]);
@@ -671,19 +675,19 @@ public class EstimatorResultsAnalysis {
                 String[] groupSummaryFileStrings = eval_metricOnSplit(groupingMethodPath+metric+"/", groupFileName, groupName, evalSet, metric, groupFoldVals, cnames, groupDsets, null);
 
                 //collect the accuracies for the dataset group
-                String[] classifierNamesLine = groupSummaryFileStrings[1].split("\n")[0].split(",");
-                assert(classifierNamesLine.length-1 == cnames.length);
+                String[] estimatorNamesLine = groupSummaryFileStrings[1].split("\n")[0].split(",");
+                assert(estimatorNamesLine.length-1 == cnames.length);
                 String[] accLineParts = groupSummaryFileStrings[1].split("\n")[1].split(",");
                 for (int i = 1; i < accLineParts.length; i++) { //i=1 => skip the row fileHelper_header
-                    double[] accs = groupAccs.get(classifierNamesLine[i]);
+                    double[] accs = groupAccs.get(estimatorNamesLine[i]);
                     accs[groupIndex] = Double.parseDouble(accLineParts[i]);
-                    groupAccs.put(classifierNamesLine[i], accs);
+                    groupAccs.put(estimatorNamesLine[i], accs);
                 }
 
                 //collect the wins for the group
                 Scanner ranksFileIn = new Scanner(new File(groupingMethodPath+metric+"/"+evalSet+"/"+groupName+"/"+groupFileName+"_"+evalSet+metric+"RANKS.csv"));
-                classifierNamesLine = ranksFileIn.nextLine().split(",");
-                double[] winCounts = new double[classifierNamesLine.length];
+                estimatorNamesLine = ranksFileIn.nextLine().split(",");
+                double[] winCounts = new double[estimatorNamesLine.length];
                 while (ranksFileIn.hasNextLine()) {
                     //read the ranks on this dataset
                     String[] ranksStr = ranksFileIn.nextLine().split(",");
@@ -700,9 +704,9 @@ public class EstimatorResultsAnalysis {
                 ranksFileIn.close();
 
                 for (int i = 1; i < winCounts.length; i++) {
-                    double[] wins = groupWins.get(classifierNamesLine[i]);
+                    double[] wins = groupWins.get(estimatorNamesLine[i]);
                     wins[groupIndex] = winCounts[i];
-                    groupWins.put(classifierNamesLine[i], wins);
+                    groupWins.put(estimatorNamesLine[i], wins);
                 }
 
                 //build the summary string
@@ -746,7 +750,7 @@ public class EstimatorResultsAnalysis {
         int numGroups = groupNames.length;
         StringBuilder sb = new StringBuilder();
 
-        sb.append("This table accounts for ties on a dset e.g if 2 classifiers share best accuracy "
+        sb.append("This table accounts for ties on a dset e.g if 2 estimators share best accuracy "
                 + "that will count as half a win for each").append("\n");
 
         //header row
@@ -768,9 +772,9 @@ public class EstimatorResultsAnalysis {
             sb.append(","+(groupSums[i])).append("\n");
         }
 
-        //print final row, avg of classifiers
+        //print final row, avg of estimators
         double globalSum = 0;
-        sb.append("TotalNumWinsForClassifier");
+        sb.append("TotalNumWinsForEstimator");
         for (int j = 0; j < cnames.length; j++) {
             globalSum += clsfrSums[j];
             sb.append(","+clsfrSums[j]);
@@ -804,7 +808,7 @@ public class EstimatorResultsAnalysis {
             sb.append(","+(groupAvgs[i]/cnames.length)).append("\n");
         }
 
-        //print final row, avg of classifiers
+        //print final row, avg of estimators
         double globalAvg = 0;
         sb.append("Averages");
         for (int j = 0; j < cnames.length; j++) {
@@ -826,9 +830,9 @@ public class EstimatorResultsAnalysis {
             String dset = groupDsets[groupDsetInd];
             int globalDsetInd = Arrays.asList(dsets).indexOf(dset);
 
-            for (int classifier = 0; classifier < foldVals.length; classifier++) {
-                for (int fold = 0; fold < foldVals[classifier][globalDsetInd].length; fold++) {
-                    groupFoldVals[classifier][groupDsetInd][fold] = foldVals[classifier][globalDsetInd][fold];
+            for (int estimator = 0; estimator < foldVals.length; estimator++) {
+                for (int fold = 0; fold < foldVals[estimator][globalDsetInd].length; fold++) {
+                    groupFoldVals[estimator][groupDsetInd][fold] = foldVals[estimator][globalDsetInd][fold];
                 }
             }
         }
@@ -884,7 +888,7 @@ public class EstimatorResultsAnalysis {
 
         String[] estimateResStr1 = null;
         String[] estimateResStr2 = null;
-        if (Arrays.asList(results.getSplits()).contains("train")) {
+        if (Arrays.asList(results.getSplits()).contains("train") && resultsType == EstimatorResultsCollection.ResultsType.CLASSIFICATION) {
             double[][][] estimateTimes1 = results.sliceSplit("train").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTime.getter)[0];
             if (estimateTimes1 != null)
                 estimateResStr1 = eval_metricOnSplit(timingsOutPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTime, estimateTimes1, cnames, dsets, dsetGroupings);
@@ -927,7 +931,7 @@ public class EstimatorResultsAnalysis {
         String[] trainResStr = null;
         if (benchmarkedTrainTimes != null) {
             trainResStr = eval_metricOnSplit(outPath, filename, null, trainLabel, trainTimeMetric, benchmarkedTrainTimes, cnames, dsets, dsetGroupings);
-            writeTableFile_ClassifierDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkedTrainTimes, cnames, dsets);
+            writeTableFile_EstimatorDatasetFolds(outPath + "allTrainBenchmarkTimes.csv", "TrainBenchmarkTimes", benchmarkedTrainTimes, cnames, dsets);
         }
 
 
@@ -935,13 +939,13 @@ public class EstimatorResultsAnalysis {
         String[] testResStr = null;
         if (benchmarkedTestTimes != null) {
             testResStr = eval_metricOnSplit(outPath, filename, null, testLabel, benchmarkedTestTimeMetric, benchmarkedTestTimes, cnames, dsets, dsetGroupings);
-            writeTableFile_ClassifierDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
+            writeTableFile_EstimatorDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
         }
 
 
         String[] estimateResStr1 = null;
         String[] estimateResStr2 = null;
-        if (Arrays.asList(results.getSplits()).contains("train")) {
+        if (Arrays.asList(results.getSplits()).contains("train") && resultsType == EstimatorResultsCollection.ResultsType.CLASSIFICATION) {
             double[][][] estimateTimes1 = results.sliceSplit("train").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked.getter)[0];
             if (estimateTimes1 != null)
                 estimateResStr1 = eval_metricOnSplit(outPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked, estimateTimes1, cnames, dsets, dsetGroupings);
@@ -1020,7 +1024,7 @@ public class EstimatorResultsAnalysis {
             out.closeFile();
         }
 
-        writeRawTableFile_ClassifierDatasetFolds(outPath + "TEXASPLOT_"+splitLabel+".csv", folds, cnames);
+        writeRawTableFile_EstimatorDatasetFolds(outPath + "TEXASPLOT_"+splitLabel+".csv", folds, cnames);
     }
 
 
@@ -1032,8 +1036,8 @@ public class EstimatorResultsAnalysis {
         for (int dset = 0; dset < res[0].length; ++dset) {
             sb.append("\n").append(dsets[dset]);
 
-            for (int classifier = 0; classifier < res.length; classifier++)
-                sb.append("," + res[classifier][dset]);
+            for (int estimator = 0; estimator < res.length; estimator++)
+                sb.append("," + res[estimator][dset]);
         }
         return sb.toString();
     }
@@ -1044,8 +1048,8 @@ public class EstimatorResultsAnalysis {
 
         for (int dset = 0; dset < res[0].length; ++dset) {
             sb.append("\n").append(res[0][dset]);
-            for (int classifier = 1; classifier < res.length; classifier++)
-                sb.append("," + res[classifier][dset]);
+            for (int estimator = 1; estimator < res.length; estimator++)
+                sb.append("," + res[estimator][dset]);
         }
         return sb.toString();
     }
@@ -1057,8 +1061,8 @@ public class EstimatorResultsAnalysis {
         for (int dset = 0; dset < res[0].length; ++dset) {
             for (int fold = 0; fold < res[0][0].length; fold++) {
                 sb.append("\n").append(dsets[dset]).append("_").append(fold);
-                for (int classifier = 0; classifier < res.length; classifier++)
-                    sb.append("," + res[classifier][dset][fold]);
+                for (int estimator = 0; estimator < res.length; estimator++)
+                    sb.append("," + res[estimator][dset][fold]);
             }
         }
         return sb.toString();
@@ -1071,8 +1075,8 @@ public class EstimatorResultsAnalysis {
         for (int dset = 0; dset < res[0].length; ++dset) {
             for (int fold = 0; fold < res[0][0].length; fold++) {
                 sb.append("\n").append(res[0][dset][fold]);
-                for (int classifier = 1; classifier < res.length; classifier++)
-                    sb.append("," + res[classifier][dset][fold]);
+                for (int estimator = 1; estimator < res.length; estimator++)
+                    sb.append("," + res[estimator][dset][fold]);
             }
         }
         return sb.toString();
@@ -1102,10 +1106,10 @@ public class EstimatorResultsAnalysis {
     }
 
 //    protected static double[][][] util_correctTimingsForBenchmarks(double[][][] timings, double[][][] benchmarks) {
-//        for (int classifier = 0; classifier < timings.length; classifier++)
+//        for (int estimator = 0; estimator < timings.length; estimator++)
 //            for (int dset = 0; dset < timings[0].length; dset++)
 //                for (int fold = 0; fold < timings[0][0].length; fold++)
-//                    timings[classifier][dset][fold] /= benchmarks[classifier][dset][fold];
+//                    timings[estimator][dset][fold] /= benchmarks[estimator][dset][fold];
 //
 //        return timings;
 //    }
@@ -1274,7 +1278,7 @@ public class EstimatorResultsAnalysis {
 //            //in accuracy that are smaller than this maximum precision, which were being taken into
 //            //acount here (by declaring one as havign a higher rank than the other), but not being 
 //            //taken into account in matlab (which considered them a tie). 
-//            //one could argue the importance of a difference less than 1x10^-15 when comparing classifiers,
+//            //one could argue the importance of a difference less than 1x10^-15 when comparing estimators,
 //            //so for ranks only, will round to matlab's precision. rounding the accuracies everywhere
 //            //creates a number of headaches, therefore the tiny inconsistency as a result of this
 //            //will jsut have to be lived with
@@ -1322,7 +1326,7 @@ public class EstimatorResultsAnalysis {
 
     protected static String[] eval_winsDrawsLosses(double[][] accs, String[] cnames, String[] dsets) {
         StringBuilder table = new StringBuilder();
-        ArrayList<ArrayList<ArrayList<String>>> wdlList = new ArrayList<>(); //[classifierPairing][win/draw/loss][dsetNames]
+        ArrayList<ArrayList<ArrayList<String>>> wdlList = new ArrayList<>(); //[estimatorPairing][win/draw/loss][dsetNames]
         ArrayList<String> wdlListNames = new ArrayList<>();
 
         String[][] wdlPlusMinus = new String[cnames.length*cnames.length][dsets.length];
@@ -1396,7 +1400,7 @@ public class EstimatorResultsAnalysis {
 
     protected static String[] eval_sigWinsDrawsLosses(double pval, double[][] accs, double[][][] foldAccs, String[] cnames, String[] dsets) {
         StringBuilder table = new StringBuilder();
-        ArrayList<ArrayList<ArrayList<String>>> wdlList = new ArrayList<>(); //[classifierPairing][win/draw/loss][dsetNames]
+        ArrayList<ArrayList<ArrayList<String>>> wdlList = new ArrayList<>(); //[estimatorPairing][win/draw/loss][dsetNames]
         ArrayList<String> wdlListNames = new ArrayList<>();
 
         String[][] wdlPlusMinus = new String[cnames.length*cnames.length][dsets.length];
@@ -1486,7 +1490,7 @@ public class EstimatorResultsAnalysis {
     /**
      * Intended for potentially new stats that are introduced over time (at time of writing this function,
      * build and especially test times), where maybe some older files in the intended analysis 
-     * dont have the stat but newer ones do, or some classifiers that write their own files 
+     * dont have the stat but newer ones do, or some estimators that write their own files
      * (via e.g TrainAccuracyEstimate) aren't properly writing them.
      *
      * Missing for timings is defined as -1. why cant i hold all this spaghetti?
@@ -1494,8 +1498,8 @@ public class EstimatorResultsAnalysis {
      * Looking ONLY at the test files, a) because they should all be here anyway else 
      * wouldnt have got as far as needing to call this, b) because the 'testtime' stored 
      * in the testfold files are the test timing we're generally actually interested in,
-     * i.e. the total prediction time of the fully trained classifier on the test set, 
-     * as opposed to the test time of the classifier on (e.g) corssvalidation folds in training
+     * i.e. the total prediction time of the fully trained estimator on the test set,
+     * as opposed to the test time of the estimator on (e.g) crossvalidation folds in training
      * that is stored in the train file
      *
      * @returns null if any of the wanted info is missing, else the score described by the stat for each results
@@ -1683,18 +1687,18 @@ public class EstimatorResultsAnalysis {
                 boolean drawFitLine = compStat;
 
                 Pair<String[], double[][]> asd = matlab_readRawFile(outPath + fileNameBuild_pws(expName, metric.name) + ".csv", dsets.length);
-                String[] classifierNames = asd.var1;
+                String[] estimatorNames = asd.var1;
                 double[][] allResults = asd.var2;
 
-                int numClassifiers = allResults.length;
+                int numEstimator = allResults.length;
 
                 MatlabController proxy = MatlabController.getInstance();
 
-                for (int c1 = 0; c1 < numClassifiers-1; c1++) {
-                    for (int c2 = c1+1; c2 < numClassifiers; c2++) {
+                for (int c1 = 0; c1 < numEstimator-1; c1++) {
+                    for (int c2 = c1+1; c2 < numEstimator; c2++) {
 
-                        String c1name = classifierNames[c1];
-                        String c2name = classifierNames[c2];
+                        String c1name = estimatorNames[c1];
+                        String c2name = estimatorNames[c2];
 
                         double[] c1res = allResults[c1];
                         double[] c2res = allResults[c2];
@@ -1739,8 +1743,8 @@ public class EstimatorResultsAnalysis {
     }
 
 
-    public static int[] dsetGroups_clusterDsetResults(double[/*classifier*/][/*dataset*/] results) {
-        double[/*dataset*/][/*classifier*/] dsetScores = GenericTools.cloneAndTranspose(results);
+    public static int[] dsetGroups_clusterDsetResults(double[/*estimator*/][/*dataset*/] results) {
+        double[/*dataset*/][/*estimator*/] dsetScores = GenericTools.cloneAndTranspose(results);
         int numDsets = dsetScores.length;
 
         for (int dset = 0; dset < dsetScores.length; dset++) {
@@ -1796,20 +1800,20 @@ public class EstimatorResultsAnalysis {
                 "vertebral-column-2clases","vertebral-column-3clases","wall-following","waveform","waveform-noise","wine","wine-quality-red","wine-quality-white","yeast","zoo"
         };
 
-        String[] classifiers = new String[]{ "NN", "C45",  "Logistic", "SVML" };
+        String[] estimators = new String[]{ "NN", "C45",  "Logistic", "SVML" };
 
 //        ClassifierExperiments.ExperimentalArguments expSettings = new ClassifierExperiments.ExperimentalArguments(settings);
-//        setupAndRunMultipleExperimentsThreaded(expSettings, classifiers,datasets,0,3);
+//        setupAndRunMultipleExperimentsThreaded(expSettings, estimators,datasets,0,3);
 //        
 
-        new MultipleClassifierEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Analysis", "timingsDiaTest", 3).
+        new MultipleEstimatorEvaluation("Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest23/Analysis", "timingsDiaTest", 3).
                 setTestResultsOnly(true).
 //            setTestResultsOnly(false).
         setBuildMatlabDiagrams(true).
 //            setBuildMatlabDiagrams(false).
         setUseAccuracyOnly().
                 setDatasets(datasets).
-                readInClassifiers(classifiers, classifiers, "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Results/").
+                readInEstimators(estimators, estimators, "Z:/Results_7_2_19/CAWPEReproducabiltyTests/CAWPEReproducabiltyTest22/Results/").
                 runComparison();
     }
 }

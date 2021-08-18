@@ -17,7 +17,7 @@
 package experiments;
 
 import evaluation.MultipleEstimatorsPairwiseTest;
-import evaluation.MultipleClassifierEvaluation;
+import evaluation.MultipleEstimatorEvaluation;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -38,7 +38,7 @@ import java.util.HashMap;
  * It does not do comparisons between classifiers, and it will build with incomplete
  * data, ignoring incomplete data sets. This can be run on the cluster (see below). 
  * See method individualClassifiersCollate() for example usage
- * 2 (James Large) Using the MultipleClassifierEvaluation class, detailed  
+ * 2 (James Large) Using the MultipleEstimatorEvaluation class, detailed
  * comparisons between classifier can be conducted. This can create matlab driven
  * critical difference diagrams
 
@@ -684,12 +684,12 @@ public static void basicSummaryComparisons(){
         String[] classifiers={""};
         String readPath="";
 //Where to put them, directory name, number of folds           
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//somewhere", "OneHour", 1);
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("E://Results//somewhere", "OneHour", 1);
         m.setBuildMatlabDiagrams(true);
         m.setDebugPrinting(true);
         m.setUseAllStatistics();
         m.setDatasets(problems);
-        m.readInClassifiers(classifiers, readPath); 
+        m.readInEstimators(classifiers, readPath);
         m.runComparison(); 
        
        
@@ -697,7 +697,7 @@ public static void basicSummaryComparisons(){
 
     
 /**
- * Usage of MultipleClassifierEvaluation. See the class for more info
+ * Usage of MultipleEstimatorEvaluation. See the class for more info
  * @throws Exception 
  */
    public static void multipleClassifierFullStats(String[] args) throws Exception{
@@ -710,12 +710,12 @@ public static void basicSummaryComparisons(){
            
            
 //Where to put them, directory name, number of folds           
-            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
+            MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
             m.setDatasets(Arrays.copyOfRange(experiments.data.DatasetLists.UCIContinuousWithoutBigFour, 0, 117));
-            m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
+            m.readInEstimators(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"},
                     "E://Results/UCI/Tuned");
             m.runComparison(); 
        }
@@ -1103,17 +1103,17 @@ public static void basicSummaryComparisons(){
             String readPath="E://Temp/Python/";
 
 //Where to put them, directory name, number of folds
-            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E:/Temp/RotFDebug/","rotf_debug",1);
+            MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("E:/Temp/RotFDebug/","rotf_debug",1);
             m.setIgnoreMissingResults(true);
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
             m.setUseAllStatistics();
             m.setDatasets(DatasetLists.ReducedUCI);
             m.setTestResultsOnly(true);
-            m.readInClassifiers(classifierList,readPath);
+            m.readInEstimators(classifierList,readPath);
             classifierList=new String[]{"RotF"};
             readPath="E://Temp/";
-            m.readInClassifiers(classifierList,readPath);
+            m.readInEstimators(classifierList,readPath);
             m.runComparison(); 
 
 
@@ -1122,7 +1122,7 @@ public static void basicSummaryComparisons(){
     public static void rotFDebug() throws Exception{
             String[] classifierList={"RotFMarkus","RotF"};//sktime1","sktime2"};//,"RotF","DTWCV"};{"PythonTSF","PythonTSFComposite",
             String readPath="Z://RotFDebug/";
-            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("Z:/RotFDebug/","markus_no_norm",30);
+            MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("Z:/RotFDebug/","markus_no_norm",30);
             m.setIgnoreMissingResults(true);
             m.setBuildMatlabDiagrams(true);
             m.setDebugPrinting(true);
@@ -1132,7 +1132,7 @@ public static void basicSummaryComparisons(){
             System.arraycopy(DatasetLists.tscProblems112,0,allProbs,DatasetLists.ReducedUCI.length,DatasetLists.tscProblems112.length);
             m.setDatasets(allProbs);
             m.setTestResultsOnly(true);
-            m.readInClassifiers(classifierList,readPath);
+            m.readInEstimators(classifierList,readPath);
    //         classifierList=new String[]{"RandF","RotF"};//sktime1","sktime2"};//,"RotF","DTWCV"};{"PythonTSF","PythonTSFComposite",
  //           readPath="E://Results/RotFDebug/UCINorm/";
 //            m.readInClassifiers(classifierList,readPath);
@@ -1145,7 +1145,7 @@ public static void basicSummaryComparisons(){
         String readPath="Z:/ReferenceResults/Hive Cote Components REDUX/";
 
 //Where to put them, directory name, number of folds
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,"bakeoff_redux",30);
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,"bakeoff_redux",30);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
         m.setDebugPrinting(true);
@@ -1153,10 +1153,10 @@ public static void basicSummaryComparisons(){
         String[] allProbs=DatasetLists.tscProblems78;
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
-        m.readInClassifiers(classifierList,readPath);
+        m.readInEstimators(classifierList,readPath);
          classifierList=new String[]{"FlatCote"};//sktime1","sktime2"};//,"RotF","DTWCV"};{"PythonTSF","PythonTSFComposite",
            readPath="E:/Results Working Area/Hybrids/";
-           m.readInClassifiers(classifierList,readPath);
+           m.readInEstimators(classifierList,readPath);
         m.runComparison();
 
 
@@ -1165,7 +1165,7 @@ public static void basicSummaryComparisons(){
 
     public static void compareDistanceBased(int folds, boolean testOnly) throws Exception {
         String readPath="E:/Results Working Area/DistanceBased/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "distance_compare_"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1177,13 +1177,13 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] benchmark={"EE","PF","FastEE"};
-        m.readInClassifiers(benchmark,readPath);
+        m.readInEstimators(benchmark,readPath);
         m.runComparison();
     }
 
     public static void compareDictionary(int folds, boolean testOnly) throws Exception {
 
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E:/Results Working Area/DictionaryBased/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation("E:/Results Working Area/DictionaryBased/",
                 "dictionary_compare_with_csBOSS",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1195,7 +1195,7 @@ public static void basicSummaryComparisons(){
         m.setTestResultsOnly(testOnly);
         String readPath="E:/Results Working Area/DictionaryBased/";
         String[] classifierList={"BOSS","S-BOSS","WEASEL","cBOSS","cS-BOSS"};//,};//,"
-        m.readInClassifiers(classifierList,readPath);
+        m.readInEstimators(classifierList,readPath);
         m.runComparison();
         boolean recalAcc=false;
         //These for quick stats
@@ -1225,7 +1225,7 @@ public static void basicSummaryComparisons(){
     public static void compareHiveCoteVariants() throws Exception {
         int folds=30;
         String readPath="E:/Results Working Area/HC Variants/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "hc_compare_"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1235,7 +1235,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] newClassifiers={"HC-Alpha4","HC-Alpha1","HC-Catch22TSF"};
-        m.readInClassifiers(newClassifiers,readPath);
+        m.readInEstimators(newClassifiers,readPath);
    //     readPath="E:/Results Working Area/Hybrids/";
      //   String[] c2={"TSCHIEF","HiveCote"};
      //   m.readInClassifiers(c2,readPath);
@@ -1246,7 +1246,7 @@ public static void basicSummaryComparisons(){
     public static void compareShapeletVariants(int folds) throws Exception {
 
         String readPath="E:/Results Working Area/STC Variants/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "shapelet_compare_"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1257,9 +1257,9 @@ public static void basicSummaryComparisons(){
         m.setTestResultsOnly(true);
         //"k200","k300","k400","k600","k700","k800","k900",
         String[] classifierList={"k100","k500","k1000","hr1000k100"};//,"BOSS","SpatialBOSS","cBOSS"};//,"cBOSS",
-        m.readInClassifiers(classifierList,readPath);
+        m.readInEstimators(classifierList,readPath);
 
-        m.readInClassifiers(new String[]{"STC"},"Z:\\ReferenceResults\\Hive Cote Components REDUX\\");
+        m.readInEstimators(new String[]{"STC"},"Z:\\ReferenceResults\\Hive Cote Components REDUX\\");
 
         m.runComparison();
         boolean recalAcc=false;
@@ -1292,7 +1292,7 @@ public static void basicSummaryComparisons(){
     public static void compareShapelets(int folds) throws Exception {
 
         String readPath="E:/Results Working Area/STC Variants/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "shapelet_compare_"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1302,7 +1302,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] classifierList={"STC-Bakeoff","STC-DAWAK","ShapeletTreeClassifier"};//,"BOSS","SpatialBOSS","cBOSS"};//,"cBOSS",
-        m.readInClassifiers(classifierList,readPath);
+        m.readInEstimators(classifierList,readPath);
         m.runComparison();
         boolean recalAcc=false;
         //These for quick stats
@@ -1333,7 +1333,7 @@ public static void basicSummaryComparisons(){
     public static void compareTopDogs() throws Exception {
         int folds=30;
         String readPath="E:/Results Working Area/Hybrids/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "top_dog_compare",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1343,13 +1343,13 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] newClassifiers={"TSCHIEF"};
-        m.readInClassifiers(newClassifiers,readPath);
+        m.readInEstimators(newClassifiers,readPath);
 //        readPath="Z:/Results Working Area/DeepLearning/";
  //       newClassifiers=new String[] {"resnet","InceptionTime"};
  //       m.readInClassifiers(newClassifiers,readPath);
         readPath="E:/Results Working Area/HC Variants/";
         newClassifiers=new String[] {"HC-Catch22TSF"};
-       m.readInClassifiers(newClassifiers,readPath);
+       m.readInEstimators(newClassifiers,readPath);
 
         m.runComparison();
 
@@ -1359,7 +1359,7 @@ public static void basicSummaryComparisons(){
     public static void C22IFPaperSection5_1MiniBakeoff() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/CIFPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"Summary Results/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"Summary Results/",
                 "miniBakeoff5_1_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1369,7 +1369,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"catch22","DTWCV","HIVE-COTE","S-BOSS","PF","STC","TSF","TS-CHIEF","InceptionTime","WEASEL"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath+"Classifier Results/");
+        m.readInEstimators(c,readPath+"Classifier Results/");
         m.runComparison();
 
     }
@@ -1378,7 +1378,7 @@ public static void basicSummaryComparisons(){
     public static void C22IFPaperSection5_2IntervalBased() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/CIFPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"Summary Results/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"Summary Results/",
                 "intervalbased5_2_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1388,7 +1388,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"CIF","hybrid","TSF","catch22"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath+"Classifier Results/");
+        m.readInEstimators(c,readPath+"Classifier Results/");
         m.runComparison();
 
     }
@@ -1398,7 +1398,7 @@ public static void basicSummaryComparisons(){
     public static void C22IFPaperSection5_2HCComponents() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"C22IFPaper/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"C22IFPaper/",
                 "HC-components5_2_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1408,9 +1408,9 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"CIF"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath+"IntervalBased/");
+        m.readInEstimators(c,readPath+"IntervalBased/");
         String[] c2={"BOSS","RISE","TSF","EE","STC","HIVE-COTE"};
-        m.readInClassifiers(c2,readPath+"HC Variants/");
+        m.readInEstimators(c2,readPath+"HC Variants/");
         m.runComparison();
 
     }
@@ -1419,7 +1419,7 @@ public static void basicSummaryComparisons(){
     public static void C22IFPaperSection5_2NewComponents() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/CIFPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"Summary Results/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"Summary Results/",
                 "new-components5_2_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1429,7 +1429,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"S-BOSS","STC","PF","WEASEL","CIF"};
-        m.readInClassifiers(c,readPath+"Classifier Results/");
+        m.readInEstimators(c,readPath+"Classifier Results/");
         m.runComparison();
 
     }
@@ -1438,7 +1438,7 @@ public static void basicSummaryComparisons(){
     public static void CIFPaperSection5_3SOTA() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/CIFPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"Summary Results/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"Summary Results/",
                 "Reboot_SOTA5_3_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1448,7 +1448,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"HIVE-COTE","HC-CIF","TS-CHIEF","InceptionTime"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath+"Classifier Results/");
+        m.readInEstimators(c,readPath+"Classifier Results/");
         m.runComparison();
 
     }
@@ -1456,7 +1456,7 @@ public static void basicSummaryComparisons(){
     public static void HC_SOTA() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/HC Variants/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "HC_tuning_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1466,7 +1466,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"HIVE-COTE","TunedHIVE-COTE"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath);
+        m.readInEstimators(c,readPath);
         m.runComparison();
 
     }
@@ -1476,7 +1476,7 @@ public static void basicSummaryComparisons(){
     public static void C22IFPaperSectionSuppMaterialAll() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/CIFPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"Summary Results/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"Summary Results/",
                 "AllSuppMaterial_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1486,7 +1486,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] c={"catch22","DTWCV","CIF","HIVE-COTE","S-BOSS","PF","STC","TSF","TS-CHIEF","InceptionTime","WEASEL","HC-CIF"};//,"HC-Latest","HC-CIF"};
-        m.readInClassifiers(c,readPath+"Classifier Results/");
+        m.readInEstimators(c,readPath+"Classifier Results/");
         m.runComparison();
 
     }
@@ -1494,7 +1494,7 @@ public static void basicSummaryComparisons(){
     public static void tempCompare() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/FrequencyBased/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "RISE_TRAIN"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1504,14 +1504,14 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(false);
         String[] allClassifiersWithTestResults={"RISE-CVTRAIN","RISE-OOB"};
-        m.readInClassifiers(allClassifiersWithTestResults,readPath);
+        m.readInEstimators(allClassifiersWithTestResults,readPath);
         m.runComparison();
 
     }
     public static void tsfCompare() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/TSF Test/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "TSFResults_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1521,14 +1521,14 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(false);
         String[] allClassifiersWithTestResults={"TSFBagging","TSFCV_Full","TSFOOB_Full","TunedTSF"};
-        m.readInClassifiers(allClassifiersWithTestResults,readPath);
+        m.readInEstimators(allClassifiersWithTestResults,readPath);
         m.runComparison();
 
     }
     public static void TDEvsDictionary() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"TDEPaper/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"TDEPaper/",
                 "DictionaryComparison",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1539,7 +1539,7 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
 //        m.setTestResultsOnly(true);
         String[] ts={"BOSS","cBOSS","WEASEL","S-BOSS","TDE","cS-BOSS"};
-        m.readInClassifiers(ts,readPath+"DictionaryBased/");
+        m.readInEstimators(ts,readPath+"DictionaryBased/");
 
 
         m.runComparison();
@@ -1551,7 +1551,7 @@ public static void basicSummaryComparisons(){
             () throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"TempResults/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"TempResults/",
                 "SOTA",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1563,11 +1563,11 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
  //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"HIVE-COTE"};//
-        m.readInClassifiers(str2,readPath+"TDEPaper/");
+        m.readInEstimators(str2,readPath+"TDEPaper/");
         String[] ts={"TS-CHIEF"};
-        m.readInClassifiers(ts,readPath+"Hybrids/");
+        m.readInEstimators(ts,readPath+"Hybrids/");
         String[] incep={"InceptionTime","ROCKET"};
-        m.readInClassifiers(incep,readPath+"DeepLearning/");
+        m.readInEstimators(incep,readPath+"DeepLearning/");
         m.runComparison();
 
     }
@@ -1575,7 +1575,7 @@ public static void basicSummaryComparisons(){
     public static void HC_Variants() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/TDEPaper/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "HC_Variants",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1587,11 +1587,11 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
         //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"HC-TDE","HIVE-COTE", "HC-WEASEL","HC-S-BOSS"};
-        m.readInClassifiers(str2,readPath);
+        m.readInEstimators(str2,readPath);
         str2=new String[]{"InceptionTime","ROCKET"};
-        m.readInClassifiers(str2,"E:/Results Working Area/DeepLearning/");
+        m.readInEstimators(str2,"E:/Results Working Area/DeepLearning/");
         str2=new String[]{"TS-CHIEF"};
-        m.readInClassifiers(str2,"E:/Results Working Area/Hybrids/");
+        m.readInEstimators(str2,"E:/Results Working Area/Hybrids/");
 
         m.runComparison();
 
@@ -1602,7 +1602,7 @@ public static void basicSummaryComparisons(){
     public static void TDEContractCompare() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"TDEPaper/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"TDEPaper/",
                 "TDEContract_Folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1614,7 +1614,7 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
         //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"TDE","TDE-1H"};//
-        m.readInClassifiers(str2,readPath+"TDEPaper/");
+        m.readInEstimators(str2,readPath+"TDEPaper/");
         m.runComparison();
 
     }
@@ -1623,7 +1623,7 @@ public static void basicSummaryComparisons(){
     public static void componentTest() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"HCv2Paper/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"HCv2Paper/",
                 "Component_TEST"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1633,15 +1633,15 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(false);
         String[] g1={"BOSS","STC","RISE","TSF","BcS-BOSS"};
-        m.readInClassifiers(g1,readPath+"cS-BOSSPaper/");
+        m.readInEstimators(g1,readPath+"cS-BOSSPaper/");
         String[] g2={"CIF","PF","RISEV2"};
-        m.readInClassifiers(g2,readPath+"HCv2Paper/");
+        m.readInEstimators(g2,readPath+"HCv2Paper/");
         m.runComparison();
     }
     public static void bestCompare() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"HCv2Paper/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"HCv2Paper/",
                 "Hybrid_"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1651,13 +1651,13 @@ public static void basicSummaryComparisons(){
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
         String[] allClassifiersWithTestResults={"HC-TED2","HIVE-COTE2"};
-        m.readInClassifiers(allClassifiersWithTestResults,readPath+"cS-BOSSPaper/");
+        m.readInEstimators(allClassifiersWithTestResults,readPath+"cS-BOSSPaper/");
         String[] ts={"TSCHIEF"};
-        m.readInClassifiers(ts,readPath+"Hybrids/");
+        m.readInEstimators(ts,readPath+"Hybrids/");
         String[] incep={"InceptionTime"};
-        m.readInClassifiers(incep,readPath+"DeepLearning/");
+        m.readInEstimators(incep,readPath+"DeepLearning/");
         String[] hc={"HIVE-COTEV2","HC-V2NoRise"};
-        m.readInClassifiers(hc,readPath+"HCv2Paper/");
+        m.readInEstimators(hc,readPath+"HCv2Paper/");
         m.runComparison();
 
     }
@@ -1781,7 +1781,7 @@ public static void basicSummaryComparisons(){
     public static void memoryCompare() throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/TDEPaper/MemoryCompare/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "MemoryComparison",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(false);
@@ -1793,9 +1793,9 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
         //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"BOSS","S-BOSS", "WEASEL"};
-        m.readInClassifiers(str2,readPath);
+        m.readInEstimators(str2,readPath);
         str2=new String[]{"cBOSS","cS-BOSS","TDE"};
-        m.readInClassifiers(str2,"Z:/Results Working Area/DictionaryBased/");
+        m.readInEstimators(str2,"Z:/Results Working Area/DictionaryBased/");
 
         m.runComparison();
 
@@ -1806,7 +1806,7 @@ public static void basicSummaryComparisons(){
         int folds = 30;
         String readPath = "E:/Results Working Area/HIVE-COTE 1.0/";
         String[] ts={"TSF","RISE","cBOSS","STC","HC 1.0"};
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "HC-Analysis",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1815,7 +1815,7 @@ public static void basicSummaryComparisons(){
         String[] allProbs=DatasetLists.tscProblems112;
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
-        m.readInClassifiers(ts,readPath);
+        m.readInEstimators(ts,readPath);
         m.runComparison();
   }
 
@@ -1823,7 +1823,7 @@ public static void basicSummaryComparisons(){
             () throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"HIVE-COTE 1.0/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"HIVE-COTE 1.0/",
                 "HC-vs-SOTA_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1835,11 +1835,11 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
         //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"HC 1.0"};//
-        m.readInClassifiers(str2,readPath+"HIVE-COTE 1.0/");
+        m.readInEstimators(str2,readPath+"HIVE-COTE 1.0/");
         String[] ts={"TS-CHIEF"};
-        m.readInClassifiers(ts,readPath+"Hybrids/");
+        m.readInEstimators(ts,readPath+"Hybrids/");
         String[] incep={"InceptionTime","ROCKET"};
-        m.readInClassifiers(incep,readPath+"DeepLearning/");
+        m.readInEstimators(incep,readPath+"DeepLearning/");
         m.runComparison();
 
     }
@@ -1847,7 +1847,7 @@ public static void basicSummaryComparisons(){
             () throws Exception {
         int folds = 30;
         String readPath = "E:/Results Working Area/";
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath+"HIVE-COTE 1.0/",
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath+"HIVE-COTE 1.0/",
                 "HC-all_folds"+folds,folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1859,11 +1859,11 @@ public static void basicSummaryComparisons(){
 //        String[] allClassifiersWithTestResults={"HC-TDE2","HIVE-COTE2","HC-WEASEL2"};
         //       m.readInClassifiers(allClassifiersWithTestResults,readPath+"TDEPaper/");
         String[] str2={"TSF","RISE","cBOSS","STC","HC 1.0"};//
-        m.readInClassifiers(str2,readPath+"HIVE-COTE 1.0/");
+        m.readInEstimators(str2,readPath+"HIVE-COTE 1.0/");
         String[] ts={"TS-CHIEF"};
-        m.readInClassifiers(ts,readPath+"Hybrids/");
+        m.readInEstimators(ts,readPath+"Hybrids/");
         String[] incep={"InceptionTime","ROCKET"};
-        m.readInClassifiers(incep,readPath+"DeepLearning/");
+        m.readInEstimators(incep,readPath+"DeepLearning/");
         m.runComparison();
 
     }
@@ -1872,7 +1872,7 @@ public static void basicSummaryComparisons(){
         int folds = 1;
         String readPath = "E:/Results Working Area/HIVE-COTE 1.0/";
         String[] ts={"HIVE-COTE","TSCHIEF"};
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "temp",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1881,14 +1881,14 @@ public static void basicSummaryComparisons(){
         String[] allProbs=DatasetLists.tscProblems112;
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
-        m.readInClassifiers(ts,readPath);
+        m.readInEstimators(ts,readPath);
         m.runComparison();
     }
     public static void singleProblem(String classifier) throws Exception {
         int folds = 30;
         String readPath = "Z:/ReferenceResults/";
         String[] ts={classifier};
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 classifier+"/SummaryEvaluation",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1897,7 +1897,7 @@ public static void basicSummaryComparisons(){
         String[] allProbs=DatasetLists.tscProblems112;
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
-        m.readInClassifiers(ts,readPath);
+        m.readInEstimators(ts,readPath);
         m.runComparison();
     }
 
@@ -1906,7 +1906,7 @@ public static void basicSummaryComparisons(){
         String readPath = "Z:/ReferenceResults/";
         String[] ts={"BOSS","Catch22","cBOSS","HIVE-COTE v1.0","InceptionTime","ProximityForest","ResNet",
                     "RISE", "ROCKET","S-BOSS","STC","TS-CHIEF","TSF","WEASEL"};
-        MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath,
+        MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath,
                 "MegaComparison",folds);
         m.setIgnoreMissingResults(true);
         m.setBuildMatlabDiagrams(true);
@@ -1915,7 +1915,7 @@ public static void basicSummaryComparisons(){
         String[] allProbs=DatasetLists.tscProblems112;
         m.setDatasets(allProbs);
         m.setTestResultsOnly(true);
-        m.readInClassifiers(ts,readPath);
+        m.readInEstimators(ts,readPath);
         m.runComparison();
 
     }
@@ -1991,7 +1991,7 @@ public static void basicSummaryComparisons(){
                 case "MultipleClassifiers":
 //Where to put them, directory name, number of folds
                     String[] name=readPath.split("/");
-                    MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(readPath, name[name.length-1]+"_"+folds+"_Resamples", folds);
+                    MultipleEstimatorEvaluation m=new MultipleEstimatorEvaluation(readPath, name[name.length-1]+"_"+folds+"_Resamples", folds);
                     m.setIgnoreMissingResults(true);
                     m.setBuildMatlabDiagrams(true);
                     m.setDebugPrinting(true);
@@ -2000,7 +2000,7 @@ public static void basicSummaryComparisons(){
 
 //                    m.setDatasets(reduxComplete);
                     m.setTestResultsOnly(true);
-                    m.readInClassifiers(classifierList,readPath);
+                    m.readInEstimators(classifierList,readPath);
                     m.runComparison();
                     
                     

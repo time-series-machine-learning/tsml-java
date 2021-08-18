@@ -19,14 +19,14 @@
 
 package examples;
 
-import evaluation.MultipleClassifierEvaluation;
+import evaluation.MultipleEstimatorEvaluation;
 import evaluation.storage.EstimatorResultsCollection;
 import experiments.ExperimentalArguments;
 import experiments.ClassifierExperiments;
 import java.util.Arrays;
 
 /**
- * Examples on how to handle collections of results and use the MultipleClassifierEvaluation pipeline
+ * Examples on how to handle collections of results and use the MultipleEstimatorEvaluation pipeline
  * 
  * @author James Large (james.large@uea.ac.uk)
  */
@@ -104,33 +104,33 @@ public class ThoroughEvaluation {
         
         
         
-        // The MultipleClassifierEvaluation (MCE) pipeline is a bit of a beast, and is itself 
-        // only a front end-api for ClassifierResultsAnalysis, which is an absolute monster.
+        // The MultipleEstimatorEvaluation (MEE) pipeline is a bit of a beast, and is itself
+        // only a front end-api for EstimatorResultsAnalysis, which is an absolute monster.
         // These especialy will get updated over time when desire/need/motivation for
         // software engineering is found
         
-        // Broadly, give it results (we plan to update MCE to take results via a ClassifierResultsCollection, 
+        // Broadly, give it results (we plan to update MEE to take results via a EstimatorResultsCollection,
         // but at present you load results in a very similar way), give it evaluation metrics 
         // to compare on and settings for things like diagram creation etc., call runComparison()
         // and let it split out a LOT of csv and xls files, and matlab figs + pdf files if diagram
         // creation is turned on
         
-        // See MCE.main and examples for more indepth stuff and different options
+        // See MEE.main and examples for more indepth stuff and different options
         
         // Tycally we'd write somewhere else, but for this example we'll write into the resultsPath again.
-        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(resultsPath, "Ex05_ThoroughEvaluation", numFolds);
+        MultipleEstimatorEvaluation mee = new MultipleEstimatorEvaluation(resultsPath, "Ex05_ThoroughEvaluation", numFolds);
         
-        mce.setTestResultsOnly(true);         // We didnt also produce e.g. train data estimates
-        mce.setBuildMatlabDiagrams(false);    // turning this off for example, see *1 below
-        mce.setCleanResults(true);            // deletes the individual predictions once per-object evals are found (acc in this case) to save memory
-        mce.setDebugPrinting(true);          
-        mce.setUseAccuracyOnly();             // using accuracy only to reduce number of files produced in this example
-        mce.setDatasets(datasets);
+        mee.setTestResultsOnly(true);         // We didnt also produce e.g. train data estimates
+        mee.setBuildMatlabDiagrams(false);    // turning this off for example, see *1 below
+        mee.setCleanResults(true);            // deletes the individual predictions once per-object evals are found (acc in this case) to save memory
+        mee.setDebugPrinting(true);
+        mee.setUseAccuracyOnly();             // using accuracy only to reduce number of files produced in this example
+        mee.setDatasets(datasets);
         
         //general rule of thumb: set/add/read the classifiers as the last thing before running
-        mce.readInClassifiers(classifiers, resultsPath); 
+        mee.readInEstimators(classifiers, resultsPath);
 
-        mce.runComparison();  
+        mee.runComparison();
         
         // A whole bunch of files should now have been spat out. Have a poke around them. 
         // There's little documentation on exactly what each output represents, but most 

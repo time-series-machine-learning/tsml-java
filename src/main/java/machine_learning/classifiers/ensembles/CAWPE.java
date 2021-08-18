@@ -20,7 +20,7 @@ package machine_learning.classifiers.ensembles;
 import experiments.ClassifierExperiments;
 import experiments.CollateResults;
 import experiments.ExperimentalArguments;
-import evaluation.MultipleClassifierEvaluation;
+import evaluation.MultipleEstimatorEvaluation;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import machine_learning.classifiers.ensembles.weightings.TrainAccByClass;
 import tsml.transformers.SAX;
@@ -535,13 +535,13 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         if (!ClassifierExperiments.beQuiet)
             System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
-        new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
+        new MultipleEstimatorEvaluation(analysisWritePath, analysisName, numFolds).
             setTestResultsOnly(true).
 //            setBuildMatlabDiagrams(true).
 //            setUseAccuracyOnly().
             setBuildMatlabDiagrams(false).
             setDatasets(datasets).
-            readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
+                readInEstimators(classifiersInStorage, classifiersOnFigs, resultsReadPath).
             runComparison();
     }
 

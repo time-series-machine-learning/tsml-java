@@ -249,7 +249,6 @@ public class ClusteringExperiments {
         long maxMemory = memoryMonitor.getMaxMemoryUsed();
 
         ClustererResults trainResults;
-
         if (!trainFoldExists || expSettings.forceEvaluation) {
             if (clusterer instanceof EnhancedAbstractClusterer)
                 trainResults = ClusteringUtilities.getClusteringResults((EnhancedAbstractClusterer)clusterer, trainSet);
@@ -281,7 +280,6 @@ public class ClusteringExperiments {
      */
     public static ClustererResults testing(ExperimentalArguments expSettings, Clusterer clusterer, Instances testSet, ClustererResults trainResults) throws Exception {
         ClustererResults testResults;
-
         if (expSettings.forceEvaluation || !CollateResults.validateSingleFoldFile(expSettings.testFoldFileName)) {
             Instances clsTest = new Instances(testSet);
             clsTest.setClassIndex(-1);
@@ -289,9 +287,9 @@ public class ClusteringExperiments {
                 clsTest.deleteAttributeAt(testSet.classIndex());
 
             testResults = evaluateClusterer(clusterer, clsTest, testSet, testSet.numClasses());
-            trainResults.setBenchmarkTime(trainResults.getBenchmarkTime());
-            trainResults.setBuildTime(trainResults.getBuildTime());
-            trainResults.setMemory(trainResults.getMemory());
+            testResults.setBenchmarkTime(trainResults.getBenchmarkTime());
+            testResults.setBuildTime(trainResults.getBuildTime());
+            testResults.setMemory(trainResults.getMemory());
 
             LOGGER.log(Level.FINE, "Testing complete");
 

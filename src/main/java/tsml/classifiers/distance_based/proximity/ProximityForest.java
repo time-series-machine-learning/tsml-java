@@ -85,7 +85,7 @@ public class ProximityForest extends BaseClassifier implements ContractedTrain, 
 //        String analysisName = "analysis_pf_v2_vs_pf_wrapped";
 //        
 //        
-//        MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation(expDir, analysisName, 30);
+//        MultipleEstimatorEvaluation mce = new MultipleEstimatorEvaluation(expDir, analysisName, 30);
 //        
 //        mce.setDatasets("/bench/phd/data/lists/uni_2015_pigless.txt");
 //        mce.readInClassifier("PF_R5", "mine", expDir + "v1/results/");

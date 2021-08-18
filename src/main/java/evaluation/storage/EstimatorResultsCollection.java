@@ -47,7 +47,7 @@ import utilities.ErrorReport;
  *      RETRIEVE...(...) methods get a particular stat or info from each results object
  *          retrieveAccuracies() wraps the accuracies getter as a shortcut/example 
  * 
- * todo integrate into multipleclassifierevaluation/classifierresultsanalysis
+ * todo integrate into multipleestimatorevaluation/estimatorresultsanalysis
  * todo replace old DebugPrinting stuff with loggers if/when going full enterprise
  * todo proper missing results summaries, option to reduce to largest complete subset 
  *      of split/estimator/dataset/folds
@@ -716,7 +716,7 @@ public class EstimatorResultsCollection implements DebugPrinting {
      * Returns a EstimatorResultsCollection that contains the same split, estimator and fold
      * sets, but only the DATASETS for which all results exist for all splits, estimators and folds.
      * 
-     * Mainly for use with MultipleClassifierEvaluation, where for prototyping etc we only want 
+     * Mainly for use with MultipleEstimatorEvaluation, where for prototyping etc we only want
      * to compare over completed datasets for a fair comparison. 
      */
     public EstimatorResultsCollection reduceToMinimalCompleteResults_datasets() throws Exception {
