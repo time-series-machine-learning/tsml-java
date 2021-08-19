@@ -281,6 +281,7 @@ public class CAST extends DistanceBasedVectorClusterer {
             inst.setClassIndex(inst.numAttributes() - 1);
             CAST cast = new CAST();
             cast.setDynamicAffinityThreshold(true);
+            cast.setSeed(0);
             cast.buildClusterer(inst);
 
             if (output) {

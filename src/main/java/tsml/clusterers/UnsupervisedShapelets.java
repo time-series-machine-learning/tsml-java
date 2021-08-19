@@ -56,6 +56,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     private int[] shapeletLengths = {50};
     private boolean exhaustiveSearch = false;
     private double randomSearchProportion = -1;
+    private boolean allowUnassignedCluster = false;
 
     private ArrayList<UShapelet> shapelets;
     private KMeans shapeletClusterer;
@@ -97,6 +98,8 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         randomSearchProportion = d;
     }
 
+    private void setAllowUnassignedCluster(boolean b) { allowUnassignedCluster = b; }
+
     @Override
     public void buildClusterer(Instances data) throws Exception {
         super.buildClusterer(data);
@@ -134,6 +137,15 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
 
             return minIdx;
         }
+    }
+
+    public Instance shapeletTransform(Instance inst) throws Exception {
+        Instance shapeletDists = new DenseInstance(numShapeletsToUse);
+        for (int i = 0; i < numShapeletsToUse; i++) {
+            shapeletDists.setValue(i, shapelets.get(i).computeDistance(inst));
+        }
+        shapeletDists.setDataset(header);
+        return shapeletDists;
     }
 
     private void extractUShapelets(Instances data) {
@@ -278,7 +290,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
 
         if (!useKMeans){
             for (int idx: indicies){
-                assignments[idx] = -1;
+                assignments[idx] = allowUnassignedCluster ? -1 : iteration;
             }
         }
     }
@@ -408,7 +420,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
         inst.addAll(inst2);
 
         UnsupervisedShapelets us = new UnsupervisedShapelets();
-        us.seed = 0;
+        us.setSeed(0);
         us.k = inst.numClasses();
         us.buildClusterer(inst);
 

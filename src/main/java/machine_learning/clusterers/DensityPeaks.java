@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
+import static utilities.ClusteringUtilities.createFullDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
@@ -53,10 +54,16 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
     private int[] nearestNeighbours;
     private int numInstances;
     private Integer[] sortedDensitiesIndex;
+    private boolean hasDistances = false;
 
     private ArrayList<Integer> clusterCenters;
 
     public DensityPeaks() {
+    }
+
+    public DensityPeaks(double[][] distanceMatrix) {
+        this.distanceMatrix = distanceMatrix;
+        this.hasDistances = true;
     }
 
     public ArrayList<Integer> getClusterCenters() {
@@ -97,7 +104,10 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
         super.buildClusterer(data);
 
         numInstances = train.size();
-        distanceMatrix = createDistanceMatrix(train, distFunc);
+
+        if (!hasDistances) {
+            distanceMatrix = createDistanceMatrix(train, distFunc);
+        }
 
         if (distC < 0) {
             distC = getDistCDefault();
@@ -363,6 +373,7 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
             dp.setClusterCenterCutoff(cutoffs[i]);
             dp.setGaussianKernel(true);
             dp.setHaloOutlierSelection(false);
+            dp.setSeed(0);
             dp.buildClusterer(inst);
 
             if (output) {

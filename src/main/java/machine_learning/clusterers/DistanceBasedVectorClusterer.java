@@ -30,6 +30,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
 public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClusterer {
 
     protected DistanceFunction distFunc = new EuclideanDistance();
+    protected boolean symmetricDistance = true;
     protected boolean normaliseData = true;
 
     //mean and stdev of each attribute for normalisation.
@@ -71,6 +72,8 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
     public void setDistanceFunction(DistanceFunction distFunc) {
         this.distFunc = distFunc;
     }
+
+    public void setSymmetricDistance(boolean b) { this.symmetricDistance = b; }
 
     public void setNormaliseData(boolean b) {
         this.normaliseData = b;

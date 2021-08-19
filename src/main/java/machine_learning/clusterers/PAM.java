@@ -50,7 +50,7 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
     private double[][] distanceMatrix;
     private int numInstances;
-    boolean hasInitialMedoids = false;
+    private boolean hasInitialMedoids = false;
     private boolean hasDistances = false;
 
     private int[] medoids;
@@ -514,7 +514,7 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
             PAM pam = new PAM();
             pam.setFindBestK(true);
             pam.setRefinedInitialMedoids(true);
-            pam.setSeed(1);
+            pam.setSeed(0);
             pam.buildClusterer(inst);
 
             if (output) {
