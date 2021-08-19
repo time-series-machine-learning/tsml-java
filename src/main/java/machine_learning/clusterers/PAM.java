@@ -374,7 +374,7 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
                 double clusterDist = 0;
 
                 for (int g = 0; g < clusters[i].size(); g++) {
-                    if (clusters[i].get(n) == clusters[i].get(g)) continue;
+                    if (clusters[i].get(n).equals(clusters[i].get(g))) continue;
 
                     if (clusters[i].get(n) > clusters[i].get(g)) {
                         clusterDist += distanceMatrix[clusters[i].get(n)][clusters[i].get(g)];
