@@ -200,6 +200,23 @@ public class ClusteringUtilities {
         return distMatrix;
     }
 
+    //Create full distance matrix.
+    public static double[][] createFullDistanceMatrix(Instances data, DistanceFunction distFunc){
+        double[][] distMatrix = new double[data.numInstances()][];
+        distFunc.setInstances(data);
+
+        for (int i = 0; i < data.numInstances(); i++){
+            distMatrix[i] = new double[data.numInstances()];
+            Instance first = data.get(i);
+
+            for (int n = 0; n < data.numInstances(); n++){
+                distMatrix[i][n] = distFunc.distance(first, data.get(n));
+            }
+        }
+
+        return distMatrix;
+    }
+
     public static ClustererResults getClusteringResults(EnhancedAbstractClusterer clusterer, Instances inst)
             throws Exception {
         ClustererResults cr = new ClustererResults(inst.numClasses(), inst.attributeToDoubleArray(inst.classIndex()),

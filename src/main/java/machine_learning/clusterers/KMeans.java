@@ -548,7 +548,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);
             kmeans.setRefinedInitialMedoids(true);
-            kmeans.setSeed(1);
+            kmeans.setSeed(0);
             kmeans.buildClusterer(inst);
 
             if (output) {

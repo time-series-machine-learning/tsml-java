@@ -18,13 +18,12 @@
 package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
-import tsml.transformers.FFT;
-import tsml.transformers.FFT.Complex;
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
 import weka.clusterers.NumberOfClustersRequestable;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
+import weka.core.*;
 import weka.core.matrix.EigenvalueDecomposition;
 import weka.core.matrix.Matrix;
 
@@ -32,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import static tsml.transformers.FFT.MathsPower2;
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.InstanceTools.deleteClassAttribute;
@@ -93,13 +91,19 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
             rand = new Random(seed);
         }
 
-        int iterations = 0;
-        assignments = new double[train.numInstances()];
-        //Randomly assign clusters
-        for (int i = 0; i < assignments.length; i++) {
-            assignments[i] = (int) Math.ceil(rand.nextDouble() * k) - 1;
-        }
+//        assignments = new double[train.numInstances()];
+//        //Randomly assign clusters
+//        for (int i = 0; i < assignments.length; i++) {
+//            assignments[i] = (int) Math.ceil(rand.nextDouble() * k) - 1;
+//        }
 
+        assignments = new double[] {2,3,1,2,1,1,1,2,2,3,2,3,1,4,1,3,2,3,1,1,4,4,2,3,4,4,1,1,1,4,1,2,4,3,3,2,3,4,1,4,4,3,2,4,1,2,4,2,2,1,1,3,1,2,2,1,3,1,3,3,1,2,3,2,1,3,3,3,4,3,4,1,1,4,2,1,4,2,4,3,4,3,4,2,2,4,2,4,3,3,1,4,2,3,2,1,4,3,1,3,2,3,4,2,4,3,1,4,3,4,1,1,4,3,1,4,4,4,3,1,1,1,1,1,4,3,3,4,1,2,3,4,3,1,4,1,4,2,4,3,3,1,1,1,1,1,1,3,3,1,1,4,3,1,2,3,1,3,4,4,1,2,3,4,1,1,1,2,3,3,2,4,3,2,3,3,3,2,1,2,3,1,4,1,2,4,1,3,3,4,2,1,3,4,4,4,1,1,3,4};
+        for (int i = 0; i < assignments.length; i++)
+            assignments[i] -= 1;
+
+        SBD sbd = new SBD();
+
+        int iterations = 0;
         double[] prevCluster = new double[train.numInstances()];
         prevCluster[0] = -1;
         //While clusters change and less than max iterations
@@ -116,10 +120,10 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
                 double minDist = Double.MAX_VALUE;
 
                 for (int n = 0; n < k; n++) {
-                    SBD sbd = new SBD(centroids.get(n), train.get(i), false);
+                    double dist = sbd.calculateDistance(centroids.get(n), train.get(i));
 
-                    if (sbd.dist < minDist) {
-                        minDist = sbd.dist;
+                    if (dist < minDist) {
+                        minDist = dist;
                         assignments[i] = n;
                     }
                 }
@@ -246,7 +250,6 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         }
 
         Instance newCent;
-
         if (eigSum < eigSumNeg) {
             newCent = new DenseInstance(1, eigVector);
         } else {
@@ -260,35 +263,16 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
     }
 
     public static void main(String[] args) throws Exception {
-//        double[] d = {1,2,3,4,5,6,7,8,9,10};
-//        DenseInstance inst1 = new DenseInstance(1, d);
-//
-//        double[] d2 = {-1,-1,-1,1,1,1,2,2,2,2,3,3,3};
-//        DenseInstance inst2 = new DenseInstance(1, d2);
-//
-//        ArrayList<Attribute> atts = new ArrayList();
-//        for (int i = 0; i < d2.length; i++){
-//            atts.add(new Attribute("att" + i));
-//        }
-//        Instances data = new Instances("test", atts, 0);
-//        inst1.setDataset(data);
-//        inst2.setDataset(data);
-//
-//        SBD sbd = new SBD(inst1, inst2);
-//
-//        System.out.println(sbd.dist);
-//        System.out.println(sbd.yShift);
-
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes() - 1);
         inst.addAll(inst2);
 
         KShape k = new KShape();
-        k.seed = 0;
+        k.setSeed(0);
         k.k = inst.numClasses();
         k.buildClusterer(inst);
 
@@ -299,18 +283,48 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
     }
 
     //Class for calculating Shape Based Distance
-    private static class SBD {
+    public static class SBD {
 
-        public double dist;
-        public Instance yShift;
+        private double dist;
+        private Instance yShift;
 
-        private FFT fft;
+        private FastFourierTransformer fft;
 
         public SBD() {
         }
 
-        public SBD(Instance first, Instance second, boolean calcShift) {
+        private SBD(Instance first, Instance second, boolean calcShift) {
             calculateDistance(first, second, calcShift);
+        }
+
+        public double[][] createDistanceMatrix(Instances data){
+            double[][] distMatrix = new double[data.numInstances()][];
+
+            for (int i = 0; i < data.numInstances(); i++){
+                distMatrix[i] = new double[data.numInstances()];
+                Instance first = data.get(i);
+
+                for (int n = 0; n < data.numInstances(); n++){
+                    distMatrix[i][n] = calculateDistance(first, data.get(n));
+                }
+            }
+
+            return distMatrix;
+        }
+
+        public double[][] createBottomHalfDistanceMatrix(Instances data){
+            double[][] distMatrix = new double[data.numInstances()][];
+
+            for (int i = 0; i < data.numInstances(); i++){
+                distMatrix[i] = new double[i + 1];
+                Instance first = data.get(i);
+
+                for (int n = 0; n < i; n++){
+                    distMatrix[i][n] = calculateDistance(first, data.get(n));
+                }
+            }
+
+            return distMatrix;
         }
 
         public double calculateDistance(Instance first, Instance second) {
@@ -318,24 +332,23 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
             return dist;
         }
 
-        public void calculateDistance(Instance first, Instance second, boolean calcShift) {
-            int oldLength = first.numAttributes() - 1;
-            int oldLengthY = second.numAttributes() - 1;
+        private void calculateDistance(Instance first, Instance second, boolean calcShift) {
+            int oldLength = first.numAttributes();
+            int oldLengthY = second.numAttributes();
+            int maxLength = Math.max(oldLength, oldLengthY);
 
-            int length = paddedLength(oldLength);
+            int nfft = (int) Math.pow(2.0, (int) Math.ceil(Math.log(maxLength) / Math.log(2)));
 
             //FFT and IFFT
-            fft = new FFT();
+            fft = new FastFourierTransformer(DftNormalization.STANDARD);
 
-            Complex[] firstC = fft(first, oldLength, length);
-            Complex[] secondC = fft(second, oldLengthY, length);
-
-            for (int i = 0; i < length; i++) {
-                secondC[i].conjugate();
-                firstC[i].multiply(secondC[i]);
+            Complex[] firstC = fft(first, oldLength, nfft);
+            Complex[] secondC = fft(second, oldLengthY, nfft);
+            for (int i = 0; i < nfft; i++) {
+                firstC[i] = firstC[i].multiply(secondC[i].conjugate());
             }
 
-            fft.inverseFFT(firstC, length);
+            firstC = fft.transform(firstC, TransformType.INVERSE);
 
             //Calculate NCCc values
             double firstNorm = sumSquare(first);
@@ -345,7 +358,7 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
             double[] ncc = new double[oldLength * 2 - 1];
             int idx = 0;
 
-            for (int i = length - oldLength + 1; i < length; i++) {
+            for (int i = nfft - oldLength + 1; i < nfft; i++) {
                 ncc[idx++] = firstC[i].getReal() / norm;
             }
 
@@ -355,7 +368,6 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
 
             double maxValue = 0;
             int shift = -1;
-
             //Largest NCCc value and index
             for (int i = 0; i < ncc.length; i++) {
                 if (ncc[i] > maxValue) {
@@ -368,11 +380,7 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
 
             //Create y', shifting the second instance in a direction and padding with 0s
             if (calcShift) {
-                if (oldLength > oldLengthY) {
-                    shift -= oldLength - 1;
-                } else {
-                    shift -= oldLengthY - 1;
-                }
+                shift -= maxLength;
 
                 yShift = new DenseInstance(1, new double[second.numAttributes()]);
 
@@ -388,37 +396,26 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
             }
         }
 
-        //Amount of padding required for FFT
-        private int paddedLength(int oldLength) {
-            int length = (int) MathsPower2.roundPow2((float) oldLength);
-            if (length < oldLength) length *= 2;
-            return length;
-        }
-
         //Run FFT and return array of complex numbers
-        private Complex[] fft(Instance inst, int oldLength, int length) {
-            Complex[] complex = new Complex[length];
+        private Complex[] fft(Instance inst, int oldLength, int nfft) {
+            Complex[] complex = new Complex[nfft];
 
             for (int i = 0; i < oldLength; i++) {
                 complex[i] = new Complex(inst.value(i), 0);
             }
 
-            for (int i = oldLength; i < length; i++) {
+            for (int i = oldLength; i < nfft; i++) {
                 complex[i] = new Complex(0, 0);
             }
 
-            fft.fft(complex, length);
-
-            return complex;
+            return fft.transform(complex, TransformType.FORWARD);
         }
 
         private double sumSquare(Instance inst) {
             double sum = 0;
-
             for (int i = 0; i < inst.numAttributes(); i++) {
                 sum += inst.value(i) * inst.value(i);
             }
-
             return sum;
         }
     }

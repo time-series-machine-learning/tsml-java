@@ -158,7 +158,7 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
         inst.addAll(inst2);
 
         TTC k = new TTC();
-        k.seed = 0;
+        k.setSeed(0);
         k.k = inst.numClasses();
         k.buildClusterer(inst);
 
