@@ -1281,7 +1281,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         of.closeFile();
 
         //run python file to output temporal importance curves graph
-        Process p = Runtime.getRuntime().exec("py src/main/python/visCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/visCIF.py \"" +
                 visSavePath.replace("\\", "/") + "\" " + seed + " " + startNumAttributes
                 + " " + numDimensions + " " + visNumTopAtts);
 
@@ -1373,7 +1373,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         of.closeFile();
 
         //run python file to output graph displaying important attributes and intervals for test series
-        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityCIF.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/interpretabilityCIF.py \"" +
                 interpSavePath.replace("\\", "/") + "\" " + seed + " " + interpCount
                 + " " + trees.size() + " " + seriesLength + " " + startNumAttributes + " " + interpPred);
 

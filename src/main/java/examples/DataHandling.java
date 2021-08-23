@@ -43,21 +43,22 @@ public class DataHandling {
         /*
          * Uncomment which function is needed depending on data file type.
          */
-        String whereTheDataIs =DatasetLoading.BAKED_IN_TSC_DATA_PATH;
-        String whereToPutTheData ="C:\\Temp\\";
-        String[] problems=DatasetLists.tscProblems112;
-        problems=new String[]{"Chinatown"};
-        int resamples=30;
-        for(String str: problems){
-            for(int i=0;i<30;i++)
-                resamplingData(whereTheDataIs,whereToPutTheData,str,i);
+        // dataHandlingWithARFF(); // .arff
 
+        // dataHandlingWithTS(); // .ts
+
+
+        String whereTheDataIs = DatasetLoading.BAKED_IN_TSC_DATA_PATH;
+        String whereToPutTheData = "C:\\Temp\\";
+        String[] problems = DatasetLists.tscProblems112;
+        problems = new String[]{"Chinatown"};
+        int resamples = 30;
+        for (String str : problems) {
+            for (int i = 0; i < 30; i++)
+                resamplingData(whereTheDataIs, whereToPutTheData, str, i);
         }
-
-//        dataHandlingWithARFF(); // .arff
-
-        //dataHandlingWithTS(); // .ts
     }
+
     public static void resamplingData(String source, String dest, String problem, int resample) throws IOException {
         Instances train = DatasetLoading.loadData(source + problem + "/" + problem + "_TRAIN.arff");
         Instances test = DatasetLoading.loadData(source + problem + "/" + problem + "_TEST.arff");
@@ -68,9 +69,8 @@ public class DataHandling {
         train = trainTest[0];
         test = trainTest[1];
 
-        DatasetLoading.saveDataset(train,dest+ problem + "/" + problem +"_"+resample+ "_TRAIN"+".arff");
-        DatasetLoading.saveDataset(test,dest+ problem + "/" + problem +"_"+resample+ "_TEST"+".arff");
-
+        DatasetLoading.saveDataset(train, dest + problem + "/" + problem + "_" + resample + "_TRAIN" + ".arff");
+        DatasetLoading.saveDataset(test, dest + problem + "/" + problem + "_" + resample + "_TEST" + ".arff");
     }
 
     private static void dataHandlingWithARFF() throws Exception {

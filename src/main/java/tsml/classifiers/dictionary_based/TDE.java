@@ -836,6 +836,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
 
             int idx = 0;
             for (Future<Double> f : futures) {
+                if (correct + series.numInstances() - idx < requiredCorrect) {
+                    return -1;
+                }
+
                 if (f.get() == series.get(idx).getLabelIndex()) {
                     ++correct;
                 }
@@ -1380,7 +1384,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
             of.writeLine(counts[i][1].toString());
         }
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/interpretabilityTDE.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/interpretabilityTDE.py \"" +
                 interpSavePath.replace("\\", "/") + "\" " + seed + " " + interpCount
                 + " " + tde.getLevels() + " " + interpPred + " " + train.get(topNeighbour).getLabelIndex());
 
@@ -1605,7 +1609,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         }
         of.closeFile();
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/visTDE.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/visTDE.py \"" +
                 visSavePath.replace("\\", "/") + "\" " + seed + " " + getNumClasses());
 
         if (debug) {
