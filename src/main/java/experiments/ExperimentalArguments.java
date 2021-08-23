@@ -101,6 +101,10 @@ public class ExperimentalArguments implements Runnable {
             + " < 1, Runtime.getRuntime().availableProcessors()-1 threads are used.")
     public int numberOfThreads = 1;
 
+    @Parameter(names = {"-rmv", "--replaceMissingValues"}, arity = 1, description = "(boolean) Whether to replace any missing values in the train and test set with 0. " +
+            "(clustering only currently)")
+    public boolean replaceMissingValues = false;
+
     @Parameter(names = {"-co", "--classifierOptions"}, arity = 1, description = "(String) Classifier specific comma delimited options string to be split and passed to a"
             + " classifiers setOptions() method. Each option should have the parameter name/tag, a comma and then the parameter value for each options i.e. T,500,I,0.5")
     private String classifierOptionsStr = null;

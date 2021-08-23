@@ -167,6 +167,13 @@ public class ClusteringExperiments {
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         expSettings.numClassValues = data[0].numClasses();
 
+        if (expSettings.replaceMissingValues) {
+            for (Instance inst : data[0])
+                inst.replaceMissingValues(new double[data[0].numAttributes()]);
+            for (Instance inst : data[1])
+                inst.replaceMissingValues(new double[data[1].numAttributes()]);
+        }
+
         // if a pre-instantiated clusterer instance hasn't been supplied, generate one here using setClusterer
         if (expSettings.clusterer == null) {
             expSettings.clusterer = ClustererLists.setClusterer(expSettings);
