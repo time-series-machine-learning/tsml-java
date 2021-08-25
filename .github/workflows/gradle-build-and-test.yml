@@ -1,0 +1,58 @@
+name: Gradle build and test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+      
+jobs:
+  buildAndTest:
+    runs-on: ubuntu-latest
+    steps:
+      # print all github info (e.g. branch name, commit id, etc)
+      - name: Github info
+        run: |
+          echo "${{ toJSON(github) }}"
+      # print all runner (host pc) info (e.g. os, etc)
+      - name: Runner info
+        run: |
+          echo "${{ toJSON(runner) }}"
+
+      # set up github actions
+      - uses: actions/checkout@v2
+
+      # set up the jdk
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          # there's various versions (oracle / openjdk, etc). due to licensing, we'll use the AdoptOpenJDK version
+          # because it's free
+          distribution: 'adopt'
+
+      # add a cache to avoid having to redownload gradle pkgs for every build
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build with Gradle
+        run: ./gradlew build
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
+
+      # what's the outcome?
+      - run: |
+          echo "job completed: ${{ job.status }}."
