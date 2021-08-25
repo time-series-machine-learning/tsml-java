@@ -1,7 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.filter;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
@@ -18,7 +17,6 @@ public class ExhaustiveFilter extends ShapeletFilterMV {
 
 
         ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
-
         return findShapelets(params,quality,instances);
 
     }
@@ -30,8 +28,7 @@ public class ExhaustiveFilter extends ShapeletFilterMV {
         start = System.nanoTime();
 
         ShapeletFunctions fun = params.type.createShapeletType();
-        ShapeletDistanceFunction distFunction = params.distance.createShapeletDistance(fun);
-        int[] classesArray  = instances.getClassIndexes();
+       int[] classesArray  = instances.getClassIndexes();
 
 
         ArrayList<ShapeletMV> shapelets = new ArrayList<ShapeletMV>();
@@ -43,9 +40,7 @@ public class ExhaustiveFilter extends ShapeletFilterMV {
                 ShapeletMV[] candidates = fun.getShapeletsOverInstance(shapeletSize,index,classesArray[index],instances.get(index));
 
                 for (int candidate = 0 ; candidate < candidates.length; candidate++){
-
-                    //     if (isSimilar(shapelets, candidates[candidate],fun,params.minDist)) continue;
-                    double q = quality.calculate (distFunction, candidates[candidate]);
+                    double q = quality.calculate (fun, candidates[candidate]);
                     candidates[candidate].setQuality(q);
                     shapelets.add(candidates[candidate]);
                 }
@@ -53,7 +48,7 @@ public class ExhaustiveFilter extends ShapeletFilterMV {
             Collections.sort(shapelets);
             if (shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
             double avg = shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
-            System.out.println(shapelets);
+            System.out.println(avg);
             if (withinTrainContract(start)){
                 System.out.println("Contract time reached");
                 return shapelets;

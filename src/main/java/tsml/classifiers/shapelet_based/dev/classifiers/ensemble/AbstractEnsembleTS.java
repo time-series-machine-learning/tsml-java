@@ -40,7 +40,7 @@ public abstract class AbstractEnsembleTS implements TSClassifier {
 
         public double priorWeight = 1.0;
         public double[] posteriorWeights;
-
+        int finishedClassifiers;
 
         public EnsembleModuleTS(TSClassifier classifier) {
             this.classifier = classifier;
@@ -183,6 +183,7 @@ public abstract class AbstractEnsembleTS implements TSClassifier {
         for (int i=0;i<numEnsembles;i++){
 
             modules[i].classifier.buildClassifier(data);
+
         }
     }
 

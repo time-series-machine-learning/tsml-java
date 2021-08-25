@@ -125,15 +125,11 @@ public class DatasetLists {
    //<editor-fold defaultstate="collapsed" desc="Multivariate TSC datasets 2018 release">    
     public static String[] mtscProblems2018={
 		"ArticularyWordRecognition", //Index 0
-	//	"AsphaltObstaclesCoordinates",
-	//	"AsphaltPavementTypeCoordinates",
-	//	"AsphaltRegularityCoordinates",
         "AtrialFibrillation",
         "BasicMotions",
-    //    "CharacterTrajectories",
         "Cricket",
-   //     "DuckDuckGeese",
-        "EigenWorms",
+        "DuckDuckGeese",
+     //   "EigenWorms",
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
@@ -142,20 +138,16 @@ public class DatasetLists {
         "HandMovementDirection",
         "Handwriting",
         "Heartbeat",
-     //   "InsectWingbeat",
-//        "KickVsPunch", Poorly formatted and very small train size
-     //   "JapaneseVowels",
         "Libras",
         "LSST",
-        "MotorImagery",
+     //  "MotorImagery",
         "NATOPS",
         "PenDigits",
-    //    "PEMS-SF",
+        "PEMS-SF",
         "PhonemeSpectra",
         "RacketSports",
         "SelfRegulationSCP1",
         "SelfRegulationSCP2",
-    //    "SpokenArabicDigits",
         "StandWalkJump",
         "UWaveGestureLibrary"
 };
@@ -821,7 +813,7 @@ public class DatasetLists {
 		 "CricketX", // 390,390,300,12
 		 "CricketY", // 390,390,300,12
 		 "CricketZ", // 390,390,300,12
-		 "Crop",
+	//	 "Crop",
 		 "DiatomSizeReduction", // 16,306,345,4
 		 "DistalPhalanxOutlineAgeGroup", // 400,139,80,3
 		 "DistalPhalanxOutlineCorrect", // 600,276,80,2
@@ -848,7 +840,7 @@ public class DatasetLists {
 		 "GunPointMaleVersusFemale",
 		 "GunPointOldVersusYoung",
 		 "Ham",      //105,109,431
-		 "HandOutlines", // 1000,370,2709,2
+	//	 "HandOutlines", // 1000,370,2709,2
 		 "Haptics", // 155,308,1092,5
 		 "Herring", // 64,64,512,2
 		 "HouseTwenty",

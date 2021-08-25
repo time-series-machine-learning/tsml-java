@@ -29,7 +29,7 @@ import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.EnsembleMSTC;
-import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.RandomEnsembleMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.CombinedEnsembleMSTC;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
@@ -248,8 +248,8 @@ public class ExperimentsTS {
 
         if (expSettings.classifierName.contains("ENS-MSTC")){
             classifier = new EnsembleMSTC(getMSTCParams(expSettings, data));
-        }else if  (expSettings.classifierName.contains("ENS-COMB-MSTC")) {
-            classifier = new RandomEnsembleMSTC(getMSTCParams(expSettings, data));
+        }else if  (expSettings.classifierName.contains("5BIN-MSTC")) {
+            classifier = new CombinedEnsembleMSTC(getMSTCParams(expSettings, data));
         }else{
             classifier = new MSTC(getMSTCParams(expSettings, data));
         }
@@ -269,42 +269,22 @@ public class ExperimentsTS {
         int n = data.train.numInstances();
         int m = data.train.getMinLength()-1;
         int c = data.train.getMaxNumDimensions();
-       // int numShapelets = Math.min(10000,Math.max(500,(int)Math.sqrt(n*m*c)));
+//        int numShapelets = Math.min(10000,Math.max(500,(int)Math.sqrt(n*m*c)));
         int numShapelets = 10*n < 1000 ? 10*n: 1000;
 
         System.out.println("Shapelets " + numShapelets);
 
         MSTC.ShapeletParams params = new MSTC.ShapeletParams(numShapelets,
-                3,m-1,
-                100000,0.1,4, true,
+                3,Math.min(m-1,1000),
+                100000,0.01,4, true,
                 MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN,
-                MSTC.ShapeletDistances.EUCLIDEAN,
+               // MSTC.ShapeletDistances.IMPROVED,
                 MSTC.ShapeletFactories.INDEPENDENT,
                 MSTC.AuxClassifiers.ROT);
-        if (expSettings.classifierName.contains("PAR")){
-            if(data.train.numClasses() > 2) {
-                params.quality = MSTC.ShapeletQualities.ORDER_LINE_BINARY;
-                params.filter = MSTC.ShapeletFilters.RANDOM_BY_CLASS;
-                params.maxIterations = 1000000*data.train.numClasses();
 
-            }else {
-                params.quality = MSTC.ShapeletQualities.ORDER_LINE;
-            }
-            params.k =  10*n < 1000 ? 10*n: 1000;
-            params.contractTimeHours =  4;
-            params.classifier =  MSTC.AuxClassifiers.ROT;
-        }
 
         if (expSettings.classifierName.contains("EXH")){
             params.filter = MSTC.ShapeletFilters.EXHAUSTIVE;
-            params.quality = MSTC.ShapeletQualities.BINARY;
-            params.classifier =  MSTC.AuxClassifiers.ROT;
-        }
-
-        if (expSettings.classifierName.contains("ENS")){
-            params.classifier =  MSTC.AuxClassifiers.LINEAR;
-            params.maxIterations = 10000;
-            params.contractTimeHours = 1;
         }
 
         // Shapelet dependant
@@ -312,40 +292,61 @@ public class ExperimentsTS {
             params.type =  MSTC.ShapeletFactories.DEPENDANT;
         }
 
+        if (expSettings.classifierName.contains("1M")){
+            params.maxIterations =  1000000;
+        }
+
         // Binary quality
         if (expSettings.classifierName.contains("BIN")){
             params.quality =  MSTC.ShapeletQualities.GAIN_BINARY;
+            if (expSettings.classifierName.contains("CHI")){
+                params.quality =  MSTC.ShapeletQualities.CHI_BINARY;
+            }
+            if (expSettings.classifierName.contains("FSTAT")){
+                params.quality =  MSTC.ShapeletQualities.FSTAT_BINARY;
+            }
+            if (expSettings.classifierName.contains("CORR")){
+                params.quality =  MSTC.ShapeletQualities.CORR_BINARY;
+            }
+            if (expSettings.classifierName.contains("ONER")){
+                params.quality =  MSTC.ShapeletQualities.ONE_R_BINARY;
+            }
+
         }
 
+
         // Original STC orderline code
-        if (expSettings.classifierName.contains("OL")){
+   /*     if (expSettings.classifierName.contains("OL")){
             params.quality =  MSTC.ShapeletQualities.ORDER_LINE;
         }
 
         if (expSettings.classifierName.contains("OLB")){
             params.quality =  MSTC.ShapeletQualities.ORDER_LINE_BINARY;
         }
-
+*/
 
         // Split shapelets by class
         if (expSettings.classifierName.contains("CLASS")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_CLASS;
-            params.maxIterations = 10000*data.train.numClasses();
+            params.maxIterations =10000*data.train.numClasses();
+        }
+        if (expSettings.classifierName.contains("FIL")){
+            params.classifier = MSTC.AuxClassifiers.FILTERED;
+        }
+        if (expSettings.classifierName.contains("LIN")){
+            params.classifier = MSTC.AuxClassifiers.LINEAR;
         }
 
         // Split shapelets by class and series (only for independent)
         if (expSettings.classifierName.contains("SER")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_SERIES;
-            params.maxIterations = 100000*data.train.numClasses()*data.train.getMaxNumDimensions();
+            params.maxIterations = 10000*data.train.numClasses()*data.train.getMaxNumDimensions();
         }
 
         // Use rotational forest for classification
         if (expSettings.classifierName.contains("ROT")){
             params.classifier =  MSTC.AuxClassifiers.ROT;
         }
-
-
-
 
 
         return params;
@@ -393,13 +394,6 @@ public class ExperimentsTS {
 
         return experimentResults;
     }
-
-
-
-
-
-
-
 
     /**
      * Performs all operations related to training the classifier, and returns a ClassifierResults object holding the results
@@ -533,7 +527,6 @@ public class ExperimentsTS {
         return testResults;
     }
 
-
     /**
      * Based on experimental parameters passed, defines the target results file and workspace locations for use in the
      * rest of the experiment
@@ -569,7 +562,6 @@ public class ExperimentsTS {
             f.mkdirs();
     }
 
-
     /**
      * Returns true if the work to be done in this experiment already exists at the locations defined by the experimental settings,
      * indicating that this execution can be skipped.
@@ -586,7 +578,6 @@ public class ExperimentsTS {
 
         return quit;
     }
-
 
     /**
      * This method cleans up and consolidates the information we have about the

@@ -1,12 +1,16 @@
 package tsml.classifiers.shapelet_based.dev.functions;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceImprovedOnline;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletIndependentMV;
 import tsml.data_containers.TimeSeriesInstance;
 
 import java.util.ArrayList;
 
 public class ShapeletFunctionsIndependent implements ShapeletFunctions<ShapeletIndependentMV> {
+
+    ShapeletDistanceImprovedOnline distance = new ShapeletDistanceImprovedOnline();
+
     @Override
     public ShapeletIndependentMV[] getShapeletsOverInstance(int shapeletSize, int instanceIndex, double classIndex, TimeSeriesInstance instance) {
 
@@ -28,7 +32,7 @@ public class ShapeletFunctionsIndependent implements ShapeletFunctions<ShapeletI
     }
 
     @Override
-    public double getDistanceFunction(ShapeletIndependentMV shapelet1, ShapeletIndependentMV shapelet2) {
+    public double distance(ShapeletIndependentMV shapelet1, ShapeletIndependentMV shapelet2) {
         ShapeletIndependentMV small,big;
         double sum = 0, min = Double.MAX_VALUE;
         if (shapelet1.getLength()>shapelet2.getLength()){
@@ -137,7 +141,7 @@ public class ShapeletFunctionsIndependent implements ShapeletFunctions<ShapeletI
         }
         return false;
     }
-
+/*
     public double sDist(int start, ShapeletIndependentMV shapelet, TimeSeriesInstance instance) {
         double sum = 0;
         double temp = 0;
@@ -151,6 +155,13 @@ public class ShapeletFunctionsIndependent implements ShapeletFunctions<ShapeletI
         }
         return Math.sqrt(sum);
 //        return distance(shapelet.getData(),instance.get(0).getVSliceArray(start,start+shapelet.getLength()-1),1);
+    }*/
+
+    public double sDist(ShapeletIndependentMV shapelet, TimeSeriesInstance instance) {
+
+        double[] timeSeries = instance.getHSliceArray(shapelet.getSeriesIndex());
+        double[] shapeletData = shapelet.getData();
+        return distance.calculate(shapeletData,timeSeries);
     }
 
 }

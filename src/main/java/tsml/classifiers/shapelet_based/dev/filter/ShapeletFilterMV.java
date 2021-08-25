@@ -11,6 +11,10 @@ import java.util.List;
 
 public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
 
+    protected long time;
+    protected long start;
+
+
 
     public abstract List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances);
@@ -20,9 +24,8 @@ public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
                                                         TimeSeriesInstances instances);
 
     protected boolean isSimilar(List<ShapeletMV> shapelets, ShapeletMV candidate, ShapeletFunctions shapeletFunctions, double minDist){
-
         for (ShapeletMV shapelet: shapelets){
-            if (shapeletFunctions.selfSimilarity(shapelet, candidate)){
+            if (shapeletFunctions.distance(shapelet, candidate)<=minDist){
                     return true;
             }
         }
@@ -30,8 +33,6 @@ public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
     }
 
 
-
-    protected   long time,start;
     @Override
     public void setTrainTimeLimit(long time) {
         this.time = time;
@@ -41,6 +42,5 @@ public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
     public boolean withinTrainContract(long start) {
         return start+time < System.nanoTime();
     }
-
 
 }

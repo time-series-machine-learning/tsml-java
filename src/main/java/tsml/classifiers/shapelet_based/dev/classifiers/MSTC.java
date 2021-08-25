@@ -1,18 +1,14 @@
 package tsml.classifiers.shapelet_based.dev.classifiers;
 
 import machine_learning.classifiers.ensembles.CAWPE;
-import machine_learning.classifiers.ensembles.ContractRotationForest;
+import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.TSClassifier;
-import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceEuclidean;
-import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.dev.filter.*;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsDependant;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsIndependent;
-import tsml.classifiers.shapelet_based.dev.quality.OrderlineBinaryQuality;
-import tsml.classifiers.shapelet_based.dev.quality.OrderlineQuality;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.quality.WekaQuality;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
@@ -25,6 +21,7 @@ import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.classifiers.lazy.IBk;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
@@ -103,12 +100,11 @@ public class MSTC implements TSClassifier {
             output.add(new DenseInstance(size + 1));
         }
         ShapeletFunctions fun = params.type.createShapeletType();
-        ShapeletDistanceFunction distanceFunction = this.params.distance.createShapeletDistance(fun);
         double dist;
         for (int j = 0; j < dataSize; j++) {
             int i=0;
             for (ShapeletMV shapelet: this.shapelets) {
-                dist = distanceFunction.calculate( shapelet,instances.get(j));
+                dist = fun.sDist( shapelet,instances.get(j));
                 output.instance(j).setValue(i, dist);
                 i++;
             }
@@ -127,13 +123,13 @@ public class MSTC implements TSClassifier {
         int size = shapelets.size();
         Instance out = new DenseInstance(size + 1);
         ShapeletFunctions fun = params.type.createShapeletType();
-        ShapeletDistanceFunction distanceFunction = this.params.distance.createShapeletDistance(fun);
         out.setDataset(transformData);
         double dist;
         int i=0;
         for (ShapeletMV shapelet: this.shapelets) {
-            dist = distanceFunction.calculate(shapelet,instance);
+            dist = fun.sDist(shapelet,instance);
             out.setValue(i, dist);
+
             i++;
         }
         return out;
@@ -152,7 +148,9 @@ public class MSTC implements TSClassifier {
         String name;
         for (int i = 0; i < length; i++) {
             name = "Shapelet_" + i;
-            atts.add(new Attribute(name));
+            Attribute att = new Attribute(name);
+            att.setWeight(this.shapelets.get(i).getQuality());
+            atts.add(att);
         }
 
         FastVector vals = new FastVector(inputFormat.numClasses());
@@ -222,7 +220,7 @@ public class MSTC implements TSClassifier {
                         instances);
             }
         },
-        ORDER_LINE {
+   /*     ORDER_LINE {
             @Override
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
                 return new OrderlineQuality(instances);
@@ -235,50 +233,78 @@ public class MSTC implements TSClassifier {
             }
         },
 
-        BINARY{
+        */
+       CORR{
+           public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+               return new WekaQuality(
+                       WekaQuality.WekaEvaluatorFactory.CORRELATION,
+                       WekaQuality.TransformedInstancesFactory.REGULAR,
+                       instances);
+           }
+       },
+        CORR_BINARY{
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
                 return new WekaQuality(
-                        WekaQuality.WekaEvaluatorFactory.GAIN,
+                        WekaQuality.WekaEvaluatorFactory.CORRELATION,
+                        WekaQuality.TransformedInstancesFactory.BINARY,
+                        instances);
+            }
+         },
+        ONE_R{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQuality(
+                        WekaQuality.WekaEvaluatorFactory.ONE_R,
+                        WekaQuality.TransformedInstancesFactory.REGULAR,
+                        instances);
+            }
+        },
+        ONE_R_BINARY{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQuality(
+                        WekaQuality.WekaEvaluatorFactory.ONE_R,
+                        WekaQuality.TransformedInstancesFactory.BINARY,
+                        instances);
+            }
+        },
+        FSTAT{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQuality(
+                        WekaQuality.WekaEvaluatorFactory.FSTAT,
+                        WekaQuality.TransformedInstancesFactory.REGULAR,
+                        instances);
+            }
+        },
+        FSTAT_BINARY{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQuality(
+                        WekaQuality.WekaEvaluatorFactory.FSTAT,
                         WekaQuality.TransformedInstancesFactory.BINARY,
                         instances);
             }
         },
 
-         CHI{
+        CHI{
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQuality(
+                        WekaQuality.WekaEvaluatorFactory.CHI,
+                        WekaQuality.TransformedInstancesFactory.REGULAR,
+                        instances);
+            }
+        },
+
+        CHI_BINARY{
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
                 return new WekaQuality(
                         WekaQuality.WekaEvaluatorFactory.CHI,
                         WekaQuality.TransformedInstancesFactory.BINARY,
                         instances);
             }
-        }/*,
-
-        CLASSIFICATION{
-            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances,
-                    ShapeletDistanceFunction distance) {
-                return new ClassificationQuality(instances,distance);
-            }
-        }*/;
+        };
 
         public abstract ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) ;
     }
 
-    public enum ShapeletDistances {
-        EUCLIDEAN {
-            @Override
-            public ShapeletDistanceFunction createShapeletDistance(ShapeletFunctions functions) {
-                return new ShapeletDistanceEuclidean(functions);
-            }
-        },
-        NEW {
-            @Override
-            public ShapeletDistanceFunction createShapeletDistance(ShapeletFunctions functions) {
-                return new ShapeletDistanceEuclidean(functions);
-            }
-        };
 
-        public abstract ShapeletDistanceFunction createShapeletDistance(ShapeletFunctions functions);
-    }
 
     public enum ShapeletFactories {
         DEPENDANT {
@@ -371,11 +397,29 @@ public class MSTC implements TSClassifier {
         ROT{
             @Override
             public Classifier createClassifier() {
-                ContractRotationForest rf = new ContractRotationForest();
-                rf.setTrainTimeLimit(TimeUnit.HOURS,10);
-                return rf;
+                EnhancedRotationForest rotf=new EnhancedRotationForest();
+                rotf.setMaxNumTrees(200);
+                rotf.setTrainTimeLimit(TimeUnit.HOURS,10);
+                return rotf;
             }
-        };
+        },
+        NB{
+            @Override
+            public Classifier createClassifier() {
+
+                return new NaiveBayes();
+            }
+        },
+        FILTERED{
+            @Override
+            public Classifier createClassifier() {
+                FilteredClassifier fc = new FilteredClassifier();
+                LibLinearTS ll = new LibLinearTS();
+                fc.setClassifier( ll);
+                return fc;
+            }
+        }
+        ;
 
         public abstract Classifier createClassifier();
     }
@@ -392,14 +436,13 @@ public class MSTC implements TSClassifier {
 
         public ShapeletFilters filter;
         public ShapeletQualities quality;
-        public ShapeletDistances distance;
         public ShapeletFactories type;
         public AuxClassifiers classifier;
 
         public ShapeletParams(int k, int min, int max, int maxIterations, double minDist,
                               int contractTimeHours, boolean compareSimilar,
                               ShapeletFilters filter, ShapeletQualities quality,
-                              ShapeletDistances distance, ShapeletFactories type,
+                              ShapeletFactories type,
                               AuxClassifiers classifier){
             this.k = k ;
             this.min = min;
@@ -410,7 +453,6 @@ public class MSTC implements TSClassifier {
             this.compareSimilar = compareSimilar;
             this.filter = filter;
             this.quality = quality;
-            this.distance = distance;
             this.type = type;
             this.classifier = classifier;
         }
@@ -425,7 +467,6 @@ public class MSTC implements TSClassifier {
             this.compareSimilar = params.compareSimilar;
             this.filter = params.filter;
             this.quality = params.quality;
-            this.distance = params.distance;
             this.type = params.type;
             this.classifier = params.classifier;
         }
@@ -449,7 +490,7 @@ public class MSTC implements TSClassifier {
             System.out.println( "f= " + f);
             ShapeletParams params = new ShapeletParams(f,3,ts_train_data.getMaxLength()/2,
                     10000,0.01,4,true,
-                    ShapeletFilters.RANDOM, ShapeletQualities.GAIN, ShapeletDistances.EUCLIDEAN,
+                    ShapeletFilters.RANDOM, ShapeletQualities.GAIN,
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);
 

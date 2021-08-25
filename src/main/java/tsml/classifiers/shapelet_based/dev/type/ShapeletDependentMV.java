@@ -25,24 +25,6 @@ public  class ShapeletDependentMV extends ShapeletSingle{
     }
 
     @Override
-    public double getDistanceToInstance(int start, TimeSeriesInstance instance) {
-        double sum = 0;
-        double temp = 0;
-        for(int channel=0;channel< instance.getNumDimensions(); channel++){
-
-            for (int index = 0; index < length; index++)
-            {
-                temp = data[channel][index] - instance.get(channel).get(start+index);
-                sum = sum + (temp * temp);
-            }
-        }
-        return sum/data.length;
-    }
-
-
-
-
-    @Override
     public String toString(){
         return "Start: " + start + " Length: " + length + " Instance Index: " + instanceIndex
                  + " Quality: " + quality + "\n";//+  " " + Arrays.deepToString(data) + "\n";

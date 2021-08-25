@@ -546,13 +546,11 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             MatlabController.getInstance().discconnectMatlab();
     }
 
-    public static void main(String[] args) throws Exception {
-     //  String basePath = "C:/Users/fbu19zru/code/results/";
-        String basePath = "C:/Users/fbu19zru/code/results_univariate_ts/";
-//            String basePath = "Z:/Results/FinalisedUCIContinuous/";
+    private static void mainMTSC(String[] args) throws Exception{
+        String basePath = "C:/Users/fbu19zru/code/results/";
 
         MultipleClassifierEvaluation mcc =
-            new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-TSC", 1);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-MTSC", 1);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -560,50 +558,63 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-//        mcc.setUseAccuracyOnly();
-//        mcc.addEvaluationStatistic("F1", (ClassifierResults cr) -> {return cr.f1;}); //add on the f1 stat too
-//        mcc.setUseAllStatistics();
-
- //       mcc.setDatasets(DatasetLists.mtscProblems2018);
-        mcc.setDatasets(DatasetLists.tscProblems112);
-
-        //general rule of thumb: set/add/read the classifiers as the last thing before running
-     /*   mcc.readInClassifiers(new String[] {//"HIVE-COTE", "ROCKET", "DTW_D"
-                 "STC"
-               , "MSTC_D", "MSTC_I", "MSTC-SER", "ENS-MSTC_I"
-        }, basePath);*/
-        mcc.readInClassifiers(new String[] {/*"HC 1.0","RISE","TSF","cBOSS" */
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
+        mcc.readInClassifiers(new String[] {"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
                 "STC"
-               ,"MSTC_I"
-                ,"MSTC-OL_I"
-                ,"MSTC-BIN_I"
-                ,"MSTC-CLASS_I"
-         //      ,"ENS-MSTC_I"
+            //    , "MSTC_I"
+
+            , "MSTC-BIN_I"
+
+
+
+             //   , "MSTC-BIN_D"
+              //      , "MSTC--BIN-CHI_I"
+                //    , "MSTC-BIN-CORR_I"
+               //     , "MSTC-BIN-FSTAT_I"
+               //     , "MSTC-BIN-ONER_I"
+
+              //      , "MSTC-CLASS-BIN_I"
+            //    , "ENS-MSTC_I"
+
+
+             //   ,"5BIN-MSTC_I"
+        }, basePath);
+        mcc.runComparison();
+    }
+
+    private static void mainTSC(String[] args) throws Exception{
+        String basePath = "C:/Users/fbu19zru/code/results_univariate_ts/";
+
+        MultipleClassifierEvaluation mcc =
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-TSC", 1);
+
+        mcc.setTestResultsOnly(true); //as is default
+        mcc.setBuildMatlabDiagrams(true); //as is default
+        mcc.setCleanResults(true); //as is default
+        mcc.setDebugPrinting(true);
+
+        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
+        mcc.setDatasets(DatasetLists.tscProblems112);
+        mcc.readInClassifiers(new String[] {"HC2","ROCKET","RISE","TSF","cBOSS" ,
+                "STC"
+              //  , "MSTC_I"
+                , "MSTC-BIN_I"
+                , "MSTC-BIN-IO_I"
+              //  , "MSTC-BIN-IO-FIL_I"
+             //   , "MSTC-BIN-IO-LIN_I"
+            //    , "MSTC-CLASS-BIN-IO_I"
+            //    , "MSTC-CLASS-BIN-IO-FIL_I"
+            //    , "MSTC-CLASS-BIN-IO-LIN_I"
+            //    , "ENS-MSTC-BIN_I"
+                   ,"5BIN-MSTC_I"
+
 
         }, basePath);
-//        mcc.readInClassifier("RandF", basePath); //
-
         mcc.runComparison();
+    }
 
-        
-   //     new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/analysis/", "analysis", 1).
-   //         setTestResultsOnly(false).
-  //          setDatasets(DataSetLists.mtscProblems2018).
-   //         readInClassifiers(new String[] {"1NN", "C4.5"}, "C:/Users/fbu19zru/code/results/").
-   //             buildMatlabDiagrams(true)
-   //         runComparison();
-       // new MultipleClassifierEvaluation("C:\\JamesLPHD\\DatasetGroups\\anatesting\\", "test29", 30).
-//            setBuildMatlabDiagrams(true).
-//            setUseAllStatistics().
-//            setDatasets(Arrays.copyOfRange(development.experiments.DataSets.UCIContinuousFileNames, 0, 10)). //using only 10 datasets just to make it faster...
-//            setDatasets("C:/Temp/dsets.txt").
-  //          setDatasets("C:/Temp/dsets.txt").
-     //       setDatasetGroupingFromDirectory("C:\\JamesLPHD\\DatasetGroups\\TestGroups").
-        //    setPerformPostHocDsetResultsClustering(true).
-      //      readInClassifiers(new String[] {"1NN", "C4.5", "MLP", "RotF", "RandF"}, "C:\\JamesLPHD\\HESCA\\UCR\\UCRResults").
-       //     runComparison();
-
-    //    workingExampleCodeRunnableOnTSCServerMachine();
+    public static void main(String[] args) throws Exception {
+        mainMTSC(args);
     }
     
     public static void workingExampleCodeRunnableOnTSCServerMachine() throws FileNotFoundException, Exception {

@@ -1,7 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.filter;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletIndependentMV;
@@ -28,8 +27,7 @@ public class RandomFilterBySeries extends RandomFilter {
 
         long start = System.nanoTime();
         int numClasses = instances.getClassCounts().length;
-        ShapeletFunctions type = params.type.createShapeletType();
-        ShapeletDistanceFunction distanceFunction= params.distance.createShapeletDistance(type);
+        ShapeletFunctions fun = params.type.createShapeletType();
         ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
         int[] classesArray  = instances.getClassIndexes();
@@ -43,7 +41,7 @@ public class RandomFilterBySeries extends RandomFilter {
             //Get random shapelet
             int shapeletSize = params.min + MSTC.RAND.nextInt(params.max-params.min);
             int instanceIndex = MSTC.RAND.nextInt(instances.numInstances());
-            ShapeletIndependentMV candidate = (ShapeletIndependentMV) type.getRandomShapelet(
+            ShapeletIndependentMV candidate = (ShapeletIndependentMV) fun.getRandomShapelet(
                     shapeletSize,
                     instanceIndex,
                     classesArray[instanceIndex],
@@ -52,7 +50,7 @@ public class RandomFilterBySeries extends RandomFilter {
             int curSeries = candidate.getSeriesIndex();
             int curClass = (int)candidate.getClassIndex();
 
-            double q = quality.calculate (distanceFunction, candidate);
+            double q = quality.calculate (fun, candidate);
              if (q>0 ){
                 candidate.setQuality(q);
                 queues[curSeries][curClass].add(candidate);

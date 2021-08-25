@@ -17,8 +17,6 @@ public class ShapeletIndependentMV extends ShapeletSingle {
         return seriesIndex;
     }
 
-
-
     public void setData(TimeSeriesInstance instance) {
         this.data = new double[length];
         for (int i=0;i<length;i++){
@@ -30,28 +28,6 @@ public class ShapeletIndependentMV extends ShapeletSingle {
     public double[] getData(){
         return this.data;
     }
-
-    @Override
-    public double getDistanceToInstance(int start, TimeSeriesInstance instance) {
-        double sum = 0;
-        double temp = 0;
-        double a=0,b=0,ab=0 ;
-        for (int i = 0; i < length; i++)
-        {
-            temp = data[i] - instance.get(seriesIndex).get(start+i);
-            ab +=  (data[i] * instance.get(seriesIndex).get(start+i));
-            a += (data[i]*data[i]);
-            b += (instance.get(seriesIndex).get(start+i)*instance.get(seriesIndex).get(start+i));
-
-            sum = sum + (temp * temp);
-        }
-        return Math.sqrt(sum);
-    //    return ab / (Math.sqrt(a)*Math.sqrt(b));
-    }
-
-
-
-
 
     @Override
     public String toString(){

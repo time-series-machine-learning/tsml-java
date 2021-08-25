@@ -1,10 +1,14 @@
 package tsml.classifiers.shapelet_based.dev.functions;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceImprovedOnline;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletDependentMV;
 import tsml.data_containers.TimeSeriesInstance;
 
 public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDependentMV> {
+
+
+    ShapeletDistanceImprovedOnline distance = new ShapeletDistanceImprovedOnline();
 
     @Override
     public ShapeletDependentMV[] getShapeletsOverInstance(int shapeletSize, int instanceIndex, double classIndex,TimeSeriesInstance instance) {
@@ -25,7 +29,7 @@ public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDep
     }
 
     @Override
-    public double getDistanceFunction(ShapeletDependentMV shapelet1, ShapeletDependentMV shapelet2) {
+    public double distance(ShapeletDependentMV shapelet1, ShapeletDependentMV shapelet2) {
         ShapeletDependentMV small,big;
         double sum = 0, min = Double.MAX_VALUE;
         if (shapelet1.getLength()>shapelet2.getLength()){
@@ -68,19 +72,29 @@ public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDep
         }
         return false;
     }
-
-    public double sDist(int start, ShapeletDependentMV shapelet,  TimeSeriesInstance instance) {
+/*
+    public double sDist(ShapeletDependentMV shapelet,  TimeSeriesInstance instance) {
         double sum = 0;
         double temp = 0;
         for(int channel=0;channel< instance.getNumDimensions(); channel++){
 
             for (int index = 0; index < shapelet.getLength(); index++)
             {
-                temp = shapelet.getData()[channel][index] - instance.get(channel).get(start+index);
+                temp = shapelet.getData()[channel][index] - instance.get(channel).get(index);
                 sum = sum + (temp * temp);
             }
         }
         return sum/shapelet.getData().length;
-    }
+    }*/
+    public double sDist(ShapeletDependentMV shapelet, TimeSeriesInstance instance) {
 
+        double[][] timeSeries = instance.toValueArray();
+        double[][] shapeletData = shapelet.getData();
+        double dist = 0;
+
+        for (int i=0;i<shapeletData.length;i++){
+            dist += distance.calculate(shapeletData[i],timeSeries[i]);
+        }
+        return dist;
+    }
 }

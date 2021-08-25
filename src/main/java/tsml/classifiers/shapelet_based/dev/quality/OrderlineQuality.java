@@ -1,6 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.quality;
 
-import tsml.classifiers.shapelet_based.dev.distances.ShapeletDistanceFunction;
+import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.shapelet_tools.OrderLineObj;
@@ -19,7 +19,7 @@ public class OrderlineQuality extends ShapeletQualityFunction {
     }
 
     @Override
-    public double calculate(ShapeletDistanceFunction distance, ShapeletMV candidate) {
+    public double calculate(ShapeletFunctions fun, ShapeletMV candidate) {
 
 
         int[] classIndexes = trainInstances.getClassIndexes();
@@ -35,7 +35,7 @@ public class OrderlineQuality extends ShapeletQualityFunction {
 
 
 
-            double d = distance.calculate(candidate, trainInstances.get(i));
+            double d = fun.sDist(candidate, trainInstances.get(i));
 
             //this could be binarised or normal.
             double classVal = classIndexes[i];
