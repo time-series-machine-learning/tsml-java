@@ -97,9 +97,6 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
             assignments[i] = (int) Math.ceil(rand.nextDouble() * k) - 1;
         }
 
-        for (int i = 0; i < assignments.length; i++)
-            assignments[i] -= 1;
-
         SBD sbd = new SBD();
 
         int iterations = 0;
@@ -379,9 +376,9 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
 
             //Create y', shifting the second instance in a direction and padding with 0s
             if (calcShift) {
-                shift -= maxLength;
+                shift -= maxLength - 1;
 
-                yShift = new DenseInstance(1, new double[second.numAttributes()]);
+                yShift = new DenseInstance(1, new double[oldLengthY]);
 
                 if (shift >= 0) {
                     for (int i = 0; i < oldLengthY - shift; i++) {

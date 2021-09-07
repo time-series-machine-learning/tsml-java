@@ -235,8 +235,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             if (!useKMeans && iteration == 0){
                 firstGap = maxGap;
             }
-
-            if (!useKMeans && maxGap < firstGap / 2){
+            else if (!useKMeans && maxGap < firstGap / 2){
                 break;
             }
 
@@ -300,7 +299,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             Instances distanceMap;
             double[][] foldClusters = new double[shapelets.size()][];
             double[][] distanceMatrix = new double[numInstances][1];
-            double minRandIndex = 1;
+            double minRandIndex = Double.MAX_VALUE;
             KMeans bestClusterer = null;
 
             //Create a distance matrix by calculating the distance of shapelet i and previous shapelets to each time
@@ -328,7 +327,6 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                     kmeans.buildClusterer(distanceMap);
 
                     double dist = kmeans.clusterSquaredDistance(distanceMap);
-
                     if (dist < minDist) {
                         minDist = dist;
                         foldClusters[i] = kmeans.getAssignments();
@@ -336,10 +334,9 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                     }
                 }
 
-                double randIndex = 1;
-
                 //If the rand index of this output of clusters compared to the previous one is greater than the current
                 //best use this output of clusters
+                double randIndex = 1;
                 if (i > 0) {
                     randIndex = 1 - randIndex(foldClusters[i - 1], foldClusters[i]);
                 }
@@ -412,9 +409,9 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
 
     public static void main(String[] args) throws Exception {
         String dataset = "Trace";
-        Instances inst = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+        Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
-        Instances inst2 = DatasetLoading.loadDataNullable("Z:\\ArchiveData\\Univariate_arff\\" + dataset + "/" +
+        Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes() - 1);
         inst.addAll(inst2);
