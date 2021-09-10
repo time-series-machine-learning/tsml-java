@@ -94,6 +94,10 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
             attributeStdDevs[i] = data.attributeStats(i).numericStats
                     .stdDev;
 
+            if (attributeStdDevs[i] == 0) {
+                attributeStdDevs[i] = 0.0000001;
+            }
+
             for (int n = 0; n < data.size(); n++) {
                 Instance instance = data.get(n);
                 instance.setValue(i, (instance.value(i) - attributeMeans[i]) / attributeStdDevs[i]);
