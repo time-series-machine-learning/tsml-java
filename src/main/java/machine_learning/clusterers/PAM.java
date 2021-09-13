@@ -139,10 +139,12 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
             findBestK(train);
         } else {
             //Pick initial medoids.
-            if (refinedInitialMedoids) {
-                initialMedoidsRefined(train);
-            } else {
-                initialMedoids();
+            if (!hasInitialMedoids) {
+                if (refinedInitialMedoids) {
+                    initialMedoidsRefined(train);
+                } else {
+                    initialMedoids();
+                }
             }
 
             boolean finished = false;

@@ -23,7 +23,10 @@ import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import weka.clusterers.NumberOfClustersRequestable;
-import weka.core.*;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
 import weka.core.matrix.EigenvalueDecomposition;
 import weka.core.matrix.Matrix;
 
@@ -137,12 +140,7 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         }
 
         for (int i = 0; i < train.numInstances(); i++) {
-            for (int n = 0; n < k; n++) {
-                if (n == assignments[i]) {
-                    clusters[n].add(i);
-                    break;
-                }
-            }
+            clusters[(int) assignments[i]].add(i);
         }
     }
 

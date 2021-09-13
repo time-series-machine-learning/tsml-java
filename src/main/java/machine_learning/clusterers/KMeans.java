@@ -132,10 +132,12 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             findBestK(train);
         } else {
             //Pick initial cluster centers.
-            if (refinedInitialCenters) {
-                initialClusterCentersRefined(train);
-            } else if (!hasInitialCenters) {
-                initialClusterCenters(train);
+            if (!hasInitialCenters) {
+                if (refinedInitialCenters) {
+                    initialClusterCentersRefined(train);
+                } else {
+                    initialClusterCenters(train);
+                }
             }
 
             boolean finished = false;
@@ -403,12 +405,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         }
 
         for (int i = 0; i < numInstances; i++) {
-            for (int n = 0; n < k; n++) {
-                if (n == assignments[i]) {
-                    clusters[n].add(i);
-                    break;
-                }
-            }
+            clusters[(int) assignments[i]].add(i);
         }
 
         return membershipChange;

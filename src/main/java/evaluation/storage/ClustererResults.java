@@ -667,6 +667,14 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
         return d;
     }
 
+    public int[] getClusterValuesAsIntArray() {
+        int[] d = new int[clusterValues.size()];
+        int i = 0;
+        for (double x : clusterValues)
+            d[i++] = (int) x;
+        return d;
+    }
+
     public double getClusterValue(int index) {
         return clusterValues.get(index);
     }

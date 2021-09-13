@@ -131,12 +131,7 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
         }
 
         for (int i = 0; i < train.size(); i++) {
-            for (int n = 0; n < k; n++) {
-                if (n == assignments[i]) {
-                    clusters[n].add(i);
-                    break;
-                }
-            }
+            clusters[(int) assignments[i]].add(i);
         }
     }
 

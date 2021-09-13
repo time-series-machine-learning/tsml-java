@@ -244,6 +244,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             shapelets.add(best);
 
             double[] distances = best.computeDistances(data);
+
             ArrayList<Double> lesserDists = new ArrayList();
             double maxDist = -1;
             int maxDistIndex = -1;
@@ -278,7 +279,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
                 }
 
                 data = newData;
-                if (data.size() == 1) {
+                if (data.size() <= 1) {
                     finished = true;
                 }
                 else{
@@ -357,12 +358,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             }
 
             for (int i = 0; i < numInstances; i++) {
-                for (int n = 0; n < k; n++) {
-                    if (n == assignments[i]) {
-                        clusters[n].add(i);
-                        break;
-                    }
-                }
+                clusters[(int) assignments[i]].add(i);
             }
         }
         else{
@@ -374,12 +370,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
             }
 
             for (int i = 0; i < numInstances; i++) {
-                for (int n = 0; n < clusters.length; n++) {
-                    if (n == assignments[i]) {
-                        clusters[n].add(i);
-                        break;
-                    }
-                }
+                clusters[(int) assignments[i]].add(i);
             }
         }
     }
@@ -408,7 +399,7 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     }
 
     public static void main(String[] args) throws Exception {
-        String dataset = "Trace";
+        String dataset = "Earthquakes";
         Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
