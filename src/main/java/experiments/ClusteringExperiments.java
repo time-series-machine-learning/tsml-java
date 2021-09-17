@@ -101,7 +101,6 @@ public class ClusteringExperiments {
             ArrayList<String> parameters= new ArrayList<>();
             parameters.add("-dp=src\\main\\java\\experiments\\data\\tsc\\"); //Where to get datasets
             parameters.add("-rp=temp\\"); //Where to write results
-            parameters.add("-gtf=false"); //Whether to generate train files or not
             parameters.add("-cn="+clusterer); //Clusterer name
             parameters.add("-dn="); //Problem name, don't change here as it is overwritten by probFiles
             parameters.add("-f=1"); //Resample number (resample number 1 is stored as testResample0.csv, its a cluster thing)
@@ -167,6 +166,7 @@ public class ClusteringExperiments {
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         expSettings.numClassValues = data[0].numClasses();
 
+        // replace missing values with 0 if enabled
         if (expSettings.replaceMissingValues) {
             for (Instance inst : data[0])
                 inst.replaceMissingValues(new double[data[0].numAttributes()]);
