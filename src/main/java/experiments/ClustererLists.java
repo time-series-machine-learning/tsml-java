@@ -18,11 +18,14 @@ package experiments;
 import machine_learning.clusterers.CAST;
 import machine_learning.clusterers.DensityPeaks;
 import machine_learning.clusterers.KMeans;
-import machine_learning.clusterers.PAM;
+import machine_learning.clusterers.KMedoids;
 import tsml.clusterers.KShape;
 import tsml.clusterers.TTC;
 import tsml.clusterers.UnsupervisedShapelets;
-import weka.clusterers.*;
+import weka.clusterers.Clusterer;
+import weka.clusterers.EM;
+import weka.clusterers.NumberOfClustersRequestable;
+import weka.clusterers.SimpleKMeans;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -72,8 +75,8 @@ public class ClustererLists {
             case "kmeans":
                 c = new KMeans();
                 break;
-            case "pam":
-                c = new PAM();
+            case "kmedoids":
+                c = new KMedoids();
                 break;
             case "densitypeaks":
                 c = new DensityPeaks();

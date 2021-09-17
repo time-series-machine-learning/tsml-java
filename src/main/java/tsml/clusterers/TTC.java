@@ -19,7 +19,7 @@ package tsml.clusterers;
 
 import experiments.data.DatasetLoading;
 import machine_learning.clusterers.CAST;
-import machine_learning.clusterers.PAM;
+import machine_learning.clusterers.KMedoids;
 import tsml.classifiers.legacy.elastic_ensemble.distance_functions.DTW;
 import weka.clusterers.NumberOfClustersRequestable;
 import weka.core.DenseInstance;
@@ -50,7 +50,7 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
     private double[][] distanceMatrix;
     private ArrayList<Integer>[] subclusters;
 
-    private PAM pam;
+    private KMedoids kmedoids;
 
     public TTC() {
     }
@@ -100,20 +100,20 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
             cl.add(new DenseInstance(1, prototypes[i]));
         }
 
-        //Use PAM using DTW distance to cluster discretised data
-        pam = new PAM();
-        pam.setDistanceFunction(new DTW());
-        pam.setNumClusters(k);
-        pam.setNormaliseData(false);
-        pam.setCopyInstances(false);
+        //Use KMedoids using DTW distance to cluster discretised data
+        kmedoids = new KMedoids();
+        kmedoids.setDistanceFunction(new DTW());
+        kmedoids.setNumClusters(k);
+        kmedoids.setNormaliseData(false);
+        kmedoids.setCopyInstances(false);
         if (seedClusterer)
-            pam.setSeed(seed);
-        pam.buildClusterer(cl);
+            kmedoids.setSeed(seed);
+        kmedoids.buildClusterer(cl);
 
-        ArrayList<Integer>[] ptClusters = pam.getClusters();
+        ArrayList<Integer>[] ptClusters = kmedoids.getClusters();
         assignments = new double[train.size()];
 
-        //Assign each instance to the cluster assigned it its subcluster using PAM
+        //Assign each instance to the cluster assigned it its subcluster using KMedoids
         for (int i = 1; i < k; i++) {
             for (int n = 0; n < ptClusters[i].size(); n++) {
                 ArrayList<Integer> subcluster = subclusters[ptClusters[i].get(n)];
@@ -140,7 +140,7 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
         deleteClassAttribute(newInst);
         zNormalise(newInst);
-        return pam.clusterInstance(newInst);
+        return kmedoids.clusterInstance(newInst);
     }
 
     public static void main(String[] args) throws Exception {

@@ -32,16 +32,12 @@ import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
- * Implementation of the Partitioning Around Medoids (PAM) algorithm with
+ * Implementation of the KMedoids algorithm with
  * options for finding a value for k and a refined initial medoid selection.
  *
  * @author Matthew Middlehurst
  */
-public class PAM extends DistanceBasedVectorClusterer implements NumberOfClustersRequestable {
-
-    //L. Kaufman, P.J. Rousseeuw
-    //Finding groups in data: An introduction to cluster analysis
-    //Wiley, New York (1990)
+public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfClustersRequestable {
 
     private int k = 2;
     private boolean findBestK = false;
@@ -55,17 +51,17 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
     private int[] medoids;
 
-    public PAM() {
+    public KMedoids() {
     }
 
     //Used when finding best value for k to avoid recalculating distances
-    public PAM(double[][] distanceMatrix) {
+    public KMedoids(double[][] distanceMatrix) {
         this.distanceMatrix = distanceMatrix;
         this.hasDistances = true;
     }
 
     //Used when selecting refined initial medoids.
-    private PAM(int[] initialMedoids) {
+    private KMedoids(int[] initialMedoids) {
         super();
         this.medoids = initialMedoids;
         this.hasInitialMedoids = true;
@@ -237,7 +233,7 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
     //ICML. Vol. 98. 1998.
 
     //Refined selection on initial medoids using a modified version of the
-    //method above, running PAM over multiple subsamples then again on the
+    //method above, running KMedoids over multiple subsamples then again on the
     //resulting medoids selecting the best perfoming one
     private void initialMedoidsRefined(Instances data) throws Exception {
         int subsampleSize = numInstances / 10;
@@ -261,7 +257,7 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
         int[][] subsampleMedoids = new int[numSubsamples][];
 
-        //Get the resulting medoids from running PAM on multiple random
+        //Get the resulting medoids from running KMedoids on multiple random
         //subsamples of the data
         for (int i = 0; i < numSubsamples; i++) {
             Collections.shuffle(indexes, rand);
@@ -271,15 +267,15 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
                 subsample.add(data.get(indexes.get(n)));
             }
 
-            PAM pam = new PAM();
-            pam.setNumClusters(k);
-            pam.setNormaliseData(false);
-            pam.setRefinedInitialMedoids(false);
+            KMedoids kmedoids = new KMedoids();
+            kmedoids.setNumClusters(k);
+            kmedoids.setNormaliseData(false);
+            kmedoids.setRefinedInitialMedoids(false);
             if (seedClusterer)
-                pam.setSeed(seed + (i + 1) * 37);
-            pam.buildClusterer(subsample);
+                kmedoids.setSeed(seed + (i + 1) * 37);
+            kmedoids.buildClusterer(subsample);
 
-            subsampleMedoids[i] = pam.medoids;
+            subsampleMedoids[i] = kmedoids.medoids;
         }
 
         //Create Instance object for subsample medoids.
@@ -304,15 +300,15 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
                 initialMedoids[n] = n + (i * k);
             }
 
-            PAM pam = new PAM(initialMedoids);
-            pam.setNumClusters(k);
-            pam.setNormaliseData(false);
-            pam.setRefinedInitialMedoids(false);
+            KMedoids kmedoids = new KMedoids(initialMedoids);
+            kmedoids.setNumClusters(k);
+            kmedoids.setNormaliseData(false);
+            kmedoids.setRefinedInitialMedoids(false);
             if (seedClusterer)
-                pam.setSeed(seed + (i + 1) * 137);
-            pam.buildClusterer(medoidInsts);
+                kmedoids.setSeed(seed + (i + 1) * 137);
+            kmedoids.buildClusterer(medoidInsts);
 
-            double dist = pam.clusterSquaredDistance();
+            double dist = kmedoids.clusterSquaredDistance();
 
             if (dist < minDist) {
                 minDist = dist;
@@ -413,38 +409,38 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
         //For each value of K.
         for (int i = 2; i <= maxK; i++) {
-            PAM pam = new PAM(distanceMatrix);
-            pam.setNumClusters(i);
-            pam.setNormaliseData(false);
-            pam.setRefinedInitialMedoids(refinedInitialMedoids);
+            KMedoids kmedoids = new KMedoids(distanceMatrix);
+            kmedoids.setNumClusters(i);
+            kmedoids.setNormaliseData(false);
+            kmedoids.setRefinedInitialMedoids(refinedInitialMedoids);
             if (seedClusterer)
-                pam.setSeed(seed + (i + 1) * 237);
-            pam.buildClusterer(data);
+                kmedoids.setSeed(seed + (i + 1) * 237);
+            kmedoids.buildClusterer(data);
 
             double totalSilVal = 0;
 
             //For each cluster created by k-means.
             for (int n = 0; n < i; n++) {
                 //For each point in the cluster.
-                for (int g = 0; g < pam.clusters[n].size(); g++) {
+                for (int g = 0; g < kmedoids.clusters[n].size(); g++) {
                     double clusterDist = 0;
                     double minOtherClusterDist = Double.MAX_VALUE;
 
-                    int index = pam.clusters[n].get(g);
+                    int index = kmedoids.clusters[n].get(g);
 
                     //Find mean distance of the point to other points in its
                     //cluster.
-                    for (int j = 0; j < pam.clusters[n].size(); j++) {
-                        if (index == pam.clusters[n].get(j)) continue;
+                    for (int j = 0; j < kmedoids.clusters[n].size(); j++) {
+                        if (index == kmedoids.clusters[n].get(j)) continue;
 
-                        if (index > pam.clusters[n].get(j)) {
-                            clusterDist += distanceMatrix[index][pam.clusters[n].get(j)];
+                        if (index > kmedoids.clusters[n].get(j)) {
+                            clusterDist += distanceMatrix[index][kmedoids.clusters[n].get(j)];
                         } else {
-                            clusterDist += distanceMatrix[pam.clusters[n].get(j)][index];
+                            clusterDist += distanceMatrix[kmedoids.clusters[n].get(j)][index];
                         }
                     }
 
-                    clusterDist /= pam.clusters[n].size();
+                    clusterDist /= kmedoids.clusters[n].size();
 
                     //Find the minimum distance of the point to other clusters.
                     for (int m = 0; m < i; m++) {
@@ -454,15 +450,15 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
                         double otherClusterDist = 0;
 
-                        for (int j = 0; j < pam.clusters[m].size(); j++) {
-                            if (index > pam.clusters[m].get(j)) {
-                                otherClusterDist += distanceMatrix[index][pam.clusters[m].get(j)];
+                        for (int j = 0; j < kmedoids.clusters[m].size(); j++) {
+                            if (index > kmedoids.clusters[m].get(j)) {
+                                otherClusterDist += distanceMatrix[index][kmedoids.clusters[m].get(j)];
                             } else {
-                                otherClusterDist += distanceMatrix[pam.clusters[m].get(j)][index];
+                                otherClusterDist += distanceMatrix[kmedoids.clusters[m].get(j)][index];
                             }
                         }
 
-                        otherClusterDist /= pam.clusters[m].size();
+                        otherClusterDist /= kmedoids.clusters[m].size();
 
                         if (otherClusterDist < minOtherClusterDist) {
                             minOtherClusterDist = otherClusterDist;
@@ -485,10 +481,10 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
 
             if (totalSilVal > bestSilVal) {
                 bestSilVal = totalSilVal;
-                medoids = pam.medoids;
-                assignments = pam.assignments;
-                clusters = pam.clusters;
-                k = pam.k;
+                medoids = kmedoids.medoids;
+                assignments = kmedoids.assignments;
+                clusters = kmedoids.clusters;
+                k = kmedoids.k;
             }
         }
     }
@@ -513,14 +509,14 @@ public class PAM extends DistanceBasedVectorClusterer implements NumberOfCluster
         for (int i = 0; i < datasets.length; i++) {
             Instances inst = DatasetLoading.loadDataNullable(datasets[i]);
             inst.setClassIndex(inst.numAttributes() - 1);
-            PAM pam = new PAM();
-            pam.setFindBestK(true);
-            pam.setRefinedInitialMedoids(true);
-            pam.setSeed(0);
-            pam.buildClusterer(inst);
+            KMedoids kmedoids = new KMedoids();
+            kmedoids.setFindBestK(true);
+            kmedoids.setRefinedInitialMedoids(true);
+            kmedoids.setSeed(0);
+            kmedoids.buildClusterer(inst);
 
             if (output) {
-                System.out.println(names[i] + "c = " + Arrays.toString(pam.assignments));
+                System.out.println(names[i] + "c = " + Arrays.toString(kmedoids.assignments));
                 System.out.println("figure");
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");
             }
