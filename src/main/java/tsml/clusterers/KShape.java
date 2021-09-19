@@ -197,9 +197,6 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         if (subsample.numInstances() == 0) {
             return new DenseInstance(1, new double[centroid.numAttributes()]);
         }
-        else if (subsample.numInstances() == 1) {
-            return new DenseInstance(1, subsample.firstInstance().toDoubleArray());
-        }
 
         zNormalise(subsample);
 
@@ -222,7 +219,10 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
 
         matrix = identity.times(matrix).times(identity);
 
+        // If we dont add a max iterations it can fail to converge
+        EigenvalueDecomposition.maxIter = 100000;
         EigenvalueDecomposition eig = matrix.eig();
+        EigenvalueDecomposition.maxIter = -1;
         Matrix v = eig.getV();
         double[] eigVector = new double[centroid.numAttributes()];
         double[] eigVectorNeg = new double[centroid.numAttributes()];
@@ -266,13 +266,13 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
     }
 
     public static void main(String[] args) throws Exception {
-        String dataset = "SwedishLeaf";
+        String dataset = "Trace";
         Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes() - 1);
-        //inst.addAll(inst2);
+        inst.addAll(inst2);
 
         KShape k = new KShape();
         k.setSeed(0);
@@ -283,13 +283,6 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         System.out.println(Arrays.toString(k.assignments));
         System.out.println(Arrays.toString(k.clusters));
         System.out.println(randIndex(k.assignments, inst));
-
-        for(int i = 0; i < inst2.numInstances(); i++) {
-            long startTime = System.nanoTime();
-            double[] dist = k.distributionForInstance(inst2.instance(i));
-            long predTime = System.nanoTime() - startTime;
-            System.out.println(predTime);
-        }
     }
 
     //Class for calculating Shape Based Distance
