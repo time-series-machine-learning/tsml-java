@@ -36,6 +36,7 @@ import java.util.Random;
 
 import static utilities.ClusteringUtilities.randIndex;
 import static utilities.ClusteringUtilities.zNormalise;
+import static utilities.GenericTools.indexOfMax;
 import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
@@ -147,11 +148,16 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
+
         zNormalise(newInst);
+
         double minDist = Double.MAX_VALUE;
         int closestCluster = 0;
-
         for (int i = 0; i < centroids.size(); ++i) {
             SBD sbd = new SBD(newInst, centroids.get(i), false);
 
@@ -190,6 +196,9 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         //Return instances of 0s as centroid if subsample empty
         if (subsample.numInstances() == 0) {
             return new DenseInstance(1, new double[centroid.numAttributes()]);
+        }
+        else if (subsample.numInstances() == 1) {
+            return new DenseInstance(1, subsample.firstInstance().toDoubleArray());
         }
 
         zNormalise(subsample);
@@ -257,13 +266,13 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
     }
 
     public static void main(String[] args) throws Exception {
-        String dataset = "Trace";
+        String dataset = "SwedishLeaf";
         Instances inst = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TRAIN.arff");
         Instances inst2 = DatasetLoading.loadDataNullable("D:\\CMP Machine Learning\\Datasets\\UnivariateARFF\\" + dataset + "/" +
                 dataset + "_TEST.arff");
         inst.setClassIndex(inst.numAttributes() - 1);
-        inst.addAll(inst2);
+        //inst.addAll(inst2);
 
         KShape k = new KShape();
         k.setSeed(0);
@@ -274,6 +283,13 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
         System.out.println(Arrays.toString(k.assignments));
         System.out.println(Arrays.toString(k.clusters));
         System.out.println(randIndex(k.assignments, inst));
+
+        for(int i = 0; i < inst2.numInstances(); i++) {
+            long startTime = System.nanoTime();
+            double[] dist = k.distributionForInstance(inst2.instance(i));
+            long predTime = System.nanoTime() - startTime;
+            System.out.println(predTime);
+        }
     }
 
     //Class for calculating Shape Based Distance

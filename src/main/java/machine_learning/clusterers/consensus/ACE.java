@@ -22,6 +22,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
     private int k = 2;
 
     private int[] newLabels;
+    int clusterCount;
 
     public ACE(EnhancedAbstractClusterer[] clusterers) {
         super(clusterers);
@@ -33,7 +34,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
 
     @Override
     public int numberOfClusters() throws Exception {
-        return 0;
+        return clusterCount;
     }
 
     @Override
@@ -103,7 +104,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         ensembleClusters[2][1] = new ArrayList(Arrays.asList(5, 6, 7, 8));
         ensembleClusters[2][2] = new ArrayList(Arrays.asList(3, 4));
 
-        int clusterCount = 0;
+        clusterCount = 0;
         ArrayList<ArrayList<double[]>> binaryClusterMembership = new ArrayList<>(ensembleClusters.length);
         for (ArrayList<Integer>[] memberClusters: ensembleClusters){
             clusterCount += memberClusters.length;
@@ -177,7 +178,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                     for (int j = 0; j < binaryClusterMembership.get(i).size(); j++) {
                         for (int k = 0; k < binaryClusterMembership.get(n).size(); k++) {
                             if (!merged[countI + j] && !merged[countI + j] &&
-                                    clusterSimilarities[countI + j][countN + k] > alpha) {
+                                    clusterSimilarities[countI + j][countN + k] >= alpha) {
                                 tempNewLabels[countI + j] = tempNewLabels[countN + k];
                                 merged[countI + j] = true;
                                 newCluster[countN + k] = true;
@@ -197,16 +198,6 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                 countI += binaryClusterMembership.get(i).size();
             }
 
-            // No set k, keep going until no changes
-            if (k < 2){
-                clusterCount = tempClusterCount;
-                binaryClusterMembership = removeMerged(binaryClusterMembership, merged, newCluster);
-                newLabels = tempNewLabels;
-
-                if (finished){
-                    break;
-                }
-            }
             // using the initial clusters, keep going and incrementing alpha until the number of
             // clusters is greater than k
             if (stage1) {
@@ -219,7 +210,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                     alpha += alphaIncrement;
                 }
             }
-            // using the initial clusters, keep going and lowering alpha to the max similarity
+            // no longer using the initial clusters, keep going and lowering alpha to the max similarity
             // until the number of clusters is less than or equal to k or less than the minimum alpha
             else{
                 if (tempClusterCount == k){
@@ -244,13 +235,16 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
             System.out.println(clusterCount);
             System.out.println(binaryClusterMembership);
             System.out.println(Arrays.toString(newLabels));
+            System.out.println(alpha);
         }
 
         System.out.println();
         for (double[] b: clusterSimilarities)
             System.out.println(Arrays.toString(b));
         System.out.println(clusterCount);
-        System.out.println(binaryClusterMembership);
+        for (ArrayList<double[]> a : binaryClusterMembership)
+            for (double[] b : a)
+                System.out.println(" " + Arrays.toString(b));
         System.out.println(Arrays.toString(newLabels));
     }
 
@@ -333,7 +327,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         }
 
         ACE k = new ACE(clusterers);
-        //k.setNumClusters();
+        k.setNumClusters(3);
         k.setSeed(0);
         k.buildClusterer(inst);
 

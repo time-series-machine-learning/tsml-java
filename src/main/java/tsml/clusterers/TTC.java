@@ -138,7 +138,11 @@ public class TTC extends EnhancedAbstractClusterer implements NumberOfClustersRe
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
         zNormalise(newInst);
         return kmedoids.clusterInstance(newInst);
     }

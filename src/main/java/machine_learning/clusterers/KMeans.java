@@ -162,12 +162,17 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
+
         if (normaliseData)
             normaliseData(newInst);
+
         double minDist = Double.MAX_VALUE;
         int closestCluster = 0;
-
         for (int i = 0; i < clusterCenters.size(); ++i) {
             double dist = distFunc.distance(inst, clusterCenters.get(i));
 

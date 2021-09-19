@@ -51,12 +51,17 @@ public abstract class DistanceBasedVectorClusterer extends EnhancedAbstractClust
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
+
         if (normaliseData)
             normaliseData(newInst);
+
         double minDist = Double.MAX_VALUE;
         int closestCluster = 0;
-
         for (int i = 0; i < train.size(); ++i) {
             double dist = distFunc.distance(newInst, train.get(i));
 

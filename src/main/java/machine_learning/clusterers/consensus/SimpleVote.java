@@ -87,7 +87,11 @@ public class SimpleVote extends ConsensusClusterer implements LoadableConsensusC
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
 
         double[] votes = new double[k];
         votes[clusterers[0].clusterInstance(inst)]++;

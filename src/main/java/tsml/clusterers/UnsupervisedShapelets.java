@@ -111,7 +111,11 @@ public class UnsupervisedShapelets extends EnhancedAbstractClusterer implements 
     @Override
     public int clusterInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
-        deleteClassAttribute(newInst);
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
 
         if (useKMeans) {
             Instance shapeletDists = new DenseInstance(numShapeletsToUse);
