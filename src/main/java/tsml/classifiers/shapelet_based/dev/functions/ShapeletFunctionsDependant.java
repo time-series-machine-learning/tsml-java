@@ -28,34 +28,6 @@ public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDep
         return new ShapeletDependentMV(MSTC.RAND.nextInt(minLength-shapeletSize), shapeletSize ,instanceIndex, classIndex, instance);
     }
 
-    @Override
-    public double distance(ShapeletDependentMV shapelet1, ShapeletDependentMV shapelet2) {
-        ShapeletDependentMV small,big;
-        double sum = 0, min = Double.MAX_VALUE;
-        if (shapelet1.getLength()>shapelet2.getLength()){
-            small = shapelet2;
-            big = shapelet1;
-        }else{
-            small = shapelet1;
-            big = shapelet2;
-
-        }
-
-        for (int i=0;i<big.getLength()-small.getLength();i++){
-            sum = 0;
-            for (int j=0;j<small.getData().length;j++){
-                for (int k=0;k<small.getData()[j].length;k++){
-                    sum =+ (small.getData()[j][k]-big.getData()[j][k+i])*(small.getData()[j][k]-big.getData()[j][k+i]);
-                }
-            }
-            if (min<sum){
-                min = sum;
-            }
-        }
-
-
-        return Math.sqrt(min);
-    }
 
     public boolean selfSimilarity(ShapeletDependentMV shapelet, ShapeletDependentMV candidate) {
         // check whether they're the same dimension or not.
@@ -72,20 +44,7 @@ public class ShapeletFunctionsDependant implements ShapeletFunctions<ShapeletDep
         }
         return false;
     }
-/*
-    public double sDist(ShapeletDependentMV shapelet,  TimeSeriesInstance instance) {
-        double sum = 0;
-        double temp = 0;
-        for(int channel=0;channel< instance.getNumDimensions(); channel++){
 
-            for (int index = 0; index < shapelet.getLength(); index++)
-            {
-                temp = shapelet.getData()[channel][index] - instance.get(channel).get(index);
-                sum = sum + (temp * temp);
-            }
-        }
-        return sum/shapelet.getData().length;
-    }*/
     public double sDist(ShapeletDependentMV shapelet, TimeSeriesInstance instance) {
 
         double[][] timeSeries = instance.toValueArray();

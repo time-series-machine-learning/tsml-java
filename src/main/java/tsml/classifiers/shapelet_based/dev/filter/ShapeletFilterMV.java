@@ -2,7 +2,6 @@ package tsml.classifiers.shapelet_based.dev.filter;
 
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
@@ -23,14 +22,7 @@ public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
                                                         ShapeletQualityFunction quality,
                                                         TimeSeriesInstances instances);
 
-    protected boolean isSimilar(List<ShapeletMV> shapelets, ShapeletMV candidate, ShapeletFunctions shapeletFunctions, double minDist){
-        for (ShapeletMV shapelet: shapelets){
-            if (shapeletFunctions.distance(shapelet, candidate)<=minDist){
-                    return true;
-            }
-        }
-        return false;
-    }
+
 
 
     @Override

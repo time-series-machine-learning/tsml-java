@@ -42,8 +42,10 @@ public class CombinedEnsembleMSTC extends AbstractEnsembleTS {
 
             MSTC.ShapeletParams params = new MSTC.ShapeletParams(this.params);
             params.quality = QUALITIES[i];
-            params.contractTimeHours = 1;
-            //params.type = TYPES[r.nextInt(TYPES.length)];
+            params.contractTimeHours = 2;
+            params.allowZeroQuality = true;
+            params.k = params.k / 5;
+            params.classifier = MSTC.AuxClassifiers.ROT_2H;
 
 
             classifiers[i] = new MSTC(params);

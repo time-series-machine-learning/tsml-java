@@ -8,6 +8,7 @@ import tsml.classifiers.TSClassifier;
 import tsml.classifiers.shapelet_based.dev.filter.*;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsDependant;
+import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsDimDependant;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsIndependent;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.quality.WekaQuality;
@@ -61,6 +62,8 @@ public class MSTC implements TSClassifier {
     @Override
     public void setTSTrainData(TimeSeriesInstances train) {
 
+
+
     }
 
     @Override
@@ -72,8 +75,12 @@ public class MSTC implements TSClassifier {
         ShapeletFilterMV filter =  this.params.filter.createFilter();
         filter.setHourLimit(this.params.contractTimeHours);
         shapelets =filter.findShapelets(params, data);
-        System.out.println(shapelets);
+       // System.out.println(shapelets);
         transformData = buildTansformedDataset(data);
+       // ArffSaver saver = new ArffSaver();
+       // saver.setInstances(transformData);
+       // saver.setFile(new File("./data/transform.arff"));
+       // saver.writeBatch();
        // System.out.println(transformData);
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
@@ -313,6 +320,13 @@ public class MSTC implements TSClassifier {
                 return new ShapeletFunctionsDependant();
             }
         },
+        DIMENSION_DEPENDANT {
+            @Override
+            public ShapeletFunctions createShapeletType() {
+                return new ShapeletFunctionsDimDependant();
+            }
+        },
+
         INDEPENDENT {
             @Override
             public ShapeletFunctions createShapeletType() {
@@ -403,6 +417,15 @@ public class MSTC implements TSClassifier {
                 return rotf;
             }
         },
+        ROT_2H{
+            @Override
+            public Classifier createClassifier() {
+                EnhancedRotationForest rotf=new EnhancedRotationForest();
+                rotf.setMaxNumTrees(200);
+                rotf.setTrainTimeLimit(TimeUnit.HOURS,2);
+                return rotf;
+            }
+        },
         NB{
             @Override
             public Classifier createClassifier() {
@@ -429,18 +452,15 @@ public class MSTC implements TSClassifier {
         public int min;
         public int max;
         public int maxIterations;
-        public double minDist;
         public int contractTimeHours;
-        public boolean compareSimilar;
-        public boolean normalize;
+        public boolean allowZeroQuality = false;
 
         public ShapeletFilters filter;
         public ShapeletQualities quality;
         public ShapeletFactories type;
         public AuxClassifiers classifier;
 
-        public ShapeletParams(int k, int min, int max, int maxIterations, double minDist,
-                              int contractTimeHours, boolean compareSimilar,
+        public ShapeletParams(int k, int min, int max, int maxIterations, int contractTimeHours,
                               ShapeletFilters filter, ShapeletQualities quality,
                               ShapeletFactories type,
                               AuxClassifiers classifier){
@@ -448,13 +468,12 @@ public class MSTC implements TSClassifier {
             this.min = min;
             this.max = max;
             this.maxIterations = maxIterations;
-            this.minDist = minDist;
             this.contractTimeHours = contractTimeHours;
-            this.compareSimilar = compareSimilar;
             this.filter = filter;
             this.quality = quality;
             this.type = type;
             this.classifier = classifier;
+            this.allowZeroQuality = false;
         }
 
         public ShapeletParams(ShapeletParams params){
@@ -462,13 +481,12 @@ public class MSTC implements TSClassifier {
             this.min = params.min;
             this.max = params.max;
             this.maxIterations = params.maxIterations;
-            this.minDist = params.minDist;
             this.contractTimeHours = params.contractTimeHours;
-            this.compareSimilar = params.compareSimilar;
             this.filter = params.filter;
             this.quality = params.quality;
             this.type = params.type;
             this.classifier = params.classifier;
+            this.allowZeroQuality = params.allowZeroQuality;
         }
 
     }
@@ -489,7 +507,7 @@ public class MSTC implements TSClassifier {
             int f = ts_train_data.numInstances()*ts_train_data.getMaxLength()*ts_train_data.getMaxNumDimensions();
             System.out.println( "f= " + f);
             ShapeletParams params = new ShapeletParams(f,3,ts_train_data.getMaxLength()/2,
-                    10000,0.01,4,true,
+                    10000,4,
                     ShapeletFilters.RANDOM, ShapeletQualities.GAIN,
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);

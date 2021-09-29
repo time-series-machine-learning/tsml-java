@@ -547,10 +547,10 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     private static void mainMTSC(String[] args) throws Exception{
-        String basePath = "C:/Users/fbu19zru/code/results/";
+        String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-MTSC", 1);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Shapelet-hd", 30);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -558,12 +558,20 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.mtscProblems2018);
+        mcc.setDatasets(DatasetLists.mtscProblems2018HighDimensions);
         mcc.readInClassifiers(new String[] {"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
                 "STC"
-            //    , "MSTC_I"
+               ,  "MSTC_I"
+                , "MSTC-500_I"
+               // , "MSTC-LIN_I"
+                , "SEL-MSTC_I"
+                , "SEL-MSTC_D"
 
-            , "MSTC-BIN_I"
+             //   , "MSTC_D"
+  //              , "MSTC_X"
+
+
+
 
 
 
@@ -574,7 +582,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
                //     , "MSTC-BIN-ONER_I"
 
               //      , "MSTC-CLASS-BIN_I"
-            //    , "ENS-MSTC_I"
+              //  , "ENS-MSTC_I"
 
 
              //   ,"5BIN-MSTC_I"
@@ -583,10 +591,10 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
     }
 
     private static void mainTSC(String[] args) throws Exception{
-        String basePath = "C:/Users/fbu19zru/code/results_univariate_ts/";
+        String basePath = "C:/Users/fbu19zru/code/results_univariate_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-TSC", 1);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-Final-TSC", 1);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -595,18 +603,18 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
         mcc.setDatasets(DatasetLists.tscProblems112);
-        mcc.readInClassifiers(new String[] {"HC2","ROCKET","RISE","TSF","cBOSS" ,
+        mcc.readInClassifiers(new String[] {//"HC2","ROCKET","RISE","TSF","cBOSS" ,
                 "STC"
-              //  , "MSTC_I"
-                , "MSTC-BIN_I"
-                , "MSTC-BIN-IO_I"
+                , "MSTC_I"
+                , "MSTC-LIN_I"
+
               //  , "MSTC-BIN-IO-FIL_I"
              //   , "MSTC-BIN-IO-LIN_I"
             //    , "MSTC-CLASS-BIN-IO_I"
             //    , "MSTC-CLASS-BIN-IO-FIL_I"
             //    , "MSTC-CLASS-BIN-IO-LIN_I"
             //    , "ENS-MSTC-BIN_I"
-                   ,"5BIN-MSTC_I"
+            //       ,"5BIN-MSTC_I"
 
 
         }, basePath);

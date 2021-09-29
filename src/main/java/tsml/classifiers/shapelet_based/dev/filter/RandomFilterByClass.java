@@ -61,7 +61,7 @@ public class RandomFilterByClass extends RandomFilter {
 
         int[] classesArray  = instances.getClassIndexes();
 
-        this.stopCriteria = new Combined();
+        Combined stopCriteria = new Combined();
         this.params = classParams;
         this.start = System.nanoTime();
         iteration = 0;
@@ -101,7 +101,7 @@ public class RandomFilterByClass extends RandomFilter {
 
                 averageQuality = shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
                 System.out.println(averageQuality  + " " + shapelets.size());
-                if (this.stopCriteria.stop()){
+                if (stopCriteria.stop()){
                     return shapelets;
                 }
 

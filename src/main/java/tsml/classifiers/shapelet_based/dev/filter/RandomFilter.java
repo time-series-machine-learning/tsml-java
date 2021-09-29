@@ -16,8 +16,11 @@ public class RandomFilter extends ShapeletFilterMV {
     protected int iteration;
     protected double averageQuality;
     protected MSTC.ShapeletParams params;
-    protected StopCriteria stopCriteria;
     protected ArrayList<ShapeletMV> shapelets;
+
+    protected IterationsStopCriteria iterationsStopCriteria;
+    protected ContractedStopCriteria contractedStopCriteria;
+    protected QualityStopCriteria qualityStopCriteria;
 
     @Override
     public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
@@ -25,6 +28,9 @@ public class RandomFilter extends ShapeletFilterMV {
 
         this.start = System.nanoTime();
         this.params = params;
+        this.iterationsStopCriteria = new IterationsStopCriteria();
+        this.contractedStopCriteria = new ContractedStopCriteria();
+        this.qualityStopCriteria = new QualityStopCriteria();
 
         ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
@@ -43,15 +49,11 @@ public class RandomFilter extends ShapeletFilterMV {
 
         int[] classesArray  = instances.getClassIndexes();
 
-        this.stopCriteria = new Combined();
         this.params = params;
         this.start = System.nanoTime();
-        iteration = 0;
+        this.iteration = 0;
+        int numShapeletsEvaluated = 0;
         while (true){ // Iterate
-
-        //    if (iteration % (params.maxIterations/10) == 0){
-         //       System.out.println("Iteration: "+ iteration);
-        //    }
 
             //Get random shapelet
             int shapeletSize = params.min + (int)(MSTC.RAND.nextInt(params.max-params.min));
@@ -62,32 +64,50 @@ public class RandomFilter extends ShapeletFilterMV {
                     classesArray[instanceIndex],
                     instances.get(instanceIndex));
             double q = quality.calculate (fun, candidate);
-         //   System.out.println(q);
-            //    if (!isSimilar(shapelets, candidate,type,params.minDist)){
+            numShapeletsEvaluated++;
 
-            if (q>0){
+            if (q>0 || params.allowZeroQuality){
                 candidate.setQuality(q);
                 shapelets.add(candidate);
 
             }
 
-            //   }
-
-            if (iteration % 1000 == 0){
-                Collections.sort(shapelets);
-                if ( shapelets.size()>params.k) shapelets.subList(params.k,shapelets.size()).clear();
-                this.shapelets = removeSelfSimilar(fun,this.shapelets);
-
-                averageQuality = shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
-                System.out.println("It.:" + iteration +  " Avg. Quality: " + averageQuality  +
-                        " Num shapelets: " + shapelets.size());
-                if (this.stopCriteria.stop()){
-                    return shapelets;
-                }
-
+            if (this.iteration % 1000 == 0){
+                reorderShapelets(fun);
             }
-            iteration++;
+            if (this.iterationsStopCriteria.stop()){
+                reorderShapelets(fun);
+                System.out.println("Max iterations reached ");
+                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                return shapelets;
+            }
+            if (this.contractedStopCriteria.stop()){
+                reorderShapelets(fun);
+                System.out.println("Contract time reached");
+                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                return shapelets;
+            }
+
+         /*   if (this.qualityStopCriteria.stop()){
+                reorderShapelets(fun);
+                System.out.println("Quality reached");
+                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                return shapelets;
+            }*/
+
+            this.iteration++;
         }
+    }
+
+    protected void reorderShapelets(ShapeletFunctions fun){
+        Collections.sort(this.shapelets);
+        if ( this.shapelets.size()>this.params.k)
+            this.shapelets.subList(this.params.k,this.shapelets.size()).clear();
+        this.shapelets = removeSelfSimilar(fun,this.shapelets);
+
+        this.averageQuality = this.shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
+        System.out.println("It.:" + this.iteration +  " Avg. Quality: " + this.averageQuality  +
+               " Num shapelets: " + this.shapelets.size());
     }
 
     protected static ArrayList<ShapeletMV> removeSelfSimilar(ShapeletFunctions fun, ArrayList<ShapeletMV> shapelets) {
@@ -120,23 +140,23 @@ public class RandomFilter extends ShapeletFilterMV {
         public boolean stop();
     }
 
-    class Iterations implements StopCriteria{
+    class IterationsStopCriteria implements StopCriteria{
         public boolean stop(){
             return iteration>=params.maxIterations;
         }
     }
 
-    class Contracted implements StopCriteria{
+    class ContractedStopCriteria implements StopCriteria{
         @Override
         public boolean stop() {
             return withinTrainContract(start);
         }
     }
 
-    class BestFound implements StopCriteria{
+    class QualityStopCriteria implements StopCriteria{
         @Override
         public boolean stop() {
-            return averageQuality>0.999;
+            return shapelets.size() >= params.k*0.9 && averageQuality>0.95;
         }
     }
 
@@ -161,7 +181,7 @@ public class RandomFilter extends ShapeletFilterMV {
     class Combined implements StopCriteria{
         @Override
         public boolean stop() {
-            return shapelets.size()>0 && (iteration>=params.maxIterations ||
+            return  (iteration>=params.maxIterations ||
                     withinTrainContract(start));
         }
     }

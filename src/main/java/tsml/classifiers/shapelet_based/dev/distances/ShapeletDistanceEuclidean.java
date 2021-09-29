@@ -1,14 +1,8 @@
 package tsml.classifiers.shapelet_based.dev.distances;
 
-import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
-
 public class ShapeletDistanceEuclidean implements ShapeletDistanceFunction {
 
-    protected ShapeletFunctions fun;
 
-    public ShapeletDistanceEuclidean(ShapeletFunctions fun){
-        this.fun = fun;
-    }
 
     @Override
     public double calculate(double[] shapelet, double[] instance) {

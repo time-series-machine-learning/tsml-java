@@ -45,6 +45,14 @@ public class TimeSeriesInstances implements Iterable<TimeSeriesInstance>, Serial
     private int maxLength;
     private int maxNumDimensions;
 
+    public TimeSeriesInstances(double[][][] rawData, int[] targetValues) {
+        int index = 0;
+        for (double[][] series : rawData) {
+            //using the add function means all stats should be correctly counted.
+            seriesCollection.add(new TimeSeriesInstance(series, targetValues[index++]));
+        }
+    }
+
     /**
      * Returns the highest number of dimensions from the instances in the data.
      *

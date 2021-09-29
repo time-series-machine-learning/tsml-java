@@ -32,6 +32,8 @@ public class EnsembleMSTC extends AbstractEnsembleTS  {
             params.classifier = MSTC.AuxClassifiers.LINEAR;
             params.quality = MSTC.ShapeletQualities.GAIN_BINARY;
             params.contractTimeHours = 1;
+            params.k = 100;
+
             classifiers[i] = new MSTC(params);
         }
 

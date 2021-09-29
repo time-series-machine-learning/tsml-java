@@ -28,8 +28,12 @@ import experiments.data.DatasetLoading;
 import tsml.classifiers.*;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.EnsembleMSTC;
 import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.CombinedEnsembleMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.ensemble.EnsembleMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.DistanceMatrixMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.DistanceMatrixPairsMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.RandomDimensionSelectionMSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.TrainDimensionSelectionMSTC;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSReader;
 import tsml.data_containers.utilities.TimeSeriesResampler;
@@ -248,8 +252,16 @@ public class ExperimentsTS {
 
         if (expSettings.classifierName.contains("ENS-MSTC")){
             classifier = new EnsembleMSTC(getMSTCParams(expSettings, data));
+        }else if  (expSettings.classifierName.contains("DM-MSTC")) {
+            classifier = new DistanceMatrixMSTC(expSettings, getMSTCParams(expSettings, data));
+        }else if  (expSettings.classifierName.contains("DMP-MSTC")) {
+            classifier = new DistanceMatrixPairsMSTC(expSettings, getMSTCParams(expSettings, data));
         }else if  (expSettings.classifierName.contains("5BIN-MSTC")) {
             classifier = new CombinedEnsembleMSTC(getMSTCParams(expSettings, data));
+        }else if  (expSettings.classifierName.contains("RND-MSTC")) {
+            classifier = new RandomDimensionSelectionMSTC(expSettings, getMSTCParams(expSettings, data));
+        }else if  (expSettings.classifierName.contains("SEL-MSTC")) {
+            classifier = new TrainDimensionSelectionMSTC(expSettings, getMSTCParams(expSettings, data));
         }else{
             classifier = new MSTC(getMSTCParams(expSettings, data));
         }
@@ -272,29 +284,25 @@ public class ExperimentsTS {
 //        int numShapelets = Math.min(10000,Math.max(500,(int)Math.sqrt(n*m*c)));
         int numShapelets = 10*n < 1000 ? 10*n: 1000;
 
-        System.out.println("Shapelets " + numShapelets);
-
         MSTC.ShapeletParams params = new MSTC.ShapeletParams(numShapelets,
-                3,Math.min(m-1,1000),
-                100000,0.01,4, true,
-                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN,
-               // MSTC.ShapeletDistances.IMPROVED,
+                3,
+                Math.min(m-1,500),
+                1000000,expSettings.contractTimeHours,
+                MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
                 MSTC.ShapeletFactories.INDEPENDENT,
                 MSTC.AuxClassifiers.ROT);
 
 
-        if (expSettings.classifierName.contains("EXH")){
-            params.filter = MSTC.ShapeletFilters.EXHAUSTIVE;
-        }
-
         // Shapelet dependant
         if (expSettings.classifierName.contains("_D")){
             params.type =  MSTC.ShapeletFactories.DEPENDANT;
+            params.allowZeroQuality = true;
+        }
+        if (expSettings.classifierName.contains("_X")){
+            params.type =  MSTC.ShapeletFactories.DIMENSION_DEPENDANT;
+            params.allowZeroQuality = true;
         }
 
-        if (expSettings.classifierName.contains("1M")){
-            params.maxIterations =  1000000;
-        }
 
         // Binary quality
         if (expSettings.classifierName.contains("BIN")){
@@ -314,38 +322,25 @@ public class ExperimentsTS {
 
         }
 
-
-        // Original STC orderline code
-   /*     if (expSettings.classifierName.contains("OL")){
-            params.quality =  MSTC.ShapeletQualities.ORDER_LINE;
-        }
-
-        if (expSettings.classifierName.contains("OLB")){
-            params.quality =  MSTC.ShapeletQualities.ORDER_LINE_BINARY;
-        }
-*/
-
         // Split shapelets by class
         if (expSettings.classifierName.contains("CLASS")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_CLASS;
             params.maxIterations =10000*data.train.numClasses();
         }
-        if (expSettings.classifierName.contains("FIL")){
-            params.classifier = MSTC.AuxClassifiers.FILTERED;
-        }
+
         if (expSettings.classifierName.contains("LIN")){
             params.classifier = MSTC.AuxClassifiers.LINEAR;
+        }
+        if (expSettings.classifierName.contains("ENC")){
+            params.classifier = MSTC.AuxClassifiers.LINEAR;
+            params.k = Math.min(10000,Math.max(500,(int)Math.sqrt(n*m*c)));
+            params.allowZeroQuality = true;
         }
 
         // Split shapelets by class and series (only for independent)
         if (expSettings.classifierName.contains("SER")){
             params.filter =  MSTC.ShapeletFilters.RANDOM_BY_SERIES;
             params.maxIterations = 10000*data.train.numClasses()*data.train.getMaxNumDimensions();
-        }
-
-        // Use rotational forest for classification
-        if (expSettings.classifierName.contains("ROT")){
-            params.classifier =  MSTC.AuxClassifiers.ROT;
         }
 
 
@@ -1041,6 +1036,9 @@ public class ExperimentsTS {
 
         @Parameter(names={"-l", "--logLevel"}, description = "log level")
         private String logLevelStr = null;
+
+        @Parameter(names={"-cth", "--contractTimeHours"}, description = "Contract time in hours")
+        private int contractTimeHours = 1;
 
         private Level logLevel = null;
 
