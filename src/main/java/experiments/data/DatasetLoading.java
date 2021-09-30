@@ -488,8 +488,7 @@ public class DatasetLoading {
             String zipFilePath = folderPathString + ".zip";
             unzip(zipFilePath, folderPathString);
             File zipFile = new File(zipFilePath);
-            Boolean deleted= zipFile.delete();
-            System.out.println(deleted);
+            zipFile.delete();
             f = new File(folderPathString);
         }
 
@@ -498,7 +497,6 @@ public class DatasetLoading {
 
             if (file.exists() && !file.isDirectory() ){
                 instances = loadDataThrowable(file);
-                System.out.println("loaded");
             }
             //instances = loadDataThrowable(filePathString);
             ;
