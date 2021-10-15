@@ -20,11 +20,10 @@
 package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-
-import java.util.concurrent.TimeUnit;
-
 import evaluation.tuning.ParameterSpace;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
+import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
@@ -33,15 +32,17 @@ import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.interval_based.DrCIF;
-import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.kernel_based.Arsenal;
+import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.*;
-import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -76,7 +77,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
     protected double alpha=4.0; // Weighting parameter for voting method
-    
+    private Resizer resizer;
     
     @Override
     public TechnicalInformation getTechnicalInformation() {
@@ -247,8 +248,37 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
+    @Override
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        if (!data.isEqualLength()) {
+            // pad with 0s
+            resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
+            TimeSeriesInstances padded = resizer.fitTransform(data);
+            data = padded;
+        }
+        setTSTrainData(data);
 
+        if(debug) {
+            printDebug(" Building HIVE-COTE with components: ");
+            for (EnsembleModule module : modules){
+                if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                    ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
+                printDebug(module.getModuleName()+" ");
+            }
+            printDebug(" \n ");
+        }
 
+        if (trainTimeContract){
+            printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
+            setupContracting();
+        }
+
+        super.buildClassifier(data);
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished HIVE-COTE Build with train time " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
+
+    }
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
