@@ -689,7 +689,7 @@ public class ClassifierLists {
      */
     public static String[] standard= {
         "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
-            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN"};
+            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN","NB","BN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(ExperimentalArguments exp){
         String classifier=exp.estimatorName;
