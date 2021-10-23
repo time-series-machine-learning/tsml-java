@@ -88,6 +88,10 @@ public class EigenvalueDecomposition
    */
   private transient double cdivr, cdivi;
 
+  // added by MM for KShape
+  public static int maxIter = -1;
+
+
   /** 
    * Symmetric Householder reduction to tridiagonal form.
    * <p/>
@@ -474,6 +478,9 @@ public class EigenvalueDecomposition
 
     int iter = 0;
     while (n >= low) {
+
+      if (iter == maxIter)
+        break;
 
       // Look for single small sub-diagonal element
 

@@ -62,6 +62,22 @@ public class ArrayUtilities {
         return array;
     }
 
+    public static double[][] oneHot(int length, int[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][indicies[i]] = 1;
+        }
+        return array;
+    }
+
+    public static double[][] oneHot(int length, double[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][(int) indicies[i]] = 1;
+        }
+        return array;
+    }
+
     public static void add(double[] src, double[] addend) {
         if(src.length < addend.length) {
             throw new IllegalArgumentException();
@@ -123,6 +139,32 @@ public class ArrayUtilities {
         double sum = 0;
         for(int i = 0; i < array.length; i++) {
             sum += array[i];
+        }
+        return sum;
+    }
+
+    public static double sumPow2(double[] array) {
+        double sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += Math.pow(array[i], 2);
+        }
+        return sum;
+    }
+
+    public static double[] cumsum(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = array[0];
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + array[i];
+        }
+        return sum;
+    }
+
+    public static double[] cumsumPow2(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = Math.pow(array[0], 2);
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + Math.pow(array[i], 2);;
         }
         return sum;
     }

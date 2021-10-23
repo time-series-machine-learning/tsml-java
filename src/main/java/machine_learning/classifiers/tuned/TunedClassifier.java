@@ -23,6 +23,8 @@ import evaluation.tuning.ParameterResults;
 import evaluation.tuning.ParameterSet;
 import evaluation.tuning.ParameterSpace;
 import evaluation.tuning.Tuner;
+import experiments.ClassifierExperiments;
+import experiments.ExperimentalArguments;
 import tsml.classifiers.ParameterSplittable;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
@@ -295,9 +297,9 @@ public class TunedClassifier extends EnhancedAbstractClassifier
 //        }
         
 
-        experiments.Experiments.ExperimentalArguments exp = new experiments.Experiments.ExperimentalArguments();
+        ExperimentalArguments exp = new ExperimentalArguments();
         exp.checkpointing = true;
-        exp.classifierName = "TunedSMO";
+        exp.estimatorName = "TunedSMO";
         exp.datasetName = "hayes-roth";
         exp.foldId = 1;
         exp.generateErrorEstimateOnTrainSet = true;
@@ -306,7 +308,7 @@ public class TunedClassifier extends EnhancedAbstractClassifier
 //        
 //        exp.singleParameterID = 1;
         
-        experiments.Experiments.setupAndRunExperiment(exp);
+        ClassifierExperiments.setupAndRunExperiment(exp);
     }
 
     

@@ -18,7 +18,6 @@
 package experiments;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 public class ShapeDTWExperiments {
@@ -33,7 +32,7 @@ public class ShapeDTWExperiments {
                 experimentArguments[2] = "--classifierName=NN_ShapeDTW_Raw";
                 experimentArguments[3] = "--datasetName=" + scan.nextLine();
                 experimentArguments[4] = "--fold=10";
-                Experiments.main(experimentArguments);
+                ClassifierExperiments.main(experimentArguments);
             }
             scan.close();
         } catch (Exception e) {

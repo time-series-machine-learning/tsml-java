@@ -19,6 +19,7 @@ package evaluation.tuning;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.Evaluator;
+import evaluation.storage.EstimatorResults;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
 import experiments.data.DatasetLoading;
@@ -49,7 +50,7 @@ public class Tuner
     //Main 3 design choices.
     private ParameterSearcher searcher;                      //default = new GridSearcher();
     private Evaluator evaluator;                             //default = new CrossValidationEvaluator();
-    private Function<ClassifierResults, Double> evalMetric;  //default = ClassifierResults.GETTER_Accuracy;
+    private Function<EstimatorResults, Double> evalMetric;   //default = ClassifierResults.GETTER_Accuracy;
     
     private ParameterResults bestParaSetAndResults = null;
     
@@ -197,11 +198,11 @@ public class Tuner
         this.evaluator = evaluator;
     }
 
-    public Function<ClassifierResults, Double> getEvalMetric() {
+    public Function<EstimatorResults, Double> getEvalMetric() {
         return evalMetric;
     }
 
-    public void setEvalMetric(Function<ClassifierResults, Double> evalMetric) {
+    public void setEvalMetric(Function<EstimatorResults, Double> evalMetric) {
         this.evalMetric = evalMetric;
     }
     

@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -14,17 +14,19 @@
  * You should have received a copy of the GNU General Public License along
  * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package machine_learning.clusterers;
+
+import experiments.data.DatasetLoading;
+import weka.clusterers.NumberOfClustersRequestable;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-
-import experiments.data.DatasetLoading;
-import weka.core.Instance;
-import weka.core.Instances;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
 import static utilities.InstanceTools.deleteClassAttribute;
@@ -35,7 +37,7 @@ import static utilities.InstanceTools.deleteClassAttribute;
  *
  * @author Matthew Middlehurst
  */
-public class KMeans extends AbstractVectorClusterer{
+public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClustersRequestable {
 
     //MacQueen, James.
     //"Some methods for classification and analysis of multivariate observations."
@@ -45,7 +47,6 @@ public class KMeans extends AbstractVectorClusterer{
     private boolean findBestK = false;
     private boolean refinedInitialCenters = false;
     private int numSubsamples = 30;
-    private int seed = Integer.MIN_VALUE;
     private int maxIterations = 200;
 
     private int numInstances;
@@ -54,66 +55,63 @@ public class KMeans extends AbstractVectorClusterer{
 
     private Instances clusterCenters;
 
-    public KMeans(){}
+    public KMeans() {
+    }
 
     //Used when selecting refined initial centers.
-    private KMeans(Instances initialCenters){
+    private KMeans(Instances initialCenters) {
         super();
         this.clusterCenters = new Instances(initialCenters);
         this.hasInitialCenters = true;
     }
 
-    public Instances getClusterCenters(){
+    public Instances getClusterCenters() {
         return clusterCenters;
     }
 
     @Override
-    public int numberOfClusters(){
+    public int numberOfClusters() {
         return k;
     }
 
-    public void setNumberOfClusters(int n){ k = n; }
+    @Override
+    public void setNumClusters(int numClusters) throws Exception {
+        k = numClusters;
+    }
 
-    public void setFindBestK(boolean b){
+    public void setFindBestK(boolean b) {
         this.findBestK = b;
     }
 
-    public void setRefinedInitialMedoids(boolean b){
+    public void setRefinedInitialMedoids(boolean b) {
         this.refinedInitialCenters = b;
     }
 
-    public void setNumSubsamples(int n){
+    public void setNumSubsamples(int n) {
         this.numSubsamples = n;
     }
 
-    public void setSeed(int seed){ this.seed = seed; }
-
-    public void setMaxIterations(int n){
+    public void setMaxIterations(int n) {
         this.maxIterations = n;
     }
 
     @Override
     public void buildClusterer(Instances data) throws Exception {
-        if (copyInstances){
-            data = new Instances(data);
-        }
+        super.buildClusterer(data);
 
-        deleteClassAttribute(data);
+        numInstances = train.size();
+        assignments = new double[numInstances];
 
-        distFunc.setInstances(data);
-        numInstances = data.size();
-        assignments = new int[numInstances];
+        if (numInstances <= k) {
+            clusterCenters = new Instances(train);
 
-        if (numInstances <= k){
-            clusterCenters = new Instances(data);
-
-            for (int i = 0; i < numInstances; i++){
+            for (int i = 0; i < numInstances; i++) {
                 assignments[i] = i;
             }
 
             clusters = new ArrayList[k];
 
-            for (int i = 0; i < k; i++){
+            for (int i = 0; i < k; i++) {
                 clusters[i] = new ArrayList();
             }
 
@@ -129,36 +127,31 @@ public class KMeans extends AbstractVectorClusterer{
             return;
         }
 
-        if (normaliseData){
-            normaliseData(data);
-        }
-
-        if (findBestK){
+        if (findBestK) {
             //Builds clusters using multiple values of k and keeps the best one
-            findBestK(data);
-        }
-        else{
+            findBestK(train);
+        } else {
             //Pick initial cluster centers.
-            if (refinedInitialCenters){
-                initialClusterCentersRefined(data);
-            }
-            else if (!hasInitialCenters){
-                initialClusterCenters(data);
+            if (!hasInitialCenters) {
+                if (refinedInitialCenters) {
+                    initialClusterCentersRefined(train);
+                } else {
+                    initialClusterCenters(train);
+                }
             }
 
             boolean finished = false;
             int iterations = 0;
 
             //Change cluster centers until cluster membership no longer changes
-            while(!finished){
-                centerDistances = createCenterDistances(data);
+            while (!finished) {
+                centerDistances = createCenterDistances(train);
 
                 //If no clusters changed membership.
-                if (!calculateClusterMembership() || iterations == maxIterations){
+                if (!calculateClusterMembership() || iterations == maxIterations) {
                     finished = true;
-                }
-                else{
-                    selectClusterCenters(data);
+                } else {
+                    selectClusterCenters(train);
                 }
 
                 iterations++;
@@ -166,16 +159,42 @@ public class KMeans extends AbstractVectorClusterer{
         }
     }
 
+    @Override
+    public int clusterInstance(Instance inst) throws Exception {
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
+
+        if (normaliseData)
+            normaliseData(newInst);
+
+        double minDist = Double.MAX_VALUE;
+        int closestCluster = 0;
+        for (int i = 0; i < clusterCenters.size(); ++i) {
+            double dist = distFunc.distance(inst, clusterCenters.get(i));
+
+            if (dist < minDist) {
+                minDist = dist;
+                closestCluster = i;
+            }
+        }
+
+        return closestCluster;
+    }
+
     //Returns the sum of the squared distance from each point to its cluster
     //center
-    public double clusterSquaredDistance(Instances data){
+    public double clusterSquaredDistance(Instances data) {
         distFunc.setInstances(data);
         double distSum = 0;
 
-        for (int i = 0; i < k; i++){
-            for(int n = 0; n < clusters[i].size(); n++){
-                double dist = distFunc.distance(clusterCenters.get(i),data.get(clusters[i].get(n)));
-                distSum += dist*dist;
+        for (int i = 0; i < k; i++) {
+            for (int n = 0; n < clusters[i].size(); n++) {
+                double dist = distFunc.distance(clusterCenters.get(i), data.get(clusters[i].get(n)));
+                distSum += dist * dist;
             }
         }
 
@@ -183,13 +202,14 @@ public class KMeans extends AbstractVectorClusterer{
     }
 
     //Create distances to cluster centers
-    private double[][] createCenterDistances(Instances data){
+    private double[][] createCenterDistances(Instances data) {
+        distFunc.setInstances(data);
         double[][] centerDists = new double[k][numInstances];
 
-        for (int i = 0; i < numInstances; i++){
+        for (int i = 0; i < numInstances; i++) {
             Instance first = data.get(i);
 
-            for (int n = 0; n < k; n++){
+            for (int n = 0; n < k; n++) {
                 centerDists[n][i] = distFunc.distance(first, clusterCenters.get(n));
             }
         }
@@ -198,25 +218,24 @@ public class KMeans extends AbstractVectorClusterer{
     }
 
     //Randomly select initial cluster centers
-    private void initialClusterCenters(Instances data){
+    private void initialClusterCenters(Instances data) {
         ArrayList<Integer> indexes = new ArrayList(numInstances);
 
-        for (int i = 0; i < numInstances; i++){
+        for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
         }
 
         Random rand;
-
-        if (seed == Integer.MIN_VALUE){
+        if (!seedClusterer) {
             rand = new Random();
         } else {
             rand = new Random(seed);
         }
 
-        clusterCenters = new Instances(data,0);
+        clusterCenters = new Instances(data, 0);
         Collections.shuffle(indexes, rand);
 
-        for (int i = 0; i < k; i++){
+        for (int i = 0; i < k; i++) {
             clusterCenters.add(data.get(indexes.get(i)));
         }
     }
@@ -229,32 +248,31 @@ public class KMeans extends AbstractVectorClusterer{
     //Refined selection on initial cluster centers using the method above,
     //running k-means over multiple subsamples then again on the resulting
     //centers selecting the best perfoming one
-    private void initialClusterCentersRefined(Instances data) throws Exception{
-        int subsampleSize = numInstances/10;
+    private void initialClusterCentersRefined(Instances data) throws Exception {
+        int subsampleSize = numInstances / 10;
 
-        if (subsampleSize < k){
+        if (subsampleSize < k) {
             subsampleSize = k;
         }
 
         ArrayList<Integer> indexes = new ArrayList(numInstances);
 
-        for (int i = 0; i < numInstances; i++){
+        for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
         }
 
         Random rand;
-
-        if (seed == Integer.MIN_VALUE){
+        if (!seedClusterer) {
             rand = new Random();
         } else {
             rand = new Random(seed);
         }
 
         //Randomly select centers for the subsample data
-        Instances initialClusterCenters = new Instances(data,k);
+        Instances initialClusterCenters = new Instances(data, k);
         Collections.shuffle(indexes, rand);
 
-        for (int i = 0; i < k; i++){
+        for (int i = 0; i < k; i++) {
             initialClusterCenters.add(data.get(indexes.get(i)));
         }
 
@@ -262,49 +280,50 @@ public class KMeans extends AbstractVectorClusterer{
 
         //Get the resulting centers from running k-means on multiple random
         //subsamples of the data
-        for (int i = 0; i < numSubsamples; i++){
+        for (int i = 0; i < numSubsamples; i++) {
             Collections.shuffle(indexes, rand);
             Instances subsample = new Instances(data, subsampleSize);
 
-            for (int n = 0; n < subsampleSize; n++){
+            for (int n = 0; n < subsampleSize; n++) {
                 subsample.add(data.get(indexes.get(n)));
             }
 
             boolean finished = false;
 
-            while (!finished){
+            while (!finished) {
                 KMeans kmeans = new KMeans(initialClusterCenters);
-                kmeans.setNumberOfClusters(k);
+                kmeans.setNumClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
                 kmeans.setRefinedInitialMedoids(false);
-                kmeans.setSeed(seed);
+                if (seedClusterer)
+                    kmeans.setSeed(seed + (i + 1) * 37);
                 kmeans.buildClusterer(subsample);
 
                 boolean emptyCluster = false;
 
                 //If any cluster is empty set the initial cluster centre to the
                 //point with the max distance from its centre
-                for (int n = 0; n < k; n++){
-                    if (kmeans.clusters[n].isEmpty()){
+                for (int n = 0; n < k; n++) {
+                    if (kmeans.clusters[n].isEmpty()) {
                         emptyCluster = true;
                         double maxDist = 0;
                         int maxIndex = -1;
 
-                        for (int g = 0; g < subsampleSize; g++){
-                            double dist = kmeans.centerDistances[kmeans.assignments[g]][g];
+                        for (int g = 0; g < subsampleSize; g++) {
+                            double dist = kmeans.centerDistances[(int) kmeans.assignments[g]][g];
 
-                            if (dist > maxDist){
+                            if (dist > maxDist) {
                                 boolean contains = false;
 
-                                for (int j = 0; j < k; j++){
-                                    if (Arrays.equals(initialClusterCenters.get(j).toDoubleArray(),subsample.get(g).toDoubleArray())){
+                                for (int j = 0; j < k; j++) {
+                                    if (Arrays.equals(initialClusterCenters.get(j).toDoubleArray(), subsample.get(g).toDoubleArray())) {
                                         contains = true;
                                         break;
                                     }
                                 }
 
-                                if (!contains){
+                                if (!contains) {
                                     maxDist = dist;
                                     maxIndex = g;
                                 }
@@ -317,17 +336,17 @@ public class KMeans extends AbstractVectorClusterer{
 
                 subsampleCenters[i] = kmeans.clusterCenters;
 
-                if (!emptyCluster){
+                if (!emptyCluster) {
                     finished = true;
                 }
             }
         }
 
         //Create Instance object for subsample centers
-        Instances centers = new Instances(data,numSubsamples*k);
+        Instances centers = new Instances(data, numSubsamples * k);
 
-        for (int i = 0; i < numSubsamples; i++){
-            for (int n = 0; n < k; n++){
+        for (int i = 0; i < numSubsamples; i++) {
+            for (int n = 0; n < k; n++) {
                 centers.add(subsampleCenters[i].get(n));
             }
         }
@@ -338,18 +357,19 @@ public class KMeans extends AbstractVectorClusterer{
         double minDist = Double.MAX_VALUE;
         int minIndex = -1;
 
-        for (int i = 0; i < numSubsamples; i++){
+        for (int i = 0; i < numSubsamples; i++) {
             KMeans kmeans = new KMeans(subsampleCenters[i]);
-            kmeans.setNumberOfClusters(k);
+            kmeans.setNumClusters(k);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
             kmeans.setRefinedInitialMedoids(false);
-            kmeans.setSeed(seed);
+            if (seedClusterer)
+                kmeans.setSeed(seed + (i + 1) * 137);
             kmeans.buildClusterer(centers);
 
             double dist = kmeans.clusterSquaredDistance(centers);
 
-            if (dist < minDist){
+            if (dist < minDist) {
                 minDist = dist;
                 minIndex = i;
             }
@@ -358,16 +378,16 @@ public class KMeans extends AbstractVectorClusterer{
         clusterCenters = subsampleCenters[minIndex];
     }
 
-    private boolean calculateClusterMembership(){
+    private boolean calculateClusterMembership() {
         boolean membershipChange = false;
 
         //Set membership of each point to the closest cluster center
-        for (int i = 0; i < numInstances; i++){
+        for (int i = 0; i < numInstances; i++) {
             double minDist = Double.MAX_VALUE;
             int minIndex = -1;
 
-            for (int n = 0; n < k; n++){
-                if (centerDistances[n][i] < minDist){
+            for (int n = 0; n < k; n++) {
+                if (centerDistances[n][i] < minDist) {
                     minDist = centerDistances[n][i];
                     minIndex = n;
                 }
@@ -375,7 +395,7 @@ public class KMeans extends AbstractVectorClusterer{
 
             //If membership of any point changed return true to keep
             //looping
-            if (minIndex != assignments[i]){
+            if (minIndex != assignments[i]) {
                 assignments[i] = minIndex;
                 membershipChange = true;
             }
@@ -385,17 +405,12 @@ public class KMeans extends AbstractVectorClusterer{
         //points inside the cluster
         clusters = new ArrayList[k];
 
-        for (int i = 0; i < k; i++){
+        for (int i = 0; i < k; i++) {
             clusters[i] = new ArrayList();
         }
 
-        for (int i = 0; i < numInstances; i++){
-            for (int n = 0; n < k; n++){
-                if(n == assignments[i]){
-                    clusters[n].add(i);
-                    break;
-                }
-            }
+        for (int i = 0; i < numInstances; i++) {
+            clusters[(int) assignments[i]].add(i);
         }
 
         return membershipChange;
@@ -403,18 +418,18 @@ public class KMeans extends AbstractVectorClusterer{
 
     //Select the new cluster centers for each cluster to be the mean of each
     //attribute of points in the cluster.
-    private void selectClusterCenters(Instances data){
-        for (int i = 0; i < k; i++){
+    private void selectClusterCenters(Instances data) {
+        for (int i = 0; i < k; i++) {
             Instance center = clusterCenters.get(i);
 
-            for (int n = 0; n < data.numAttributes()-1; n++){
+            for (int n = 0; n < data.numAttributes() - 1; n++) {
                 double sum = 0;
 
-                for (Integer g : clusters[i]){
+                for (Integer g : clusters[i]) {
                     sum += data.get(g).value(n);
                 }
 
-                center.setValue(n, sum/clusters[i].size());
+                center.setValue(n, sum / clusters[i].size());
             }
         }
     }
@@ -425,28 +440,29 @@ public class KMeans extends AbstractVectorClusterer{
 
     //Method of finding the best value for k based on the silhouette method
     //above
-    private void findBestK(Instances data) throws Exception{
+    private void findBestK(Instances data) throws Exception {
         int maxK = 10;
         double bestSilVal = 0;
 
         double[][] distMatrix = createDistanceMatrix(data, distFunc);
 
         //For each value of K
-        for (int i = 2; i <= maxK; i++){
+        for (int i = 2; i <= maxK; i++) {
             KMeans kmeans = new KMeans();
-            kmeans.setNumberOfClusters(i);
+            kmeans.setNumClusters(i);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
             kmeans.setRefinedInitialMedoids(refinedInitialCenters);
-            kmeans.setSeed(seed);
+            if (seedClusterer)
+                kmeans.setSeed(seed + (i + 1) * 237);
             kmeans.buildClusterer(data);
 
             double totalSilVal = 0;
 
             //For each cluster created by k-means
-            for (int n = 0; n < i; n++){
+            for (int n = 0; n < i; n++) {
                 //For each point in the cluster
-                for (int g = 0; g < kmeans.clusters[n].size(); g++){
+                for (int g = 0; g < kmeans.clusters[n].size(); g++) {
                     double clusterDist = 0;
                     double minOtherClusterDist = Double.MAX_VALUE;
 
@@ -454,11 +470,10 @@ public class KMeans extends AbstractVectorClusterer{
 
                     //Find mean distance of the point to other points in its
                     //cluster
-                    for (int j = 0; j < kmeans.clusters[n].size(); j++){
-                        if (index > kmeans.clusters[n].get(j)){
+                    for (int j = 0; j < kmeans.clusters[n].size(); j++) {
+                        if (index > kmeans.clusters[n].get(j)) {
                             clusterDist += distMatrix[index][kmeans.clusters[n].get(j)];
-                        }
-                        else {
+                        } else {
                             clusterDist += distMatrix[kmeans.clusters[n].get(j)][index];
                         }
                     }
@@ -466,25 +481,24 @@ public class KMeans extends AbstractVectorClusterer{
                     clusterDist /= kmeans.clusters[n].size();
 
                     //Find the minimum distance of the point to other clusters
-                    for (int m = 0; m < i; m++){
-                        if(m == n){
+                    for (int m = 0; m < i; m++) {
+                        if (m == n) {
                             continue;
                         }
 
                         double otherClusterDist = 0;
 
-                        for (int j = 0; j < kmeans.clusters[m].size(); j++){
-                            if (index > kmeans.clusters[m].get(j)){
+                        for (int j = 0; j < kmeans.clusters[m].size(); j++) {
+                            if (index > kmeans.clusters[m].get(j)) {
                                 otherClusterDist += distMatrix[index][kmeans.clusters[m].get(j)];
-                            }
-                            else {
+                            } else {
                                 otherClusterDist += distMatrix[kmeans.clusters[m].get(j)][index];
                             }
                         }
 
                         otherClusterDist /= kmeans.clusters[m].size();
 
-                        if(otherClusterDist < minOtherClusterDist){
+                        if (otherClusterDist < minOtherClusterDist) {
                             minOtherClusterDist = otherClusterDist;
                         }
                     }
@@ -494,7 +508,7 @@ public class KMeans extends AbstractVectorClusterer{
                     double silVal = minOtherClusterDist - clusterDist;
                     double div = clusterDist;
 
-                    if(minOtherClusterDist > clusterDist){
+                    if (minOtherClusterDist > clusterDist) {
                         div = minOtherClusterDist;
                     }
 
@@ -503,7 +517,7 @@ public class KMeans extends AbstractVectorClusterer{
                 }
             }
 
-            if (totalSilVal > bestSilVal){
+            if (totalSilVal > bestSilVal) {
                 bestSilVal = totalSilVal;
                 clusterCenters = kmeans.clusterCenters;
                 assignments = kmeans.assignments;
@@ -513,7 +527,7 @@ public class KMeans extends AbstractVectorClusterer{
         }
     }
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         String[] datasets = {"Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\aggregation.arff",
                 "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\clustersynth.arff",
                 "Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\dptest1k.arff",
@@ -523,23 +537,23 @@ public class KMeans extends AbstractVectorClusterer{
         String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
         boolean output = true;
 
-        if (output){
+        if (output) {
             System.out.println("cd('Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\" +
                     "DensityPeakVector')");
             System.out.println("load('matlabCluster.mat')");
             System.out.println("k = [1,2,3,4,5,6,7,8,9,10]");
         }
 
-        for (int i = 0; i < datasets.length; i++){
+        for (int i = 0; i < datasets.length; i++) {
             Instances inst = DatasetLoading.loadDataNullable(datasets[i]);
-            inst.setClassIndex(inst.numAttributes()-1);
+            inst.setClassIndex(inst.numAttributes() - 1);
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);
             kmeans.setRefinedInitialMedoids(true);
-            kmeans.setSeed(1);
+            kmeans.setSeed(0);
             kmeans.buildClusterer(inst);
 
-            if(output){
+            if (output) {
                 System.out.println(names[i] + "c = " + Arrays.toString(kmeans.assignments));
                 System.out.println("figure");
                 System.out.println("scatter(" + names[i] + "x," + names[i] + "y,[],scatterColours(" + names[i] + "c))");

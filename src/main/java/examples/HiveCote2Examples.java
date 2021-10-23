@@ -1,12 +1,10 @@
 package examples;
 
-import experiments.Experiments;
+import experiments.ExperimentalArguments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.hybrids.HIVE_COTE;
 import utilities.ClassifierTools;
 import weka.core.Instances;
-
-import java.io.IOException;
 
 public class HiveCote2Examples {
 
@@ -22,7 +20,7 @@ public class HiveCote2Examples {
 
 
     public static void experimentClassBuild() {
-        Experiments.ExperimentalArguments exp;
+        ExperimentalArguments exp;
 
 
     }

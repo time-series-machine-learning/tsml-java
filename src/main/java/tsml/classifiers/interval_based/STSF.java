@@ -19,9 +19,15 @@ import evaluation.evaluators.CrossValidationEvaluator;
 import experiments.data.DatasetLoading;
 import machine_learning.classifiers.ContinuousIntervalTree;
 import tsml.classifiers.*;
+import tsml.data_containers.TSCapabilities;
+import tsml.data_containers.TSCapabilitiesHandler;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.transformers.ColumnNormalizer;
 import tsml.transformers.Differences;
 import tsml.transformers.PowerSpectrum;
+import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -41,8 +47,9 @@ import static utilities.Utilities.extractTimeSeries;
  * This classifier is Contractable, Checkpointable and can estimate performance from the train data internally.
  *
  * @author Matthew Middlehurst
-*/
-public class STSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable {
+ */
+public class STSF extends EnhancedAbstractClassifier implements TechnicalInformationHandler, TrainTimeContractable,
+        TSCapabilitiesHandler {
     //Static defaults
     private final static int DEFAULT_NUM_CLASSIFIERS=500;
 
@@ -67,6 +74,16 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     private int numInstances;
     private int newNumInstances;
 
+    /**
+     * Resizer to transform data if unequal length
+     */
+    private enum paddingType {ZERO, MEAN, MEAN_NOISE}
+    private enum paddingLength {MAX, MEDIAN, WEIGHTED_MEDIAN}
+    private paddingType chosenPType;
+    private paddingLength chosenPLen;
+    private Resizer resizer;
+
+    private int seriesLength;
     private boolean trainTimeContract = false;
     transient private long trainContractTimeNanos = 0;
     transient private long finalBuildtrainContractTimeNanos = 0;
@@ -79,10 +96,14 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     public STSF(){
         //STSF Has the capability to form train estimates
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
+        chosenPLen = paddingLength.MAX;
+        chosenPType = paddingType.ZERO;
     }
     public STSF(int s){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
         setSeed(s);
+        chosenPLen = paddingLength.MAX;
+        chosenPType = paddingType.ZERO;
     }
 
     /**
@@ -106,6 +127,22 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
+     * Methods to set the padding options for handling uneven length series
+     * @param pt paddingType enum
+     */
+    public void setPaddingType(paddingType pt){
+        chosenPType = pt;
+    }
+
+    /**
+     * Methods to set the padding options for handling uneven length series
+     * @param pl paddingLength enum
+     */
+    public void setPaddingLen(paddingLength pl){
+        chosenPLen = pl;
+    }
+
+    /**
      * Perhaps make this coherent with setOptions(String[] ar)?
      * @return String written to results files
      */
@@ -125,17 +162,17 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         if(getEstimateOwnPerformance())
             result+=",EstimateMethod,"+ trainEstimateMethod;
         return result;
- 
+
     }
 
     public void setNumTrees(int t){
         numClassifiers=t;
     }
 
- /**
-  * paper defining STSF
-  * @return TechnicalInformation
-  */
+    /**
+     * paper defining STSF
+     * @return TechnicalInformation
+     */
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation result;
@@ -145,6 +182,245 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         result.setValue(TechnicalInformation.Field.TITLE, "Fast and Accurate Time Series Classification Through Supervised Interval Search");
         result.setValue(TechnicalInformation.Field.JOURNAL, "IEEE International Conference on Data Mining");
         return result;
+    }
+
+    /**
+     * buildClassifier wrapper for TimeSeriesInstances.
+     *
+     * @param data TimeSeriesInstances training data.
+     * @author l-walker
+     */
+    @Override
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        System.out.println("Building STSF with TimeSeriesInstances");
+        // Test if classifier can handle data.
+        boolean canHandle = getTSCapabilities().test(data);
+        if (!canHandle)
+            throw new Exception("STSF cannot handle this type of data!");
+        long startTime=System.nanoTime();
+
+        if (!data.isEqualLength()) {
+            if (chosenPLen == paddingLength.MAX) {
+                if (chosenPType == paddingType.ZERO){
+                    resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
+                }
+                else if(chosenPType == paddingType.MEAN){
+                    resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.MeanPadMetric());
+                }
+                else if(chosenPType == paddingType.MEAN_NOISE){
+                    resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.MeanNoisePadMetric());
+                }
+            }
+            else if(chosenPLen == paddingLength.MEDIAN){
+                if (chosenPType == paddingType.ZERO){
+                    resizer = new Resizer(new Resizer.MedianResizeMetric(), new Resizer.FlatPadMetric(0));
+                }
+                else if(chosenPType == paddingType.MEAN){
+                    resizer = new Resizer(new Resizer.MedianResizeMetric(), new Resizer.MeanPadMetric());
+                }
+                else if(chosenPType == paddingType.MEAN_NOISE){
+                    resizer = new Resizer(new Resizer.MedianResizeMetric(), new Resizer.MeanNoisePadMetric());
+                }
+            }
+            else if(chosenPLen == paddingLength.WEIGHTED_MEDIAN){
+                if (chosenPType == paddingType.ZERO){
+                    resizer = new Resizer(new Resizer.WeightedMedianResizeMetric(), new Resizer.FlatPadMetric(0));
+                }
+                else if(chosenPType == paddingType.MEAN){
+                    resizer = new Resizer(new Resizer.WeightedMedianResizeMetric(), new Resizer.MeanPadMetric());
+                }
+                else if(chosenPType == paddingType.MEAN_NOISE){
+                    resizer = new Resizer(new Resizer.WeightedMedianResizeMetric(), new Resizer.MeanNoisePadMetric());
+                }
+            }
+            TimeSeriesInstances padded = resizer.fitTransform(data);
+            data = padded;
+        }
+
+        setTSTrainData(data);
+
+        // Set attributes
+        numInstances = data.numInstances();
+        trees = new ArrayList(numClassifiers);
+        intervals = new ArrayList();
+        testHolders = new ArrayList();
+        seriesLength = data.getMaxLength();
+
+        finalBuildtrainContractTimeNanos=trainContractTimeNanos;
+        //If contracted and estimating own performance, distribute the contract evenly between estimation and the final build
+        if(trainTimeContract && getEstimateOwnPerformance()){
+            finalBuildtrainContractTimeNanos/=2;
+            printLineDebug(" Setting final contract time to "+finalBuildtrainContractTimeNanos+" nanos");
+        }
+
+
+        TimeSeriesInstances[] representations = new TimeSeriesInstances[3];
+        representations[0] = data;
+
+        ArrayList<Integer>[] idxByClass = new ArrayList[data.getClassLabels().length];
+        for (int i = 0; i < idxByClass.length; i++){
+            idxByClass[i] = new ArrayList<>();
+        }
+        for (int i = 0; i < data.numInstances(); i++){
+            idxByClass[(int)data.get(i).getTargetValue()].add(i);
+        }
+
+        double average = (double)data.numInstances()/data.getClassLabels().length;
+        int[] instToAdd = new int[numInstances];
+        for (int i = 0; i < idxByClass.length; i++) {
+            if (idxByClass[i].size() < average) {
+                int n = idxByClass[i].size();
+                while (n < average) {
+                    instToAdd[idxByClass[i].get(rand.nextInt(idxByClass[i].size()))]++;
+                    n++;
+                }
+            }
+        }
+
+        newNumInstances = numInstances + sum(instToAdd);
+
+        ps = new PowerSpectrum();
+        representations[1] = ps.transform(representations[0]);
+        di = new Differences();
+        di.setSubtractFormerValue(true);
+        representations[2] = di.transform(representations[0]);
+
+        int classifiersBuilt = trees.size();
+
+        /** MAIN BUILD LOOP
+         *  For each base classifier
+         *      generate random intervals
+         *      do the transforms
+         *      build the classifier
+         * */
+        while(withinTrainContract(startTime) && (classifiersBuilt < numClassifiers)) {
+            if (classifiersBuilt % 100 == 0)
+                printLineDebug("\t\t\t\t\tBuilding STSF tree " + classifiersBuilt + " time taken = " +
+                        (System.nanoTime() - startTime) + " contract =" + finalBuildtrainContractTimeNanos + " nanos");
+
+            //If bagging find instances with replacement
+            int[] instInclusions = new int[numInstances];
+            int[] baggingClassCounts = new int[representations[0].numClasses()];
+
+            for (int n = 0; n < numInstances; n++) {
+                instInclusions[rand.nextInt(numInstances)]++;
+                instInclusions[n] += instToAdd[n];
+            }
+
+            for (int n = 0; n < numInstances; n++) {
+                if (instInclusions[n] > 0) {
+                    baggingClassCounts[(int)representations[0].get(n).getTargetValue()] += instInclusions[n];
+                }
+            }
+
+            //1. Select intervals for tree i
+            intervals.add(new ArrayList[3][]);
+            int totalAtts = 0;
+            for (int r = 0; r < representations.length; r++) {
+                intervals.get(classifiersBuilt)[r] = findCandidateDiscriminatoryIntervals(representations[r],
+                        instInclusions, baggingClassCounts);
+
+                for (int a = 0; a < intervals.get(classifiersBuilt)[r].length; a++) {
+                    totalAtts += intervals.get(classifiersBuilt)[r][a].size();
+                }
+            }
+
+            // Convert representations and data to weka instances.
+            Instances[] newRepresentations = new Instances[3];
+            newRepresentations[0] = Converter.toArff(representations[0]);
+            newRepresentations[1] = Converter.toArff(representations[1]);
+            newRepresentations[2] = Converter.toArff(representations[2]);
+            Instances newData = new Instances(Converter.toArff(data));
+
+            //2. Generate and store attributes
+            ArrayList<Attribute> atts = new ArrayList<>();
+            for (int j = 0; j < totalAtts; j++) {
+                atts.add(new Attribute("att" + j));
+            }
+            atts.add(newData.classAttribute());
+            //create blank instances with the correct class value
+            Instances result = new Instances("Tree", atts, newNumInstances);
+            result.setClassIndex(result.numAttributes() - 1);
+
+            Instances testHolder = new Instances(result, 0);
+            testHolder.add(new DenseInstance(result.numAttributes()));
+            testHolders.add(testHolder);
+
+            //For bagging
+            int instIdx = 0;
+            int lastIdx = -1;
+
+            for (int n = 0; n < newNumInstances; n++) {
+                boolean sameInst = false;
+
+                while (true) {
+                    if (instInclusions[instIdx] == 0) {
+                        instIdx++;
+                    } else {
+                        instInclusions[instIdx]--;
+
+                        if (instIdx == lastIdx) {
+                            result.add(n, new DenseInstance(result.instance(n - 1)));
+                            sameInst = true;
+                        } else {
+                            lastIdx = instIdx;
+                        }
+
+                        break;
+                    }
+                }
+
+                if (sameInst) continue;
+
+                DenseInstance in = new DenseInstance(result.numAttributes());
+                in.setValue(result.numAttributes() - 1, newRepresentations[0].instance(instIdx).classValue());
+
+                int p = 0;
+                for (int r = 0; r < representations.length; r++) {
+                    double[] series = extractTimeSeries(newRepresentations[r].get(instIdx));
+
+                    for (int a = 0; a < FeatureSet.numFeatures; a++) {
+                        for (int j = 0; j < intervals.get(classifiersBuilt)[r][a].size(); j++) {
+                            int[] interval = intervals.get(classifiersBuilt)[r][a].get(j);
+                            double val = FeatureSet.calcFeatureByIndex(a, interval[0], interval[1], series);
+                            in.setValue(p, val);
+                            p++;
+                        }
+                    }
+                }
+
+                result.add(in);
+            }
+
+            //3. Create and build tree using all the features.
+            Classifier tree = AbstractClassifier.makeCopy(classifier);
+            if (seedClassifier && tree instanceof Randomizable)
+                ((Randomizable) tree).setSeed(seed * (classifiersBuilt + 1));
+
+            tree.buildClassifier(result);
+            trees.add(tree);
+            classifiersBuilt++;
+        }
+
+        if(classifiersBuilt==0){//Not enough time to build a single classifier
+            throw new Exception((" ERROR in STSF, no trees built, contract time probably too low. Contract time ="+trainContractTimeNanos));
+        }
+
+        long endTime=System.nanoTime();
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(endTime-startTime-trainResults.getErrorEstimateTime());
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime());
+        /** Estimate accuracy from Train data
+         * distributions and predictions stored in trainResults */
+        if(getEstimateOwnPerformance()){
+            long est1=System.nanoTime();
+            estimateOwnPerformance(Converter.toArff(data));
+            long est2=System.nanoTime();
+            trainResults.setErrorEstimateTime(est2-est1);
+            trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime()+trainResults.getErrorEstimateTime());
+        }
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished STSF Build with "+classifiersBuilt+" Trees built in "+(System.nanoTime()-startTime)/1000000000+" Seconds  ***************");
     }
 
     /**
@@ -160,8 +436,8 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         getCapabilities().testWithFail(data);
         long startTime=System.nanoTime();
 
+        // Set attributes.
         numInstances = data.numInstances();
-
         trees = new ArrayList(numClassifiers);
         intervals = new ArrayList();
         testHolders = new ArrayList();
@@ -356,6 +632,38 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         return newIntervals;
     }
 
+    /**
+     * Method to carry out supervised learning with TimeSeriesInstances
+     * @param rep TimeSeriesInstances
+     * @param instInclusions TimeSeriesInstances to include
+     * @param classCounts Bagging Class counts
+     * @return newIntervals ArrayList<int[]>[]
+     */
+    private ArrayList<int[]>[] findCandidateDiscriminatoryIntervals(TimeSeriesInstances rep, int[] instInclusions,
+                                                                    int[] classCounts){
+        int seriesLength = rep.getMaxLength();
+        int splitPoint;
+        if (seriesLength <= 8) splitPoint = seriesLength/2;
+        else splitPoint = rand.nextInt(seriesLength-8)+4; //min 4, max serieslength-4
+
+        Instances data = Converter.toArff(rep);
+
+        ColumnNormalizer rn = new ColumnNormalizer();
+        rn.fit(data);
+        rn.setNormMethod(ColumnNormalizer.NormType.STD_NORMAL);
+        data = rn.transform(data);
+
+        ArrayList<int[]>[] newIntervals = new ArrayList[FeatureSet.numFeatures];
+        for (int i = 0; i < FeatureSet.numFeatures; i++){
+            newIntervals[i] = new ArrayList<>();
+            supervisedIntervalSearch(data, instInclusions, i, newIntervals[i], classCounts, 0, splitPoint);
+            supervisedIntervalSearch(data, instInclusions, i, newIntervals[i], classCounts, splitPoint+1,
+                    rep.getMaxLength()-1);
+        }
+
+        return newIntervals;
+    }
+
     private void supervisedIntervalSearch(Instances data, int[] instInclusions, int featureIdx,
                                           ArrayList<int[]> intervals, int[] classCount, int start, int end){
         int seriesLength = end-start;
@@ -397,6 +705,68 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
             if (sameInst) continue;
 
             double[] series = data.instance(instIdx).toDoubleArray();
+            x1[i] = FeatureSet.calcFeatureByIndex(featureIdx, start, e1, series);
+            x2[i] = FeatureSet.calcFeatureByIndex(featureIdx, e2, end, series);
+            y[i] = series[series.length-1];
+        }
+
+        double s1 = fisherScore(x1, y, classCount);
+        double s2 = fisherScore(x2, y, classCount);
+
+        if (s2 < s1){
+            intervals.add(new int[]{start, e1});
+            supervisedIntervalSearch(data, instInclusions, featureIdx, intervals, classCount, start, e1);
+        }
+        else{
+            intervals.add(new int[]{e2, end});
+            supervisedIntervalSearch(data, instInclusions, featureIdx, intervals, classCount, e2, end);
+        }
+    }
+
+    /**
+     * Method to search for the intervals.
+     */
+    private void supervisedIntervalSearch(TimeSeriesInstances data, int[] instInclusions, int featureIdx,
+                                          ArrayList<int[]> intervals, int[] classCount, int start, int end){
+        int seriesLength = end-start;
+        if (seriesLength < 4) return;
+        int halfSeriesLength = seriesLength/2;
+
+        double[] x1 = new double[newNumInstances];
+        double[] x2 = new double[newNumInstances];
+        double[] y = new double[newNumInstances];
+
+        int e1 = start + halfSeriesLength;
+        int e2 = start + halfSeriesLength + 1;
+        int instIdx = 0;
+        int lastIdx = -1;
+        int[] instInclusionsCopy = Arrays.copyOf(instInclusions, instInclusions.length);
+
+        for (int i = 0; i < newNumInstances; i++){
+            boolean sameInst = false;
+
+            while (true) {
+                if (instInclusionsCopy[instIdx] == 0) {
+                    instIdx++;
+                } else {
+                    instInclusionsCopy[instIdx]--;
+
+                    if (instIdx == lastIdx) {
+                        x1[i] = x1[i-1];
+                        x1[i] = x1[i-1];
+                        y[i] = y[i-1];
+                        sameInst = true;
+                    } else {
+                        lastIdx = instIdx;
+                    }
+
+                    break;
+                }
+            }
+
+            if (sameInst) continue;
+
+            double[] series = data.get(instIdx).toValueArray()[0];
             x1[i] = FeatureSet.calcFeatureByIndex(featureIdx, start, e1, series);
             x2[i] = FeatureSet.calcFeatureByIndex(featureIdx, e2, end, series);
             y[i] = series[series.length-1];
@@ -483,14 +853,14 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         trainResults.setClassifierName("TSFCV");
         trainResults.setErrorEstimateMethod("CV_"+numFolds);
     }
-     
+
     private void copyParameters(STSF other){
         this.numClassifiers=other.numClassifiers;
     }
 
     @Override
     public long getTrainContractTimeNanos(){
-            return trainContractTimeNanos;
+        return trainContractTimeNanos;
     }
 
     /**
@@ -542,13 +912,77 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
     }
 
     /**
-     * @param ins
-     * @return
+     * @param ins TimeSeriesInstance
+     * @return array of doubles: probability of each class
+     * @throws Exception
+     */
+    @Override
+    public double[] distributionForInstance(TimeSeriesInstance ins) throws Exception {
+        // check if unequal length
+        if (seriesLength != ins.getMaxLength()) {
+            // reformat
+            TimeSeriesInstance padded = resizer.transform(ins);
+            ins = padded;
+        }
+        double[] d = new double[getTSTrainData().getClassLabels().length];// length of class variables
+
+        double[][] representations = new double[3][];
+        representations[0] = ins.toValueArray()[0];
+        representations[1] = ps.transform(ins).toValueArray()[0];
+        representations[2] = di.transform(ins).toValueArray()[0];
+
+        for(int i=0;i<trees.size();i++){
+            Instances testHolder = testHolders.get(i);
+
+            int p = 0;
+            for (int r = 0; r < representations.length; r++){
+                for (int a = 0; a < FeatureSet.numFeatures; a++){
+                    for (int j = 0; j < intervals.get(i)[r][a].size(); j++){
+                        int[] interval = intervals.get(i)[r][a].get(j);
+                        double val = FeatureSet.calcFeatureByIndex(a, interval[0], interval[1], representations[r]);
+                        testHolder.instance(0).setValue(p, val);
+                        p++;
+                    }
+                }
+            }
+
+            if(voteEnsemble){
+                int c=(int)trees.get(i).classifyInstance(testHolder.instance(0));
+                d[c]++;
+            }else{
+                double[] temp=trees.get(i).distributionForInstance(testHolder.instance(0));
+                for(int j=0;j<temp.length;j++)
+                    d[j]+=temp[j];
+            }
+        }
+        double sum=0;
+        for(double x:d)
+            sum+=x;
+        if(sum>0)
+            for(int i=0;i<d.length;i++)
+                d[i]=d[i]/sum;
+        return d;
+    }
+
+    /**
+     * @param ins Weka Instance
+     * @return double
      * @throws Exception
      */
     @Override
     public double classifyInstance(Instance ins) throws Exception {
         double[] d=distributionForInstance(ins);
+        return findIndexOfMax(d, rand);
+    }
+
+    /**
+     * @param ins TimeSeriesInstance
+     * @return double
+     * @throws Exception
+     */
+    @Override
+    public double classifyInstance(TimeSeriesInstance ins) throws Exception {
+        double[] d = distributionForInstance(ins);
         return findIndexOfMax(d, rand);
     }
 
@@ -569,7 +1003,18 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         if(trainContractTimeNanos<=0) return true; //Not contracted
         return System.nanoTime()-start < finalBuildtrainContractTimeNanos;
     }
- 
+
+    // TSCapabilities for TSInstances.
+    @Override
+    public TSCapabilities getTSCapabilities() {
+        TSCapabilities tsCapabilities = new TSCapabilities();
+        tsCapabilities.enable(TSCapabilities.EQUAL_OR_UNEQUAL_LENGTH)
+                .enable(TSCapabilities.UNIVARIATE)
+                .enable(TSCapabilities.NO_MISSING_VALUES)
+                .enable(TSCapabilities.MIN_LENGTH(2));
+        return tsCapabilities;
+    }
+
     //Nested class to store seven simple summary features used to construct train data
     private static class FeatureSet{
         static int numFeatures = 7;
@@ -684,10 +1129,18 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         // Basic correctness tests, including setting paras through
         String dataLocation="Z:\\ArchiveData\\Univariate_arff\\";
         String problem="ItalyPowerDemand";
-        Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
-        Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
+        //Instances train=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TRAIN");
+        //Instances test=DatasetLoading.loadDataNullable(dataLocation+problem+"\\"+problem+"_TEST");
+        int seed = 0;
+        Instances[] trainTest = DatasetLoading.sampleItalyPowerDemand(seed);
+        //Instances train = trainTest[0];
+        //Instances test = trainTest[1];
+        TimeSeriesInstances train = Converter.fromArff(trainTest[0]);
+        TimeSeriesInstances test = Converter.fromArff(trainTest[1]);
         STSF tsf = new STSF();
         tsf.setSeed(0);
+        tsf.setPaddingLen(paddingLength.MAX);
+        tsf.setPaddingType(paddingType.ZERO);
         double a;
         tsf.buildClassifier(train);
         System.out.println(tsf.trainResults.getBuildTime());

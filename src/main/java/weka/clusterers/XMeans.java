@@ -55,11 +55,14 @@ import java.util.Vector;
  <!-- globalinfo-start -->
  * Cluster data using the X-means algorithm.<br/>
  * <br/>
- * X-Means is K-Means extended by an Improve-Structure part In this part of the algorithm the centers are attempted to be split in its region. The decision between the children of each center and itself is done comparing the BIC-values of the two structures.<br/>
+ * X-Means is K-Means extended by an Improve-Structure part In this part of the algorithm the centers are attempted to
+ * be split in its region. The decision between the children of each center and itself is done comparing the BIC-values
+ * of the two structures.<br/>
  * <br/>
  * For more information see:<br/>
  * <br/>
- * Dan Pelleg, Andrew W. Moore: X-means: Extending K-means with Efficient Estimation of the Number of Clusters. In: Seventeenth International Conference on Machine Learning, 727-734, 2000.
+ * Dan Pelleg, Andrew W. Moore: X-means: Extending K-means with Efficient Estimation of the Number of Clusters.
+ * In: Seventeenth International Conference on Machine Learning, 727-734, 2000.
  * <p/>
  <!-- globalinfo-end -->
  *

@@ -20,11 +20,10 @@
 package evaluation;
 
 import ResultsProcessing.MatlabController;
-import static evaluation.ClassifierResultsAnalysis.matlabFilePath;
+import static evaluation.EstimatorResultsAnalysis.matlabFilePath;
 import evaluation.storage.ClassifierResults;
 import java.io.File;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
