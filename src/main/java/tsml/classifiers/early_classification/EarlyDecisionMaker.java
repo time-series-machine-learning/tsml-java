@@ -45,6 +45,13 @@ public abstract class EarlyDecisionMaker {
         fit(data, classifier, defaultTimeStamps(data.numAttributes()-1));
     }
 
+    /**
+     * Many algorithms require data from previous decisions form an instance. The way this is currently set up got many
+     * is that it will create a clean slate each time the thresholdIndex is 0. Calling this on a new instance before
+     * the final decision has been made on a previous one is a good way to break everything.
+     *
+     * This is obviously not ideal for real use cases, but there arent being used for that currently.
+     */
     public abstract boolean decide(int thresholdIndex, double[] probabilities) throws Exception;
 
     public int[] defaultTimeStamps(int length) {

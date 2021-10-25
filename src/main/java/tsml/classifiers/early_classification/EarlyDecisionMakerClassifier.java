@@ -60,6 +60,10 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
     @Override
     public int getSeed() { return 0; }
 
+    public Classifier getClassifier() { return classifier; }
+
+    public EarlyDecisionMaker getDecisionMaker() { return decisionMaker; }
+
     @Override
     public void setSeed(int i) { seed = i; }
 

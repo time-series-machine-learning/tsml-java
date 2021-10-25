@@ -46,7 +46,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
     private static final double[] SVM_GAMMAS = new double[]{100, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.5, 1};
 
     private LibSVM[] svm;
-    private int[] timeStamps;
+    private int finalIndex;
     private Instances probDataHeader;
     private IntIntHashMap predCounts;
     private int v;
@@ -104,7 +104,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
 
     @Override
     public boolean decide(int thresholdIndex, double[] probabilities) throws Exception {
-        if (thresholdIndex == timeStamps.length-1) return true;
+        if (thresholdIndex == finalIndex) return true;
 
         int pred = argMax(probabilities, rand);
         double minDiff = 1;
@@ -122,6 +122,10 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
         if (thresholdIndex == 0) predCounts = new IntIntHashMap();
 
         if (svm[thresholdIndex] != null && svm[thresholdIndex].distributionForInstance(inst)[0] == 1) {
+            if (v < 2) {
+                return true;
+            }
+
             int count = predCounts.get(pred);
             if (count == 0) {
                 predCounts.clear();
@@ -147,7 +151,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
         libsvm.svm.rand.setSeed(seed);
         // Disables svm output
         libsvm.svm.svm_set_print_string_function(s -> { });
-        timeStamps = thresholds;
+        finalIndex = thresholds.length - 1;
         svm = new LibSVM[thresholds.length];
 
         ArrayList<Attribute> atts = new ArrayList<>();
