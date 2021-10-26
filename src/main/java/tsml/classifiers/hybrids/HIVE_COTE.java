@@ -251,6 +251,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     }
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        getCapabilities().testWithFail(Converter.toArff(data));
         if (!data.isEqualLength()) {
             // pad with 0s
             resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
