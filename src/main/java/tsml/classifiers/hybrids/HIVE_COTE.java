@@ -37,6 +37,7 @@ import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
 import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
@@ -77,8 +78,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
     protected double alpha=4.0; // Weighting parameter for voting method
+
     private Resizer resizer;
-    
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -256,7 +257,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             TimeSeriesInstances padded = resizer.fitTransform(data);
             data = padded;
         }
-        setTSTrainData(data);
+
 
         if(debug) {
             printDebug(" Building HIVE-COTE with components: ");
@@ -273,12 +274,13 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             setupContracting();
         }
 
-        super.buildClassifier(data);
+        super.buildClassifier(Converter.toArff(data));
         trainResults.setParas(getParameters());
         printLineDebug("*************** Finished HIVE-COTE Build with train time " +
                 (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
 
     }
+
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
