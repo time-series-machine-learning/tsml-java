@@ -16,6 +16,7 @@ package tsml.classifiers.early_classification;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.interval_based.TSF;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -43,6 +44,7 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
 
     private Classifier[] classifiers;
 
+    private boolean useOwnTrainEstimates = true;
     private int seed = 0;
     private Random rand;
 
@@ -72,6 +74,10 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         loadPath = path;
     }
 
+    public void setUseOwnTrainEstimates(boolean b){
+        useOwnTrainEstimates = b;
+    }
+
     @Override
     public void buildClassifier(Instances data) throws Exception {
         if (thresholds == null) thresholds = decisionMaker.defaultTimeStamps(data.numAttributes()-1);
@@ -80,6 +86,13 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         if (decisionMaker instanceof Randomizable) ((Randomizable) decisionMaker).setSeed(seed);
         decisionMaker.setNormalise(normalise);
         rand = new Random(seed);
+
+        boolean estimatingOwnPerformance = false;
+        if (classifier instanceof EnhancedAbstractClassifier &&
+                ((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance()){
+            ((EnhancedAbstractClassifier)classifier).setEstimateOwnPerformance(useOwnTrainEstimates);
+            estimatingOwnPerformance = true;
+        }
 
         if (loadFromFile) {
             loadedResults = new ClassifierResults[thresholds.length];
@@ -105,11 +118,16 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
                 classifiers[i].buildClassifier(newData);
             }
 
-            Classifier[] blankClassifiers = new Classifier[thresholds.length];
-            for (int i = 0; i < blankClassifiers.length; i++) {
-                blankClassifiers[i] = AbstractClassifier.makeCopy(classifier);
+            if (estimatingOwnPerformance) {
+                decisionMaker.fit(data, classifiers, thresholds);
             }
-            decisionMaker.fit(data, blankClassifiers, thresholds);
+            else{
+                Classifier[] blankClassifiers = new Classifier[thresholds.length];
+                for (int i = 0; i < blankClassifiers.length; i++) {
+                    blankClassifiers[i] = AbstractClassifier.makeCopy(classifier);
+                }
+                decisionMaker.fit(data, blankClassifiers, thresholds);
+            }
         }
     }
 

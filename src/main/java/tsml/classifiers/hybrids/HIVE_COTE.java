@@ -76,6 +76,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
      */
     protected final double BASE_CLASSIFIER_CONTRACT_PROP = 0.99; //if e.g 1 day contract, 864 seconds grace time
     protected double alpha=4.0; // Weighting parameter for voting method
+
+    private int defaultSettings = 2;
     
     
     @Override
@@ -95,15 +97,17 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     public HIVE_COTE() { 
         super();
-        setupHIVE_COTE_2_0();
     }
     @Override
     public void setupDefaultEnsembleSettings() {
-        setupHIVE_COTE_1_0();
+        defaultSettings = 2;
     }
 
 
     public void setupHIVE_COTE_0_1() {
+        defaultSettings = 0;
+    }
+    private void buildHC0() {
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //TODO jay/tony review
         this.ensembleName = "HIVE-COTE 0.1";
@@ -154,13 +158,18 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             System.exit(1);
         }
 
-        setSeed(seed);
+        for (EnsembleModule module : modules)
+            if(module.getClassifier() instanceof Randomizable)
+                ((Randomizable)module.getClassifier()).setSeed(seed);
 
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
 
     public void setupHIVE_COTE_1_0() {
+        defaultSettings = 1;
+    }
+    private void buildHC1() {
         this.ensembleName = "HIVE-COTE 1.0";
         alpha=4.0;
 
@@ -200,8 +209,10 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                     + "be fixed before continuing");
             System.exit(1);
         }
-        
-        setSeed(seed);
+
+        for (EnsembleModule module : modules)
+            if(module.getClassifier() instanceof Randomizable)
+                ((Randomizable)module.getClassifier()).setSeed(seed);
         
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
@@ -210,6 +221,9 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
 
     public void setupHIVE_COTE_2_0() {
+        defaultSettings = 2;
+    }
+    private void buildHC2() {
         this.ensembleName = "HIVE-COTE 2.0";
         alpha=4.0;
         this.weightingScheme = new TrainAcc(alpha);
@@ -243,7 +257,11 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
                     + "be fixed before continuing");
             System.exit(1);
         }
-        setSeed(seed);
+
+        for (EnsembleModule module : modules)
+            if(module.getClassifier() instanceof Randomizable)
+                ((Randomizable)module.getClassifier()).setSeed(seed);
+
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
@@ -252,6 +270,16 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
+        if (defaultSettings == 0){
+            buildHC0();
+        }
+        else if (defaultSettings == 1){
+            buildHC1();
+        }
+        else if (defaultSettings == 2){
+            buildHC2();
+        }
+
         if(debug) {
             printDebug(" Building HIVE-COTE with components: ");
             for (EnsembleModule module : modules){
@@ -376,9 +404,6 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     @Override   //EnhancedAbstractClassifier
     public void setSeed(int seed) { 
         super.setSeed(seed);
-        for (EnsembleModule module : modules)
-            if(module.getClassifier() instanceof Randomizable)
-                ((Randomizable)module.getClassifier()).setSeed(seed);
     }
 
     @Override //AbstractClassifier

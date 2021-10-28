@@ -1193,12 +1193,12 @@ public class ClassifierLists {
                 //((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "cBOSS/Predictions/" + dataset + "/");
                 break;
             case "TEASER-HC1":
-                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                c = new EarlyDecisionMakerClassifier(new HIVE_COTE(), new TEASER());
                 ((HIVE_COTE) ((EarlyDecisionMakerClassifier) c).getClassifier()).setupHIVE_COTE_1_0();
                 //((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC1/Predictions/" + dataset + "/");
                 break;
             case "TEASER-HC2":
-                c = new EarlyDecisionMakerClassifier(null, new TEASER());
+                c = new EarlyDecisionMakerClassifier(new HIVE_COTE(), new TEASER());
                 //((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC2/Predictions/" + dataset + "/");
                 break;
             case "TEASER-DTWCV":

@@ -24,6 +24,7 @@ import evaluation.evaluators.SamplingEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -178,7 +179,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
     /**
      * Simple data type to hold a classifier and it's related information and results.
      */
-    public static class EnsembleModule implements DebugPrinting {
+    public static class EnsembleModule implements DebugPrinting, Serializable {
         private Classifier classifier;
 
         private String moduleName;

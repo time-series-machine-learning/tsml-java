@@ -1767,9 +1767,9 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
     /**
      * CIF attributes as functions
      **/
-    public Function<Interval, Double>[] functions = new Function[]{c22_0, c22_1, c22_2, c22_3, c22_4, c22_5, c22_6,
-            c22_7, c22_8, c22_9, c22_10, c22_11, c22_12, c22_13, c22_14, c22_15, c22_16, c22_17, c22_18, c22_19, c22_20,
-            c22_21, mean, stdev, slope};
+    public static final Function<Interval, Double>[] functions = new Function[]{c22_0, c22_1, c22_2, c22_3, c22_4,
+            c22_5, c22_6, c22_7, c22_8, c22_9, c22_10, c22_11, c22_12, c22_13, c22_14, c22_15, c22_16, c22_17, c22_18,
+            c22_19, c22_20, c22_21, mean, stdev, slope};
 
     /**
      * Development tests for the CIF classifier.
