@@ -33,7 +33,7 @@ import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.interval_based.DrCIF;
-import tsml.classifiers.legacy.RISE;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
