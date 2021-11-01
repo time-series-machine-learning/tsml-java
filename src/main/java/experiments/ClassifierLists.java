@@ -1080,7 +1080,7 @@ public class ClassifierLists {
                 //((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "HC2/Predictions/" + dataset + "/");
                 break;
 
-            case "P85c3--CIF":
+            case "P85c3-CIF":
                 c = new EarlyDecisionMakerClassifier(new CIF(), new ProbabilityThreshold());
                 ((ProbabilityThreshold) ((EarlyDecisionMakerClassifier) c).getDecisionMaker()).setConsecutivePredictions(3);
                 //((EarlyDecisionMakerClassifier) c).setLoadFromFilePath(resultsPath + "CIF/Predictions/" + dataset + "/");

@@ -128,8 +128,8 @@ public class ECEC extends EarlyDecisionMaker implements Randomizable, LoadableEa
         for (int i = 0; i < classCondifences.length; i++) {
             classCondifences[i] = new ArrayList<>();
         }
-        int p = 0;
 
+        int p = 0;
         for (int i = 0; i < data.numInstances(); i++) {
             for (int n = 0; n < thresholds.length; n++) {
                 double mod = 1;
@@ -142,7 +142,7 @@ public class ECEC extends EarlyDecisionMaker implements Randomizable, LoadableEa
                 confidences[n][i] = 1 - mod;
 
                 allConfidences[p++] = confidences[n][i];
-                classCondifences[data.get(i).classIndex()].add(confidences[n][i]);
+                classCondifences[(int) data.get(i).classValue()].add(confidences[n][i]);
             }
         }
 
@@ -161,7 +161,7 @@ public class ECEC extends EarlyDecisionMaker implements Randomizable, LoadableEa
                 for (int j = 0; j < thresholds.length; j++) {
                     if (confidences[n][j] > threshold || j == finalIndex) {
                         earliness += (double) thresholds[j] / seriesLength;
-                        if (trainPred[n][j] == data.get(n).classIndex()) {
+                        if (trainPred[n][j] == (int) data.get(n).classValue()) {
                             success++;
                         }
                         break;
