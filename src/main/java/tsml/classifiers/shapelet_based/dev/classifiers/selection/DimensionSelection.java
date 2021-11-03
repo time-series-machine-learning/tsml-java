@@ -1,7 +1,7 @@
 package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
 import evaluation.evaluators.SingleTestSetEvaluatorTS;
-import experiments.ExperimentsTS;
+import experiments.Experiments;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
@@ -14,7 +14,7 @@ import weka.core.Instances;
 import java.util.Arrays;
 import java.util.Random;
 
-public abstract class DimensionSelectionMSTC  extends EnhancedAbstractClassifier implements TrainTimeContractable {
+public abstract class DimensionSelection extends EnhancedAbstractClassifier implements TrainTimeContractable {
 
     private boolean normalise = true;
     private long trainContractTimeNanos = 0;
@@ -23,12 +23,12 @@ public abstract class DimensionSelectionMSTC  extends EnhancedAbstractClassifier
     Random rand = new Random();
 
     protected MSTC classifier;
-    protected ExperimentsTS.ExperimentalArguments exp;
+    protected Experiments.ExperimentalArguments exp;
     protected MSTC.ShapeletParams params;
     protected int[] indexes;
     protected int numDimensions;
 
-    public DimensionSelectionMSTC(int numClasses, ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public DimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
 
         this.exp = exp;
         this.params = params;

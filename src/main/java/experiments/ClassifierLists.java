@@ -48,6 +48,7 @@ import tsml.classifiers.shapelet_based.*;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
+import tsml.classifiers.shapelet_based.dev.classifiers.MultivariateShapeletClassifier;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -345,6 +346,9 @@ public class ClassifierLists {
             case "Arsenal":
                 c = new Arsenal();
                 break;
+            case "MSTC":
+                c = new MultivariateShapeletClassifier(exp);
+                break;
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -565,7 +569,7 @@ public class ClassifierLists {
      */
     public static String[] allMultivariate={"Shapelet_I","Shapelet_D","Shapelet_Indep","ED_I","ED_D","DTW_I","DTW_D",
             "DTW_A","HIVE-COTE_I", "HC_I", "CBOSS_I", "RISE_I", "STC_I", "TSF_I","PF_I","TS-CHIEF_I","HC-PF_I",
-            "HIVE-COTEn_I","WEASEL-MUSE", "STC-D"};//Not enough to classify yet
+            "HIVE-COTEn_I","WEASEL-MUSE", "MSTC", "STC-D"};//Not enough to classify yet
     public static HashSet<String> multivariateBased=new HashSet<String>( Arrays.asList(allMultivariate));
     private static Classifier setMultivariate(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName,resultsPath="",dataset="";
@@ -668,6 +672,9 @@ public class ClassifierLists {
                 break;
             case "WEASEL-MUSE":
                 c=new WEASEL_MUSE();
+                break;
+            case "MSTC":
+                c=new MultivariateShapeletClassifier(exp);
                 break;
             case "STC-D":
                 c=new ShapeletTransformClassifier();

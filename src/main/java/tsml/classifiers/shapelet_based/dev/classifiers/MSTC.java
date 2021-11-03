@@ -1,10 +1,12 @@
 package tsml.classifiers.shapelet_based.dev.classifiers;
 
+import evaluation.evaluators.SingleTestSetEvaluatorTS;
+import experiments.Experiments;
 import machine_learning.classifiers.ensembles.CAWPE;
 import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
 import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
 import machine_learning.classifiers.ensembles.weightings.TrainAcc;
-import tsml.classifiers.TSClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.shapelet_based.dev.filter.*;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsDependant;
@@ -12,6 +14,7 @@ import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsDimDependa
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsIndependent;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.quality.WekaQuality;
+import tsml.classifiers.shapelet_based.dev.quality.WekaQualityFiltered;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -36,7 +39,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class MSTC implements TSClassifier {
+public class MSTC extends EnhancedAbstractClassifier {
 
     private ShapeletParams params;
     private Classifier classifier;
@@ -45,26 +48,17 @@ public class MSTC implements TSClassifier {
 
     public static Random RAND = new Random();
 
-    public MSTC(ShapeletParams params){
+    protected Experiments.ExperimentalArguments exp;
+
+    public ShapeletFilterMV filter;
+
+    public MSTC(int numClasses, Experiments.ExperimentalArguments exp, ShapeletParams params){
+        //super(numClasses);
         this.params = params;
+        this.exp = exp;
+        this.estimateOwnPerformance = true;
     }
 
-    @Override
-    public Classifier getClassifier() {
-        return null;
-    }
-
-    @Override
-    public TimeSeriesInstances getTSTrainData() {
-        return null;
-    }
-
-    @Override
-    public void setTSTrainData(TimeSeriesInstances train) {
-
-
-
-    }
 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
@@ -72,18 +66,17 @@ public class MSTC implements TSClassifier {
 
 
 
-        ShapeletFilterMV filter =  this.params.filter.createFilter();
+        filter =  this.params.filter.createFilter();
         filter.setHourLimit(this.params.contractTimeHours);
         shapelets =filter.findShapelets(params, data);
-       // System.out.println(shapelets);
         transformData = buildTansformedDataset(data);
-       // ArffSaver saver = new ArffSaver();
-       // saver.setInstances(transformData);
-       // saver.setFile(new File("./data/transform.arff"));
-       // saver.writeBatch();
-       // System.out.println(transformData);
+
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
+        SingleTestSetEvaluatorTS eval = new SingleTestSetEvaluatorTS(this.exp.foldId, false, true, this.exp.interpret); //DONT clone data, DO set the class to be missing for each inst
+
+        this.trainResults =  eval.evaluate(this, data);
+        this.trainResults.setParas(getParameters());
     }
 
     @Override
@@ -171,6 +164,11 @@ public class MSTC implements TSClassifier {
         return result;
     }
 
+    @Override
+    public String getParameters(){
+        return filter.getParameters();
+    }
+
 
 
     public enum ShapeletFilters {
@@ -227,7 +225,17 @@ public class MSTC implements TSClassifier {
                         instances);
             }
         },
-   /*     ORDER_LINE {
+        GAIN_BINARY_FILTERED {
+            @Override
+            public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
+                return new WekaQualityFiltered(
+                        WekaQuality.WekaEvaluatorFactory.GAIN,
+                        WekaQuality.TransformedInstancesFactory.BINARY,
+                        instances);
+            }
+        },
+
+        /*     ORDER_LINE {
             @Override
             public ShapeletQualityFunction createShapeletQuality(TimeSeriesInstances instances) {
                 return new OrderlineQuality(instances);
@@ -454,6 +462,7 @@ public class MSTC implements TSClassifier {
         public int maxIterations;
         public int contractTimeHours;
         public boolean allowZeroQuality = false;
+        public boolean removeSelfSimilar = true;
 
         public ShapeletFilters filter;
         public ShapeletQualities quality;
@@ -474,6 +483,7 @@ public class MSTC implements TSClassifier {
             this.type = type;
             this.classifier = classifier;
             this.allowZeroQuality = false;
+            this.removeSelfSimilar = true;
         }
 
         public ShapeletParams(ShapeletParams params){
@@ -487,6 +497,7 @@ public class MSTC implements TSClassifier {
             this.type = params.type;
             this.classifier = params.classifier;
             this.allowZeroQuality = params.allowZeroQuality;
+            this.removeSelfSimilar = params.removeSelfSimilar;
         }
 
     }
@@ -512,7 +523,7 @@ public class MSTC implements TSClassifier {
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);
 
-            MSTC shapelet = new MSTC(params);
+            MSTC shapelet = new MSTC( ts_train_data.numClasses(), new Experiments.ExperimentalArguments(), params);
             shapelet.buildClassifier(ts_train_data);
 
             double ok=0, wrong=0;

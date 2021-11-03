@@ -15,12 +15,16 @@ public class RandomFilter extends ShapeletFilterMV {
 
     protected int iteration;
     protected double averageQuality;
+
     protected MSTC.ShapeletParams params;
     protected ArrayList<ShapeletMV> shapelets;
 
     protected IterationsStopCriteria iterationsStopCriteria;
     protected ContractedStopCriteria contractedStopCriteria;
     protected QualityStopCriteria qualityStopCriteria;
+
+    protected int numShapeletsEvaluated;
+    protected String endCriteria;
 
     @Override
     public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
@@ -52,7 +56,7 @@ public class RandomFilter extends ShapeletFilterMV {
         this.params = params;
         this.start = System.nanoTime();
         this.iteration = 0;
-        int numShapeletsEvaluated = 0;
+        this.numShapeletsEvaluated = 0;
         while (true){ // Iterate
 
             //Get random shapelet
@@ -64,7 +68,8 @@ public class RandomFilter extends ShapeletFilterMV {
                     classesArray[instanceIndex],
                     instances.get(instanceIndex));
             double q = quality.calculate (fun, candidate);
-            numShapeletsEvaluated++;
+
+            this.numShapeletsEvaluated++;
 
             if (q>0 || params.allowZeroQuality){
                 candidate.setQuality(q);
@@ -77,14 +82,12 @@ public class RandomFilter extends ShapeletFilterMV {
             }
             if (this.iterationsStopCriteria.stop()){
                 reorderShapelets(fun);
-                System.out.println("Max iterations reached ");
-                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                this.endCriteria = "MAX_ITER";
                 return shapelets;
             }
             if (this.contractedStopCriteria.stop()){
                 reorderShapelets(fun);
-                System.out.println("Contract time reached");
-                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                this.endCriteria = "CONTRACT_TIME";
                 return shapelets;
             }
 
@@ -103,11 +106,11 @@ public class RandomFilter extends ShapeletFilterMV {
         Collections.sort(this.shapelets);
         if ( this.shapelets.size()>this.params.k)
             this.shapelets.subList(this.params.k,this.shapelets.size()).clear();
-        this.shapelets = removeSelfSimilar(fun,this.shapelets);
+        if ( this.params.removeSelfSimilar )
+            this.shapelets = removeSelfSimilar(fun,this.shapelets);
 
         this.averageQuality = this.shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
-        System.out.println("It.:" + this.iteration +  " Avg. Quality: " + this.averageQuality  +
-               " Num shapelets: " + this.shapelets.size());
+
     }
 
     protected static ArrayList<ShapeletMV> removeSelfSimilar(ShapeletFunctions fun, ArrayList<ShapeletMV> shapelets) {
@@ -133,6 +136,11 @@ public class RandomFilter extends ShapeletFilterMV {
             }
         }
         return outputShapelets;
+    }
+
+    @Override
+    public String getParameters(){
+        return "End criteria, " + endCriteria + ", shapelets evaluated," + numShapeletsEvaluated + ", avg quality," + averageQuality;
     }
 
 

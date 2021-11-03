@@ -1,5 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.filter;
 
+import tsml.classifiers.SaveParameterInfo;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
@@ -8,7 +9,7 @@ import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.List;
 
-public abstract class  ShapeletFilterMV  implements TrainTimeContractable {
+public abstract class  ShapeletFilterMV  implements TrainTimeContractable, SaveParameterInfo {
 
     protected long time;
     protected long start;

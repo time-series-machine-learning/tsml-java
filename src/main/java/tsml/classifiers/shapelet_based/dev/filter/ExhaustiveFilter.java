@@ -59,4 +59,8 @@ public class ExhaustiveFilter extends ShapeletFilterMV {
     }
 
 
+    @Override
+    public String getParameters() {
+        return null;
+    }
 }

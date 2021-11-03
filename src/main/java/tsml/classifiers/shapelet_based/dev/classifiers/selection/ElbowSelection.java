@@ -1,37 +1,23 @@
 package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
-import evaluation.storage.ClassifierResults;
-import experiments.ExperimentsTS;
+import experiments.Experiments;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.data_containers.TimeSeriesInstances;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class TrainFoldDimensionSelectionMSTC extends DimensionSelection {
+public abstract class ElbowSelection extends DimensionSelection {
 
     protected int k;
-    private String TRAIN_ALG = "STC";
 
-    public TrainFoldDimensionSelectionMSTC(int numClasses, ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public ElbowSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
         super(numClasses, exp,params);
     }
 
-    protected ArrayList<DimensionResult> getDimensionResults(TimeSeriesInstances data) throws Exception{
-        ArrayList<DimensionResult> dimensionResults = new ArrayList<DimensionResult>();
-
-        for (int i=0;i<this.numDimensions;i++){
-            ClassifierResults results = new ClassifierResults(this.exp.resultsWriteLocation + "STC/Predictions/" +
-                    this.exp.datasetName + "Dimension" + (i+1) + "/trainFold" + this.exp.foldId + ".csv");
-            dimensionResults.add(new DimensionResult(i,results.getAcc()));
-
-        }
-        return dimensionResults;
-    }
+    protected abstract ArrayList<DimensionResult> getDimensionResults(TimeSeriesInstances data) throws Exception;
 
     int[] getIndexes(TimeSeriesInstances data) throws Exception{
-
-
         ArrayList<DimensionResult> dimensionResults = getDimensionResults(data);
         Collections.sort(dimensionResults);
         this.k = getElbow(dimensionResults)+1;
@@ -42,7 +28,7 @@ public class TrainFoldDimensionSelectionMSTC extends DimensionSelection {
     }
 
 
-    protected int getElbow(ArrayList<TrainFoldDimensionSelectionMSTC.DimensionResult> dimensionResults){
+    protected int getElbow(ArrayList<ElbowSelection.DimensionResult> dimensionResults){
        int  nPoints = dimensionResults.size();
 
         DimensionResult firstPoint = dimensionResults.get(0);

@@ -1,6 +1,6 @@
 package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
-import experiments.ExperimentsTS;
+import experiments.Experiments;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -8,11 +8,11 @@ import tsml.data_containers.TimeSeriesInstances;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DistanceMatrixMSTC extends ElbowSelection {
+public class DistanceMatrix extends ElbowSelection {
 
     int numClasses;
 
-    public DistanceMatrixMSTC(int numClasses, ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public DistanceMatrix(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
         super(numClasses, exp,params);
     }
 

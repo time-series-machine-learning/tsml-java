@@ -23,7 +23,7 @@ package utilities.rescalers;
  */
 public class ZNormalisation implements SeriesRescaler{
 
-     public static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;   
+     public static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;
     
     @Override
     public double[] rescaleSeries(double[] series) {
@@ -64,7 +64,8 @@ public class ZNormalisation implements SeriesRescaler{
         stdv /= (double) inputLength;
 
         // if the variance is less than the error correction, just set it to 0, else calc stdv.
-        stdv = (stdv < ROUNDING_ERROR_CORRECTION) ? 0.0 : Math.sqrt(stdv);
+        stdv =  Math.sqrt(stdv);
+//        stdv = (stdv < ROUNDING_ERROR_CORRECTION) ? 0.0 : Math.sqrt(stdv);
         
         //System.out.println("mean "+ mean);
         //System.out.println("stdv "+stdv);

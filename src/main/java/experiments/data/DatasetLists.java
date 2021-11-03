@@ -144,7 +144,7 @@ public class DatasetLists {
 		"NATOPS",
         "PenDigits",
         "PEMS-SF",
-     //   "PhonemeSpectra",
+        "PhonemeSpectra",
         "RacketSports",
         "SelfRegulationSCP1",
         "SelfRegulationSCP2",

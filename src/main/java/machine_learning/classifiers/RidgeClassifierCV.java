@@ -29,8 +29,6 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 
-import static utilities.InstanceTools.resampleTrainAndTestInstances;
-
 /**
  * Ridge classification with cross-validation to select the alpha value.
  * <p>
@@ -162,7 +160,10 @@ public class RidgeClassifierCV extends AbstractClassifier implements MultiThread
             double e = 0;
             for (int i = 0; i < sums.length; i++) {
                 for (int n = 0; n < coefs.size(1); n++) {
-                    e += Math.pow(coefs.getDouble(i, n) / sums[i], 2);
+                    if (Double.isNaN(Math.pow(coefs.getDouble(i, n) / sums[i], 2)))
+                        e+=0;
+                    else
+                        e += Math.pow(coefs.getDouble(i, n) / sums[i], 2);
                 }
             }
             e /= sums.length * coefs.size(1);
