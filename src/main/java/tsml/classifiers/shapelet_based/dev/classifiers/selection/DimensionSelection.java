@@ -1,16 +1,24 @@
 package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
+import evaluation.evaluators.SingleTestSetEvaluatorTS;
 import experiments.ExperimentsTS;
-import tsml.classifiers.TSClassifier;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
-import weka.classifiers.Classifier;
+import tsml.data_containers.utilities.Converter;
+import weka.core.Capabilities;
+import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.Random;
 
-public abstract class DimensionSelectionMSTC implements TSClassifier {
+public abstract class DimensionSelectionMSTC  extends EnhancedAbstractClassifier implements TrainTimeContractable {
+
+    private boolean normalise = true;
+    private long trainContractTimeNanos = 0;
+    private boolean trainTimeContract = false;
 
     Random rand = new Random();
 
@@ -20,38 +28,74 @@ public abstract class DimensionSelectionMSTC implements TSClassifier {
     protected int[] indexes;
     protected int numDimensions;
 
-    public DimensionSelectionMSTC(ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public DimensionSelectionMSTC(int numClasses, ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+
         this.exp = exp;
         this.params = params;
-        classifier = new MSTC(params);
+        this.estimateOwnPerformance = true;
+        classifier = new MSTC(numClasses, exp, params);
     }
 
     abstract int[] getIndexes(TimeSeriesInstances data) throws Exception;
 
+
+
+
     @Override
-    public Classifier getClassifier() {
-        return null;
+    public String getParameters(){
+        return classifier.filter.getParameters() + ", Num Dimensions, " + this.indexes.length + "/" + this.numDimensions+", Dimension Selected," +    Arrays.toString(this.indexes);
     }
 
     @Override
-    public TimeSeriesInstances getTSTrainData() {
-        return null;
+    public Capabilities getCapabilities() {
+        Capabilities result = super.getCapabilities();
+        result.disableAll();
+
+        result.setMinimumNumberInstances(2);
+
+        // attributes
+        result.enable(Capabilities.Capability.RELATIONAL_ATTRIBUTES);
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
+
+        // class
+        result.enable(Capabilities.Capability.NOMINAL_CLASS);
+
+        return result;
+    }
+
+
+    public void setNormalise(boolean normalise) {
+        this.normalise = normalise;
+    }
+
+
+    @Override
+    public void setTrainTimeLimit(long time) {
+        trainContractTimeNanos = time;
+        trainTimeContract = true;
     }
 
     @Override
-    public void setTSTrainData(TimeSeriesInstances train) {
-
+    public boolean withinTrainContract(long start) {
+        if (trainContractTimeNanos <= 0) return true; //Not contracted
+        return System.nanoTime() - start < trainContractTimeNanos/5*4;
     }
 
-
+    @Override
+    public void buildClassifier(Instances data) throws Exception {
+        buildClassifier(Converter.fromArff(data));
+    }
 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         this.numDimensions = data.getMaxNumDimensions();
         this.indexes = getIndexes(data);
-        System.out.println("Selected dimensions: "  + Arrays.toString(this.indexes));
         TimeSeriesInstances finalData = new TimeSeriesInstances(data.getHSliceArray(this.indexes),data.getClassIndexes(), data.getClassLabels());
         classifier.buildClassifier(finalData);
+        SingleTestSetEvaluatorTS eval = new SingleTestSetEvaluatorTS(this.exp.foldId, false, true, this.exp.interpret); //DONT clone data, DO set the class to be missing for each inst
+
+        this.trainResults =  eval.evaluate(classifier, data);
+        this.trainResults.setParas(getParameters());
 
     }
 
@@ -79,5 +123,6 @@ public abstract class DimensionSelectionMSTC implements TSClassifier {
         TimeSeriesInstances instances  = new TimeSeriesInstances(data.getHSliceArray(this.indexes),data.getClassIndexes(), data.getClassLabels());
         return classifier.classifyInstances(instances);
     }
+
 
 }

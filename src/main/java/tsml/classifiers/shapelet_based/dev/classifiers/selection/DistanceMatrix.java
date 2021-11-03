@@ -8,12 +8,12 @@ import tsml.data_containers.TimeSeriesInstances;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DistanceMatrixMSTC extends TrainDimensionSelectionMSTC {
+public class DistanceMatrixMSTC extends ElbowSelection {
 
     int numClasses;
 
-    public DistanceMatrixMSTC(ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(exp,params);
+    public DistanceMatrixMSTC(int numClasses, ExperimentsTS.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super(numClasses, exp,params);
     }
 
     protected  ArrayList<CentroidMatrixItem> getCentroidMatrix(TimeSeriesInstances data){
@@ -27,11 +27,11 @@ public class DistanceMatrixMSTC extends TrainDimensionSelectionMSTC {
                 double[] cen = new double[instances.getMinLength()];
                 for (TimeSeriesInstance instance: instances){
                     for (int j=0;j<cen.length;j++){
-                        cen[i] += instance.get(0).get(j);
+                        cen[j] += instance.get(0).get(j);
                     }
                 }
                 for (int j=0;j<cen.length;j++){
-                    cen[i] /= (double)instances.numInstances();
+                    cen[j] /= (double)instances.numInstances();
                 }
                 centroidMatrix.add(new CentroidMatrixItem(i,k,cen));
 
