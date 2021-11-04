@@ -21,7 +21,10 @@ import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.Interpretable;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -52,6 +55,40 @@ public class SingleTestSetEvaluator extends Evaluator {
     public SingleTestSetEvaluator(int seed, boolean cloneData, boolean setClassMissing, boolean vis) {
         super(seed,cloneData,setClassMissing);
         this.vis = vis;
+    }
+
+    public synchronized ClassifierResults evaluate(EnhancedAbstractClassifier classifier, TimeSeriesInstances dataset) throws Exception {
+
+//        final Instances insts = cloneData ? new Instances(dataset) : dataset;
+
+        ClassifierResults res = new ClassifierResults(dataset.numClasses());
+        res.setTimeUnit(TimeUnit.NANOSECONDS);
+        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setDatasetName(dataset.getProblemName());
+        res.setFoldID(seed);
+        res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed
+
+        res.turnOffZeroTimingsErrors();
+        for (TimeSeriesInstance testinst : dataset) {
+            double trueClassVal = testinst.getTargetValue();
+            //if (setClassMissing)
+            //    testinst.setClassMissing();
+
+            long startTime = System.nanoTime();
+            double[] dist = classifier.distributionForInstance(testinst);
+            long predTime = System.nanoTime() - startTime;
+
+            if (vis) ((Interpretable)classifier).lastClassifiedInterpretability();
+
+            res.addPrediction(trueClassVal, dist, indexOfMax(dist), predTime, ""); //todo indexOfMax does not break ties randomly.
+        }
+
+        res.turnOnZeroTimingsErrors();
+
+        res.finaliseResults();
+        res.findAllStatsOnce();
+        
+        return res;
     }
 
     @Override
@@ -85,7 +122,7 @@ public class SingleTestSetEvaluator extends Evaluator {
 
         res.finaliseResults();
         res.findAllStatsOnce();
-        
+
         return res;
     }
 
