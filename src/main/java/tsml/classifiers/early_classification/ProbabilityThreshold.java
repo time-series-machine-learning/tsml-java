@@ -84,7 +84,7 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
             }
         }
         else{
-            //predCounts.clear();
+            predCounts.clear();
         }
 
         return false;

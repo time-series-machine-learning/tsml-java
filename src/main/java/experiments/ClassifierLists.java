@@ -16,9 +16,11 @@ package experiments;
 
 
 import evaluation.tuning.ParameterSpace;
+import machine_learning.classifiers.RidgeClassifierCV;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import machine_learning.classifiers.tuned.TunedSVM;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
@@ -688,8 +690,8 @@ public class ClassifierLists {
      * STANDARD classifiers such as random forest etc
      */
     public static String[] standard= {
-        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
-            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN","NB","BN"};
+        "XGBoostMultiThreaded","XGBoost","TunedXGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
+            "SVML","SVMQ","TunedSVM","SVMRBF","RidgeCV","MLP","Logistic","CAWPE","NN","NB","BN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(ExperimentalArguments exp){
         String classifier=exp.estimatorName;
@@ -703,6 +705,11 @@ public class ClassifierLists {
             case "XGBoost":
                 c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
+                break;
+            case "TunedXGBoost":
+                c = new TunedXGBoost();
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                ((TunedXGBoost)c).setTuneParameters(true);
                 break;
             case "SmallTunedXGBoost":
                 c = new TunedXGBoost();
@@ -789,7 +796,14 @@ public class ClassifierLists {
                 ((SMO)c).setKernel(rbf);
                 ((SMO)c).setRandomSeed(fold);
                 ((SMO)c).setBuildLogisticModels(true);
-
+                break;
+            case "TunedSVM":
+                c=new TunedSVM();
+                ((TunedSVM)c).optimiseKernel(true);
+                ((TunedSVM)c).setRandomSeed(fold);
+                break;
+            case "RidgeCV":
+                c=new RidgeClassifierCV();
                 break;
             case "BN":
                 c=new BayesNet();

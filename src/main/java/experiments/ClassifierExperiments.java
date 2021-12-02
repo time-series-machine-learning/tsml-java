@@ -217,6 +217,15 @@ public class ClassifierExperiments {
             return null;
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
+
+        // replace missing values with 0 if enabled
+        if (expSettings.replaceMissingValues) {
+            for (Instance inst : data[0])
+                inst.replaceMissingValues(new double[data[0].numAttributes()]);
+            for (Instance inst : data[1])
+                inst.replaceMissingValues(new double[data[1].numAttributes()]);
+        }
+
         setupClassifierExperimentalOptions(expSettings, expSettings.classifier, data[0]);
         ClassifierResults[] results = runExperiment(expSettings, data[0], data[1], expSettings.classifier);
         LOGGER.log(Level.INFO, "Experiment finished " + expSettings.toShortString() + ", Test Acc:" + results[1].getAcc());
