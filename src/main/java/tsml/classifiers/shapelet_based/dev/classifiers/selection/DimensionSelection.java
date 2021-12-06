@@ -1,9 +1,11 @@
 package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
+import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluatorTS;
 import experiments.Experiments;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.classifiers.kernel_based.ROCKETClassifier;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
@@ -22,18 +24,15 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
 
     Random rand = new Random();
 
-    protected MSTC classifier;
-    protected Experiments.ExperimentalArguments exp;
-    protected MSTC.ShapeletParams params;
+    protected ROCKETClassifier classifier;
     protected int[] indexes;
     protected int numDimensions;
 
-    public DimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public DimensionSelection(){
 
-        this.exp = exp;
-        this.params = params;
         this.estimateOwnPerformance = true;
-        classifier = new MSTC(numClasses, exp, params);
+        this.ableToEstimateOwnPerformance = true;
+        classifier = new ROCKETClassifier();
     }
 
     abstract int[] getIndexes(TimeSeriesInstances data) throws Exception;
@@ -43,7 +42,7 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
 
     @Override
     public String getParameters(){
-        return classifier.filter.getParameters() + ", Num Dimensions, " + this.indexes.length + "/" + this.numDimensions+", Dimension Selected," +    Arrays.toString(this.indexes);
+        return "Num Dimensions, " + ((double)this.indexes.length/(double)this.numDimensions)+", Dimension Selected," +    Arrays.toString(this.indexes);
     }
 
     @Override
@@ -92,7 +91,7 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
         this.indexes = getIndexes(data);
         TimeSeriesInstances finalData = new TimeSeriesInstances(data.getHSliceArray(this.indexes),data.getClassIndexes(), data.getClassLabels());
         classifier.buildClassifier(finalData);
-        SingleTestSetEvaluatorTS eval = new SingleTestSetEvaluatorTS(this.exp.foldId, false, true, this.exp.interpret); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
 
         this.trainResults =  eval.evaluate(classifier, data);
         this.trainResults.setParas(getParameters());

@@ -185,8 +185,15 @@ public class InstanceTools {
             Instances newTest = new Instances(test);
             return new Instances[]{newTrain,newTest};
         }
-        Instances all = new Instances(train);
-        all.addAll(test);
+        Instances all;
+        if (train.numInstances()>test.numInstances()){
+            all = new Instances(train);
+            all.addAll(test);
+        }else{
+           all = new Instances(test);
+            all.addAll(train);
+
+        }
         ClassCounts trainDistribution = new TreeSetClassCounts(train);
         
         Map<Double, Instances> classBins = createClassInstancesMap(all);

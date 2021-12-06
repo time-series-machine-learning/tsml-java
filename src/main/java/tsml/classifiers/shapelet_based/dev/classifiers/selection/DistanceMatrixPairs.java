@@ -12,9 +12,7 @@ public class DistanceMatrixPairs extends DistanceMatrix {
 
     int numClasses;
 
-    public DistanceMatrixPairs(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(numClasses, exp,params);
-    }
+
 
     @Override
     int[] getIndexes(TimeSeriesInstances data) throws Exception{

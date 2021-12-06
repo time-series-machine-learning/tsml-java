@@ -23,6 +23,7 @@ import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.MultiThreadable;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.data_containers.TimeSeriesInstances;
 import tsml.transformers.ROCKET;
 import utilities.ClassifierTools;
 import weka.classifiers.AbstractClassifier;
@@ -212,6 +213,43 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
             long est2 = System.nanoTime();
             trainResults.setErrorEstimateTime(est2 - est1 + trainResults.getErrorEstimateTime());
         }
+        trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
+        trainResults.setParas(getParameters());
+    }
+
+    public void buildClassifier(TimeSeriesInstances data){
+
+        trainResults.setBuildTime(System.nanoTime());
+
+        if (multithreading && cls instanceof MultiThreadable)
+            ((MultiThreadable) cls).enableMultiThreading(threads);
+
+        Instances trainEstData = null;
+        rocket = new ROCKET();
+        rocket.setNumKernels(numKernels);
+        rocket.setNormalise(normalise);
+        if (seedClassifier) rocket.setSeed(seed);
+
+        if (multithreading) {
+            rocket.enableMultiThreading(threads);
+        }
+
+        Instances transformedData = rocket.fitTransformer(data);
+        header = new Instances(transformedData, 0);
+
+        if (cls instanceof Randomizable) {
+            ((Randomizable) cls).setSeed(seed);
+        }
+
+        cls.buildClassifier(transformedData);
+
+        if (getEstimateOwnPerformance()) {
+            trainEstData = transformedData;
+        }
+
+
+        trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
+        trainResults.setBuildTime(System.nanoTime() - trainResults.getBuildTime());
         trainResults.setBuildPlusEstimateTime(trainResults.getBuildTime() + trainResults.getErrorEstimateTime());
         trainResults.setParas(getParameters());
     }
