@@ -20,11 +20,10 @@
 package tsml.classifiers.hybrids;
 
 import evaluation.evaluators.CrossValidationEvaluator;
-
-import java.util.concurrent.TimeUnit;
-
 import evaluation.tuning.ParameterSpace;
 import machine_learning.classifiers.ensembles.AbstractEnsemble;
+import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
+import machine_learning.classifiers.ensembles.weightings.TrainAcc;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.Tuneable;
@@ -37,11 +36,14 @@ import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
+import tsml.data_containers.TimeSeriesInstances;
+import tsml.data_containers.utilities.Converter;
+import tsml.transformers.Resizer;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.*;
-import machine_learning.classifiers.ensembles.voting.MajorityConfidence;
-import machine_learning.classifiers.ensembles.weightings.TrainAcc;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -78,8 +80,8 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     protected double alpha=4.0; // Weighting parameter for voting method
 
     private int defaultSettings = 2;
-    
-    
+    private Resizer resizer;
+
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -266,6 +268,48 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
 
+    @Override
+    public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        if (defaultSettings == 0){
+            buildHC0();
+        }
+        else if (defaultSettings == 1){
+            buildHC1();
+        }
+        else if (defaultSettings == 2){
+            buildHC2();
+        }
+
+        getCapabilities().testWithFail(Converter.toArff(data));
+        if (!data.isEqualLength()) {
+            // pad with 0s
+            resizer = new Resizer(new Resizer.MaxResizeMetric(), new Resizer.FlatPadMetric(0));
+            TimeSeriesInstances padded = resizer.fitTransform(data);
+            data = padded;
+        }
+
+
+        if(debug) {
+            printDebug(" Building HIVE-COTE with components: ");
+            for (EnsembleModule module : modules){
+                if (module.getClassifier() instanceof EnhancedAbstractClassifier)
+                    ((EnhancedAbstractClassifier) module.getClassifier()).setDebug(debug);
+                printDebug(module.getModuleName()+" ");
+            }
+            printDebug(" \n ");
+        }
+
+        if (trainTimeContract){
+            printLineDebug(" In build of HC2: contract time = "+trainContractTimeNanos/1000000000/60/60+" hours ");
+            setupContracting();
+        }
+
+        super.buildClassifier(Converter.toArff(data));
+        trainResults.setParas(getParameters());
+        printLineDebug("*************** Finished HIVE-COTE Build with train time " +
+                (trainResults.getBuildTime()/1000000000/60/60.0) + " hours, Train+Estimate time = "+(trainResults.getBuildPlusEstimateTime()/1000000000/60/60.0)+" hours ***************");
+
+    }
 
 
     @Override
