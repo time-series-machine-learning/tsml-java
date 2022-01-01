@@ -121,43 +121,45 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         cv.setNumFolds(10);
         this.trainEstimator = cv;
 
-        Classifier[] classifiers = new Classifier[5];
-        String[] classifierNames = new String[5];
+        if (modules == null) {
+            Classifier[] classifiers = new Classifier[5];
+            String[] classifierNames = new String[5];
 
-        EnhancedAbstractClassifier ee = new ElasticEnsemble();
-        ee.setEstimateOwnPerformance(true);
-        classifiers[0] = ee;
-        classifierNames[0] = "EE";
+            EnhancedAbstractClassifier ee = new ElasticEnsemble();
+            ee.setEstimateOwnPerformance(true);
+            classifiers[0] = ee;
+            classifierNames[0] = "EE";
 
-//        CAWPE st_classifier = new CAWPE();
-//        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
-//        st_classifier.setTransform(st_transform);
-        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
-        if (trainTimeContract)
-            stc.setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
-        stc.setEstimateOwnPerformance(true);
-        classifiers[1] = stc;
-        classifierNames[1] = "STC";
+    //        CAWPE st_classifier = new CAWPE();
+    //        DefaultShapeletTransformPlaceholder st_transform= new DefaultShapeletTransformPlaceholder();
+    //        st_classifier.setTransform(st_transform);
+            ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+            if (trainTimeContract)
+                stc.setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
+            stc.setEstimateOwnPerformance(true);
+            classifiers[1] = stc;
+            classifierNames[1] = "STC";
 
-        classifiers[2] = new RISE();
-        classifierNames[2] = "RISE";
+            classifiers[2] = new RISE();
+            classifierNames[2] = "RISE";
 
-        BOSS boss = new BOSS();
-        boss.setEstimateOwnPerformance(true);
-        classifiers[3] = boss;
-        classifierNames[3] = "BOSS";
+            BOSS boss = new BOSS();
+            boss.setEstimateOwnPerformance(true);
+            classifiers[3] = boss;
+            classifierNames[3] = "BOSS";
 
-        TSF tsf = new TSF();
-        tsf.setEstimateOwnPerformance(true);
-        classifiers[4] = tsf;
-        classifierNames[4] = "TSF";
+            TSF tsf = new TSF();
+            tsf.setEstimateOwnPerformance(true);
+            classifiers[4] = tsf;
+            classifierNames[4] = "TSF";
 
-        try {
-            setClassifiers(classifiers, classifierNames, null);
-        } catch (Exception e) {
-            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
-                    + "be fixed before continuing");
-            System.exit(1);
+            try {
+                setClassifiers(classifiers, classifierNames, null);
+            } catch (Exception e) {
+                System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
+                        + "be fixed before continuing");
+                System.exit(1);
+            }
         }
 
         for (EnsembleModule module : modules)
@@ -181,35 +183,37 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
         cv.setNumFolds(10);
-        this.trainEstimator = cv; 
+        this.trainEstimator = cv;
 
-        Classifier[] classifiers = new Classifier[4];
-        String[] classifierNames = new String[4];
-        
-        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
-        stc.setEstimateOwnPerformance(true);
-        classifiers[0] = stc;
-        classifierNames[0] = "STC";
-        
-        classifiers[1] = new RISE();
-        classifierNames[1] = "RISE";
-        
-        cBOSS boss = new cBOSS();
-        boss.setEstimateOwnPerformance(true);
-        classifiers[2] = boss;
-        classifierNames[2] = "cBOSS";
-        
-        TSF tsf = new TSF();
-        classifiers[3] = tsf;
-        classifierNames[3] = "TSF";
-        tsf.setEstimateOwnPerformance(true);
+        if (modules == null) {
+            Classifier[] classifiers = new Classifier[4];
+            String[] classifierNames = new String[4];
 
-        try {
-            setClassifiers(classifiers, classifierNames, null);
-        } catch (Exception e) {
-            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
-                    + "be fixed before continuing");
-            System.exit(1);
+            ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+            stc.setEstimateOwnPerformance(true);
+            classifiers[0] = stc;
+            classifierNames[0] = "STC";
+
+            classifiers[1] = new RISE();
+            classifierNames[1] = "RISE";
+
+            cBOSS boss = new cBOSS();
+            boss.setEstimateOwnPerformance(true);
+            classifiers[2] = boss;
+            classifierNames[2] = "cBOSS";
+
+            TSF tsf = new TSF();
+            classifiers[3] = tsf;
+            classifierNames[3] = "TSF";
+            tsf.setEstimateOwnPerformance(true);
+
+            try {
+                setClassifiers(classifiers, classifierNames, null);
+            } catch (Exception e) {
+                System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
+                        + "be fixed before continuing");
+                System.exit(1);
+            }
         }
 
         for (EnsembleModule module : modules)
@@ -234,30 +238,33 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
         this.trainEstimator = cv;
-        ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
-        DrCIF cif= new DrCIF();
-        Arsenal afc = new Arsenal();
-        TDE tde= new TDE();
-        String[] classifierNames = new String[4];
-        classifierNames[0] = "STC";
-        classifierNames[1] = "DrCIF";
-        classifierNames[2] = "Arsenal";
-        classifierNames[3] = "TDE";
-        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[4];
-        classifiers[0]=stc;
-        classifiers[1]=cif;
-        classifiers[2]=afc;
-        classifiers[3]=tde;
-        for(EnhancedAbstractClassifier cls:classifiers) {
-            cls.setEstimateOwnPerformance(true);
-            cls.setTrainEstimateMethod(TrainEstimateMethod.OOB);
-        }
-        try {
-            setClassifiers(classifiers, classifierNames, null);
-        } catch (Exception e) {
-            System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
-                    + "be fixed before continuing");
-            System.exit(1);
+
+        if (modules == null) {
+            ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
+            DrCIF cif = new DrCIF();
+            Arsenal afc = new Arsenal();
+            TDE tde = new TDE();
+            String[] classifierNames = new String[4];
+            classifierNames[0] = "STC";
+            classifierNames[1] = "DrCIF";
+            classifierNames[2] = "Arsenal";
+            classifierNames[3] = "TDE";
+            EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[4];
+            classifiers[0] = stc;
+            classifiers[1] = cif;
+            classifiers[2] = afc;
+            classifiers[3] = tde;
+            for (EnhancedAbstractClassifier cls : classifiers) {
+                cls.setEstimateOwnPerformance(true);
+                cls.setTrainEstimateMethod(TrainEstimateMethod.OOB);
+            }
+            try {
+                setClassifiers(classifiers, classifierNames, null);
+            } catch (Exception e) {
+                System.out.println("Exception thrown when setting up DEFAULT settings of " + this.getClass().getSimpleName() + ". Should "
+                        + "be fixed before continuing");
+                System.exit(1);
+            }
         }
 
         for (EnsembleModule module : modules)
