@@ -23,7 +23,7 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
     private long trainContractTimeNanos = 0;
     private boolean trainTimeContract = false;
 
-    private Classifier cls = new RidgeClassifierCV();
+    private Classifier cls;
 
     private MultivariateShapeletTransformer transformer;
     private Instances header;
