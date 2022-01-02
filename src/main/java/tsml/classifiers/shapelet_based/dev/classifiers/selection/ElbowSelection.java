@@ -11,7 +11,9 @@ public abstract class ElbowSelection extends DimensionSelection {
 
     protected int k;
 
-
+    public ElbowSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super(numClasses, exp,params);
+    }
 
     protected abstract ArrayList<DimensionResult> getDimensionResults(TimeSeriesInstances data) throws Exception;
 

@@ -550,7 +550,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Rocket2", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Shapelet-var", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
@@ -558,29 +558,57 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
         mcc.setDatasets(new String[]{
-                "ArticularyWordRecognition",
+                "ArticularyWordRecognition", //Index 0
+                "AtrialFibrillation",
+                "BasicMotions",
                 "DuckDuckGeese",
-                //"EMOPain",
-               // "FaceDetection",
+                "ERing",
+                "FaceDetection",
                 "FingerMovements",
                 "HandMovementDirection",
                 "Heartbeat",
-                //"InsectWingbeat",
-                //"JapaneseVowels",
-                //"MindReading",
-                //"MotorImagery",
+                "Libras",
+                "MotorImagery",
                 "NATOPS",
-              //  "PEMS-SF",
-                "PhonemeSpectra",
-                //"Siemens",
-                //"SpokenArabicDigits"",
-
+                "PEMS-SF",
+                "PenDigits",
+                "RacketSports"
         });
         mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
+                "STC"
+               ,  "MSTC_I"
+                ,  "MSTC-500_I"
+                ,  "MSTC-500-24_I"
+             //   ,  "MSTC_D"
+
+              //  , "MSTC-SER_I"
+               // , "MSTC-LIN_I"
+              //  , "SEL-MSTC_I"
+              //  , "SEL-MSTC_D"
+
+              //  , "DM-MSTC_I"
+             //   , "DMP-MSTC_I"
+           //     , "TRAINF-MSTC_I"
+
+              //  , "DM-MSTC_D"
+              //  , "DMP-MSTC_D"
+              //  , "SEL-MSTC_D"
 
 
-            "ROCKET", "ROCKETtsml", "ROCKET_DS"
 
+
+
+             //   , "MSTC-BIN_D"
+              //      , "MSTC--BIN-CHI_I"
+                //    , "MSTC-BIN-CORR_I"
+               //     , "MSTC-BIN-FSTAT_I"
+               //     , "MSTC-BIN-ONER_I"
+
+              //      , "MSTC-CLASS-BIN_I"
+              //  , "ENS-MSTC_I"
+
+
+             //   ,"5BIN-MSTC_I"
         }, basePath);
         mcc.runComparison();
     }

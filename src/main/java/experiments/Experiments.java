@@ -421,8 +421,6 @@ public class Experiments  {
             //otherwise perform the evaluation externally here (e.g. cross validation on the
             //train data
            classifier.setEstimateOwnPerformance(true);
-
-
         }
         LOGGER.log(Level.FINE, "Train estimate ready.");
 
@@ -1346,7 +1344,7 @@ public class Experiments  {
         @Parameter(names={"-l", "--logLevel"}, description = "log level")
         private String logLevelStr = null;
 
-        @Parameter(names={"-ts", "--useTS"}, arity = 1, description = "Use ts files for experiments")
+        @Parameter(names={"-ts", "--useTS"}, description = "Use ts files for experiments")
         private boolean useTS = false;
 
         private Level logLevel = null;

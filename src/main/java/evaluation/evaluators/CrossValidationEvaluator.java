@@ -93,7 +93,6 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     public synchronized ClassifierResults crossValidateWithStats(Classifier classifier, Instances dataset) throws Exception {
         return crossValidateWithStats(new Classifier[] { classifier }, dataset)[0];
     }
-
     
     /**
      * Performs more extensive cross validation using dist for instance and 

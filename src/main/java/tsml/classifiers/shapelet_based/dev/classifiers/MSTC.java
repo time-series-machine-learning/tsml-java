@@ -1,6 +1,5 @@
 package tsml.classifiers.shapelet_based.dev.classifiers;
 
-import evaluation.evaluators.SingleTestSetEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluatorTS;
 import experiments.Experiments;
 import machine_learning.classifiers.ensembles.CAWPE;
@@ -49,14 +48,15 @@ public class MSTC extends EnhancedAbstractClassifier {
 
     public static Random RAND = new Random();
 
+    protected Experiments.ExperimentalArguments exp;
 
     public ShapeletFilterMV filter;
 
-    public MSTC(ShapeletParams params){
+    public MSTC(int numClasses, Experiments.ExperimentalArguments exp, ShapeletParams params){
         //super(numClasses);
         this.params = params;
+        this.exp = exp;
         this.estimateOwnPerformance = true;
-        this.ableToEstimateOwnPerformance = true;
     }
 
 
@@ -73,7 +73,7 @@ public class MSTC extends EnhancedAbstractClassifier {
 
         classifier = params.classifier.createClassifier();
         classifier.buildClassifier(transformData);
-        SingleTestSetEvaluator eval = new SingleTestSetEvaluator(); //DONT clone data, DO set the class to be missing for each inst
+        SingleTestSetEvaluatorTS eval = new SingleTestSetEvaluatorTS(this.exp.foldId, false, true, this.exp.interpret); //DONT clone data, DO set the class to be missing for each inst
 
         this.trainResults =  eval.evaluate(this, data);
         this.trainResults.setParas(getParameters());
@@ -523,7 +523,7 @@ public class MSTC extends EnhancedAbstractClassifier {
                     ShapeletFactories.DEPENDANT,
                     AuxClassifiers.ENSEMBLE);
 
-            MSTC shapelet = new MSTC(  params);
+            MSTC shapelet = new MSTC( ts_train_data.numClasses(), new Experiments.ExperimentalArguments(), params);
             shapelet.buildClassifier(ts_train_data);
 
             double ok=0, wrong=0;

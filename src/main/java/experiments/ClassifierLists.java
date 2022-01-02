@@ -49,7 +49,6 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.classifiers.shapelet_based.dev.classifiers.MultivariateShapeletClassifier;
-import tsml.classifiers.shapelet_based.dev.classifiers.selection.RocketDimensionSelection;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -317,7 +316,7 @@ public class ClassifierLists {
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
-            "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned", "ROCKET_DS"};
+            "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -348,10 +347,7 @@ public class ClassifierLists {
                 c = new Arsenal();
                 break;
             case "MSTC":
-                c = new MultivariateShapeletClassifier();
-                break;
-            case "ROCKET_DS":
-                c = new RocketDimensionSelection();
+                c = new MultivariateShapeletClassifier(exp);
                 break;
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
@@ -678,7 +674,7 @@ public class ClassifierLists {
                 c=new WEASEL_MUSE();
                 break;
             case "MSTC":
-                c=new MultivariateShapeletClassifier();
+                c=new MultivariateShapeletClassifier(exp);
                 break;
             case "STC-D":
                 c=new ShapeletTransformClassifier();

@@ -5,7 +5,6 @@ import experiments.Experiments;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
-import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import weka.classifiers.AbstractClassifier;
@@ -30,9 +29,10 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
     private Instances header;
 
     MSTC.ShapeletParams params;
+    Experiments.ExperimentalArguments exp;
 
-    public MultivariateShapeletClassifier(){
-        super(CAN_ESTIMATE_OWN_PERFORMANCE);
+    public MultivariateShapeletClassifier(Experiments.ExperimentalArguments exp){
+       this.exp = exp;
        this.params = new MSTC.ShapeletParams(100,
                 3,
                 50,
@@ -92,7 +92,7 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
 
-        this.setTSTrainData(data);
+
         int n = data.numInstances();
         int m = data.getMinLength()-1;
         int c = data.getMaxNumDimensions();
@@ -168,6 +168,4 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
         transformedInst.setDataset(header);
         return cls.distributionForInstance(transformedInst);
     }
-
-
 }

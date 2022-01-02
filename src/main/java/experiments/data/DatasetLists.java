@@ -133,7 +133,7 @@ public class DatasetLists {
         "Epilepsy",
         "EthanolConcentration",
         "ERing",
-      //  "FaceDetection",
+        "FaceDetection",
         "FingerMovements",
         "HandMovementDirection",
         "Handwriting",

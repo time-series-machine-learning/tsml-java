@@ -31,7 +31,7 @@ import java.util.Enumeration;
  * @author Eibe Frank (eibe@cs.waikato.ac.nz)
  * @version $Revision: 9134 $
  */
-  public abstract class AbstractInstance implements Instance, Serializable,
+public abstract class AbstractInstance implements Instance, Serializable,
     RevisionHandler {
 
   /** for serialization */

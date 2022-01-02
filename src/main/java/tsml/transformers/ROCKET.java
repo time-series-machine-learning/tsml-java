@@ -596,9 +596,4 @@ public class ROCKET implements TrainableTransformer, Randomizable, MultiThreadab
             return k;
         }
     }
-
-    public Instances fitTransformer(TimeSeriesInstances data){
-        fit(data);
-        return transformer(data);
-    }
 }
