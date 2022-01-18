@@ -550,35 +550,29 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Shapelet-var", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Rocket-hd", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(new String[]{
-                "ArticularyWordRecognition", //Index 0
-                "AtrialFibrillation",
-                "BasicMotions",
-                "DuckDuckGeese",
-                "ERing",
-                "FaceDetection",
-                "FingerMovements",
-                "HandMovementDirection",
-                "Heartbeat",
-                "Libras",
-                "MotorImagery",
-                "NATOPS",
-                "PEMS-SF",
-                "PenDigits",
-                "RacketSports"
-        });
+        mcc.setDatasets(DatasetLists.mtscProblems2022);
         mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
-                "STC"
-               ,  "MSTC_I"
-                ,  "MSTC-500_I"
-                ,  "MSTC-500-24_I"
+                "rocket_i",
+                "rocket_",
+                "rocket_ds",
+                "rocket_d",
+                "hc2ds",
+                "hc2",
+          //      "ROCKETsktime",
+
+
+
+             //   "STC"
+             //  ,  "MSTC_I"
+             //   ,  "MSTC-500_I"
+             //   ,  "MSTC-500-24_I"
              //   ,  "MSTC_D"
 
               //  , "MSTC-SER_I"

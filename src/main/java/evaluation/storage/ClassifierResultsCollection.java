@@ -530,8 +530,8 @@ public class ClassifierResultsCollection implements DebugPrinting {
         return -1;
     }
     
-    private static String buildFileName(String baseReadPath, String classifier, String dataset, String split, int fold) { 
-        return baseReadPath + classifier + "/Predictions/" + dataset + "/" + split + "Fold" + fold + ".csv";
+    private static String buildFileName(String baseReadPath, String classifier, String dataset, String split, int fold, String sufix) {
+        return baseReadPath + classifier + "/Predictions/" + dataset + "/" + split + sufix + fold + ".csv";
     }
 
     public class SliceException extends Exception {
@@ -593,8 +593,11 @@ public class ClassifierResultsCollection implements DebugPrinting {
                             printlnDebug("\t\t\t" + split + " reading");
 
                             String readPath = resultsFilesDirectories.length == 1 ? resultsFilesDirectories[0] : resultsFilesDirectories[c];
-                            String fileName = buildFileName(readPath, classifierStorage, datasetStorage, split, fold); 
+                            String fileName = buildFileName(readPath, classifierStorage, datasetStorage, split, fold, "Fold");
                             try {
+                                File fTemp = new File(fileName);
+                                if (!fTemp.exists())
+                                    fileName = buildFileName(readPath, classifierStorage, datasetStorage, split, fold, "Resample");
                                 allResults[s][c][d][f] = new ClassifierResults(fileName);
                                 if (ignoreMissingDistributions) {
                                     boolean wasMissing = allResults[s][c][d][f].populateMissingDists();
