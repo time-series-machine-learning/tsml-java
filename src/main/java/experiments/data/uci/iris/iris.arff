@@ -4,7 +4,7 @@
 @attribute f2 numeric
 @attribute f3 numeric
 @attribute f4 numeric
-@attribute clase {0,1,2}
+@attribute classValue {0,1,2}
 
 @data
 -0.897674,1.02861,-1.33679,-1.30859,0
