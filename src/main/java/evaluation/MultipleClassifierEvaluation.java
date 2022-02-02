@@ -550,20 +550,22 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final_Rocket-hd", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-hc2", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.mtscProblems2022);
+        mcc.setDatasets(DatasetLists.mtscProblems2022HighDimensions);
         mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
-                "rocket_i",
-                "rocket_",
-                "rocket_ds",
-                "rocket_d",
-                "hc2ds",
+              //  "rocket_i",
+              //  "rocket",
+              //  "rocket_ds",
+              //  "rocket_d",
+              //  "arsenal",
+                "hc2-ds-rocket",
+                "hc2_ds_random",
                 "hc2",
           //      "ROCKETsktime",
 

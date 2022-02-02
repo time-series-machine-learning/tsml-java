@@ -17,6 +17,7 @@
  
 package tsml.data_containers.ts_fileIO;
 
+import tsml.data_containers.TimeSeries;
 import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 
@@ -24,10 +25,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * File for reading sktime format data into TimeSeriesInstances object
@@ -237,11 +235,11 @@ public class TSReader {
         // String local_path = "D:\\Work\\Data\\Univariate_ts\\";
         // String m_local_path = "D:\\Work\\Data\\Multivariate_ts\\";
 
-        String local_path = "Z:\\ArchiveData\\Univariate_ts\\";
-        String m_local_path = "Z:\\ArchiveData\\Multivariate_ts\\";
+        String local_path = "C:\\Users\\fbu19zru\\code\\Multivariate_ts\\";
+        String m_local_path = "C:\\Users\\fbu19zru\\code\\Multivariate_ts\\JapaneseVowels\\JapaneseVowels";
 
         String[] paths = {/*local_path,*/ m_local_path};
-
+/*
         for (String path : paths){
             File dir = new File(path);
             for (File file : dir.listFiles()){
@@ -251,6 +249,22 @@ public class TSReader {
                 TSReader ts_reader = new TSReader(new FileReader(f));
                 System.out.println("after: " + (System.nanoTime() - time));
             }
+       }*/
+
+        File f = new File(m_local_path + "_TRAIN" + ".ts");
+        long time = System.nanoTime();
+        TSReader ts_reader = new TSReader(new FileReader(f));
+        System.out.println("after: " + (System.nanoTime() - time));
+        int i=1;
+        for (TimeSeriesInstance instance: ts_reader.m_data){
+
+          /*  int j =0;
+            for (TimeSeries ts: instance){
+                System.out.println(i + " " + j + " " + ts.getSeriesLength());
+                j++;
+            }*/
+            System.out.println(i + " " + instance.get(0).getSeriesLength());
+            i++;
         }
     }
 }

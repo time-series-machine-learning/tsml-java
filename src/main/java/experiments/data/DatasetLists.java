@@ -153,49 +153,59 @@ public class DatasetLists {
 };
 
 	public static String[] mtscProblems2022={
-			"ArticularyWordRecognition", //Index 0
+			"ArticularyWordRecognition",
 			"AtrialFibrillation",
 			"BasicMotions",
 			"Cricket",
 			"DuckDuckGeese",
 			"EigenWorms",
+            "EMO",
 			"Epilepsy",
 			"EthanolConcentration",
 			"ERing",
-			"FaceDetection",
+		//	"FaceDetection",
 			"FingerMovements",
+            "HAR",
 			"HandMovementDirection",
 			"Handwriting",
 			"Heartbeat",
+        //    "InsectWingbeatEq",
+            "JapaneseVowelsEq",
 			"Libras",
 			"LSST",
 			"MotorImagery",
 			"MindReading",
 			"NATOPS",
-			"PenDigits",
+			"PenDigitsEq",
 			"PEMS-SF",
 			"PhonemeSpectra",
 			"RacketSports",
 			"Siemens",
 			"SelfRegulationSCP1",
 			"SelfRegulationSCP2",
+            "SpokenArabicDigitsEq",
 			"StandWalkJump",
 			"UWaveGestureLibrary"
 	};
 
-	public static String[] mtscProblems2018HighDimensions={
+	public static String[] mtscProblems2022HighDimensions={
 			"ArticularyWordRecognition", //Index 0
 			"DuckDuckGeese",
+			"EMO",
 			"FaceDetection",
 			"FingerMovements",
+			"HAR",
 			"HandMovementDirection",
 			"Heartbeat",
+		//	"InsectWingBeatEq",
+			"JapaneseVowelsEq",
 			"MotorImagery",
 			"MindReading",
 			"NATOPS",
 			"PEMS-SF",
 			"PhonemeSpectra",
-			"Siemens"
+			"Siemens",
+			"SpokenArabicDigitsEq"
 	};
 	public static String[] mtscProblems2018LowDimensions={
 			"AtrialFibrillation",
