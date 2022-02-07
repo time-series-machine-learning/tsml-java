@@ -23,6 +23,7 @@ public class MajorityClassClassifier extends AbstractClassifier {
     public double[] distributionForInstance(Instance ins){
         return classDistribution;
     }
+    @Override
     public String toString(){
         String str= "Class Distribution  = ";
         for(double d:classDistribution)

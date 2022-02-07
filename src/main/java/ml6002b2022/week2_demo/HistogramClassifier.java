@@ -30,6 +30,9 @@ import weka.core.Instances;
 public class HistogramClassifier implements Classifier {
     int numBins=10;
     int[][] counts;
+    double[][] distributions;
+
+
     int attribute=0;
     double min, max, interval;
     @Override
@@ -57,6 +60,16 @@ public class HistogramClassifier implements Classifier {
                 c=numBins-1;
             System.out.println(" c = "+c+" value = "+value+" min = "+min+" max = "+max);
             counts[classVal][c]++;
+            distributions = new double[data.numClasses()][numBins];
+            for(int j=0;j<data.numClasses();j++) {
+                double sum = 0;
+                for (int i = 0; i < counts[j].length; i++) {
+                    sum += counts[j][i];
+                }
+                for (int i = 0; i < counts[j].length; i++)
+                    distributions[j][i] = counts[j][i] / sum;
+            }
+
         }
     }
     private static int maxIndex( int[] x){
@@ -70,8 +83,7 @@ public class HistogramClassifier implements Classifier {
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         double value=instance.value(attribute);
-//Find which bin its in
-        //Find bin from value
+        //Find which bin its in
         double x=min;
         int c=0;
         while(x<value){
@@ -80,7 +92,9 @@ public class HistogramClassifier implements Classifier {
         }
         if(x>=max-0.001)
             c=numBins-1;
-        //Find max count: Maybe more efficient to transpose counts completely?
+        // C is the bin that the new instance attribute 0 is in
+        // we call it discretisation: making a continuous variable discrete
+        //Find max count
         int[] ct=new int[instance.numClasses()];
         for(int i=0;i<counts.length;i++)
             ct[i]=counts[i][c];
@@ -125,6 +139,12 @@ public class HistogramClassifier implements Classifier {
         res+= "Histogram::\n";
         for(int[] hist:counts) {
             for (int c : hist)
+                res += c + ",";
+            res += "\n";
+        }
+        res+= "Probabilities::\n";
+        for(double[] d:distributions) {
+            for (double c : d)
                 res += c + ",";
             res += "\n";
         }

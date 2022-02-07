@@ -30,7 +30,7 @@ public class Week2Examples {
         for(Instance ins:data) {
             int pred = (int) cls.classifyInstance(ins);
             int actual = (int) ins.classValue();
-            System.out.println(" Predicted  = "+pred);
+//            System.out.println(" Predicted  = "+pred);
             if (pred == actual)
                 correct++;
 //            double[] probs = mc.distributionForInstance(ins);
@@ -39,20 +39,41 @@ public class Week2Examples {
         Instances[] split = InstanceTools.resampleInstances(data,0,0.5);
         Evaluation evaluation = new Evaluation(split[0]);
         evaluation.evaluateModel(cls, split[1]);
-        System.out.println(" Evaluation  = "+evaluation.toSummaryString());
+  //      System.out.println(" Evaluation  = "+evaluation.toSummaryString());
     }
-    public static void discreteProblem() throws IOException {
+    public static void discreteProblem() throws Exception {
         Instances train = DatasetLoading.loadData("src/main/java/ml6002b2022/week2_demo/Arsenal_TRAIN");
         Instances test = DatasetLoading.loadData("src/main/java/ml6002b2022/week2_demo/Arsenal_TEST");
+
+        for(int k=0;k<train.numAttributes()-1;k++) {
+            //Get countds
+            int numVals = train.attribute(k).numValues();
+            int[][] counts = new int[numVals][train.numClasses()];
+            for (Instance ins : train) {
+                int cls = (int) ins.classValue();
+                int att = (int) ins.value(k);
+                counts[att][cls]=counts[att][cls]+1;
+            }
+            for (int i = 0; i < counts.length; i++) {
+                for (int j = 0; j < counts[i].length; j++)
+                    System.out.print(counts[i][j] + ",");
+                System.out.println("");
+            }
+            //Find probs
+
+            //Find the info gain
+
+        }
 
     }
 
     public static void main(String[] args) throws Exception {
         Instances wdbc = DatasetLoading.loadData("src/main/java/ml6002b2022/week1_demo/wdbc");
+        Instances afc = DatasetLoading.loadData("src/main/java/ml6002b2022/week2_demo/arsenal_TRAIN");
         MajorityClassClassifier mc= new MajorityClassClassifier();
-//        simpleDemo(mc,wdbc);
+//        simpleDemo(mc,afc);
         HistogramClassifier hc = new HistogramClassifier();
-        simpleDemo(hc, wdbc);
+//        simpleDemo(hc, wdbc);
         discreteProblem();
     }
 
