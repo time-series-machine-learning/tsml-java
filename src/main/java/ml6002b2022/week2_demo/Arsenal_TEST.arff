@@ -1,0 +1,28 @@
+@RELATION Arsenal
+
+@ATTRIBUTE Ramsdale  {0,1}
+@ATTRIBUTE Tierney   {0,1}
+@ATTRIBUTE Saka  {0,1}
+@ATTRIBUTE class    {Loss,Draw,Win}
+@DATA
+
+1, 0,  0,  Draw
+1, 0,  0,  Loss
+0, 1,  1,  Win
+1, 0,  1,  Draw
+0, 0,  1,  Win
+0, 1,  1,  Win
+1, 1,  1,  Draw
+0, 1,  1,  Win
+1, 1,  0,  Loss
+1, 0,  1,  Win
+1, 1,  0,  Loss
+0, 1,  0,  Win
+1, 1,  0,  Draw
+1, 1,  0,  Draw
+0, 0,  1,  Win
+1, 0,  1,  Win
+0, 1,  1,  Draw
+1, 1,  0,  Win
+1, 1,  1,  Win
+1, 1,  0,  Win

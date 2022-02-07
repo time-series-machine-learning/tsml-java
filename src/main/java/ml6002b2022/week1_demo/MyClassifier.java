@@ -1,4 +1,4 @@
-package ml6002b2022;
+package ml6002b2022.week1_demo;
 
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;

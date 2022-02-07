@@ -1,21 +1,14 @@
-package ml6002b2022;
+package ml6002b2022.week1_demo;
 
 import experiments.data.DatasetLoading;
-import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.FileReader;
-import java.io.IOException;
-
 public class Week1Examples {
     public static void main(String[] args) throws Exception {
-        Instances wdbc = DatasetLoading.loadData("src/main/java/ml6002b2022/wdbc");
+        Instances wdbc = DatasetLoading.loadData("src/main/java/ml6002b2022/week1_demo/wdbc");
         MyClassifier cls= new MyClassifier();
         cls.buildClassifier(wdbc);
-
-
-
         int count =0;
         for(Instance in:wdbc){
             double pred=cls.classifyInstance(in);
