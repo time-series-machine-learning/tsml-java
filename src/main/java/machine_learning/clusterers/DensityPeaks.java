@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
-import static utilities.ClusteringUtilities.createFullDistanceMatrix;
-import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the Density Peaks algorithm described in "Clustering by
@@ -258,14 +256,10 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
 
         double mean = sum / numInstances;
         boolean threshholdFound = false;
-        boolean findCutoff = false;
+        //If no estimate cutoff value is set find a cutoff point
+        boolean findCutoff = clusterCenterCutoff < 0;
 
         for (int i = 0; i < numInstances; i++) {
-            //If no estimate cutoff value is set find a cutoff point
-            if (clusterCenterCutoff < 0) {
-                findCutoff = true;
-            }
-
             if (findCutoff) {
                 clusterCenterCutoff = estimates[estIndexes[i]] + mean;
             }
@@ -355,14 +349,13 @@ public class DensityPeaks extends DistanceBasedVectorClusterer {
         String[] names = {"aggre", "synth", "dptest1k", "dptest4k", "flame", "spiral"};
         double[] cutoffs = {0.75, 1.5, 1, 4, 2, 0.3};
 
-//        String[] datasets = {"Z:/Data/ClusteringTestDatasets/DensityPeakVector/aggregation.arff"};
+//        String[] datasets = {"Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\aggregation.arff"};
 //        String[] names = {"aggre"};
 
         boolean output = true;
 
         if (output) {
-            System.out.println("cd('Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\" +
-                    "DensityPeakVector')");
+            System.out.println("cd('Z:\\Data Working Area\\ClusteringTestDatasets\\DensityPeakVector\\)");
             System.out.println("load('matlabCluster.mat')");
         }
 

@@ -95,6 +95,29 @@ public class ClustererLists {
                 c = new TTC();
                 break;
 
+            case "ushapelets2":
+                c = new UnsupervisedShapelets();
+                ((UnsupervisedShapelets)c).setExhaustiveSearch(true);
+                break;
+            case "ushapelets3":
+                c = new UnsupervisedShapelets();
+                ((UnsupervisedShapelets)c).setRandomSearchProportion(0.2);
+                break;
+            case "ushapelets4":
+                c = new UnsupervisedShapelets();
+                ((UnsupervisedShapelets)c).setUseKMeans(false);
+                break;
+            case "ushapelets5":
+                c = new UnsupervisedShapelets();
+                ((UnsupervisedShapelets)c).setExhaustiveSearch(true);
+                ((UnsupervisedShapelets)c).setUseKMeans(false);
+                break;
+            case "ushapelets6":
+                c = new UnsupervisedShapelets();
+                ((UnsupervisedShapelets)c).setRandomSearchProportion(0.2);
+                ((UnsupervisedShapelets)c).setUseKMeans(false);
+                break;
+
             default:
                 System.out.println("Unknown clusterer " + cls);
         }
