@@ -7,6 +7,7 @@ import utilities.ClassifierTools;
 import weka.core.Instances;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class HiveCote2Examples {
 
@@ -67,21 +68,67 @@ public class HiveCote2Examples {
      * (CLARIFY WITH JAMES)
      * 4. Threaded. The HC2.0 version has limited threading: if threaded, each classifier is built in its own thread.
      * If threaded and contracted, the assumption is the contract time is available for each thread, so that the overall
-     * build time wwill be approximately the contract time.
+     * build time will be approximately the contract time.
      *
      *
       */
-    public static void contracting() {
-//Example with a 1 hour sequential contract, each classifier gets approximately 15 mins
+    public static void contracting() throws Exception {
+        //Example with a 1 hour sequential contract, each classifier gets approximately 15 mins
+        Instances train = DatasetLoading.loadData("src/main/java/experiments/data/tsc/ArrowHead/ArrowHead_TRAIN");
+
+        HIVE_COTE hc2 = new HIVE_COTE();
+
+        System.out.println("HIVE COTE 2.0 is contractable");
+        System.out.println("Contract time can be set via the use Contractable methods");
+
+        //Set by minute, hour and day
+        hc2.setMinuteLimit(1);
+        hc2.setHourLimit(2);
+        hc2.setDayLimit(3);
+        //Set single unit limits
+        hc2.setOneMinuteLimit();
+        hc2.setOneHourLimit();
+        hc2.setOneDayLimit();
+        //Set by specifying TimeUnit
+        hc2.setTrainTimeLimit(42, TimeUnit.MINUTES);
+        hc2.setTrainTimeLimit(10,TimeUnit.SECONDS);
+
+        System.out.println("First example is a 1 hour sequential contract");
+        System.out.println("Each classifier gets approximately 15 minutes train time");
+        hc2.setHourLimit(1);
+        hc2.setDebug(true);
+
+        long time = System.nanoTime();
+        hc2.buildClassifier(train);
+        time = System.nanoTime() - time;
+        System.out.println("\t\t Time elapsed = "+time/1000000000+" seconds");
 
 
-//Example with a 1 hour threaded contract, each classifier gets approximately 1 hour.
 
+        //Example with a 1 hour threaded contract, each classifier gets approximately 1 hour.
+        HIVE_COTE hc2Threaded = new HIVE_COTE();
+        System.out.println("HIVE COTE 2.0 can be threaded");
+        System.out.println("The amount of threads can be specified");
+        // set by number
+        // hc2.enableMultiThreading(2);
+
+        //with no argument it will allocate the number of available processors minus 1
+        hc2Threaded.enableMultiThreading();
+
+        System.out.println("Second example is a 1 hour threaded contract");
+        System.out.println("Each classifier gets approximately 1 hour train time");
+        hc2Threaded.setHourLimit(1);
+        hc2Threaded.setDebug(true);
+
+        time = System.nanoTime();
+        hc2Threaded.buildClassifier(train);
+        time = System.nanoTime() - time;
+        System.out.println("\t\t Time elapsed = "+time/1000000000+" seconds");
     }
 
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Exception {
+        contracting();
     }
 
 
