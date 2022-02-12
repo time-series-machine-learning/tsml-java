@@ -123,7 +123,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
 
             if (i > 0){
                 for (int n = 0; n < ensembleAssignments[i].length; n++) {
-                    ensembleAssignments[i][n] = newLabels[i - 1][ensembleAssignments[i][n]];
+                    //ensembleAssignments[i][n] = newLabels[i - 1][ensembleAssignments[i][n]];
                 }
             }
         }
