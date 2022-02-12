@@ -12,10 +12,19 @@ import java.util.concurrent.TimeUnit;
 public class HiveCote2Examples {
 
     public static void simpleBuild() throws Exception {
+        System.out.println("Basic Usage: \n" +
+                           "   - load a dataset\n" +
+                           "   - build a default classifier\n" +
+                           "   - make predictions");
+        System.out.println("Current default for HIVE COTE is to use version 2.0:\n" +
+                           "   STC, DrCIF, Arsenal and TDE");
         String problem="Chinatown";
-        Instances train= DatasetLoading.loadData("");
-        Instances test= DatasetLoading.loadData("");
+        Instances train= DatasetLoading.loadData("src/main/java/experiments/data/tsc/" +
+                problem + "/" + problem + "_TRAIN"); //load train data of Chinatown dataset
+        Instances test= DatasetLoading.loadData("src/main/java/experiments/data/tsc/" +
+                problem + "/" + problem + "_TEST"); //load test data of chinatown dataset
         HIVE_COTE hc2 = new HIVE_COTE();//Defaults to HC V2.0
+        hc2.setDebug(true); //Verbose output
         hc2.buildClassifier(train);
         double acc = ClassifierTools.accuracy(test,hc2);
         System.out.println(" HC2 test accuracy on "+problem+" = "+acc);
@@ -128,7 +137,8 @@ public class HiveCote2Examples {
 
 
     public static void main(String[] args) throws Exception {
-        contracting();
+        simpleBuild();
+        //contracting();
     }
 
 
