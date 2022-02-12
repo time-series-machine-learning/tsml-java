@@ -110,6 +110,12 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      */
     public static boolean printOnFailureToLoad = true;
 
+    /**
+     * Print a message when result file clustering accuracy does not match calculated accuracy.
+     * Some results files do not have valid accuracies, setting this to false will stop print outs from this check.
+     */
+    public static boolean clAccTestPrint = true;
+
 
     //LINE 1: meta info, set by user
     private String clustererName = "";
@@ -1017,13 +1023,13 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
 
             //acts as a basic form of verification, does the acc reported on line 3 align with
             //the acc calculated while reading predictions
-/*            double eps = 1.e-8;
-            if (Math.abs(reportedTestAcc - accuracy) > eps) {
+            double eps = 1.e-8;
+            if (clAccTestPrint && Math.abs(reportedTestAcc - accuracy) > eps) {
                 System.out.println("Calculated accuracy (" + accuracy + ") differs from written accuracy " +
                         "(" + reportedTestAcc + ") by more than eps (" + eps + "). File = " + path + ". numinstances = "
                         + numInstances + ". numClasses = " + numClasses);
             }
-*/
+
             finalised = true;
             inf.close();
         } catch (FileNotFoundException fnf) {
