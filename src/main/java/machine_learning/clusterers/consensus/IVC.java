@@ -49,8 +49,18 @@ public class IVC extends ConsensusClusterer implements LoadableConsensusClustere
     }
 
     @Override
+    public double[] distributionForInstance(Instance inst) throws Exception {
+        return null;
+    }
+
+    @Override
     public int[] clusterFromFile(String[] directoryPaths) throws Exception {
         return new int[0];
+    }
+
+    @Override
+    public double[][] distributionFromFile(String[] directoryPaths) throws Exception {
+        return new double[0][0];
     }
 
     public static void main(String[] args) throws Exception {

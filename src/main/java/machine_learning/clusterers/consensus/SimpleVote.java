@@ -86,6 +86,12 @@ public class SimpleVote extends ConsensusClusterer implements LoadableConsensusC
 
     @Override
     public int clusterInstance(Instance inst) throws Exception {
+        double[] dist = distributionForInstance(inst);
+        return argMax(dist, rand);
+    }
+
+    @Override
+    public double[] distributionForInstance(Instance inst) throws Exception {
         Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
         int clsIdx = inst.classIndex();
         if (clsIdx >= 0){
@@ -93,17 +99,33 @@ public class SimpleVote extends ConsensusClusterer implements LoadableConsensusC
             newInst.deleteAttributeAt(clsIdx);
         }
 
-        double[] votes = new double[k];
-        votes[clusterers[0].clusterInstance(inst)]++;
+        double[] dist = new double[k];
+        dist[clusterers[0].clusterInstance(inst)]++;
         for (int i = 1; i < clusterers.length; i++) {
-            votes[newLabels[i - 1][clusterers[i].clusterInstance(inst)]]++;
+            dist[newLabels[i - 1][clusterers[i].clusterInstance(inst)]]++;
         }
 
-        return argMax(votes, rand);
+        for (int i = 0; i < dist.length; i++){
+            dist[i] /= clusterers.length;
+        }
+
+        return dist;
     }
 
     @Override
     public int[] clusterFromFile(String[] directoryPaths) throws Exception {
+        double[][] dists = distributionFromFile(directoryPaths);
+
+        int[] arr = new int[dists.length];
+        for (int i = 0; i < dists.length; i++) {
+            arr[i] = argMax(dists[i], rand);
+        }
+
+        return arr;
+    }
+
+    @Override
+    public double[][] distributionFromFile(String[] directoryPaths) throws Exception {
         int[][] ensembleAssignments = new int[directoryPaths.length][];
 
         for (int i = 0; i < directoryPaths.length; i++) {
@@ -121,17 +143,18 @@ public class SimpleVote extends ConsensusClusterer implements LoadableConsensusC
             }
         }
 
-        int[] arr = new int[ensembleAssignments[0].length];
-        for (int i = 0; i < arr.length; i++) {
-            double[] votes = new double[k];
+        double[][] dists = new double[ensembleAssignments[0].length][k];
+        for (int i = 0; i < dists.length; i++) {
             for (int[] clusterAssignments : ensembleAssignments) {
-                votes[clusterAssignments[i]]++;
+                dists[i][clusterAssignments[i]]++;
             }
 
-            arr[i] = argMax(votes, rand);
+            for (int n = 0; n < dists[n].length; n++){
+                dists[i][n] /= ensembleAssignments.length;
+            }
         }
 
-        return arr;
+        return dists;
     }
 
     private void buildEnsemble(double[][] ensembleAssignments){

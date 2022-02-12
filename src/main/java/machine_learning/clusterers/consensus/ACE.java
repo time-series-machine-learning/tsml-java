@@ -11,9 +11,13 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 import static utilities.ArrayUtilities.sum;
 import static utilities.ArrayUtilities.unique;
+import static utilities.ClusteringUtilities.randIndex;
+import static utilities.GenericTools.max;
+import static utilities.Utilities.argMax;
 
 public class ACE extends ConsensusClusterer implements LoadableConsensusClusterer, NumberOfClustersRequestable {
 
@@ -24,6 +28,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
     private int k = 2;
 
     private int[] newLabels;
+    private Random rand;
 
     public ACE(EnhancedAbstractClusterer[] clusterers) {
         super(clusterers);
@@ -47,16 +52,16 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
     public void buildClusterer(Instances data) throws Exception {
         super.buildClusterer(data);
 
-//        if (buildClusterers){
-//            for (EnhancedAbstractClusterer clusterer: clusterers){
-//                clusterer.buildClusterer(data);
-//            }
-//        }
+        if (buildClusterers){
+            for (EnhancedAbstractClusterer clusterer: clusterers){
+                clusterer.buildClusterer(data);
+            }
+        }
 
         ArrayList<Integer>[][] ensembleClusters = new ArrayList[clusterers.length][];
-//        for (int i = 0; i < ensembleClusters.length; i++) {
-//            ensembleClusters[i] = clusterers[i].getClusters();
-//        }
+        for (int i = 0; i < ensembleClusters.length; i++) {
+            ensembleClusters[i] = clusterers[i].getClusters();
+        }
 
         buildEnsemble(ensembleClusters, data.numInstances());
     }
@@ -92,22 +97,57 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
     }
 
     @Override
+    public double[] distributionForInstance(Instance inst) throws Exception {
+        return null;
+    }
+
+    @Override
     public int[] clusterFromFile(String[] directoryPaths) throws Exception {
-        return new int[0];
+        double[][] dists = distributionFromFile(directoryPaths);
+
+        int[] arr = new int[dists.length];
+        for (int i = 0; i < dists.length; i++) {
+            arr[i] = argMax(dists[i], rand);
+        }
+
+        return arr;
+    }
+
+    @Override
+    public double[][] distributionFromFile(String[] directoryPaths) throws Exception {
+        int[][] ensembleAssignments = new int[directoryPaths.length][];
+
+        for (int i = 0; i < directoryPaths.length; i++) {
+            ClustererResults r = new ClustererResults(directoryPaths[i] + "testFold" + seed + ".csv");
+            ensembleAssignments[i] = r.getClusterValuesAsIntArray();
+
+            if (i > 0){
+                for (int n = 0; n < ensembleAssignments[i].length; n++) {
+                    ensembleAssignments[i][n] = newLabels[i - 1][ensembleAssignments[i][n]];
+                }
+            }
+        }
+
+        double[][] dists = new double[ensembleAssignments[0].length][k];
+        for (int i = 0; i < dists.length; i++) {
+            for (int[] clusterAssignments : ensembleAssignments) {
+                dists[i][clusterAssignments[i]]++;
+            }
+
+            for (int n = 0; n < dists[n].length; n++){
+                dists[i][n] /= ensembleAssignments.length;
+            }
+        }
+
+        return dists;
     }
 
     private void buildEnsemble(ArrayList<Integer>[][] ensembleClusters, int numInstances) throws Exception {
-        numInstances = 10;
-        ensembleClusters = new ArrayList[3][3];
-        ensembleClusters[0][0] = new ArrayList(Arrays.asList(5, 6, 7, 8));
-        ensembleClusters[0][1] = new ArrayList(Arrays.asList(0, 1, 9));
-        ensembleClusters[0][2] = new ArrayList(Arrays.asList(2, 3, 4));
-        ensembleClusters[1][0] = new ArrayList(Arrays.asList(2, 3, 4));
-        ensembleClusters[1][1] = new ArrayList(Arrays.asList(6, 7, 8));
-        ensembleClusters[1][2] = new ArrayList(Arrays.asList(0, 1, 5, 9));
-        ensembleClusters[2][0] = new ArrayList(Arrays.asList(0, 1, 2, 9));
-        ensembleClusters[2][1] = new ArrayList(Arrays.asList(5, 6, 7, 8));
-        ensembleClusters[2][2] = new ArrayList(Arrays.asList(3, 4));
+        if (!seedClusterer) {
+            rand = new Random();
+        } else {
+            rand = new Random(seed);
+        }
 
         int clusterCount = 0;
         ArrayList<ArrayList<double[]>> binaryClusterMembership = new ArrayList<>(ensembleClusters.length);
@@ -129,16 +169,19 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
             throw new Exception("K is greater than the total number of clusters in the ensemble.");
         }
 
+        double newAlpha = alpha;
+
         newLabels = new int[clusterCount];
         for (int i = 1; i < clusterCount; i++){
             newLabels[i] = i;
         }
 
         boolean stage1 = true;
+        double[][] clusterSimilarities = null;
         while (true) {
             // find the similarity of each cluster from different ensemble members
-            double[][] clusterSimilarities = new double[clusterCount][];
             int countI = 0;
+            clusterSimilarities = new double[clusterCount][];
             for (int i = 0; i < binaryClusterMembership.size(); i++) {
                 for (int n = 0; n < binaryClusterMembership.get(i).size(); n++) {
                     clusterSimilarities[countI + n] = new double[countI];
@@ -160,9 +203,9 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
 
             // update alpha to the max similarity value if not using initial clusters
             if (!stage1){
-                alpha = maxSimilarity(clusterSimilarities);
+                newAlpha = maxSimilarity(clusterSimilarities);
 
-                if (alpha < alphaMin){
+                if (newAlpha < alphaMin){
                     break;
                 }
             }
@@ -180,7 +223,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                     for (int j = 0; j < binaryClusterMembership.get(i).size(); j++) {
                         for (int k = 0; k < binaryClusterMembership.get(n).size(); k++) {
                             if (!merged[countI + j] && !merged[countN + k] &&
-                                    clusterSimilarities[countI + j][countN + k] >= alpha) {
+                                    clusterSimilarities[countI + j][countN + k] >= newAlpha) {
                                 for (int g = 0; g < tempNewLabels.length; g++){
                                     if (tempNewLabels[g] == countI + j){
                                         tempNewLabels[g] = countN + k;
@@ -212,7 +255,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                     newLabels = relabel(tempNewLabels);
                     stage1 = false;
                 } else {
-                    alpha += alphaIncrement;
+                    newAlpha += alphaIncrement;
                 }
             }
             // no longer using the initial clusters, keep going and lowering alpha to the max similarity
@@ -236,22 +279,23 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         }
 
         // calculate how certain each cluster is for each case
-        double[][] membershipSimilarities = new double[clusterCount][];
+        double[][] membershipCounts = new double[clusterCount][];
         int clusterIdx = 0;
         for (ArrayList<double[]> clusterGroup : binaryClusterMembership) {
             for (double[] cluster : clusterGroup) {
-                membershipSimilarities[clusterIdx++] = cluster;
+                membershipCounts[clusterIdx++] = cluster;
             }
         }
 
+        double[][] membershipSimilarities = new double[clusterCount][numInstances];
         for (int i = 0; i < numInstances; i++){
             double sum = 0;
             for (int n = 0; n < clusterCount; n++){
-                sum += membershipSimilarities[n][i];
+                sum += membershipCounts[n][i];
             }
 
             for (int n = 0; n < clusterCount; n++){
-                membershipSimilarities[n][i] /= sum;
+                membershipSimilarities[n][i] = membershipCounts[n][i] / sum;
             }
         }
 
@@ -268,7 +312,9 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         // if we dont have k clusters with at least one certain (member similarity > alpha2) case, find the k most
         // certain clusters
         Integer[] clusterRanks = new Integer[clusterCount];
-        if (sum(certainClusters) != k){
+        double ncc = sum(certainClusters);
+        double newAlpha2 = alpha2;
+        if (ncc != k){
             double[] clusterCertainties = new double[clusterCount];
             for (int i = 0; i < clusterCount; i++) {
                 int numObjects = 0;
@@ -287,18 +333,33 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
 
             GenericTools.SortIndexDescending sort = new GenericTools.SortIndexDescending(clusterCertainties);
             Arrays.sort(clusterRanks, sort);
+
+            //todo check out, weird
+            newAlpha2 = -1;
+            if (ncc < 1) {
+                newAlpha2 = clusterCertainties[clusterRanks[k - 1]];
+            }
+            else {
+                for (int i = 1; i < clusterCount; i++) {
+                    double m = max(clusterSimilarities[i]);
+                    if (m > newAlpha2) {
+                        newAlpha2 = m;
+                    }
+                }
+            }
         }
+        //todo checkout
         else{
             int n = 0;
             for (int i = 0; i < clusterCount; i++) {
                 if (certainClusters[i] == 1) {
-                    clusterRanks[n++] = certainClusters[i];
+                    clusterRanks[n++] = i;
                 }
             }
 
             for (int i = 0; i < clusterCount; i++) {
                 if (certainClusters[i] == 0) {
-                    clusterRanks[n++] = certainClusters[i];
+                    clusterRanks[n++] = i;
                 }
             }
         }
@@ -313,7 +374,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         }
 
         // calculate similarities of remaining clusters to removed ones to determine labels for new cases
-        double[][] clusterSimilarities = new double[k][clusterCount - k];
+        clusterSimilarities = new double[k][clusterCount - k];
         for (int i = k; i < clusterCount; i++){
             double max = -2;
             int maxIdx = -1;
@@ -334,10 +395,34 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                     newLabels[n] = maxIdx;
                 }
             }
+
+            for (int n = 0; n < numInstances; n++){
+                membershipCounts[maxIdx][n] += membershipCounts[clusterRanks[i]][n];
+            }
         }
 
-        // assign clusters to any cases which have no similarity with any of the current clusters
         assignments = new double[numInstances];
+        clusters = new ArrayList[k];
+        for (int i = 0; i < k; i++) {
+            clusters[i] = new ArrayList();
+        }
+
+        //todo checkout
+        if (clusterCount > k) {
+            for (int i = 0; i < numInstances; i++) {
+                double sum = 0;
+                for (int n = 0; n < clusterCount; n++) {
+                    sum += membershipCounts[clusterRanks[n]][i];
+                }
+
+                for (int n = 0; n < clusterCount; n++) {
+                    membershipSimilarities[clusterRanks[n]][i] = membershipCounts[clusterRanks[n]][i] / sum;
+                }
+            }
+        }
+
+        // assign similarities to any cases which have no similarity with any of the current clusters
+        int numUnclustered = 0;
         for (int i = 0; i < numInstances; i++) {
             double max = 0;
             int maxIdx = -1;
@@ -352,27 +437,81 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
                 }
             }
 
+            // todo checkout, weird
             if (sum == 0){
                 for (int n = 0; n < k; n++) {
                     for (int j = k; j < clusterCount; j++) {
                         if (membershipSimilarities[clusterRanks[j]][i] > 0) {
-                            membershipSimilarities[n][i] += clusterSimilarities[n][j - k] *
+                            membershipSimilarities[clusterRanks[n]][i] += clusterSimilarities[n][j - k] *
                                     membershipSimilarities[clusterRanks[j]][i];
                         }
                     }
 
-                    if (membershipSimilarities[n][i] > max){
-                        max =  membershipSimilarities[n][i];
+                    if (membershipSimilarities[clusterRanks[n]][i] > max){
+                        max =  membershipSimilarities[clusterRanks[n]][i];
                         maxIdx = n;
                     }
                 }
             }
 
-            if (max > alpha2){
+            // this skips stage 3.
+            if (max > newAlpha2) {
                 assignments[i] = maxIdx;
+                clusters[maxIdx].add(i);
             }
-            else{
+            else {
+                assignments[i] = -1;
+                numUnclustered++;
+            }
+        }
 
+        // assign clusters to uncertain cases
+        if (numUnclustered > 0) {
+            double[] clusterQualities = new double[k];
+            double[] membershipSums = new double[k];
+            for (int n = 0; n < k; n++){
+                int numAboveZero = 0;
+                for (int i = 0; i < numInstances; i++) {
+                    if (membershipSimilarities[clusterRanks[n]][i] > 0) {
+                        membershipSums[n] += membershipSimilarities[clusterRanks[n]][i];
+                        numAboveZero++;
+                    }
+                }
+                membershipSums[n] /= numAboveZero;
+
+                double sum = 0;
+                for (int c: clusters[n]){
+                    sum += Math.pow(membershipSimilarities[clusterRanks[n]][c] - membershipSums[n], 2);
+                }
+                clusterQualities[n] = sum / clusters[n].size();
+            }
+
+            for (int i = 0; i < numInstances; i++){
+                if (assignments[i] == -1){
+                    double minQualityChange = Double.MAX_VALUE;
+                    double newClusterQuality = -1;
+                    int minIdx = -1;
+
+                    for (int n = 0; n < k; n++){
+                        double sum = 0;
+                        for (int c: clusters[n]){
+                            sum += Math.pow(membershipSimilarities[clusterRanks[n]][c] - membershipSums[n], 2);
+                        }
+                        sum += Math.pow(membershipSimilarities[clusterRanks[n]][i] - membershipSums[n], 2);
+                        double quality = sum / (clusters[n].size() + 1);
+
+                        double qualityChange = quality - clusterQualities[n];
+                        if (qualityChange < minQualityChange){
+                            minQualityChange = qualityChange;
+                            newClusterQuality = quality;
+                            minIdx = n;
+                        }
+                    }
+
+                    clusterQualities[minIdx] = newClusterQuality;
+                    assignments[i] = minIdx;
+                    clusters[minIdx].add(i);
+                }
             }
         }
     }
@@ -479,13 +618,13 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         }
 
         ACE k = new ACE(clusterers);
-        k.setNumClusters(3);
+        k.setNumClusters(inst.numClasses());
         k.setSeed(0);
         k.buildClusterer(inst);
 
-//        System.out.println(k.clusters.length);
-//        System.out.println(Arrays.toString(k.assignments));
-//        System.out.println(Arrays.toString(k.clusters));
-//        System.out.println(randIndex(k.assignments, inst));
+        System.out.println(k.clusters.length);
+        System.out.println(Arrays.toString(k.assignments));
+        System.out.println(Arrays.toString(k.clusters));
+        System.out.println(randIndex(k.assignments, inst));
     }
 }

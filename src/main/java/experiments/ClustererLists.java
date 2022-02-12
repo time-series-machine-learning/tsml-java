@@ -19,6 +19,9 @@ import machine_learning.clusterers.CAST;
 import machine_learning.clusterers.DensityPeaks;
 import machine_learning.clusterers.KMeans;
 import machine_learning.clusterers.KMedoids;
+import tsml.classifiers.distance_based.distances.DistanceFunctionAdapter;
+import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
+import tsml.classifiers.distance_based.distances.msm.MSMDistance;
 import tsml.clusterers.KShape;
 import tsml.clusterers.TTC;
 import tsml.clusterers.UnsupervisedShapelets;
@@ -116,6 +119,21 @@ public class ClustererLists {
                 c = new UnsupervisedShapelets();
                 ((UnsupervisedShapelets)c).setRandomSearchProportion(0.2);
                 ((UnsupervisedShapelets)c).setUseKMeans(false);
+                break;
+
+            case "kmeans-msm":
+                c = new KMeans();
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new MSMDistance()));
+                break;
+            case "kmeans-dtwfull":
+                c = new KMeans();
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new DTWDistance()));
+                break;
+            case "kmeans-dtw20":
+                c = new KMeans();
+                DTWDistance dtw20 = new DTWDistance();
+                dtw20.setWindow(0.2);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(dtw20));
                 break;
 
             default:
