@@ -244,6 +244,8 @@ public class HiveCote2Examples {
 
 
     public static void main(String[] args) throws Exception {
+        HIVE_COTE hc2 = new HIVE_COTE();
+        System.out.println("HIVE-COTE Classifier class location: " + hc2.getClass().getName());
         simpleBuild();
         //experimentClassBuild();
         //fromComponentBuild();
