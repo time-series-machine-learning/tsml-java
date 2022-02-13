@@ -2,11 +2,13 @@ package examples;
 
 import experiments.Experiments;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.hybrids.HIVE_COTE;
+import tsml.classifiers.kernel_based.Arsenal;
 import utilities.ClassifierTools;
 import weka.core.Instances;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class HiveCote2Examples {
@@ -116,17 +118,50 @@ public class HiveCote2Examples {
     }
 
 
-    public static void configuration() {
-// Set up to debug print
+    public static void configuration() throws Exception {
+        System.out.println("HIVE-COTE is very configurable");
+        HIVE_COTE hc2 = new HIVE_COTE();
+        System.out.println("The current default for HC is to use version 2.0: STC, DrCIF, Arsenal, TDE");
 
-// Switch version versions
+        // Set up to debug print
+        hc2.setDebug(true);
 
-// Set up to checkpoint
+        // Switch version versions
+        System.out.println("HIVE-COTE can be configured between 3 main versions:");
+        System.out.println("\t 0.1 - EE, STC, RISE, BOSS, TSF");
+        System.out.println("\t 1.0 - STC, RISE, cBOSS, TSF");
+        System.out.println("\t 2.0 - STC, DrCIF, Arsenal, TDE");
+        hc2.setupHIVE_COTE_0_1(); //Version 0.1
+        hc2.setupHIVE_COTE_1_0(); //Version 1.0
+        hc2.setupHIVE_COTE_2_0(); //Version 2.0
 
-//Set up as threaded
+        //Set up as threaded
+        System.out.println("HIVE-COTE 2.0 can be threaded");
+        hc2.enableMultiThreading(2); //Set thread limit of 2
+        hc2.enableMultiThreading(4); //Set thread limit of 4
+        hc2.enableMultiThreading();//Set thread limit to the number of available processors subtract 1
+                                   //For example a 4 core processor would have 3 cores allocated
 
-//Build from any old classifiers
+        //Build from any old classifiers
+        System.out.println("HIVE-COTE can have the classifiers to be used set manually");
+        System.out.println("Manually set classifiers");
+        EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[2];
+        classifiers[0] = new Arsenal();
+        classifiers[1] = new TDE();
+        String[] classifierNames = {"Arsenal","TDE"};
+        hc2.setClassifiers(classifiers,classifierNames,null);
+        String[] names = hc2.getClassifierNames();
+        for(String name : names){
+            System.out.println("\tClassifier: " + name);
+        }
 
+        String problem = "Chinatown";
+        Instances train = DatasetLoading.loadData("src/main/java/experiments/data/tsc/"+problem+"/"+problem+"_TRAIN");
+        Instances test = DatasetLoading.loadData("src/main/java/experiments/data/tsc/"+problem+"/"+problem+"_TEST");
+
+        hc2.buildClassifier(train);
+        double acc = ClassifierTools.accuracy(test,hc2);
+        System.out.println("Accuracy = " + acc);
     }
 
 
@@ -209,9 +244,10 @@ public class HiveCote2Examples {
 
 
     public static void main(String[] args) throws Exception {
-        //simpleBuild();
+        simpleBuild();
         //experimentClassBuild();
-        fromComponentBuild();
+        //fromComponentBuild();
+        //configuration();
         //contracting();
     }
 
