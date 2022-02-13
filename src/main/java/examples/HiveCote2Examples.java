@@ -142,7 +142,7 @@ public class HiveCote2Examples {
         hc2.enableMultiThreading();//Set thread limit to the number of available processors subtract 1
                                    //For example a 4 core processor would have 3 cores allocated
 
-        //Build from any old classifiers
+        //Build from any classifiers
         System.out.println("HIVE-COTE can have the classifiers to be used set manually");
         System.out.println("Manually set classifiers");
         EnhancedAbstractClassifier[] classifiers = new EnhancedAbstractClassifier[2];
