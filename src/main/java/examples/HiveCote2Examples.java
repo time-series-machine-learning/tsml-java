@@ -65,11 +65,54 @@ public class HiveCote2Examples {
 
         System.out.println("The output of this will be stored in C:/Temp/HC2/Predictions/Chinatown/testFold0.csv");
     }
-    public static void fromComponentBuild() {
-//Build some components with train files using experiments
+    public static void fromComponentBuild() throws Exception {
+        //Build some components with train files using experiments
+        String problem = "Chinatown";
+        //Setting up arguments
+        String[] arguments = new String[6];
+        arguments[0] = "-dp=src/main/java/experiments/data/tsc/"; //Data location
+        arguments[1] = "-rp=C:/Temp/"; //Location of where to write results
+        arguments[2] = "-gtf=true"; //Generate train files
+        arguments[3] = "-cn="; //Classifier name. A list of valid classifier names can be found in ClassifierLists.java
+        arguments[4] = "-dn="+problem; //Dataset name
+        arguments[5] = "-f=1"; //Fold number
 
-//Rebuild from file
+        Experiments.debug = true;
+        System.out.println("Manually set arguments:");
+        for (String string : arguments){
+            System.out.println("\t" + string);
+        }
+        System.out.println();
 
+        String[] components = {"STC","DrCIF","Arsenal","TDE"};
+        for (String component : components){
+            System.out.println("Building component: " + component);
+            arguments[3] = "-cn="+component;
+            Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments(arguments);
+            Experiments.setupAndRunExperiment(experimentalArguments);
+            System.out.println("Finished component: " + component);
+        }
+        System.out.println("All components finished");
+        //Rebuild from file
+        System.out.println("You can now run the load from file using Experiments with the argument:" +
+                "\t HIVE-COTE 2.0");
+        arguments[2] = "-gtf=false"; // Do not need train files
+        arguments[3] = "-cn=HIVE-COTE 2.0"; //Classifier name. A list of valid classifier names can be found in ClassifierLists.java
+        Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments(arguments);
+        Experiments.setupAndRunExperiment(experimentalArguments);
+        System.out.println("HIVE-COTE 2.0 finished. Results will be in C:/Temp/HIVE-COTE 2.0/Predictions/Chinatown/");
+
+        System.out.println("Or it can be run manually");
+        HIVE_COTE hc2 = new HIVE_COTE();
+        hc2.setBuildIndividualsFromResultsFiles(true);
+        hc2.setResultsFileLocationParameters("C:/Temp/",problem,0);
+        hc2.setClassifiersNamesForFileRead(components);
+        Instances train = DatasetLoading.loadData("src/main/java/experiments/data/tsc/"+problem+"/"+problem+"_TRAIN");
+        Instances test = DatasetLoading.loadData("src/main/java/experiments/data/tsc/"+problem+"/"+problem+"_TEST");
+        hc2.setDebug(true);
+        hc2.buildClassifier(train);
+        double acc = ClassifierTools.accuracy(test,hc2);
+        System.out.println("Accuracy = " + acc);
     }
 
 
@@ -167,7 +210,8 @@ public class HiveCote2Examples {
 
     public static void main(String[] args) throws Exception {
         //simpleBuild();
-        experimentClassBuild();
+        //experimentClassBuild();
+        fromComponentBuild();
         //contracting();
     }
 
