@@ -31,10 +31,39 @@ public class HiveCote2Examples {
     }
 
 
-    public static void experimentClassBuild() {
-        Experiments.ExperimentalArguments exp;
+    public static void experimentClassBuild() throws Exception {
+        System.out.println("The Experiments.java class located in src/main/java/experiments/Experiments.java is used to " +
+                "standardise the output of classifiers to make post processing easier");
+        System.out.println("\nExperiments.java can be configured through the use of command line arguments" +
+                           "\n\tDocumentation for these arguments can be seen at the top of the ExperimentalArguments class in Experiments.java");
+        System.out.println("Experiments.java creates a classifier based on a switch statement in src/main/java/experiments/ClassifierLists.java");
+        System.out.println("\nThe classifier cannot be configured directly, as the purpose of this class is to run large scale comparative experiments");
+        System.out.println("However bespoke options can be added to ClassifierLists.java.");
+        System.out.println("\tThe option need to be added to the setBespokeClassifiers method and the option name needs " +
+                "to be added to the 'bespoke' string array\n");
+        //Setting up arguments
+        String[] arguments = new String[9];
+        arguments[0] = "-dp=src/main/java/experiments/data/tsc/"; //Data location
+        arguments[1] = "-rp=C:/Temp/"; //Location of where to write results
+        arguments[2] = "-gtf=false"; //Generate train files or not
+        arguments[3] = "-cn=HC2"; //Classifier name. A list of valid classifier names can be found in ClassifierLists.java
+        arguments[4] = "-dn=Chinatown"; //Dataset name
+        arguments[5] = "-f=1"; //Fold number
+        arguments[6] = "--force=true"; //Overwrites existing results if set to true, otherwise does not
+        arguments[7] = "-ctr=0"; //No time contract
+        arguments[8] = "-cp=0"; //No checkpointing
 
+        Experiments.debug = true;
+        System.out.println("Manually set args: ");
+        for (String string : arguments){
+            System.out.println("\t" + string);
+        }
+        System.out.println();
 
+        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments(arguments);
+        Experiments.setupAndRunExperiment(exp);
+
+        System.out.println("The output of this will be stored in C:/Temp/HC2/Predictions/Chinatown/testFold0.csv");
     }
     public static void fromComponentBuild() {
 //Build some components with train files using experiments
@@ -102,7 +131,7 @@ public class HiveCote2Examples {
         hc2.setTrainTimeLimit(42, TimeUnit.MINUTES);
         hc2.setTrainTimeLimit(10,TimeUnit.SECONDS);
 
-        System.out.println("First example is a 1 hour sequential contract");
+        System.out.println("The first example is a 1 hour sequential contract");
         System.out.println("Each classifier gets approximately 15 minutes train time");
         hc2.setHourLimit(1);
         hc2.setDebug(true);
@@ -124,7 +153,7 @@ public class HiveCote2Examples {
         //with no argument it will allocate the number of available processors minus 1
         hc2Threaded.enableMultiThreading();
 
-        System.out.println("Second example is a 1 hour threaded contract");
+        System.out.println("The second example is a 1 hour threaded contract");
         System.out.println("Each classifier gets approximately 1 hour train time");
         hc2Threaded.setHourLimit(1);
         hc2Threaded.setDebug(true);
@@ -137,7 +166,8 @@ public class HiveCote2Examples {
 
 
     public static void main(String[] args) throws Exception {
-        simpleBuild();
+        //simpleBuild();
+        experimentClassBuild();
         //contracting();
     }
 
