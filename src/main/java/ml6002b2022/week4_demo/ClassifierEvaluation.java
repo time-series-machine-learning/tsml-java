@@ -51,6 +51,8 @@ public class ClassifierEvaluation {
         }//,"trains"
 
         static String[] allProblems ={"blood", "hayes-roth","bank","balance-scale","monks-1","breast-cancer-wisc-diag"};
+
+
         static String[] allClassifiers={"J48","SimpleCart","FT","HoeffdingTree","LADTree","REPTree","DecisionStump","J48graft"};
 
 
@@ -83,11 +85,11 @@ public class ClassifierEvaluation {
         }
 
         public static void runExperimentManually() throws Exception {
-            String problem = "bank";
+            String problem = "optical";
             Instances data = DatasetLoading.loadData(basePath+problem+"/"+problem+".arff");
             System.out.println(data.numClasses());
             Instances[] split = InstanceTools.resampleInstances(data,0,0.5);
-//            split = DatasetLoading.sampleHayesRoth(0);
+            split = DatasetLoading.sampleHayesRoth(0);
             Classifier c = new J48();
             c.buildClassifier(split[0]);
             OutFile out = new OutFile("C:/temp/"+problem+"Resample0.csv");
@@ -121,12 +123,13 @@ public class ClassifierEvaluation {
             expSettings.debug = true;
             //If splits are not defined, can set here, the default is 50/50 splits
             DatasetLoading.setProportionKeptForTraining(0.75);
-            Experiments.setupAndRunExperiment(expSettings);
+//            Experiments.setupAndRunExperiment(expSettings);
+            expSettings.run();
+
         }
         public static void evaluateInCode() throws Exception {
             String problem = "bank";
             Instances data = DatasetLoading.loadData(basePath+problem+"/"+problem+".arff");
-            System.out.println(data.numClasses());
             Instances[] split = InstanceTools.resampleInstances(data,0,0.5);
             Evaluation eval = new Evaluation(split[0]);
             Classifier c = new J48();
@@ -137,17 +140,19 @@ public class ClassifierEvaluation {
             System.out.println(" Acc = "+acc+" auroc = "+weightedAuroc);
             eval.crossValidateModel(c,data,10,new Random());
             acc =1-eval.errorRate();
+            weightedAuroc = eval.weightedAreaUnderROC();
 //            weightedAuroc = eval.areaUnderROC(split[0].classIndex());
-//            System.out.println(" Acc = "+acc+" auroc = "+auroc);
+            System.out.println(" Acc = "+acc+" auroc = "+weightedAuroc);
         }
 
     public static void runMultipleExperiments() throws Exception {
         Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments();
-        Classifier[] cls= new Classifier[3];
-        String[] names = {"C45","RandF","TunedC45"};
+        Classifier[] cls= new Classifier[4];
+        String[] names = {"C45","RandF","RandF500","TunedC45"};
         J48 c45 = new J48();
+        RandomForest randfDefault = new RandomForest();
         RandomForest randf = new RandomForest();
-        randf.setNumTrees(200);
+        randf.setNumTrees(500);
         //Tuned C45
         TunedClassifier tunedC45 = new TunedClassifier();
         ParameterSpace ps = new ParameterSpace();
@@ -155,16 +160,18 @@ public class ClassifierEvaluation {
         int[] range = new int[10];
         for(int i=0;i<10;i++)
             range[i] = 2+i*2;
+
         ps.addParameter("M",range);
         tunedC45.setClassifier(new J48());
         tunedC45.setParameterSpace(ps);
         cls[0]=c45;
-        cls[1]=randf;
-        cls[2]=tunedC45;
+        cls[1]=randfDefault;
+        cls[2]=randf;
+        cls[3]=tunedC45;
 
         expSettings.dataReadLocation = basePath;
         expSettings.resultsWriteLocation = "c:/temp/";
-        expSettings.forceEvaluation = false; // Overwrite existing results?
+        expSettings.forceEvaluation = true; // Overwrite existing results?
         expSettings.debug = true;
         //If splits are not defined, can set here, the default is 50/50 splits
         DatasetLoading.setProportionKeptForTraining(0.5);
@@ -175,8 +182,8 @@ public class ClassifierEvaluation {
                 for (int j = 0; j < 5; j++) {
                     expSettings.datasetName = str;
                     expSettings.foldId = j;  // note that since we're now setting the fold directly, we can resume zero-indexing
-//                    Experiments.setupAndRunExperiment(expSettings);
-                    expSettings.run();
+                    Experiments.setupAndRunExperiment(expSettings);
+//                    expSettings.run();
                 }
             }
         }
@@ -187,7 +194,7 @@ public class ClassifierEvaluation {
             System.out.println("Classifier evaluation begins");
             MultipleClassifierEvaluation mce = new MultipleClassifierEvaluation("C:/Temp/","MyExperiment", 5);
             mce.setDatasets(allProblems);
-            mce.readInClassifiers(new String[] {"J48","RandF"},"C:/Temp/");
+            mce.readInClassifiers(new String[] {"C45","RandF","RandF500","TunedC45"},"C:/Temp/");
             mce.setIgnoreMissingResults(true);
             mce.setBuildMatlabDiagrams(false);
             mce.setTestResultsOnly(true);
@@ -205,13 +212,14 @@ public class ClassifierEvaluation {
  */
 //            runExperimentManually();
 //            runExperimentAutomatically();
-/*  Part 2: Generating performance measures in code */
-//            evaluateInCode();
+//            runMultipleExperiments();
+
+            /*  Part 2: Generating performance measures in code */
+ //           evaluateInCode();
 /*  Part 3: Generating performance measures from results files
              */
             //Create results files
-            runMultipleExperiments();
-//            multipleClassifierEvaluation();
+            multipleClassifierEvaluation();
             //Compare
 //            compareClassifiers();
 
