@@ -211,8 +211,6 @@ public class ClassifierEvaluation {
              */
             //Create results files
             runMultipleExperiments();
-
-
 //            multipleClassifierEvaluation();
             //Compare
 //            compareClassifiers();

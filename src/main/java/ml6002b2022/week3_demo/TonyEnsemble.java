@@ -61,6 +61,9 @@ public class TonyEnsemble extends AbstractClassifier {
     }
 
     public static void main(String[] args) throws Exception {
+        // Test github
+        //
+
         Instances playGolf= DatasetLoading.loadData("src/main/java/ml6002b2022/week3_demo/playGolf");
         TonyEnsemble t= new TonyEnsemble();
         t.buildClassifier(playGolf);
