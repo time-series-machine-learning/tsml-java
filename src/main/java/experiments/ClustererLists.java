@@ -136,6 +136,46 @@ public class ClustererLists {
                 ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(dtw20));
                 break;
 
+            case "kmeans-msm-nonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new MSMDistance()));
+                break;
+            case "kmeans-dtwfull-nonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new DTWDistance()));
+                break;
+            case "kmeans-dtw20-nonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                DTWDistance dtw201 = new DTWDistance();
+                dtw201.setWindow(0.2);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(dtw201));
+                break;
+
+
+            case "kmeans-msm-refinednonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                ((KMeans) c).setRefinedInitialCenters(true);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new MSMDistance()));
+                break;
+            case "kmeans-dtwfull-refinednonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                ((KMeans) c).setRefinedInitialCenters(true);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(new DTWDistance()));
+                break;
+            case "kmeans-dtw20-refinednonorm":
+                c = new KMeans();
+                ((KMeans) c).setNormaliseData(false);
+                ((KMeans) c).setRefinedInitialCenters(true);
+                DTWDistance dtw202 = new DTWDistance();
+                dtw202.setWindow(0.2);
+                ((KMeans) c).setDistanceFunction(new DistanceFunctionAdapter(dtw202));
+                break;
+
             default:
                 System.out.println("Unknown clusterer " + cls);
         }

@@ -1,5 +1,6 @@
 package machine_learning.clusterers.consensus;
 
+import evaluation.storage.ClustererResults;
 import experiments.data.DatasetLoading;
 import machine_learning.clusterers.KMeans;
 import tsml.clusterers.EnhancedAbstractClusterer;
@@ -36,11 +37,31 @@ public class IVC extends ConsensusClusterer implements LoadableConsensusClustere
     @Override
     public void buildClusterer(Instances data) throws Exception {
         super.buildClusterer(data);
+
+        if (buildClusterers){
+            for (EnhancedAbstractClusterer clusterer: clusterers){
+                clusterer.buildClusterer(data);
+            }
+        }
+
+        double[][] ensembleClusters = new double[clusterers.length][];
+        for (int i = 0; i < ensembleClusters.length; i++) {
+            ensembleClusters[i] = clusterers[i].getAssignments();
+        }
+
+        buildEnsemble(ensembleClusters);
     }
 
     @Override
     public void buildFromFile(String[] directoryPaths) throws Exception {
+        double[][] ensembleAssignments = new double[directoryPaths.length][];
 
+        for (int i = 0; i < directoryPaths.length; i++) {
+            ClustererResults r = new ClustererResults(directoryPaths[i] + "trainFold" + seed + ".csv");
+            ensembleAssignments[i] = r.getClusterValuesAsArray();
+        }
+
+        buildEnsemble(ensembleAssignments);
     }
 
     @Override
@@ -61,6 +82,22 @@ public class IVC extends ConsensusClusterer implements LoadableConsensusClustere
     @Override
     public double[][] distributionFromFile(String[] directoryPaths) throws Exception {
         return new double[0][0];
+    }
+
+    private void buildEnsemble(double[][] ensembleClusters) throws Exception {
+        assignments = new double[ensembleClusters[0].length];
+
+        //Create and store an ArrayList for each cluster containing indexes of
+        //points inside the cluster.
+        clusters = new ArrayList[k];
+
+        for (int i = 0; i < k; i++) {
+            clusters[i] = new ArrayList();
+        }
+
+        for (int i = 0; i < train.numInstances(); i++) {
+            clusters[(int) assignments[i]].add(i);
+        }
     }
 
     public static void main(String[] args) throws Exception {

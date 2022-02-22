@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.Random;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
-import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the K-Means algorithm with options for finding a value
@@ -83,7 +82,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         this.findBestK = b;
     }
 
-    public void setRefinedInitialMedoids(boolean b) {
+    public void setRefinedInitialCenters(boolean b) {
         this.refinedInitialCenters = b;
     }
 
@@ -295,7 +294,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
                 kmeans.setNumClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
-                kmeans.setRefinedInitialMedoids(false);
+                kmeans.setRefinedInitialCenters(false);
                 if (seedClusterer)
                     kmeans.setSeed(seed + (i + 1) * 37);
                 kmeans.buildClusterer(subsample);
@@ -362,7 +361,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             kmeans.setNumClusters(k);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
-            kmeans.setRefinedInitialMedoids(false);
+            kmeans.setRefinedInitialCenters(false);
             if (seedClusterer)
                 kmeans.setSeed(seed + (i + 1) * 137);
             kmeans.buildClusterer(centers);
@@ -452,7 +451,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             kmeans.setNumClusters(i);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
-            kmeans.setRefinedInitialMedoids(refinedInitialCenters);
+            kmeans.setRefinedInitialCenters(refinedInitialCenters);
             if (seedClusterer)
                 kmeans.setSeed(seed + (i + 1) * 237);
             kmeans.buildClusterer(data);
@@ -549,7 +548,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             inst.setClassIndex(inst.numAttributes() - 1);
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);
-            kmeans.setRefinedInitialMedoids(true);
+            kmeans.setRefinedInitialCenters(true);
             kmeans.setSeed(0);
             kmeans.buildClusterer(inst);
 

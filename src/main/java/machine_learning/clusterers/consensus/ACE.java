@@ -6,6 +6,7 @@ import machine_learning.clusterers.KMeans;
 import tsml.clusterers.EnhancedAbstractClusterer;
 import utilities.GenericTools;
 import weka.clusterers.NumberOfClustersRequestable;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -93,12 +94,32 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
 
     @Override
     public int clusterInstance(Instance inst) throws Exception {
-        return 0;
+        double[] dist = distributionForInstance(inst);
+        return argMax(dist, rand);
     }
 
     @Override
     public double[] distributionForInstance(Instance inst) throws Exception {
-        return null;
+        Instance newInst = copyInstances ? new DenseInstance(inst) : inst;
+        int clsIdx = inst.classIndex();
+        if (clsIdx >= 0){
+            newInst.setDataset(null);
+            newInst.deleteAttributeAt(clsIdx);
+        }
+
+        //todo checkout with certainty stuff
+        double[] dist = new double[k];
+        int offset = 0;
+        for (EnhancedAbstractClusterer clusterer : clusterers) {
+            dist[offset + clusterer.clusterInstance(inst)]++;
+            offset += clusterer.numberOfClusters();
+        }
+
+        for (int i = 0; i < dist.length; i++){
+            dist[i] /= clusterers.length;
+        }
+
+        return dist;
     }
 
     @Override
@@ -117,15 +138,16 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
     public double[][] distributionFromFile(String[] directoryPaths) throws Exception {
         int[][] ensembleAssignments = new int[directoryPaths.length][];
 
+        int offset = 0;
         for (int i = 0; i < directoryPaths.length; i++) {
             ClustererResults r = new ClustererResults(directoryPaths[i] + "testFold" + seed + ".csv");
             ensembleAssignments[i] = r.getClusterValuesAsIntArray();
 
-            if (i > 0){
-                for (int n = 0; n < ensembleAssignments[i].length; n++) {
-                    //ensembleAssignments[i][n] = newLabels[i - 1][ensembleAssignments[i][n]];
-                }
+            for (int n = 0; n < ensembleAssignments[i].length; n++) {
+                ensembleAssignments[i][n] = newLabels[offset + ensembleAssignments[i][n]];
             }
+
+            offset += r.getNumClusters();
         }
 
         double[][] dists = new double[ensembleAssignments[0].length][k];
