@@ -42,7 +42,7 @@ public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfCl
     private int k = 2;
     private boolean findBestK = false;
     private boolean refinedInitialMedoids = false;
-    private int numSubsamples = 30;
+    private int numSubsamples = 10;
 
     private double[][] distanceMatrix;
     private int numInstances;
@@ -239,7 +239,7 @@ public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfCl
 
     //Refined selection on initial medoids using a modified version of the
     //method above, running KMedoids over multiple subsamples then again on the
-    //resulting medoids selecting the best perfoming one
+    //resulting medoids selecting the best performing one
     private void initialMedoidsRefined(Instances data) throws Exception {
         int subsampleSize = numInstances / 10;
 
@@ -273,6 +273,7 @@ public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfCl
             }
 
             KMedoids kmedoids = new KMedoids();
+            kmedoids.setDistanceFunction(distFunc);
             kmedoids.setNumClusters(k);
             kmedoids.setNormaliseData(false);
             kmedoids.setRefinedInitialMedoids(false);
@@ -306,6 +307,7 @@ public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfCl
             }
 
             KMedoids kmedoids = new KMedoids(initialMedoids);
+            kmedoids.setDistanceFunction(distFunc);
             kmedoids.setNumClusters(k);
             kmedoids.setNormaliseData(false);
             kmedoids.setRefinedInitialMedoids(false);
@@ -415,6 +417,7 @@ public class KMedoids extends DistanceBasedVectorClusterer implements NumberOfCl
         //For each value of K.
         for (int i = 2; i <= maxK; i++) {
             KMedoids kmedoids = new KMedoids(distanceMatrix);
+            kmedoids.setDistanceFunction(distFunc);
             kmedoids.setNumClusters(i);
             kmedoids.setNormaliseData(false);
             kmedoids.setRefinedInitialMedoids(refinedInitialMedoids);
