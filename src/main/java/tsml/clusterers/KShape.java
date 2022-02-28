@@ -219,10 +219,10 @@ public class KShape extends EnhancedAbstractClusterer implements NumberOfCluster
 
         matrix = identity.times(matrix).times(identity);
 
-        // If we dont add a max iterations it can fail to converge
-        EigenvalueDecomposition.maxIter = 100000;
+        // todo If we dont add a max iterations it can fail to converge
+//        EigenvalueDecomposition.maxIter = 100000;
         EigenvalueDecomposition eig = matrix.eig();
-        EigenvalueDecomposition.maxIter = -1;
+//        EigenvalueDecomposition.maxIter = -1;
         Matrix v = eig.getV();
         double[] eigVector = new double[centroid.numAttributes()];
         double[] eigVectorNeg = new double[centroid.numAttributes()];

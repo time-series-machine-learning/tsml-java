@@ -52,7 +52,7 @@ import weka.filters.UnsupervisedFilter;
  * <br/>
  * For more information, see:<br/>
  * <br/>
- * Dmitriy Fradkin, David Madigan: ClassifierExperiments with random projections for machine learning. In: KDD '03: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining, New York, NY, USA, 517-522, 003.
+ * Dmitriy Fradkin, David Madigan: Experiments with random projections for machine learning. In: KDD '03: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining, New York, NY, USA, 517-522, 003.
  * <p/>
  <!-- globalinfo-end -->
  * 
@@ -65,7 +65,7 @@ import weka.filters.UnsupervisedFilter;
  *    booktitle = {KDD '03: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining},
  *    pages = {517-522},
  *    publisher = {ACM Press},
- *    title = {ClassifierExperiments with random projections for machine learning},
+ *    title = {Experiments with random projections for machine learning},
  *    year = {003}
  * }
  * </pre>
@@ -363,7 +363,7 @@ public class RandomProjection
     
     result = new TechnicalInformation(Type.INPROCEEDINGS);
     result.setValue(Field.AUTHOR, "Dmitriy Fradkin and David Madigan");
-    result.setValue(Field.TITLE, "ClassifierExperiments with random projections for machine learning");
+    result.setValue(Field.TITLE, "Experiments with random projections for machine learning");
     result.setValue(Field.BOOKTITLE, "KDD '03: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining");
     result.setValue(Field.YEAR, "003");
     result.setValue(Field.PAGES, "517-522");

@@ -43,9 +43,6 @@ import weka.estimators.DiscreteEstimator;
 import weka.estimators.Estimator;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
-import static java.lang.Double.isInfinite;
-import static java.lang.Double.isNaN;
-
 /**
  <!-- globalinfo-start -->
  * Simple EM (expectation maximisation) class.<br/>
@@ -884,10 +881,8 @@ public class EM extends RandomizableDensityBasedClusterer implements
     // System.err.println("diff*diff/(2*stdv*stdv): "+ (diff * diff / (2 *
     // stdDev * stdDev)));
 
-    double a = -(diff * diff / (2 * stdDev * stdDev)) - m_normConst
-            - Math.log(stdDev);
-
-    return isNaN(a) || isInfinite(a) ? 0 : a;
+    return -(diff * diff / (2 * stdDev * stdDev)) - m_normConst
+        - Math.log(stdDev);
   }
 
   /**

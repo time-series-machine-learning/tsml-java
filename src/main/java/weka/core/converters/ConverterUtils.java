@@ -668,7 +668,7 @@ public class ConverterUtils
     }
   }
   
-  /** the core loaders - hardcoded list necessary for RMI/Remote ClassifierExperiments
+  /** the core loaders - hardcoded list necessary for RMI/Remote Experiments
    * (comma-separated list). */
   public final static String CORE_FILE_LOADERS = 
       weka.core.converters.ArffLoader.class.getName() + ","
@@ -682,7 +682,7 @@ public class ConverterUtils
     + weka.core.converters.TextDirectoryLoader.class.getName() + ","
     + weka.core.converters.XRFFLoader.class.getName();
 
-  /** the core savers - hardcoded list necessary for RMI/Remote ClassifierExperiments
+  /** the core savers - hardcoded list necessary for RMI/Remote Experiments
    * (comma-separated list). */
   public final static String CORE_FILE_SAVERS =
       weka.core.converters.ArffSaver.class.getName() + ","
