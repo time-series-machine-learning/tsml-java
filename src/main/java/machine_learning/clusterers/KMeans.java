@@ -111,7 +111,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             clusters = new ArrayList[k];
 
             for (int i = 0; i < k; i++) {
-                clusters[i] = new ArrayList();
+                clusters[i] = new ArrayList<>();
             }
 
             for (int i = 0; i < numInstances; i++) {
@@ -218,7 +218,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
 
     //Randomly select initial cluster centers
     private void initialClusterCenters(Instances data) {
-        ArrayList<Integer> indexes = new ArrayList(numInstances);
+        ArrayList<Integer> indexes = new ArrayList<>(numInstances);
 
         for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
@@ -254,7 +254,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             subsampleSize = k;
         }
 
-        ArrayList<Integer> indexes = new ArrayList(numInstances);
+        ArrayList<Integer> indexes = new ArrayList<>(numInstances);
 
         for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
@@ -405,7 +405,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         clusters = new ArrayList[k];
 
         for (int i = 0; i < k; i++) {
-            clusters[i] = new ArrayList();
+            clusters[i] = new ArrayList<>();
         }
 
         for (int i = 0; i < numInstances; i++) {
@@ -505,11 +505,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
                     //Calculate the silhoutte value for the point and add it
                     //to the total.
                     double silVal = minOtherClusterDist - clusterDist;
-                    double div = clusterDist;
-
-                    if (minOtherClusterDist > clusterDist) {
-                        div = minOtherClusterDist;
-                    }
+                    double div = Math.max(minOtherClusterDist, clusterDist);
 
                     silVal /= div;
                     totalSilVal += silVal;

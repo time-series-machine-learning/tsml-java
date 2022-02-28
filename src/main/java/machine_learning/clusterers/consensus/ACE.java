@@ -111,7 +111,7 @@ public class ACE extends ConsensusClusterer implements LoadableConsensusClustere
         double[] dist = new double[k];
         int offset = 0;
         for (EnhancedAbstractClusterer clusterer : clusterers) {
-            dist[offset + clusterer.clusterInstance(inst)]++;
+            dist[newLabels[offset + clusterer.clusterInstance(inst)]]++;
             offset += clusterer.numberOfClusters();
         }
 
