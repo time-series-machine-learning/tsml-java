@@ -17,7 +17,9 @@
  
 package machine_learning.classifiers.ensembles;
 
+import experiments.ClassifierExperiments;
 import experiments.CollateResults;
+import experiments.ExperimentalArguments;
 import experiments.data.DatasetLists;
 import java.io.File;
 import java.util.ArrayList;
@@ -30,14 +32,12 @@ import java.util.Random;
 import machine_learning.classifiers.ensembles.voting.MajorityVote;
 import machine_learning.classifiers.ensembles.weightings.EqualWeighting;
 import evaluation.storage.ClassifierResults;
-import experiments.Experiments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import static utilities.GenericTools.indexOfMax;
 import utilities.InstanceTools;
 import weka.core.Instances;
 import weka.core.TechnicalInformation;
-import weka.filters.Filter;
 
 /**
  * Implementation of ensemble selection
@@ -410,15 +410,15 @@ public class EnsembleSelection extends CAWPE {
                     c.setEstimateOwnPerformance(true);
                     c.setResultsFileWritingLocation(resPath);
                                         
-                    Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
-                    exp.classifierName = classifier;
+                    ExperimentalArguments exp = new ExperimentalArguments();
+                    exp.estimatorName = classifier;
                     exp.datasetName = dset;
                     exp.foldId = fold;
                     exp.generateErrorEstimateOnTrainSet = true;
                     exp.testFoldFileName = predictions+"/testFold"+fold+".csv";
                     exp.trainFoldFileName = predictions+"/trainFold"+fold+".csv";
 //                        exp.performTimingBenchmark = true;
-                    Experiments.runExperiment(exp,data[0],data[1],c);
+                    ClassifierExperiments.runExperiment(exp,data[0],data[1],c);
                 }
             }
         }

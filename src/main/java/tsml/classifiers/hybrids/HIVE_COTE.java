@@ -32,9 +32,9 @@ import tsml.classifiers.dictionary_based.TDE;
 import tsml.classifiers.dictionary_based.cBOSS;
 import tsml.classifiers.distance_based.ElasticEnsemble;
 import tsml.classifiers.interval_based.DrCIF;
+import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.kernel_based.Arsenal;
-import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
@@ -80,6 +80,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     protected double alpha=4.0; // Weighting parameter for voting method
 
     private Resizer resizer;
+
     @Override
     public TechnicalInformation getTechnicalInformation() {
         TechnicalInformation 	result;
@@ -249,6 +250,7 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         if(trainTimeContract)
             setTrainTimeLimit(contractTrainTimeUnit, trainContractTimeNanos);
     }
+
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
         getCapabilities().testWithFail(Converter.toArff(data));

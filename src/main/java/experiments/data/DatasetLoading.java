@@ -19,8 +19,8 @@
 
 package experiments.data;
 
+import experiments.ClassifierExperiments;
 import experiments.ClassifierLists;
-import experiments.Experiments;
 import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.ts_fileIO.TSWriter;
@@ -53,7 +53,7 @@ import java.util.zip.ZipInputStream;
  */
 public class DatasetLoading {
 
-    private final static Logger LOGGER = Logger.getLogger(Experiments.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(ClassifierExperiments.class.getName());
 
     private static final String BAKED_IN_DATA_MASTERPATH = "src/main/java/experiments/data/";
 
@@ -224,6 +224,23 @@ public class DatasetLoading {
         return sampleDataset(BAKED_IN_TSC_DATA_PATH, "ItalyPowerDemand", seed);
     }
 
+    /**
+     * Helper function for loading the baked-in ChinaTown dataset, one of the
+     * UCR datasets for TSC
+     *
+     * http://timeseriesclassification.com/description.php?Dataset=ChinaTown
+     *
+     * UCR data comes with predefined fold 0 splits. If a seed of 0 is given, that exact split is returned.
+     * Train/test distributions are maintained between resamples.
+     *
+     * @param seed the seed for resampling the data.
+     * @return new Instances[] { trainSet, testSet };
+     * @throws Exception if data loading or sampling failed
+     */
+    public static Instances[] sampleChinatown(int seed) throws Exception {
+        return sampleDataset(BAKED_IN_TSC_DATA_PATH, "Chinatown", seed);
+    }
+
     public static Instances loadBasicMotions() throws Exception {
         final Instances[] instances = sampleBasicMotions(0);
         instances[0].addAll(instances[1]);
@@ -244,6 +261,12 @@ public class DatasetLoading {
 
     public static Instances loadItalyPowerDemand() throws Exception {
         final Instances[] instances = sampleItalyPowerDemand(0);
+        instances[0].addAll(instances[1]);
+        return instances[0];
+    }
+
+    public static Instances loadChinatown() throws Exception {
+        final Instances[] instances = sampleChinatown(0);
         instances[0].addAll(instances[1]);
         return instances[0];
     }
@@ -305,8 +328,8 @@ public class DatasetLoading {
                 if (fold != 0)
 //                    data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
 //                data = InstanceTools.resampleTrainAndTestInstances(data[0], data[1], fold);
-                if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
-                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
+                    if (data[0].checkForAttributeType(Attribute.RELATIONAL)) {
+                        data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances(data[0], data[1], fold);
 //                    data = MultivariateInstanceTools.resampleMultivariateTrainAndTestInstances_old(data[0], data[1], fold);
 
                     }

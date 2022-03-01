@@ -398,7 +398,7 @@ public class BasicReproductionTests {
     public static boolean testBuildCAWPEPaper_AllResultsForFigure3() throws Exception {
         System.out.println("--buildCAWPEPaper_AllResultsForFigure3()");
         
-        Experiments.beQuiet = true;
+        ClassifierExperiments.beQuiet = true;
         CAWPE.buildCAWPEPaper_AllResultsForFigure3("");
         
         File f = new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/UCICAWPEvsHeteroEnsembles_BasicClassifiers_BIGglobalSummary.csv");
@@ -418,7 +418,7 @@ public class BasicReproductionTests {
         //confirm folder structure all there
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TRAIN/TRAINTrainTimes_SUMMARY.csv").exists());
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TEST/TESTAvgPredTimes_SUMMARY.csv").exists());
-//        for (String set : new String[] { ClassifierResultsAnalysis.trainLabel, ClassifierResultsAnalysis.testLabel, ClassifierResultsAnalysis.trainTestDiffLabel }) {
+//        for (String set : new String[] { EstimatorResultsAnalysis.trainLabel, EstimatorResultsAnalysis.testLabel, EstimatorResultsAnalysis.trainTestDiffLabel }) {
 //            for (PerformanceMetric metric : PerformanceMetric.getDefaultStatistics()) {
 //                String name = metric.name;
 //                assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/"+name+"/"+set+"/"+set+name+"_SUMMARY.csv").exists());

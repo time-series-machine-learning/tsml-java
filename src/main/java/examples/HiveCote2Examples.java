@@ -1,6 +1,7 @@
 package examples;
 
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
+import experiments.ExperimentalArguments;
 import experiments.data.DatasetLoading;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.dictionary_based.TDE;
@@ -55,15 +56,15 @@ public class HiveCote2Examples {
         arguments[7] = "-ctr=0"; //No time contract
         arguments[8] = "-cp=0"; //No checkpointing
 
-        Experiments.debug = true;
+        ClassifierExperiments.debug = true;
         System.out.println("Manually set args: ");
         for (String string : arguments){
             System.out.println("\t" + string);
         }
         System.out.println();
 
-        Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments(arguments);
-        Experiments.setupAndRunExperiment(exp);
+        ExperimentalArguments exp = new ExperimentalArguments(arguments);
+        ClassifierExperiments.setupAndRunExperiment(exp);
 
         System.out.println("The output of this will be stored in C:/Temp/HC2/Predictions/Chinatown/testFold0.csv");
     }
@@ -79,7 +80,7 @@ public class HiveCote2Examples {
         arguments[4] = "-dn="+problem; //Dataset name
         arguments[5] = "-f=1"; //Fold number
 
-        Experiments.debug = true;
+        ClassifierExperiments.debug = true;
         System.out.println("Manually set arguments:");
         for (String string : arguments){
             System.out.println("\t" + string);
@@ -90,8 +91,8 @@ public class HiveCote2Examples {
         for (String component : components){
             System.out.println("Building component: " + component);
             arguments[3] = "-cn="+component;
-            Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments(arguments);
-            Experiments.setupAndRunExperiment(experimentalArguments);
+            ExperimentalArguments experimentalArguments = new ExperimentalArguments(arguments);
+            ClassifierExperiments.setupAndRunExperiment(experimentalArguments);
             System.out.println("Finished component: " + component);
         }
         System.out.println("All components finished");
@@ -100,8 +101,8 @@ public class HiveCote2Examples {
                 "\t HIVE-COTE 2.0");
         arguments[2] = "-gtf=false"; // Do not need train files
         arguments[3] = "-cn=HIVE-COTE 2.0"; //Classifier name. A list of valid classifier names can be found in ClassifierLists.java
-        Experiments.ExperimentalArguments experimentalArguments = new Experiments.ExperimentalArguments(arguments);
-        Experiments.setupAndRunExperiment(experimentalArguments);
+        ExperimentalArguments experimentalArguments = new ExperimentalArguments(arguments);
+        ClassifierExperiments.setupAndRunExperiment(experimentalArguments);
         System.out.println("HIVE-COTE 2.0 finished. Results will be in C:/Temp/HIVE-COTE 2.0/Predictions/Chinatown/");
 
         System.out.println("Or it can be run manually");

@@ -63,7 +63,7 @@ m_C
 * EnhancedAbstractClassifier (in that, it extend RandomForest directly
 * which does not extend that)
 * 
-* Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
+* Simple usage with ClassifierExperiments may not be guaranteed to work, especially in trainfile writing
 
  TunedSVM sets the margin c through b ten fold cross validation.
  

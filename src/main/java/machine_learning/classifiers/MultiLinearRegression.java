@@ -111,7 +111,7 @@ public class MultiLinearRegression extends AbstractClassifier {
 //        String basePath = "C:/JamesLPHD/HESCA/"+dsetGroup+"/";
 ////        String[] datasets = (new File(basePath + "Results/DTWCV/Predictions/")).list();
 //        
-//        new MultipleClassifierEvaluation(basePath+"XGBoostAnalysis/", dsetGroup+"_testy", 10).
+//        new MultipleEstimatorEvaluation(basePath+"XGBoostAnalysis/", dsetGroup+"_testy", 10).
 //            setTestResultsOnly(true).
 ////            setBuildMatlabDiagrams(true).
 //            setDatasets(dsetGroup.equals("UCI") ? development.experiments.DataSets.UCIContinuousFileNames : development.experiments.DataSets.fileNames).

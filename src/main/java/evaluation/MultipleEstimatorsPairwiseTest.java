@@ -31,9 +31,9 @@ import statistics.tests.OneSampleTests;
 import statistics.tests.TwoSampleTests;
 
 /**
- * Reads in a file of accuracies for k classifiers and generates a kxk matrix
+ * Reads in a file of accuracies for k estimators and generates a kxk matrix
  * of p-values. INPUT FORMAT:
-          ,Classifier1,Classifier2,Classifier3, ...,Classifierk
+          ,Estimator1,Estimator2,Estimator3, ...,Estimatork
  Problem1 , 0.5,....
  Problem2 , 0.5,....
  .
@@ -44,36 +44,36 @@ import statistics.tests.TwoSampleTests;
  * 
  * @author ajb
  */
-public class MultipleClassifiersPairwiseTest {
+public class MultipleEstimatorsPairwiseTest {
     public static boolean beQuiet = false;
     
-    static double[][] accs; //ROW indicates classifier, for ease of processing
-    static double[][] pValsTTest; //ROW indicates classifier, for ease of processing
-    static double[][] pValsSignTest; //ROW indicates classifier, for ease of processing
-    static double[][] pValsSignRankTest; //ROW indicates classifier, for ease of processing
-    static double[][] bonferonni_pVals; //ROW indicates classifier, for ease of processing
-    static boolean[][] noDifference; //ROW indicates classifier, for ease of processing
+    static double[][] accs; //ROW indicates estimator, for ease of processing
+    static double[][] pValsTTest; //ROW indicates estimator, for ease of processing
+    static double[][] pValsSignTest; //ROW indicates estimator, for ease of processing
+    static double[][] pValsSignRankTest; //ROW indicates estimator, for ease of processing
+    static double[][] bonferonni_pVals; //ROW indicates estimator, for ease of processing
+    static boolean[][] noDifference; //ROW indicates estimator, for ease of processing
     
-    static int nosClassifiers;
+    static int nosEstimators;
     static int nosProblems;
     static String[] names;
     
-/** Assumes classifier names in the first line and problem names in the first column
+/** Assumes estimator names in the first line and problem names in the first column
  */ public static void loadData(String file, PrintStream out){
         InFile data=new InFile(file);
         nosProblems=data.countLines()-1;
         data=new InFile(file);
         String[] temp=data.readLine().split(",");
-        nosClassifiers=temp.length-1;
-        names=new String[nosClassifiers];
-        for(int i=0;i<nosClassifiers;i++)
+        nosEstimators=temp.length-1;
+        names=new String[nosEstimators];
+        for(int i=0;i<nosEstimators;i++)
             names[i]=temp[i+1];
-        accs=new double[nosClassifiers][nosProblems];
+        accs=new double[nosEstimators][nosProblems];
         for(int j=0;j<nosProblems;j++){
             String[] line = data.readLine().split(",");
             if(!beQuiet)
                 System.out.print("Problem ="+line[0]+",");
-            for(int i=0;i<nosClassifiers;i++){
+            for(int i=0;i<nosEstimators;i++){
                 accs[i][j]=Double.parseDouble(line[i+1]);
                 if (!beQuiet)
                     out.print(accs[i][j]+",");
@@ -89,13 +89,13 @@ public class MultipleClassifiersPairwiseTest {
     }
     
     public static void findPVals(){
-        pValsTTest=new double[nosClassifiers][nosClassifiers];
-        pValsSignTest=new double[nosClassifiers][nosClassifiers];
-        pValsSignRankTest=new double[nosClassifiers][nosClassifiers];
+        pValsTTest=new double[nosEstimators][nosEstimators];
+        pValsSignTest=new double[nosEstimators][nosEstimators];
+        pValsSignRankTest=new double[nosEstimators][nosEstimators];
         OneSampleTests test=new OneSampleTests();
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
         {
-            for(int j=i+1;j<nosClassifiers;j++){
+            for(int j=i+1;j<nosEstimators;j++){
 //Find differences
                 double[] diff=new double[accs[i].length];
                 for(int k=0;k<accs[i].length;k++)
@@ -103,7 +103,7 @@ public class MultipleClassifiersPairwiseTest {
                 String str=test.performTests(diff);
                 
                 if(!beQuiet)
-                    System.out.println("TEST Classifier "+names[i]+" VS "+names[j]+ " returns string "+str);
+                    System.out.println("TEST Estimator "+names[i]+" VS "+names[j]+ " returns string "+str);
                 
                 String[] tmp=str.split(",");
                 pValsTTest[i][j]=Double.parseDouble(tmp[2]);
@@ -113,11 +113,11 @@ public class MultipleClassifiersPairwiseTest {
         }
     }
     public static void findMeanDifferences(String file){
-        double[][] meanDiff=new double[nosClassifiers][nosClassifiers];
+        double[][] meanDiff=new double[nosEstimators][nosEstimators];
         OutFile outf=new OutFile(file);
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
         {
-            for(int j=i+1;j<nosClassifiers;j++){
+            for(int j=i+1;j<nosEstimators;j++){
                 for(int k=0;k<accs[i].length;k++)
                     meanDiff[i][j]+=accs[i][k]-accs[j][k];
                 meanDiff[i][j]/=accs[i].length;
@@ -125,9 +125,9 @@ public class MultipleClassifiersPairwiseTest {
 //                meanDiff[i][j]*=-1;
             }
         }
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
         {
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 outf.writeString(meanDiff[i][j]+",");
             outf.writeString("\n");
         }
@@ -140,22 +140,22 @@ public class MultipleClassifiersPairwiseTest {
      */
     public static void findDifferences(double alpha,boolean printPVals){
 
-        noDifference=new boolean[nosClassifiers][nosClassifiers];
-        for(int i=0;i<nosClassifiers;i++)
+        noDifference=new boolean[nosEstimators][nosEstimators];
+        for(int i=0;i<nosEstimators;i++)
         {
             noDifference[i][i]=true;
-/*            for(int j=nosClassifiers-1;j>i;j--) {
-                int numComparisons = nosClassifiers - i;
+/*            for(int j=nosEstimators-1;j>i;j--) {
+                int numComparisons = nosEstimators - i;
                 noDifference[i][j] = true;
                 noDifference[j][i] = true;
-                double criticalValue = alpha / (numComparisons - (j - nosClassifiers - 1));
+                double criticalValue = alpha / (numComparisons - (j - nosEstimators - 1));
 //                System.out.println(" Critical value = "+criticalValue);
                 if (pValsSignRankTest[i][j] < criticalValue) {
                     noDifference[i][j] = false;
                 }
             }
 */
-            for(int j=i+1;j<nosClassifiers;j++){
+            for(int j=i+1;j<nosEstimators;j++){
                 noDifference[i][j]=true;
                 noDifference[j][i]=true;
                 if(pValsSignRankTest[i][j]<alpha){
@@ -181,14 +181,14 @@ public class MultipleClassifiersPairwiseTest {
         double alpha=0.1;
 //printPVals=false;
 //Bonferonni adjusted        
-//        alpha/=nosClassifiers*(nosClassifiers-1)/2;
+//        alpha/=nosEstimators*(nosEstimators-1)/2;
 //Control adjusted 
-        alpha/=nosClassifiers-1;
+        alpha/=nosEstimators-1;
         findDifferences(alpha,true);
-        //Sort classifiers by rank: assume already done
+        //Sort estimators by rank: assume already done
         OutFile cliques=new OutFile(output);
-        for(int i=0;i<nosClassifiers;i++){
-            for(int j=0;j<nosClassifiers;j++)
+        for(int i=0;i<nosEstimators;i++){
+            for(int j=0;j<nosEstimators;j++)
                 cliques.writeString(noDifference[i][j]+",");
             cliques.writeString("\n");
         }
@@ -197,62 +197,62 @@ public class MultipleClassifiersPairwiseTest {
 
     public static StringBuilder runTests(double[][] d,String[] n){
         nosProblems=d.length;
-        nosClassifiers=d[0].length;
+        nosEstimators=d[0].length;
         names=n;
         accs=d;
         findPVals();
         double alpha=0.05;
 //printPVals=false;
 //Bonferonni adjusted        
-//        alpha/=nosClassifiers*(nosClassifiers-1)/2;
+//        alpha/=nosEstimators*(nosEstimators-1)/2;
 //Control adjusted 
-        alpha/=nosClassifiers-1;
+        alpha/=nosEstimators-1;
         findDifferences(alpha,true);
         StringBuilder results=new StringBuilder();
         
         results.append("T TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             results.append(",").append(names[i]);
         results.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             results.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 results.append(",").append(pValsTTest[i][j]);
             results.append("\n");
         }
         results.append("\n");
         
         results.append("SIGN TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             results.append(",").append(names[i]);
         results.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             results.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 results.append(",").append(pValsSignTest[i][j]);
             results.append("\n");
         }
         results.append("\n");
         
         results.append("SIGN RANK TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             results.append(",").append(names[i]);
         results.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             results.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 results.append(",").append(pValsSignRankTest[i][j]);
             results.append("\n");
         }
         results.append("\n");
         
         results.append("NOSIGDIFFERENCE");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             results.append(",").append(names[i]);
         results.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             results.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 results.append(",").append(noDifference[i][j]);
             results.append("\n");
         }
@@ -264,25 +264,25 @@ public class MultipleClassifiersPairwiseTest {
  
     public static StringBuilder runSignRankTest(double[][] d,String[] n){
         nosProblems=d.length;
-        nosClassifiers=d[0].length;
+        nosEstimators=d[0].length;
         names=n;
         accs=d;
         findPVals();
         double alpha=0.05;
 //printPVals=false;
 //Bonferonni adjusted        
-//        alpha/=nosClassifiers*(nosClassifiers-1)/2;
+//        alpha/=nosEstimators*(nosEstimators-1)/2;
 //Control adjusted 
-        alpha/=nosClassifiers-1;
+        alpha/=nosEstimators-1;
         findDifferences(alpha,true);
         StringBuilder results=new StringBuilder();
         results.append("SIGN RANK TEST \n ");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             results.append(",").append(names[i]);
         results.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             results.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 results.append(",").append(pValsSignRankTest[i][j]);
             results.append("\n");
         }
@@ -301,56 +301,56 @@ public class MultipleClassifiersPairwiseTest {
         double alpha=0.05;
 //printPVals=false;
 //Bonferonni adjusted        
-//        alpha/=nosClassifiers*(nosClassifiers-1)/2;
+//        alpha/=nosEstimators*(nosEstimators-1)/2;
 //Control adjusted 
-//        alpha/=nosClassifiers-1;
+//        alpha/=nosEstimators-1;
         findDifferences(alpha,true);
         
         StringBuilder cliques=new StringBuilder();
         
         cliques.append("T TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             cliques.append(",").append(names[i]);
         cliques.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             cliques.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 cliques.append(",").append(pValsTTest[i][j]);
             cliques.append("\n");
         }
         cliques.append("\n");
         
         cliques.append("SIGN TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             cliques.append(",").append(names[i]);
         cliques.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             cliques.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 cliques.append(",").append(pValsSignTest[i][j]);
             cliques.append("\n");
         }
         cliques.append("\n");
         
         cliques.append("SIGN RANK TEST");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             cliques.append(",").append(names[i]);
         cliques.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             cliques.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 cliques.append(",").append(pValsSignRankTest[i][j]);
             cliques.append("\n");
         }
         cliques.append("\n");
         
         cliques.append("NOSIGDIFFERENCE");
-        for(int i=0;i<nosClassifiers;i++)
+        for(int i=0;i<nosEstimators;i++)
             cliques.append(",").append(names[i]);
         cliques.append("\n");
-        for(int i=0;i<nosClassifiers;i++){
+        for(int i=0;i<nosEstimators;i++){
             cliques.append(names[i]);
-            for(int j=0;j<nosClassifiers;j++)
+            for(int j=0;j<nosEstimators;j++)
                 cliques.append(",").append(noDifference[i][j]);
             cliques.append("\n");
         }
@@ -374,8 +374,8 @@ public class MultipleClassifiersPairwiseTest {
     }
 
     public static boolean[][] findCliques(boolean[][] same) {
-        //want to find the largest non-contained 'blocks' in the matrix where all values are true, i.e. all classifiers
-        //are similar to all over classifiers within the block.
+        //want to find the largest non-contained 'blocks' in the matrix where all values are true, i.e. all estimators
+        //are similar to all over estimators within the block.
         //
         //if 1 = true, 0 = false, for input data
         // 1 1 1 0 0
@@ -400,7 +400,7 @@ public class MultipleClassifiersPairwiseTest {
             growClique(same, clique);
 
             if (clique.size() > 1) {
-                //potential new clique, check it's not contained within the previous, i.e. a new classifier has been
+                //potential new clique, check it's not contained within the previous, i.e. a new estimator has been
                 //included at the end of the clique
                 int endOfClique = clique.get(clique.size()-1);
                 if (endOfClique > prevEndOfClique) {
@@ -424,7 +424,7 @@ public class MultipleClassifiersPairwiseTest {
     private static void growClique(boolean[][] same, List<Integer> clique) {
         int prevVal = clique.get(clique.size()-1);
         if (prevVal == same.length-1)
-            return; // reached the end of the classifiers, no more room to grow
+            return; // reached the end of the estimators, no more room to grow
 
 
         int cliqueStart = clique.get(0);
@@ -482,7 +482,7 @@ public class MultipleClassifiersPairwiseTest {
 //                //all before i assumed false, wrong side of the diagonal
 //                //i,j assumed true, no sig diff with self
 //                //however only set later, to take advantaged of a binary flag
-//                //for the existance of a clique for this classifier
+//                //for the existance of a clique for this estimator
 //                inClique = inClique || same[i][j];
 //                clique[j] = same[i][j];
 //            }
@@ -533,7 +533,7 @@ public class MultipleClassifiersPairwiseTest {
     public static void main(String[] args) {
         testNewCliques();
 
-////ASSUME INPUT IN RANK ORDER, WITH TOP RANKED CLASSIFIER FIRST, WORST LAST
+////ASSUME INPUT IN RANK ORDER, WITH TOP RANKED ESTIMATOR FIRST, WORST LAST
 ////        String input="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
 ////        String output="C:\\Users\\ajb\\Dropbox\\Results\\SimulationExperiments\\BasicExperiments\\";
 ////        String[] allSimulators={"WholeSeriesElastic","Interval","Shapelet","Dictionary","ARMA","All"};
