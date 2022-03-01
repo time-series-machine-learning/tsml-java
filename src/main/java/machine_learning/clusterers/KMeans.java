@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.Random;
 
 import static utilities.ClusteringUtilities.createDistanceMatrix;
-import static utilities.InstanceTools.deleteClassAttribute;
 
 /**
  * Implementation of the K-Means algorithm with options for finding a value
@@ -46,7 +45,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
     private int k = 2;
     private boolean findBestK = false;
     private boolean refinedInitialCenters = false;
-    private int numSubsamples = 30;
+    private int numSubsamples = 10;
     private int maxIterations = 200;
 
     private int numInstances;
@@ -83,7 +82,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         this.findBestK = b;
     }
 
-    public void setRefinedInitialMedoids(boolean b) {
+    public void setRefinedInitialCenters(boolean b) {
         this.refinedInitialCenters = b;
     }
 
@@ -112,7 +111,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             clusters = new ArrayList[k];
 
             for (int i = 0; i < k; i++) {
-                clusters[i] = new ArrayList();
+                clusters[i] = new ArrayList<>();
             }
 
             for (int i = 0; i < numInstances; i++) {
@@ -219,7 +218,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
 
     //Randomly select initial cluster centers
     private void initialClusterCenters(Instances data) {
-        ArrayList<Integer> indexes = new ArrayList(numInstances);
+        ArrayList<Integer> indexes = new ArrayList<>(numInstances);
 
         for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
@@ -247,7 +246,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
 
     //Refined selection on initial cluster centers using the method above,
     //running k-means over multiple subsamples then again on the resulting
-    //centers selecting the best perfoming one
+    //centers selecting the best performing one
     private void initialClusterCentersRefined(Instances data) throws Exception {
         int subsampleSize = numInstances / 10;
 
@@ -255,7 +254,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             subsampleSize = k;
         }
 
-        ArrayList<Integer> indexes = new ArrayList(numInstances);
+        ArrayList<Integer> indexes = new ArrayList<>(numInstances);
 
         for (int i = 0; i < numInstances; i++) {
             indexes.add(i);
@@ -292,10 +291,11 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
 
             while (!finished) {
                 KMeans kmeans = new KMeans(initialClusterCenters);
+                kmeans.setDistanceFunction(distFunc);
                 kmeans.setNumClusters(k);
                 kmeans.setNormaliseData(false);
                 kmeans.setFindBestK(false);
-                kmeans.setRefinedInitialMedoids(false);
+                kmeans.setRefinedInitialCenters(false);
                 if (seedClusterer)
                     kmeans.setSeed(seed + (i + 1) * 37);
                 kmeans.buildClusterer(subsample);
@@ -359,10 +359,11 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
 
         for (int i = 0; i < numSubsamples; i++) {
             KMeans kmeans = new KMeans(subsampleCenters[i]);
+            kmeans.setDistanceFunction(distFunc);
             kmeans.setNumClusters(k);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
-            kmeans.setRefinedInitialMedoids(false);
+            kmeans.setRefinedInitialCenters(false);
             if (seedClusterer)
                 kmeans.setSeed(seed + (i + 1) * 137);
             kmeans.buildClusterer(centers);
@@ -406,7 +407,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         clusters = new ArrayList[k];
 
         for (int i = 0; i < k; i++) {
-            clusters[i] = new ArrayList();
+            clusters[i] = new ArrayList<>();
         }
 
         for (int i = 0; i < numInstances; i++) {
@@ -449,10 +450,11 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
         //For each value of K
         for (int i = 2; i <= maxK; i++) {
             KMeans kmeans = new KMeans();
+            kmeans.setDistanceFunction(distFunc);
             kmeans.setNumClusters(i);
             kmeans.setNormaliseData(false);
             kmeans.setFindBestK(false);
-            kmeans.setRefinedInitialMedoids(refinedInitialCenters);
+            kmeans.setRefinedInitialCenters(refinedInitialCenters);
             if (seedClusterer)
                 kmeans.setSeed(seed + (i + 1) * 237);
             kmeans.buildClusterer(data);
@@ -506,11 +508,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
                     //Calculate the silhoutte value for the point and add it
                     //to the total.
                     double silVal = minOtherClusterDist - clusterDist;
-                    double div = clusterDist;
-
-                    if (minOtherClusterDist > clusterDist) {
-                        div = minOtherClusterDist;
-                    }
+                    double div = Math.max(minOtherClusterDist, clusterDist);
 
                     silVal /= div;
                     totalSilVal += silVal;
@@ -549,7 +547,7 @@ public class KMeans extends DistanceBasedVectorClusterer implements NumberOfClus
             inst.setClassIndex(inst.numAttributes() - 1);
             KMeans kmeans = new KMeans();
             kmeans.setFindBestK(true);
-            kmeans.setRefinedInitialMedoids(true);
+            kmeans.setRefinedInitialCenters(true);
             kmeans.setSeed(0);
             kmeans.buildClusterer(inst);
 

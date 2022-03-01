@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # print all github info (e.g. branch name, commit id, etc)
-      - name: Github info
-        run: |
-          echo "${{ toJSON(github) }}"
+      # - name: Github info
+      #   run: |
+      #     echo "${{ toJSON(github) }}"
       # print all runner (host pc) info (e.g. os, etc)
-      - name: Runner info
-        run: |
-          echo "${{ toJSON(runner) }}"
+      # - name: Runner info
+      #   run: |
+      #     echo "${{ toJSON(runner) }}"
 
       # set up github actions
       - uses: actions/checkout@v2
