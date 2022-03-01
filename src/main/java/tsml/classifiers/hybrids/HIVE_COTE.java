@@ -35,7 +35,6 @@ import tsml.classifiers.interval_based.DrCIF;
 import tsml.classifiers.interval_based.RISE;
 import tsml.classifiers.interval_based.TSF;
 import tsml.classifiers.kernel_based.Arsenal;
-import tsml.classifiers.legacy.RISE;
 import tsml.classifiers.shapelet_based.ShapeletTransformClassifier;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
