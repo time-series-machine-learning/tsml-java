@@ -141,6 +141,9 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
                 }
             }
         }
+        else {
+            predCounts.clear();
+        }
 
         return false;
     }
