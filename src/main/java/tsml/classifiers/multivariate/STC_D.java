@@ -48,7 +48,7 @@ import static utilities.InstanceTools.resampleTrainAndTestInstances;
 
 /**
  *
- *
+ * @author Matthew Middlehurst
  */
 public class STC_D extends EnhancedAbstractClassifier {
 

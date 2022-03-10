@@ -91,6 +91,10 @@ public class LEFTIST {
 
     public void setKernel(Function<Double,Double> f) { kernel = f; }
 
+    public void setFSMethod(FeatureSelectionMethod fs){
+        fsMethod = fs;
+    }
+
     public void setDebug(boolean b) { debug = b; }
 
     public void setSeed(int i) {
@@ -187,7 +191,7 @@ public class LEFTIST {
             of.writeLine(Arrays.toString(exp.coefficientsForClass[i]));
         }
 
-        Process p = Runtime.getRuntime().exec("py src/main/python/leftist.py \"" +
+        Process p = Runtime.getRuntime().exec("py src/main/python/visualisation/leftist.py \"" +
                 figureSavePath.replace("\\", "/")+ "\" " + seed);
 
         if (debug) {
@@ -338,6 +342,7 @@ public class LEFTIST {
             ArrayList<Attribute> atts = new ArrayList<>(1);
             atts.add(new Attribute("class"));
             Instances fsInstances = new Instances("fs", atts, noNeighbours);
+            fsInstances.setClassIndex(fsInstances.numAttributes() - 1);
             for (int i = 0; i < noNeighbours; i++){
                 double[] a = new double[]{probas[i][cls]};
                 fsInstances.add(new DenseInstance(neighbourWeights[i], a));

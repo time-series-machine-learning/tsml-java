@@ -38,14 +38,11 @@ import weka.classifiers.bayes.NaiveBayes;
 import java.util.logging.Level;
 
 import tsml.classifiers.EnhancedAbstractClassifier;
-import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
+import tsml.classifiers.distance_based.utils.classifiers.contracting.TimedTest;
 import tsml.classifiers.distance_based.utils.classifiers.results.ResultUtils;
-import tsml.classifiers.distance_based.utils.strings.StrUtils;
 import tsml.classifiers.distance_based.utils.system.logging.Loggable;
 import tsml.classifiers.distance_based.utils.system.memory.MemoryWatcher;
 import tsml.classifiers.distance_based.utils.system.timing.StopWatch;
-import weka.classifiers.*;
-import weka.classifiers.bayes.*;
 
 import weka.classifiers.evaluation.EvaluationUtils;
 import weka.classifiers.evaluation.NominalPrediction;
@@ -55,19 +52,9 @@ import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.RotationForest;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.Randomizable;
+import weka.core.*;
 import weka.filters.supervised.attribute.NominalToBinary;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
-
-
-import fileIO.OutFile;
-import statistics.distributions.NormalDistribution;
-import machine_learning.classifiers.kNN;
 
 /**
  * @author ajb
@@ -490,6 +477,9 @@ public class ClassifierTools {
      * @throws Exception
      */
     public static void trainTestPrint(Classifier classifier, Instances[] trainAndTestData, int seed) throws Exception {
+        if(classifier instanceof Randomizable) {
+            ((Randomizable) classifier).setSeed(seed);
+        }
         Random random = new Random(seed);
         MemoryWatcher overallMemoryWatcher = new MemoryWatcher();
         StopWatch overallTimer = new StopWatch();
@@ -498,7 +488,7 @@ public class ClassifierTools {
         MemoryWatcher memoryWatcher = new MemoryWatcher();
         StopWatch timer = new StopWatch();
         if(classifier instanceof Loggable) {
-            ((Loggable) classifier).getLogger().setLevel(Level.ALL);
+            ((Loggable) classifier).setLogLevel(Level.ALL);
         }
         final Instances trainData = trainAndTestData[0];
         final Instances testData = trainAndTestData[1];
@@ -508,8 +498,8 @@ public class ClassifierTools {
         timer.stop();
         memoryWatcher.stop();
         System.out.println();
-        System.out.println("train time: " + timer.getTime());
-        System.out.println("train mem: " + memoryWatcher.toString());
+        System.out.println("train time: " + timer.elapsedTime());
+        System.out.println("train mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println();
 //        GcFinalization.awaitFullGc();
         if(classifier instanceof EnhancedAbstractClassifier) {
@@ -518,6 +508,7 @@ public class ClassifierTools {
                 ResultUtils.setInfo(trainResults, classifier, trainData);
                 System.out.println("train results:");
                 System.out.println(trainResults.writeFullResultsToString());
+                System.out.println("train acc: " + trainResults.getAcc());
                 System.out.println();
             }
         }
@@ -530,15 +521,16 @@ public class ClassifierTools {
         memoryWatcher.stop();
         timer.stop();
         ResultUtils.setInfo(testResults, classifier, trainData);
-        System.out.println("test time: " + timer.getTime());
-        System.out.println("test mem: " + memoryWatcher.toString());
+        System.out.println("test time: " + timer.elapsedTime());
+        System.out.println("test mem: " + memoryWatcher.getMaxMemoryUsage());
         System.out.println("test results:");
         System.out.println(testResults.writeFullResultsToString());
+        System.out.println("test acc: " + testResults.getAcc());
         overallMemoryWatcher.stop();
         overallTimer.stop();
         System.out.println();
-        System.out.println("overall time: " + overallTimer.getTime());
-        System.out.println("overall mem: " + overallMemoryWatcher.toString());
+        System.out.println("overall time: " + overallTimer.elapsedTime());
+        System.out.println("overall mem: " + overallMemoryWatcher.getMaxMemoryUsage());
     }
 
     /**
@@ -552,6 +544,13 @@ public class ClassifierTools {
     public static void addPredictions(Classifier classifier, Instances testData, ClassifierResults results, Random random)
             throws Exception {
         for(Instance test : testData) {
+            addPrediction(classifier, test, results, random);
+        }
+    }
+    
+    public static void addPredictions(TSClassifier classifier, TimeSeriesInstances testData, ClassifierResults results, Random random)
+            throws Exception {
+        for(TimeSeriesInstance test : testData) {
             addPrediction(classifier, test, results, random);
         }
     }
@@ -570,14 +569,27 @@ public class ClassifierTools {
         long timestamp = System.nanoTime();
         final double[] distribution = classifier.distributionForInstance(test);
         long testTime = System.nanoTime() - timestamp;
-        if(classifier instanceof TestTimeable) {
-            testTime = ((TestTimeable) classifier).getTestTime();
+        if(classifier instanceof TimedTest) {
+            testTime = ((TimedTest) classifier).getTestTime();
         }
         final double prediction = Utilities.argMax(distribution, random);
         results.addPrediction(classValue, distribution, prediction, testTime, null);
         test.setClassValue(classValue);
     }
 
+    public static void addPrediction(TSClassifier classifier, TimeSeriesInstance test, ClassifierResults results, Random random)
+            throws Exception {
+        final double classValue = test.getLabelIndex();
+        test = new TimeSeriesInstance(test, -1);
+        long timestamp = System.nanoTime();
+        final double[] distribution = classifier.distributionForInstance(test);
+        long testTime = System.nanoTime() - timestamp;
+        if(classifier instanceof TimedTest) {
+            testTime = ((TimedTest) classifier).getTestTime();
+        }
+        final double prediction = Utilities.argMax(distribution, random);
+        results.addPrediction(classValue, distribution, prediction, testTime, null);
+    }
 
     public static class ResultsStats{
         public double accuracy;

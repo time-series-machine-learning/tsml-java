@@ -18,9 +18,8 @@
 package tsml.classifiers.distance_based.utils.classifiers.contracting;
 
 import tsml.classifiers.TestTimeContractable;
-import tsml.classifiers.distance_based.utils.classifiers.TestTimeable;
 
-public interface ContractedTest extends TestTimeable, TestTimeContractable {
+public interface ContractedTest extends TimedTest, TestTimeContractable {
 
     long getTestTimeLimit();
 

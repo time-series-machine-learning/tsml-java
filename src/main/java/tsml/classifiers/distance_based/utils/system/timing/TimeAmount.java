@@ -111,6 +111,6 @@ public class TimeAmount implements Comparable<TimeAmount> {
     public int compareTo(final TimeAmount other) {
         TimeAmount otherNanos = other.convert(TimeUnit.NANOSECONDS);
         TimeAmount nanos = convert(TimeUnit.NANOSECONDS);
-        return (int) (otherNanos.getAmount() - nanos.getAmount());
+        return Long.compare(nanos.getAmount(), otherNanos.getAmount());
     }
 }

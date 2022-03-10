@@ -17,21 +17,20 @@
  
 package tsml.classifiers.distance_based.utils.collections.params.iteration;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-import static tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils.fromPermutation;
-import static tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils.numPermutations;
-import static tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils.toPermutation;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+import static tsml.classifiers.distance_based.utils.collections.params.iteration.PermutationUtils.*;
 
 /**
  * Purpose: // todo - docs - type the purpose of the code here

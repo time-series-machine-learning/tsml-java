@@ -17,15 +17,21 @@
  
 package utilities;
 
-import weka.core.Instance;
-import weka.core.Instances;
-
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
+    public static String toString(double[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
+    public static String toString(int[][] array) {
+        return toString(array, ",", System.lineSeparator());
+    }
+    
     public static double[][] transposeMatrix(double [][] m){
         double[][] temp = new double[m[0].length][m.length];
         for (int i = 0; i < m.length; i++)
@@ -56,6 +62,22 @@ public class ArrayUtilities {
         return array;
     }
 
+    public static double[][] oneHot(int length, int[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][indicies[i]] = 1;
+        }
+        return array;
+    }
+
+    public static double[][] oneHot(int length, double[] indicies) {
+        final double[][] array = new double[indicies.length][length];
+        for (int i = 0; i < indicies.length; i++){
+            array[i][(int) indicies[i]] = 1;
+        }
+        return array;
+    }
+
     public static void add(double[] src, double[] addend) {
         if(src.length < addend.length) {
             throw new IllegalArgumentException();
@@ -65,17 +87,84 @@ public class ArrayUtilities {
         }
     }
 
-    public static void subtract(double[] a, double[] b) {
+    public static double[] subtract(double[] a, double[] b) {
         int length = Math.min(a.length, b.length);
         for(int i = 0; i < length; i++) {
             a[i] -= b[i];
         }
+        return a;
+    }
+    
+    public static double[] subtract(double[] a, double amount) {
+        int length = a.length;
+        for(int i = 0; i < length; i++) {
+            a[i] -= amount;
+        }
+        return a;
+    }
+    
+    public static double[] abs(double[] array) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.abs(array[i]);
+        }
+        return array;
+    }
+    
+    public static boolean[] mask(double[] array, Predicate<Double> condition) {
+        final boolean[] result = new boolean[array.length];
+        for(int i = 0; i < array.length; i++) {
+            result[i] = condition.test(array[i]);
+        }
+        return result;
+    }
+    
+    public static int count(boolean[] array) {
+        int sum = 0;
+        for(final boolean b : array) {
+            if(b) {
+                sum++;
+            }
+        }
+        return sum;
+    }
+    
+    public static double[] pow(double[] array, double degree) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] = Math.pow(array[i], degree);
+        }
+        return array;
     }
 
     public static double sum(double[] array) {
         double sum = 0;
         for(int i = 0; i < array.length; i++) {
             sum += array[i];
+        }
+        return sum;
+    }
+
+    public static double sumPow2(double[] array) {
+        double sum = 0;
+        for(int i = 0; i < array.length; i++) {
+            sum += Math.pow(array[i], 2);
+        }
+        return sum;
+    }
+
+    public static double[] cumsum(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = array[0];
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + array[i];
+        }
+        return sum;
+    }
+
+    public static double[] cumsumPow2(double[] array) {
+        double[] sum = new double[array.length];
+        sum[0] = Math.pow(array[0], 2);
+        for(int i = 1; i < array.length; i++) {
+            sum[i] = sum[i - 1] + Math.pow(array[i], 2);;
         }
         return sum;
     }
@@ -139,9 +228,10 @@ public class ArrayUtilities {
     public static List<Double> normalise(List<Double> list) {
         double sum = sum(list);
         if(sum == 0) {
-            throw new IllegalArgumentException("sum zero");
+            sum = 1;
         }
-        return list.stream().map(element -> element / sum).collect(Collectors.toList());
+        final double finalSum = sum;
+        return list.stream().map(element -> element / finalSum).collect(Collectors.toList());
     }
 
     public static List<Double> normalise(Iterable<Double> iterable) {
@@ -157,6 +247,29 @@ public class ArrayUtilities {
 
     public static double mean(double[] array) {
         return sum(array) / array.length;
+    }
+
+    public static double std(double[] array){
+        double mean = mean(array);
+        double squareSum = 0;
+
+        for (double v : array) {
+            double temp = v - mean;
+            squareSum += temp * temp;
+        }
+
+        return Math.sqrt(squareSum/(array.length-1));
+    }
+
+    public static double std(double[] array, double mean){
+        double squareSum = 0;
+
+        for (double v : array) {
+            double temp = v - mean;
+            squareSum += temp * temp;
+        }
+
+        return Math.sqrt(squareSum/(array.length-1));
     }
 
     public static void divide(int[] array, int divisor) {
@@ -377,6 +490,24 @@ public class ArrayUtilities {
         return boxed;
     }
 
+    public static String toString(double[][] matrix, String horizontalSeparator, String verticalSeparator) {
+        StringBuilder builder = new StringBuilder();
+        for(int i = 0; i < matrix.length; i++) {
+            for(int j = 0; j < matrix[i].length; j++) {
+                //                builder.append(new BigDecimal(matrix[i][j]).setScale(2, RoundingMode.HALF_UP).doubleValue());
+                builder.append(matrix[i][j]);
+                if(j != matrix[i].length - 1) {
+                    builder.append(horizontalSeparator);
+                }
+            }
+            if(i != matrix.length - 1) {
+                builder.append(verticalSeparator);
+            }
+        }
+        builder.append(System.lineSeparator());
+        return builder.toString();
+    }
+    
     public static String toString(int[][] matrix, String horizontalSeparator, String verticalSeparator) {
         StringBuilder builder = new StringBuilder();
         for(int i = 0; i < matrix.length; i++) {

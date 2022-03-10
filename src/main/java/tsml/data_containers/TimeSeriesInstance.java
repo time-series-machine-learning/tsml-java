@@ -17,6 +17,7 @@
 
 package tsml.data_containers;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,7 +32,7 @@ import java.util.stream.Stream;
  *
  * @author Aaron Bostrom, 2020
  */
-public class TimeSeriesInstance implements Iterable<TimeSeries> {
+public class TimeSeriesInstance implements Iterable<TimeSeries>, Serializable {
 
     /* Meta Information */
     private boolean isMultivariate;
@@ -177,6 +178,10 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
 
         dataChecks();
     }
+    
+    public TimeSeriesInstance(double[] singleDimension) {
+	    this(new double[][] {singleDimension});
+    }
 
     /**
      * Construct an labelled instance from raw data.
@@ -211,6 +216,19 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         }
         this.labelIndex = labelIndex;
 
+        dataChecks();
+    }
+
+    /**
+     * Retarget the class label, shallow copying the data from another inst.
+     * @param other
+     * @param classLabelIndex
+     */
+    public TimeSeriesInstance(TimeSeriesInstance other, int classLabelIndex) {
+        seriesDimensions = other.seriesDimensions;
+        labelIndex = classLabelIndex;
+        targetValue = classLabelIndex;
+        
         dataChecks();
     }
 
@@ -287,24 +305,7 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         this(data, Double.NaN);
     }
 
-    private TimeSeriesInstance() {
-    }
-
-    /**
-     * Returns a deep copy of a TimeSeriesInstance object.
-     *
-     * @return deep copy
-     */
-    private TimeSeriesInstance copy() {
-        final TimeSeriesInstance inst = new TimeSeriesInstance();
-        inst.labelIndex = labelIndex;
-        inst.seriesDimensions = seriesDimensions;
-        inst.targetValue = targetValue;
-
-        inst.dataChecks();
-
-        return inst;
-    }
+    private TimeSeriesInstance() {}
 
     public TimeSeriesInstance(double targetValue, TimeSeries[] data) {
         this(targetValue, Arrays.asList(data));
@@ -486,6 +487,26 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
         return getVSlice(new int[]{index});
     }
 
+    public TimeSeries getHSliceTS(int index) {
+        return getHSliceTS(Collections.singletonList(index)).get(0);
+    }
+    
+    public List<TimeSeries> getHSliceTS(List<Integer> indices) {
+        final List<TimeSeries> result = new ArrayList<>();
+        for(Integer i : indices) {
+            result.add(seriesDimensions.get(i));
+        }
+        return result;
+    }
+    
+    public List<TimeSeries> getHSliceTS(int fromInclusive, int toExclusive) {
+        return seriesDimensions.subList(fromInclusive, toExclusive);
+    }
+    
+    public TimeSeries[] getHSliceTS(int[] indices) {
+        return getHSliceTS(Arrays.stream(indices).boxed().collect(Collectors.toList()).stream().mapToInt(i -> i).toArray());
+    }
+    
     /**
      * Returns the series at the dimension passed.
      *
@@ -574,7 +595,20 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      * @return a new TimeSeriesInstance
      */
     public TimeSeriesInstance getHSlice(List<Integer> dimensionsToKeep) {
-        return new TimeSeriesInstance(getHSliceArray(dimensionsToKeep), this);
+        if(seriesDimensions.size() == 1 && dimensionsToKeep.size() == 1 && dimensionsToKeep.get(0) == 0) {
+            return this;
+        }
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
+        tsi.seriesDimensions = new ArrayList<>(dimensionsToKeep.size());
+        for(Integer i : dimensionsToKeep) {
+            tsi.seriesDimensions.add(seriesDimensions.get(i));
+        }
+        tsi.targetValue = targetValue;
+        tsi.labelIndex = labelIndex;
+        
+        tsi.dataChecks();
+        
+        return tsi;
     }
 
     /**
@@ -702,7 +736,9 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      */
     public TimeSeriesInstance getHSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
-        final TimeSeriesInstance tsi = copy();
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
+        tsi.labelIndex = labelIndex;
+        tsi.targetValue = targetValue;
         // trim current data to a subset
         tsi.seriesDimensions = seriesDimensions.subList(startInclusive, endExclusive);
         tsi.dataChecks();
@@ -767,9 +803,11 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
      */
     public TimeSeriesInstance getVSlice(int startInclusive, int endExclusive) {
         // copy construct a new inst
-        final TimeSeriesInstance tsi = copy();
+        final TimeSeriesInstance tsi = new TimeSeriesInstance();
         // trim current data to a subset
         tsi.seriesDimensions = seriesDimensions.stream().map(dim -> dim.getVSlice(startInclusive, endExclusive)).collect(Collectors.toList());
+        tsi.labelIndex = labelIndex;
+        tsi.targetValue = labelIndex;
         tsi.dataChecks();
         return tsi;
     }
@@ -840,4 +878,5 @@ public class TimeSeriesInstance implements Iterable<TimeSeries> {
     public boolean isRegressionProblem() {
         return !isClassificationProblem();
     }
+    
 }

@@ -43,7 +43,7 @@ public class TSWriter {
         data = dat;
     }
 
-    DecimalFormat df = new DecimalFormat();
+    DecimalFormat df = new DecimalFormat(".########");
 
     public void setDestination(OutputStream output) {
         writer = new BufferedWriter(new OutputStreamWriter(output));
@@ -76,7 +76,7 @@ public class TSWriter {
         outW.println("@timeStamps " + data.hasTimeStamps());
         outW.println("@missing " + data.hasMissing());
         outW.println("@univariate " + !data.isMultivariate());
-        outW.println("@dimensions " + data.getMaxNumChannels());
+        outW.println("@dimensions " + data.getMaxNumDimensions());
         outW.println("@equalLength " + data.isEqualLength());
         outW.println("@seriesLength " + data.getMaxLength());
         //outW.println("@classLabel " + );

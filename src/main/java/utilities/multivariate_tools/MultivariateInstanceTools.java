@@ -350,7 +350,6 @@ public class MultivariateInstanceTools {
         Instances[] resample_test_channels = new Instances[test_channels.length];
         
         for (int i = 0; i < resample_train_channels.length; i++) {
-            System.out.printf("%d / %d \n", i,  resample_train_channels.length);
             Instances[] temp = utilities.InstanceTools.resampleTrainAndTestInstances(train_channels[i], test_channels[i], seed);
             resample_train_channels[i] = temp[0];
             resample_test_channels[i] = temp[1];

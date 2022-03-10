@@ -1,9 +1,9 @@
 /*
  * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- * The UEA TSML toolbox is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation, either version 3 of the License, or 
+ * The UEA TSML toolbox is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * The UEA TSML toolbox is distributed in the hope that it will be useful,
@@ -16,13 +16,16 @@
  */
 package machine_learning.classifiers;
 
-import experiments.data.DatasetLoading;
 import weka.classifiers.AbstractClassifier;
-import weka.core.*;
+import weka.core.Capabilities;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static utilities.ArrayUtilities.normalise;
@@ -54,7 +57,8 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
 
     protected static final long serialVersionUID = 2L;
 
-    public ContinuousIntervalTree(){}
+    public ContinuousIntervalTree() {
+    }
 
     @Override
     public Capabilities getCapabilities() {
@@ -78,15 +82,17 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         this.seed = seed;
     }
 
-    public void setUseMargin(boolean b){
+    public void setUseMargin(boolean b) {
         this.useMargin = b;
     }
 
-    public void setK(int i){
+    public void setK(int i) {
         this.k = i;
     }
 
-    public void setMaxDepth(int i) { this.maxDepth = i; }
+    public void setMaxDepth(int i) {
+        this.maxDepth = i;
+    }
 
     @Override
     public int getSeed() {
@@ -95,7 +101,7 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
 
     @Override
     public void buildClassifier(Instances data) throws Exception {
-        numAttributes = data.numAttributes()-1;
+        numAttributes = data.numAttributes() - 1;
         if (data.classIndex() != numAttributes) throw new Exception("Class attribute must be the last index.");
 
         rand = new Random(seed);
@@ -105,13 +111,13 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
 
         //Initial tree node setup
         double[] dist = new double[data.numClasses()];
-        for (Instance inst: data){
-            dist[(int)inst.classValue()]++;
+        for (Instance inst : data) {
+            dist[(int) inst.classValue()]++;
         }
         double rootEntropy = 0;
-        for (int i = 0; i < data.numClasses(); i++){
-            double p = dist[i]/data.numInstances();
-            rootEntropy += p > 0 ? -(p*Math.log(p)/log2) : 0;
+        for (int i = 0; i < data.numClasses(); i++) {
+            double p = dist[i] / data.numInstances();
+            rootEntropy += p > 0 ? -(p * Math.log(p) / log2) : 0;
         }
 
         root = new TreeNode();
@@ -152,10 +158,10 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         return tieBreak(probs);
     }
 
-    private int tieBreak(double[] probs){
+    private int tieBreak(double[] probs) {
         int maxClass = 0;
-        for (int n = 1; n < probs.length; n++){
-            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())){
+        for (int n = 1; n < probs.length; n++) {
+            if (probs[n] > probs[maxClass] || (probs[n] == probs[maxClass] && rand.nextBoolean())) {
                 maxClass = n;
             }
         }
@@ -182,44 +188,45 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         return root.distributionForInstance(instance, functions, intervals, attributes, dimensions);
     }
 
-    //Fills the info List with the attribute, threshold and where it next moved for each node traversed
+    //Fills the info List with the attribute, threshold and the next node for each node traversed
     public double[] distributionForInstance(double[][] instance, Function<Interval, Double>[] functions,
                                             int[][] intervals, int[] attributes,
                                             int[] dimensions, ArrayList<double[]> info) throws Exception {
         return root.distributionForInstance(instance, functions, intervals, attributes, dimensions, info);
     }
 
+    //Same as above but for multiple representations
     public double[] distributionForInstance(double[][][] instance, Function<Interval, Double>[] functions,
                                             int[][][] intervals, int[] attributes,
                                             int[][] dimensions, ArrayList<double[]> info) throws Exception {
         return root.distributionForInstance(instance, functions, intervals, attributes, dimensions, info);
     }
 
-    private double[][] findThresholds(Instances data){
+    private double[][] findThresholds(Instances data) {
         double[][] thresholds = new double[numAttributes][k];
-        for (int i = 0; i < numAttributes; i++){
+        for (int i = 0; i < numAttributes; i++) {
             double min = Double.MAX_VALUE;
             double max = -99999999;
-            for (Instance inst: data){
+            for (Instance inst : data) {
                 double v = inst.value(i);
-                if (v < min){
+                if (v < min) {
                     min = v;
                 }
-                if (v > max){
+                if (v > max) {
                     max = v;
                 }
             }
 
-            double step = (max - min)/(k-1);
-            for (int n = 0; n < k; n++){
-                thresholds[i][n] = min + step*n;
+            double step = (max - min) / (k - 1);
+            for (int n = 0; n < k; n++) {
+                thresholds[i][n] = min + step * n;
             }
         }
         return thresholds;
     }
 
     //Returns the attribute used for each node and its information gain
-    public ArrayList<Double>[] getTreeSplitsGain(){
+    public ArrayList<Double>[] getTreeSplitsGain() {
         ArrayList<Double> splits = new ArrayList<>();
         ArrayList<Double> gain = new ArrayList<>();
 
@@ -231,32 +238,32 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         return r;
     }
 
-    private void findSplitsGain(TreeNode tree, ArrayList<Double> splits, ArrayList<Double> gain){
-        splits.add((double)tree.bestSplit);
-        gain.add(tree.bestGain);
+    private void findSplitsGain(TreeNode node, ArrayList<Double> splits, ArrayList<Double> gain) {
+        splits.add((double) node.bestSplit);
+        gain.add(node.bestGain);
 
-        for (int i = 0; i < tree.children.length; i++){
-            if (tree.children[i].bestSplit > -1){
-                findSplitsGain(tree.children[i], splits, gain);
+        for (int i = 0; i < node.children.length; i++) {
+            if (node.children[i].bestSplit > -1) {
+                findSplitsGain(node.children[i], splits, gain);
             }
         }
     }
 
     //Returns true for attributes which are used in tree nodes, false otherwise
-    public boolean[] getAttributesUsed(){
+    public boolean[] getAttributesUsed() {
         boolean[] attsUsed = new boolean[numAttributes];
         if (root.bestSplit > -1) findAttributesUsed(root, attsUsed);
         return attsUsed;
     }
 
-    private void findAttributesUsed(TreeNode tree, boolean[] attsUsed){
-        if (!attsUsed[tree.bestSplit]){
-            attsUsed[tree.bestSplit] = true;
+    private void findAttributesUsed(TreeNode node, boolean[] attsUsed) {
+        if (!attsUsed[node.bestSplit]) {
+            attsUsed[node.bestSplit] = true;
         }
 
-        for (int i = 0; i < tree.children.length; i++){
-            if (tree.children[i].bestSplit > -1){
-                findAttributesUsed(tree.children[i], attsUsed);
+        for (int i = 0; i < node.children.length; i++) {
+            if (node.children[i].bestSplit > -1) {
+                findAttributesUsed(node.children[i], attsUsed);
             }
         }
     }
@@ -265,47 +272,48 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         int bestSplit = -1;
         double bestThreshold = 0;
         double bestGain = 0;
-        double bestMargin = 0;
+        double bestMargin = -1;
         TreeNode[] children;
         double[] leafDistribution;
         int depth;
 
         protected static final long serialVersionUID = 1L;
 
-        TreeNode(){}
+        TreeNode() {
+        }
 
         void buildTree(Instances data, double[][] thresholds, double entropy, double[] distribution, int lastDepth,
-                       boolean leaf){
+                       boolean leaf) {
             double[][] bestEntropies = new double[0][0];
             depth = lastDepth + 1;
 
             int remainingClasses = 0;
-            for (double d: distribution){
+            for (double d : distribution) {
                 if (d > 0) remainingClasses++;
             }
 
-            if (!leaf && remainingClasses > 1 && depth < maxDepth){
+            if (!leaf && remainingClasses > 1 && depth < maxDepth) {
                 //Loop through all attributes each using k threshold values looking the best split for this node
-                for (int i = 0; i < numAttributes; i++){
-                    for (int n = 0; n < k; n++){
+                for (int i = 0; i < numAttributes; i++) {
+                    for (int n = 0; n < k; n++) {
                         //gain stored in [0][0]
                         double[][] entropies = entropyGain(data, i, thresholds[i][n], entropy);
 
                         if (entropies[0][0] > bestGain || (!useMargin && entropies[0][0] == bestGain && entropies[0][0]
-                                > 0 && rand.nextBoolean())){
+                                > 0 && rand.nextBoolean())) {
                             bestSplit = i;
                             bestThreshold = thresholds[i][n];
                             bestGain = entropies[0][0];
-                            bestMargin = 0;
+                            bestMargin = -1;
                             bestEntropies = entropies;
                         }
                         //Use margin gain if there is a tie
-                        else if (useMargin && entropies[0][0] == bestGain && entropies[0][0] > 0){
+                        else if (useMargin && entropies[0][0] == bestGain && entropies[0][0] > 0) {
                             double margin = findMargin(data, i, thresholds[i][n]);
-                            if (bestMargin == 0) bestMargin = findMargin(data, bestSplit, bestThreshold);
+                            if (bestMargin == -1) bestMargin = findMargin(data, bestSplit, bestThreshold);
 
                             //Select randomly if there is a tie again
-                            if (margin > bestMargin || (margin == bestMargin && rand.nextBoolean())){
+                            if (margin > bestMargin || (margin == bestMargin && rand.nextBoolean())) {
                                 bestSplit = i;
                                 bestThreshold = thresholds[i][n];
                                 bestMargin = margin;
@@ -316,54 +324,48 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
                 }
             }
 
-            if (bestSplit > -1){
+            if (bestSplit > -1) {
                 Instances[] split = splitData(data);
                 children = new TreeNode[3];
 
                 //Left node
                 children[0] = new TreeNode();
-                if (split[0].isEmpty()){
-                    children[0].buildTree(split[0], thresholds, entropy, distribution, depth,true);
-                }
-                else{
-                    children[0].buildTree(split[0], thresholds, bestEntropies[0][1], bestEntropies[1], depth,false);
+                if (split[0].isEmpty()) {
+                    children[0].buildTree(split[0], thresholds, entropy, distribution, depth, true);
+                } else {
+                    children[0].buildTree(split[0], thresholds, bestEntropies[0][1], bestEntropies[1], depth, false);
                 }
 
                 //Right node
                 children[1] = new TreeNode();
-                if (split[1].isEmpty()){
-                    children[1].buildTree(split[1], thresholds, entropy, distribution, depth,true);
-                }
-                else{
-                    children[1].buildTree(split[1], thresholds, bestEntropies[0][2], bestEntropies[2], depth,false);
+                if (split[1].isEmpty()) {
+                    children[1].buildTree(split[1], thresholds, entropy, distribution, depth, true);
+                } else {
+                    children[1].buildTree(split[1], thresholds, bestEntropies[0][2], bestEntropies[2], depth, false);
                 }
 
                 //Missing value node
                 children[2] = new TreeNode();
-                if (split[2].isEmpty()){
-                    children[2].buildTree(split[2], thresholds, entropy, distribution, depth,true);
+                if (split[2].isEmpty()) {
+                    children[2].buildTree(split[2], thresholds, entropy, distribution, depth, true);
+                } else {
+                    children[2].buildTree(split[2], thresholds, bestEntropies[0][3], bestEntropies[3], depth, false);
                 }
-                else{
-                    children[2].buildTree(split[2], thresholds, bestEntropies[0][3], bestEntropies[3], depth,false);
-                }
-            }
-            else{
-                leafDistribution = distribution;
-                leafDistribution = normalise(leafDistribution);
+            } else {
+                leafDistribution = normalise(distribution);
             }
         }
 
-        double[][] entropyGain(Instances data, int att, double threshold, double parentEntropy){
+        //Distribution, entropy for each split and information gain
+        double[][] entropyGain(Instances data, int att, double threshold, double parentEntropy) {
             double[][] dists = new double[4][data.numClasses()];
-            for (Instance inst: data){
-                if (Double.isNaN(inst.value(att))){
-                    dists[3][(int)inst.classValue()]++;
-                }
-                else if (inst.value(att) <= threshold){
-                    dists[1][(int)inst.classValue()]++;
-                }
-                else{
-                    dists[2][(int)inst.classValue()]++;
+            for (Instance inst : data) {
+                if (Double.isNaN(inst.value(att))) {
+                    dists[3][(int) inst.classValue()]++;
+                } else if (inst.value(att) <= threshold) {
+                    dists[1][(int) inst.classValue()]++;
+                } else {
+                    dists[2][(int) inst.classValue()]++;
                 }
             }
 
@@ -372,31 +374,32 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
             double sumMissing = sum(dists[3]);
 
             double[] entropies = new double[4];
-            for (int i = 0; i < data.numClasses(); i++){
-                double p1 = sumLeft > 0 ? dists[1][i]/sumLeft : 0;
-                entropies[1] += p1 > 0 ? -(p1*Math.log(p1)/log2) : 0;
-                double p2 = sumRight > 0 ? dists[2][i]/sumRight : 0;
-                entropies[2] += p2 > 0 ? -(p2*Math.log(p2)/log2) : 0;
-                double p3 = sumMissing > 0 ? dists[3][i]/sumMissing : 0;
-                entropies[3] += p3 > 0 ? -(p3*Math.log(p3)/log2) : 0;
+            for (int i = 0; i < data.numClasses(); i++) {
+                double p1 = sumLeft > 0 ? dists[1][i] / sumLeft : 0;
+                entropies[1] += p1 > 0 ? -(p1 * Math.log(p1) / log2) : 0;
+                double p2 = sumRight > 0 ? dists[2][i] / sumRight : 0;
+                entropies[2] += p2 > 0 ? -(p2 * Math.log(p2) / log2) : 0;
+                double p3 = sumMissing > 0 ? dists[3][i] / sumMissing : 0;
+                entropies[3] += p3 > 0 ? -(p3 * Math.log(p3) / log2) : 0;
             }
 
             entropies[0] = parentEntropy
-                    - sumLeft/data.numInstances() * entropies[1]
-                    - sumRight/data.numInstances() * entropies[2]
-                    - sumMissing/data.numInstances() * entropies[3];
+                    - sumLeft / data.numInstances() * entropies[1]
+                    - sumRight / data.numInstances() * entropies[2]
+                    - sumMissing / data.numInstances() * entropies[3];
 
             dists[0] = entropies;
 
             return dists;
         }
 
-        double findMargin(Instances data, int att, double threshold){
+        //Margin gain for tie breaks
+        double findMargin(Instances data, int att, double threshold) {
             double min = Double.MAX_VALUE;
 
-            for (Instance inst: data){
-                double n = Math.abs(inst.value(att)-threshold);
-                if (n < min){
+            for (Instance inst : data) {
+                double n = Math.abs(inst.value(att) - threshold);
+                if (n < min) {
                     min = n;
                 }
             }
@@ -404,20 +407,18 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
             return min;
         }
 
-        Instances[] splitData(Instances data){
+        Instances[] splitData(Instances data) {
             Instances[] split = new Instances[3];
             split[0] = new Instances(data, data.numInstances());
             split[1] = new Instances(data, data.numInstances());
             split[2] = new Instances(data, data.numInstances());
 
-            for (Instance inst: data){
-                if (Double.isNaN(inst.value(bestSplit))){
+            for (Instance inst : data) {
+                if (Double.isNaN(inst.value(bestSplit))) {
                     split[2].add(inst);
-                }
-                else if (inst.value(bestSplit) <= bestThreshold){
+                } else if (inst.value(bestSplit) <= bestThreshold) {
                     split[0].add(inst);
-                }
-                else{
+                } else {
                     split[1].add(inst);
                 }
             }
@@ -425,111 +426,99 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
             return split;
         }
 
-        double[] distributionForInstance(Instance inst){
-            if (bestSplit > -1){
-                if (Double.isNaN(inst.value(bestSplit))){
+        double[] distributionForInstance(Instance inst) {
+            if (bestSplit > -1) {
+                if (Double.isNaN(inst.value(bestSplit))) {
                     return children[2].distributionForInstance(inst);
-                }
-                else if (inst.value(bestSplit) <= bestThreshold){
+                } else if (inst.value(bestSplit) <= bestThreshold) {
                     return children[0].distributionForInstance(inst);
-                }
-                else{
+                } else {
                     return children[1].distributionForInstance(inst);
                 }
-            }
-            else{
+            } else {
                 return leafDistribution;
             }
         }
 
         double[] distributionForInstance(double[][] inst, Function<Interval, Double>[] functions,
-                                         int[][] intervals, int[] attributes, int[] dimensions){
-            if (bestSplit > -1){
-                int interval = bestSplit/attributes.length;
-                int att = bestSplit%attributes.length;
+                                         int[][] intervals, int[] attributes, int[] dimensions) {
+            if (bestSplit > -1) {
+                int interval = bestSplit / attributes.length;
+                int att = bestSplit % attributes.length;
                 int dim = dimensions[interval];
 
                 double val = functions[attributes[att]].apply(new Interval(inst[dim], intervals[interval][0],
                         intervals[interval][1]));
 
-                if (Double.isNaN(val)){
+                if (Double.isNaN(val)) {
                     return children[2].distributionForInstance(inst, functions, intervals, attributes, dimensions);
-                }
-                else if (val <= bestThreshold){
+                } else if (val <= bestThreshold) {
                     return children[0].distributionForInstance(inst, functions, intervals, attributes, dimensions);
-                }
-                else{
+                } else {
                     return children[1].distributionForInstance(inst, functions, intervals, attributes, dimensions);
                 }
-            }
-            else{
+            } else {
                 return leafDistribution;
             }
         }
 
         double[] distributionForInstance(double[][][] inst, Function<Interval, Double>[] functions,
-                                         int[][][] intervals, int[] attributes, int[][] dimensions){
-            if (bestSplit > -1){
+                                         int[][][] intervals, int[] attributes, int[][] dimensions) {
+            if (bestSplit > -1) {
                 int repSum = 0;
                 int rep = -1;
                 for (int i = 0; i < intervals.length; i++) {
-                    if (bestSplit < repSum + attributes.length * intervals[i].length){
+                    if (bestSplit < repSum + attributes.length * intervals[i].length) {
                         rep = i;
                         break;
                     }
                     repSum += attributes.length * intervals[i].length;
                 }
 
-                int att = bestSplit%attributes.length;
-                int interval = (bestSplit-repSum)/attributes.length;
+                int att = bestSplit % attributes.length;
+                int interval = (bestSplit - repSum) / attributes.length;
                 int dim = dimensions[rep][interval];
 
                 double val = functions[attributes[att]].apply(new Interval(inst[rep][dim], intervals[rep][interval][0],
                         intervals[rep][interval][1]));
 
-                if (Double.isNaN(val)){
+                if (Double.isNaN(val)) {
                     return children[2].distributionForInstance(inst, functions, intervals, attributes, dimensions);
-                }
-                else if (val <= bestThreshold){
+                } else if (val <= bestThreshold) {
                     return children[0].distributionForInstance(inst, functions, intervals, attributes, dimensions);
-                }
-                else{
+                } else {
                     return children[1].distributionForInstance(inst, functions, intervals, attributes, dimensions);
                 }
-            }
-            else{
+            } else {
                 return leafDistribution;
             }
         }
 
         double[] distributionForInstance(double[][] inst, Function<Interval, Double>[] functions,
                                          int[][] intervals, int[] attributes, int[] dimensions,
-                                         ArrayList<double[]> info){
-            if (bestSplit > -1){
-                int interval = bestSplit/attributes.length;
-                int att = bestSplit%attributes.length;
+                                         ArrayList<double[]> info) {
+            if (bestSplit > -1) {
+                int interval = bestSplit / attributes.length;
+                int att = bestSplit % attributes.length;
                 int dim = dimensions[interval];
 
                 double val = functions[attributes[att]].apply(new Interval(inst[dim], intervals[interval][0],
                         intervals[interval][1]));
 
-                if (Double.isNaN(val)){
+                if (Double.isNaN(val)) {
                     info.add(new double[]{bestSplit, bestThreshold, 2});
                     return children[2].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
-                }
-                else if (val <= bestThreshold){
+                } else if (val <= bestThreshold) {
                     info.add(new double[]{bestSplit, bestThreshold, 0});
                     return children[0].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
-                }
-                else{
+                } else {
                     info.add(new double[]{bestSplit, bestThreshold, 1});
                     return children[1].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
                 }
-            }
-            else{
+            } else {
                 info.add(leafDistribution);
                 return leafDistribution;
             }
@@ -537,49 +526,46 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
 
         double[] distributionForInstance(double[][][] inst, Function<Interval, Double>[] functions,
                                          int[][][] intervals, int[] attributes, int[][] dimensions,
-                                         ArrayList<double[]> info){
-            if (bestSplit > -1){
+                                         ArrayList<double[]> info) {
+            if (bestSplit > -1) {
                 int repSum = 0;
                 int rep = -1;
                 for (int i = 0; i < intervals.length; i++) {
-                    if (bestSplit < repSum + attributes.length * intervals[i].length){
+                    if (bestSplit < repSum + attributes.length * intervals[i].length) {
                         rep = i;
                         break;
                     }
                     repSum += attributes.length * intervals[i].length;
                 }
 
-                int att = bestSplit%attributes.length;
-                int interval = (bestSplit-repSum)/attributes.length;
+                int att = bestSplit % attributes.length;
+                int interval = (bestSplit - repSum) / attributes.length;
                 int dim = dimensions[rep][interval];
 
                 double val = functions[attributes[att]].apply(new Interval(inst[rep][dim], intervals[rep][interval][0],
                         intervals[rep][interval][1]));
 
-                if (Double.isNaN(val)){
+                if (Double.isNaN(val)) {
                     info.add(new double[]{bestSplit, bestThreshold, 2});
                     return children[2].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
-                }
-                else if (val <= bestThreshold){
+                } else if (val <= bestThreshold) {
                     info.add(new double[]{bestSplit, bestThreshold, 0});
                     return children[0].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
-                }
-                else{
+                } else {
                     info.add(new double[]{bestSplit, bestThreshold, 1});
                     return children[1].distributionForInstance(inst, functions, intervals, attributes, dimensions,
                             info);
                 }
-            }
-            else{
+            } else {
                 info.add(leafDistribution);
                 return leafDistribution;
             }
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "[" + bestSplit + "," + depth + "]";
         }
     }
@@ -589,21 +575,10 @@ public class ContinuousIntervalTree extends AbstractClassifier implements Random
         public int start;
         public int end;
 
-        public Interval(double[] series, int start, int end){
+        public Interval(double[] series, int start, int end) {
             this.series = series;
             this.start = start;
             this.end = end;
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        int fold = 0;
-
-        Instances[] data = DatasetLoading.sampleItalyPowerDemand(fold);
-        Instances train = data[0];
-        Instances test = data[1];
-
-        ContinuousIntervalTree c = new ContinuousIntervalTree();
-        c.buildClassifier(train);
     }
 }

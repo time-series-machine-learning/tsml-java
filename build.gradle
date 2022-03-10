@@ -54,6 +54,9 @@ dependencies {
     compile group: 'org.nd4j', name: 'nd4j-native-platform', version: '1.0.0-beta4'
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-nop
     compile group: 'org.slf4j', name: 'slf4j-nop', version: '1.7.25'
+    // https://mvnrepository.com/artifact/com.github.kevinstern/software-and-algorithms
+    compile group: 'com.github.kevinstern', name: 'software-and-algorithms', version: '1.0'
+
 }
 
 sourceSets {
@@ -71,30 +74,30 @@ application {
     mainClassName = 'experiments.Experiments'
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': application.mainClassName,
-                   'Implementation-Title': project.name,
-                   'Implementation-Version': version
-    }
-}
+//jar {
+//    manifest {
+//        attributes 'Main-Class': application.mainClassName,
+//                   'Implementation-Title': project.name,
+//                   'Implementation-Version': version
+//    }
+//}
 
-task copyDepsToBuild(type: Copy) {
-    into "build/libs/lib"
-    from configurations.runtime
-    from 'lib'
-}
+//task copyDepsToBuild(type: Copy) {
+//    into "build/libs/lib"
+//    from configurations.runtime
+//    from 'lib'
+//}
 
-task fatJar(type: Jar) {
-    zip64 true
-    manifest = jar.manifest
-    baseName = project.name + "-all"
-    from sourceSets.main.output
-    dependsOn configurations.runtimeClasspath
-    from {
-        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
-    }
-}
-
-jar.finalizedBy(fatJar)
-jar.finalizedBy(copyDepsToBuild)
+//task fatJar(type: Jar) {
+//    zip64 true
+//    manifest = jar.manifest
+//    baseName = project.name + "-all"
+//    from sourceSets.main.output
+//    dependsOn configurations.runtimeClasspath
+//    from {
+//        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+//    }
+//}
+//
+//jar.finalizedBy(fatJar)
+//jar.finalizedBy(copyDepsToBuild)

@@ -344,13 +344,15 @@ import weka.core.Instances;
 
         }
         public static void makeSingleDimensionFiles() throws IOException {
-            String path="Z:\\Data\\MultivariateTSCProblems\\";
-            for(String prob: DatasetLists.mtscProblems2018){
+            String path="Z:\\Results Working Area\\HIVE-COTE\\New Multivariate Datasets\\";
+            String[] probs={"CounterMovementJump"};//DatasetLists.newMultivariate
+            for(String prob: probs){
 
                 File f= new File(path+prob+"\\"+prob+"Dimension"+(1)+"_TRAIN.arff");
-                if(!f.exists()){
-                    Instances train =DatasetLoading.loadData(path+prob+"\\"+prob+"_TRAIN");
-                    Instances test =DatasetLoading.loadData(path+prob+"\\"+prob+"_TEST");
+                File f2= new File(path+prob+"\\"+prob+"Dimension"+(1)+"_TEST.arff");
+                if(!f.exists()||!f2.exists()){
+                    Instances train =DatasetLoading.loadData(path+prob+"\\"+prob+"_TRAIN.arff");
+                    Instances test =DatasetLoading.loadData(path+prob+"\\"+prob+"_TEST.arff");
                     System.out.println("PROBLEM "+prob);
                     System.out.println("Num train instances ="+train.numInstances());
                     System.out.println("Num test instances ="+test.numInstances());
@@ -365,9 +367,11 @@ import weka.core.Instances;
                     System.out.println(" Num split files ="+splitTest.length);
                     for(int i=0;i<splitTrain.length;i++){
                         System.out.println("Number of test instances = "+splitTest[i].numInstances());
-                        OutFile outTrain=new OutFile(path+prob+"\\"+prob+"Dimension"+(i+1)+"_TRAIN.arff");
+                        File file=new File(path+"SingleDimensionProblems\\"+prob);
+                        file.mkdirs();
+                        OutFile outTrain=new OutFile(path+"SingleDimensionProblems\\"+prob+"\\"+prob+"Dimension"+(i+1)+"_TRAIN.arff");
                         outTrain.writeLine(splitTrain[i].toString()+"");
-                        OutFile outTest=new OutFile(path+prob+"\\"+prob+"Dimension"+(i+1)+"_TEST.arff");
+                        OutFile outTest=new OutFile(path+"SingleDimensionProblems\\"+prob+"\\"+prob+"Dimension"+(i+1)+"_TEST.arff");
                         outTest.writeLine(splitTest[i].toString()+"");
 
                     }
@@ -704,6 +708,8 @@ import weka.core.Instances;
         }
 
         public static void main(String[] args) throws Exception {
+            makeSingleDimensionFiles();
+            System.exit(0);
             exampleUsage();
             String prob="UWaveGestureLibrary";
             String dest="Z:\\Data\\UnivariateMTSC\\";
