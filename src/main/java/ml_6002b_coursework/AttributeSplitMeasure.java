@@ -8,11 +8,10 @@ import java.util.Enumeration;
 
 /**
  * Interface for alternative attribute split measures for Part 2.2 of the coursework
- *
  */
-public interface AttributeSplitMeasure {
+public abstract class AttributeSplitMeasure {
 
-    double computeAttributeQuality(Instances data, Attribute att) throws Exception;
+    public abstract double computeAttributeQuality(Instances data, Attribute att) throws Exception;
 
     /**
      * Splits a dataset according to the values of a nominal attribute.
@@ -21,19 +20,20 @@ public interface AttributeSplitMeasure {
      * @param att the attribute to be used for splitting
      * @return the sets of instances produced by the split
      */
-     default Instances[] splitData(Instances data, Attribute att) {
+    public Instances[] splitData(Instances data, Attribute att) {
         Instances[] splitData = new Instances[att.numValues()];
-        for (int j = 0; j < att.numValues(); j++) {
-            splitData[j] = new Instances(data, data.numInstances());
+        for (int i = 0; i < att.numValues(); i++) {
+            splitData[i] = new Instances(data, data.numInstances());
         }
-        Enumeration instEnum = data.enumerateInstances();
-        while (instEnum.hasMoreElements()) {
-            Instance inst = (Instance) instEnum.nextElement();
+
+        for (Instance inst: data) {
             splitData[(int) inst.value(att)].add(inst);
         }
-        for (int i = 0; i < splitData.length; i++) {
-            splitData[i].compactify();
+
+        for (Instances split : splitData) {
+            split.compactify();
         }
+
         return splitData;
     }
 

@@ -69,4 +69,5 @@ out/
 src/main/java/local_code/
 src/main/java/local/
 project_jar/tsml.jar
+big_jar/tsml.jar
 src/main/java/ml_6002b_coursework/BasicTests.java

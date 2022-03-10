@@ -2,13 +2,12 @@ package ml_6002b_coursework;
 
 /**
  * lists of datasets available on blackboard for part 3 of the coursework.
-
- * These problems have no missing values
+ *
+ * These problems have no missing values.
  */
 public class DatasetLists {
 
-
-    static String[] nominalAttributeProblems={
+    public static String[] nominalAttributeProblems={
             "balance-scale",
             "car-evaluation",
             "chess-krvk",
@@ -31,7 +30,7 @@ public class DatasetLists {
             "semeion",
             "spect-heart",
             "tic-tac-toe",
-            "zoo"
+            "zoo",
     };
 
     public static String[] continuousAttributeProblems={
@@ -70,11 +69,7 @@ public class DatasetLists {
             "wall-following",
             "waveform-noise",
             "wine-quality-white",
-            "yeast"
+            "yeast",
     };
-
-
-
-
 
 }
