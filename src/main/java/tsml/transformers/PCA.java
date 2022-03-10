@@ -154,7 +154,7 @@ public class PCA implements TrainableTransformer {
          * Instances train= DatasetLoading.loadData(
          * "Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TRAIN.arff");
          * Instances test= DatasetLoading.loadData(
-         * "Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown_TEST.arff");
+         * "Z:\\ArchiveData\\Univariate_arff\\Chinatown\\Chinatown.arff");
          */
 
         /*
