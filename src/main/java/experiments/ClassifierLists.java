@@ -48,7 +48,8 @@ import tsml.classifiers.shapelet_based.*;
 import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
-import tsml.classifiers.shapelet_based.dev.classifiers.MultivariateShapeletClassifier;
+import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.RandomShapeletClassifier;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -316,10 +317,12 @@ public class ClassifierLists {
      * SHAPELET BASED: Classifiers that use shapelets in some way.
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
-            "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned"};
+            "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned",
+            "RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I","RSTC-FSTAT_I"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
+        MSTC.ShapeletParams params;
         Classifier c;
         int fold=exp.foldId;
         switch(classifier) {
@@ -346,9 +349,55 @@ public class ClassifierLists {
             case "Arsenal":
                 c = new Arsenal();
                 break;
-            case "MSTC":
-                c = new MultivariateShapeletClassifier(exp);
+            case "RSTC_I":
+                c = new RandomShapeletClassifier(exp);
                 break;
+            case "RSTC-COR_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CORR_BINARY,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-CHI_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI_BINARY,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-FSTAT_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.FSTAT_BINARY,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+
+            case "RSTC_D":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
+                        MSTC.ShapeletFactories.DEPENDANT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+
            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
@@ -674,7 +723,7 @@ public class ClassifierLists {
                 c=new WEASEL_MUSE();
                 break;
             case "MSTC_I":
-                c=new MultivariateShapeletClassifier(exp);
+                c=new RandomShapeletClassifier(exp);
                 break;
             case "STC-D":
                 c=new ShapeletTransformClassifier();

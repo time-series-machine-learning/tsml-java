@@ -21,7 +21,7 @@ public class RandomFilter extends ShapeletFilterMV {
 
     protected IterationsStopCriteria iterationsStopCriteria;
     protected ContractedStopCriteria contractedStopCriteria;
-    protected QualityStopCriteria qualityStopCriteria;
+    protected NoImprovement qualityStopCriteria;
 
     protected int numShapeletsEvaluated;
     protected String endCriteria;
@@ -34,7 +34,7 @@ public class RandomFilter extends ShapeletFilterMV {
         this.params = params;
         this.iterationsStopCriteria = new IterationsStopCriteria();
         this.contractedStopCriteria = new ContractedStopCriteria();
-        this.qualityStopCriteria = new QualityStopCriteria();
+        this.qualityStopCriteria = new NoImprovement();
 
         ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
@@ -91,12 +91,11 @@ public class RandomFilter extends ShapeletFilterMV {
                 return shapelets;
             }
 
-         /*   if (this.qualityStopCriteria.stop()){
+            if (this.qualityStopCriteria.stop()){
                 reorderShapelets(fun);
-                System.out.println("Quality reached");
-                System.out.println("num shapelets evaluated: " + numShapeletsEvaluated);
+                this.endCriteria = "NO_IMPROVEMENT";
                 return shapelets;
-            }*/
+            }
 
             this.iteration++;
         }
@@ -170,13 +169,23 @@ public class RandomFilter extends ShapeletFilterMV {
 
     class NoImprovement implements StopCriteria{
 
-        double prevImprovement = 1;
+        double prevImprovement = -1;
+        int noImprovementLimit = 0;
+        static final int LIMIT_IMPROVEMENT = 1000;
+
         @Override
         public boolean stop() {
-            if (shapelets.size() >= params.k){
-                if (prevImprovement==averageQuality) return true;
+            if (shapelets.size() >= params.k*0.5){
+                if (prevImprovement>=averageQuality){
+                    noImprovementLimit++;
+                    if (noImprovementLimit>=LIMIT_IMPROVEMENT)
+                        return true;
+                    else
+                        return false;
+                }
                 else{
                     prevImprovement = averageQuality;
+                    noImprovementLimit = 0;
                     return  false;
                 }
 

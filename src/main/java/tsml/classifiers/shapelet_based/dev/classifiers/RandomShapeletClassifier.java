@@ -5,6 +5,7 @@ import experiments.Experiments;
 import machine_learning.classifiers.RidgeClassifierCV;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
+import tsml.data_containers.TimeSeriesInstance;
 import tsml.data_containers.TimeSeriesInstances;
 import tsml.data_containers.utilities.Converter;
 import weka.classifiers.AbstractClassifier;
@@ -16,7 +17,7 @@ import weka.core.Randomizable;
 
 import java.util.concurrent.TimeUnit;
 
-public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier implements TrainTimeContractable{
+public class RandomShapeletClassifier extends EnhancedAbstractClassifier implements TrainTimeContractable{
     private boolean normalise = true;
 
 
@@ -27,21 +28,28 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
 
     private MultivariateShapeletTransformer transformer;
     private Instances header;
+    private String[] classLabels;
 
     MSTC.ShapeletParams params;
     Experiments.ExperimentalArguments exp;
 
-    public MultivariateShapeletClassifier(Experiments.ExperimentalArguments exp){
+    public RandomShapeletClassifier(Experiments.ExperimentalArguments exp){
        this.exp = exp;
        this.params = new MSTC.ShapeletParams(100,
                 3,
                 50,
-                1000,
-                10,
+                1000000,
+                24,
                 MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
                 MSTC.ShapeletFactories.INDEPENDENT,
                 MSTC.AuxClassifiers.ROT);
+        this.setAbleToEstimateOwnPerformance(true);
+    }
 
+    public RandomShapeletClassifier(Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        this.exp = exp;
+        this.params = params;
+        this.setAbleToEstimateOwnPerformance(true);
     }
 
     @Override
@@ -92,7 +100,7 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
 
-
+        classLabels = data.getClassLabels();
         int n = data.numInstances();
         int m = data.getMinLength()-1;
         int c = data.getMaxNumDimensions();
@@ -165,6 +173,15 @@ public class MultivariateShapeletClassifier  extends EnhancedAbstractClassifier 
 
     public double[] distributionForInstance(Instance instance) throws Exception {
         Instance transformedInst = transformer.transform(instance);
+        transformedInst.setDataset(header);
+        return cls.distributionForInstance(transformedInst);
+    }
+
+    @Override
+    public double[] distributionForInstance(TimeSeriesInstance instance) throws Exception {
+       Instance transformedData = Converter.toArff(instance,classLabels);
+
+        Instance transformedInst = transformer.transform(transformedData);
         transformedInst.setDataset(header);
         return cls.distributionForInstance(transformedInst);
     }

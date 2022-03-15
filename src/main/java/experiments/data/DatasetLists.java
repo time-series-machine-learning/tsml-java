@@ -158,8 +158,8 @@ public class DatasetLists {
 			"BasicMotions",
 			"Cricket",
 			"DuckDuckGeese",
-			"EigenWorms",
-            "EMO",
+		//	"EigenWorms",
+         //   "EMO",
 			"Epilepsy",
 			"EthanolConcentration",
 			"ERing",
@@ -176,14 +176,14 @@ public class DatasetLists {
 			"MotorImagery",
 			"MindReading",
 			"NATOPS",
-			"PenDigitsEq",
+		//	"PenDigitsEq",
 			"PEMS-SF",
-			"PhonemeSpectra",
+		//	"PhonemeSpectra",
 			"RacketSports",
-			"Siemens",
+		//	"Siemens",
 			"SelfRegulationSCP1",
 			"SelfRegulationSCP2",
-            "SpokenArabicDigitsEq",
+         //   "SpokenArabicDigitsEq",
 			"StandWalkJump",
 			"UWaveGestureLibrary"
 	};
@@ -191,8 +191,8 @@ public class DatasetLists {
 	public static String[] mtscProblems2022HighDimensions={
 			"ArticularyWordRecognition", //Index 0
 			"DuckDuckGeese",
-			"EMO",
-			"FaceDetection",
+		//	"EMO",
+			//"FaceDetection",
 			"FingerMovements",
 			"HAR",
 			"HandMovementDirection",
@@ -203,9 +203,9 @@ public class DatasetLists {
 			"MindReading",
 			"NATOPS",
 			"PEMS-SF",
-			"PhonemeSpectra",
-			"Siemens",
-			"SpokenArabicDigitsEq"
+		//	"PhonemeSpectra",
+		//	"Siemens",
+		//	"SpokenArabicDigitsEq"
 	};
 	public static String[] mtscProblems2018LowDimensions={
 			"AtrialFibrillation",

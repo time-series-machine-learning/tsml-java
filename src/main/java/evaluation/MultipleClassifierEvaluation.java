@@ -550,61 +550,24 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-hc2", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-shapelets-alt", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.mtscProblems2022HighDimensions);
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
         mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
-              //  "rocket_i",
-              //  "rocket",
-              //  "rocket_ds",
-              //  "rocket_d",
-              //  "arsenal",
-                "hc2-ds-rocket",
-                "hc2_ds_random",
-                "hc2",
-          //      "ROCKETsktime",
+               // "rocket_i",
+               //  "rocket",
+               //  "rocket_d",
+                // "arsenal",
+                 //"hc2-",  "hc2-ds-ecp", "hc2-ds-rocket","hc2-ds-ecs",//,"hc2-ds-kmeans",,"hc2-ds-random",
+               // "hc2-",  "hc2-ds-ecp", "hc2-ds-rocket-60", "hc2-ds-rocket","hc2-ds-ecs","hc2-ds-cluster",//, "hc2-ds-cluster"
+                 "MSTC", "STC","MSTC_1","rocket"//,"HC2"
+                //   "hc2-ds-random_20", "hc2-ds-random_60"
 
-
-
-             //   "STC"
-             //  ,  "MSTC_I"
-             //   ,  "MSTC-500_I"
-             //   ,  "MSTC-500-24_I"
-             //   ,  "MSTC_D"
-
-              //  , "MSTC-SER_I"
-               // , "MSTC-LIN_I"
-              //  , "SEL-MSTC_I"
-              //  , "SEL-MSTC_D"
-
-              //  , "DM-MSTC_I"
-             //   , "DMP-MSTC_I"
-           //     , "TRAINF-MSTC_I"
-
-              //  , "DM-MSTC_D"
-              //  , "DMP-MSTC_D"
-              //  , "SEL-MSTC_D"
-
-
-
-
-
-             //   , "MSTC-BIN_D"
-              //      , "MSTC--BIN-CHI_I"
-                //    , "MSTC-BIN-CORR_I"
-               //     , "MSTC-BIN-FSTAT_I"
-               //     , "MSTC-BIN-ONER_I"
-
-              //      , "MSTC-CLASS-BIN_I"
-              //  , "ENS-MSTC_I"
-
-
-             //   ,"5BIN-MSTC_I"
         }, basePath);
         mcc.runComparison();
     }

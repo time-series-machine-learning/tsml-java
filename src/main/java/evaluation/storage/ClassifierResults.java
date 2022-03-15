@@ -20,12 +20,7 @@ import fileIO.OutFile;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -1547,10 +1542,23 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         }
     }
 
-    private void parseFirstLine(String line) {
+    private void parseFirstLine(String line, String path) {
         String[] parts = line.split(",");
+        String[] newparts = new String[parts.length + 1];
         if (parts.length == 0)
             return;
+
+        if (parts[3].equals("MILLISECONDS")){
+            int indexStart = path.indexOf("Resample")+8;
+            int indexEnd = path.indexOf(".");
+
+            System.out.println(path.substring(indexStart, indexEnd));
+
+            System.arraycopy(parts, 0, newparts, 0, 3);
+            newparts[3] = path.substring(indexStart, indexEnd);
+            System.arraycopy(parts, 3, newparts, 4, parts.length - 3);
+            parts = newparts;
+        }
 
         //old tuned classifiers (and maybe others) just wrote a classifier name identifier
         //covering for backward compatability, otherwise datasetname is first
@@ -1564,9 +1572,10 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         if (parts.length > 2)
             split = parts[2];
 
-        if (parts.length > 3)
-            foldID = Integer.parseInt(parts[3]);
+        if (parts.length > 3) {
+           foldID = Integer.parseInt(parts[3]);
 
+        }
         if (parts.length > 4)
             setTimeUnitFromString(parts[4]);
         else //time unit is missing, assumed to be older file, which recorded build times in milliseconds by default
@@ -1695,7 +1704,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             Scanner inf = new Scanner(f);
 
             //parse meta infos
-            parseFirstLine(inf.nextLine());
+            parseFirstLine(inf.nextLine(), path);
             parseSecondLine(inf.nextLine());
             double reportedTestAcc = parseThirdLine(inf.nextLine());
 

@@ -246,7 +246,12 @@ public class Experiments  {
 
         if (expSettings.useTS){
             if (expSettings.classifier instanceof EnhancedAbstractClassifier){
+
                 EnhancedAbstractClassifier eClassifier = (EnhancedAbstractClassifier)expSettings.classifier;
+                if (expSettings.generateErrorEstimateOnTrainSet) {
+                    eClassifier.setEstimateOwnPerformance(true);
+
+                }
                 TimeSeriesResampler.TrainTest data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
                 setupClassifierExperimentalOptions(expSettings, eClassifier, data.train);
                 ClassifierResults[] results = runExperiment(expSettings, data.train, data.test, eClassifier);
@@ -1344,7 +1349,7 @@ public class Experiments  {
         @Parameter(names={"-l", "--logLevel"}, description = "log level")
         private String logLevelStr = null;
 
-        @Parameter(names={"-ts", "--useTS"}, description = "Use ts files for experiments")
+        @Parameter(names={"-ts", "--useTS"}, arity = 1, description = "Use ts files for experiments")
         private boolean useTS = false;
 
         private Level logLevel = null;
