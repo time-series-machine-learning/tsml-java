@@ -31,6 +31,12 @@ public class ShapeletFunctionsIndependent implements ShapeletFunctions<ShapeletI
                 shapeletSize, instanceIndex, classIndex, channelIndex, instance);
     }
 
+    public ShapeletIndependentMV getRandomShapelet(int shapeletSize, int instanceIndex, double classIndex, int dimensionIndex, TimeSeriesInstance instance) {
+
+        return new ShapeletIndependentMV(MSTC.RAND.nextInt(instance.get(dimensionIndex).getSeriesLength()-shapeletSize),
+                shapeletSize, instanceIndex, classIndex, dimensionIndex, instance);
+    }
+
 
 
     public boolean selfSimilarity(ShapeletIndependentMV shapelet, ShapeletIndependentMV candidate) {

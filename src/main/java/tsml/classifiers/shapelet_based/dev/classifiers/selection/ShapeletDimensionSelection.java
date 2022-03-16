@@ -12,8 +12,8 @@ import java.util.List;
 public class ShapeletDimensionSelection extends ElbowSelection {
 
 
-    public ShapeletDimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(numClasses, exp,params);
+    public ShapeletDimensionSelection(Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super( exp,params);
     }
 
     protected ArrayList<DimensionResult> getDimensionResults(TimeSeriesInstances data) throws Exception{

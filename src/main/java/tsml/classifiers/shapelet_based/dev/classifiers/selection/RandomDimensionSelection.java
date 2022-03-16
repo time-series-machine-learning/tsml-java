@@ -8,8 +8,8 @@ public class RandomDimensionSelection extends DimensionSelection {
 
     private int k=5;
 
-    public RandomDimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params) {
-        super(numClasses, exp, params);
+    public RandomDimensionSelection(Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params) {
+        super( exp, params);
     }
 
     private int[] getRandomIndexes(){

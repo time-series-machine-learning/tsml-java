@@ -11,8 +11,8 @@ public class TrainFoldDimensionSelection extends ElbowSelection {
 
     private String TRAIN_ALG = "STC";
 
-    public TrainFoldDimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(numClasses, exp,params);
+    public TrainFoldDimensionSelection( Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super(exp,params);
     }
 
     protected ArrayList<DimensionResult> getDimensionResults(TimeSeriesInstances data) throws Exception{

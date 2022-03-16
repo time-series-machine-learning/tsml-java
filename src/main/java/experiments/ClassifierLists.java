@@ -50,6 +50,7 @@ import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.dev.classifiers.RandomShapeletClassifier;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.ShapeletSeriesDimensionSelection;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -318,7 +319,7 @@ public class ClassifierLists {
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
             "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned",
-            "RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I","RSTC-FSTAT_I"};
+            "RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I","RSTC-FSTAT_I","RSTC-SER_I"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -396,6 +397,17 @@ public class ClassifierLists {
                         MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
                 c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-SER_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new ShapeletSeriesDimensionSelection(exp,params);
                 break;
 
            default:

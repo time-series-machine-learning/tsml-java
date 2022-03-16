@@ -12,8 +12,8 @@ public class DistanceMatrix extends ElbowSelection {
 
     int numClasses;
 
-    public DistanceMatrix(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(numClasses, exp,params);
+    public DistanceMatrix(Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super( exp,params);
     }
 
     protected  ArrayList<CentroidMatrixItem> getCentroidMatrix(TimeSeriesInstances data){

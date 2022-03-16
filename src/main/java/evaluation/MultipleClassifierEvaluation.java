@@ -550,22 +550,22 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-shapelets-alt", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-hc2-ds-alt", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.mtscProblems2018);
+        mcc.setDatasets(DatasetLists.mtscProblems2022);
         mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
                // "rocket_i",
                //  "rocket",
                //  "rocket_d",
                 // "arsenal",
                  //"hc2-",  "hc2-ds-ecp", "hc2-ds-rocket","hc2-ds-ecs",//,"hc2-ds-kmeans",,"hc2-ds-random",
-               // "hc2-",  "hc2-ds-ecp", "hc2-ds-rocket-60", "hc2-ds-rocket","hc2-ds-ecs","hc2-ds-cluster",//, "hc2-ds-cluster"
-                 "MSTC", "STC","MSTC_1","rocket"//,"HC2"
+                "hc2-",  "hc2-ds-ecp", "hc2-ds-rocket-60", "hc2-ds-rocket","hc2-ds-ecs"//,"hc2-ds-cluster",//, "hc2-ds-cluster"
+                 //"MSTC", "STC","MSTC_1","rocket"//,"HC2"
                 //   "hc2-ds-random_20", "hc2-ds-random_60"
 
         }, basePath);

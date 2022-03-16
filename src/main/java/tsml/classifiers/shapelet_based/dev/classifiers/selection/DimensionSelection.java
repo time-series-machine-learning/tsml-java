@@ -2,6 +2,7 @@ package tsml.classifiers.shapelet_based.dev.classifiers.selection;
 
 import evaluation.evaluators.SingleTestSetEvaluatorTS;
 import experiments.Experiments;
+import fileIO.OutFile;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.TrainTimeContractable;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
@@ -11,6 +12,7 @@ import tsml.data_containers.utilities.Converter;
 import weka.core.Capabilities;
 import weka.core.Instances;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -28,12 +30,12 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
     protected int[] indexes;
     protected int numDimensions;
 
-    public DimensionSelection(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+    public DimensionSelection( Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
 
         this.exp = exp;
         this.params = params;
         this.estimateOwnPerformance = true;
-        classifier = new MSTC(numClasses, exp, params);
+
     }
 
     abstract int[] getIndexes(TimeSeriesInstances data) throws Exception;
@@ -88,8 +90,11 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
 
     @Override
     public void buildClassifier(TimeSeriesInstances data) throws Exception {
+        classifier = new MSTC(data.numClasses(), exp, params);
         this.numDimensions = data.getMaxNumDimensions();
         this.indexes = getIndexes(data);
+        saveData(this.indexes);
+
         TimeSeriesInstances finalData = new TimeSeriesInstances(data.getHSliceArray(this.indexes),data.getClassIndexes(), data.getClassLabels());
         classifier.buildClassifier(finalData);
         SingleTestSetEvaluatorTS eval = new SingleTestSetEvaluatorTS(this.exp.foldId, false, true, this.exp.interpret); //DONT clone data, DO set the class to be missing for each inst
@@ -97,6 +102,28 @@ public abstract class DimensionSelection extends EnhancedAbstractClassifier impl
         this.trainResults =  eval.evaluate(classifier, data);
         this.trainResults.setParas(getParameters());
 
+    }
+
+    private void saveData(int[] indexes) throws Exception {
+        OutFile out = null;
+        try {
+            File directory = new File(exp.resultsWriteLocation + "/"+ exp.classifierName + "/ds/" + exp.datasetName);
+            if (! directory.exists()){
+                directory.mkdir();
+                // If you require it to make the entire directory path including parents,
+                // use directory.mkdirs(); here instead.
+            }
+
+            out = new OutFile(exp.resultsWriteLocation + "/"+ exp.classifierName + "/ds/" + exp.datasetName + "/ds" + exp.foldId + ".csv");
+            out.writeString(Arrays.toString(indexes).replace("[","").replace("]",""));
+        } catch (Exception e) {
+            throw new Exception("Error writing file.\n"
+                    + "Outfile most likely didnt open successfully, probably directory doesnt exist yet.\n"
+                    +"\nError: "+ e);
+        } finally {
+            if (out != null)
+                out.closeFile();
+        }
     }
 
     @Override

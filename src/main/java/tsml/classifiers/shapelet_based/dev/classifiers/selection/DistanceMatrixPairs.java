@@ -12,8 +12,8 @@ public class DistanceMatrixPairs extends DistanceMatrix {
 
     int numClasses;
 
-    public DistanceMatrixPairs(int numClasses, Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
-        super(numClasses, exp,params);
+    public DistanceMatrixPairs(Experiments.ExperimentalArguments exp, MSTC.ShapeletParams params){
+        super(exp,params);
     }
 
     @Override

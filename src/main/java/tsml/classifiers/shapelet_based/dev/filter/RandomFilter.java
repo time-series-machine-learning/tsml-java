@@ -2,6 +2,7 @@ package tsml.classifiers.shapelet_based.dev.filter;
 
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
 import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctions;
+import tsml.classifiers.shapelet_based.dev.functions.ShapeletFunctionsIndependent;
 import tsml.classifiers.shapelet_based.dev.quality.ShapeletQualityFunction;
 import tsml.classifiers.shapelet_based.dev.type.ShapeletMV;
 import tsml.data_containers.TimeSeriesInstances;
@@ -26,15 +27,19 @@ public class RandomFilter extends ShapeletFilterMV {
     protected int numShapeletsEvaluated;
     protected String endCriteria;
 
+    public RandomFilter(){
+        this.iterationsStopCriteria = new IterationsStopCriteria();
+        this.contractedStopCriteria = new ContractedStopCriteria();
+        this.qualityStopCriteria = new NoImprovement();
+    }
+
     @Override
     public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
                                                TimeSeriesInstances instances) {
 
         this.start = System.nanoTime();
         this.params = params;
-        this.iterationsStopCriteria = new IterationsStopCriteria();
-        this.contractedStopCriteria = new ContractedStopCriteria();
-        this.qualityStopCriteria = new NoImprovement();
+
 
         ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
 
@@ -101,6 +106,68 @@ public class RandomFilter extends ShapeletFilterMV {
         }
     }
 
+    public List<ShapeletMV> findShapelets(MSTC.ShapeletParams params,
+                                          TimeSeriesInstances instances, int[] availableIndex, int dimensionIndex) {
+
+        this.start = System.nanoTime();
+        ShapeletFunctionsIndependent fun = new ShapeletFunctionsIndependent();
+        ShapeletQualityFunction quality = params.quality.createShapeletQuality(instances);
+        this.shapelets = new ArrayList<ShapeletMV>();
+
+        int[] classesArray  = instances.getClassIndexes();
+
+        this.params = params;
+        this.start = System.nanoTime();
+        this.iteration = 0;
+        this.numShapeletsEvaluated = 0;
+        this.averageQuality = 0;
+        this.qualityStopCriteria.prevImprovement = -1;
+        this.qualityStopCriteria.noImprovementLimit = 0;
+        while (true){ // Iterate
+
+            //Get random shapelet
+            int shapeletSize = params.min + (int)(MSTC.RAND.nextInt(params.max-params.min));
+            int instanceIndex =  availableIndex[MSTC.RAND.nextInt(availableIndex.length)];
+            ShapeletMV candidate = fun.getRandomShapelet(
+                    shapeletSize,
+                    instanceIndex,
+                    classesArray[instanceIndex],
+                    dimensionIndex,
+                    instances.get(instanceIndex));
+            double q = quality.calculate (fun, candidate);
+
+            this.numShapeletsEvaluated++;
+
+            if (q>0 || params.allowZeroQuality){
+                candidate.setQuality(q);
+                shapelets.add(candidate);
+
+            }
+
+            if (this.iteration % 1000 == 0){
+                reorderShapelets(fun);
+            }
+            if (this.iterationsStopCriteria.stop()){
+                reorderShapelets(fun);
+                this.endCriteria = "MAX_ITER";
+                return shapelets;
+            }
+            if (this.contractedStopCriteria.stop()){
+                reorderShapelets(fun);
+                this.endCriteria = "CONTRACT_TIME";
+                return shapelets;
+            }
+
+            if (this.qualityStopCriteria.stop()){
+                reorderShapelets(fun);
+                this.endCriteria = "NO_IMPROVEMENT";
+                return shapelets;
+            }
+
+            this.iteration++;
+        }
+    }
+
     protected void reorderShapelets(ShapeletFunctions fun){
         Collections.sort(this.shapelets);
         if ( this.shapelets.size()>this.params.k)
@@ -109,7 +176,7 @@ public class RandomFilter extends ShapeletFilterMV {
             this.shapelets = removeSelfSimilar(fun,this.shapelets);
 
         this.averageQuality = this.shapelets.stream().mapToDouble(ShapeletMV::getQuality).average().orElse(0);
-
+      
     }
 
     protected static ArrayList<ShapeletMV> removeSelfSimilar(ShapeletFunctions fun, ArrayList<ShapeletMV> shapelets) {
@@ -171,7 +238,7 @@ public class RandomFilter extends ShapeletFilterMV {
 
         double prevImprovement = -1;
         int noImprovementLimit = 0;
-        static final int LIMIT_IMPROVEMENT = 1000;
+        static final int LIMIT_IMPROVEMENT = 5000;
 
         @Override
         public boolean stop() {

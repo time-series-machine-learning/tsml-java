@@ -1459,6 +1459,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public void writeFullResultsToFile(String path) throws Exception {
         OutFile out = null;
         try {
+
             out = new OutFile(path);
             out.writeString(writeFullResultsToString());
         } catch (Exception e) {
