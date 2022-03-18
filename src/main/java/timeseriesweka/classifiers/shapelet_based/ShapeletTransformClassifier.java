@@ -97,8 +97,8 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
     public void setTransformType(TransformType t){
         type=t;
     }
-    public void saveShapelets(String str){
-        shapeletPath=str;
+    public void saveShapelets(String filePathForShapelets){
+        shapeletPath=filePathForShapelets;
         saveShapelets=true;
     }
     public void setTransformType(String t){
@@ -223,6 +223,14 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier imp
                 of.writeString(","+i);
             of.writeString("\n");
             of.writeString(transform.toString());
+/*            ArrayList<Shapelet>  shapelets= transform.getShapelets();
+            of.writeLine("SHAPELETS:");
+            for(Shapelet s:shapelets){
+                double[] d=s.getUnivariateShapeletContent();
+                for(double x:d)
+                    of.writeString(x+",");
+                of.writeString("\n");
+*/
             of.closeFile();
         }
         long classifierTime=timeLimit-transformBuildTime;

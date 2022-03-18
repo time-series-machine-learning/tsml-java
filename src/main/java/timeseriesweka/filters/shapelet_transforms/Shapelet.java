@@ -58,6 +58,8 @@ public class Shapelet implements Comparable<Shapelet>, Serializable
     boolean useSeparationGap = false;
     public double classValue;
 
+    public double splitThreshold;
+
     public void setUseSeparationGap(boolean b)
     {
         useSeparationGap = true;
@@ -153,7 +155,7 @@ public class Shapelet implements Comparable<Shapelet>, Serializable
     }
     
     //this rertuns the first channel.
-    public double[] getUniveriateShapeletContent(){
+    public double[] getUnivariateShapeletContent(){
         return content.getShapeletContent(0);
     }
 

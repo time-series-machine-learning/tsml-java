@@ -370,13 +370,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
     public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
 
-    public static final Function<ClassifierResults, Double> NegMAA = (ClassifierResults cr) -> {
-        double MAA = 0;
-        for (int i = 0; i < cr.numInstances; i++){
-            MAA += Math.abs(cr.trueClassValues.get(i) - cr.predClassValues.get(i));
-        }
-        return -(MAA/cr.numInstances);
-    };
+    public static final Function<ClassifierResults, Double> GETTER_MemoryMB = (ClassifierResults cr) -> { return (double)(cr.memoryUsage/1e+6); };
 
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -391,6 +385,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.errorEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime, cr.timeUnit);};
     public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime - cr.buildTime, cr.timeUnit);};
+    public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
 
     private static double toDoubleMillis(long time, TimeUnit unit) {
         if (time < 0)
@@ -1075,7 +1070,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
         if (predDistributions == null || predClassValues == null ||
                 predDistributions.isEmpty() || predClassValues.isEmpty())
-            throw new Exception("finaliseTestResults(): no test predictions stored for this module");
+            throw new Exception("finaliseTestResults(): no predictions stored for this module");
 
         double correct = .0;
         for (int inst = 0; inst < predClassValues.size(); inst++)

@@ -14,6 +14,7 @@
  */
 package evaluation;
 
+import com.sun.org.apache.xpath.internal.operations.Mult;
 import evaluation.storage.ClassifierResults;
 import ResultsProcessing.MatlabController;
 import evaluation.storage.ClassifierResultsCollection;
@@ -190,7 +191,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         this.closeMatlabConnectionWhenFinished = closeMatlabConnectionWhenFinished;
         return this;
     }
-    
+
     /**
      * if true, will null the individual prediction info of each ClassifierResults object after stats are found 
      */

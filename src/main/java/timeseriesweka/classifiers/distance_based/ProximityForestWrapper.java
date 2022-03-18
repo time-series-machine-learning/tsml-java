@@ -101,9 +101,9 @@ public class ProximityForestWrapper extends AbstractClassifier {
     public ProximityForest pf;
     
     private int numClasses;
-    Instances header;
+    private Instances header;
     
-    public ProximityForestWrapper() { 
+    public ProximityForestWrapper() {
     }
 
     public int getNum_trees() {
@@ -160,6 +160,8 @@ public class ProximityForestWrapper extends AbstractClassifier {
         //init
         numClasses = data.numClasses();
         header = new Instances(data,0);
+
+        if (AppContext.rand == null) AppContext.rand = new Random();
                 
         AppContext.num_trees = num_trees;
         AppContext.num_candidates_per_split = num_candidates_per_split;
@@ -171,7 +173,6 @@ public class ProximityForestWrapper extends AbstractClassifier {
         //actual work
         Dataset pfdata = toPFDataset(data);
         pf.train(pfdata);
-        
     }
     
     @Override
@@ -186,8 +187,26 @@ public class ProximityForestWrapper extends AbstractClassifier {
         
         return pf.predict_proba(getSeries(inst), numClasses);
     }
-    
-    
+
+
+    @Override
+    public double classifyInstance(Instance inst) throws Exception {
+        double[] probs = distributionForInstance(inst);
+
+        int maxClass = 0;
+        for (int n = 1; n < probs.length; ++n) {
+            if (probs[n] > probs[maxClass]) {
+                maxClass = n;
+            }
+            else if (probs[n] == probs[maxClass]){
+                if (AppContext.rand.nextBoolean()){
+                    maxClass = n;
+                }
+            }
+        }
+
+        return maxClass;
+    }
     
     public static void main(String[] args) throws Exception {
         

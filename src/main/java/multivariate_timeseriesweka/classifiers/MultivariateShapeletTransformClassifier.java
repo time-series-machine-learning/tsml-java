@@ -88,7 +88,7 @@ public class MultivariateShapeletTransformClassifier  extends EnhancedAbstractCl
             case "shapeleti": case "shapelet_i":
                 type=TransformType.MULTI_I;
                 break;
-            case "indep": case "shapelet_indep":
+            case "indep": case "shapelet_indep": case "shapeletindep":
                 type=TransformType.INDEP;
                 break;
                 

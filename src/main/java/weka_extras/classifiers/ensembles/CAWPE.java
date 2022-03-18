@@ -446,7 +446,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
         if (writePathBase == null) 
-            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod08/";
+            writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod17/";
         
         //default for unit tests, running on e.g. travis
         String[] dataHeaders = { "UCI", };

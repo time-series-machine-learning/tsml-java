@@ -8,6 +8,8 @@ import utilities.multivariate_tools.MultivariateInstanceTools;
 import weka.core.*;
 import weka.filters.SimpleBatchFilter;
 
+import java.sql.SQLOutput;
+
 import static experiments.data.DatasetLoading.loadDataNullable;
 
 public class Spectrogram extends SimpleBatchFilter {
@@ -60,7 +62,6 @@ public class Spectrogram extends SimpleBatchFilter {
             for (int j = 0; j < instances.get(i).numAttributes() - 1; j++) {
                 signal[j] = instances.get(i).value(j);
             }
-
             spectrogram = spectrogram(signal, windowLength, overlap, nfft);
             spectrogramsInstances[i] = MatrixToInstances(spectrogram, instances.classAttribute(), instances.get(i).classValue());
         }
@@ -68,10 +69,16 @@ public class Spectrogram extends SimpleBatchFilter {
     }
 
     public int getNumWindows(int signalLength){
-        return (int)Math.floor((signalLength - overlap)/(windowLength - overlap));
+            return (int)Math.floor((signalLength - overlap)/(windowLength - overlap));
+    }
+
+    private void checkParameters(int signalLength){
+        windowLength = windowLength < (int)(signalLength * 0.5) ? windowLength : (int)(signalLength * 0.5);
+        overlap = overlap < (int)(windowLength * 0.5) ? overlap : (windowLength / 2);
     }
 
     public double[][] spectrogram(double[] signal, int windowWidth, int overlap, int nfft){
+        checkParameters(signal.length);
         int numWindows = getNumWindows(signal.length);
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
         double[][] spectrogram = new double[numWindows][nfft/2];
@@ -81,8 +88,8 @@ public class Spectrogram extends SimpleBatchFilter {
             for (int j = 0; j < nfft; j++) {
                 STFFT[j] = new Complex(0.0, 0.0);
             }
-            for (int j = 0; j < windowWidth; j++) {
-                double temp = signal[j + (i * (windowWidth - overlap))]*(0.56 - 0.46*Math.cos(2*Math.PI*((double)j/(double)windowWidth)));
+            for (int j = 0; j < windowLength; j++) {
+                double temp = signal[j + (i * (this.windowLength - this.overlap))]*(0.56 - 0.46*Math.cos(2*Math.PI*((double)j/(double)this.windowLength)));
                 STFFT[j] = new Complex(temp, 0.0);
             }
             STFFT = fft.transform(STFFT, TransformType.FORWARD);
@@ -122,7 +129,8 @@ public class Spectrogram extends SimpleBatchFilter {
         Spectrogram spec = new Spectrogram(75, 70, 256);
         Instances[] data = new Instances[2];
 
-        data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + ".arff");
+        data[0] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TRAIN.arff");
+        data[1] = loadDataNullable(args[0] + args[1] + "/" + args[1] + "_TEST.arff");
         System.out.println(data[0].get(0).toString());
         data[1] = spec.process(data[0]);
         System.out.println();
@@ -130,6 +138,10 @@ public class Spectrogram extends SimpleBatchFilter {
             Instance[] temp = MultivariateInstanceTools.splitMultivariateInstanceWithClassVal(data[1].get(i));
             System.out.println(temp[0]);
         }
-
+        System.out.println();
+        System.out.println("Signal length:" + (data[0].numAttributes() - 1));
+        System.out.println("Window length: " + spec.windowLength);
+        System.out.println("Overlap: " + spec.overlap);
+        System.out.println("NFFT: " + spec.nfft);
     }
 }

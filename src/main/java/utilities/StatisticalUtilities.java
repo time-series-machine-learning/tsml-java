@@ -58,6 +58,18 @@ public class StatisticalUtilities {
             return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
     }
 
+    public static double median(Double[] values) {
+        if(values.length == 1) {
+            return values[0];
+        }
+        Double[] copy = Arrays.copyOf(values, values.length);
+        Arrays.sort(copy);
+        if (copy.length % 2 == 1)
+            return copy[copy.length/2 + 1];
+        else
+            return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
+    }
+
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
 //        double mean = mean(values, classVal);
         double sumSquaresDiffs = 0;

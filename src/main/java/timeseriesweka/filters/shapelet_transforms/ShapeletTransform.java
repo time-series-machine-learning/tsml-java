@@ -1223,13 +1223,15 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
 
     @Override
     public String toString() {
-        String str = "Shapelets: ";
+        String str = "Shapelets: \n";
         for (Shapelet s : shapelets) {
             str += s.toString() + "\n";
         }
         return str;
     }
-    
+
+
+
     public String getParameters(){
         String str="minShapeletLength,"+searchFunction.getMin()+",maxShapeletLength,"+searchFunction.getMax()+",numShapelets,"+numShapelets+",roundrobin,"+roundRobin
                 + ",searchFunction,"+this.searchFunction.getClass().getSimpleName()
@@ -1287,12 +1289,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements Serializable
         long endTime1 = System.nanoTime();
 
         System.out.println("Transform time = " + (endTime1-startTime1)); 
-        
-        
-        
-        
-        
-        
+
     }
     
     public static void testFilterUsage(){
