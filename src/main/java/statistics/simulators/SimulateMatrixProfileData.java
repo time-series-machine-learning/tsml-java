@@ -1,15 +1,32 @@
+/*
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
+ *
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 
 package statistics.simulators;
 
 import fileIO.OutFile;
 import java.text.DecimalFormat;
 
-import timeseriesweka.filters.MatrixProfile;
+import tsml.transformers.MatrixProfile;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
-import weka_extras.classifiers.kNN;
+import machine_learning.classifiers.kNN;
 import weka.core.Instances;
-import timeseriesweka.filters.NormalizeCase;
+import tsml.transformers.RowNormalizer;
 
 /**
  *
@@ -70,14 +87,14 @@ public class SimulateMatrixProfileData {
                 knn.setKNN(1);
                 double acc=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
 
-                NormalizeCase nc=new NormalizeCase();
-                split[0]=nc.process(split[0]);
-                split[1]=nc.process(split[1]);
+                RowNormalizer nc=new RowNormalizer();
+                split[0]=nc.transform(split[0]);
+                split[1]=nc.transform(split[1]);
                 double acc2=ClassifierTools.singleTrainTestSplitAccuracy(knn, split[0], split[1]);
                 MatrixProfile mp=new MatrixProfile(29);
                 Instances[] mpSplit=new Instances[2];
-                mpSplit[0]=mp.process(split[0]);
-                mpSplit[1]=mp.process(split[1]);
+                mpSplit[0]=mp.transform(split[0]);
+                mpSplit[1]=mp.transform(split[1]);
                 double acc3=ClassifierTools.singleTrainTestSplitAccuracy(knn, mpSplit[0], mpSplit[1]);
                 meanAcc+=acc;
                 meanAcc2+=acc2;
@@ -100,7 +117,7 @@ public class SimulateMatrixProfileData {
         Instances d=generateMatrixProfileData(seriesLength,casesPerClass);
         MatrixProfile mp=new MatrixProfile(29);
         Instances md;
-        md=mp.process(d);
+        md=mp.transform(d);
         raw.writeLine(d.toString());
         mpFile.writeLine(md.toString());
     }
@@ -113,7 +130,7 @@ public class SimulateMatrixProfileData {
         Model.setGlobalRandomSeed(0);
         int seriesLength=500;
         int[] casesPerClass=new int[]{100,100};        
-        NormalizeCase nc=new NormalizeCase();
+        RowNormalizer nc=new RowNormalizer();
         Instances d=generateMatrixProfileData(seriesLength,casesPerClass);
         Instances[] split=InstanceTools.resampleInstances(d, 0,0.1);
         OutFile of = new OutFile("C:\\Temp\\train.arff");
@@ -121,11 +138,11 @@ public class SimulateMatrixProfileData {
         of = new OutFile("C:\\Temp\\test.arff");
         of.writeString(split[1].toString()+"");
         MatrixProfile mp=new MatrixProfile(29);
-        Instances m1=mp.process(split[0]);
+        Instances m1=mp.transform(split[0]);
 //        m1=nc.process(m1);
         of = new OutFile("C:\\Temp\\MPTrain.arff");
         of.writeString(split[0]+"");
-        Instances m2=mp.process(split[1]);
+        Instances m2=mp.transform(split[1]);
  //       m2=nc.process(m2);
         of = new OutFile("C:\\Temp\\MPTest.arff");
         of.writeString(split[1].toString()+"\n\n");

@@ -4,10 +4,12 @@ Class to do basic build tests for all classifiers
 package experiments;
 
 import experiments.data.DatasetLoading;
+import tsml.transformers.Transformer;
 import utilities.ClassifierTools;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
+
+import java.io.IOException;
 
 /**
  * Does basic sanity check builds for all listed classifiers and transformers. Does not guarantee correctness,
@@ -18,7 +20,7 @@ import weka.filters.SimpleBatchFilter;
 public class BasicBuildTests {
 
 
-    public static void buildAllClassifiers(String[] problems, String[] classifiers, String path) {
+    public static void buildAllClassifiers(String[] problems, String[] classifiers, String path) throws IOException {
         for(String str:problems){
             System.out.println("Building all for problem "+str);
             Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN.arff");
@@ -38,18 +40,18 @@ public class BasicBuildTests {
             }
         }
     }
-    public static void buildAllTransforms(String[] problems, String[] transforms, String path) {
+    public static void buildAllTransforms(String[] problems, String[] transforms, String path) throws IOException {
         for(String str:problems){
             System.out.println("Transforming all all for problem "+str);
             Instances train = DatasetLoading.loadData(path+str+"\\"+str+"_TRAIN.arff");
             Instances test = DatasetLoading.loadData(path+str+"\\"+str+"_TEST.arff");
             for(String trans:transforms){
                 System.out.print("\t Building "+trans+" .... ");
-                SimpleBatchFilter f = TransformLists.setClassicTransform(trans,0);
+                Transformer f = TransformLists.setClassicTransform(trans,0);
                 try{
-                    Instances trainTrans=f.process(train);
+                    Instances trainTrans=f.transform(train);
                     System.out.print("\tTrain transformed successfully. Prior to Trans length = "+(train.numAttributes()-1));
-                    Instances testTrans=f.process(test);
+                    Instances testTrans=f.transform(test);
                     System.out.println("\t\t   Test transformed successfully. Length = "+(testTrans.numAttributes()-1));
                 }catch(Exception e){
                     System.out.println("Transform failed to build with exception "+e);
@@ -62,7 +64,7 @@ public class BasicBuildTests {
 
 
 
-    public static void main(String[] args)  {
+    public static void main(String[] args) throws IOException {
         System.out.println("Testing all SimpleBatch filters do not crash");
         String dataPath="src\\main\\java\\experiments\\data\\tsc\\";
         String[] problems={"ItalyPowerDemand","Chinatown","Beef"};

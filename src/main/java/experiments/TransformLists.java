@@ -1,22 +1,22 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package experiments;
 
-import timeseriesweka.filters.*;
-import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
-import weka.filters.SimpleBatchFilter;
+import tsml.transformers.*;
 
 /**
  *
@@ -29,7 +29,7 @@ public class TransformLists {
     public static String[] allFilters={
             "ACF","ACF_PACF","ARMA","BagOfPatterns","BinaryTransform","Clipping",
             "Cosine","Derivative","Differences","Fast_FFT", "FFT","Hilbert","MatrixProfile",
-            "NormalizeAttribute","NormalizeCase","PAA","PACF","PowerCepstrum","RankOrder",
+            "NormalizeCase","PAA","PACF","PowerCepstrum","RankOrder",
             "RunLength","SAX","Sine","SummaryStats","ShapeletTransform"
     };
     //</editor-fold>
@@ -38,94 +38,93 @@ public class TransformLists {
     public static String[] multivariateFilters={"Spectrogram","MFCC"};
     //</editor-fold>
 
-    public static SimpleBatchFilter setTransform(Experiments.ExperimentalArguments exp){
-        return setClassicTransform(exp.classifierName, exp.foldId);
+    public static Transformer setTransform(ExperimentalArguments exp){
+        return setClassicTransform(exp.estimatorName, exp.foldId);
     }
 
-    public static SimpleBatchFilter setClassicTransform(String transformName, int foldId) {
-        SimpleBatchFilter transformer = null;
+
+    //TODO: Fix for new Transformers.
+    public static Transformer setClassicTransform(String transformName, int foldId) {
+        Transformer transformer = null;
         switch(transformName){
             case "ShapeletTransform": case "ST":
                 transformer = new ShapeletTransform();
                 break;
             case "ACF":
-                transformer = new ACF();
-                break;
+               transformer = new ACF();
+               break;
             case "ACF_PACF":
-                transformer = new ACF_PACF();
-                break;
+               transformer = new ACF_PACF();
+               break;
             case "ARMA":
-                transformer = new ARMA();
-                break;
+               transformer = new ARMA();
+               break;
             case "BagOfPatterns":
-                transformer = new BagOfPatterns();
-                break;
+               transformer = new BagOfPatterns();
+               break;
             case "BinaryTransform":
-                transformer = new BinaryTransform();
-                break;
+               transformer = new BinaryTransform();
+               break;
             case "Clipping":
-                transformer = new Clipping();
-                break;
+               transformer = new Clipping();
+               break;
             case "Cosine":
                 transformer = new Cosine();
                 break;
             case "Derivative":
-                transformer = new Derivative();
-                break;
+               transformer = new Derivative();
+               break;
             case "Differences":
-                transformer = new Differences();
-                break;
+               transformer = new Differences();
+               break;
             case "Fast_FFT":
-                transformer = new Fast_FFT();
-                break;
+               transformer = new Fast_FFT();
+               break;
             case "FFT":
-                transformer = new FFT();
-                break;
+               transformer = new FFT();
+               break;
             case "Hilbert":
                 transformer = new Hilbert();
                 break;
             case "MatrixProfile":
-                transformer = new MatrixProfile();
-                break;
+               transformer = new MatrixProfile();
+               break;
             case "MFCC":
-                transformer = new MFCC();
-                break;
-            case "NormalizeAttribute":
-                transformer = new NormalizeAttribute();
-                break;
+               transformer = new MFCC();
+               break;
             case "NormalizeCase":
-                transformer = new NormalizeCase();
+                transformer = new RowNormalizer();
                 break;
             case "PAA":
-                transformer = new PAA();
-                break;
+               transformer = new PAA();
+               break;
             case "PACF":
-                transformer = new PACF();
-                break;
+               transformer = new PACF();
+               break;
             case "PowerCepstrum":
-                transformer = new PowerCepstrum();
-                break;
+               transformer = new PowerCepstrum();
+               break;
             case "PowerSpectrum":
-                transformer = new PowerSpectrum();
-                break;
+               transformer = new PowerSpectrum();
+               break;
             case "RankOrder":
-                transformer = new RankOrder();
-                break;
+               transformer = new RankOrder();
+               break;
             case "RunLength":
-                transformer = new RunLength();
-                break;
+               transformer = new RunLength();
+               break;
             case "SAX":
-                transformer = new SAX();
-                break;
+               transformer = new SAX();
+               break;
             case "Sine":
                 transformer = new Sine();
                 break;
             case "Spectrogram":
-                transformer = new Spectrogram();
-                break;
+               transformer = new Spectrogram();
+               break;
             case "SummaryStats":
-                transformer = new SummaryStats();
-                break;
+               transformer = new SummaryStats();
+               break;
 
 
 

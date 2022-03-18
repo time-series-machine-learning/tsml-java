@@ -1,22 +1,25 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation.tuning;
 
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.storage.ClassifierResults;
 import evaluation.evaluators.Evaluator;
+import evaluation.storage.EstimatorResults;
 import evaluation.tuning.searchers.GridSearcher;
 import evaluation.tuning.searchers.ParameterSearcher;
 import experiments.data.DatasetLoading;
@@ -25,18 +28,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import utilities.ClassifierTools;
+
 import utilities.FileHandlingTools;
 import utilities.InstanceTools;
-import weka_extras.classifiers.SaveEachParameter;
+import machine_learning.classifiers.SaveEachParameter;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.PolyKernel;
 import weka.core.Instances;
-import timeseriesweka.classifiers.Checkpointable;
-import timeseriesweka.classifiers.TrainTimeContractable;
+import tsml.classifiers.Checkpointable;
+import tsml.classifiers.TrainTimeContractable;
 
 /**
  *
@@ -46,9 +48,9 @@ public class Tuner
         implements SaveEachParameter,Checkpointable, TrainTimeContractable {
     
     //Main 3 design choices.
-    private ParameterSearcher searcher = new GridSearcher();
-    private Evaluator evaluator = new CrossValidationEvaluator();
-    private Function<ClassifierResults, Double> evalMetric = ClassifierResults.GETTER_Accuracy;
+    private ParameterSearcher searcher;                      //default = new GridSearcher();
+    private Evaluator evaluator;                             //default = new CrossValidationEvaluator();
+    private Function<EstimatorResults, Double> evalMetric;   //default = ClassifierResults.GETTER_Accuracy;
     
     private ParameterResults bestParaSetAndResults = null;
     
@@ -66,8 +68,8 @@ public class Tuner
     private String parameterSavingPath = null; //SaveEachParameter //CheckpointClassifier
     private boolean saveParameters = false; //SaveEachParameter //CheckpointClassifier
     
-    long contractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
-    boolean contracting = false; //TrainTimeContractClassifier
+    long trainContractTimeNanos; //TrainTimeContractClassifier  //note, leaving in nanos for max fidelity, max val of long = 2^64-1 = 586 years in nanoseconds
+    boolean trainTimeContract = false; //TrainTimeContractClassifier
     
     ////////// end interface variables
     
@@ -96,6 +98,14 @@ public class Tuner
     boolean cloneTrainSetForEachParameterEval = false;
 
     public Tuner() { 
+        this(new CrossValidationEvaluator());
+    }
+
+    public Tuner(Evaluator evaluator) {
+        this.searcher = new GridSearcher();
+        this.evaluator = evaluator;
+        this.evalMetric = ClassifierResults.GETTER_Accuracy;
+
         setSeed(0);
     }
 
@@ -188,11 +198,11 @@ public class Tuner
         this.evaluator = evaluator;
     }
 
-    public Function<ClassifierResults, Double> getEvalMetric() {
+    public Function<EstimatorResults, Double> getEvalMetric() {
         return evalMetric;
     }
 
-    public void setEvalMetric(Function<ClassifierResults, Double> evalMetric) {
+    public void setEvalMetric(Function<EstimatorResults, Double> evalMetric) {
         this.evalMetric = evalMetric;
     }
     
@@ -269,7 +279,7 @@ public class Tuner
             else 
                 storeParaResult(pset, results, tiesBestSoFar);
             
-            if (contracting) {
+            if (trainTimeContract) {
                 long thisParaTime = System.nanoTime() - thisParaStartTime;
                 if (thisParaTime > maxParaEvalTime) 
                     maxParaEvalTime = thisParaTime;
@@ -279,7 +289,7 @@ public class Tuner
 //                int numParasEvald = parameterSetID + 1; 
 //                long avgTimePerPara = totalTimeSoFar / numParasEvald;
                 
-                if (!canWeEvaluateAnotherParaSet(maxParaEvalTime, totalTimeSoFar))
+                if (withinTrainContract(totalTimeSoFar+maxParaEvalTime))
                     break;
             }
             
@@ -292,7 +302,7 @@ public class Tuner
             // we might not have had time to eval ALL the psets, justfind the best so far
             // if we're contracting but not saving each paraset, we'll have been using 
             // storeParaResult() and have them in memory currently anyway
-            if (contracting)
+            if (trainTimeContract)
                 tiesBestSoFar = loadBestOfSavedParas_SoFar();
             else
                 tiesBestSoFar = loadBestOfSavedParas_All(parameterSpace.numUniqueParameterSets());
@@ -308,7 +318,7 @@ public class Tuner
     }
     
     private boolean canWeEvaluateAnotherParaSet(long maxParaEvalTime, long totalTimeSoFar) {
-        return contractTimeNanos - totalTimeSoFar > maxParaEvalTime;
+        return trainContractTimeNanos - totalTimeSoFar > maxParaEvalTime;
     }
     
     private boolean parametersAlreadyEvaluated(int paraID) {
@@ -470,8 +480,8 @@ public class Tuner
     }
 
     @Override //Checkpointable
-    public boolean setSavePath(String path) {
-        boolean validPath=Checkpointable.super.setSavePath(path);
+    public boolean setCheckpointPath(String path) {
+        boolean validPath=Checkpointable.super.createDirectories(path);
         if(validPath){
             this.parameterSavingPath = path;
             this.saveParameters = true;
@@ -484,24 +494,14 @@ public class Tuner
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override //TrainTimeContractClassifier
-    public void setTrainTimeLimit(TimeUnit time, long amount) {
-        contracting = true;
-        
-        long secToNano = 1000000000L;
-        switch(time){
-            case NANOSECONDS:
-                contractTimeNanos = amount;
-                break;
-            case MINUTES:
-                contractTimeNanos = amount*60*secToNano;
-                break;
-            case HOURS: default:
-                contractTimeNanos= amount*60*60*secToNano;
-                break;
-            case DAYS:
-                contractTimeNanos= amount*24*60*60*secToNano; 
-                break;
-        }
+    public void setTrainTimeLimit(long amount) {
+        trainTimeContract = true;
+        trainContractTimeNanos =amount;
     }
+
+    @Override
+    public boolean withinTrainContract(long start) {
+        return start<trainContractTimeNanos;
+    }
+
 }

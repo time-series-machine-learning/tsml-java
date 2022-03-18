@@ -1,16 +1,18 @@
 /*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
 package evaluation.evaluators;
 
@@ -44,7 +46,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -82,7 +84,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -100,7 +102,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -161,7 +163,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
 //        }
         
         ClassifierResults res = stratifiedResampleWithStats(classifier, dataset);
-        if (!REGRESSION_HACK) res.findAllStatsOnce();
+        res.findAllStatsOnce();
         return res;
     }
     

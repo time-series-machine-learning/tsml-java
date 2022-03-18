@@ -22,19 +22,17 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.junit.Test;
 import utilities.ClassifierTools;
 import utilities.FileHandlingTools;
 import weka.classifiers.Classifier;
 import weka.core.Randomizable;
-import weka_extras.classifiers.ensembles.CAWPE;
+import machine_learning.classifiers.ensembles.CAWPE;
 
 /**
  *
@@ -52,45 +50,45 @@ public class BasicReproductionTests {
     public static boolean failTestsOnTimingsDifference = false;
     public static double timingEqualityThreshold = 1.2;
     
-    public static String reproductionDirectory = "src/main/java/experiments/reproductions/";
+    public static String reproductionDirectory = "src/main/java/experiments/reproductions/classifiers/";
     
     static { 
         new File(reproductionDirectory).mkdirs();
     }
     
-    private static final String tsClassifiers = "timeseriesweka.classifiers.";
-    private static final String extraClassifiers = "weka_extras.classifiers.";
+    private static final String tsClassifiers = "tsml.classifiers.";
+    private static final String extraClassifiers = "machine_learning.classifiers.";
     
     public static final String[] classifierPaths = {
-        
-        tsClassifiers + "dictionary_based.BagOfPatterns",
-        tsClassifiers + "dictionary_based.SAXVSM",
-        tsClassifiers + "dictionary_based.WEASEL",
-        tsClassifiers + "dictionary_based.cBOSS",
-       
-        tsClassifiers + "distance_based.DTWCV",
-        tsClassifiers + "distance_based.ProximityForestWrapper",
-        tsClassifiers + "distance_based.SlowDTW_1NN",
-        
-        tsClassifiers + "frequency_based.cRISE",
-        
-//        tsClassifiers + "hybrids.FlatCote", 
-//        tsClassifiers + "hybrids.HiveCote", //assumed to cover its consituents
-        
-        tsClassifiers + "interval_based.LPS",
-        tsClassifiers + "interval_based.cTSF",
-        
-        tsClassifiers + "shapelet_based.FastShapelets",
-        tsClassifiers + "shapelet_based.LearnShapelets",        
-        
-        extraClassifiers + "PLSNominalClassifier",
-        extraClassifiers + "kNN",
-        
-        extraClassifiers + "ensembles.CAWPE",
-        extraClassifiers + "ensembles.HIVE_COTE",
-        extraClassifiers + "ensembles.cRotationForest",
-        extraClassifiers + "ensembles.stackers.SMLR",
-        
+            tsClassifiers + "dictionary_based.BagOfPatternsClassifier",
+            tsClassifiers + "dictionary_based.SAXVSM",
+            tsClassifiers + "dictionary_based.WEASEL",
+            tsClassifiers + "dictionary_based.cBOSS",
+            tsClassifiers + "dictionary_based.TDE",
+
+            tsClassifiers + "distance_based.DTWCV",
+            tsClassifiers + "distance_based.proximity.ProximityForest",
+            tsClassifiers + "distance_based.ProximityForestWrapper",
+            tsClassifiers + "distance_based.SlowDTW_1NN",
+
+//            tsClassifiers + "hybrids.HIVE_COTE", //assumed to cover its consituents
+
+            tsClassifiers + "interval_based.LPS",
+            tsClassifiers + "interval_based.TSF",
+            tsClassifiers + "interval_based.RISE",
+            tsClassifiers + "interval_based.STSF",
+            tsClassifiers + "interval_based.CIF",
+            tsClassifiers + "interval_based.DrCIF",
+
+            tsClassifiers + "shapelet_based.FastShapelets",
+            tsClassifiers + "shapelet_based.LearnShapelets",
+//            tsClassifiers + "shapelet_based.ROCKETClassifier", //requires env variable, transform covered
+
+            extraClassifiers + "PLSNominalClassifier",
+            extraClassifiers + "kNN",
+
+            extraClassifiers + "ensembles.CAWPE",
+            extraClassifiers + "ensembles.stackers.SMLR",
     };
     
     ////////////////////////
@@ -358,7 +356,7 @@ public class BasicReproductionTests {
         System.out.println("--confirmAllExpectedResultReproductions()");
 
         File[] expectedResults = FileHandlingTools.listFiles(reproductionDirectory);
-        if (expectedResults == null) 
+        if (expectedResults == null)
             throw new Exception("No expected results saved to compare to, dir="+reproductionDirectory);
         
         List<String> failedClassifiers = new ArrayList<>();
@@ -400,7 +398,7 @@ public class BasicReproductionTests {
     public static boolean testBuildCAWPEPaper_AllResultsForFigure3() throws Exception {
         System.out.println("--buildCAWPEPaper_AllResultsForFigure3()");
         
-        Experiments.beQuiet = true;
+        ClassifierExperiments.beQuiet = true;
         CAWPE.buildCAWPEPaper_AllResultsForFigure3("");
         
         File f = new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/UCICAWPEvsHeteroEnsembles_BasicClassifiers_BIGglobalSummary.csv");
@@ -411,7 +409,7 @@ public class BasicReproductionTests {
         StringBuilder sb = new StringBuilder();
         while (scan.hasNext()) {
             String t = scan.nextLine();
-            if (t.contains("AvgPredTimes:"))
+            if (t.contains("ExtraTimeForEst")) //this is now the first timing metric, these can't be reliably reproduced ofc so ignore
                 break;
             sb.append(t).append("\n");
         }
@@ -420,7 +418,7 @@ public class BasicReproductionTests {
         //confirm folder structure all there
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TRAIN/TRAINTrainTimes_SUMMARY.csv").exists());
 //        assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/Timings/TEST/TESTAvgPredTimes_SUMMARY.csv").exists());
-//        for (String set : new String[] { ClassifierResultsAnalysis.trainLabel, ClassifierResultsAnalysis.testLabel, ClassifierResultsAnalysis.trainTestDiffLabel }) {
+//        for (String set : new String[] { EstimatorResultsAnalysis.trainLabel, EstimatorResultsAnalysis.testLabel, EstimatorResultsAnalysis.trainTestDiffLabel }) {
 //            for (PerformanceMetric metric : PerformanceMetric.getDefaultStatistics()) {
 //                String name = metric.name;
 //                assertTrue(new File("Analysis/UCICAWPEvsHeteroEnsembles_BasicClassifiers/"+name+"/"+set+"/"+set+name+"_SUMMARY.csv").exists());
@@ -520,7 +518,12 @@ public class BasicReproductionTests {
         
         return res;
     }
-    
+
+    @Test
+    public void test() throws Exception {
+        main(new String[0]);
+    }
+
     public static void main(String[] args) throws Exception {
 //        generateAllExpectedResults();
 //        generateMissingExpectedResults();
@@ -531,7 +534,7 @@ public class BasicReproductionTests {
         if (!classifiersComplete) {
             System.out.println("Classifiers simple eval recreation failed!");
         }
-        
+
         if (!analysisReproduced) {
             System.out.println("CAWPE analysis recreation failed!");
         }

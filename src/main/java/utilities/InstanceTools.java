@@ -1,24 +1,27 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 
-import scala.tools.nsc.Global;
+//import scala.tools.nsc.Global;
 import utilities.class_counts.ClassCounts;
 import utilities.class_counts.TreeSetClassCounts;
 import utilities.generic_storage.Pair;
@@ -28,13 +31,38 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import static utilities.Utilities.normalise;
-
 /**
  *
  * @author Aaron
  */
 public class InstanceTools {
+
+    public static double[] countClasses(Instances data) {
+        return countClasses(data, data.numClasses());
+    }
+
+    public static double[] countClasses(List<? extends Instance> data, int numClasses) {
+        double[] distribution = new double[numClasses];
+        for(Instance instance : data) {
+            final int classValue = (int) instance.classValue();
+            distribution[classValue] += instance.weight();
+        }
+        return distribution;
+    }
+
+    public static Map<Instance, Integer> indexInstances(Instances instances) {
+        Map<Instance, Integer> instanceIntegerMap = new HashMap<>(instances.size(), 1);
+        for(int i = 0; i < instances.size(); i++) {
+            instanceIntegerMap.put(instances.get(i), i);
+        }
+        return instanceIntegerMap;
+    }
+
+    public static void setClassMissing(Instances data) {
+        for(Instance instance : data) {
+            instance.setClassMissing();
+        }
+    }
 
     public static Pair<Instance, Double> findMinDistance(Instances data, Instance inst, DistanceFunction dist){
         double min = dist.distance(data.get(0), inst);
@@ -151,7 +179,8 @@ public class InstanceTools {
      * @return Instances[] with two elements; [0] is the output training instances, [1] output test instances
      */
     public static Instances[] resampleTrainAndTestInstances(Instances train, Instances test, long seed){
-        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it introduced a bug indiagnostics elsewhere
+        if(seed==0){    //For consistency, I have made this clone the data. Its not necessary generally, but not doing it
+            // introduced a bug in diagnostics elsewhere
             Instances newTrain = new Instances(train);
             Instances newTest = new Instances(test);
             return new Instances[]{newTrain,newTest};
@@ -481,7 +510,16 @@ public class InstanceTools {
         return del;
         
     }
-    
+
+    /**
+     * Removes attributes deemed redundant. These are either
+     * 1. All one value (i.e. constant)
+     * 2. Some odd test to count the number different to the one before.
+     * I think this is meant to count the number of different values?
+     * It would be good to delete attributes that are identical to other attributes.
+     * @param train instances from which to remove redundant attributes
+     * @return array of indexes of attributes remove
+     */
      //Returns the *shifted* indexes, so just deleting them should work
 //Removes all constant attributes or attributes with just a single value
     public static int[] removeRedundantTrainAttributes(Instances train){
@@ -500,7 +538,9 @@ public class InstanceTools {
             if(j==train.numInstances())
                 remove=true;
             else{
-//Test if just a single value to remove
+//Test pairwise similarity?
+//I think this is meant to test how many different values there are. If so, it should be
+//done with a HashSet of doubles. This counts how many values are identical to their predecessor
                 count =0;
                 for(j=1;j<train.numInstances();j++){
                     if(train.instance(j-1).value(i)==train.instance(j).value(i))
@@ -509,16 +549,14 @@ public class InstanceTools {
                 if(train.numInstances()-count<minNumDifferent+1)
                     remove=true;
             }
-            if(remove)
-            {
-    // Remove from train
+            if(remove){
+    // Remove from data
                 train.deleteAttributeAt(i);
                 list.add(i);
-    // Remove from test            
             }else{
                 i++;
             }
-            count++;
+  //          count++;
         }
         int[] del=new int[list.size()];
         count=0;
@@ -709,6 +747,7 @@ public class InstanceTools {
             data.deleteAttributeAt(clsIndex);
         }
     }
+
     public static List<Instances> instancesByClass(Instances instances) {
         List<Instances> instancesByClass = new ArrayList<>();
         int numClasses = instances.get(0).numClasses();
@@ -732,13 +771,21 @@ public class InstanceTools {
         }
         return instancesByClass;
     }
+    public static double[] classCounts(Instances instances) {
+        double[] counts = new double[instances.numClasses()];
+        for(Instance instance : instances) {
+            counts[(int) instance.classValue()]++;
+        }
+        return counts;
+    }
+
 
     public static double[] classDistribution(Instances instances) {
         double[] distribution = new double[instances.numClasses()];
         for(Instance instance : instances) {
             distribution[(int) instance.classValue()]++;
         }
-        normalise(distribution);
+        ArrayUtilities.normalise(distribution);
         return distribution;
     }
     /**
@@ -764,6 +811,14 @@ public class InstanceTools {
         combo=Instances.mergeInstances(combo,b);
         combo.setClassIndex(combo.numAttributes()-1);
         return combo;
+    }
+
+    public static Map<Double, Instances> byClass(Instances instances) {
+        Map<Double, Instances> map = new HashMap<>();
+        for(Instance instance : instances) {
+            map.computeIfAbsent(instance.classValue(), k -> new Instances(instances, 0)).add(instance);
+        }
+        return map;
     }
 
     public static Instance reverseSeries(Instance inst){
@@ -848,4 +903,281 @@ public class InstanceTools {
 
         return newInst;
     }
+
+    public static Instances shortenInstances(Instances data, double proportionRemaining, boolean normalise){
+        if (proportionRemaining > 1 || proportionRemaining <= 0){
+            throw new RuntimeException("Remaining series length propotion must be greater than 0 and less than or equal to 1");
+        }
+        else if (data.classIndex() != data.numAttributes()-1){
+            throw new RuntimeException("Dataset class attribute must be the final attribute");
+        }
+
+        Instances shortenedData = new Instances(data);
+        if (proportionRemaining == 1) return shortenedData;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        if (normalise) {
+            Instances tempData = truncateInstances(data, data.numAttributes()-1, newSize);
+            tempData = zNormaliseWithClass(tempData);
+
+            for (int i = 0; i < data.numInstances(); i++){
+                for (int n = 0; n < tempData.numAttributes()-1; n++){
+                    shortenedData.get(i).setValue(n, tempData.get(i).value(n));
+                }
+            }
+        }
+
+        for (int i = 0; i < data.numInstances(); i++){
+            for (int n = data.numAttributes()-2; n >= newSize; n--){
+                //shortenedData.get(i).setMissing(n);
+                shortenedData.get(i).setValue(n, 0);
+            }
+        }
+
+        return shortenedData;
+    }
+
+    public static Instances truncateInstances(Instances data, int fullLength, int newLength){
+        Instances newData = new Instances(data);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newData.deleteAttributeAt(newLength);
+        }
+        return newData;
+    }
+
+    public static Instances truncateInstances(Instances data, double proportionRemaining){
+        if (proportionRemaining == 1) return data;
+        int newSize = (int)Math.round((data.numAttributes()-1) * proportionRemaining);
+        if (newSize == 0) newSize = 1;
+
+        return truncateInstances(data, data.numAttributes()-1, newSize);
+    }
+
+    public static Instance truncateInstance(Instance inst, int fullLength, int newLength){
+        Instance newInst = new DenseInstance(inst);
+        for (int i = 0; i < fullLength - newLength; i++){
+            newInst.deleteAttributeAt(newLength);
+        }
+        return newInst;
+    }
+
+    public static Instances zNormaliseWithClass(Instances data) {
+        Instances newData = new Instances(data, 0);
+
+        for (int i = 0; i < data.numInstances(); i++){
+            newData.add(zNormaliseWithClass(data.get(i)));
+        }
+
+        return newData;
+    }
+
+    public static Instance zNormaliseWithClass(Instance inst){
+        Instance newInst = new DenseInstance(inst);
+        newInst.setDataset(inst.dataset());
+
+        double meanSum = 0;
+        int length = newInst.numAttributes()-1;
+
+        if (length < 2) return newInst;
+
+        for (int i = 0; i < length; i++){
+            meanSum += newInst.value(i);
+        }
+
+        double mean = meanSum / length;
+
+        double squareSum = 0;
+
+        for (int i = 0; i < length; i++){
+            double temp = newInst.value(i) - mean;
+            squareSum += temp * temp;
+        }
+
+        double stdev = Math.sqrt(squareSum/(length-1));
+
+        if (stdev == 0){
+            stdev = 1;
+        }
+
+        for (int i = 0; i < length; i++){
+            newInst.setValue(i, (newInst.value(i) - mean) / stdev);
+        }
+
+        return newInst;
+    }
+
+    /* Surprised these don't exist */
+    public static double sum(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x;
+            }
+        }
+        return sumSq;
+    }
+
+    public static double sumSq(Instance inst){
+        double sumSq = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts
+                double x = inst.value(j);
+                sumSq += x * x;
+            }
+        }
+        return sumSq;
+    }
+
+    public static int argmax(Instance inst){
+        double max = -99999999;
+        int arg = -1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x > max){
+                    max = x;
+                    arg = j;
+                }
+            }
+        }
+        return arg;
+    }
+
+    public static double max(Instance inst){
+        return inst.value(argmax(inst));
+    }
+
+    public static int argmin(Instance inst){
+        double min = Double.MAX_VALUE;
+        int arg =-1;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                if (x < min){
+                    min = x;
+                    arg = j;
+                }
+
+            }
+        }
+        return arg;
+    }
+
+    public static double min(Instance inst){
+        return inst.value(argmin(inst));
+    }
+
+
+
+    public static double mean(Instance inst){
+        double mean = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal() && !inst.isMissing(j)){// Ignore all nominal atts{
+                double x = inst.value(j);
+                mean +=x;
+            }
+            else
+                k++;
+        }
+
+        return mean / (double)(inst.numAttributes() - 1 - k);
+    }
+
+
+    public static double variance(Instance inst, double mean){
+        double var = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                var += Math.pow(x-mean, 2);
+            }
+            else
+                k++;
+        }
+
+        return var / (double)(inst.numAttributes() - 1 - k);
+    }
+
+    public static double kurtosis(Instance inst, double mean, double std){
+        double kurt = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                kurt += Math.pow(x-mean, 4);
+            }
+            else
+                k++;
+        }
+
+        kurt /= Math.pow(std, 4);
+        return kurt / (double)(inst.numAttributes() - 1 - k);
+    }
+
+
+    public static double skew(Instance inst, double mean, double std){
+        double skew = 0;
+        int k = 0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                double x = inst.value(j);
+                skew += Math.pow(x-mean, 3);
+            }
+            else
+                k++;
+        }
+
+        skew /= Math.pow(std, 3);
+        return skew / (double)(inst.numAttributes() - 1 - k);
+    }
+
+    public static double slope(Instance inst, double sum, double sumXX){
+        double sumXY= 0;
+        int k =0;
+        for (int j = 0; j < inst.numAttributes(); j++) {
+            if (j != inst.classIndex() && !inst.attribute(j).isNominal()) {// Ignore all nominal atts{
+                sumXY += inst.value(j) *  j;
+            }
+            else
+                k++;
+        }
+        double length = (double)(inst.numAttributes() - k);
+
+        double sqsum = sum*sum;
+        //slope
+        double slope = sumXY-sqsum/length;
+        double denom=sumXX-sqsum/length;
+        if(denom!=0)
+            slope/=denom;
+        else
+            slope=0;
+
+        //if(standardDeviation == 0)
+        //slope=0;
+
+        return slope;
+    }
+
+    public static double[] ConvertInstanceToArrayRemovingClassValue(Instance inst, int c) {
+        double[]  d = inst.toDoubleArray();
+        double[] temp;
+
+		if (c >= 0) {
+			temp = new double[d.length - 1];
+			System.arraycopy(d, 0, temp, 0, c);
+			d = temp;
+        }
+
+        return d;
+
+    }
+
+    public static double[] ConvertInstanceToArrayRemovingClassValue(Instance inst) {
+        return ConvertInstanceToArrayRemovingClassValue(inst, inst.classIndex());
+    }
+
 }

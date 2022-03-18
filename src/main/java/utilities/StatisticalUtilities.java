@@ -1,24 +1,33 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+/* 
+ * This file is part of the UEA Time Series Machine Learning (TSML) toolbox.
  *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ * The UEA TSML toolbox is free software: you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * The UEA TSML toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with the UEA TSML toolbox. If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package utilities;
+
+import tsml.data_containers.TimeSeries;
+import tsml.data_containers.TimeSeriesInstance;
+import tsml.data_containers.TimeSeriesInstances;
+import weka.core.Instance;
+import weka.core.Instances;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
+import static java.math.BigDecimal.ROUND_HALF_UP;
 
 /**
  * A class offering statistical utility functions like the average and the
@@ -40,34 +49,90 @@ public class StatisticalUtilities {
 
         return sum / (double) (values.length - offset);
     }
-    
-    
-    
-    // jamesl
-    // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
-    // can make O(n) if wanted later 
-    public static double median(double[] values) {
-        if(values.length == 1) {
-            return values[0];
+
+    public static double pStdDev(TimeSeriesInstances insts) {
+        double sumx = 0;
+        double sumx2 = 0;
+        int n = 0;
+        for(int i = 0; i < insts.numInstances(); i++){
+            final TimeSeriesInstance inst = insts.get(i);
+            for(int j = 0; j < inst.getNumDimensions(); j++){
+                final TimeSeries dim = inst.get(j);
+                for(int k = 0; k < inst.getMaxLength(); k++) {
+                    final Double value = dim.get(k);
+                    sumx+= value;
+                    sumx2+= value * value;
+                    n++;
+                }
+            }
         }
-        double[] copy = Arrays.copyOf(values, values.length);
-        Arrays.sort(copy);
-        if (copy.length % 2 == 1)
-            return copy[copy.length/2 + 1];
-        else 
-            return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+    }
+    
+
+    public static double pStdDev(Instances input){
+        if(input.classIndex() != input.numAttributes() - 1) {
+            throw new IllegalArgumentException("class value must be at the end");
+        }
+        double sumx = 0;
+        double sumx2 = 0;
+        double[] ins2array;
+        for(int i = 0; i < input.numInstances(); i++){
+            final Instance instance = input.instance(i);
+            for(int j = 0; j < instance.numAttributes()-1; j++){//-1 to avoid classVal
+                final double value = instance.value(j);
+                sumx+= value;
+                sumx2+= value * value;
+            }
+        }
+        int n = input.numInstances()*(input.numAttributes()-1);
+        double mean = sumx/n;
+        return Math.sqrt(sumx2/(n)-mean*mean);
+
     }
 
-    public static double median(Double[] values) {
-        if(values.length == 1) {
-            return values[0];
-        }
-        Double[] copy = Arrays.copyOf(values, values.length);
+
+
+    // jamesl
+    // the median of a list of values, just sorts (a copy, original remains unsorted) and takes middle for now
+    // can make O(n) if wanted later
+    public static double median(double[] values) { return median(values, true); }
+
+    public static double median(double[] values, boolean copyArr) {
+        double[] copy;
+        if (copyArr) copy = Arrays.copyOf(values, values.length); else copy = values;
         Arrays.sort(copy);
         if (copy.length % 2 == 1)
-            return copy[copy.length/2 + 1];
+            return copy[copy.length/2];
+        else 
+            return (copy[copy.length/2 - 1] + copy[copy.length/2]) / 2;
+    }
+
+    public static double median(ArrayList<Double> values) { return median(values, true); }
+
+    public static double median(ArrayList<Double> values, boolean copyArr) {
+        ArrayList<Double> copy;
+        if (copyArr) copy = new ArrayList<>(values); else copy = values;
+        Collections.sort(copy);
+        if (copy.size() % 2 == 1)
+            return copy.get(copy.size()/2);
         else
-            return (copy[copy.length/2] + copy[copy.length/2 + 1]) / 2;
+            return (copy.get(copy.size()/2 - 1) + copy.get(copy.size()/2)) / 2;
+    }
+
+    public static double standardDeviation(double[] values, boolean classVal) {
+        double mean = mean(values, classVal);
+        double sumSquaresDiffs = 0;
+        int offset = classVal ? 1 : 0;
+
+        for (int i = 0; i < values.length - offset; i++) {
+            double diff = values[i] - mean;
+
+            sumSquaresDiffs += diff * diff;
+        }
+
+        return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
 
     public static double standardDeviation(double[] values, boolean classVal, double mean) {
@@ -83,6 +148,7 @@ public class StatisticalUtilities {
 
         return Math.sqrt(sumSquaresDiffs / (values.length - 1 - offset));
     }
+
     // normalize the vector to mean 0 and std 1
     public static double[] normalize(double[] vector, boolean classVal) {
         double mean = mean(vector, classVal);
@@ -91,9 +157,7 @@ public class StatisticalUtilities {
         double[] normalizedVector = new double[vector.length];
 
         for (int i = 0; i < vector.length; i++) {
-            if (std != 0) {
-                normalizedVector[i] = (vector[i] - mean) / std;
-            }
+            normalizedVector[i] = !NumUtils.isNearlyEqual(std, 0.0) ? (vector[i] - mean) / std : 0;
         }
 
         return normalizedVector;
@@ -103,6 +167,54 @@ public class StatisticalUtilities {
         return StatisticalUtilities.normalize(vector, false);
     }
     
+
+    //Aaron: I'm not confident in the others...I may have written those too... lol
+    public static double[] norm(double[] patt){
+        double mean =0,sum =0 ,sumSq =0,var = 0;
+        for(int i=0; i< patt.length; ++i){
+            sum = patt[i];
+            sumSq = patt[i]*patt[i];
+        }
+
+        double size= patt.length;
+		var = (sumSq - sum * sum / size) / size;
+        mean = sum / size;
+        
+        double[] out = new double[patt.length];
+        if(NumUtils.isNearlyEqual(var, 0.0)){
+            for(int i=0; i<patt.length; ++i)
+                out[i] = 0.0;
+        }
+        else{
+            double stdv = Math.sqrt(var);
+            for(int i=0; i<patt.length; ++i)
+                out[i] = (patt[i] - mean) / stdv;
+        }
+
+        return out;
+    }
+
+    public static void normInPlace(double[] r){
+        double sum=0,sumSq=0,mean=0,stdev=0;
+        for(int i=0;i<r.length;i++){
+                sum+=r[i];
+                sumSq+=r[i]*r[i];
+        }
+        stdev=(sumSq-sum*sum/r.length)/r.length;
+        mean=sum/r.length;
+        if(stdev==0){
+            for (int j = 0; j < r.length; ++j)
+                r[j] = 0;
+        }
+        else{
+            stdev=Math.sqrt(stdev);
+            for(int i=0;i<r.length;i++)
+                r[i]=(r[i]-mean)/stdev;
+        }
+    }
+    
+
+
     public static void normalize2D(double[][] data, boolean classVal)
     {
         int offset = classVal ? 1 : 0;
@@ -232,5 +344,32 @@ public class StatisticalUtilities {
     
     public static double averageFinalDimension(double[] results) { 
         return StatisticalUtilities.mean(results, false);
+    }
+
+    public static BigDecimal sqrt(BigDecimal decimal) {
+        int scale = MathContext.DECIMAL128.getPrecision();
+        BigDecimal x0 = new BigDecimal("0");
+        BigDecimal x1 = BigDecimal.valueOf(Math.sqrt(decimal.doubleValue()));
+        while (!x0.equals(x1)) {
+            x0 = x1;
+            x1 = decimal.divide(x0, scale, ROUND_HALF_UP);
+            x1 = x1.add(x0);
+            x1 = x1.divide(TWO, scale, ROUND_HALF_UP);
+        }
+        return x1;
+    }
+
+    public static double dot(double[] inst1, double[] inst2){
+        double sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
+    }
+
+    public static int dot(int[] inst1, int[] inst2){
+        int sum = 0;
+        for (int i = 0; i < inst1.length; i++)
+            sum += inst1[i] * inst2[i];
+        return sum;
     }
 }
