@@ -388,6 +388,11 @@ public class MultipleEstimatorEvaluation implements DebugPrinting {
         return this;
     }
 
+    public MultipleEstimatorEvaluation setUseEarlyClassificationStatistics() {
+        metrics = PerformanceMetric.getEarlyClassificationStatistics();
+        return this;
+    }
+
     public MultipleEstimatorEvaluation setUseClusteringStatistics() {
         metrics = PerformanceMetric.getClusteringStatistics();
         return this;

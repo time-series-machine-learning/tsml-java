@@ -1299,7 +1299,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
  The equation is then reordered to solve for positive x, providing the upper bound on the interval space.
  Dividing this by minNumtrees - treeCount gives the maximum space such that in the worse case the contract is met.
      */
-    private class Timer implements Serializable{
+    private class Timer implements Serializable {
 
         protected long forestTimeLimit = Long.MAX_VALUE;
         protected long forestStartTime = 0;

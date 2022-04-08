@@ -70,7 +70,7 @@ public class ShapeletTransformEarlyClassifier extends AbstractEarlyClassifier {
         ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;
         ShapeletTransformFactoryOptions.ShapeletTransformOptions transformOptions
                 = new ShapeletTransformFactoryOptions.ShapeletTransformOptions();
-        transformOptions.setDistanceType(ShapeletDistance.DistanceType.NORMAL); //default STC uses improved online
+        transformOptions.setDistanceType(ShapeletDistance.DistanceType.IMPROVED_ONLINE);
         transformOptions.setQualityMeasure(ShapeletQuality.ShapeletQualityChoice.INFORMATION_GAIN);
         transformOptions.setRescalerType(ShapeletDistance.RescalerType.NORMALISATION);
         transformOptions.setRoundRobin(true);

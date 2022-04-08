@@ -20,6 +20,8 @@ package machine_learning.classifiers.ensembles.voting;
 import utilities.DebugPrinting;
 import machine_learning.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 import evaluation.storage.ClassifierResults;
+
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
 import weka.core.Instance;
@@ -29,7 +31,7 @@ import weka.core.Instance;
  * 
  * @author James Large
  */
-public abstract class ModuleVotingScheme implements DebugPrinting {
+public abstract class ModuleVotingScheme implements DebugPrinting, Serializable {
     
     protected int numClasses;  
     public boolean needTrainPreds = false;

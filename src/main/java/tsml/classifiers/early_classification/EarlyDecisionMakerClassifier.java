@@ -16,6 +16,7 @@ package tsml.classifiers.early_classification;
 
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
+import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.interval_based.TSF;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -43,6 +44,7 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
 
     private Classifier[] classifiers;
 
+    private boolean useOwnTrainEstimates = true;
     private int seed = 0;
     private Random rand;
 
@@ -50,7 +52,7 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
     private String loadPath;
     private ClassifierResults[] loadedResults;
     private int testInstanceCounter = 0;
-    private int lastIdx = -1;
+    private int lastIdx = Integer.MIN_VALUE;
 
     public EarlyDecisionMakerClassifier(Classifier classifier, EarlyDecisionMaker decisionMaker){
         this.classifier = classifier;
@@ -60,12 +62,20 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
     @Override
     public int getSeed() { return 0; }
 
+    public Classifier getClassifier() { return classifier; }
+
+    public EarlyDecisionMaker getDecisionMaker() { return decisionMaker; }
+
     @Override
     public void setSeed(int i) { seed = i; }
 
     public void setLoadFromFilePath(String path) {
         loadFromFile = true;
         loadPath = path;
+    }
+
+    public void setUseOwnTrainEstimates(boolean b){
+        useOwnTrainEstimates = b;
     }
 
     @Override
@@ -76,6 +86,13 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         if (decisionMaker instanceof Randomizable) ((Randomizable) decisionMaker).setSeed(seed);
         decisionMaker.setNormalise(normalise);
         rand = new Random(seed);
+
+        boolean estimatingOwnPerformance = false;
+        if (classifier instanceof EnhancedAbstractClassifier &&
+                ((EnhancedAbstractClassifier)classifier).ableToEstimateOwnPerformance()){
+            ((EnhancedAbstractClassifier)classifier).setEstimateOwnPerformance(useOwnTrainEstimates);
+            estimatingOwnPerformance = true;
+        }
 
         if (loadFromFile) {
             loadedResults = new ClassifierResults[thresholds.length];
@@ -94,13 +111,6 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         else {
             int length = data.numAttributes() - 1;
             for (int i = 0; i < thresholds.length; i++) {
-                if (thresholds[i] < 3) {
-                    thresholds = Arrays.copyOfRange(thresholds, 1, thresholds.length);
-                    classifiers = new Classifier[thresholds.length];
-                    i--;
-                    continue;
-                }
-
                 Instances newData = truncateInstances(data, length, thresholds[i]);
                 if (normalise) newData = zNormaliseWithClass(newData);
 
@@ -108,11 +118,16 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
                 classifiers[i].buildClassifier(newData);
             }
 
-            Classifier[] blankClassifiers = new Classifier[thresholds.length];
-            for (int i = 0; i < blankClassifiers.length; i++) {
-                blankClassifiers[i] = AbstractClassifier.makeCopy(classifier);
+            if (estimatingOwnPerformance) {
+                decisionMaker.fit(data, classifiers, thresholds);
             }
-            decisionMaker.fit(data, blankClassifiers, thresholds);
+            else{
+                Classifier[] blankClassifiers = new Classifier[thresholds.length];
+                for (int i = 0; i < blankClassifiers.length; i++) {
+                    blankClassifiers[i] = AbstractClassifier.makeCopy(classifier);
+                }
+                decisionMaker.fit(data, blankClassifiers, thresholds);
+            }
         }
     }
 
@@ -139,10 +154,11 @@ public class EarlyDecisionMakerClassifier extends AbstractEarlyClassifier implem
         Instance newData = instance;
         if (normalise) newData = zNormaliseWithClass(instance);
 
-        if (loadFromFile){
+        if (loadFromFile) {
+            if (idx <= lastIdx)
+                testInstanceCounter++;
             probs = loadedResults[idx].getProbabilityDistribution(testInstanceCounter);
             decision = decisionMaker.decide(idx, probs);
-            if (idx <= lastIdx) testInstanceCounter++;
             lastIdx = idx;
         }
         else {

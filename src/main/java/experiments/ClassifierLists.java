@@ -16,9 +16,11 @@ package experiments;
 
 
 import evaluation.tuning.ParameterSpace;
+import machine_learning.classifiers.RidgeClassifierCV;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import machine_learning.classifiers.ensembles.EnhancedRotationForest;
 import machine_learning.classifiers.tuned.TunedClassifier;
+import machine_learning.classifiers.tuned.TunedSVM;
 import tsml.classifiers.EnhancedAbstractClassifier;
 import tsml.classifiers.distance_based.distances.dtw.DTWDistance;
 import tsml.classifiers.distance_based.distances.ed.EDistance;
@@ -688,8 +690,8 @@ public class ClassifierLists {
      * STANDARD classifiers such as random forest etc
      */
     public static String[] standard= {
-        "XGBoostMultiThreaded","XGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
-            "SVML","SVMQ","SVMRBF","MLP","Logistic","CAWPE","NN","NB","BN"};
+        "XGBoostMultiThreaded","XGBoost","TunedXGBoost","SmallTunedXGBoost","RandF","RotF", "ContractRotF","ERotF","ERotFBag","ERotFOOB","ERotFCV","ERotFTRAIN","PLSNominalClassifier","BayesNet","ED","C45",
+            "SVML","SVMQ","TunedSVM","SVMRBF","RidgeCV","MLP","Logistic","CAWPE","NN","NB","BN"};
     public static HashSet<String> standardClassifiers=new HashSet<String>( Arrays.asList(standard));
     private static Classifier setStandardClassifiers(ExperimentalArguments exp){
         String classifier=exp.estimatorName;
@@ -703,6 +705,11 @@ public class ClassifierLists {
             case "XGBoost":
                 c = new TunedXGBoost();
                 ((TunedXGBoost)c).setRunSingleThreaded(true);
+                break;
+            case "TunedXGBoost":
+                c = new TunedXGBoost();
+                ((TunedXGBoost)c).setRunSingleThreaded(true);
+                ((TunedXGBoost)c).setTuneParameters(true);
                 break;
             case "SmallTunedXGBoost":
                 c = new TunedXGBoost();
@@ -789,7 +796,14 @@ public class ClassifierLists {
                 ((SMO)c).setKernel(rbf);
                 ((SMO)c).setRandomSeed(fold);
                 ((SMO)c).setBuildLogisticModels(true);
-
+                break;
+            case "TunedSVM":
+                c=new TunedSVM();
+                ((TunedSVM)c).optimiseKernel(true);
+                ((TunedSVM)c).setRandomSeed(fold);
+                break;
+            case "RidgeCV":
+                c=new RidgeClassifierCV();
                 break;
             case "BN":
                 c=new BayesNet();
@@ -822,7 +836,7 @@ public class ClassifierLists {
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
     public static String[] bespoke= {"HIVE-COTE 1.0","HIVE-COTE 2.0","HIVE-COTE","HC-TDE","HC-CIF","HC-WEASEL",
-            "HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS"};
+            "HC-BcSBOSS","HC-cSBOSS","TunedHIVE-COTE","HC-S-BOSS",   "HC2-MultiArsenal","HC2-MiniArsenal","HC2-FreshPRINCE","HC2-FreshPRINCE-MultiArsenal"};
     public static HashSet<String> bespokeClassifiers=new HashSet<String>( Arrays.asList(bespoke));
     private static Classifier setBespokeClassifiers(ExperimentalArguments exp){
         String classifier=exp.estimatorName,resultsPath="",dataset="";
@@ -852,7 +866,7 @@ public class ClassifierLists {
                 break;
             case "HIVE-COTE 2.0":
                 if(canLoadFromFile){
-                    String[] cls={"DrCIF","TDE","ARSENAL","STC"};//RotF for ST
+                    String[] cls={"DrCIF","TDE","Arsenal","STC"};//RotF for ST
                     c=new HIVE_COTE();
                     ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
                     ((HIVE_COTE)c).setSeed(fold);
@@ -864,6 +878,64 @@ public class ClassifierLists {
                     throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
                             + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
                 break;
+
+            case "HC2-FreshPRINCE":
+                if(canLoadFromFile){
+                    String[] cls={"DrCIF","TDE","Arsenal","STC","FreshPRINCE"};
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC2-MiniArsenal":
+                if(canLoadFromFile){
+                    String[] cls={"DrCIF","TDE","MiniArsenal","STC"};
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC2-MultiArsenal":
+                if(canLoadFromFile){
+                    String[] cls={"DrCIF","TDE","MultiArsenal","STC"};
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+            case "HC2-FreshPRINCE-MultiArsenal":
+                if(canLoadFromFile){
+                    String[] cls={"DrCIF","TDE","MultiArsenal","STC","FreshPRINCE"};
+                    c=new HIVE_COTE();
+                    ((HIVE_COTE)c).setFillMissingDistsWithOneHotVectors(true);
+                    ((HIVE_COTE)c).setSeed(fold);
+                    ((HIVE_COTE)c).setBuildIndividualsFromResultsFiles(true);
+                    ((HIVE_COTE)c).setResultsFileLocationParameters(resultsPath, dataset, fold);
+                    ((HIVE_COTE)c).setClassifiersNamesForFileRead(cls);
+                }
+                else
+                    throw new UnsupportedOperationException("ERROR: currently only loading from file for CAWPE and no results file path has been set. "
+                            + "Call setClassifier with an ExperimentalArguments object exp with exp.resultsWriteLocation (contains component classifier results) and exp.datasetName set");
+                break;
+
             case "HC-TDE":
                 if(canLoadFromFile){
                     String[] cls={"TSF","TDE","RISE","STC"};//RotF for ST
@@ -990,7 +1062,9 @@ public class ClassifierLists {
     /**
      * BESPOKE classifiers for particular set ups. Use if you want some special configuration/pipeline
      * not encapsulated within a single classifier      */
-    public static String[] earlyClassification= {"TEASER","eSTC"};
+    public static String[] earlyClassification= {"TEASER","ECEC","eSTC","P85-DrCIF","P85c3-DrCIF","TEASER-DrCIF",
+            "SR1CF1-DrCIF","ECEC-DrCIF"
+    };
     public static HashSet<String> earlyClassifiers=new HashSet<String>( Arrays.asList(earlyClassification));
     private static Classifier setEarlyClassifiers(ExperimentalArguments exp){
         String classifier=exp.estimatorName,resultsPath="",dataset="";
@@ -1008,8 +1082,28 @@ public class ClassifierLists {
             case "TEASER":
                 c = new EarlyDecisionMakerClassifier(new WEASEL(), new TEASER());
                 break;
+            case "ECEC":
+                c = new EarlyDecisionMakerClassifier(new WEASEL(), new ECEC());
+                break;
             case "eSTC":
                 c = new ShapeletTransformEarlyClassifier();
+                break;
+
+            case "P85-DrCIF":
+                c = new EarlyDecisionMakerClassifier(new DrCIF(), new ProbabilityThreshold());
+                break;
+            case "P85c3-DrCIF":
+                c = new EarlyDecisionMakerClassifier(new DrCIF(), new ProbabilityThreshold());
+                ((ProbabilityThreshold) ((EarlyDecisionMakerClassifier) c).getDecisionMaker()).setConsecutivePredictions(3);
+                break;
+            case "TEASER-DrCIF":
+                c = new EarlyDecisionMakerClassifier(new DrCIF(), new TEASER());
+                break;
+            case "SR1CF1-DrCIF":
+                c = new EarlyDecisionMakerClassifier(new DrCIF(), new SR1CF1());
+                break;
+            case "ECEC-DrCIF":
+                c = new EarlyDecisionMakerClassifier(new DrCIF(), new ECEC());
                 break;
 
             default:

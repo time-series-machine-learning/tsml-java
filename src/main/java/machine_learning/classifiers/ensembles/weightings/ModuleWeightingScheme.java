@@ -19,12 +19,14 @@ package machine_learning.classifiers.ensembles.weightings;
 
 import machine_learning.classifiers.ensembles.AbstractEnsemble.EnsembleModule;
 
+import java.io.Serializable;
+
 /**
  * Base class for defining the weighting of a classifiers votes in ensemble classifiers
  * 
  * @author James Large
  */
-public abstract class ModuleWeightingScheme {
+public abstract class ModuleWeightingScheme implements Serializable {
     
     public boolean uniformWeighting = true;
     public boolean needTrainPreds = true;

@@ -18,6 +18,7 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.util.Arrays;
+import java.util.TreeSet;
 
 /**
  * Class for early classification decision makers.
@@ -44,14 +45,29 @@ public abstract class EarlyDecisionMaker {
         fit(data, classifier, defaultTimeStamps(data.numAttributes()-1));
     }
 
+    /**
+     * Many algorithms require data from previous decisions form an instance. The way this is currently set up got many
+     * is that it will create a clean slate each time the thresholdIndex is 0. Calling this on a new instance before
+     * the final decision has been made on a previous one is a good way to break everything.
+     *
+     * This is obviously not ideal for real use cases, but there arent being used for that currently.
+     */
     public abstract boolean decide(int thresholdIndex, double[] probabilities) throws Exception;
 
     public int[] defaultTimeStamps(int length) {
-        int[] ts = new int[20];
-        ts[19] = length;
-        for (int i = 0; i < 19; i++){
-            ts[i] = (int)Math.round((i+1) * 0.05 * length);
+        TreeSet<Integer> ts = new TreeSet<>();
+        for (double i = 0.05; i < 0.99; i += 0.05) {
+            i = Math.round(i * 100.0) / 100.0;
+            int v = (int) Math.round(i * length);
+            if (v >= 3)
+                ts.add(v);
         }
-        return ts;
+        ts.add(length);
+
+        int[] arr = new int[ts.size()];
+        int i = 0;
+        for (Integer v: ts)
+            arr[i++] = v;
+        return arr;
     }
 }
