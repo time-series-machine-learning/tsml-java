@@ -1,5 +1,10 @@
 package ml_6002b_coursework;
+import scala.tools.nsc.JarRunner;
+
 import java.lang.Math;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Empty class for Part 2.1 of the coursework.
  */
@@ -11,11 +16,32 @@ public class AttributeMeasures {
      * @param args the options for the attribute measure main
      */
 
+    public static int[][] transpose(int[][] matrix){
+        int m = matrix.length;
+        int n = matrix[0].length;
+
+        int[][] transposedMatrix = new int[n][m];
+
+        for(int x = 0; x < n; x++) {
+            for(int y = 0; y < m; y++) {
+                transposedMatrix[x][y] = matrix[y][x];
+            }
+        }
+
+        return transposedMatrix;
+    }
     public static void main(String[] args) {
         /** Table representing 0 as False and 1 as True
          * Islay is represented as 0 and Speyside is represented as 1
          * This will only work if 2 whiskey regions are used
          */
+
+        //
+        int [][]contingenyTable = new int[][]{
+                {4,0},
+                {1,5},
+        };
+
         int[][] whiskeyData = new int[][]{
                 {1, 0, 1, 0},
                 {1, 1, 1, 0},
@@ -28,10 +54,36 @@ public class AttributeMeasures {
                 {0, 0, 1, 1},
                 {0, 0, 1, 1},
         };
+        measureInformationGain(contingenyTable);
     }
 
-    public static double measureInformationGain(int[][] whiskeyData) {
-        double len = whiskeyData.length;
+    public static double measureInformationGain(int[][] contingencyTable) {
+        List<Integer> rowTotal = new ArrayList<>();
+        List<Integer> columnTotal = new ArrayList<>();
+        int count;
+        for (int i=0; i<contingencyTable.length; i++) {
+            count = 0;
+            for (int j=0;j<contingencyTable[i].length;j++) {
+                count = count + contingencyTable[i][j];
+            }
+            rowTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
+        for (int i=0; i<transpose(contingencyTable).length; i++) {
+            count = 0;
+            for (int j=0;j<contingencyTable[i].length;j++) {
+                count = count + contingencyTable[i][j];
+            }
+            columnTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
+        System.out.println(rowTotal +"test");
+        System.out.println(columnTotal+"column");
+
+        /
+        double len = 0;
+        for (int i=0; i<rowTotal.size();i++){
+            len = len+rowTotal[i];
         double infGain = 0;
         int P1TrueCount = 0;
         int P1FalseCount = 0;
@@ -64,19 +116,18 @@ public class AttributeMeasures {
         double Hx1 = 1.0;
         double Hx2 = 1.0;
 
-
         /**Entropy calculation proivided ML Lecture 2, page 25 and 26
          * -(5/10 log (5/10) + 5/10 log(5/10)) = 1
          *
          *Code only works if 2 possible whiskey types - if more are provided will need to adjust "1-islayChance"
          **/
-        double islayChance = islayCount / len;
-        double speysideChance = speysideCount / len;
+       /* double islayChance = islayCount / len;
+        double speysideChance = speysideCount / len;*/
         /** NOTE
          * All logorithms in this class are log base 2 :
          * The conversion is done using the Math.log giving natural log then dividing it by log 2
          */
-        entropy = -(((islayChance) * ((Math.log(islayChance) / Math.log(2)))) +
+     /*   entropy = -(((islayChance) * ((Math.log(islayChance) / Math.log(2)))) +
                 ( (speysideChance) * ( (Math.log(speysideChance) ) / Math.log(2))));
 
         double P1Len = P1TrueCount+P1FalseCount;
@@ -96,8 +147,8 @@ public class AttributeMeasures {
         return infGain;
     }
 
-
- public double measureInformationGainRatio (int[][] whiskeyData){
+*/
+ /*public double measureInformationGainRatio (int[][] whiskeyData){
 
     double infGain = measureInformationGain(whiskeyData);
 
@@ -204,6 +255,7 @@ public class AttributeMeasures {
  return chiSquared;
  }
 
-}
+}*/
 
 
+    }
