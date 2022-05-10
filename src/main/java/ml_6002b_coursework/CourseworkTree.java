@@ -3,12 +3,32 @@ package ml_6002b_coursework;
 import weka.classifiers.AbstractClassifier;
 import weka.core.*;
 
+import java.io.FileReader;
 import java.util.Arrays;
 
 /**
  * A basic decision tree classifier for use in machine learning coursework (6002B).
  */
 public class CourseworkTree extends AbstractClassifier {
+
+    public void setOptions(String options) throws Exception{
+        switch(options) {
+            case "infoGain":
+                setAttSplitMeasure(new IGAttributeSplitMeasure());
+                break;
+            case "infoGainRatio":
+                IGAttributeSplitMeasure igRatioSplitMeasure = new IGAttributeSplitMeasure();
+                igRatioSplitMeasure.setUseGain(true);
+                setAttSplitMeasure((new IGAttributeSplitMeasure()));
+                break;
+            case "chiSquared":
+                setAttSplitMeasure(new ChiSquaredAttributeSplitMeasure());
+                break;
+            case "gini":
+                setAttSplitMeasure(new GiniAttributeSplitMeasure());
+                break;
+        }
+    }
 
     /** Measure to use when selecting an attribute to split the data with. */
     private AttributeSplitMeasure attSplitMeasure = new IGAttributeSplitMeasure();
@@ -238,6 +258,8 @@ public class CourseworkTree extends AbstractClassifier {
             }
             return str;
         }
+
+
     }
 
     /**
@@ -245,7 +267,28 @@ public class CourseworkTree extends AbstractClassifier {
      *
      * @param args the options for the classifier main
      */
-    public static void main(String[] args) {
-        System.out.println("Not Implemented.");
+    public static void main(String[] args) throws Exception {
+        String[] files = {
+                "./src/main/java/ml_6002b_coursework/test_data/Whisky.arff"
+        };
+        for (String file:files){
+            FileReader reader = new FileReader(file);
+            Instances data = new Instances(reader);
+            data.setClassIndex(data.numAttributes()-1);
+
+            CourseworkTree informationGainTree = new CourseworkTree();
+            informationGainTree.setOptions("infoGain");
+
+
+            CourseworkTree informationGainRatioTree = new CourseworkTree();
+            informationGainRatioTree.setOptions("infoGainRatio");
+
+            CourseworkTree giniTree = new CourseworkTree();
+            giniTree.setOptions("gini");
+
+            CourseworkTree chiSquaredTree = new CourseworkTree();
+            chiSquaredTree.setOptions("chiSquared");
+        }
+
     }
 }
