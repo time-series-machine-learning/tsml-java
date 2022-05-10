@@ -1,0 +1,40 @@
+package ml_6002b_coursework;
+import weka.core.Attribute;
+import weka.core.Instances;
+import weka.core.Instance;
+import java.io.FileReader;
+
+public class GiniAttributeSplitMeasure extends AttributeSplitMeasure {
+
+    @Override
+    public double computeAttributeQuality(Instances data, Attribute att) throws Exception {
+        int count = data.numClasses();
+        int value = att.numValues();
+        int[][] contingencyTable = new int[value][count];
+
+        for (Instance instance : data){
+            int attributeValue = (int) instance.value(att);
+            int classValue = (int) instance.classValue();
+            contingencyTable[attributeValue][classValue]++;
+        }
+        return AttributeMeasures.measureGini(contingencyTable);
+    }
+
+    public static void main(String[] args){
+        try {
+            FileReader reader = new FileReader("./src/main/java/ml_6002b_coursework/test_data/Whisky.arff");
+            Instances data = new Instances(reader);
+            data.setClassIndex(data.numAttributes() - 1);
+
+            GiniAttributeSplitMeasure giniAttributeSplitMeasure = new GiniAttributeSplitMeasure();
+            for (int i = 0; i < data.numAttributes() - 1; i++) {
+                double gini = giniAttributeSplitMeasure.computeAttributeQuality(data, data.attribute(i));
+                System.out.println("measure Gini for attribute " + data.attribute(i).name() + " splitting diagnosis " + gini);
+            }
+        }
+        catch (Exception e) {
+            System.out.println("Error: "+e);
+        }
+    }
+}
+

@@ -19,7 +19,7 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
 
         for (Instance instance : data){
             int attributeValue = (int) instance.value(att);
-            int classValue = (int) instance.value(att);
+            int classValue = (int) instance.classValue();
             contingencyTable[attributeValue][classValue]++;
         }
         if (useGain){
@@ -34,7 +34,7 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
     }
     public static void main(String[] args){
         try{
-            FileReader reader = new FileReader("\"./src/main/java/ml_6002b_coursework/test_data/Whisky.arff\"");
+            FileReader reader = new FileReader("./src/main/java/ml_6002b_coursework/test_data/Whisky.arff");
             Instances data = new Instances(reader);
             data.setClassIndex(data.numAttributes()-1);
 
@@ -53,6 +53,6 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
     }
         catch (Exception e) {
             System.out.println("Error: "+e);
+        }
     }
-}
 }
