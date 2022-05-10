@@ -1,0 +1,17 @@
+@RELATION testing
+@ATTRIBUTE peaty {0, 1}
+@ATTRIBUTE woody {0, 1}
+@ATTRIBUTE sweet {0, 1}
+@ATTRIBUTE region {0, 1}
+
+@DATA
+1,0,1,1
+1,1,1,1
+1,0,0,1
+1,0,0,1
+0,1,0,1
+0,1,1,0
+0,1,1,0
+0,1,1,0
+0,0,1,0
+0,0,1,0
