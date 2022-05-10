@@ -50,10 +50,12 @@ public class AttributeMeasures {
                 {0, 0, 1, 1},
         };
         */
-        measureInformationGain(contingenyTable);
-        measureInformationGainRatio(contingenyTable);
-        measureGini(contingenyTable);
-        measureChiSquared(contingenyTable);
+        System.out.println("measure Information Gain for Peaty = "+measureInformationGain(contingenyTable));
+        System.out.println("measure Information Gain Ratio for Peaty = "+measureInformationGainRatio(contingenyTable));
+        System.out.println("measure Gini for Peaty = "+measureGini(contingenyTable));
+        System.out.println("measure Chi Squared  for Peaty = "+measureChiSquared(contingenyTable));
+
+
     }
 
     public static double measureInformationGain(int[][] contingencyTable) {
@@ -141,7 +143,6 @@ public class AttributeMeasures {
             for (int j = 0; j < rowTotal.size(); j++) {
                 infGain -= (rowTotal.get(j) / denominator) * Hx.get(j + 1);
             }
-            System.out.println(infGain+" Inf Gain");
         return infGain;
     }
 
@@ -172,8 +173,7 @@ public class AttributeMeasures {
 
         }
 
-        double infGainRatio = infGain / splitInfo;
-        System.out.println(infGainRatio+" inf gain ratio");
+        double infGainRatio = Math.abs(infGain / splitInfo);
         return infGainRatio;
     }
 
@@ -227,7 +227,6 @@ public class AttributeMeasures {
         for (int i = 0; i < rowTotal.size(); i++) {
             gini -= (rowTotal.get(i) / denominator) * P.get(i+1);
         }
-        System.out.println(gini+" Gini");
         return gini;
     }
 
@@ -277,7 +276,6 @@ public class AttributeMeasures {
                 n++;
             }
         }
-        System.out.println(chiSquared+" Chi Squared");
         return chiSquared;
     }
 }
