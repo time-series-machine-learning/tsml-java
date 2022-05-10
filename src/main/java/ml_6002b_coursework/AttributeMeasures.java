@@ -10,26 +10,21 @@ import java.util.List;
  */
 public class AttributeMeasures {
 
-    /**
-     * Main method.
-     *
-     * @param args the options for the attribute measure main
-     */
-
-    public static int[][] transpose(int[][] matrix){
+    public static int[][] transpose(int[][] matrix) {
         int m = matrix.length;
         int n = matrix[0].length;
 
         int[][] transposedMatrix = new int[n][m];
 
-        for(int x = 0; x < n; x++) {
-            for(int y = 0; y < m; y++) {
+        for (int x = 0; x < n; x++) {
+            for (int y = 0; y < m; y++) {
                 transposedMatrix[x][y] = matrix[y][x];
             }
         }
 
         return transposedMatrix;
     }
+
     public static void main(String[] args) {
         /** Table representing 0 as False and 1 as True
          * Islay is represented as 0 and Speyside is represented as 1
@@ -37,12 +32,12 @@ public class AttributeMeasures {
          */
 
         //
-        int [][]contingenyTable = new int[][]{
-                {4,0},
-                {1,5},
+        int[][] contingenyTable = new int[][]{
+                {4, 0},
+                {1, 5},
         };
 
-        int[][] whiskeyData = new int[][]{
+        /*int[][] whiskeyData = new int[][]{
                 {1, 0, 1, 0},
                 {1, 1, 1, 0},
                 {1, 0, 0, 0},
@@ -54,208 +49,235 @@ public class AttributeMeasures {
                 {0, 0, 1, 1},
                 {0, 0, 1, 1},
         };
+        */
         measureInformationGain(contingenyTable);
+        measureInformationGainRatio(contingenyTable);
+        measureGini(contingenyTable);
+        measureChiSquared(contingenyTable);
     }
 
     public static double measureInformationGain(int[][] contingencyTable) {
-        List<Integer> rowTotal = new ArrayList<>();
-        List<Integer> columnTotal = new ArrayList<>();
-        int count;
-        for (int i=0; i<contingencyTable.length; i++) {
+        List<Double> rowTotal = new ArrayList<>();
+        List<Double> columnTotal = new ArrayList<>();
+        double count;
+        for (int i = 0; i < contingencyTable.length; i++) {
             count = 0;
-            for (int j=0;j<contingencyTable[i].length;j++) {
+            for (int j = 0; j < contingencyTable[i].length; j++) {
                 count = count + contingencyTable[i][j];
             }
             rowTotal.add(count);
         }
         contingencyTable = transpose(contingencyTable);
-        for (int i=0; i<transpose(contingencyTable).length; i++) {
+        for (int i = 0; i < transpose(contingencyTable).length; i++) {
             count = 0;
-            for (int j=0;j<contingencyTable[i].length;j++) {
+            for (int j = 0; j < contingencyTable[i].length; j++) {
                 count = count + contingencyTable[i][j];
             }
             columnTotal.add(count);
         }
         contingencyTable = transpose(contingencyTable);
-        System.out.println(rowTotal +"test");
-        System.out.println(columnTotal+"column");
-
-        /
         double len = 0;
-        for (int i=0; i<rowTotal.size();i++){
-            len = len+rowTotal[i];
-        double infGain = 0;
-        int P1TrueCount = 0;
-        int P1FalseCount = 0;
-        int P2TrueCount = 0;
-        int P2FalseCount = 0;
-        int islayCount = 0;
-        for (int i = 0; i < len; i++) {
-            if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 1) {
-                P1TrueCount++;
-            }
-            if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 0) {
-                P1FalseCount++;
-            }
-            if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 1) {
-                P2TrueCount++;
-            }
-            if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 0) {
-                P2FalseCount++;
-            }
-            if (whiskeyData[i][3] == 1) {
-                islayCount++;
-            }
+        for (int i = 0; i < rowTotal.size(); i++) {
+            len = len + rowTotal.get(i);
         }
-        double speysideCount = len - islayCount;
-
-
-        System.out.println(islayCount);
+        double infGain = 0;
 
         double entropy;
-        double Hx1 = 1.0;
-        double Hx2 = 1.0;
+
+        List<Double> chance = new ArrayList<>();
+        double denominator = 0;
+
+        //calculates the total datapoints provided
+        for (int i = 0; i < columnTotal.size(); i++) {
+            denominator += columnTotal.get(i);
+        }
 
         /**Entropy calculation proivided ML Lecture 2, page 25 and 26
          * -(5/10 log (5/10) + 5/10 log(5/10)) = 1
          *
          *Code only works if 2 possible whiskey types - if more are provided will need to adjust "1-islayChance"
          **/
-       /* double islayChance = islayCount / len;
-        double speysideChance = speysideCount / len;*/
+
+        // chance iterates through all the potential outcomes and turns them into fractions based on the total
+        for (int i = 0; i < columnTotal.size(); i++) {
+            if (denominator == 0) {
+                return 1;
+            } else {
+                double temp = columnTotal.get(i) / denominator;
+                chance.add(temp);
+            }
+        }
+
         /** NOTE
          * All logorithms in this class are log base 2 :
          * The conversion is done using the Math.log giving natural log then dividing it by log 2
          */
-     /*   entropy = -(((islayChance) * ((Math.log(islayChance) / Math.log(2)))) +
-                ( (speysideChance) * ( (Math.log(speysideChance) ) / Math.log(2))));
+        entropy = 0;
+        // in test case: -(0.5log(0.5) + 0.5log(0.5) = 1
 
-        double P1Len = P1TrueCount+P1FalseCount;
-        double P2Len = P2TrueCount+P2FalseCount;
+        for (int i = 0; i < columnTotal.size(); i++) {
+            entropy += chance.get(i) * (Math.log(chance.get(i)) / Math.log(2));
+        }
+        entropy = -entropy;
 
-        //Hx1 = ...
-        if(P1TrueCount != 0.0 || P1FalseCount != 0.0) {
-            Hx1 = -(((P1TrueCount / P1Len) * ((Math.log(P1TrueCount / P1Len) / Math.log(2)))) +
-                    ((P1FalseCount / P1Len) * ((Math.log(P1FalseCount / P1Len)) / Math.log(2))));
+        List<Double> Hx = new ArrayList<>();
+        Hx.add(entropy);
+
+        for (int i = 0; i < contingencyTable.length; i++) {
+            double tempHx = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                if (contingencyTable[i][j] == 0.0) {
+                    tempHx = 0.0;
+                } else {
+                    tempHx = tempHx + (contingencyTable[i][j] / rowTotal.get(i)) * ((Math.log(contingencyTable[i][j] / rowTotal.get(i))) / Math.log(2));
+                }
+
+            }
+            tempHx = Math.abs(tempHx);
+            Hx.add(tempHx);
         }
-        //Hx2 = ...
-        if(P2TrueCount != 0.0 || P2FalseCount != 0.0) {
-            Hx2 = -(((P2TrueCount / P2Len) * ((Math.log(P2TrueCount / P2Len) / Math.log(2)))) +
-                    ((P2FalseCount / P2Len) * ((Math.log(P2FalseCount / P2Len)) / Math.log(2))));
-        }
-        infGain = entropy - (((P1Len/(P1Len+P2Len)*Hx1) -((P2Len/(P1Len+P2Len)*Hx2))));
+
+        infGain = Hx.get(0);
+            for (int j = 0; j < rowTotal.size(); j++) {
+                infGain -= (rowTotal.get(j) / denominator) * Hx.get(j + 1);
+            }
+            System.out.println(infGain+" Inf Gain");
         return infGain;
     }
 
-*/
- /*public double measureInformationGainRatio (int[][] whiskeyData){
 
-    double infGain = measureInformationGain(whiskeyData);
+    public static double measureInformationGainRatio(int[][] contingencyTable) {
 
-    int PTrueCount = 0;
-    int PFalseCount = 0;
-    double splitInfo;
-    int dataSize = whiskeyData.length;
+        double infGain = measureInformationGain(contingencyTable);
 
-    for (int i=0; i < dataSize; i++){
-        if (whiskeyData[i][1] == 0) {
-            PFalseCount++;
+        double splitInfo = 0;
+
+        List<Double> rowTotal = new ArrayList<>();
+        double count;
+
+        for (int i = 0; i < contingencyTable.length; i++) {
+            count = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                count = count + contingencyTable[i][j];
+            }
+            rowTotal.add(count);
         }
-        if (whiskeyData[i][1] == 1) {
-            PTrueCount++;
+        //calculates the total datapoints provided
+        double denominator = 0;
+        for (int i = 0; i < rowTotal.size(); i++) {
+            denominator += rowTotal.get(i);
         }
+        for (int i = 0; i < rowTotal.size(); i++) {
+            splitInfo += (rowTotal.get(i) / denominator) * (Math.log(rowTotal.get(i) / denominator) / Math.log(2));
+
+        }
+
+        double infGainRatio = infGain / splitInfo;
+        System.out.println(infGainRatio+" inf gain ratio");
+        return infGainRatio;
     }
-    double PTotal = PTrueCount + PFalseCount;
-    //Split Info calculation:
-     splitInfo = (PTrueCount / (PTotal * (Math.log(PTrueCount / PTotal) / Math.log(2)))) +
-                (PFalseCount / (PTotal * (Math.log(PFalseCount / PTotal) / Math.log(2))));
 
-     double infGainRatio = infGain / splitInfo;
- return infGainRatio;
- }
-
- public static double measureGini (int[][] whiskeyData){
+    public static double measureGini(int[][] contingencyTable) {
         //TODO turn counters into a method
-     int P1TrueCount = 0;
-     int P1FalseCount = 0;
-     int P2TrueCount = 0;
-     int P2FalseCount = 0;
-     int islayCount = 0;
-     double len = whiskeyData.length;
-     for (int i = 0; i < len; i++) {
-         if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 1) {
-             P1TrueCount++;
-         }
-         if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 0) {
-             P1FalseCount++;
-         }
-         if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 1) {
-             P2TrueCount++;
-         }
-         if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 0) {
-             P2FalseCount++;
-         }
-         if (whiskeyData[i][3] == 1) {
-             islayCount++;
-         }
-     }
+        List<Double> rowTotal = new ArrayList<>();
+        List<Double> columnTotal = new ArrayList<>();
+        double count;
+        for (int i = 0; i < contingencyTable.length; i++) {
+            count = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                count = count + contingencyTable[i][j];
+            }
+            rowTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
+        for (int i = 0; i < transpose(contingencyTable).length; i++) {
+            count = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                count = count + contingencyTable[i][j];
+            }
+            columnTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
 
-     double P1Count = P1TrueCount+P1FalseCount;
-     double P2Count = P2TrueCount+P2FalseCount;
-     double speysideCount = len - islayCount;
-     double islayChance = islayCount / len;
-     double speysideChance = speysideCount / len;
+        double len = 0;
+        for (int i = 0; i < rowTotal.size(); i++) {
+            len = len + rowTotal.get(i);
+        }
 
-     double Px = 1 - Math.pow(P1Count, 2) + Math.pow(P2Count, 2);
-     double P1 = 1 - Math.pow(P1TrueCount/P1Count,2) + Math.pow(P1FalseCount/P1Count,2);
-     double P2 = 1 - Math.pow(P2TrueCount/P2Count,2) + Math.pow(P2FalseCount/P2Count,2);
+        double denominator = 0;
+        for (int i = 0; i < columnTotal.size(); i++) {
+            denominator += columnTotal.get(i);
+        }
 
-     double gini = Px - islayChance/P1 - speysideChance/P2;
- return gini;
- }
+        List<Double> P = new ArrayList<>();
+        double tempP = 0;
+        for (int i = 0; i < columnTotal.size(); i++) {
+            tempP += Math.pow(columnTotal.get(i) / denominator, 2);
+        }
+        P.add(1 - tempP);
+        for (int j = 0; j < columnTotal.size(); j++) {
+            tempP = 0;
 
- public static double measureChiSquared (int[][] whiskeyData){
-     //TODO turn counters into a method
-     int P1TrueCount = 0;
-     int P1FalseCount = 0;
-     int P2TrueCount = 0;
-     int P2FalseCount = 0;
-     int islayCount = 0;
-     double len = whiskeyData.length;
-     for (int i = 0; i < len; i++) {
-         if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 1) {
-             P1TrueCount++;
-         }
-         if (whiskeyData[i][0] == 1 && whiskeyData[i][3] == 0) {
-             P1FalseCount++;
-         }
-         if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 1) {
-             P2TrueCount++;
-         }
-         if (whiskeyData[i][0] == 0 && whiskeyData[i][3] == 0) {
-             P2FalseCount++;
-         }
-         if (whiskeyData[i][3] == 1) {
-             islayCount++;
-         }
-     }
-     double speysideCount = len - islayCount;
-     int PTrueCount = P1TrueCount+P2TrueCount;
-     int PFalseCount = P1FalseCount+P2FalseCount;
-
-     double P1TrueExpected = islayCount*(PTrueCount/len);
-     double P1FalseExpected = islayCount*(PFalseCount/len);
-     double P2TrueExpected = speysideCount*(PTrueCount/len);
-     double P2FalseExpected = speysideCount*(PFalseCount/len);
-
-     double chiSquared = (Math.pow((P1TrueCount - P1TrueExpected),2)) +
-             Math.pow((P1FalseCount - P1FalseExpected),2) +
-             Math.pow((P2TrueCount - P2TrueExpected),2 ) +
-             Math.pow((P2FalseCount - P2FalseExpected),2 );
- return chiSquared;
- }
-
-}*/
-
-
+            for (int i = 0; i < rowTotal.size(); i++) {
+                tempP += Math.pow(contingencyTable[j][i] / rowTotal.get(j), 2);
+            }
+            P.add(1 - tempP);
+        }
+        double gini = P.get(0);
+        for (int i = 0; i < rowTotal.size(); i++) {
+            gini -= (rowTotal.get(i) / denominator) * P.get(i+1);
+        }
+        System.out.println(gini+" Gini");
+        return gini;
     }
+
+    public static double measureChiSquared(int[][] contingencyTable) {
+        //TODO turn counters into a method
+        List<Double> rowTotal = new ArrayList<>();
+        List<Double> columnTotal = new ArrayList<>();
+        double count;
+        for (int i = 0; i < contingencyTable.length; i++) {
+            count = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                count = count + contingencyTable[i][j];
+            }
+            rowTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
+        for (int i = 0; i < transpose(contingencyTable).length; i++) {
+            count = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                count = count + contingencyTable[i][j];
+            }
+            columnTotal.add(count);
+        }
+        contingencyTable = transpose(contingencyTable);
+
+        double len = 0;
+        for (int i = 0; i < rowTotal.size(); i++) {
+            len = len + rowTotal.get(i);
+        }
+
+        double denominator = 0;
+        for (int i = 0; i < columnTotal.size(); i++) {
+            denominator += columnTotal.get(i);
+        }
+        List<Double> Expected = new ArrayList<>();
+
+        for (int i = 0; i < contingencyTable.length; i++) {
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                Expected.add(columnTotal.get(j) * ((rowTotal.get(i)) / denominator));
+            }
+        }
+        double chiSquared = 0;
+        int n = 0;
+        for (int i = 0; i < contingencyTable.length; i++) {
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                chiSquared += Math.pow((contingencyTable[i][j] - Expected.get(n)),2) / Expected.get(n);
+                n++;
+            }
+        }
+        System.out.println(chiSquared+" Chi Squared");
+        return chiSquared;
+    }
+}
