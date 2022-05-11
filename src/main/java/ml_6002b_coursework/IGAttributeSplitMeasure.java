@@ -4,6 +4,7 @@ import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.Instance;
 import java.io.FileReader;
+import java.util.Arrays;
 
 
 public class IGAttributeSplitMeasure extends AttributeSplitMeasure {

@@ -34,7 +34,7 @@ public class AttributeMeasures {
          */
 
         //
-        int[][] contingenyTable = new int[][]{
+        int[][] contingencyTable = new int[][]{
                 {4, 0},
                 {1, 5},
         };
@@ -52,10 +52,10 @@ public class AttributeMeasures {
                 {0, 0, 1, 1},
         };
         */
-        System.out.println("measure Information Gain for Peaty = "+measureInformationGain(contingenyTable));
-        System.out.println("measure Information Gain Ratio for Peaty = "+measureInformationGainRatio(contingenyTable));
-        System.out.println("measure Gini for Peaty = "+measureGini(contingenyTable));
-        System.out.println("measure Chi Squared  for Peaty = "+measureChiSquared(contingenyTable));
+        System.out.println("measure Information Gain for Peaty = "+measureInformationGain(contingencyTable));
+        System.out.println("measure Information Gain Ratio for Peaty = "+measureInformationGainRatio(contingencyTable));
+        System.out.println("measure Gini for Peaty = "+measureGini(contingencyTable));
+        System.out.println("measure Chi Squared  for Peaty = "+measureChiSquared(contingencyTable));
 
 
     }

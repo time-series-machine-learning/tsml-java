@@ -38,13 +38,17 @@ public abstract class AttributeSplitMeasure {
         return splitData;
     }
 
-    public Instances[]splitDataOnNumeric(Instances data, Attribute att) {
-        //calculates average value
+    public static double splitValue(Instances data, Attribute att) {
         double meanValue = 0.0;
         for(Instance instance : data) {
-            meanValue +=instance.value(att);
+            meanValue += instance.value(att);
         }
-        meanValue = meanValue / data.size();
+        return meanValue / data.size();
+    }
+
+    public Instances[]splitDataOnNumeric(Instances data, Attribute att) {
+        //calculates average value
+        double meanValue = splitValue(data, att);
 
         Instances[] splitDataNumeric = new Instances[2];
         splitDataNumeric[0] = new Instances(data, data.numInstances());

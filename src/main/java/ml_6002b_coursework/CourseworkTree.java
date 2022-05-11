@@ -18,7 +18,7 @@ public class CourseworkTree extends AbstractClassifier {
             case "infoGainRatio":
                 IGAttributeSplitMeasure igRatioSplitMeasure = new IGAttributeSplitMeasure();
                 igRatioSplitMeasure.setUseGain(true);
-                setAttSplitMeasure((new IGAttributeSplitMeasure()));
+                setAttSplitMeasure(igRatioSplitMeasure);
                 break;
             case "chiSquared":
                 setAttSplitMeasure(new ChiSquaredAttributeSplitMeasure());
@@ -140,6 +140,7 @@ public class CourseworkTree extends AbstractClassifier {
          * Attribute used for splitting, if null the node is a leaf.
          */
         Attribute bestSplit = null;
+        double bestSplitValue = 0;
 
         /**
          * Best gain from the splitting measure if the node is not a leaf.
@@ -178,6 +179,7 @@ public class CourseworkTree extends AbstractClassifier {
 
                 if (gain > bestGain) {
                     bestSplit = data.attribute(i);
+                    bestSplitValue = AttributeSplitMeasure.splitValue(data, bestSplit);
                     bestGain = gain;
                 }
             }
@@ -235,7 +237,14 @@ public class CourseworkTree extends AbstractClassifier {
             if (bestSplit == null) {
                 return leafDistribution;
             } else {
-                return children[(int) inst.value(bestSplit)].distributionForInstance(inst);
+                //System.out.println(bestSplit);
+                int index;
+                if (bestSplit.isNumeric()) {
+                    index = inst.value(bestSplit) < bestSplitValue ? 0 : 1;
+                } else {
+                    index = (int) inst.value(bestSplit);
+                }
+                return children[index].distributionForInstance(inst);
             }
         }
 
