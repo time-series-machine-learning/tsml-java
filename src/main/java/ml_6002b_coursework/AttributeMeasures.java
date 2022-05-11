@@ -2,7 +2,9 @@ package ml_6002b_coursework;
 import scala.tools.nsc.JarRunner;
 
 import java.lang.Math;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,8 +35,8 @@ public class AttributeMeasures {
 
         //
         int[][] contingenyTable = new int[][]{
-                {4, 0,},
-                {1, 5,},
+                {4, 0},
+                {1, 5},
         };
 
         /*int[][] whiskeyData = new int[][]{
@@ -61,28 +63,35 @@ public class AttributeMeasures {
     public static double measureInformationGain(int[][] contingencyTable) {
         List<Double> rowTotal = new ArrayList<>();
         List<Double> columnTotal = new ArrayList<>();
-        System.out.println("contTabLen"+contingencyTable.length);
+        //System.out.println("contTabLen" + contingencyTable.length);
 
         double count;
         for (int i = 0; i < contingencyTable.length; i++) {
             count = 0;
-            System.out.println("bruh1");
             for (int j = 0; j < contingencyTable[i].length; j++) {
 
                 count = count + contingencyTable[i][j];
             }
             rowTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
-        for (int i = 0; i < transpose(contingencyTable).length; i++) {
+
+
+        int[][] transposedContingencyTable;
+        transposedContingencyTable = transpose(contingencyTable);
+        for (int i = 0; i < transposedContingencyTable.length; i++) {
+            //System.out.println("row number "+i);
             count = 0;
-            System.out.println(contingencyTable.length+" column");
-            for (int j = 0; j < contingencyTable[i].length; j++) {
-                count = count + contingencyTable[i][j];
+            for (int j = 0; j < transposedContingencyTable[i].length; j++) {
+//                System.out.println("col number "+j);
+                count = count + transposedContingencyTable[i][j];
             }
             columnTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
+        //System.out.println("after" +Arrays.deepToString(transposedContingencyTable));
+        //contingencyTable = transpose(contingencyTable);
+
+
+
         double len = 0;
         for (int i = 0; i < rowTotal.size(); i++) {
             len = len + rowTotal.get(i);
@@ -152,6 +161,7 @@ public class AttributeMeasures {
     }
 
 
+
     public static double measureInformationGainRatio(int[][] contingencyTable) {
 
         double infGain = measureInformationGain(contingencyTable);
@@ -194,15 +204,17 @@ public class AttributeMeasures {
             }
             rowTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
-        for (int i = 0; i < transpose(contingencyTable).length; i++) {
+        int[][] transposedContingencyTable;
+        transposedContingencyTable = transpose(contingencyTable);
+        //contingencyTable = transpose(contingencyTable);
+        for (int i = 0; i < transposedContingencyTable.length; i++) {
             count = 0;
-            for (int j = 0; j < contingencyTable[i].length; j++) {
-                count = count + contingencyTable[i][j];
+            for (int j = 0; j < transposedContingencyTable[i].length; j++) {
+                count = count + transposedContingencyTable[i][j];
             }
             columnTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
+        //contingencyTable = transpose(contingencyTable);
 
         double len = 0;
         for (int i = 0; i < rowTotal.size(); i++) {
@@ -220,11 +232,16 @@ public class AttributeMeasures {
             tempP += Math.pow(columnTotal.get(i) / denominator, 2);
         }
         P.add(1 - tempP);
-        for (int j = 0; j < columnTotal.size(); j++) {
+        //System.out.println(Arrays.deepToString(contingencyTable));
+        int [][] tempCt = contingencyTable;
+        for (int i = 0; i < tempCt.length; i++) {
+            //System.out.println("column size "+columnTotal.size());
             tempP = 0;
-
-            for (int i = 0; i < rowTotal.size(); i++) {
-                tempP += Math.pow(contingencyTable[j][i] / rowTotal.get(j), 2);
+            for (int j = 0; j < tempCt[i].length; j++) {
+                //System.out.println("row size "+rowTotal.size());
+                //System.out.println(Arrays.deepToString(tempCt));
+                //System.out.println("i"+i+" j"+j);
+                tempP += Math.pow(tempCt[i][j] / rowTotal.get(i), 2);
             }
             P.add(1 - tempP);
         }
@@ -247,15 +264,17 @@ public class AttributeMeasures {
             }
             rowTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
-        for (int i = 0; i < transpose(contingencyTable).length; i++) {
+        int[][] transposedContingencyTable;
+        transposedContingencyTable = transpose(contingencyTable);
+        //contingencyTable = transpose(contingencyTable);
+        for (int i = 0; i < transposedContingencyTable.length; i++) {
             count = 0;
-            for (int j = 0; j < contingencyTable[i].length; j++) {
-                count = count + contingencyTable[i][j];
+            for (int j = 0; j < transposedContingencyTable[i].length; j++) {
+                count = count + transposedContingencyTable[i][j];
             }
             columnTotal.add(count);
         }
-        contingencyTable = transpose(contingencyTable);
+        //contingencyTable = transpose(contingencyTable);
 
         double len = 0;
         for (int i = 0; i < rowTotal.size(); i++) {

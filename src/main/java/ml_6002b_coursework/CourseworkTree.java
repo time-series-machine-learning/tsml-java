@@ -10,7 +10,6 @@ import java.util.Arrays;
  * A basic decision tree classifier for use in machine learning coursework (6002B).
  */
 public class CourseworkTree extends AbstractClassifier {
-
     public void setOptions(String options) throws Exception {
         switch (options) {
             case "infoGain":
@@ -303,10 +302,10 @@ public class CourseworkTree extends AbstractClassifier {
 
             //TODO Randomise data for test and training - 75-25 split
             data.randomize(new java.util.Random(0));
-            int train = (int) (data.numInstances() * 0.75);
-            int test = (int) (data.numInstances() * 0.25);
-            Instances trainData = new Instances(data, 0, train);
-            Instances testData = new Instances(data, train, test);
+            //double train = (data.numInstances() * 0.75);
+            //double test = (data.numInstances() * 0.25);
+            Instances trainData = new Instances(data, 0, (int) (data.numInstances() * 0.75));
+            Instances testData = new Instances(data, (int) (data.numInstances() * 0.75), (int) (data.numInstances() * 0.25));
 
             CourseworkTree informationGainTree = new CourseworkTree();
             informationGainTree.setOptions("infoGain");
@@ -319,7 +318,7 @@ public class CourseworkTree extends AbstractClassifier {
             CourseworkTree giniTree = new CourseworkTree();
             giniTree.setOptions("gini");
             giniTree.buildClassifier(trainData);
-
+//
             CourseworkTree chiSquaredTree = new CourseworkTree();
             chiSquaredTree.setOptions("chiSquared");
             chiSquaredTree.buildClassifier(trainData);

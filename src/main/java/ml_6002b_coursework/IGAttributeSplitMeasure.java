@@ -31,8 +31,8 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
         }else{
 
             int[][] contingencyTable = new int[value][count];
-            System.out.println(value);
-            System.out.println(count);
+            //System.out.println(value);
+            //System.out.println(count);
 
             for (Instance instance : data){
                 int attributeValue = (int) instance.value(att);
