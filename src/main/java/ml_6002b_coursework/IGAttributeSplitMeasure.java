@@ -13,19 +13,34 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
     public double computeAttributeQuality(Instances data, Attribute att) throws Exception {
         int count = data.numClasses();
         int value = att.numValues();
-        int[][] contingencyTable = new int[value][count];
 
-        Instances[] splitData = splitData(data,att);
+        if(att.isNumeric()){
+            Instances[] splitData = splitDataNumeric(data,att);
+            int[][] contingencyTable = new int[2][count];
+            for (int i=0; i<2;i++){
+                for(Instance instance:splitData[i]){
+                    value = (int)instance.classValue();
+                    contingencyTable[i][value]++;
+                }
+            }
+            if (useGain){
+                return AttributeMeasures.measureInformationGainRatio(contingencyTable);
+            } else {
+                return AttributeMeasures.measureInformationGain(contingencyTable);
+            }
+        }else{
 
-        for (Instance instance : data){
-            int attributeValue = (int) instance.value(att);
-            int classValue = (int) instance.classValue();
-            contingencyTable[attributeValue][classValue]++;
-        }
-        if (useGain){
-            return AttributeMeasures.measureInformationGainRatio(contingencyTable);
-        } else {
-            return AttributeMeasures.measureInformationGain(contingencyTable);
+            int[][] contingencyTable = new int[value][count];
+            for (Instance instance : data){
+                int attributeValue = (int) instance.value(att);
+                int classValue = (int) instance.classValue();
+                contingencyTable[attributeValue][classValue]++;
+            }
+            if (useGain){
+                return AttributeMeasures.measureInformationGainRatio(contingencyTable);
+            } else {
+                return AttributeMeasures.measureInformationGain(contingencyTable);
+            }
         }
     }
 

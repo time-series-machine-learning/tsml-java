@@ -68,6 +68,7 @@ public class CourseworkTree extends AbstractClassifier {
         result.disableAll();
 
         // attributes
+        result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
         result.enable(Capabilities.Capability.NOMINAL_ATTRIBUTES);
 
         // class
@@ -168,7 +169,12 @@ public class CourseworkTree extends AbstractClassifier {
 
             // If we found an attribute to split on, create child nodes.
             if (bestSplit != null) {
-                Instances[] split = attSplitMeasure.splitData(data, bestSplit);
+                Instances[] split;
+                if(bestSplit.isNumeric()){
+                    split=attSplitMeasure.splitDataNumeric(data,bestSplit);
+                } else {
+                    split = attSplitMeasure.splitData(data, bestSplit);
+                }
                 children = new TreeNode[split.length];
 
                 // Create a child for each value in the selected attribute, and determine whether it is a leaf or not.
@@ -271,10 +277,15 @@ public class CourseworkTree extends AbstractClassifier {
         String[] files = {
                 "./src/main/java/ml_6002b_coursework/test_data/Whisky.arff"
         };
-        for (String file:files){
+
+
+        for (String file:files) {
             FileReader reader = new FileReader(file);
             Instances data = new Instances(reader);
-            data.setClassIndex(data.numAttributes()-1);
+            data.setClassIndex(data.numAttributes() - 1);
+
+            //TODO Randomise data for test and training - 75-25 split
+
 
             CourseworkTree informationGainTree = new CourseworkTree();
             informationGainTree.setOptions("infoGain");
@@ -288,7 +299,14 @@ public class CourseworkTree extends AbstractClassifier {
 
             CourseworkTree chiSquaredTree = new CourseworkTree();
             chiSquaredTree.setOptions("chiSquared");
-        }
 
+
+            int igCorrect = 0;
+            int igrCorrect = 0;
+            int chiSquaredCorrect = 0;
+            int giniCorrect = 0;
+            //todo add classifyInstance to each and check if prediction = instance.classValue for each
+
+        }
     }
 }
