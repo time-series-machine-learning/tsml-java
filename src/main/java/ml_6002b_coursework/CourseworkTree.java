@@ -11,8 +11,8 @@ import java.util.Arrays;
  */
 public class CourseworkTree extends AbstractClassifier {
 
-    public void setOptions(String options) throws Exception{
-        switch(options) {
+    public void setOptions(String options) throws Exception {
+        switch (options) {
             case "infoGain":
                 setAttSplitMeasure(new IGAttributeSplitMeasure());
                 break;
@@ -30,13 +30,19 @@ public class CourseworkTree extends AbstractClassifier {
         }
     }
 
-    /** Measure to use when selecting an attribute to split the data with. */
+    /**
+     * Measure to use when selecting an attribute to split the data with.
+     */
     private AttributeSplitMeasure attSplitMeasure = new IGAttributeSplitMeasure();
 
-    /** Maxiumum depth for the tree. */
+    /**
+     * Maxiumum depth for the tree.
+     */
     private int maxDepth = Integer.MAX_VALUE;
 
-    /** The root node of the tree. */
+    /**
+     * The root node of the tree.
+     */
     private TreeNode root;
 
     /**
@@ -53,7 +59,7 @@ public class CourseworkTree extends AbstractClassifier {
      *
      * @param maxDepth the max depth
      */
-    public void setMaxDepth(int maxDepth){
+    public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
 
@@ -131,19 +137,29 @@ public class CourseworkTree extends AbstractClassifier {
      */
     private class TreeNode {
 
-        /** Attribute used for splitting, if null the node is a leaf. */
+        /**
+         * Attribute used for splitting, if null the node is a leaf.
+         */
         Attribute bestSplit = null;
 
-        /** Best gain from the splitting measure if the node is not a leaf. */
+        /**
+         * Best gain from the splitting measure if the node is not a leaf.
+         */
         double bestGain = 0;
 
-        /** Depth of the node in the tree. */
+        /**
+         * Depth of the node in the tree.
+         */
         int depth;
 
-        /** The node's children if it is not a leaf. */
+        /**
+         * The node's children if it is not a leaf.
+         */
         TreeNode[] children;
 
-        /** The class distribution if the node is a leaf. */
+        /**
+         * The class distribution if the node is a leaf.
+         */
         double[] leafDistribution;
 
         /**
@@ -151,7 +167,7 @@ public class CourseworkTree extends AbstractClassifier {
          * Builds a single tree node, finding the best attribute to split on using a splitting measure.
          * Splits the best attribute into multiple child tree node's if they can be made, else creates a leaf node.
          *
-         * @param data Instances to build the tree node with
+         * @param data  Instances to build the tree node with
          * @param depth the depth of the node in the tree
          */
         void buildTree(Instances data, int depth) throws Exception {
@@ -170,15 +186,15 @@ public class CourseworkTree extends AbstractClassifier {
             // If we found an attribute to split on, create child nodes.
             if (bestSplit != null) {
                 Instances[] split;
-                if(bestSplit.isNumeric()){
-                    split=attSplitMeasure.splitDataNumeric(data,bestSplit);
+                if (bestSplit.isNumeric()) {
+                    split = attSplitMeasure.splitDataOnNumeric(data, bestSplit);
                 } else {
                     split = attSplitMeasure.splitData(data, bestSplit);
                 }
                 children = new TreeNode[split.length];
 
                 // Create a child for each value in the selected attribute, and determine whether it is a leaf or not.
-                for (int i = 0; i < children.length; i++){
+                for (int i = 0; i < children.length; i++) {
                     children[i] = new TreeNode();
 
                     boolean leaf = split[i].numDistinctValues(data.classIndex()) == 1 || depth + 1 == maxDepth;
@@ -191,7 +207,7 @@ public class CourseworkTree extends AbstractClassifier {
                         children[i].buildTree(split[i], depth + 1);
                     }
                 }
-            // Else turn this node into a leaf node.
+                // Else turn this node into a leaf node.
             } else {
                 leafDistribution = classDistribution(data);
             }
@@ -201,7 +217,7 @@ public class CourseworkTree extends AbstractClassifier {
          * Builds a leaf node for the tree, setting the depth and recording the class distribution of the remaining
          * instances.
          *
-         * @param data remaining Instances to build the leafs class distribution
+         * @param data  remaining Instances to build the leafs class distribution
          * @param depth the depth of the node in the tree
          */
         void buildLeaf(Instances data, int depth) {
@@ -236,11 +252,11 @@ public class CourseworkTree extends AbstractClassifier {
             }
 
             double sum = 0;
-            for (double d : distribution){
+            for (double d : distribution) {
                 sum += d;
             }
 
-            if (sum != 0){
+            if (sum != 0) {
                 for (int i = 0; i < distribution.length; i++) {
                     distribution[i] = distribution[i] / sum;
                 }
@@ -257,7 +273,7 @@ public class CourseworkTree extends AbstractClassifier {
         @Override
         public String toString() {
             String str;
-            if (bestSplit == null){
+            if (bestSplit == null) {
                 str = "Leaf," + Arrays.toString(leafDistribution) + "," + depth;
             } else {
                 str = bestSplit.name() + "," + bestGain + "," + depth;
@@ -275,38 +291,66 @@ public class CourseworkTree extends AbstractClassifier {
      */
     public static void main(String[] args) throws Exception {
         String[] files = {
-                "./src/main/java/ml_6002b_coursework/test_data/Whisky.arff"
+                "./src/main/java/ml_6002b_coursework/test_data/optdigits.arff",
+                "./src/main/java/ml_6002b_coursework/test_data/Chinatown.arff"
         };
 
 
-        for (String file:files) {
+        for (String file : files) {
             FileReader reader = new FileReader(file);
             Instances data = new Instances(reader);
             data.setClassIndex(data.numAttributes() - 1);
 
             //TODO Randomise data for test and training - 75-25 split
-
+            data.randomize(new java.util.Random(0));
+            int train = (int) (data.numInstances() * 0.75);
+            int test = (int) (data.numInstances() * 0.25);
+            Instances trainData = new Instances(data, 0, train);
+            Instances testData = new Instances(data, train, test);
 
             CourseworkTree informationGainTree = new CourseworkTree();
             informationGainTree.setOptions("infoGain");
-
+            informationGainTree.buildClassifier(trainData);
 
             CourseworkTree informationGainRatioTree = new CourseworkTree();
             informationGainRatioTree.setOptions("infoGainRatio");
+            informationGainRatioTree.buildClassifier(trainData);
 
             CourseworkTree giniTree = new CourseworkTree();
             giniTree.setOptions("gini");
+            giniTree.buildClassifier(trainData);
 
             CourseworkTree chiSquaredTree = new CourseworkTree();
             chiSquaredTree.setOptions("chiSquared");
-
+            chiSquaredTree.buildClassifier(trainData);
 
             int igCorrect = 0;
             int igrCorrect = 0;
             int chiSquaredCorrect = 0;
             int giniCorrect = 0;
             //todo add classifyInstance to each and check if prediction = instance.classValue for each
-
+            for (Instance instance : testData) {
+                if (informationGainTree.classifyInstance(instance) == instance.classValue()) {
+                    igCorrect++;
+                }
+                if (informationGainRatioTree.classifyInstance(instance) == instance.classValue()) {
+                    igrCorrect++;
+                }
+                if (giniTree.classifyInstance(instance) == instance.classValue()) {
+                    giniCorrect++;
+                }
+                if (chiSquaredTree.classifyInstance(instance) == instance.classValue()) {
+                    chiSquaredCorrect++;
+                }
+            }
+            double igAccuracy = ((double)igCorrect / (double)testData.numInstances())*100;
+            double igrAccuracy = ((double)igrCorrect / (double)testData.numInstances())*100;
+            double giniAccuracy = ((double)giniCorrect / (double)testData.numInstances())*100;
+            double chiSquaredAccuracy = ((double)chiSquaredCorrect / (double)testData.numInstances())*100;
+            System.out.println("DT using measure Information Gain on "+data.relationName()+" problem has test accuracy = "+igAccuracy);
+            System.out.println("DT using measure Information Gain Ratio on "+data.relationName()+" problem has test accuracy = "+igrAccuracy);
+            System.out.println("DT using measure Gini on "+data.relationName()+" problem has test accuracy = "+giniAccuracy);
+            System.out.println("DT using measure Chi Squared on "+data.relationName()+" problem has test accuracy = "+chiSquaredAccuracy);
         }
     }
 }

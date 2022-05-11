@@ -33,8 +33,8 @@ public class AttributeMeasures {
 
         //
         int[][] contingenyTable = new int[][]{
-                {4, 0},
-                {1, 5},
+                {4, 0,},
+                {1, 5,},
         };
 
         /*int[][] whiskeyData = new int[][]{
@@ -61,10 +61,14 @@ public class AttributeMeasures {
     public static double measureInformationGain(int[][] contingencyTable) {
         List<Double> rowTotal = new ArrayList<>();
         List<Double> columnTotal = new ArrayList<>();
+        System.out.println("contTabLen"+contingencyTable.length);
+
         double count;
         for (int i = 0; i < contingencyTable.length; i++) {
             count = 0;
+            System.out.println("bruh1");
             for (int j = 0; j < contingencyTable[i].length; j++) {
+
                 count = count + contingencyTable[i][j];
             }
             rowTotal.add(count);
@@ -72,6 +76,7 @@ public class AttributeMeasures {
         contingencyTable = transpose(contingencyTable);
         for (int i = 0; i < transpose(contingencyTable).length; i++) {
             count = 0;
+            System.out.println(contingencyTable.length+" column");
             for (int j = 0; j < contingencyTable[i].length; j++) {
                 count = count + contingencyTable[i][j];
             }

@@ -15,7 +15,7 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
         int value = att.numValues();
 
         if(att.isNumeric()){
-            Instances[] splitData = splitDataNumeric(data,att);
+            Instances[] splitData = splitDataOnNumeric(data,att);
             int[][] contingencyTable = new int[2][count];
             for (int i=0; i<2;i++){
                 for(Instance instance:splitData[i]){
@@ -31,6 +31,9 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
         }else{
 
             int[][] contingencyTable = new int[value][count];
+            System.out.println(value);
+            System.out.println(count);
+
             for (Instance instance : data){
                 int attributeValue = (int) instance.value(att);
                 int classValue = (int) instance.classValue();
