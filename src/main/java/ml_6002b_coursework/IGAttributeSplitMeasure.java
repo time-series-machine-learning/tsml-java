@@ -16,6 +16,7 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
 
         if(att.isNumeric()){
             Instances[] splitData = splitDataOnNumeric(data,att);
+            //TODO make dynamic - cant be 2 u dumb
             int[][] contingencyTable = new int[2][count];
             for (int i=0; i<2;i++){
                 for(Instance instance:splitData[i]){

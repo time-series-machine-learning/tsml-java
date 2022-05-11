@@ -253,7 +253,6 @@ public class AttributeMeasures {
     }
 
     public static double measureChiSquared(int[][] contingencyTable) {
-        //TODO turn counters into a method
         List<Double> rowTotal = new ArrayList<>();
         List<Double> columnTotal = new ArrayList<>();
         double count;
