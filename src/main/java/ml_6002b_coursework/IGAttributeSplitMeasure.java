@@ -10,14 +10,22 @@ import java.util.Arrays;
 public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
 
     private boolean useGain = false;
+
+    /**
+     * Checks quality of data for Information Gain
+     * Checks whether numeric or nominal - if numeric perform numeric split
+     * Creates contingency table based on data
+     * @param data
+     * @param att
+     * @return Information Gain or Information Gain Ratio based upon setUseGain
+     */
     @Override
-    public double computeAttributeQuality(Instances data, Attribute att) throws Exception {
+    public double computeAttributeQuality(Instances data, Attribute att){
         int count = data.numClasses();
         int value = att.numValues();
 
         if(att.isNumeric()){
             Instances[] splitData = splitDataOnNumeric(data,att);
-            //TODO make dynamic - cant be 2 u dumb
             int[][] contingencyTable = new int[2][count];
             for (int i=0; i<2;i++){
                 for(Instance instance:splitData[i]){
@@ -31,10 +39,7 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
                 return AttributeMeasures.measureInformationGain(contingencyTable);
             }
         }else{
-
             int[][] contingencyTable = new int[value][count];
-            //System.out.println(value);
-            //System.out.println(count);
 
             for (Instance instance : data){
                 int attributeValue = (int) instance.value(att);
@@ -53,6 +58,9 @@ public class IGAttributeSplitMeasure extends AttributeSplitMeasure {
         this.useGain = useGain;
     }
     public static void main(String[] args){
+        /**
+         * test harness for all different split possibilities
+         */
         try{
             FileReader reader = new FileReader("./src/main/java/ml_6002b_coursework/test_data/Whisky.arff");
             Instances data = new Instances(reader);

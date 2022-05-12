@@ -28,30 +28,14 @@ public class AttributeMeasures {
     }
 
     public static void main(String[] args) {
-        /** Table representing 0 as False and 1 as True
-         * Islay is represented as 0 and Speyside is represented as 1
-         * This will only work if 2 whiskey regions are used
+        /**
+         * Test harness for AttributeMeasures methods
          */
-
-        //
         int[][] contingencyTable = new int[][]{
                 {4, 0},
                 {1, 5},
         };
 
-        /*int[][] whiskeyData = new int[][]{
-                {1, 0, 1, 0},
-                {1, 1, 1, 0},
-                {1, 0, 0, 0},
-                {1, 0, 0, 0},
-                {0, 1, 0, 0},
-                {0, 1, 1, 1},
-                {0, 1, 1, 1},
-                {0, 1, 1, 1},
-                {0, 0, 1, 1},
-                {0, 0, 1, 1},
-        };
-        */
         System.out.println("measure Information Gain for Peaty = "+measureInformationGain(contingencyTable));
         System.out.println("measure Information Gain Ratio for Peaty = "+measureInformationGainRatio(contingencyTable));
         System.out.println("measure Gini for Peaty = "+measureGini(contingencyTable));
@@ -60,18 +44,23 @@ public class AttributeMeasures {
 
     }
 
+    /**
+     * Measures information gain of a contingency table
+     * @param contingencyTable
+     * @return Information Gain
+     */
     public static double measureInformationGain(int[][] contingencyTable) {
         List<Double> rowTotal = new ArrayList<>();
         List<Double> columnTotal = new ArrayList<>();
-        //System.out.println("contTabLen" + contingencyTable.length);
 
         double count;
         for (int i = 0; i < contingencyTable.length; i++) {
             count = 0;
-            for (int j = 0; j < contingencyTable[i].length; j++) {
 
+            for (int j = 0; j < contingencyTable[i].length; j++) {
                 count = count + contingencyTable[i][j];
             }
+
             rowTotal.add(count);
         }
 
@@ -79,16 +68,15 @@ public class AttributeMeasures {
         int[][] transposedContingencyTable;
         transposedContingencyTable = transpose(contingencyTable);
         for (int i = 0; i < transposedContingencyTable.length; i++) {
-            //System.out.println("row number "+i);
             count = 0;
+
             for (int j = 0; j < transposedContingencyTable[i].length; j++) {
-//                System.out.println("col number "+j);
                 count = count + transposedContingencyTable[i][j];
             }
+
             columnTotal.add(count);
         }
-        //System.out.println("after" +Arrays.deepToString(transposedContingencyTable));
-        //contingencyTable = transpose(contingencyTable);
+
 
 
 
@@ -96,10 +84,9 @@ public class AttributeMeasures {
         for (int i = 0; i < rowTotal.size(); i++) {
             len = len + rowTotal.get(i);
         }
+
         double infGain = 0;
-
         double entropy;
-
         List<Double> chance = new ArrayList<>();
         double denominator = 0;
 
@@ -108,13 +95,13 @@ public class AttributeMeasures {
             denominator += columnTotal.get(i);
         }
 
-        /**Entropy calculation proivided ML Lecture 2, page 25 and 26
-         * -(5/10 log (5/10) + 5/10 log(5/10)) = 1
-         *
-         *Code only works if 2 possible whiskey types - if more are provided will need to adjust "1-islayChance"
+        /**
+         * Entropy calculation proivided ML Lecture 2, page 25 and 26
          **/
 
-        // chance iterates through all the potential outcomes and turns them into fractions based on the total
+        /**
+         * chance iterates through all the potential outcomes and turns them into fractions based on the total
+         */
         for (int i = 0; i < columnTotal.size(); i++) {
             if (denominator == 0) {
                 return 1;
@@ -129,8 +116,10 @@ public class AttributeMeasures {
          * The conversion is done using the Math.log giving natural log then dividing it by log 2
          */
         entropy = 0;
-        // in test case: -(0.5log(0.5) + 0.5log(0.5) = 1
 
+        /**
+         * in test case: -(0.5log(0.5) + 0.5log(0.5) = 1
+         */
         for (int i = 0; i < columnTotal.size(); i++) {
             entropy += chance.get(i) * (Math.log(chance.get(i)) / Math.log(2));
         }
@@ -161,7 +150,14 @@ public class AttributeMeasures {
     }
 
 
-
+    /**
+     * Measures information gain ratio of a continggency table
+     * takes information gain
+     * Calculates split info
+     * Calculates information gain ratio
+     * @param contingencyTable
+     * @return Information Gain Ratio
+     */
     public static double measureInformationGainRatio(int[][] contingencyTable) {
 
         double infGain = measureInformationGain(contingencyTable);
@@ -178,7 +174,9 @@ public class AttributeMeasures {
             }
             rowTotal.add(count);
         }
-        //calculates the total datapoints provided
+        /**
+         * calculates the total datapoints provided
+         */
         double denominator = 0;
         for (int i = 0; i < rowTotal.size(); i++) {
             denominator += rowTotal.get(i);
@@ -192,6 +190,14 @@ public class AttributeMeasures {
         return infGainRatio;
     }
 
+    /**
+     * measures the gini value of a contingency table
+     * Finds row and column totals
+     * Finds length and denominator
+     * Performs gini algorithm
+     * @param contingencyTable
+     * @return gini
+     */
     public static double measureGini(int[][] contingencyTable) {
         //TODO turn counters into a method
         List<Double> rowTotal = new ArrayList<>();
@@ -206,7 +212,6 @@ public class AttributeMeasures {
         }
         int[][] transposedContingencyTable;
         transposedContingencyTable = transpose(contingencyTable);
-        //contingencyTable = transpose(contingencyTable);
         for (int i = 0; i < transposedContingencyTable.length; i++) {
             count = 0;
             for (int j = 0; j < transposedContingencyTable[i].length; j++) {
@@ -214,7 +219,6 @@ public class AttributeMeasures {
             }
             columnTotal.add(count);
         }
-        //contingencyTable = transpose(contingencyTable);
 
         double len = 0;
         for (int i = 0; i < rowTotal.size(); i++) {
@@ -226,32 +230,35 @@ public class AttributeMeasures {
             denominator += columnTotal.get(i);
         }
 
-        List<Double> P = new ArrayList<>();
-        double tempP = 0;
+        List<Double> impurity = new ArrayList<>();
+        double tempImpurity = 0;
         for (int i = 0; i < columnTotal.size(); i++) {
-            tempP += Math.pow(columnTotal.get(i) / denominator, 2);
+            tempImpurity += Math.pow(columnTotal.get(i) / denominator, 2);
         }
-        P.add(1 - tempP);
-        //System.out.println(Arrays.deepToString(contingencyTable));
-        int [][] tempCt = contingencyTable;
-        for (int i = 0; i < tempCt.length; i++) {
-            //System.out.println("column size "+columnTotal.size());
-            tempP = 0;
-            for (int j = 0; j < tempCt[i].length; j++) {
-                //System.out.println("row size "+rowTotal.size());
-                //System.out.println(Arrays.deepToString(tempCt));
-                //System.out.println("i"+i+" j"+j);
-                tempP += Math.pow(tempCt[i][j] / rowTotal.get(i), 2);
+        impurity.add(1 - tempImpurity);
+        for (int i = 0; i < contingencyTable.length; i++) {
+            tempImpurity = 0;
+            for (int j = 0; j < contingencyTable[i].length; j++) {
+                tempImpurity += Math.pow(contingencyTable[i][j] / rowTotal.get(i), 2);
             }
-            P.add(1 - tempP);
+            impurity.add(1 - tempImpurity);
         }
-        double gini = P.get(0);
+        double gini = impurity.get(0);
         for (int i = 0; i < rowTotal.size(); i++) {
-            gini -= (rowTotal.get(i) / denominator) * P.get(i+1);
+            gini -= (rowTotal.get(i) / denominator) * impurity.get(i+1);
         }
         return gini;
     }
 
+    /**
+     * measures the Chi squared value of a contingency table
+     * Finds row and column totals
+     * Finds length and denominator
+     * calculates estimated values
+     * performs Chi Squared algorithm
+     * @param contingencyTable
+     * @return Chi Squared
+     */
     public static double measureChiSquared(int[][] contingencyTable) {
         List<Double> rowTotal = new ArrayList<>();
         List<Double> columnTotal = new ArrayList<>();
@@ -265,7 +272,6 @@ public class AttributeMeasures {
         }
         int[][] transposedContingencyTable;
         transposedContingencyTable = transpose(contingencyTable);
-        //contingencyTable = transpose(contingencyTable);
         for (int i = 0; i < transposedContingencyTable.length; i++) {
             count = 0;
             for (int j = 0; j < transposedContingencyTable[i].length; j++) {
@@ -273,7 +279,6 @@ public class AttributeMeasures {
             }
             columnTotal.add(count);
         }
-        //contingencyTable = transpose(contingencyTable);
 
         double len = 0;
         for (int i = 0; i < rowTotal.size(); i++) {

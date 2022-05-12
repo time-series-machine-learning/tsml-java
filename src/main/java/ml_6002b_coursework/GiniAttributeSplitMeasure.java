@@ -6,6 +6,14 @@ import java.io.FileReader;
 
 public class GiniAttributeSplitMeasure extends AttributeSplitMeasure {
 
+    /**
+     * Checks quality of data for Gini
+     * Checks whether numeric or nominal - if numeric perform numeric split
+     * Creates contingency table based on data
+     * @param data
+     * @param att
+     * @return Information Gain or Information Gain Ratio based upon setUseGain
+     */
     @Override
     public double computeAttributeQuality(Instances data, Attribute att) throws Exception {
         int count = data.numClasses();
@@ -33,6 +41,9 @@ public class GiniAttributeSplitMeasure extends AttributeSplitMeasure {
 
     }
 
+    /**
+     * test harness for all different split possibilities
+     */
     public static void main(String[] args){
         try {
             FileReader reader = new FileReader("./src/main/java/ml_6002b_coursework/test_data/Whisky.arff");

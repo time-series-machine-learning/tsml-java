@@ -294,7 +294,9 @@ public class CourseworkTree extends AbstractClassifier {
 
     /**
      * Main method.
-     *
+     * Randomises training and testing data to pass through the 4 algorithms
+     * Calculates the number of correct classifications
+     * Calculates final test accuracy
      * @param args the options for the classifier main
      */
     public static void main(String[] args) throws Exception {
@@ -309,25 +311,26 @@ public class CourseworkTree extends AbstractClassifier {
             Instances data = new Instances(reader);
             data.setClassIndex(data.numAttributes() - 1);
 
-            //TODO Randomise data for test and training - 75-25 split
             data.randomize(new java.util.Random(0));
-            //double train = (data.numInstances() * 0.75);
-            //double test = (data.numInstances() * 0.25);
             Instances trainData = new Instances(data, 0, (int) (data.numInstances() * 0.75));
             Instances testData = new Instances(data, (int) (data.numInstances() * 0.75), (int) (data.numInstances() * 0.25));
 
+            //Information Gain
             CourseworkTree informationGainTree = new CourseworkTree();
             informationGainTree.setOptions("infoGain");
             informationGainTree.buildClassifier(trainData);
 
+            //Information Gain Ratio
             CourseworkTree informationGainRatioTree = new CourseworkTree();
             informationGainRatioTree.setOptions("infoGainRatio");
             informationGainRatioTree.buildClassifier(trainData);
 
+            //Gini
             CourseworkTree giniTree = new CourseworkTree();
             giniTree.setOptions("gini");
             giniTree.buildClassifier(trainData);
-//
+
+            //Chi Squared
             CourseworkTree chiSquaredTree = new CourseworkTree();
             chiSquaredTree.setOptions("chiSquared");
             chiSquaredTree.buildClassifier(trainData);
@@ -336,7 +339,7 @@ public class CourseworkTree extends AbstractClassifier {
             int igrCorrect = 0;
             int chiSquaredCorrect = 0;
             int giniCorrect = 0;
-            //todo add classifyInstance to each and check if prediction = instance.classValue for each
+
             for (Instance instance : testData) {
                 if (informationGainTree.classifyInstance(instance) == instance.classValue()) {
                     igCorrect++;
@@ -355,6 +358,7 @@ public class CourseworkTree extends AbstractClassifier {
             double igrAccuracy = ((double)igrCorrect / (double)testData.numInstances())*100;
             double giniAccuracy = ((double)giniCorrect / (double)testData.numInstances())*100;
             double chiSquaredAccuracy = ((double)chiSquaredCorrect / (double)testData.numInstances())*100;
+
             System.out.println("DT using measure Information Gain on "+data.relationName()+" problem has test accuracy = "+igAccuracy);
             System.out.println("DT using measure Information Gain Ratio on "+data.relationName()+" problem has test accuracy = "+igrAccuracy);
             System.out.println("DT using measure Gini on "+data.relationName()+" problem has test accuracy = "+giniAccuracy);

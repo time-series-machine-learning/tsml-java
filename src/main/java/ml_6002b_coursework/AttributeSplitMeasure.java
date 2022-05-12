@@ -4,8 +4,6 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.Enumeration;
-
 /**
  * Interface for alternative attribute split measures for Part 2.2 of the coursework
  */
@@ -38,6 +36,12 @@ public abstract class AttributeSplitMeasure {
         return splitData;
     }
 
+    /**
+     * Calculates the mean value of data
+     * @param data
+     * @param att
+     * @return mean
+     */
     public static double splitValue(Instances data, Attribute att) {
         double meanValue = 0.0;
         for(Instance instance : data) {
@@ -46,6 +50,12 @@ public abstract class AttributeSplitMeasure {
         return meanValue / data.size();
     }
 
+    /**
+     * Splits data with a numeric attribute
+     * @param data
+     * @param att
+     * @return Nominal array
+     */
     public Instances[]splitDataOnNumeric(Instances data, Attribute att) {
         //calculates average value
         double meanValue = splitValue(data, att);
