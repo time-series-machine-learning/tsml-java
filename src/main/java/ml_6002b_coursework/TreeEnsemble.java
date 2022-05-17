@@ -60,14 +60,14 @@ public class TreeEnsemble extends AbstractClassifier{
 //            }
 //            System.out.println(attributes);
 
-            int[] arr = attributes.stream().mapToInt(y -> y).toArray();
+            int[] arr = attributes.stream().mapToInt(att -> att).toArray();
             //System.out.println(Arrays.toString(arr));
 
-            Remove removeFilter = new Remove();
-            removeFilter.setAttributeIndicesArray(arr);
-            removeFilter.setInvertSelection(true);
-            removeFilter.setInputFormat(data);
-            Instances newData = Filter.useFilter(data, removeFilter);
+            Remove filter = new Remove();
+            filter.setAttributeIndicesArray(arr);
+            filter.setInvertSelection(true);
+            filter.setInputFormat(data);
+            Instances newData = Filter.useFilter(data, filter);
 
             data.setClassIndex(data.numAttributes() - 1);
             newData.setClassIndex(newData.numAttributes() - 1);
