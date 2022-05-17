@@ -42,13 +42,15 @@ public abstract class AttributeSplitMeasure {
      * @param att
      * @return mean
      */
-    public static double splitValue(Instances data, Attribute att) {
-        double meanValue = 0.0;
-        for(Instance instance : data) {
-            meanValue += instance.value(att);
-        }
-        return meanValue / data.size();
-    }
+//    public static double splitValue(Instances data, Attribute att) {
+////        if (numArray.length % 2 == 0)
+////            median = ((double)numArray[numArray.length/2] + (double)numArray[numArray.length/2 - 1])/2;
+////        else
+////            median = (double) numArray[numArray.length/2];
+////        meanValue = data.meanOrMode(att);
+//        System.out.println(att);
+//        return data.meanOrMode(att);
+//    }
 
     /**
      * Splits data with a numeric attribute
@@ -58,7 +60,7 @@ public abstract class AttributeSplitMeasure {
      */
     public Instances[]splitDataOnNumeric(Instances data, Attribute att) {
         //calculates average value
-        double meanValue = splitValue(data, att);
+        double meanValue = data.meanOrMode(att);
 
         Instances[] splitDataNumeric = new Instances[2];
         splitDataNumeric[0] = new Instances(data, data.numInstances());
@@ -67,6 +69,12 @@ public abstract class AttributeSplitMeasure {
         for (Instance inst: data) {
             splitDataNumeric[inst.value(att) < meanValue ? 0 : 1].add(inst);
         }
+//        System.out.println(splitDataNumeric[0]);
+//        System.out.println();
+//        System.out.println(splitDataNumeric[1]);
+//        System.out.println();
+//        System.out.println(meanValue+" mean");
+//        System.out.println();
 
         for (Instances split : splitDataNumeric) {
             split.compactify();

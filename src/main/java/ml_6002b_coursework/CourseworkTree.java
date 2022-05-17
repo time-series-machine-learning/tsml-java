@@ -14,17 +14,21 @@ public class CourseworkTree extends AbstractClassifier {
         switch (options) {
             case "infoGain":
                 setAttSplitMeasure(new IGAttributeSplitMeasure());
+//                System.out.println("IG");
                 break;
             case "infoGainRatio":
                 IGAttributeSplitMeasure igRatioSplitMeasure = new IGAttributeSplitMeasure();
                 igRatioSplitMeasure.setUseGain(true);
                 setAttSplitMeasure(igRatioSplitMeasure);
+//                System.out.println("IGR");
                 break;
             case "chiSquared":
                 setAttSplitMeasure(new ChiSquaredAttributeSplitMeasure());
+//                System.out.println("chi");
                 break;
             case "gini":
                 setAttSplitMeasure(new GiniAttributeSplitMeasure());
+//                System.out.println("gini");
                 break;
         }
     }
@@ -175,11 +179,11 @@ public class CourseworkTree extends AbstractClassifier {
 
             // Loop through each attribute, finding the best one.
             for (int i = 0; i < data.numAttributes() - 1; i++) {
+                data.randomize(new java.util.Random(5));
                 double gain = attSplitMeasure.computeAttributeQuality(data, data.attribute(i));
-
                 if (gain > bestGain) {
                     bestSplit = data.attribute(i);
-                    bestSplitValue = AttributeSplitMeasure.splitValue(data, bestSplit);
+                    bestSplitValue = data.meanOrMode(bestSplit);
                     bestGain = gain;
                 }
             }
@@ -319,21 +323,33 @@ public class CourseworkTree extends AbstractClassifier {
             CourseworkTree informationGainTree = new CourseworkTree();
             informationGainTree.setOptions("infoGain");
             informationGainTree.buildClassifier(trainData);
+            data.randomize(new java.util.Random(0));
 
             //Information Gain Ratio
             CourseworkTree informationGainRatioTree = new CourseworkTree();
             informationGainRatioTree.setOptions("infoGainRatio");
             informationGainRatioTree.buildClassifier(trainData);
+            data.randomize(new java.util.Random(1));
 
             //Gini
             CourseworkTree giniTree = new CourseworkTree();
             giniTree.setOptions("gini");
             giniTree.buildClassifier(trainData);
+            data.randomize(new java.util.Random(2));
 
             //Chi Squared
             CourseworkTree chiSquaredTree = new CourseworkTree();
             chiSquaredTree.setOptions("chiSquared");
             chiSquaredTree.buildClassifier(trainData);
+            data.randomize(new java.util.Random(3));
+
+//            System.out.println(Arrays.toString(informationGainTree.getOptions()));
+//            System.out.println(Arrays.toString(informationGainRatioTree.getOptions()));
+//            System.out.println(Arrays.toString(giniTree.getOptions()));
+//            System.out.println(Arrays.toString(chiSquaredTree.getOptions()));
+
+
+
 
             int igCorrect = 0;
             int igrCorrect = 0;

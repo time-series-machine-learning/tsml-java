@@ -3,6 +3,7 @@ import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.Instance;
 import java.io.FileReader;
+import java.util.Arrays;
 
 public class GiniAttributeSplitMeasure extends AttributeSplitMeasure {
 
@@ -20,6 +21,7 @@ public class GiniAttributeSplitMeasure extends AttributeSplitMeasure {
         int value = att.numValues();
         if (att.isNumeric()) {
             Instances[] splitData = splitDataOnNumeric(data, att);
+//            System.out.println(Arrays.toString(splitData));
             int[][] contingencyTable = new int[2][count];
             for (int i = 0; i < 2; i++) {
                 for (Instance instance : splitData[i]) {

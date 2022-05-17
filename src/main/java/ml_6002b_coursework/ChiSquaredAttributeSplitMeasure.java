@@ -16,7 +16,7 @@ public class ChiSquaredAttributeSplitMeasure extends AttributeSplitMeasure {
      * @return Information Gain or Information Gain Ratio based upon setUseGain
      */
     @Override
-    public double computeAttributeQuality(Instances data, Attribute att) throws Exception {
+    public double computeAttributeQuality(Instances data, Attribute att){
         int count = data.numClasses();
         int value = att.numValues();
 
