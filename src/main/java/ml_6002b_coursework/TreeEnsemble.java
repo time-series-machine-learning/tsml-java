@@ -4,10 +4,13 @@ import weka.classifiers.AbstractClassifier;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 
@@ -17,7 +20,7 @@ public class TreeEnsemble extends AbstractClassifier{
 
     private CourseworkTree[] trees;
     private double attributeProportion;
-    //private ArrayList<Attribute>[] treeAttributes = new ArrayList[numTrees];
+//    private HashMap<ArrayList><CourseworkTree> treeAttributes = new HashMap;
     private boolean averageDistribution = false;
 
     public TreeEnsemble() {
@@ -41,24 +44,39 @@ public class TreeEnsemble extends AbstractClassifier{
         Random splitRnd = new Random();
         Random rnd = new Random();
         trees = new CourseworkTree[numTrees];
-
         for (int i=0;i<numTrees;i++){
+            ArrayList<Integer> attributes = new ArrayList<>();
             trees[i] = new CourseworkTree();
             trees[i].buildClassifier(data);
 
             String[] splitMeasure = new String[]{"infoGain", "infoGainRatio", "gini", "chiSquared"};
             trees[i].setOptions(splitMeasure[splitRnd.nextInt(4)]);
-            ArrayList<Attribute> attributes = new ArrayList<>();
             for (int a=0;a<data.numAttributes();a++){
-                attributes.add(data.attribute(a));
+                attributes.add(a);
             }
-            while(attributes.size() > data.numAttributes()*attributeProportion){
-                int randomInt = rnd.nextInt(attributes.size());
-                attributes.remove(randomInt);
-            }
+//            while(attributes.size() > data.numAttributes()*attributeProportion){
+//                int randomInt = rnd.nextInt(attributes.size());
+//                attributes.remove(randomInt);
+//            }
 //            System.out.println(attributes);
 
+            int[] arr = attributes.stream().mapToInt(y -> y).toArray();
+            //System.out.println(Arrays.toString(arr));
+
+            Remove removeFilter = new Remove();
+            removeFilter.setAttributeIndicesArray(arr);
+            removeFilter.setInvertSelection(true);
+            removeFilter.setInputFormat(data);
+            Instances newData = Filter.useFilter(data, removeFilter);
+
+            data.setClassIndex(data.numAttributes() - 1);
+            newData.setClassIndex(newData.numAttributes() - 1);
+
+
+            trees[i].buildClassifier(newData);
             //treeAttributes[i] = attributes;
+//            System.out.println(trees[i]);
+//            treeAttributes.put(attributes, trees[i]);
         }
     }
 
@@ -86,7 +104,7 @@ public class TreeEnsemble extends AbstractClassifier{
                 }
             }
         }
-        System.out.println(bestClass+ "bestclass");
+//        System.out.println(bestClass+ "bestclass");
         return bestClass;
     }
 
@@ -172,7 +190,9 @@ public class TreeEnsemble extends AbstractClassifier{
 
                 if(i < 5){
                     double[] dist = treeEnsemble.distributionForInstance(instance);
-                    System.out.println("Tree Ensemble "+i+" with "+data.relationName()+" has the probability = "
+                    int j = i;
+                    j++;
+                    System.out.println("Tree Ensemble "+j+" with "+data.relationName()+" has the probability = "
                             +Arrays.toString(dist));
                 }
                 if(instance.classValue() == prediction){
