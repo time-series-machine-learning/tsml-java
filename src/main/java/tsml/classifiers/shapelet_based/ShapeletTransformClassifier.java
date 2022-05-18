@@ -79,7 +79,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
 
 //  ***********************  TRANSFORM STRUCTURE SETTINGS *************************************/
     /** Shapelet transform parameters that can be configured through the STC, stored here **/
-    private ShapeletTransformOptions transformOptions=new ShapeletTransformOptions();
+    private transient ShapeletTransformOptions transformOptions;
     private int numShapeletsInTransform = ShapeletTransform.MAXTRANSFORMSIZE;
     private ShapeletSearch.SearchType searchType = ShapeletSearch.SearchType.RANDOM;//FULL == enumeration, RANDOM =random sampled to train time contract
 
@@ -148,6 +148,7 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
     public ShapeletTransformClassifier(){
         super(CAN_ESTIMATE_OWN_PERFORMANCE);
 //Data independent config set here, so user can change them after construction
+        transformOptions=new ShapeletTransformOptions();
         configureDefaultShapeletTransform();
         EnhancedRotationForest rotf=new EnhancedRotationForest();
         rotf.setMaxNumTrees(200);
@@ -179,6 +180,12 @@ public class ShapeletTransformClassifier  extends EnhancedAbstractClassifier
         getCapabilities().testWithFail(data);
     //Add the requirement to test if there are at least one of each class
         long startTime=System.nanoTime();
+
+        //for AbstractClassifier copy serialisation
+        if (transformOptions == null){
+            transformOptions=new ShapeletTransformOptions();
+            configureDefaultShapeletTransform();
+        }
 
 //Temp to test multivariate
         if(data.attribute(0).isRelationValued())

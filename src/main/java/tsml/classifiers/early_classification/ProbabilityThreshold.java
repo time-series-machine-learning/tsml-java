@@ -53,7 +53,7 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
 
     @Override
     public void fit(Instances data, Classifier[] classifiers, int[] thresholds) {
-        finalIndex = thresholds.length-1;
+        finalIndex = thresholds.length - 1;
         rand = new Random(seed);
     }
 
@@ -64,7 +64,7 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
 
         int pred = argMax(probabilities, rand);
         if (probabilities[pred] > threshold) {
-            if (consecutivePredictions < 2){
+            if (consecutivePredictions < 2) {
                 return true;
             }
 
@@ -82,6 +82,9 @@ public class ProbabilityThreshold extends EarlyDecisionMaker implements Randomiz
                     return false;
                 }
             }
+        }
+        else{
+            predCounts.clear();
         }
 
         return false;
