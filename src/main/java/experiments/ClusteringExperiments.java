@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static utilities.ClusteringUtilities.zNormalise;
 import static utilities.GenericTools.indexOfMax;
 
 /**
@@ -165,6 +166,11 @@ public class ClusteringExperiments {
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         expSettings.numClassValues = data[0].numClasses();
+
+        if (expSettings.normalise){
+            zNormalise(data[0]);
+            zNormalise(data[1]);
+        }
 
         // replace missing values with 0 if enabled
         if (expSettings.replaceMissingValues) {

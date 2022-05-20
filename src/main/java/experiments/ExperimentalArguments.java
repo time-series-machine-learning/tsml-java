@@ -138,6 +138,9 @@ public class ExperimentalArguments implements Runnable {
             + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
     public String trainEstimateMethod = "cv_10";
 
+    @Parameter(names = {"-norm", "--normalise"}, arity = 1, description = "(boolean) If true, will z-normalise all series prior to training and testing (clustering only currently).")
+    public boolean normalise = false;
+
     @Parameter(names = {"--conTrain"}, arity = 2, description = "todo")
     private List<String> trainContracts = new ArrayList<>();
 
