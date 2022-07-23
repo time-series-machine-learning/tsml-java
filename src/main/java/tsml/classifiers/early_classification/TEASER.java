@@ -45,6 +45,8 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
 
     private static final double[] SVM_GAMMAS = new double[]{100, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.5, 1};
 
+    private int maxV = 5;
+
     private LibSVM[] svm;
     private int finalIndex;
     private Instances probDataHeader;
@@ -235,7 +237,7 @@ public class TEASER extends EarlyDecisionMaker implements Randomizable, Loadable
         }
 
         double bestHM = -1;
-        for (int g = 2; g <= 5; g++) {
+        for (int g = 2; g <= maxV; g++) {
             double correctSum = 0;
             double earlinessSum = 0;
             for (int n = 0; n < data.numInstances(); n++){
