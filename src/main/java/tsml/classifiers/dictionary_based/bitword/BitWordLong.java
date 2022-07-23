@@ -116,6 +116,8 @@ public class BitWordLong implements BitWord {
          
          packAll(letters);
     }
+
+    public void setLength(byte length) { this.length = length; }
     
     public void push(int letter) {
         word = (word << BITS_PER_LETTER) | letter;

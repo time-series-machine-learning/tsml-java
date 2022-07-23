@@ -113,13 +113,17 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
         //copied over/adapted from HiveCote.setDefaultEnsembles()
         //TODO jay/tony review
         this.ensembleName = "HIVE-COTE 0.1";
-        this.weightingScheme = new TrainAcc(4);
-        this.votingScheme = new MajorityConfidence();
-        this.transform = null;
 
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
-        cv.setNumFolds(10);
-        this.trainEstimator = cv;
+        if (this.weightingScheme == null)
+            this.weightingScheme = new TrainAcc(alpha);
+        if (this.votingScheme == null)
+            this.votingScheme = new MajorityConfidence();
+
+        if (this.trainEstimator == null) {
+            CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+            cv.setNumFolds(10);
+            this.trainEstimator = cv;
+        }
 
         if (modules == null) {
             Classifier[] classifiers = new Classifier[5];
@@ -175,15 +179,17 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     }
     private void buildHC1() {
         this.ensembleName = "HIVE-COTE 1.0";
-        alpha=4.0;
 
-        this.weightingScheme = new TrainAcc(alpha);
-        this.votingScheme = new MajorityConfidence();
-        this.transform = null;
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
-        cv.setNumFolds(10);
-        this.trainEstimator = cv;
+        if (this.weightingScheme == null)
+            this.weightingScheme = new TrainAcc(alpha);
+        if (this.votingScheme == null)
+            this.votingScheme = new MajorityConfidence();
+
+        if (this.trainEstimator == null) {
+            CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+            cv.setNumFolds(10);
+            this.trainEstimator = cv;
+        }
 
         if (modules == null) {
             Classifier[] classifiers = new Classifier[4];
@@ -231,13 +237,17 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
     }
     private void buildHC2() {
         this.ensembleName = "HIVE-COTE 2.0";
-        alpha=4.0;
-        this.weightingScheme = new TrainAcc(alpha);
-        this.votingScheme = new MajorityConfidence();
-        this.transform = null;
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
-        cv.setNumFolds(10);
-        this.trainEstimator = cv;
+
+        if (this.weightingScheme == null)
+            this.weightingScheme = new TrainAcc(alpha);
+        if (this.votingScheme == null)
+            this.votingScheme = new MajorityConfidence();
+
+        if (this.trainEstimator == null) {
+            CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+            cv.setNumFolds(10);
+            this.trainEstimator = cv;
+        }
 
         if (modules == null) {
             ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
@@ -294,7 +304,6 @@ public class HIVE_COTE extends AbstractEnsemble implements TechnicalInformationH
             TimeSeriesInstances padded = resizer.fitTransform(data);
             data = padded;
         }
-
 
         if(debug) {
             printDebug(" Building HIVE-COTE with components: ");
