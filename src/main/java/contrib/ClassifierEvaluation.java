@@ -207,20 +207,24 @@ Tiselac
             "Arsenal",
             "CIF",  //Not Default
             "Catch22",  //Not Default
+            "CIF",  //Not Default
             "CNNClassifier",
             "DrCIF", //Not Default
             "FreshPRINCE",
             "HIVECOTEV2",
             "IndividualTDE",
             "KNeighborsTimeSeriesClassifier",
+            "Mini-ROCKET",
+            "MLPClassifier",
+            "Multi-ROCKET",
             "MUSE",
             "RandomInterval", //Not Default
             "RocketClassifier",
             "STC", //Not Default
             "SignatureClassifier",
             "Summary", //Not Default
-            "TSFresh",
             "TemporalDictionaryEnsemble",
+            "TSFresh",
     };
     static String[] utscSktimeClassifiers = {
             "Arsenal",
@@ -230,14 +234,19 @@ Tiselac
             "ComposableTimeSeriesForestClassifier",
             "ContractableBOSS",
             "CNNClassifier",
+            "DrCIF", //Not Default
             "DummyClassifier",
             "ElasticEnsemble",
             "FreshPRINCE",
             "HIVECOTEV1",
             "HIVECOTEV2",
             "IndividualBOSS",
+            "IndividualTDE",
             "KNeighborsTimeSeriesClassifier",
             "MatrixProfileClassifier",
+            "Mini-ROCKET",
+            "MLPClassifier",
+            "Multi-ROCKET",
             "ProximityForest",
             "ProximityStump",
             "ProximityTree",
@@ -249,9 +258,8 @@ Tiselac
             "SignatureClassifier",
             "STC", //Not Default
             "Summary", //Not Default
-            "SklearnClassifierPipeline",
-            "SupervisedTimeSeriesForest",
-            "TimeSeriesForestClassifier",
+            "STSF",
+            "TSF",
             "TSFresh",
             "TemporalDictionaryEnsemble",
             "WEASEL"
@@ -268,7 +276,7 @@ Tiselac
         System.out.println(" Number of MTSC classifiers = "+ mtscSktimeClassifiers.length);
         String path="X:\\Results Working Area\\MultivariateReferenceResults\\sktime\\";
         summariseResultsPresent (mtscSktimeClassifiers,DatasetLists.mtscProblems2022,path);
-        System.out.println(" Number of MTSC classifiers = "+ utscSktimeClassifiers.length);
+        System.out.println(" Number of UTSC classifiers = "+ utscSktimeClassifiers.length);
         path="X:\\Results Working Area\\UnivariateReferenceResults\\sktime\\";
         summariseResultsPresent (utscSktimeClassifiers,DatasetLists.tscProblems112,path);
     }
