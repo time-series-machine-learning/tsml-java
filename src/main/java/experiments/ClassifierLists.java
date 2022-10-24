@@ -395,7 +395,7 @@ public class ClassifierLists {
                 break;
 
             case "HC2-FromFile":
-                 hc=new HIVE_COTE();
+                hc=new HIVE_COTE();
                 hc.setBuildIndividualsFromResultsFiles(true);
                 hc.setSeed(fold);
                 hc.setDebug(false);

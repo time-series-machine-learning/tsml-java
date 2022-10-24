@@ -46,6 +46,40 @@ import java.util.zip.ZipOutputStream;
  * @author ajb
  */
 public class DatasetLists {
+	// New equal length univariate TSC problems in 2022: 17
+	String[] univariate2022= {
+			"AbnormalHeartbeat",
+			"AconityMINIPrinterLargeEq",
+			"AconityMINIPrinterSmallEq",
+			"AsphaltObstaclesUniEq",
+			"AsphaltPavementTypeUniEq",
+			"AsphaltRegularityUniEq",
+			"BinaryHeartbeat",
+			"CatsDogs",
+			"Colposcopy",
+			"DucksaAndGeese",
+			"ElectricDeviceDetection",
+			"FruitFlies",
+			"KeplerLightCurves",
+			"MITBIH-Heartbeat",
+			"RightWhaleCalls",
+			"SharePriceIncrease",
+			"UrbanSound"
+	};
+	//Padded unequal length series: 11
+	public static String[] UnivariateEq2020 ={
+			"AllGestureWiimoteXEq",
+			"AllGestureWiimoteYEq",
+			"AllGestureWiimoteZEq",
+			"GestureMidAirD1Eq",
+			"GestureMidAirD2Eq",
+			"GestureMidAirD3Eq",
+			"GesturePebbleZ1Eq",
+			"GesturePebbleZ2Eq",
+			"PickupGestureWiimoteZEq",
+			"PLAIDEq",
+			"ShakeGestureWiimoteZEq"
+	};
 
 	//Slow problems for contract testing
 	String[] slowProblems={
@@ -160,6 +194,50 @@ public class DatasetLists {
         "UWaveGestureLibrary"
 };
        //</editor-fold>       
+
+	public static String[] mtscProblems2022={
+			"ArticularyWordRecognition", //Index 0
+			"AsphaltObstaclesCoordinatesEq",
+			"AsphaltPavementTypeCoordinatesEq",
+			"AsphaltRegularityCoordinatesEq",
+			"AtrialFibrillation",
+			"BasicMotions",
+			"Blink",
+			"CharacterTrajectoriesEq",
+			"Cricket",
+			"DuckDuckGeese",
+			"EigenWorms",
+			"EMOPain",
+			"Epilepsy",
+			"ERing",
+			"EyesOpenShut",
+			"EthanolConcentration",
+			"FaceDetection",
+			"FingerMovements",
+			"HandMovementDirection",
+			"Handwriting",
+			"Heartbeat",
+			"InsectWingbeatEq",
+			"JapaneseVowelsEq",
+			"Libras",
+			"LSST",
+			"MindReading",
+			"MotionSenseHAR",
+			"MotorImagery",
+			"NATOPS",
+			"PenDigits",
+			"PEMS-SF",
+			"PhonemeSpectra",
+			"RacketSports",
+			"SelfRegulationSCP1",
+			"SelfRegulationSCP2",
+			"Siemens",
+			"SpokenArabicDigitsEq",
+			"StandWalkJump",
+			"Tiselac",
+			"UWaveGestureLibrary"
+	};
+
 
  //TSC data sets for relaunch in 2018 
     //<editor-fold defaultstate="collapsed" desc="tsc Problems 2018 ">    
