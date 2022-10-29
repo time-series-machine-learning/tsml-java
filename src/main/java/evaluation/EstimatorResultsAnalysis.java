@@ -81,10 +81,10 @@ public class EstimatorResultsAnalysis {
     public static PerformanceMetric trainTimeMetric = PerformanceMetric.buildTime;
     public static PerformanceMetric benchmarkedTrainTimeMetric = PerformanceMetric.buildTimeBenchmarked;
 
-//        PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
-//        PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
-    public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
-    public static PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.avgTestPredTimeBenchmarked;
+    public static PerformanceMetric testTimeMetric = PerformanceMetric.totalTestTime;
+    public static PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.totalTestTimeBenchmarked;
+//    public static PerformanceMetric testTimeMetric = PerformanceMetric.avgTestPredTime;
+//    public static PerformanceMetric benchmarkedTestTimeMetric = PerformanceMetric.avgTestPredTimeBenchmarked;
 
     //    public static PerformanceMetric estimateTimeMetric = PerformanceMetric.additionalTimeForEstimate;
     //    public static PerformanceMetric benchmarkedEstimateTimeMetric = PerformanceMetric.additionalTimeForEstimateBenchmarked;
