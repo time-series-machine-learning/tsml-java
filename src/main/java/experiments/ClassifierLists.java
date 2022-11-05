@@ -17,6 +17,7 @@ package experiments;
 
 import evaluation.tuning.ParameterSpace;
 import experiments.Experiments.ExperimentalArguments;
+import machine_learning.classifiers.ensembles.AbstractEnsemble;
 import machine_learning.classifiers.ensembles.ContractRotationForest;
 import machine_learning.classifiers.ensembles.legacy.EnhancedRotationForest;
 import machine_learning.classifiers.tuned.TunedClassifier;
@@ -49,7 +50,12 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
+import tsml.classifiers.shapelet_based.dev.classifiers.RSTCEnsemble;
+import tsml.classifiers.shapelet_based.dev.classifiers.RSTCQualityEnsemble;
 import tsml.classifiers.shapelet_based.dev.classifiers.RandomShapeletClassifier;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.ECP;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.ECS;
+import tsml.classifiers.shapelet_based.dev.classifiers.selection.RocketDimensionSelection;
 import tsml.classifiers.shapelet_based.dev.classifiers.selection.ShapeletSeriesDimensionSelection;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
@@ -319,7 +325,12 @@ public class ClassifierLists {
      */
     public static String[] shapelet= {"FastShapelets","LearnShapelets","ShapeletTransformClassifier",
             "ShapeletTreeClassifier","STC","ROCKET","Arsenal","STC-Pruned",
-            "RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I","RSTC-FSTAT_I","RSTC-SER_I"};
+            "RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I","RSTC-CHI_D","RSTC-COR_D","RSTC-FSTAT_I","RSTC-SER_I","RSTC-DS_I",
+            "RSTC-PCA_I","RSTC-ONER_I","RSTC-SYM_I",
+            "ECP-RSTC_I","ECS-RSTC_I","ECP-RSTC_D","ECS-RSTC_D","ROCKET-RSTC_D",
+            "RSTCEnsemble_W","RSTCEnsemble_Q","RSTCEnsemble_1","RSTCEnsemble_2","RSTCEnsemble_3"
+            ,"RSTCEnsemble_4","RSTCEnsemble_5","RSTCEnsemble_6","RSTCEnsemble_7","RSTCEnsemble_8"
+            ,"RSTCEnsemble_9","RSTCEnsemble_10"};
     public static HashSet<String> shapeletBased=new HashSet<String>( Arrays.asList(shapelet));
     private static Classifier setShapeletBased(Experiments.ExperimentalArguments exp){
         String classifier=exp.classifierName;
@@ -353,6 +364,12 @@ public class ClassifierLists {
             case "RSTC_I":
                 c = new RandomShapeletClassifier(exp);
                 break;
+            case "ECS-RSTC_I":
+                c = new ECS(exp,new RandomShapeletClassifier(exp));
+                break;
+            case "ECP-RSTC_I":
+                c = new ECP(exp,new RandomShapeletClassifier(exp));
+                break;
             case "RSTC-COR_I":
                 params = new MSTC.ShapeletParams(100,
                         3,
@@ -372,6 +389,28 @@ public class ClassifierLists {
                         24,
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI_BINARY,
                         MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-COR_D":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CORR_BINARY,
+                        MSTC.ShapeletFactories.DEPENDANT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-CHI_D":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI_BINARY,
+                        MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
                 c = new RandomShapeletClassifier(exp,params);
                 break;
@@ -398,19 +437,100 @@ public class ClassifierLists {
                         MSTC.AuxClassifiers.ROT);
                 c = new RandomShapeletClassifier(exp,params);
                 break;
-            case "RSTC-SER_I":
-                params = new MSTC.ShapeletParams(100,
+            case "ECS-RSTC_D":
+                MSTC.ShapeletParams par = new MSTC.ShapeletParams(100,
                         3,
                         50,
                         1000000,
                         24,
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
-                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
-                c = new ShapeletSeriesDimensionSelection(exp,params);
+                c = new ECS(exp,new RandomShapeletClassifier(exp,par));
+                break;
+            case "ROCKET-RSTC_D":
+                MSTC.ShapeletParams par2 = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
+                        MSTC.ShapeletFactories.DEPENDANT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RocketDimensionSelection(exp,new RandomShapeletClassifier(exp,par2));
+                break;
+            case "ECP-RSTC_D":
+                par = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
+                        MSTC.ShapeletFactories.DEPENDANT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new ECP(exp,new RandomShapeletClassifier(exp,par));
                 break;
 
-           default:
+            case "RSTC-PCA_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.PCA,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-ONER_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.ONE_R,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+            case "RSTC-SYM_I":
+                params = new MSTC.ShapeletParams(100,
+                        3,
+                        50,
+                        1000000,
+                        24,
+                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.SYM,
+                        MSTC.ShapeletFactories.INDEPENDENT,
+                        MSTC.AuxClassifiers.ROT);
+                c = new RandomShapeletClassifier(exp,params);
+                break;
+
+            case "RSTCEnsemble_W":
+                c = new RSTCEnsemble(exp);
+                break;
+            case "RSTCEnsemble_1":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I"});
+                break;
+            case "RSTCEnsemble_2":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-CHI_I","RSTC-COR_I"});
+                break;
+            case "RSTCEnsemble_3":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","STC","RSTC-CHI_I","RSTC-COR_I"});
+                break;
+            case "RSTCEnsemble_4":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC_D","STC","RSTC-CHI_I","RSTC-COR_I"});
+                break;
+            case "RSTCEnsemble_5":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-ONER_I","RSTC-CHI_I","RSTC-COR_I"});
+                break;
+            case "RSTCEnsemble_6":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-ONER_I","RSTC-CHI_I","RSTC-COR_I","STC"});
+                break;
+            case "RSTCEnsemble_7":
+                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-CHI_I","RSTC-COR_I","RSTC_D","RSTC-CHI_D","RSTC-COR_D"});
+                break;
+
+            default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
                 throw new UnsupportedOperationException("Unknown interval based  classifier, should not be able to get here "
@@ -608,6 +728,66 @@ public class ClassifierLists {
                 hc.setDebug(false);
                 hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
                 classifiers=new String[]{"DrCIF","Arsenal","STC","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-12":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_Q","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-13":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_3","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-14":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_5","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-15":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_6","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-16":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_2","TDE"};
+                hc.setClassifiersNamesForFileRead(classifiers);
+                c=hc;
+                break;
+            case "HC-17":
+                hc=new HIVE_COTE();
+                hc.setBuildIndividualsFromResultsFiles(true);
+                hc.setSeed(fold);
+                hc.setDebug(false);
+                hc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                classifiers=new String[]{"DrCIF","Arsenal","RSTCEnsemble_7","TDE"};
                 hc.setClassifiersNamesForFileRead(classifiers);
                 c=hc;
                 break;

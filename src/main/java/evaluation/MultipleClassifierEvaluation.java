@@ -546,37 +546,61 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
             MatlabController.getInstance().discconnectMatlab();
     }
 
-    private static void mainMTSC(String[] args) throws Exception{
-        String basePath = "C:/Users/fbu19zru/code/results_final/";
+    private static void mainMTSCHC2(String[] args) throws Exception{
+        String basePath = "C:/Users/fbu19zru/code/results/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Final-hc2-ds-alt", 30);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "cd_HC2-Shapelet", 30);
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
         mcc.setCleanResults(true); //as is default
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.mtscProblems2022);
-        mcc.readInClassifiers(new String[] {//"HC1","HC2", "Arsenal", "ROCKET","DrCIF",
-               // "rocket_i",
-               //  "rocket",
-               //  "rocket_d",
-                // "arsenal",
-                 //"hc2-",  "hc2-ds-ecp", "hc2-ds-rocket","hc2-ds-ecs",//,"hc2-ds-kmeans",,"hc2-ds-random",
-                "hc2-",  "hc2-ds-ecp", "hc2-ds-rocket-60", "hc2-ds-rocket","hc2-ds-ecs"//,"hc2-ds-cluster",//, "hc2-ds-cluster"
-                 //"MSTC", "STC","MSTC_1","rocket"//,"HC2"
-                //   "hc2-ds-random_20", "hc2-ds-random_60"
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
+        mcc.readInClassifiers(new String[] {
+                "HC2","HC-12","HC-17"
 
         }, basePath);
         mcc.runComparison();
     }
 
-    private static void mainTSC(String[] args) throws Exception{
-        String basePath = "C:/Users/fbu19zru/code/results_univariate_final/";
+
+    private static void mainMTSC(String[] args) throws Exception{
+        String basePath = "C:/Users/fbu19zru/code/results_final/";
 
         MultipleClassifierEvaluation mcc =
-                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-Final-TSC", 1);
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis_Shapelets_D-tmp", 30);
+        mcc.setTestResultsOnly(true); //as is default
+        mcc.setBuildMatlabDiagrams(true); //as is default
+        mcc.setCleanResults(true); //as is default
+        mcc.setDebugPrinting(true);
+
+        mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
+        mcc.setDatasets(DatasetLists.mtscProblems2018);
+        mcc.readInClassifiers(new String[] {
+               // "hc2-ecp", "hc2-ecs","hc2-kmeans",                                          //1
+               //  "hc2-rocket_A","hc2-cluster","hc2-rocket_S","hc2-rocket_M"               //2
+              //  "hc2","hc2-ecp","hc2-rocket_M","hc2-rocket_A","hc2-ds-merit" //3
+              //  "RSTC_I","RSTC1_I"
+               // "hc2-ds-merit",
+               // "hc2-random-60",
+               //  "hc2-random-20","hc2-random-60",
+               // "hc2-ds-rocket-60"//,"hc2-ds-cluster-60",
+                "STC",
+                "RSTC_D",//"RSTC-CHI_D","RSTC-COR_D",
+              //  "RSTC_I","RSTC-CHI_I","RSTC-COR_I",
+              //  "RSTCE_Q", "RSTCEnsemble_7"
+                "ECP-RSTC_D",
+        }, basePath);
+        mcc.runComparison();
+    }
+
+    private static void mainTSC(String[] args) throws Exception{
+        String basePath = "C:/Users/fbu19zru/code/results_tsc/";
+
+        MultipleClassifierEvaluation mcc =
+                new MultipleClassifierEvaluation("C:/Users/fbu19zru/code/", "Analysis-Shapelet-TSC-small", 30);
 
         mcc.setTestResultsOnly(true); //as is default
         mcc.setBuildMatlabDiagrams(true); //as is default
@@ -584,19 +608,18 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.tscProblems112);
+        mcc.setDatasets(DatasetLists.tscProblems112HD);
         mcc.readInClassifiers(new String[] {//"HC2","ROCKET","RISE","TSF","cBOSS" ,
-                "STC"
-                , "MSTC_I"
-                , "MSTC-LIN_I"
-
-              //  , "MSTC-BIN-IO-FIL_I"
-             //   , "MSTC-BIN-IO-LIN_I"
-            //    , "MSTC-CLASS-BIN-IO_I"
-            //    , "MSTC-CLASS-BIN-IO-FIL_I"
-            //    , "MSTC-CLASS-BIN-IO-LIN_I"
-            //    , "ENS-MSTC-BIN_I"
-            //       ,"5BIN-MSTC_I"
+                "HC2","HC-13","HC2N"
+                //"STC",
+                //"RSTC",
+                //"RSTC-COR",
+                //"RSTC-CHI",
+                //"RSTCEQ",
+                //"RSTC_1",
+                //"RSTC-COR_1",
+                //"RSTC-CHI_1",
+                //"RSTCEQ_1",
 
 
         }, basePath);
