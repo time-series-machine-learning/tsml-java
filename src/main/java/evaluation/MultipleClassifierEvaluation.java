@@ -608,7 +608,7 @@ public class MultipleClassifierEvaluation implements DebugPrinting {
         mcc.setDebugPrinting(true);
 
         mcc.setUseDefaultEvaluationStatistics(); //as is default, acc,balacc,auroc,nll
-        mcc.setDatasets(DatasetLists.tscProblems112HD);
+        mcc.setDatasets(DatasetLists.tscProblems112);
         mcc.readInClassifiers(new String[] {//"HC2","ROCKET","RISE","TSF","cBOSS" ,
                 "HC2","HC-13","HC2N"
                 //"STC",

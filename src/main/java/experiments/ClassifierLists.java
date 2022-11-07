@@ -32,6 +32,7 @@ import tsml.classifiers.distance_based.elastic_ensemble.ElasticEnsemble;
 import tsml.classifiers.distance_based.knn.KNN;
 import tsml.classifiers.distance_based.proximity.ProximityForest;
 import tsml.classifiers.early_classification.*;
+import tsml.classifiers.hybrids.RSTCEnsemble;
 import tsml.classifiers.kernel_based.Arsenal;
 import tsml.classifiers.hybrids.Catch22Classifier;
 import tsml.classifiers.hybrids.HIVE_COTE;
@@ -50,13 +51,7 @@ import tsml.classifiers.shapelet_based.FastShapelets;
 import tsml.classifiers.shapelet_based.LearnShapelets;
 import tsml.classifiers.shapelet_based.ShapeletTree;
 import tsml.classifiers.shapelet_based.dev.classifiers.MSTC;
-import tsml.classifiers.shapelet_based.dev.classifiers.RSTCEnsemble;
-import tsml.classifiers.shapelet_based.dev.classifiers.RSTCQualityEnsemble;
 import tsml.classifiers.shapelet_based.dev.classifiers.RandomShapeletClassifier;
-import tsml.classifiers.shapelet_based.dev.classifiers.selection.ECP;
-import tsml.classifiers.shapelet_based.dev.classifiers.selection.ECS;
-import tsml.classifiers.shapelet_based.dev.classifiers.selection.RocketDimensionSelection;
-import tsml.classifiers.shapelet_based.dev.classifiers.selection.ShapeletSeriesDimensionSelection;
 import tsml.transformers.*;
 import weka.core.EuclideanDistance;
 import weka.core.Randomizable;
@@ -339,21 +334,22 @@ public class ClassifierLists {
         int fold=exp.foldId;
         switch(classifier) {
             case "LearnShapelets":
-                c=new LearnShapelets();
+                c = new LearnShapelets();
                 break;
             case "FastShapelets":
-                c=new FastShapelets();
+                c = new FastShapelets();
                 break;
-            case "ShapeletTransformClassifier": case "STC":
-                c=new ShapeletTransformClassifier();
+            case "ShapeletTransformClassifier":
+            case "STC":
+                c = new ShapeletTransformClassifier();
                 break;
             case "STC-Pruned":
-                ShapeletTransformClassifier stc=new ShapeletTransformClassifier();
+                ShapeletTransformClassifier stc = new ShapeletTransformClassifier();
                 stc.setPruneMatchingShapelets(true);
-                c=stc;
+                c = stc;
                 break;
             case "ShapeletTreeClassifier":
-                c=new ShapeletTree();
+                c = new ShapeletTree();
                 break;
             case "ROCKET":
                 c = new ROCKETClassifier();
@@ -364,12 +360,6 @@ public class ClassifierLists {
             case "RSTC_I":
                 c = new RandomShapeletClassifier(exp);
                 break;
-            case "ECS-RSTC_I":
-                c = new ECS(exp,new RandomShapeletClassifier(exp));
-                break;
-            case "ECP-RSTC_I":
-                c = new ECP(exp,new RandomShapeletClassifier(exp));
-                break;
             case "RSTC-COR_I":
                 params = new MSTC.ShapeletParams(100,
                         3,
@@ -379,7 +369,7 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CORR_BINARY,
                         MSTC.ShapeletFactories.INDEPENDENT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
             case "RSTC-CHI_I":
                 params = new MSTC.ShapeletParams(100,
@@ -390,7 +380,7 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI_BINARY,
                         MSTC.ShapeletFactories.INDEPENDENT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
             case "RSTC-COR_D":
                 params = new MSTC.ShapeletParams(100,
@@ -401,7 +391,7 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CORR_BINARY,
                         MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
             case "RSTC-CHI_D":
                 params = new MSTC.ShapeletParams(100,
@@ -412,7 +402,7 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.CHI_BINARY,
                         MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
             case "RSTC-FSTAT_I":
                 params = new MSTC.ShapeletParams(100,
@@ -423,7 +413,7 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.FSTAT_BINARY,
                         MSTC.ShapeletFactories.INDEPENDENT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
 
             case "RSTC_D":
@@ -435,53 +425,9 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
                         MSTC.ShapeletFactories.DEPENDANT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
-                break;
-            case "ECS-RSTC_D":
-                MSTC.ShapeletParams par = new MSTC.ShapeletParams(100,
-                        3,
-                        50,
-                        1000000,
-                        24,
-                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
-                        MSTC.ShapeletFactories.DEPENDANT,
-                        MSTC.AuxClassifiers.ROT);
-                c = new ECS(exp,new RandomShapeletClassifier(exp,par));
-                break;
-            case "ROCKET-RSTC_D":
-                MSTC.ShapeletParams par2 = new MSTC.ShapeletParams(100,
-                        3,
-                        50,
-                        1000000,
-                        24,
-                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
-                        MSTC.ShapeletFactories.DEPENDANT,
-                        MSTC.AuxClassifiers.ROT);
-                c = new RocketDimensionSelection(exp,new RandomShapeletClassifier(exp,par2));
-                break;
-            case "ECP-RSTC_D":
-                par = new MSTC.ShapeletParams(100,
-                        3,
-                        50,
-                        1000000,
-                        24,
-                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.GAIN_BINARY,
-                        MSTC.ShapeletFactories.DEPENDANT,
-                        MSTC.AuxClassifiers.ROT);
-                c = new ECP(exp,new RandomShapeletClassifier(exp,par));
+                c = new RandomShapeletClassifier(exp, params);
                 break;
 
-            case "RSTC-PCA_I":
-                params = new MSTC.ShapeletParams(100,
-                        3,
-                        50,
-                        1000000,
-                        24,
-                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.PCA,
-                        MSTC.ShapeletFactories.INDEPENDENT,
-                        MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
-                break;
             case "RSTC-ONER_I":
                 params = new MSTC.ShapeletParams(100,
                         3,
@@ -491,45 +437,20 @@ public class ClassifierLists {
                         MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.ONE_R,
                         MSTC.ShapeletFactories.INDEPENDENT,
                         MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
-                break;
-            case "RSTC-SYM_I":
-                params = new MSTC.ShapeletParams(100,
-                        3,
-                        50,
-                        1000000,
-                        24,
-                        MSTC.ShapeletFilters.RANDOM, MSTC.ShapeletQualities.SYM,
-                        MSTC.ShapeletFactories.INDEPENDENT,
-                        MSTC.AuxClassifiers.ROT);
-                c = new RandomShapeletClassifier(exp,params);
+                c = new RandomShapeletClassifier(exp, params);
                 break;
 
-            case "RSTCEnsemble_W":
-                c = new RSTCEnsemble(exp);
-                break;
+
             case "RSTCEnsemble_1":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC_D","RSTC-CHI_I","RSTC-COR_I"});
+                RSTCEnsemble rstc = new RSTCEnsemble();
+                rstc.setBuildIndividualsFromResultsFiles(true);
+                rstc.setSeed(fold);
+                rstc.setDebug(false);
+                rstc.setResultsFileLocationParameters(exp.resultsWriteLocation,exp.datasetName,fold);
+                String[] classifiers=new String[]{"RSTC_I","RSTC-CHI_I","RSTC-COR_I"};
+                rstc.setClassifiersNamesForFileRead(classifiers);
+                c = rstc;
                 break;
-            case "RSTCEnsemble_2":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-CHI_I","RSTC-COR_I"});
-                break;
-            case "RSTCEnsemble_3":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","STC","RSTC-CHI_I","RSTC-COR_I"});
-                break;
-            case "RSTCEnsemble_4":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC_D","STC","RSTC-CHI_I","RSTC-COR_I"});
-                break;
-            case "RSTCEnsemble_5":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-ONER_I","RSTC-CHI_I","RSTC-COR_I"});
-                break;
-            case "RSTCEnsemble_6":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-ONER_I","RSTC-CHI_I","RSTC-COR_I","STC"});
-                break;
-            case "RSTCEnsemble_7":
-                c = new RSTCQualityEnsemble(exp, new String[]{"RSTC_I","RSTC-CHI_I","RSTC-COR_I","RSTC_D","RSTC-CHI_D","RSTC-COR_D"});
-                break;
-
             default:
                 System.out.println("Unknown shapelet based classifier "+classifier+" should not be able to get here ");
                 System.out.println("There is a mismatch between array interval and the switch statement ");
