@@ -58,7 +58,7 @@ import utilities.ErrorReport;
  */
 public class EstimatorResultsCollection implements DebugPrinting {
 
-    public enum ResultsType { CLASSIFICATION, CLUSTERING }
+    public enum ResultsType { CLASSIFICATION, CLUSTERING, REGRESSION }
     private ResultsType resultsType = ResultsType.CLASSIFICATION;
 
     /**
@@ -552,6 +552,9 @@ public class EstimatorResultsCollection implements DebugPrinting {
         if (resultsType == ResultsType.CLASSIFICATION){
             return new ClassifierResults(path);
         }
+        else if (resultsType == ResultsType.REGRESSION){
+            return new RegressorResults(path);
+        }
         else if (resultsType == ResultsType.CLUSTERING){
             return new ClustererResults(path);
         }
@@ -977,16 +980,26 @@ public class EstimatorResultsCollection implements DebugPrinting {
     
     
     /**
-     * Returns the accuracy of each result object loaded in as a large array 
+     * Returns the accuracy (or MSE for regression) of each result object loaded in as a large array
  double[split][estimator][dataset][fold]
  
  Wrapper retrieveDoubles for accuracies
      
      * @return Array [split][estimator][dataset][fold] of doubles with accuracy from each result
      */
-    public double[][][][] retrieveAccuracies() {
-        return resultsType == ResultsType.CLUSTERING ? retrieveDoubles(ClustererResults.GETTER_Accuracy) :
-                retrieveDoubles(ClassifierResults.GETTER_Accuracy) ;
+    public double[][][][] retrieveAccuracies() throws Exception {
+        if (resultsType == ResultsType.CLASSIFICATION){
+            return retrieveDoubles(ClassifierResults.GETTER_Accuracy);
+        }
+        else if (resultsType == ResultsType.REGRESSION){
+            return retrieveDoubles(RegressorResults.GETTER_MSE);
+        }
+        else if (resultsType == ResultsType.CLUSTERING){
+            return retrieveDoubles(ClustererResults.GETTER_Accuracy);
+        }
+        else{
+            throw new Exception("Invalid ResultType.");
+        }
     }
 
     /**

@@ -888,7 +888,7 @@ public class EstimatorResultsAnalysis {
 
         String[] estimateResStr1 = null;
         String[] estimateResStr2 = null;
-        if (Arrays.asList(results.getSplits()).contains("train") && resultsType == EstimatorResultsCollection.ResultsType.CLASSIFICATION) {
+        if (Arrays.asList(results.getSplits()).contains("train") && resultsType != EstimatorResultsCollection.ResultsType.CLUSTERING) {
             double[][][] estimateTimes1 = results.sliceSplit("train").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTime.getter)[0];
             if (estimateTimes1 != null)
                 estimateResStr1 = eval_metricOnSplit(timingsOutPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTime, estimateTimes1, cnames, dsets, dsetGroupings);
@@ -942,10 +942,9 @@ public class EstimatorResultsAnalysis {
             writeTableFile_EstimatorDatasetFolds(outPath + "allTestBenchmarkTimes.csv", "TestBenchmarkTimes", benchmarkedTestTimes, cnames, dsets);
         }
 
-
         String[] estimateResStr1 = null;
         String[] estimateResStr2 = null;
-        if (Arrays.asList(results.getSplits()).contains("train") && resultsType == EstimatorResultsCollection.ResultsType.CLASSIFICATION) {
+        if (Arrays.asList(results.getSplits()).contains("train") && resultsType != EstimatorResultsCollection.ResultsType.CLUSTERING) {
             double[][][] estimateTimes1 = results.sliceSplit("train").retrieveDoubles(PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked.getter)[0];
             if (estimateTimes1 != null)
                 estimateResStr1 = eval_metricOnSplit(outPath, filename, null, estimateLabel, PerformanceMetric.totalBuildPlusEstimateTimeBenchmarked, estimateTimes1, cnames, dsets, dsetGroupings);

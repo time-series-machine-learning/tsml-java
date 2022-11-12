@@ -8,6 +8,18 @@ import java.util.function.Function;
 
 public abstract class EstimatorResults {
 
+    //LINE 1: meta info, set by user
+
+    protected String datasetName = "";
+
+    protected String split = ""; //e.g train or test
+
+    protected int foldID = -1;
+
+    protected String description= ""; //human-friendly optional extra info if wanted.
+
+    //LINE 3: acc, buildTime, testTime, memoryUsage
+
     /**
      * The time taken to complete the build of an estimator, aka training. May be cumulative time over many parameter
      * set builds, etc It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
@@ -57,6 +69,88 @@ public abstract class EstimatorResults {
      * multi-threaded on a large dataset might exceed this.
      */
     protected TimeUnit timeUnit = TimeUnit.NANOSECONDS;
+
+
+    public String getDatasetName() { return datasetName; }
+
+    public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
+
+    public int getFoldID() { return foldID; }
+
+    public void setFoldID(int foldID) { this.foldID = foldID; }
+
+    /**
+     * e.g "train", "test", "validation"
+     */
+    public String getSplit() { return split; }
+
+    /**
+     * e.g "train", "test", "validation"
+     */
+    public void setSplit(String split) { this.split = split; }
+
+    /**
+     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
+     * Before considering different timeunits, all timing were in milliseconds, via
+     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
+     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
+     *
+     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
+     * Could be conceivable that the cumulative time of a large meta ensemble that is run
+     * multi-threaded on a large dataset might exceed this.
+     *
+     * In results files made before 19/2/2019, which only stored build times and
+     * milliseconds was assumed, there will be no unit of measurement for the time.
+     */
+    public TimeUnit getTimeUnit() {
+        return timeUnit;
+    }
+
+    /**
+     * This will NOT convert any timings already stored in this classifier results object
+     * to the new time unit. e.g if build time was had already been stored in seconds as 10, THEN
+     * setTimeUnit(TimeUnit.MILLISECONDS) was called, the actual value of build time would still be 10,
+     * but now assumed to mean 10 milliseconds.
+     *
+     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
+     * Before considering different timeunits, all timing were in milliseconds, via
+     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
+     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
+     *
+     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
+     * Could be conceivable that the cumulative time of a large meta ensemble that is run
+     * multi-threaded on a large dataset might exceed this.
+     *
+     * In results files made before 19/2/2019, which only stored build times and
+     * milliseconds was assumed, there will be no unit of measurement for the time.
+     */
+    public void setTimeUnit(TimeUnit timeUnit) {
+        this.timeUnit = timeUnit;
+    }
+
+    /**
+     * This is a free-form description that can hold any info you want, with the only caveat
+     * being that it cannot contain newline characters. Description could be the experiment
+     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
+     * up to the user to process if they want to.
+     *
+     * By default, it is an empty string.
+     */
+    public String getDescription() {
+        return description;
+    }
+    /**
+     * This is a free-form description that can hold any info you want, with the only caveat
+     * being that it cannot contain newline characters. Description could be the experiment
+     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
+     * up to the user to process if they want to.
+     *
+     * By default, it is an empty string.
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
 
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds

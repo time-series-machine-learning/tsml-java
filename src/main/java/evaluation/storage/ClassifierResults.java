@@ -74,8 +74,7 @@ import weka.estimators.Estimator;
  *    - loadResultsFromFile(String path)
  *    - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
  *
- * Supports recording of timings in different time units. Milliseconds is the default for
- * backwards compatability, however nano seconds is generally preferred.
+ * Supports recording of timings in different time units. Nanoseconds is the default.
  * Older files that are read in and do not have a time unit specified are assumed to be in milliseconds.
  *
  * WARNING: The timeunit does not enforce/convert any already-stored times to the new time unit from the old.
@@ -95,7 +94,7 @@ import weka.estimators.Estimator;
  *
  * EXAMPLE USAGE:
  *          ClassifierResults res = new ClassifierResults();
- *          //set a particular timeunit, if using something other than millis. Nanos recommended
+ *          //set a particular timeunit, if using something other than nanos. Nanos recommended
  *          //set any meta info you want to keep, e.g classifiername, datasetname...
  *
  *          for (Instance inst : test) {
@@ -106,7 +105,7 @@ import weka.estimators.Estimator;
  *              double pred = max(dist); //with some particular tie breaking scheme built in.
  *                              //easiest is utilities.GenericTools.indexOfMax(double[])
  *
- *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //desription is optional
+ *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //description is optional
  *          }
  *
  *          res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
@@ -147,9 +146,16 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
 
 //LINE 1: meta info, set by user
     private String classifierName = "";
-    private String datasetName = "";
-    private int foldID = -1;
-    private String split = ""; //e.g train or test
+
+    // datasetName
+
+    // split
+
+    // foldID
+
+    // timeUnit
+
+    // description
 
     private enum FileType {
         /**
@@ -176,8 +182,6 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
         COMPACT
     };
     private FileType fileType = FileType.PREDICTIONS;
-
-    private String description= ""; //human-friendly optional extra info if wanted.
 
 //LINE 2: classifier setup/info, parameters. precise format is up to user.
     //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
@@ -271,8 +275,6 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
      * Used to avoid infinite NLL scores when prob of true class =0 or
      */
     private static double NLL_PENALTY=-6.64; //Log_2(0.01)
-
-    // timeUnit
 
     //self-management flags
     /**
@@ -520,89 +522,6 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
 
     public String getClassifierName() { return classifierName; }
     public void setClassifierName(String classifierName) { this.classifierName = classifierName; }
-
-    public String getDatasetName() { return datasetName; }
-    public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
-
-    public int getFoldID() { return foldID; }
-    public void setFoldID(int foldID) { this.foldID = foldID; }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public String getSplit() { return split; }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public void setSplit(String split) { this.split = split; }
-
-
-    /**
-     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
-     * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
-     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
-     *
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     *
-     * In results files made before 19/2/2019, which only stored build times and
-     * milliseconds was assumed, there will be no unit of measurement for the time.
-     */
-    public TimeUnit getTimeUnit() {
-        return timeUnit;
-    }
-
-    /**
-     * This will NOT convert any timings already stored in this classifier results object
-     * to the new time unit. e.g if build time was had already been stored in seconds as 10, THEN
-     * setTimeUnit(TimeUnit.MILLISECONDS) was called, the actual value of build time would still be 10,
-     * but now assumed to mean 10 milliseconds.
-     *
-     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
-     * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
-     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
-     *
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     *
-     * In results files made before 19/2/2019, which only stored build times and
-     * milliseconds was assumed, there will be no unit of measurement for the time.
-     */
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit = timeUnit;
-    }
-
-
-
-    /**
-     * This is a free-form description that can hold any info you want, with the only caveat
-     * being that it cannot contain newline characters. Description could be the experiment
-     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
-     * up to the user to process if they want to.
-     *
-     * By default, it is an empty string.
-     */
-    public String getDescription() {
-        return description;
-    }
-    /**
-     * This is a free-form description that can hold any info you want, with the only caveat
-     * being that it cannot contain newline characters. Description could be the experiment
-     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
-     * up to the user to process if they want to.
-     *
-     * By default, it is an empty string.
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-
 
 
     /*****************************
@@ -1102,7 +1021,6 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
         return trueClassValues.get(index);
     }
 
-
     public ArrayList<Double> getPredClassVals(){
         return predClassValues;
     }
@@ -1201,7 +1119,7 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
     public static boolean printDistMissingWarning = true;
     /**
      * Reads and STORES the prediction in this classifierresults object
-     * returns true if the prediction described by this string was correct (i.e. truclass==predclass)
+     * returns true if the prediction described by this string was correct (i.e. trueclass==predclass)
      *
      * INCREMENTS NUMINSTANCES
      *
@@ -1488,7 +1406,7 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
             description += "," + parts[i];
     }
     private String generateFirstLine() {
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + ", "+ description;
+        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + "," + description;
     }
 
     private void parseSecondLine(String line) {
