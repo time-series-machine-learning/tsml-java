@@ -266,9 +266,9 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
                 trainData = data;
                 longestAddNeighbourTime = 0;
                 runTimer.reset();
+                runTimer.start(timeStamp);
                 evaluationTimer.reset();
                 checkpointConfig.resetCheckpointingTime();
-                runTimer.start(timeStamp);
                 if(getEstimateOwnPerformance()) {
                     evaluationTimer.start();
                     // init the searches for loocv
