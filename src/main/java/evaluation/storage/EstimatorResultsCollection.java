@@ -19,11 +19,7 @@ package evaluation.storage;
 import experiments.data.DatasetLists;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import utilities.DebugPrinting;
@@ -87,6 +83,8 @@ public class EstimatorResultsCollection implements DebugPrinting {
     private HashSet<String> estimatorsWithMissingResults;
     private HashSet<String> datasetsWithMissingResults;
     private HashSet<Integer> foldsWithMissingResults;
+
+    public static boolean printOnEstimatorNameMismatch = true;
     
     /**
      * Paths to directories containing all the estimatorNamesInStorage directories
@@ -621,6 +619,7 @@ public class EstimatorResultsCollection implements DebugPrinting {
                                     allResults[s][c][d][f] = loadEstimator(readPath + estimatorStorage +
                                             "/Predictions/" + datasetStorage + "/" + split + "Fold" + fold + ".csv");
                                 }
+
                                 //This is only an issue for old ClassifierResults files, we should probably stop
                                 //accepting those and just alter the results files if there are any left.
                                 if (ignoreMissingDistributions && allResults[s][c][d][f] instanceof ClassifierResults) {
@@ -631,6 +630,13 @@ public class EstimatorResultsCollection implements DebugPrinting {
                                         ignoringDistsFirstTime = false;
                                     }
                                 }
+
+                                if (printOnEstimatorNameMismatch && !allResults[s][c][d][f].estimatorName.equalsIgnoreCase(estimatorNamesInStorage[c])){
+                                    System.err.println("Estimator file name: \"" + allResults[s][c][d][f].estimatorName
+                                            + "\" is different from input name \"" + estimatorNamesInStorage[c] +
+                                            "\".");
+                                }
+
                                 allResults[s][c][d][f].findAllStatsOnce();
                                 if (cleanResults)
                                     allResults[s][c][d][f].cleanPredictionInfo();

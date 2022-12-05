@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import utilities.*;
-import weka.estimators.Estimator;
 
 /**
  * This is a container class for the storage of predictions and meta-info of a
@@ -145,7 +144,8 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
 
 
 //LINE 1: meta info, set by user
-    private String classifierName = "";
+
+    // estimatorName
 
     // datasetName
 
@@ -508,20 +508,6 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
     private void inferNumInstances() {
         this.numInstances = predClassValues.size();
     }
-
-
-
-
-    /***************************
-     *
-     *   LINE 1 GETS/SETS
-     *
-     *  Just basic descriptive stuff, nothing fancy goign on here
-     *
-     */
-
-    public String getClassifierName() { return classifierName; }
-    public void setClassifierName(String classifierName) { this.classifierName = classifierName; }
 
 
     /*****************************
@@ -1378,10 +1364,10 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
         //old tuned classifiers (and maybe others) just wrote a classifier name identifier
         //covering for backward compatability, otherwise datasetname is first
         if (parts.length == 1)
-            classifierName = parts[0];
+            estimatorName = parts[0];
         else {
             datasetName = parts[0];
-            classifierName = parts[1];
+            estimatorName = parts[1];
         }
 
         if (parts.length > 2)
@@ -1406,7 +1392,7 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
             description += "," + parts[i];
     }
     private String generateFirstLine() {
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + "," + description;
+        return datasetName + "," + estimatorName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + "," + description;
     }
 
     private void parseSecondLine(String line) {
@@ -2057,7 +2043,7 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
                 res.getPredDescriptionsAsArray());
         
         
-        newres.setClassifierName(res.getClassifierName());
+        newres.setEstimatorName(res.getEstimatorName());
         newres.setDatasetName(res.getDatasetName());
         newres.setFoldID(res.getFoldID());
         newres.setTimeUnit(res.getTimeUnit());
@@ -2088,7 +2074,7 @@ public class ClassifierResults extends EstimatorResults implements DebugPrinting
     private static void readWriteTest() throws Exception {
         ClassifierResults res = new ClassifierResults();
 
-        res.setClassifierName("testClassifier");
+        res.setEstimatorName("testClassifier");
         res.setDatasetName("testDataset");
         //empty split
         //empty foldid

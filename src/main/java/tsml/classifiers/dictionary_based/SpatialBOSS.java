@@ -451,7 +451,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
     private double findEnsembleTrainAcc(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

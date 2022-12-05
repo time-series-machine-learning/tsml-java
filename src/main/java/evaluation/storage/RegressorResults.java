@@ -116,7 +116,8 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
 
 
     //LINE 1: meta info, set by user
-    private String regressorName = "";
+
+    // estimatorName
 
     // datasetName
 
@@ -301,19 +302,6 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
     public void turnOnZeroTimingsErrors() {
         errorOnTimingOfZero = true;
     }
-
-
-    /***************************
-     *
-     *   LINE 1 GETS/SETS
-     *
-     *  Just basic descriptive stuff, nothing fancy goign on here
-     *
-     */
-
-    public String getRegressorName() { return regressorName; }
-
-    public void setRegressorName(String regressorName) { this.regressorName = regressorName; }
 
 
 
@@ -814,7 +802,7 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
             return;
 
         datasetName = parts[0];
-        regressorName = parts[1];
+        estimatorName = parts[1];
         split = parts[2];
         foldID = Integer.parseInt(parts[3]);
         setTimeUnitFromString(parts[4]);
@@ -825,7 +813,7 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
     }
 
     private String generateFirstLine() {
-        return datasetName + "," + regressorName + "," + split + "," + foldID + "," + getTimeUnitAsString() +  "," + description;
+        return datasetName + "," + estimatorName + "," + split + "," + foldID + "," + getTimeUnitAsString() +  "," + description;
     }
 
     private void parseSecondLine(String line) {

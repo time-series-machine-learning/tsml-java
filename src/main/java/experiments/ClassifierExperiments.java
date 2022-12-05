@@ -752,7 +752,7 @@ public class ClassifierExperiments {
     public static ClassifierResults evaluateEarlyClassifier(ExperimentalArguments exp, AbstractEarlyClassifier classifier, Instances testSet) throws Exception {
         ClassifierResults res = new ClassifierResults(testSet.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
-        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setEstimatorName(classifier.getClass().getSimpleName());
         res.setDatasetName(testSet.relationName());
         res.setFoldID(exp.foldId);
         res.setSplit("test");
@@ -879,7 +879,7 @@ public class ClassifierExperiments {
     }
 
     public static void writeResults(ExperimentalArguments exp, ClassifierResults results, String fullTestWritingPath, String split) throws Exception {
-        results.setClassifierName(exp.estimatorName);
+        results.setEstimatorName(exp.estimatorName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);

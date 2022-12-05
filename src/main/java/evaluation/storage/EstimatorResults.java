@@ -10,6 +10,8 @@ public abstract class EstimatorResults {
 
     //LINE 1: meta info, set by user
 
+    protected String estimatorName = "";
+
     protected String datasetName = "";
 
     protected String split = ""; //e.g train or test
@@ -70,6 +72,17 @@ public abstract class EstimatorResults {
      */
     protected TimeUnit timeUnit = TimeUnit.NANOSECONDS;
 
+    /***************************
+     *
+     *   LINE 1 GETS/SETS
+     *
+     *  Just basic descriptive stuff, nothing fancy goign on here
+     *
+     */
+
+    public String getEstimatorName() { return estimatorName; }
+
+    public void setEstimatorName(String estimatorName) { this.estimatorName = estimatorName; }
 
     public String getDatasetName() { return datasetName; }
 

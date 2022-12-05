@@ -495,7 +495,7 @@ public class ContractRotationForest extends EnhancedAbstractClassifier
 
     private void estimateOwnPerformance(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         //int numTrees = 200;

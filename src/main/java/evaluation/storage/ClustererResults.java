@@ -118,7 +118,8 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
 
 
     //LINE 1: meta info, set by user
-    private String clustererName = "";
+
+    //estimatorName
 
     // datasetName
 
@@ -300,25 +301,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     public void turnOnZeroTimingsErrors() {
         errorOnTimingOfZero = true;
     }
-
-
-    /***************************
-     *
-     *   LINE 1 GETS/SETS
-     *
-     *  Just basic descriptive stuff, nothing fancy going on here
-     *
-     */
-
-    public String getClustererName() {
-        return clustererName;
-    }
-
-    public void setClustererName(String clustererName) {
-        this.clustererName = clustererName;
-    }
-
-
+    
 
     /*****************************
      *
@@ -891,7 +874,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
             return;
 
         datasetName = parts[0];
-        clustererName = parts[1];
+        estimatorName = parts[1];
         split = parts[2];
         foldID = Integer.parseInt(parts[3]);
         setTimeUnitFromString(parts[4]);
@@ -902,7 +885,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     }
 
     private String generateFirstLine() {
-        return datasetName + "," + clustererName + "," + split + "," + foldID + "," + getTimeUnitAsString() +
+        return datasetName + "," + estimatorName + "," + split + "," + foldID + "," + getTimeUnitAsString() +
                 "," + description;
     }
 

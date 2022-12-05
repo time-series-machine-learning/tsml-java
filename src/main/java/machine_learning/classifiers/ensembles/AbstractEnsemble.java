@@ -41,7 +41,6 @@ import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 
@@ -546,7 +545,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         new File(fullPath).mkdirs();
         fullPath += "/" + trainOrTest + "Fold" + seed + ".csv";
         
-        results.setClassifierName(classifierName);
+        results.setEstimatorName(classifierName);
         results.setDatasetName(datasetName);
         results.setFoldID(seed);
         results.setSplit(trainOrTest);
@@ -630,7 +629,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         for (EnsembleModule module : modules)
             estimateTime += module.trainResults.getErrorEstimateTime();
 
-        trainResults.setClassifierName(ensembleName);
+        trainResults.setEstimatorName(ensembleName);
         if (datasetName == null || datasetName.equals(""))
             datasetName = data.relationName();
         trainResults.setDatasetName(datasetName);

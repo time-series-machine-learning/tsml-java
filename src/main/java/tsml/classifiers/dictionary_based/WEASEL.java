@@ -375,7 +375,7 @@ public class WEASEL extends EnhancedAbstractClassifier implements TechnicalInfor
     //NOTE TODO : prior to refactor, the estimate time was being included in the build time
     //measurement. I have retained that here for continuity, shout at jamesl otherwise
     long t2=System.nanoTime();
-    trainResults.setClassifierName(getClassifierName());
+    trainResults.setEstimatorName(getClassifierName());
     trainResults.setParas(classifierName);
     trainResults.setBuildTime(t2-t1);
     trainResults.setParas(getParameters());

@@ -404,7 +404,7 @@ public class ClusteringExperiments {
 
     public static void writeResults(ExperimentalArguments exp, ClustererResults results, String fullTestWritingPath, String split) throws Exception {
         results.setTimeUnit(TimeUnit.NANOSECONDS);
-        results.setClustererName(exp.estimatorName);
+        results.setEstimatorName(exp.estimatorName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);

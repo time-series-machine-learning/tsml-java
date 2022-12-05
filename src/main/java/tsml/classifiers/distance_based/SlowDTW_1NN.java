@@ -157,7 +157,7 @@ public class SlowDTW_1NN extends EnhancedAbstractClassifier  implements SaveEach
             trainResults.setErrorEstimateTime(estTime);
             trainResults.setErrorEstimateMethod("cv_loo");
             
-            trainResults.setClassifierName("SlowDTW_1NN");
+            trainResults.setEstimatorName("SlowDTW_1NN");
             trainResults.setDatasetName(train.relationName());
             trainResults.setSplit("train");
             //no foldid/seed

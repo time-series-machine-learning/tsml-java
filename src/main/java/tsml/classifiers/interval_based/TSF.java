@@ -803,7 +803,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("TSFBagging");
+            trainResults.setEstimatorName("TSFBagging");
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -831,7 +831,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             long buildTime = trainResults.getBuildTime();
             trainResults = cv.evaluate(tsf, data);
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("TSFCV");
+            trainResults.setEstimatorName("TSFCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
         else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
@@ -848,7 +848,7 @@ public class TSF extends EnhancedAbstractClassifier implements TechnicalInformat
             long buildTime = trainResults.getBuildTime();
             trainResults = tsf.trainResults;
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("TSFOOB");
+            trainResults.setEstimatorName("TSFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }

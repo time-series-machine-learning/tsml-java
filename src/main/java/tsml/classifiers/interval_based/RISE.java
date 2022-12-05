@@ -757,7 +757,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
 
     private void estimateOwnPerformance(Instances data) throws Exception{
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         if(trainEstimateMethod == TrainEstimateMethod.OOB) {
             trainResults.setFoldID(seed);
@@ -855,7 +855,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
                 double predClass = findIndexOfMax(finalDistributions[i], rand);
                 trainResults.addPrediction(data.get(i).classValue(), finalDistributions[i], predClass, 0, "");
             }
-            trainResults.setClassifierName("RISEOOB");
+            trainResults.setEstimatorName("RISEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
         else if(trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE) {
@@ -878,7 +878,7 @@ public class RISE extends EnhancedAbstractClassifier implements TrainTimeContrac
             rise.setEstimateOwnPerformance(false);
             trainResults = cv.evaluate(rise, data);
             long est2 = System.nanoTime();
-            trainResults.setClassifierName("RISECV");
+            trainResults.setEstimatorName("RISECV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
         this.timer.forestElapsedTime = System.nanoTime() - this.timer.forestStartTime;

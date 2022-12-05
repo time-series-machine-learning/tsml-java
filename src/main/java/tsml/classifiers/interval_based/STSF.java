@@ -850,7 +850,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         long buildTime = trainResults.getBuildTime();
         trainResults=cv.evaluate(tsf,data);
         trainResults.setBuildTime(buildTime);
-        trainResults.setClassifierName("TSFCV");
+        trainResults.setEstimatorName("TSFCV");
         trainResults.setErrorEstimateMethod("CV_"+numFolds);
     }
 
