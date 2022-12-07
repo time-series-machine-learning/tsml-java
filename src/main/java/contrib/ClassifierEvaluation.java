@@ -3,11 +3,16 @@ package contrib;
 import evaluation.storage.ClassifierResults;
 import evaluation.storage.EstimatorResultsCollection;
 import experiments.data.DatasetLists;
+import fileIO.InFile;
 import fileIO.OutFile;
+import org.checkerframework.checker.units.qual.A;
 import tsml.classifiers.hybrids.HIVE_COTE;
-
+import experiments.CollateResults;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 public class ClassifierEvaluation {
 
@@ -70,23 +75,17 @@ public class ClassifierEvaluation {
         x.runComparison();
     }
 
-    public static void localResults(String[] classifiers) throws Exception {
-        String location = "C:\\Results Working Area\\MultivariateReferenceResults\\sktime\\";
-        evaluation.MultipleEstimatorEvaluation x = new evaluation.MultipleEstimatorEvaluation(location, "AllResults", 10);
+    public static void localResults(String[] classifiers, String[] d, String location, String name, int numFolds) throws Exception {
+//        String location = "C:\\Results Working Area\\MultivariateReferenceResults\\sktime\\";
+        evaluation.MultipleEstimatorEvaluation x = new evaluation.MultipleEstimatorEvaluation(location, name, numFolds);
 
-//        System.arraycopy(d1,0,datasets,0,d1.length);
-//        System.arraycopy(d2,0,datasets,d1.length,d2.length);
         ClassifierResults.printOnFailureToLoad = false;
         x.setIgnoreMissingResults(true);
         x.setBuildMatlabDiagrams(true);
         x.setTestResultsOnly(true);
         x.setResultsType(EstimatorResultsCollection.ResultsType.CLASSIFICATION);
         String loc = location;
-        String[] d = DatasetLists.mtscProblems2022;
         System.out.println(" number problems = "+d.length);
- //       String[] clst = {"TDE","DrCIF","Arsenal","STC","Mini-ROCKET","Multi-ROCKET","ROCKET"};//,HC2"."FreshPRINCE","MUSE"}; //,,"",,"TDE","CIF","HC1","TDE","HC2","STSF"};
-
-//        String[] clst = {"Arsenal","cBOSS","CIF","DrCIF","DTW-A","DTW-D","DTW-I","gRSF","HC1","HC2","InceptionTime","MrSEQL","MUSE","ResNet","RISE","ROCKET","STC","TDE","TSF"}; //,"TDE", "DrCIF", "CIF","HC1","TDE","HC2","STSF"};
         x.setDatasets(d);
         x.readInEstimators(classifiers, loc);
         //x.setDebugPrinting(true);
@@ -123,6 +122,59 @@ Tiselac
 
     }
 
+    public static void summariseAccuracies(String[] classifiers, String[] problems, String path, int maxResamples) {
+        double[][][] accTest = new double[problems.length][classifiers.length][maxResamples];
+        double[][][] accTrain = new double[problems.length][classifiers.length][maxResamples];;
+        for(int i=0;i< classifiers.length;i++){
+            for(int j=0;j< problems.length;j++){
+                for(int k=0;k<maxResamples;k++){
+                    String fileName=path+classifiers[i]+"\\Predictions\\"+problems[j]+"\\";
+                    File f = new File(fileName+"testResample"+k+".csv");
+                    if(f.exists()){
+                        InFile inf = new InFile(fileName+"testResample"+k+".csv");
+                        inf.readLine();
+                        inf.readLine();
+                        accTest[j][i][k] = inf.readDouble();
+                    }
+                    else
+                        accTest[j][i][k] = Double.POSITIVE_INFINITY;
+                }
+            }
+        }
+        OutFile all = new OutFile(path+"DefaultSplitAccuracies.csv");
+        for(int i=0;i< classifiers.length;i++)
+            all.writeString(","+classifiers[i]);
+        all.writeString("\n");
+        for(int j=0;j< problems.length;j++) {
+            all.writeString(problems[j]);
+            for (int i = 0; i < classifiers.length; i++)
+                all.writeString("," + accTest[j][i][0]);
+            all.writeString(",\n");
+        }
+        all = new OutFile(path+"AverageAccuracies.csv");
+        for(int i=0;i< classifiers.length;i++)
+            all.writeString(","+classifiers[i]);
+        all.writeString("\n");
+        for(int j=0;j< problems.length;j++) {
+            all.writeString(problems[j]);
+            for (int i = 0; i < classifiers.length; i++){
+                double sum=0;
+                for(int k=0;k<maxResamples; k++){
+                    if(accTest[j][i][k]!=Double.POSITIVE_INFINITY)
+                        sum+=accTest[j][i][k];
+                    else {
+                        sum = Double.POSITIVE_INFINITY;
+                        break;
+                    }
+                }
+                if(sum!=Double.POSITIVE_INFINITY)
+                    all.writeString("," + sum/maxResamples);
+                else
+                    all.writeString("," + sum);
+            }
+            all.writeString(",\n");
+        }
+    }
     public static void summariseResultsPresent(String[] classifiers, String[] problems, String path){
         int maxResamples=30;
         int[][] countTest = new int[problems.length][classifiers.length];
@@ -182,50 +234,108 @@ Tiselac
 
         }
     }
-    static String[] allMultivariate = {
+    //<editor-fold defaultstate="collapsed" desc="defaultCapableSktimeClassifiers: sktime classifiers that can be built with default parameters"
+    static String[] defaultCapableSktimeClassifiers = {
             "Arsenal",
-            "CNN",
-            "CIF",
-            "Catch22",
+            "BOSSEnsemble",
+            "CNNClassifier",
+            "CanonicalIntervalForest",
+            "Catch22Classifier",
+            "ComposableTimeSeriesForestClassifier",
+            "ContractableBOSS",
             "DrCIF",
+            "DummyClassifier",
+            "ElasticEnsemble",
             "FreshPRINCE",
-            "HC2",
+            "HIVECOTEV1",
+            "HIVECOTEV2",
+            "IndividualBOSS",
+            "IndividualTDE",
+            "KNeighborsTimeSeriesClassifier",
+            "MatrixProfileClassifier",
+            "ProximityForest",
+            "ProximityStump",
+            "ProximityTree",
+            "RandomIntervalClassifier",
+            "RandomIntervalSpectralEnsemble",
+            "RocketClassifier",
+            "ShapeDTW",
+            "ShapeletTransformClassifier",
+            "SignatureClassifier",
+            "SummaryClassifier",
+            "SupervisedTimeSeriesForest",
+            "TSFreshClassifier",
+            "TemporalDictionaryEnsemble",
+            "TimeSeriesForestClassifier",
+            "WEASEL"
+    };
+//</editor-fold>
+    //<editor-fold defaultstate="collapsed" desc="allSktimeClassifiers: All classifiers in sktime toolkit"
+    static String[] allSktimeClassifiers = {
+            "Arsenal",
+            "BOSSEnsemble",
+            "CNNClassifier",
+            "CanonicalIntervalForest",
+            "Catch22Classifier",
+            "ClassifierPipeline",
+            "ColumnEnsembleClassifier",
+            "ComposableTimeSeriesForestClassifier",
+            "ContractableBOSS",
+            "DrCIF",
+            "DummyClassifier",
+            "ElasticEnsemble",
+            "FreshPRINCE",
+            "HIVECOTEV1",
+            "HIVECOTEV2",
+            "IndividualBOSS",
             "IndividualTDE",
             "KNeighborsTimeSeriesClassifier",
             "MUSE",
+            "MatrixProfileClassifier",
             "ProbabilityThresholdEarlyClassifier",
-            "RandomInterval",
-            "ROCKET",
-            "STC",
-            "Signature",
-            "Summary",
-            "TSFresh",
-            "TDE",
-            "WeightedEnsemble",
-};//Fresh Prince, "CIF",
+            "ProximityForest",
+            "ProximityStump",
+            "ProximityTree",
+            "RandomIntervalClassifier",
+            "RandomIntervalSpectralEnsemble",
+            "RocketClassifier",
+            "ShapeDTW",
+            "ShapeletTransformClassifier",
+            "SignatureClassifier",
+            "SklearnClassifierPipeline",
+            "SummaryClassifier",
+            "SupervisedTimeSeriesForest",
+            "TSFreshClassifier",
+            "TemporalDictionaryEnsemble",
+            "TimeSeriesForestClassifier",
+            "WEASEL"
+    };
+//</editor-fold>
+    //<editor-fold defaultstate="collapsed" desc="mtscSktimeClassifiers: Multivariate capable sktime classifiers"
+
+
     static String[] mtscSktimeClassifiers = {
             "Arsenal",
-            "CIF",  //Not Default
-            "Catch22",  //Not Default
-            "CIF",  //Not Default
+            "CanonicalIntervalForest",
+            "Catch22Classifier",
             "CNNClassifier",
-            "DrCIF", //Not Default
+            "DrCIF",
             "FreshPRINCE",
             "HIVECOTEV2",
             "IndividualTDE",
             "KNeighborsTimeSeriesClassifier",
-            "Mini-ROCKET",
             "MLPClassifier",
-            "Multi-ROCKET",
             "MUSE",
-            "RandomInterval", //Not Default
+            "RandomIntervalClassifier",
             "RocketClassifier",
-            "STC", //Not Default
+            "ShapeletTransformClassifier",
             "SignatureClassifier",
-            "Summary", //Not Default
+            "SummaryClassifier",
             "TemporalDictionaryEnsemble",
-            "TSFresh",
+            "TSFreshClassifier",
     };
+//</editor-fold>
+    //<editor-fold defaultstate="collapsed" desc="utscSktimeClassifiers: Univariate classifiers set in estimator-evaluation through set_classifier()"
     static String[] utscSktimeClassifiers = {
             "Arsenal",
             "BOSSEnsemble",
@@ -264,21 +374,93 @@ Tiselac
             "TemporalDictionaryEnsemble",
             "WEASEL"
     };
-    
+//</editor-fold>
 
-    
-//Change name CNNClassifier -> CNN when finished
+
+    //<editor-fold defaultstate="collapsed" desc="selectedClassifiers: specific subset of classifiers"
+    static String[] selectedClassifiers = {
+            "Arsenal",
+            "CNN",
+            "DrCIF",
+            "FreshPRINCE",
+            "HC2",
+            "KNeighborsTimeSeriesClassifier",
+            "MLP",
+            "MUSE",
+            "ROCKET",
+            "Mini-ROCKET",
+            "Multi-ROCKET",
+            "STC",
+            "TDE",
+    };
+//</editor-fold>
+
+
+    //Change name CNNClassifier -> CNN when finished
     static String[] clst = {"Arsenal","Catch22","CIF","CNNClassifier","DrCIF","FreshPRINCE","HC2","Mini-ROCKET\n" +
         "//        dimensionSelection();","Multi-ROCKET", "ROCKET", "STC","TDE"};//Fresh Prince, "CIF","MUSE",
+
+
+    public static void collateResults(String resultsPath,String[] classifiers, String[] problems, int folds) throws Exception {
+        for(int i=0;i<classifiers.length;i++) {
+            String cls = classifiers[i];
+            System.out.println("Processing classifier =" + cls);
+            File f = new File(resultsPath + cls);
+            if (f.isDirectory()) { //Check classifier directory exists.
+                System.out.println("Base path " + resultsPath + cls + " exists");
+                File stats = new File(resultsPath + cls + "/SummaryStats");
+                //Delete any stats files there already
+                String[] entries = stats.list();
+                for (String s : entries) {
+                    File currentFile = new File(stats.getPath(), s);
+                    currentFile.delete();
+                }
+                stats.delete();
+            }
+            ClassifierResults res = new ClassifierResults("ResultsPath");
+
+        }
+
+    }
+
+    /**
+     * Collate individual results files to create accuracy by classifier files
+     * @param path
+     * @param classifiers
+     * @param problems
+     */
+    public static void accuracyByClassifier(String path, String[] classifiers, String[] problems){
+        File f = new File(path+"ByClassifier\\");
+        f.mkdirs();
+        for(String cls:classifiers){
+           OutFile of = new OutFile(path+"ByClassifier\\"+cls+".csv");
+           for(String str:problems){
+
+
+
+           }
+        }
+
+    }
+
     public static void main(String[] args) throws Exception {
 //        referenceResults();
- //       localResults(referenceClassifiers);
-        System.out.println(" Number of MTSC classifiers = "+ mtscSktimeClassifiers.length);
-        String path="X:\\Results Working Area\\MultivariateReferenceResults\\sktime\\";
-        summariseResultsPresent (mtscSktimeClassifiers,DatasetLists.mtscProblems2022,path);
-        System.out.println(" Number of UTSC classifiers = "+ utscSktimeClassifiers.length);
-        path="X:\\Results Working Area\\UnivariateReferenceResults\\sktime\\";
-        summariseResultsPresent (utscSktimeClassifiers,DatasetLists.tscProblems112,path);
+//        System.out.println(" Number of classifiers = "+ allSktimeClassifiers.length);
+//          String path="X:\\Results Working Area\\MultivariateReferenceResults\\sktime\\";
+          String path="C:\\Results Working Area\\DefaultClassifiers\\sktime\\";
+          String[] allProblems = Stream.concat(Arrays.stream(DatasetLists.tscProblems112), Arrays.stream(DatasetLists.mtscProblems2022))
+                .toArray(String[]::new);
+//        collateResults(path, defaultCapableSktimeClassifiers, allProblems, 1);
+        path="X:\\Results Working Area\\ReduxBakeoff\\sktime\\";
+        summariseResultsPresent(selectedClassifiers, DatasetLists.mtscProblems2022, path);
+//        summariseResultsPresent (defaultCapableSktimeClassifiers,allProblems,path);
+//        localResults(defaultCapableSktimeClassifiers, allProblems,path,"DefaultResults",1);
+//        summariseResultsPresent (selectedClassifiers,DatasetLists.eegProblems,path);
+//        summariseAccuracies(selectedClassifiers,DatasetLists.eegProblems,path,30);
+
+//        System.out.println(" Number of UTSC classifiers = "+ utscSktimeClassifiers.length);
+//        path="X:\\Results Working Area\\UnivariateReferenceResults\\sktime\\";
+//        summariseResultsPresent (utscSktimeClassifiers,DatasetLists.tscProblems112,path);
     }
     public static void buildHC2(){
         HIVE_COTE hc2 = new HIVE_COTE();

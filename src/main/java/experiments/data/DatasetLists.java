@@ -195,6 +195,17 @@ public class DatasetLists {
 };
        //</editor-fold>       
 
+	public static String[] eegProblems={
+			"Blink",
+			"EyesOpenShut",
+			"FaceDetection",
+			"FingerMovements",
+			"HandMovementDirection",
+			"MindReading",
+			"MotorImagery",
+			"SelfRegulationSCP1",
+			"SelfRegulationSCP2",
+	};
 	public static String[] mtscProblems2022={
 			"ArticularyWordRecognition", //Index 0
 			"AsphaltObstaclesCoordinatesEq",

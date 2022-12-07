@@ -77,13 +77,13 @@ import java.util.HashMap;
 **/
 public class CollateResults {
     public static File[] dir;
-    static String basePath;
-    static String[] classifiers;
-    static ArrayList<String> problems;
-    static String problemPath;
-    static int folds;
-    static int numClassifiers;
-    static int[] numParas;
+    public static String basePath;
+    public static String[] classifiers;
+    public static ArrayList<String> problems;
+    public static String problemPath;
+    public static int folds;
+    public static int numClassifiers;
+    public static int[] numParas;
     static DecimalFormat df=new DecimalFormat("##.######");
     static double[][] data;
     static boolean countPartials=false;
@@ -106,7 +106,7 @@ public class CollateResults {
         System.out.println("Base path = "+basePath);
         problemPath=args[1];
         System.out.println("Problem path = "+problemPath);
-         folds =Integer.parseInt(args[2]);
+        folds =Integer.parseInt(args[2]);
         System.out.println("Folds = "+folds);
         String partial=args[3].toLowerCase();        
         if(partial.equals("true"))
@@ -215,13 +215,13 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                 OutFile nllResults=new OutFile(filePath+cls+"TestNLL.csv");
                 OutFile AUROCResults=new OutFile(filePath+cls+"TestAUROC.csv");
                 OutFile trainResults=new OutFile(filePath+cls+"TrainCVAcc.csv");
-                OutFile[] paraFiles=null;
-                if(numParas[i]>0){
+//                OutFile[] paraFiles=null;
+/*                if(numParas[i]>0){
                     paraFiles=new OutFile[numParas[i]];
                     for(int j=0;j<paraFiles.length;j++)
                         paraFiles[j]=new OutFile(filePath+cls+"Parameter"+(j+1)+".csv");
                 }
-                OutFile timings=new OutFile(filePath+cls+"Timings.csv");
+*/              OutFile timings=new OutFile(filePath+cls+"Timings.csv");
                 OutFile mem=new OutFile(filePath+cls+"Memory.csv");
                 OutFile allAccSearchValues=new OutFile(filePath+cls+"AllTuningAccuracies.csv");
                 OutFile missing=null;
@@ -243,11 +243,12 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                     allAccSearchValues.writeString(name);
                     timings.writeString(name);
                     mem.writeString(name);
-                    if(numParas[i]>0){
+/*                    if(numParas[i]>0){
                         for(OutFile out:paraFiles)
                             out.writeString(name+",");
                     }
-//GAVIN HACK                    
+*/
+//GAVIN HACK
 //                    String path=basePath+cls+"/"+name+"/results/";
                     String path=basePath+cls+"//Predictions//"+name;
                     if(missing!=null && missingCount>0)
@@ -282,7 +283,7 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                                         trainResults.writeString(","+Double.parseDouble(str));
                                         //Then variable list of numParas
                                         int pos=5;
-                                        for(int k=0;k<numParas[i];k++){
+/*                                        for(int k=0;k<numParas[i];k++){
                                             if(trainRes.length>pos){
                                                 paraFiles[k].writeString(trainRes[pos]+",");
                                                 pos+=2;    
@@ -290,15 +291,15 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                                             else
                                                 paraFiles[k].writeString(",");
                                         }
-    //                                    write the rest to the para search file
+  */  //                                    write the rest to the para search file
                                         while(pos<trainRes.length)
                                             allAccSearchValues.writeString(","+trainRes[pos++]);    
                                     }
                                 }
                                 else{
                                     trainResults.writeString(",");
-                                    for(int k=0;k<numParas[i];k++)
-                                        paraFiles[k].writeString(",");
+//                                    for(int k=0;k<numParas[i];k++)
+//                                        paraFiles[k].writeString(",");
                                 }
 //Read in the rest into a ClassifierResults object
                                 inf.closeFile();
@@ -366,13 +367,13 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                     timings.writeString("\n");
                     allAccSearchValues.writeString("\n");
                     
-                    for(int k=0;k<numParas[i];k++)
-                        paraFiles[k].writeString("\n");
+//                    for(int k=0;k<numParas[i];k++)
+//                        paraFiles[k].writeString("\n");
                 }
                 clsResults.closeFile();
                 trainResults.closeFile();
-                    for(int k=0;k<numParas[i];k++)
-                        paraFiles[k].closeFile();
+//                    for(int k=0;k<numParas[i];k++)
+//                        paraFiles[k].closeFile();
             }
             else{
                 System.out.println("Classifier "+cls+" has no results directory: "+basePath+cls);
