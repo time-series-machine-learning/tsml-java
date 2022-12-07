@@ -228,7 +228,7 @@ public class ROCKETClassifier extends EnhancedAbstractClassifier implements Trai
         long tt = trainResults.getBuildTime();
         trainResults = cv.evaluate(newCls, data);
         trainResults.setBuildTime(tt);
-        trainResults.setClassifierName("ROCKETCV");
+        trainResults.setEstimatorName("ROCKETCV");
         trainResults.setErrorEstimateMethod("CV_" + numFolds);
     }
 

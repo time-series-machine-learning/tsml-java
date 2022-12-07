@@ -351,7 +351,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getTSCapabilities().test(data);
@@ -901,7 +901,7 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                         -1, "");
             }
 
-            trainResults.setClassifierName("TDEOOB");
+            trainResults.setEstimatorName("TDEOOB");
             trainResults.setErrorEstimateMethod("OOB");
         } else {
             double[][] trainDistributions = new double[train.numInstances()][train.numClasses()];
@@ -927,10 +927,10 @@ public class TDE extends EnhancedAbstractClassifier implements TrainTimeContract
                     }
                 }
 
-                trainResults.setClassifierName("TDESubsampleLOO");
+                trainResults.setEstimatorName("TDESubsampleLOO");
                 trainResults.setErrorEstimateMethod("SubsampleLOOCV");
             } else {
-                trainResults.setClassifierName("TDELOO");
+                trainResults.setEstimatorName("TDELOO");
                 trainResults.setErrorEstimateMethod("LOOCV");
             }
 

@@ -357,7 +357,7 @@ public class BOSS extends EnhancedAbstractClassifier implements
         this.ensembleCvPreds = new double[data.numInstances()];
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

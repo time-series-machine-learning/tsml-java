@@ -204,7 +204,7 @@ public class WEASEL_MUSE extends EnhancedAbstractClassifier {
         }
 
         long t2=System.nanoTime();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setParas(classifierName);
         trainResults.setBuildTime(t2-t1);
         trainResults.setParas(getParameters());

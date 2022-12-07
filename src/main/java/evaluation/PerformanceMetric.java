@@ -20,6 +20,7 @@ package evaluation;
 import evaluation.storage.ClassifierResults;
 import evaluation.storage.ClustererResults;
 import evaluation.storage.EstimatorResults;
+import evaluation.storage.RegressorResults;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,12 +119,16 @@ public class PerformanceMetric {
     public static PerformanceMetric harmonicMean    = new PerformanceMetric("HarmonicMean", ClassifierResults.GETTER_HarmonicMean,       mean, max,   better, isNotBenchmarked, test);
 
     public static PerformanceMetric clAcc           = new PerformanceMetric("CL-ACC", ClustererResults.GETTER_Accuracy,                  mean, max,   better, isNotBenchmarked, test);
-    public static PerformanceMetric ri              = new PerformanceMetric("RI", ClustererResults.GETTER_RandIndex,                     mean, max,   better, isNotBenchmarked, test);
-    public static PerformanceMetric ari             = new PerformanceMetric("ARI", ClustererResults.GETTER_AdjustedRandIndex,            mean, max,   better, isNotBenchmarked, test);
-    public static PerformanceMetric mi              = new PerformanceMetric("MI", ClustererResults.GETTER_MutualInformation,             mean, max,   better, isNotBenchmarked, test);
-    public static PerformanceMetric nmi             = new PerformanceMetric("NMI", ClustererResults.GETTER_NormalizedMutualInformation,  mean, max,   better, isNotBenchmarked, test);
-    public static PerformanceMetric ami             = new PerformanceMetric("AMI", ClustererResults.GETTER_AdjustedMutualInformation,    mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric RI              = new PerformanceMetric("RI", ClustererResults.GETTER_RandIndex,                     mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric ARI             = new PerformanceMetric("ARI", ClustererResults.GETTER_AdjustedRandIndex,            mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric MI              = new PerformanceMetric("MI", ClustererResults.GETTER_MutualInformation,             mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric NMI             = new PerformanceMetric("NMI", ClustererResults.GETTER_NormalizedMutualInformation,  mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric AMI             = new PerformanceMetric("AMI", ClustererResults.GETTER_AdjustedMutualInformation,    mean, max,   better, isNotBenchmarked, test);
 
+    public static PerformanceMetric MSE             = new PerformanceMetric("MSE", RegressorResults.GETTER_MSE,                          mean, min,   worse, isNotBenchmarked, test);
+    public static PerformanceMetric MAE             = new PerformanceMetric("MAE", RegressorResults.GETTER_MAE,                          mean, min,   worse, isNotBenchmarked, test);
+    public static PerformanceMetric R2              = new PerformanceMetric("R2", RegressorResults.GETTER_R2,                            mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric MAPE            = new PerformanceMetric("MAPE", RegressorResults.GETTER_MAPE,                        mean, min,   worse, isNotBenchmarked, test);
 
     public static List<PerformanceMetric> getAccuracyStatistic() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
@@ -177,11 +182,21 @@ public class PerformanceMetric {
     public static List<PerformanceMetric> getClusteringStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(clAcc);
-        stats.add(ri);
-        stats.add(ari);
-        stats.add(mi);
-        stats.add(nmi);
-        stats.add(ami);
+        stats.add(RI);
+        stats.add(ARI);
+        stats.add(MI);
+        stats.add(NMI);
+        stats.add(AMI);
+
+        return stats;
+    }
+
+    public static List<PerformanceMetric> getRegressionStatistics() {
+        ArrayList<PerformanceMetric> stats = new ArrayList<>();
+        stats.add(MSE);
+        stats.add(MAE);
+        stats.add(R2);
+        stats.add(MAPE);
 
         return stats;
     }

@@ -16,7 +16,6 @@
  */
 package evaluation.evaluators;
 
-import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import java.util.concurrent.TimeUnit;
 import static utilities.GenericTools.indexOfMax;
@@ -61,7 +60,7 @@ public class SingleTestSetEvaluator extends Evaluator {
 
         ClassifierResults res = new ClassifierResults(insts.numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
-        res.setClassifierName(classifier.getClass().getSimpleName());
+        res.setEstimatorName(classifier.getClass().getSimpleName());
         res.setDatasetName(dataset.relationName());
         res.setFoldID(seed);
         res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed

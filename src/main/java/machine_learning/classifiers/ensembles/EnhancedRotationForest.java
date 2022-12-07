@@ -448,7 +448,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("RotFBagging");
+            trainResults.setEstimatorName("RotFBagging");
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -469,7 +469,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("RotFTrain");
+            trainResults.setEstimatorName("RotFTrain");
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -498,7 +498,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             long buildTime = trainResults.getBuildTime();
             trainResults = cv.evaluate(rotf, data);
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("RotFCV");
+            trainResults.setEstimatorName("RotFCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         }
         else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
@@ -519,7 +519,7 @@ public class EnhancedRotationForest extends EnhancedAbstractClassifier
             long buildTime = trainResults.getBuildTime();
             trainResults = rotf.trainResults;
             trainResults.setBuildTime(buildTime);
-            trainResults.setClassifierName("RotFOOB");
+            trainResults.setEstimatorName("RotFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }

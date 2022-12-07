@@ -448,7 +448,7 @@ public class BOSSSpatialPyramids_BD extends EnhancedAbstractClassifier implement
 
     private double findEnsembleTrainAcc(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

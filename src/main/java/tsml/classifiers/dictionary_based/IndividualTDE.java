@@ -852,7 +852,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setParas(getParameters());
         trainResults.setBuildTime(System.nanoTime());
 

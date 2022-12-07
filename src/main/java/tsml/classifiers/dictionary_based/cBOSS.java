@@ -1083,7 +1083,7 @@ public class cBOSS extends EnhancedAbstractClassifier implements TrainTimeContra
         int totalClassifers = sum(numClassifiers);
         double correct = 0;
 
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

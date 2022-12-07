@@ -202,7 +202,7 @@ public class ElasticEnsemble extends EnhancedAbstractClassifier implements Writa
         trainResults.setErrorEstimateTime(estTime);
         trainResults.setErrorEstimateMethod("cv_loo");
 
-        trainResults.setClassifierName("EE");
+        trainResults.setEstimatorName("EE");
         trainResults.setDatasetName(train.relationName());
         trainResults.setSplit("train");
         //no foldid/seed

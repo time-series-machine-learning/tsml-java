@@ -271,7 +271,7 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
 //                    cvmodels.setNextNumIterations(p4);
 //                    tempResults=cv.crossValidateWithStats(cvmodels,trainCopy);
 
-                    tempResults.setClassifierName("XGBoostPara"+count);
+                    tempResults.setEstimatorName("XGBoostPara"+count);
                     tempResults.setParas("learningRate,"+p1+",maxTreeDepth,"+p2+",numIterations="+p4);
 
                     double e=1-tempResults.getAcc();
@@ -478,7 +478,7 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
 //            trainResults.buildTime=System.nanoTime()-startTime;
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(tuneParameters ? "TunedXGBoost" : "XGBoost");
+        trainResults.setEstimatorName(tuneParameters ? "TunedXGBoost" : "XGBoost");
         trainResults.setDatasetName(trainInsts.relationName());
         trainResults.setParas(getParameters());
     }

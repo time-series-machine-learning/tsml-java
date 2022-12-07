@@ -49,12 +49,12 @@ public class ResultUtils {
     
     public static void setClassifierInfo(ClassifierResults results, Classifier classifier) {
         if(classifier instanceof EnhancedAbstractClassifier) {
-            results.setClassifierName(((EnhancedAbstractClassifier) classifier).getClassifierName());
+            results.setEstimatorName(((EnhancedAbstractClassifier) classifier).getClassifierName());
             results.setFoldID(((EnhancedAbstractClassifier) classifier).getSeed());
             results.setParas(((EnhancedAbstractClassifier) classifier).getParameters());
             results.setErrorEstimateMethod(((EnhancedAbstractClassifier) classifier).getEstimatorMethod());
         } else {
-            results.setClassifierName(classifier.getClass().getSimpleName());
+            results.setEstimatorName(classifier.getClass().getSimpleName());
             if(classifier instanceof OptionHandler) {
                 results.setParas(StrUtils.join(",", ((OptionHandler) classifier).getOptions()));
             }
