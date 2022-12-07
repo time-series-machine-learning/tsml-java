@@ -852,7 +852,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setParas(getParameters());
         trainResults.setBuildTime(System.nanoTime());
 
@@ -1033,6 +1033,7 @@ public class IndividualTDE extends EnhancedAbstractClassifier implements Compara
     public double[] firstWordVis(TimeSeriesInstance inst, BitWord word) {
         double[] dft = performMFT(inst.toValueArray()[0])[0];
         word.setWord(createWord(dft).getWord());
+        word.setLength((byte) wordLength);
         return dft;
     }
 

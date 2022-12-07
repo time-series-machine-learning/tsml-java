@@ -426,7 +426,7 @@ public class BOSSC45 extends EnhancedAbstractClassifier implements SaveParameter
     
     private double findEnsembleTrainAcc(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

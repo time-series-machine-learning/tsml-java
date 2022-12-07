@@ -235,7 +235,7 @@ public class Tuner
         classifier.setOptions(options);
 
         ClassifierResults results = evaluator.evaluate(classifier, data);
-        results.setClassifierName("TunedClassifier:"+classifierName);
+        results.setEstimatorName("TunedClassifier:"+classifierName);
         results.setDatasetName(datasetName);
         results.setFoldID(seed);
         results.setSplit("train");

@@ -691,7 +691,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
                     if (instIdx == lastIdx) {
                         x1[i] = x1[i-1];
-                        x1[i] = x1[i-1];
+                        x2[i] = x2[i-1];
                         y[i] = y[i-1];
                         sameInst = true;
                     } else {
@@ -753,7 +753,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
 
                     if (instIdx == lastIdx) {
                         x1[i] = x1[i-1];
-                        x1[i] = x1[i-1];
+                        x2[i] = x2[i-1];
                         y[i] = y[i-1];
                         sameInst = true;
                     } else {
@@ -850,7 +850,7 @@ public class STSF extends EnhancedAbstractClassifier implements TechnicalInforma
         long buildTime = trainResults.getBuildTime();
         trainResults=cv.evaluate(tsf,data);
         trainResults.setBuildTime(buildTime);
-        trainResults.setClassifierName("TSFCV");
+        trainResults.setEstimatorName("TSFCV");
         trainResults.setErrorEstimateMethod("CV_"+numFolds);
     }
 

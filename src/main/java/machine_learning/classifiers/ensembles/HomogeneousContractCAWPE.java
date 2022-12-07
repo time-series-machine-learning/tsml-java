@@ -41,7 +41,7 @@ public class HomogeneousContractCAWPE extends CAWPE {
         modules[idx] = new EnsembleModule(c.getClass().getSimpleName(), c, "");
 
         modules[idx].trainResults = new ClassifierResults(numClasses);
-        modules[idx].trainResults.setClassifierName(c.getClass().getSimpleName());
+        modules[idx].trainResults.setEstimatorName(c.getClass().getSimpleName());
         modules[idx].trainResults.setDatasetName(trainInsts.relationName());
         modules[idx].trainResults.setFoldID(seed);
         modules[idx].trainResults.setSplit("train");

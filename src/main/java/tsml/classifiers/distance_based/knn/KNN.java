@@ -266,6 +266,7 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
                 trainData = data;
                 longestAddNeighbourTime = 0;
                 runTimer.reset();
+                runTimer.start(timeStamp);
                 evaluationTimer.reset();
                 checkpointConfig.resetCheckpointingTime();
                 if(getEstimateOwnPerformance()) {
@@ -292,7 +293,6 @@ public class KNN extends BaseClassifier implements ParamHandler, Checkpointed, C
         if(getEstimateOwnPerformance()) {
             estimatePerformance();
         }
-        
         runTimer.stop();
         
         // we do this after the timers have been stopped, etc, otherwise times are inaccurate

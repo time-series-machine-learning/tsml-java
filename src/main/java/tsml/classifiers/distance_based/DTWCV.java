@@ -214,7 +214,7 @@ public class DTWCV extends EnhancedAbstractClassifier implements SaveEachParamet
             trainResults.setErrorEstimateTime(estTime);
             trainResults.setErrorEstimateMethod("cv_loo");
             
-            trainResults.setClassifierName("DTWCV");
+            trainResults.setEstimatorName("DTWCV");
             trainResults.setDatasetName(train.relationName());
             trainResults.setSplit("train");
             //no foldid/seed

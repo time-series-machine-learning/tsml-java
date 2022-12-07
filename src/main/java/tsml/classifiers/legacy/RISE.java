@@ -44,8 +44,6 @@ import tsml.transformers.Transformer;
 import weka.core.Randomizable;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import weka.filters.Filter;
-import weka.filters.SimpleFilter;
 import tsml.classifiers.Tuneable;
 
 import static experiments.data.DatasetLoading.loadDataNullable;
@@ -407,7 +405,7 @@ public class RISE extends EnhancedAbstractClassifier
 
     private void findTrainAcc(Instances data) {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setParas(getParameters());

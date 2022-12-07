@@ -286,7 +286,7 @@ public class EnsembleSelection extends CAWPE {
 //END OF THE ACTUAL SELECTION STUFF   
 
         trainResults = globalEnsembleResults;
-        trainResults.setClassifierName("EnsembleSelection");
+        trainResults.setEstimatorName("EnsembleSelection");
         trainResults.setDatasetName(datasetName);
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");

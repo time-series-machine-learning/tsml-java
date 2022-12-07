@@ -36,18 +36,18 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
 /**
  * This is a container class for the storage of predictions and meta-info of a
  * clusterer on a single set of instances.
- * <p>
+ *
  * Predictions can be stored via addPrediction(...) or addAllPredictions(...)
  * Currently, the information stored about each prediction is:
- * - The true class value                            (double   getTrueClassValue(index))
- * - The predicted cluster                           (double   getPredClassValue(index))
- * - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
- * - An optional description of the prediction       (String   getPredDescription(index))
- * <p>
+ *    - The true class value                            (double   getTrueClassValue(index))
+ *    - The predicted cluster                           (double   getPredClassValue(index))
+ *    - The probability distribution for this instance  (double[] getProbabilityDistribution(index))
+ *    - An optional description of the prediction       (String   getPredDescription(index))
+ *
  * The meta info stored is:
  * [LINE 1 OF FILE]
  * - get/setDatasetName(String)
- * - get/setClassifierName(String)
+ * - get/setClustererName(String)
  * - get/setSplit(String)
  * - get/setFoldId(String)
  * - get/setTimeUnit(TimeUnit)
@@ -62,41 +62,41 @@ import static org.apache.commons.math3.special.Gamma.logGamma;
  * - get/setMemory(long)
  * - get/setNumClasses(int)
  * - get/setNumClusters(int) (either set by user or indirectly found through predicted probability distributions)
- * <p>
+ *
  * [REMAINING LINES: PREDICTIONS]
  * - trueClassVal, predClusterVal, [empty], dist[0], dist[1] ... dist[c], [empty], predTime, [empty], predDescription
- * <p>
+ *
  * Supports reading/writing of results from/to file, in the 'ClustererResults file-format'
- * - loadResultsFromFile(String path)
- * - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
- * <p>
+ *    - loadResultsFromFile(String path)
+ *    - writeFullResultsToFile(String path)
+ *
  * Supports recording of timings in different time units. Nanoseconds is the default.
- * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy,
+ * Also supports the calculation of various evaluative performance metrics based on the predictions (accuracy,
  * rand index, mutual information etc.)
- * <p>
+ *
  * EXAMPLE USAGE:
- * ClustererResults res = new ClustererResults(numClasses);
- * //set a particular timeunit, if using something other than nanos. Nanos recommended
- * //set any meta info you want to keep, e.g classifiername, datasetname...
- * <p>
- * for (Instance inst : test) {
- *   res.addPrediction(inst.classValue(), clusterDist, clusterPred, 0, ""); //description is optional
- * }
- * <p>
- * res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
- * <p>
- * //can now find summary scores for these predictions
- * //stats stored in simple public members for now
- * res.findAllStats();
- * <p>
- * //and/or save to file
- * res.writeFullResultsToFile(path);
- * <p>
- * //and could then load them back in
- * ClassifierResults res2 = new ClassifierResults(path);
- * <p>
- * //the are automatically finalised, however the stats are not automatically found
- * res2.findAllStats();
+ *          ClustererResults res = new ClustererResults(numClasses);
+ *          //set a particular timeunit, if using something other than nanos. Nanos recommended
+ *          //set any meta info you want to keep, e.g clusterername, datasetname...
+ *
+ *          for (Instance inst : test) {
+ *              res.addPrediction(inst.classValue(), clusterDist, clusterPred, 0, ""); //description is optional
+ *          }
+ *
+ *          res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
+ *
+ *          //can now find summary scores for these predictions
+ *          //stats stored in simple public members for now
+ *          res.findAllStats();
+ *
+ *          //and/or save to file
+ *          res.writeFullResultsToFile(path);
+ *
+ *          //and could then load them back in
+ *          ClassifierResults res2 = new ClassifierResults(path);
+ *
+ *          //the are automatically finalised, however the stats are not automatically found
+ *          res2.findAllStats();
  *
  * @author Matthew Middlehurst, adapted from ClassifierResults (James Large)
  */
@@ -118,22 +118,29 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
 
 
     //LINE 1: meta info, set by user
-    private String clustererName = "";
-    private String datasetName = "";
-    private String split = "";
-    private int foldID = -1;
-    private String description = ""; //human-friendly optional extra info if wanted.
 
-//LINE 2: clusterer setup/info, parameters. precise format is up to user.
+    //estimatorName
+
+    // datasetName
+
+    // split
+
+    // foldID
+
+    // timeUnit
+
+    // description
+
+    //LINE 2: clusterer setup/info, parameters. precise format is up to user.
 
     /**
      * For now, user dependent on the formatting of this string, and really, the contents of it.
-     * It is notionally intended to contain the parameters of the classifier used to produce the
+     * It is notionally intended to contain the parameters of the clusterer used to produce the
      * attached predictions, but could also store other things as well.
      */
     private String paras = "No parameter info";
 
-//LINE 3: rand, buildTime, memoryUsage
+    //LINE 3: rand, buildTime, memoryUsage
     //simple summarative performance stats.
 
     /**
@@ -174,8 +181,6 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     private double nmi = -1;
     private double ami = -1;
 
-    // timeUnit
-
     //self-management flags
     /**
      * essentially controls whether a ClustererResults object can have finaliseResults(trueClassVals)
@@ -214,10 +219,10 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
 
     /**
      * Create an empty ClustererResults object.
-     * <p>
+     *
      * If number of classes is known when making the object, it is safer to use this constructor
      * and supply the number of classes directly.
-     * <p>
+     *
      * In some extreme use cases, predictions on dataset splits that a particular classifier results represents
      * may not have examples of each class that actually exists in the full dataset. If it is left
      * to infer the number of classes, some may be missing.
@@ -241,12 +246,12 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     }
 
     /**
-     * Create a clusterer results object with complete predictions (equivalent to addAllPredictions()). The results are
+     * Create a ClustererResults object with complete predictions (equivalent to addAllPredictions()). The results are
      * FINALISED after initialisation. Meta info such as clusterer name, datasetname... can still be set after
      * construction.
-     * <p>
+     *
      * The descriptions array argument may be null, in which case the descriptions are stored as empty strings.
-     * <p>
+     *
      * All other arguments are required in full, however
      */
     public ClustererResults(int numClasses, double[] trueClassVals, double[] predictions, double[][] distributions,
@@ -296,67 +301,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     public void turnOnZeroTimingsErrors() {
         errorOnTimingOfZero = true;
     }
-
-
-    /***************************
-     *
-     *   LINE 1 GETS/SETS
-     *
-     *  Just basic descriptive stuff, nothing fancy going on here
-     *
-     */
-
-    public String getClustererName() {
-        return clustererName;
-    }
-
-    public void setClustererName(String clustererName) {
-        this.clustererName = clustererName;
-    }
-
-    public String getDatasetName() {
-        return datasetName;
-    }
-
-    public void setDatasetName(String datasetName) {
-        this.datasetName = datasetName;
-    }
-
-    public int getFoldID() {
-        return foldID;
-    }
-
-    public void setFoldID(int foldID) {
-        this.foldID = foldID;
-    }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public String getSplit() { return split; }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public void setSplit(String split) { this.split = split; }
-
-
-    public TimeUnit getTimeUnit() {
-        return timeUnit;
-    }
-
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit = timeUnit;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
+    
 
     /*****************************
      *
@@ -493,9 +438,9 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * Will update the internal prediction info using the values passed. User must pass the predicted cluster
      * so that they may resolve ties how they want (e.g first, randomly, etc).
      * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
-     * <p>
+     *
      * The description argument may be null, however all other arguments are required in full
-     * <p>
+     *
      * The true class is missing, however can be added in one go later with the
      * method finaliseResults(double[] trueClassVals)
      */
@@ -521,7 +466,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * Will update the internal prediction info using the values passed. User must pass the predicted cluster
      * so that they may resolve ties how they want (e.g first, randomly, etc).
      * The standard, used in most places, would be utilities.GenericTools.indexOfMax(double[] dist)
-     * <p>
+     *
      * The description argument may be null, however all other arguments are required in full
      */
     public void addPrediction(double trueClassVal, double[] dist, double cluster, long predictionTime,
@@ -660,7 +605,6 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
         return trueClassValues.get(index);
     }
 
-
     public ArrayList<Double> getClusterValues() {
         return clusterValues;
     }
@@ -761,11 +705,11 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
 
     /**
      * Reads and STORES the prediction in this ClustererResults object.
-     * <p>
+     *
      * INCREMENTS NUMINSTANCES
-     * <p>
+     *
      * If numClasses is still less than 0, WILL set numclasses if distribution info is present.
-     * <p>
+     *
      * [true],[pred], ,[dist[0]],...,[dist[c]], ,[description until end of line, may have commas in it]
      */
     private void instancePredictionFromString(String predLine) throws Exception {
@@ -930,7 +874,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
             return;
 
         datasetName = parts[0];
-        clustererName = parts[1];
+        estimatorName = parts[1];
         split = parts[2];
         foldID = Integer.parseInt(parts[3]);
         setTimeUnitFromString(parts[4]);
@@ -941,7 +885,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
     }
 
     private String generateFirstLine() {
-        return datasetName + "," + clustererName + "," + split + "," + foldID + "," + getTimeUnitAsString() +
+        return datasetName + "," + estimatorName + "," + split + "," + foldID + "," + getTimeUnitAsString() +
                 "," + description;
     }
 
@@ -1067,7 +1011,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * stored in this object. Will NOT call finaliseResults(..), and finaliseResults(..)
      * not have been called elsewhere, however if it has not been called then true
      * class values must have been supplied while storing predictions.
-     * <p>
+     *
      * This is to allow iterative calculation of the metrics (in e.g. batches
      * of added predictions)
      */
@@ -1295,7 +1239,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * stored in this object, UNLESS this object has been finalised (finaliseResults(..)) AND
      * has already had it's stats found (findAllStats()), e.g. if it has already been called
      * by another process.
-     * <p>
+     *
      * In this latter case, this method does nothing.
      */
     @Override
@@ -1331,25 +1275,25 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * this obviously gets cleaned up a lot
      *
      * @param cresults ClustererResults[clusterer][fold]
-     * @return ClustererResults[clusterer]
+     * @return         ClustererResults[clusterer]
      */
     public static ClustererResults[] concatenateClustererResults( /*clusterer*/ /*fold*/ ClustererResults[][] cresults)
             throws Exception {
         ClustererResults[] concatenatedResults = new ClustererResults[cresults.length];
-        for (int classifierid = 0; classifierid < cresults.length; classifierid++) {
-            if (cresults[classifierid].length == 1) {
-                concatenatedResults[classifierid] = cresults[classifierid][0];
+        for (int clustererid = 0; clustererid < cresults.length; clustererid++) {
+            if (cresults[clustererid].length == 1) {
+                concatenatedResults[clustererid] = cresults[clustererid][0];
             } else {
-                ClustererResults newCres = new ClustererResults(cresults[classifierid][0].numClasses);
-                for (int foldid = 0; foldid < cresults[classifierid].length; foldid++) {
-                    ClustererResults foldCres = cresults[classifierid][foldid];
+                ClustererResults newCres = new ClustererResults(cresults[clustererid][0].numClasses);
+                for (int foldid = 0; foldid < cresults[clustererid].length; foldid++) {
+                    ClustererResults foldCres = cresults[clustererid][foldid];
                     for (int predid = 0; predid < foldCres.numInstances(); predid++) {
                         newCres.addPrediction(foldCres.getTrueClassValue(predid),
                                 foldCres.getProbabilityDistribution(predid), foldCres.getClusterValue(predid),
                                 foldCres.getPredictionTime(predid), foldCres.getPredDescription(predid));
                     }
                 }
-                concatenatedResults[classifierid] = newCres;
+                concatenatedResults[clustererid] = newCres;
             }
         }
         return concatenatedResults;
@@ -1359,6 +1303,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
         ClustererResults cr = new ClustererResults(3);
         Collections.addAll(cr.trueClassValues, 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 2., 2., 2., 2., 2.);
         Collections.addAll(cr.clusterValues, 0., 1., 1., 0., 0., 1., 0., 3., 3., 3., 2., 2., 2., 2., 2.);
+        Collections.addAll(cr.predTimes, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
         cr.numInstances = 15;
         cr.numClusters = 4;
         cr.findAllStats();

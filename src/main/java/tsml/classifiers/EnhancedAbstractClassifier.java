@@ -216,7 +216,7 @@ abstract public class EnhancedAbstractClassifier extends AbstractClassifier impl
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = trainData.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setParas(getParameters());
         if(trainData.classIndex() != trainData.numAttributes() - 1) {
             throw new IllegalArgumentException("class value not at the end");

@@ -303,7 +303,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                     model.setSeed(count);
                     tempResults=cv.crossValidateWithStats(model,trainCopy);
                     
-                    tempResults.setClassifierName("RandFPara"+count);
+                    tempResults.setEstimatorName("RandFPara"+count);
                     tempResults.setDatasetName(train.relationName());
                     tempResults.setFoldID(seed);
                     tempResults.setSplit("train");
@@ -512,7 +512,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         res.setTimeUnit(TimeUnit.NANOSECONDS);
         res.setBuildTime(System.nanoTime()-startTime);
         if(trainPath!=""){  //Save basic train results
-            res.setClassifierName("TunedRandF");
+            res.setEstimatorName("TunedRandF");
             res.setDatasetName(data.relationName());
             res.setFoldID(seed);
             res.setSplit("train");

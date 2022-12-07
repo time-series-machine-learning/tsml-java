@@ -17,8 +17,7 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import experiments.ClassifierLists;
-import experiments.data.DatasetLoading;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -243,7 +242,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             
             ClassifierResults concatenatedClassifierRes = ClassifierResults.concatenateClassifierResults(resultsPerFold[classifierIndex]);
             concatenatedClassifierRes.setTimeUnit(TimeUnit.NANOSECONDS);
-            concatenatedClassifierRes.setClassifierName(classifiers[classifierIndex].getClass().getSimpleName());
+            concatenatedClassifierRes.setEstimatorName(classifiers[classifierIndex].getClass().getSimpleName());
             concatenatedClassifierRes.setDatasetName(dataset.relationName());
             concatenatedClassifierRes.setFoldID(seed);
             concatenatedClassifierRes.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed

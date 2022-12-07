@@ -41,7 +41,6 @@ import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 
@@ -546,7 +545,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         new File(fullPath).mkdirs();
         fullPath += "/" + trainOrTest + "Fold" + seed + ".csv";
         
-        results.setClassifierName(classifierName);
+        results.setEstimatorName(classifierName);
         results.setDatasetName(datasetName);
         results.setFoldID(seed);
         results.setSplit(trainOrTest);
@@ -630,7 +629,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         for (EnsembleModule module : modules)
             estimateTime += module.trainResults.getErrorEstimateTime();
 
-        trainResults.setClassifierName(ensembleName);
+        trainResults.setEstimatorName(ensembleName);
         if (datasetName == null || datasetName.equals(""))
             datasetName = data.relationName();
         trainResults.setDatasetName(datasetName);
@@ -921,17 +920,17 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             //and voting definition time
             for (EnsembleModule module : modules) {
                 if (needIndividualTrainPreds()) {
-                    if (module.trainResults.getBuildPlusEstimateTime() == -1){
+                    if (module.trainResults.getBuildPlusEstimateTime() == -1 || module.trainResults.getBuildTimeInNanos() == -1){
                         //assumes estimate time is not included in the total build time
-                        buildTime += module.trainResults.getBuildTimeInNanos()
-                                + module.trainResults.getErrorEstimateTimeInNanos();
+                        long t = module.trainResults.getBuildTimeInNanos() == -1 ? module.testResults.getBuildTimeInNanos() : module.trainResults.getBuildTimeInNanos();
+                        buildTime += t + module.trainResults.getErrorEstimateTimeInNanos();
                     }
                     else{   
                         buildTime += module.trainResults.getBuildPlusEstimateTimeInNanos();
                     }
                 }
                 else{
-                    buildTime += module.trainResults.getBuildTimeInNanos();
+                    buildTime += module.trainResults.getBuildTimeInNanos() == -1 ? module.testResults.getBuildTimeInNanos() : module.trainResults.getBuildTimeInNanos();
                 }
             }
         }

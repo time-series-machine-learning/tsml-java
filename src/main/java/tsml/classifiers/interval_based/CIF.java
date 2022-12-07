@@ -356,7 +356,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getTSCapabilities().test(data);
@@ -790,7 +790,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("CIFBagging");
+            trainResults.setEstimatorName("CIFBagging");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -815,7 +815,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             long tt = trainResults.getBuildTime();
             trainResults = cv.evaluate(cif, Converter.toArff(data));
             trainResults.setBuildTime(tt);
-            trainResults.setClassifierName("CIFCV");
+            trainResults.setEstimatorName("CIFCV");
             trainResults.setErrorEstimateMethod("CV_" + numFolds);
         } else if (trainEstimateMethod == TrainEstimateMethod.OOB || trainEstimateMethod == TrainEstimateMethod.NONE ||
                 trainEstimateMethod == TrainEstimateMethod.TRAIN) {
@@ -832,7 +832,7 @@ public class CIF extends EnhancedAbstractClassifier implements TechnicalInformat
             long tt = trainResults.getBuildTime();
             trainResults = cif.trainResults;
             trainResults.setBuildTime(tt);
-            trainResults.setClassifierName("CIFOOB");
+            trainResults.setEstimatorName("CIFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }

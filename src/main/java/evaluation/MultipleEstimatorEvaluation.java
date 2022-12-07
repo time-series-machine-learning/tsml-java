@@ -398,6 +398,11 @@ public class MultipleEstimatorEvaluation implements DebugPrinting {
         return this;
     }
 
+    public MultipleEstimatorEvaluation setUseRegressionStatistics() {
+        metrics = PerformanceMetric.getRegressionStatistics();
+        return this;
+    }
+
 
     /**
      * Read in the results from file estimator by estimator, can be used if results are in different locations

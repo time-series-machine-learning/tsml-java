@@ -200,7 +200,7 @@ public class CrossValidationEvaluator extends MultiSamplingEvaluator {
     private ClassifierResults concatenateAndReorderFoldPredictions(ClassifierResults[] foldResults, String fullClassifierName, String fullDatasetName, double[] trueClassVals) throws Exception {
         ClassifierResults res = new ClassifierResults(foldResults[0].numClasses());
         res.setTimeUnit(TimeUnit.NANOSECONDS);
-        res.setClassifierName(fullClassifierName);
+        res.setEstimatorName(fullClassifierName);
         res.setDatasetName(fullDatasetName);
         res.setFoldID(seed);
         res.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed

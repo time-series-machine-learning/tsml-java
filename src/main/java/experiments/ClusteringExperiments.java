@@ -18,7 +18,6 @@ package experiments;
 
 import com.google.common.testing.GcFinalization;
 import evaluation.storage.ClustererResults;
-import evaluation.storage.ClustererResults;
 import experiments.data.DatasetLoading;
 import tsml.clusterers.EnhancedAbstractClusterer;
 import utilities.ClusteringUtilities;
@@ -30,12 +29,11 @@ import weka.core.Randomizable;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static utilities.ClusteringUtilities.zNormaliseWithClass;
 import static utilities.GenericTools.indexOfMax;
 
 /**
@@ -165,6 +163,11 @@ public class ClusteringExperiments {
 
         Instances[] data = DatasetLoading.sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         expSettings.numClassValues = data[0].numClasses();
+
+        if (expSettings.normalise){
+            zNormaliseWithClass(data[0]);
+            zNormaliseWithClass(data[1]);
+        }
 
         // replace missing values with 0 if enabled
         if (expSettings.replaceMissingValues) {
@@ -401,7 +404,7 @@ public class ClusteringExperiments {
 
     public static void writeResults(ExperimentalArguments exp, ClustererResults results, String fullTestWritingPath, String split) throws Exception {
         results.setTimeUnit(TimeUnit.NANOSECONDS);
-        results.setClustererName(exp.estimatorName);
+        results.setEstimatorName(exp.estimatorName);
         results.setDatasetName(exp.datasetName);
         results.setFoldID(exp.foldId);
         results.setSplit(split);

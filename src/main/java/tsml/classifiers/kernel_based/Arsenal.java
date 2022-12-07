@@ -285,7 +285,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
-            trainResults.setClassifierName("ArsenalOOB");
+            trainResults.setEstimatorName("ArsenalOOB");
             trainResults.setErrorEstimateMethod("OOB");
         } else if (trainEstimateMethod == TrainEstimateMethod.CV || trainEstimateMethod == TrainEstimateMethod.NONE ||
                 trainEstimateMethod == TrainEstimateMethod.TRAIN) {
@@ -304,7 +304,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             trainResults.setDatasetName(data.relationName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
-            trainResults.setClassifierName("ArsenalCV");
+            trainResults.setEstimatorName("ArsenalCV");
             trainResults.setErrorEstimateMethod("CV_10");
         } else if (trainEstimateMethod == TrainEstimateMethod.OOB) {
             Arsenal ar = new Arsenal();
@@ -318,7 +318,7 @@ public class Arsenal extends EnhancedAbstractClassifier implements TrainTimeCont
             long tt = trainResults.getBuildTime();
             trainResults = ar.trainResults;
             trainResults.setBuildTime(tt);
-            trainResults.setClassifierName("ArsenalOOB");
+            trainResults.setEstimatorName("ArsenalOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }
