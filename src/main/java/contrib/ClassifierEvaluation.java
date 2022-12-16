@@ -175,7 +175,7 @@ Tiselac
             all.writeString(",\n");
         }
     }
-    public static void summariseResultsPresent(String[] classifiers, String[] problems, String path){
+    public static void summariseResultsPresent(String[] classifiers, String[] problems, String path, String outfile){
         int maxResamples=30;
         int[][] countTest = new int[problems.length][classifiers.length];
         int[][] countTrain = new int[problems.length][classifiers.length];
@@ -192,7 +192,7 @@ Tiselac
                 }
             }
         }
-        OutFile out= new OutFile(path+"completeCounts.csv");
+        OutFile out= new OutFile(path+outfile);
         System.out.println("************** TEST COUNTS **************************");
         out.writeString(",,Test Counts");
         for (int i = 0; i < classifiers.length+2; i++)
@@ -379,19 +379,27 @@ Tiselac
 
     //<editor-fold defaultstate="collapsed" desc="selectedClassifiers: specific subset of classifiers"
     static String[] selectedClassifiers = {
+            "1NN-DTW",
+            "BOSS",
             "Arsenal",
+            "Catch22",
             "CNN",
+            "cBOSS",
             "DrCIF",
             "FreshPRINCE",
+            "HC1",
             "HC2",
-            "KNeighborsTimeSeriesClassifier",
-            "MLP",
-            "MUSE",
+            "Hydra",
             "ROCKET",
             "Mini-ROCKET",
             "Multi-ROCKET",
+            "RDST",
             "STC",
+            "STSF",
             "TDE",
+            "TSF",
+            "TSFresh",
+            "WEASEL-Dilation"
     };
 //</editor-fold>
 
@@ -442,7 +450,8 @@ Tiselac
         }
 
     }
-
+    String[] sota = {
+            "HC2", "ROCKET", "Hydra", "WEASEL-dilation"};
     public static void main(String[] args) throws Exception {
 //        referenceResults();
 //        System.out.println(" Number of classifiers = "+ allSktimeClassifiers.length);
@@ -452,9 +461,10 @@ Tiselac
                 .toArray(String[]::new);
 //        collateResults(path, defaultCapableSktimeClassifiers, allProblems, 1);
         path="X:\\Results Working Area\\ReduxBakeoff\\sktime\\";
-        summariseResultsPresent(selectedClassifiers, DatasetLists.mtscProblems2022, path);
+///DatasetLists.mtscProblems2022
+          summariseResultsPresent(selectedClassifiers, DatasetLists.tscProblems112, path, "UnivariateCounts.csv");
 //        summariseResultsPresent (defaultCapableSktimeClassifiers,allProblems,path);
-//        localResults(defaultCapableSktimeClassifiers, allProblems,path,"DefaultResults",1);
+ //       localResults(selectedClassifiers, DatasetLists.tscProblems112,path,"UnivariateResults",30);
 //        summariseResultsPresent (selectedClassifiers,DatasetLists.eegProblems,path);
 //        summariseAccuracies(selectedClassifiers,DatasetLists.eegProblems,path,30);
 
