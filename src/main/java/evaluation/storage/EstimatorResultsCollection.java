@@ -634,7 +634,7 @@ public class EstimatorResultsCollection implements DebugPrinting {
                                 if (printOnEstimatorNameMismatch && !allResults[s][c][d][f].estimatorName.equalsIgnoreCase(estimatorNamesInStorage[c])){
                                     System.err.println("Estimator file name: \"" + allResults[s][c][d][f].estimatorName
                                             + "\" is different from input name \"" + estimatorNamesInStorage[c] +
-                                            "\".");
+                                            "\" on dataset \"" + datasetStorage + "\".");
                                 }
 
                                 allResults[s][c][d][f].findAllStatsOnce();

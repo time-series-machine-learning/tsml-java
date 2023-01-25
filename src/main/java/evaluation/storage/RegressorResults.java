@@ -202,6 +202,7 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
 
     //calculated performance metrics
     //accuracy can be re-calced, as well as stored on line three in files
+    public double rmse;
     public double mae;
     public double r2;
     public double mape;
@@ -228,6 +229,7 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
     //these are currently on used in PerformanceMetric.java, can take any results type as a hack to allow other
     //results in evaluation.
     public static final Function<EstimatorResults, Double> GETTER_MSE = (EstimatorResults cr) -> ((RegressorResults)cr).mse;
+    public static final Function<EstimatorResults, Double> GETTER_RMSE = (EstimatorResults cr) -> ((RegressorResults)cr).rmse;
     public static final Function<EstimatorResults, Double> GETTER_MAE = (EstimatorResults cr) -> ((RegressorResults)cr).mae;
     public static final Function<EstimatorResults, Double> GETTER_R2 = (EstimatorResults cr) -> ((RegressorResults)cr).r2;
     public static final Function<EstimatorResults, Double> GETTER_MAPE = (EstimatorResults cr) -> ((RegressorResults)cr).mape;
@@ -945,6 +947,7 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
         if (mse < 0)
             calculateMSE();
 
+        rmse = findRMSE();
         mae = findMAE();
         r2 = findR2();
         mape = findMAPE();
@@ -952,6 +955,13 @@ public class RegressorResults extends EstimatorResults implements DebugPrinting,
         medianPredTime = findMedianPredTime(predTimes);
 
         allStatsFound = true;
+    }
+
+    public double findRMSE() {
+        if (mse < 0)
+            calculateMSE();
+
+        return Math.sqrt(mse);
     }
 
     public double findMAE() {

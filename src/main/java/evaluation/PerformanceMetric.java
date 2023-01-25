@@ -126,6 +126,8 @@ public class PerformanceMetric {
     public static PerformanceMetric AMI             = new PerformanceMetric("AMI", ClustererResults.GETTER_AdjustedMutualInformation,    mean, max,   better, isNotBenchmarked, test);
 
     public static PerformanceMetric MSE             = new PerformanceMetric("MSE", RegressorResults.GETTER_MSE,                          mean, min,   worse, isNotBenchmarked, test);
+    public static PerformanceMetric RMSE            = new PerformanceMetric("RMSE", RegressorResults.GETTER_RMSE,                        mean, min,   worse, isNotBenchmarked, test);
+
     public static PerformanceMetric MAE             = new PerformanceMetric("MAE", RegressorResults.GETTER_MAE,                          mean, min,   worse, isNotBenchmarked, test);
     public static PerformanceMetric R2              = new PerformanceMetric("R2", RegressorResults.GETTER_R2,                            mean, max,   better, isNotBenchmarked, test);
     public static PerformanceMetric MAPE            = new PerformanceMetric("MAPE", RegressorResults.GETTER_MAPE,                        mean, min,   worse, isNotBenchmarked, test);
@@ -194,6 +196,7 @@ public class PerformanceMetric {
     public static List<PerformanceMetric> getRegressionStatistics() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(MSE);
+        stats.add(RMSE);
         stats.add(MAE);
         stats.add(R2);
         stats.add(MAPE);
