@@ -175,14 +175,14 @@ Tiselac
             all.writeString(",\n");
         }
     }
-    public static void summariseResultsPresent(String[] classifiers, String[] problems, String path, String outfile){
+    public static void summariseResultsPresent(String[] estimators, String[] problems, String path, String outfile){
         int maxResamples=30;
-        int[][] countTest = new int[problems.length][classifiers.length];
-        int[][] countTrain = new int[problems.length][classifiers.length];
-        for(int i=0;i< classifiers.length;i++){
+        int[][] countTest = new int[problems.length][estimators.length];
+        int[][] countTrain = new int[problems.length][estimators.length];
+        for(int i=0;i< estimators.length;i++){
             for(int j=0;j< problems.length;j++){
                 for(int k=0;k<maxResamples;k++){
-                   String fileName=path+classifiers[i]+"\\Predictions\\"+problems[j]+"\\";
+                   String fileName=path+estimators[i]+"\\Predictions\\"+problems[j]+"\\";
                     File f = new File(fileName+"testResample"+k+".csv");
                     if(f.exists())
                         countTest[j][i]++;
@@ -195,27 +195,27 @@ Tiselac
         OutFile out= new OutFile(path+outfile);
         System.out.println("************** TEST COUNTS **************************");
         out.writeString(",,Test Counts");
-        for (int i = 0; i < classifiers.length+2; i++)
+        for (int i = 0; i < estimators.length+2; i++)
             out.writeString(",");
         out.writeString("Train Counts");
         out.writeString("\n");
 
-        for (int i = 0; i < classifiers.length; i++)
-            out.writeString(","+classifiers[i]);
+        for (int i = 0; i < estimators.length; i++)
+            out.writeString(","+estimators[i]);
         out.writeString(",,");
-        for (int i = 0; i < classifiers.length; i++)
-            out.writeString(","+classifiers[i]);
+        for (int i = 0; i < estimators.length; i++)
+            out.writeString(","+estimators[i]);
         out.writeLine("");
 
         for(int j=0;j< problems.length;j++) {
             System.out.print(problems[j]);
             out.writeString(problems[j]);
-            for (int i = 0; i < classifiers.length; i++) {
+            for (int i = 0; i < estimators.length; i++) {
                 System.out.print("," + countTest[j][i]);
                 out.writeString(","+countTest[j][i]);
             }
             out.writeString(",,");
-            for (int i = 0; i < classifiers.length; i++) {
+            for (int i = 0; i < estimators.length; i++) {
                 out.writeString(","+countTrain[j][i]);
             }
             System.out.print("\n");
@@ -227,7 +227,7 @@ Tiselac
 //        out.writeLine("");
         for(int j=0;j< problems.length;j++) {
             System.out.print(problems[j]);
-            for (int i = 0; i < classifiers.length; i++){
+            for (int i = 0; i < estimators.length; i++){
                 System.out.print("," + countTrain[j][i]);
             }
             System.out.print("\n");
@@ -460,9 +460,6 @@ Tiselac
           String[] allProblems = Stream.concat(Arrays.stream(DatasetLists.tscProblems112), Arrays.stream(DatasetLists.mtscProblems2022))
                 .toArray(String[]::new);
 //        collateResults(path, defaultCapableSktimeClassifiers, allProblems, 1);
-        path="X:\\Results Working Area\\ReduxBakeoff\\sktime\\";
-///DatasetLists.mtscProblems2022
-          summariseResultsPresent(selectedClassifiers, DatasetLists.tscProblems112, path, "UnivariateCounts.csv");
 //        summariseResultsPresent (defaultCapableSktimeClassifiers,allProblems,path);
  //       localResults(selectedClassifiers, DatasetLists.tscProblems112,path,"UnivariateResults",30);
 //        summariseResultsPresent (selectedClassifiers,DatasetLists.eegProblems,path);

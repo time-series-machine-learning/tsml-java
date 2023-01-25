@@ -114,7 +114,7 @@ public class ClustererResults extends EstimatorResults implements DebugPrinting,
      * Print a message when result file clustering accuracy does not match calculated accuracy.
      * Some results files do not have valid accuracies, setting this to false will stop print outs from this check.
      */
-    public static boolean clAccTestPrint = true;
+    public static boolean clAccTestPrint = false;
 
 
     //LINE 1: meta info, set by user
