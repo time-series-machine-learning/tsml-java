@@ -8,7 +8,7 @@ UEA Time Series Classification
 
 A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>`__-compatible Java toolbox for
 **time series classification, clustering and transformation**. For the python sklearn-compatible version, see 
-`sktime <https://github.com/alan-turing-institute/sktime>`__
+`aeon <https://github.com/aeon-toolkit/aeon>`__
 
 Find out more info about our broader work and dataset hosting for the UCR univariate and UEA multivariate time series classification archives on our `website <http://www.timeseriesclassification.com>`__.
 
