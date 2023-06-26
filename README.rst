@@ -1,4 +1,4 @@
-
+**This repository is not being proactively maintained or updated currently (message updated 26/06/2023). Feel free to open bug reports, and we may get around to fixing them still. For the latest time series algoritms implemented and maintained by our group, see the Python based** `aeon <https://github.com/aeon-toolkit/aeon>`__ **toolkit.**
 
 UEA Time Series Classification
 ==============================
@@ -8,7 +8,7 @@ UEA Time Series Classification
 
 A `Weka <https://svn.cms.waikato.ac.nz/svn/weka/branches/stable-3-8/>`__-compatible Java toolbox for
 **time series classification, clustering and transformation**. For the python sklearn-compatible version, see 
-`aeon <https://github.com/aeon-toolkit/aeon>`__
+`aeon <https://github.com/aeon-toolkit/aeon>`__.
 
 Find out more info about our broader work and dataset hosting for the UCR univariate and UEA multivariate time series classification archives on our `website <http://www.timeseriesclassification.com>`__.
 
@@ -28,7 +28,7 @@ This codebase mainly represents the implementation of different algorithms in a 
 
 We therefore mainly provide implementations of different classifiers as well as experimental and results analysis pipelines with the hope of promoting and streamlining open source, easily comparable, and easily reproducible results, specifically within the TSC space. 
 
-While they are obviously very important methods to study, we shall very likely not be implementing any kind of deep learning methods in our codebase, and leave those rightfully in the land of optimised languages and libraries for them, such as `sktime-dl <https://github.com/uea-machine-learning/sktime-dl>`__ , the Keras-enabled extension to `sktime <https://github.com/alan-turing-institute/sktime>`__. 
+While they are obviously very important methods to study, we shall very likely not be implementing any kind of deep learning methods in our codebase, and leave those rightfully in the land of optimised languages and libraries for them. See `aeon <https://github.com/aeon-toolkit/aeon>`__ for implemented deep learning methods for time series data.
 
 Our `examples <https://github.com/uea-machine-learning/tsml/tree/dev/src/main/java/examples>`__ run through the basics of using the code, however the basic layout of the codebase is this:
 
