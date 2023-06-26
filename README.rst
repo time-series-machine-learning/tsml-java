@@ -1,4 +1,4 @@
-**This repository is not being proactively maintained or updated currently (message updated 26/06/2023). Feel free to open bug reports, and we may get around to fixing them still. For the latest time series algoritms implemented and maintained by our group, see the Python based** `aeon <https://github.com/aeon-toolkit/aeon>`__ **toolkit.**
+**This repository is not being proactively maintained or receiving new implementation currently** (This message updated 26/06/2023). **Feel free to open still bug reports, we may get around to fixing them eventually but response may be delayed. For the latest time series algorithms implemented and maintained by our group, see the Python based** `aeon <https://github.com/aeon-toolkit/aeon>`__ **toolkit.**
 
 UEA Time Series Classification
 ==============================
